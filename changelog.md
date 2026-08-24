@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove `Scene` ownership cycle (`d5aaf42`)
 - Restrict visibility of geometry helpers (`f4cae07`)
 - Handle self-edges (`3192203`)
-- Correct test docs in README (``)
+- Correct test docs in README (`e8ae56e`)
 
 ## Changed
 
