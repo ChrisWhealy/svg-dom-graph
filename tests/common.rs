@@ -92,6 +92,12 @@ pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns `Err(msg)` when `condition` is `false`.
+pub fn check(condition: bool, msg: &str) -> Result<(), String> {
+    if condition { Ok(()) } else { Err(msg.into()) }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns `Err` unless `got` is within `0.01` of `expected`.
 ///
 /// A tolerance, not exact equality, since coordinate conversion through an inverted screen CTM involves real

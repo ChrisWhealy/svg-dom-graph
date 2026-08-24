@@ -257,15 +257,20 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
     let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
     {
-        // A weak handle, not a strong clone: `group` is the node this listener is registered on, so a strong
-        // capture here would create a cycle (SvgNodeInner -> listener store -> closure -> SvgNode -> the same
-        // SvgNodeInner) that leaks the node and defeats its automatic listener cleanup. See `WeakSvgNode`'s doc
-        // comment.
+        // Both `group` and `scene` are captured weakly, not as strong clones. `group` is the node this listener is
+        // registered on: a strong capture there would create a cycle (SvgNodeInner -> listener store -> closure ->
+        // SvgNode -> the same SvgNodeInner) that leaks the node and defeats its automatic listener cleanup. See
+        // `WeakSvgNode`'s doc comment.
+        // `scene` needs the same treatment one level up: `scene.node_handles` owns `group`, so a strong `scene`
+        // clone in this closure would close the cycle back through `Scene` itself (`Scene -> group ->
+        // listener store -> closure -> Scene`), leaking the whole `Scene` — everything it renders, and every
+        // listener on every node — even after every external `Rc<RefCell<Scene>>` is dropped.
         let group_weak = group.downgrade();
-        let scene = scene.clone();
+        let scene_weak = Rc::downgrade(scene);
         let drag_start = drag_start.clone();
         group.on_pointerdown(move |evt| {
             let Some(group) = group_weak.upgrade() else { return };
+            let Some(scene) = scene_weak.upgrade() else { return };
             // Can't route the drag without a way to convert client pixels into this group's own coordinates.
             let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
                 return;
@@ -285,13 +290,15 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
     }
 
     {
-        let scene = scene.clone();
+        // Weak for the same reason as the pointerdown handler above.
+        let scene_weak = Rc::downgrade(scene);
         let drag_start = drag_start.clone();
         // Reused across every pointermove call in this drag — and across drags, since the closure's environment
         // persists between invocations — rather than allocating a fresh String each time. See
         // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
         let mut scratch = String::new();
         group.on_pointermove(move |evt| {
+            let Some(scene) = scene_weak.upgrade() else { return };
             let Some(start) = drag_start.get() else { return };
             let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
             let pointer_now = client_to_user_space(client, start.inverse_ctm);

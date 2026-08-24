@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct README (`4f7c534`)
 - Remove `SvgNode` ownership cycle (`af00332`)
 - Implement pointer -> user-space coordinate conversion (``)
+- Remove `Scene` ownership cycle (``)
 
 ## Changed
 

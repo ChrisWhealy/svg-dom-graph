@@ -135,3 +135,37 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
     check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x + 50.0)?;
     check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y + 30.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `make_draggable`'s listener closures must not keep the `Scene` alive on their own.
+///
+/// Registers draggable handlers, then drops the caller's only strong `Rc<RefCell<Scene>>`.
+/// A `Weak` reference taken beforehand must fail to upgrade afterwards — proving nothing internal to `Scene` (a node's
+/// `SvgNode`, its listener closures, and so on) still holds a strong clone of `Scene` itself, which would otherwise
+/// keep the whole `Scene` alive forever, even with every external handle gone.
+#[wasm_bindgen_test]
+fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
+    let svg = make_svg("scene-lifetime", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let mut scene = Scene::new(&svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(&svg, Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(&svg, Point::new(200.0, 150.0), Size::new(90.0, 50.0), "B")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(&svg, a, b).map_err(|e| e.to_string())?;
+
+    let scene = Rc::new(RefCell::new(scene));
+    let scene_weak = Rc::downgrade(&scene);
+
+    make_draggable(&scene, a).map_err(|e| e.to_string())?;
+    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+
+    drop(scene); // the only strong handle the caller ever held
+
+    common::check(
+        scene_weak.upgrade().is_none(),
+        "Scene was still alive after its only strong handle was dropped",
+    )
+}
