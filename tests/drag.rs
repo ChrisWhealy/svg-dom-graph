@@ -172,6 +172,111 @@ fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A second, unrelated pointer must not be able to drive an already-active drag, nor end it by lifting off.
+///
+/// `pointermove`/`pointerup` reach a group's listener for any pointer, not only the one that started the drag —
+/// for example a second finger touching the same element mid-drag.
+/// Without checking the event's own `pointer_id` against the one recorded at `pointerdown`, pointer 2's move would
+/// reposition the box using pointer 1's drag state, and pointer 2's pointerup would end pointer 1's drag out from
+/// under it.
+#[wasm_bindgen_test]
+fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), String> {
+    let svg = make_svg("multi-pointer", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let b_rect_before = Rect {
+        origin: Point::new(200.0, 150.0),
+        size: Size::new(90.0, 50.0),
+    };
+
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+
+    let scene = Rc::new(RefCell::new(scene));
+    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+
+    let group_b = nth_group("multi-pointer", 1)?;
+    let rect_b = group_b
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in B's group")?;
+
+    // Pointer 1 starts the drag.
+    dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
+
+    // An unrelated pointer 2 moves. Must not drive pointer 1's drag.
+    dispatch_pointer_event(&group_b, "pointermove", 500, 500, 2)?;
+    check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y)?;
+
+    // Pointer 2 lifts off. Must not end pointer 1's still-active drag.
+    dispatch_pointer_event(&group_b, "pointerup", 500, 500, 2)?;
+
+    // Pointer 1 keeps moving. This only works if pointer 2's pointerup left pointer 1's drag state alone.
+    dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
+
+    let b_rect_after = Rect {
+        origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
+        size: b_rect_before.size,
+    };
+    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An unrelated pointer's `pointercancel` must not end another pointer's active drag either.
+///
+/// Same property as the `pointerup` half of the test above, checked separately since `pointercancel` is a distinct
+/// listener with its own `pointer_id` guard.
+#[wasm_bindgen_test]
+fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<(), String> {
+    let svg = make_svg("multi-pointer-cancel", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let b_rect_before = Rect {
+        origin: Point::new(200.0, 150.0),
+        size: Size::new(90.0, 50.0),
+    };
+
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+
+    let scene = Rc::new(RefCell::new(scene));
+    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+
+    let group_b = nth_group("multi-pointer-cancel", 1)?;
+    let rect_b = group_b
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in B's group")?;
+
+    dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_b, "pointercancel", 0, 0, 2)?; // an unrelated pointer
+
+    // Pointer 1's drag must still be active.
+    dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
+
+    let b_rect_after = Rect {
+        origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
+        size: b_rect_before.size,
+    };
+    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `NodeId` from a different `Scene` must be rejected with an error, not silently treated as one of this
 /// `Scene`'s own nodes.
 ///

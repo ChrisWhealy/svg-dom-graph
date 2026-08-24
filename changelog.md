@@ -25,10 +25,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Depend on published `svg-dom` crate (`c3d4e5b`)
 - Switch publish flag (`574838f`)
 - Change node labels away from `&'static str` (`15eecf6`)
-- `Scene` must genuinely own or bind to its SVG root (`dd421e8`)
-- `NodeId` identifies the graph to which it belongs (``)
 
 ## Added
 
 - Initial commit (`04d5cd7`)
 - Add browser-level test layer and CI testing (`9eee6e7`)
+- `Scene` must genuinely own or bind to its SVG root (`dd421e8`)
+- `NodeId` identifies the graph to which it belongs (`2fe939e`)
+- Track the active `pointer_id` (``)
