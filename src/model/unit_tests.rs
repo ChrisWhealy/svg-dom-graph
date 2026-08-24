@@ -1,6 +1,8 @@
-use super::*;
-use svg_dom::root::utils::{Point, Size};
+use super::edge::EdgeId;
+use crate::model::graph::Graph;
+use svg_dom::root::utils::{Point, Rect, Size};
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn test_rect(x: f64, y: f64) -> Rect {
     Rect {
         origin: Point::new(x, y),
@@ -8,6 +10,7 @@ fn test_rect(x: f64, y: f64) -> Rect {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), String> {
     if got == expected {
         Ok(())
@@ -124,6 +127,48 @@ fn edge_records_its_endpoints() -> Result<(), String> {
     let stored = graph.edge(edge).ok_or("edge() returned None for an id it just issued")?;
     check_eq(stored.from, a)?;
     check_eq(stored.to, b)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn foreign_node_id_at_the_same_sequence_position_does_not_resolve_locally() -> Result<(), String> {
+    let mut graph_a = Graph::new();
+    // graph_a's first node: same sequence position graph_b's first node below will also get.
+    let a0 = graph_a.add_node(test_rect(0.0, 0.0), "a0");
+
+    let mut graph_b = Graph::new();
+    let b0 = graph_b.add_node(test_rect(50.0, 50.0), "b0");
+
+    // If ids were only distinguished by sequence number, a0 and b0 would be indistinguishable: both are their
+    // graph's first node. graph_b must still refuse a0, and must still resolve its own b0 correctly.
+    if graph_b.node(a0).is_some() {
+        return Err(
+            "a NodeId from graph_a resolved to a node in graph_b, despite sharing b0's sequence position".into(),
+        );
+    }
+    check_eq(graph_b.node(b0).map(|n| n.rect), Some(test_rect(50.0, 50.0)))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn foreign_edge_id_at_the_same_sequence_position_does_not_resolve_locally() -> Result<(), String> {
+    let mut graph_a = Graph::new();
+    let a1 = graph_a.add_node(test_rect(0.0, 0.0), "a1");
+    let a2 = graph_a.add_node(test_rect(10.0, 10.0), "a2");
+    // graph_a's first edge: same sequence position graph_b's first edge below will also get.
+    let edge_a = graph_a.add_edge(a1, a2);
+
+    let mut graph_b = Graph::new();
+    let b1 = graph_b.add_node(test_rect(50.0, 50.0), "b1");
+    let b2 = graph_b.add_node(test_rect(60.0, 60.0), "b2");
+    let edge_b = graph_b.add_edge(b1, b2);
+
+    if graph_b.edge(edge_a).is_some() {
+        return Err(
+            "an EdgeId from graph_a resolved to an edge in graph_b, despite sharing edge_b's sequence position".into(),
+        );
+    }
+    check_eq(graph_b.edge(edge_b).map(|e| (e.from, e.to)), Some((b1, b2)))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

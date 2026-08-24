@@ -172,6 +172,39 @@ fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A `NodeId` from a different `Scene` must be rejected with an error, not silently treated as one of this
+/// `Scene`'s own nodes.
+///
+/// Both `Scene`s' graphs number their nodes from zero, so `foreign`'s `NodeId` and this scene's own first `NodeId`
+/// share the same internal sequence position — exactly the case a numbering scheme not scoped to its owning
+/// `Scene` would confuse.
+#[wasm_bindgen_test]
+fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Result<(), String> {
+    let foreign_svg = make_svg("foreign-scene", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let mut foreign_scene = Scene::new(foreign_svg).map_err(|e| e.to_string())?;
+    let foreign = foreign_scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Foreign")
+        .map_err(|e| e.to_string())?;
+
+    let svg = make_svg("local-scene", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let local = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Local")
+        .map_err(|e| e.to_string())?;
+
+    check(
+        scene.add_edge(local, foreign).is_err(),
+        "add_edge silently accepted a NodeId from a different Scene",
+    )?;
+
+    let scene = Rc::new(RefCell::new(scene));
+    check(
+        make_draggable(&scene, foreign).is_err(),
+        "make_draggable silently accepted a NodeId from a different Scene",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two `Scene`s sharing one `<svg>` must not collide on their arrow marker's id.
 ///
 /// A hardcoded id such as `"arrow"` would make the second `Scene::new` either fail outright or silently produce a

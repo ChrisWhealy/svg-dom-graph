@@ -9,6 +9,8 @@
 //!
 //! The underlying topology model is a private implementation detail while this crate's API is still taking shape.
 //! Only the opaque [`NodeId`]/[`EdgeId`] handles it hands out are public.
+//! Each carries the id of the `Graph` that created it, so an id from one `Scene` can never be mistaken for one
+//! from another, even where their internal sequence numbers happen to coincide.
 //!
 //! This crate has no opinion about which HTML page hosts it, what graph a caller builds, or when.
 //! The sibling `demo-app` crate supplies a small worked example: the `wasm_bindgen(start)` entry point, a specific
@@ -16,8 +18,10 @@
 //!
 //! See [`geometry::boundary_point`] for the routing math and [`scene::Scene`] for the public rendering API.
 
+pub(crate) mod error;
 pub mod geometry;
 pub(crate) mod model;
 pub mod scene;
 
-pub use model::{EdgeId, NodeId};
+pub use error::Error;
+pub use model::{edge::EdgeId, node::NodeId};

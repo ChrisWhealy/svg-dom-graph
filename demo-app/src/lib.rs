@@ -6,10 +6,13 @@
 
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
-    Error, SvgRoot,
+    SvgRoot,
     root::utils::{Point, Size},
 };
-use svg_dom_graph::scene::{Scene, make_draggable};
+use svg_dom_graph::{
+    Error,
+    scene::{Scene, make_draggable},
+};
 use wasm_bindgen::prelude::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

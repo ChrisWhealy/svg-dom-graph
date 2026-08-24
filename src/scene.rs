@@ -8,8 +8,9 @@
 //! See the sibling `demo-app` crate for a small worked example.
 
 use crate::{
+    error::Error,
     geometry::{apply_matrix, boundary_point, invert_matrix},
-    model::{EdgeId, Graph, NodeId},
+    model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
     cell::{Cell, RefCell},
@@ -18,7 +19,7 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 use svg_dom::{
-    DominantBaseline, Error, MarkerUnits, SvgMarker, SvgNode, SvgRoot, TextAnchor,
+    DominantBaseline, MarkerUnits, SvgMarker, SvgNode, SvgRoot, TextAnchor,
     root::utils::{Matrix2D, Point, Rect, Size},
 };
 
@@ -140,9 +141,14 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
+    /// `NodeId` from a different `Scene`.
     pub fn add_edge(&mut self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
-        let from_rect = self.node_rect(from);
-        let to_rect = self.node_rect(to);
+        let from_rect = self.node_rect(from)?;
+        let to_rect = self.node_rect(to)?;
 
         let start = boundary_point(from_rect, box_centre(to_rect));
         let end = boundary_point(to_rect, box_centre(from_rect));
@@ -160,16 +166,12 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current rectangle of node `id`.
     ///
-    /// # Panics
+    /// # Errors
     ///
-    /// Panics if `id` does not name a node in this scene's graph.
-    /// Every `NodeId` this module uses comes from this same `Scene`, so that would be an internal-consistency bug,
-    /// not a condition callers need to guard against.
-    fn node_rect(&self, id: NodeId) -> Rect {
-        self.graph
-            .node(id)
-            .expect("NodeId used within its own Scene is always valid")
-            .rect
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene's graph — for example, a `NodeId`
+    /// from a different `Scene`.
+    fn node_rect(&self, id: NodeId) -> Result<Rect, Error> {
+        self.graph.node(id).map(|node| node.rect).ok_or(Error::UnknownNode(id))
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -177,14 +179,15 @@ impl Scene {
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move.
     /// See [`SvgNode::set_attr_display`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     fn move_node(&mut self, id: NodeId, new_origin: Point, scratch: &mut String) -> Result<(), Error> {
-        let size = self.node_rect(id).size;
+        let size = self.node_rect(id)?.size;
         self.graph.set_node_rect(id, Rect { origin: new_origin, size });
 
-        let handles = self
-            .node_handles
-            .get(&id)
-            .expect("NodeId used within its own Scene is always valid");
+        let handles = self.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
         handles.rect_el.set_attr_display(scratch, "x", new_origin.x)?;
         handles.rect_el.set_attr_display(scratch, "y", new_origin.y)?;
 
@@ -202,18 +205,20 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes both endpoints of edge `id` from its current node positions, and rewrites its line coordinates.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if
+    /// either of its endpoints no longer does.
     fn redraw_edge(&self, id: EdgeId, scratch: &mut String) -> Result<(), Error> {
-        let edge = self.graph.edge(id).expect("EdgeId used within its own Scene is always valid");
-        let from_rect = self.node_rect(edge.from);
-        let to_rect = self.node_rect(edge.to);
+        let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
+        let from_rect = self.node_rect(edge.from)?;
+        let to_rect = self.node_rect(edge.to)?;
 
         let start = boundary_point(from_rect, box_centre(to_rect));
         let end = boundary_point(to_rect, box_centre(from_rect));
 
-        let connector = self
-            .edge_handles
-            .get(&id)
-            .expect("EdgeId used within its own Scene is always valid");
+        let connector = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
         connector.set_attr_display(scratch, "x1", start.x)?;
         connector.set_attr_display(scratch, "y1", start.y)?;
         connector.set_attr_display(scratch, "x2", end.x)?;
@@ -258,12 +263,17 @@ fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
 /// coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
 /// This converts through the dragged group's own screen CTM (see [`invert_matrix`]/[`apply_matrix`]), so dragging
 /// stays correct under scaling, a resized `viewBox`, or CSS transforms.
+///
+/// # Errors
+///
+/// Returns [`Error::UnknownNode`] if `id` does not name a node in `scene` — for example, a `NodeId` from a
+/// different `Scene`.
 pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
     let group = scene
         .borrow()
         .node_handles
         .get(&id)
-        .expect("NodeId used within its own Scene is always valid")
+        .ok_or(Error::UnknownNode(id))?
         .group
         .clone();
     group.set_attr("style", "cursor: grab; touch-action: none;")?;
@@ -294,7 +304,9 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
 
             let _ = group.as_element().set_pointer_capture(evt.pointer_id());
             let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
-            let box_origin = scene.borrow().node_rect(id).origin;
+            let Some(box_origin) = scene.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
+                return;
+            };
             drag_start.set(Some(DragStart {
                 pointer,
                 box_origin,
