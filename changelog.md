@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.1.0] - 2026-08-24
 
 ## Fixed
@@ -24,6 +26,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Initial commit (`04d5cd7`)
-- Add browser-level test layer and CI testing (``)
-
-# [Released]
+- Add browser-level test layer and CI testing (`9eee6e7`)
