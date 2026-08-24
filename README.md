@@ -20,7 +20,8 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 |---|---|
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
-| `src/scene.rs` | Renders a graph onto the DOM: `Scene` (box/label rendering, connector drawing) and `make_draggable`
+| `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
+| `src/scene.rs` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, and `make_draggable`
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
@@ -41,14 +42,21 @@ Open <http://127.0.0.1:8000/> in a browser, then drag either child box.
 cargo test
 ```
 
-Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs` and `src/model/unit_tests.rs`.
+Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`, `src/model/unit_tests.rs`, and `src/error/unit_tests.rs`.
 
 ```sh
 wasm-pack test --headless --firefox
 ```
 
 Runs the browser integration tests in `tests/drag.rs`.
-These drive a real `pointerdown`/`pointermove`/`pointerup` sequence at the actual rendered DOM.
-They assert on the resulting `<rect>`/`<text>`/`<line>` attributes.
-One test uses a `viewBox` matching the `<svg>`'s pixel size 1:1.
-The other uses a scaled `viewBox`, proving the client-pixel-to-user-space conversion.
+These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences at the actual rendered DOM.
+They assert on the resulting `<rect>`, `<text>` ,`<line>` and `<marker>` attributes, not on the internal Rust state that produced them.
+
+The test suite covers:
+
+- ordinary and scaled-coordinate dragging, proving the client-pixel-to-user-space conversion
+- listener and scene lifetime, so a dropped `Scene` leaves no dangling drag handler
+- multiple simultaneous pointers, so one pointer cannot drive or end another pointer's drag
+- self-loop rejection
+- foreign-scene node and edge ids
+- unique marker ids across scenes sharing one `<svg>`

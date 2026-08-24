@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove `Scene` ownership cycle (`d5aaf42`)
 - Restrict visibility of geometry helpers (`f4cae07`)
 - Handle self-edges (`3192203`)
+- Correct test docs in README (``)
 
 ## Changed
 
@@ -28,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Switch publish flag (`574838f`)
 - Change node labels away from `&'static str` (`15eecf6`)
 - Ensure `NodeId` and `EdgeId` are only crate public (`cbcf27e`)
-- Make `Scene` a cheap-to-clone handle around an `Rc<RefCell<SceneInner>>` (``)
+- Make `Scene` a cheap-to-clone handle around an `Rc<RefCell<SceneInner>>` (`5c2d812`)
 
 ## Added
 
