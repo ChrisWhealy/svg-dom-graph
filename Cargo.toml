@@ -12,7 +12,7 @@ edition = "2024"
 rust-version = "1.85"
 description = "Dynamically re-routable connectors between SVG boxes, built on svg-dom"
 license = "MIT"
-publish = false
+publish = true
 
 [dependencies]
 svg-dom = "0.2"
