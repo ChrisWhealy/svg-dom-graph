@@ -171,10 +171,15 @@ fn make_draggable(node: &GraphBox, handles: &BoxHandles, edges: Vec<GraphEdge>) 
     let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
     {
-        let group = handles.group.clone();
+        // A weak handle, not a strong clone: `group` is the node this listener is registered on, so a strong capture
+        // here would create an ownership cycle (SvgNodeInner -> listener store -> closure -> SvgNode -> the same
+        // SvgNodeInner). This ends up leaking the node and defeats its automatic listener cleanup.
+        // See `WeakSvgNode`'s doc comment.
+        let group_weak = handles.group.downgrade();
         let rect_state = node.rect.clone();
         let drag_start = drag_start.clone();
         handles.group.on_pointerdown(move |evt| {
+            let Some(group) = group_weak.upgrade() else { return };
             let _ = group.as_element().set_pointer_capture(evt.pointer_id());
             let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
             drag_start.set(Some(DragStart {
@@ -219,9 +224,11 @@ fn make_draggable(node: &GraphBox, handles: &BoxHandles, edges: Vec<GraphEdge>) 
     }
 
     {
-        let group = handles.group.clone();
+        // Weak for the same reason as the pointerdown handler above.
+        let group_weak = handles.group.downgrade();
         let drag_start = drag_start.clone();
         handles.group.on_pointerup(move |evt| {
+            let Some(group) = group_weak.upgrade() else { return };
             let _ = group.as_element().release_pointer_capture(evt.pointer_id());
             let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
             drag_start.set(None);
