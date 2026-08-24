@@ -65,6 +65,20 @@ jobs:
       - name: wasm-pack build (demo-app, the published web artifact)
         run: wasm-pack build demo-app --target web --out-dir ../pkg
 
+  msrv:
+    name: MSRV (1.85)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@1.85.0
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - name: Check the library builds on the declared MSRV
+        run: cargo check --lib --target wasm32-unknown-unknown
+      - name: Check demo-app builds on the declared MSRV
+        run: cargo check -p svg-dom-graph-demo --target wasm32-unknown-unknown
+
   browser-tests:
     name: wasm-pack test (${{ matrix.browser }})
     runs-on: ubuntu-latest
