@@ -59,7 +59,7 @@ fn define_arrow_marker(svg: &SvgRoot) -> Result<SvgMarker, Error> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
-fn draw_box(svg: &SvgRoot, rect: Rect, label: &'static str) -> Result<BoxHandles, Error> {
+fn draw_box(svg: &SvgRoot, rect: Rect, label: &str) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
 
     let rect_el = svg.rect(rect.origin, rect.size)?;
@@ -115,10 +115,11 @@ impl Scene {
         svg: &SvgRoot,
         top_left: Point,
         size: Size,
-        label: &'static str,
+        label: impl Into<String>,
     ) -> Result<NodeId, Error> {
+        let label = label.into();
         let rect = Rect { origin: top_left, size };
-        let handles = draw_box(svg, rect, label)?;
+        let handles = draw_box(svg, rect, &label)?;
         let id = self.graph.add_node(rect, label);
         self.node_handles.insert(id, handles);
         Ok(id)

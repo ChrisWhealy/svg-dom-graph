@@ -14,8 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct README (`4f7c534`)
 - Remove `SvgNode` ownership cycle (`af00332`)
-- Implement pointer -> user-space coordinate conversion (``)
-- Remove `Scene` ownership cycle (``)
+- Implement pointer -> user-space coordinate conversion (`b00e9f9`)
+- Remove `Scene` ownership cycle (`d5aaf42`)
 
 ## Changed
 
@@ -23,6 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Detach demo from `svg-dom-graph` library (`720d4b1`)
 - Separate PoC structures from public API (`93e3aac`)
 - Depend on published `svg-dom` crate (`c3d4e5b`)
+- Switch publish flag (`574838f`)
+- Change node labels away from `&'static str` (``)
 
 ## Added
 

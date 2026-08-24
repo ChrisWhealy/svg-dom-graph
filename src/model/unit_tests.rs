@@ -125,3 +125,17 @@ fn edge_records_its_endpoints() -> Result<(), String> {
     check_eq(stored.from, a)?;
     check_eq(stored.to, b)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
+    let mut graph = Graph::new();
+
+    // Built at runtime and borrowed from a local `String`: this could never satisfy `&'static str`, which is
+    // exactly the constraint `add_node` used to impose on every caller, including one reading a label from data
+    // fetched at runtime.
+    let owned_label = format!("node-{}", 42);
+    let id = graph.add_node(test_rect(0.0, 0.0), owned_label.as_str());
+
+    check_eq(graph.node(id).map(|n| n.label.as_str()), Some("node-42"))
+}

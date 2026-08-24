@@ -31,7 +31,7 @@ pub struct Node {
     // Kept as node data regardless, since a label is part of a node's identity, not just a one-shot render
     // parameter — a future feature such as re-rendering or editing labels would need it stored here.
     #[allow(dead_code)]
-    pub label: &'static str,
+    pub label: String,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -65,10 +65,10 @@ impl Graph {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node and returns its id.
-    pub fn add_node(&mut self, rect: Rect, label: &'static str) -> NodeId {
+    pub fn add_node(&mut self, rect: Rect, label: impl Into<String>) -> NodeId {
         let id = NodeId(self.next_node_id);
         self.next_node_id += 1;
-        self.nodes.insert(id, Node { rect, label });
+        self.nodes.insert(id, Node { rect, label: label.into() });
         self.incident.insert(id, Vec::new());
         id
     }
