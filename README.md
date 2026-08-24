@@ -11,10 +11,17 @@ This first demo keeps the scope minimal: a directed tree of three boxes (one roo
 The two child boxes are draggable.
 Dragging one redraws its connector on every pointer-move, so it stays attached to the root.
 
-- `src/geometry/` — pure, DOM-free routing math (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`.
-- `src/model/` — the graph's topology (`Graph`, `Node`, `Edge`, `NodeId`, `EdgeId`), also DOM-free and unit-tested in `unit_tests.rs`.
-- `src/scene.rs` — renders a `Graph` onto the DOM: box/label rendering, the arrow marker, connector drawing, and pointer-driven dragging.
-- `src/lib.rs` — the `wasm_bindgen(start)` entry point.
+`svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
+
+| Module | Decsription |
+|---|---|
+| `src/geometry/` | A pure, DOM-free routing math (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
+| `src/model/`  | the graph's topology (`Graph`, `Node`, `Edge`, `NodeId`, `EdgeId`), also DOM-free and unit-tested in `unit_tests.rs`
+| `src/scene.rs` | renders a `Graph` onto the DOM: `Scene` (box/label rendering, connector drawing) and `make_draggable`
+
+`demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
+
+- `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">`, and builds a specific demo graph (a directed tree of three boxes, with the two children draggable).
 
 ## Running the demo
 
@@ -31,5 +38,5 @@ Open <http://127.0.0.1:8000/> in a browser, then drag either child box.
 cargo test
 ```
 
-Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`.
+Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs` and `src/model/unit_tests.rs`.
 There is no browser test suite yet.

@@ -1,3 +1,9 @@
+[workspace]
+members = ["demo-app"]
+# Keep plain `cargo build` / `cargo test` focused on the library; the demo-app (a small worked example, consuming
+# svg-dom-graph only through its public API) is built only on demand, via `./demo` or an explicit `-p` invocation.
+default-members = ["."]
+
 [package]
 authors = ["Chris Whealy <chris@whealy.com>"]
 name = "svg-dom-graph"
@@ -8,9 +14,5 @@ description = "Dynamically re-routable connectors between SVG boxes, built on sv
 license = "MIT"
 publish = false
 
-[lib]
-crate-type = ["cdylib", "rlib"]
-
 [dependencies]
 svg-dom = { path = "../svg-dom" }
-wasm-bindgen = "0.2"

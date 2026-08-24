@@ -8,26 +8,12 @@
 //! [`scene`] renders a `Graph` onto the DOM, and keeps each node's and edge's rendered SVG handles in sync as nodes
 //! move.
 //!
-//! This first demo keeps scope minimal: a directed tree of three boxes, with the two child boxes draggable.
+//! This crate has no opinion about which HTML page hosts it, what graph a caller builds, or when.
+//! The sibling `demo-app` crate supplies a small worked example: the `wasm_bindgen(start)` entry point, a specific
+//! `<svg>` element id to attach to, and a specific demo graph.
 //!
-//! See [`geometry::boundary_point`] for the routing math and [`scene::build_demo_tree`] for the demo scene itself.
+//! See [`geometry::boundary_point`] for the routing math and [`scene::Scene`] for the public rendering API.
 
 pub mod geometry;
 pub mod model;
 pub mod scene;
-
-use svg_dom::SvgRoot;
-use wasm_bindgen::prelude::*;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[wasm_bindgen(start)]
-pub fn run() -> Result<(), JsValue> {
-    build().map_err(|e| JsValue::from_str(&e.to_string()))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn build() -> Result<(), svg_dom::Error> {
-    // Attach to <svg id="diagram"> already present in index.html.
-    let svg = SvgRoot::attach("diagram")?;
-    scene::build_demo_tree(&svg)
-}

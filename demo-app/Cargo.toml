@@ -1,0 +1,14 @@
+[package]
+name = "svg-dom-graph-demo"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+svg-dom-graph = { path = ".." }
+svg-dom = { path = "../../svg-dom" }
+wasm-bindgen = "0.2"

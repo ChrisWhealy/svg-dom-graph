@@ -2,6 +2,9 @@
 //!
 //! [`Graph`] owns the topology and is the single source of truth for it.
 //! This module pairs each of its ids with a rendered handle, and keeps both in sync as nodes move.
+//!
+//! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
+//! See the sibling `demo-app` crate for a small worked example.
 
 use crate::{
     geometry::boundary_point,
@@ -80,26 +83,39 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &'static str) -> Result<BoxHandles
 ///
 /// `Graph` owns the topology.
 /// This owns everything DOM-specific, keyed by the same ids `Graph` hands out.
-/// [`move_node`](Self::move_node) is the one place that keeps a moved node's rectangle, its rendered box/label
-/// position, and its incident connectors all in sync.
-struct Scene {
+/// `move_node` (called internally by [`make_draggable`]) is the one place that keeps a moved node's rectangle, its
+/// rendered box/label position, and its incident connectors all in sync.
+pub struct Scene {
     graph: Graph,
     node_handles: HashMap<NodeId, BoxHandles>,
     edge_handles: HashMap<EdgeId, SvgNode>,
+    arrow: SvgMarker,
 }
 
 impl Scene {
-    fn new() -> Self {
-        Self {
+    /// Creates an empty scene, ready to hold nodes and edges within `svg`.
+    ///
+    /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared
+    /// across all its edges.
+    pub fn new(svg: &SvgRoot) -> Result<Self, Error> {
+        let arrow = define_arrow_marker(svg)?;
+        Ok(Self {
             graph: Graph::new(),
             node_handles: HashMap::new(),
             edge_handles: HashMap::new(),
-        }
+            arrow,
+        })
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node to the graph, draws its box and label, and returns its id.
-    fn add_node(&mut self, svg: &SvgRoot, top_left: Point, size: Size, label: &'static str) -> Result<NodeId, Error> {
+    pub fn add_node(
+        &mut self,
+        svg: &SvgRoot,
+        top_left: Point,
+        size: Size,
+        label: &'static str,
+    ) -> Result<NodeId, Error> {
         let rect = Rect { origin: top_left, size };
         let handles = draw_box(svg, rect, label)?;
         let id = self.graph.add_node(rect, label);
@@ -109,7 +125,7 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
-    fn add_edge(&mut self, svg: &SvgRoot, from: NodeId, to: NodeId, arrow: &SvgMarker) -> Result<EdgeId, Error> {
+    pub fn add_edge(&mut self, svg: &SvgRoot, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
         let from_rect = self.node_rect(from);
         let to_rect = self.node_rect(to);
 
@@ -119,7 +135,7 @@ impl Scene {
         let connector = svg.line(start, end)?;
         connector.set_stroke("#555")?;
         connector.set_stroke_width(1.5)?;
-        connector.set_marker_end_ref(arrow)?;
+        connector.set_marker_end_ref(&self.arrow)?;
 
         let id = self.graph.add_edge(from, to);
         self.edge_handles.insert(id, connector);
@@ -207,10 +223,10 @@ struct DragStart {
 ///
 /// Moves it, and redraws its incident connectors, via `scene` as the pointer moves.
 ///
-/// This demo's `<svg>` has no CSS scaling and its `viewBox` matches its pixel size, so one CSS pixel of pointer
-/// movement equals one user-space unit.
+/// Assumes `scene`'s `<svg>` has no CSS scaling and its `viewBox` matches its pixel size, so one CSS pixel of
+/// pointer movement equals one user-space unit.
 /// A scaled or resized `<svg>` would need to convert `clientX`/`clientY` through the SVG's current transform first.
-fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
+pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
     let group = scene
         .borrow()
         .node_handles
@@ -273,34 +289,6 @@ fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
             drag_start.set(None);
         })?;
     }
-
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo scene: a root box with two children, connected by directed, arrow-tipped edges.
-/// This is a minimal directed tree — the simplest case of the general graph this crate targets.
-///
-/// The two child boxes are draggable.
-/// Their connectors stay attached to the root and redraw as each child moves.
-pub fn build_demo_tree(svg: &SvgRoot) -> Result<(), Error> {
-    let arrow = define_arrow_marker(svg)?;
-    let scene = Rc::new(RefCell::new(Scene::new()));
-
-    let box_size = Size::new(90.0, 50.0);
-    let root = scene.borrow_mut().add_node(svg, Point::new(155.0, 20.0), box_size, "Root")?;
-    let left = scene
-        .borrow_mut()
-        .add_node(svg, Point::new(25.0, 180.0), box_size, "Left child")?;
-    let right = scene
-        .borrow_mut()
-        .add_node(svg, Point::new(285.0, 180.0), box_size, "Right child")?;
-
-    scene.borrow_mut().add_edge(svg, root, left, &arrow)?;
-    scene.borrow_mut().add_edge(svg, root, right, &arrow)?;
-
-    make_draggable(&scene, left)?;
-    make_draggable(&scene, right)?;
 
     Ok(())
 }
