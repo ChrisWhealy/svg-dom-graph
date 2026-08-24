@@ -22,7 +22,7 @@ pub fn run() -> Result<(), JsValue> {
 fn build() -> Result<(), Error> {
     // Attach to <svg id="diagram"> already present in index.html.
     let svg = SvgRoot::attach("diagram")?;
-    build_demo_tree(&svg)
+    build_demo_tree(svg)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -31,20 +31,16 @@ fn build() -> Result<(), Error> {
 ///
 /// The two child boxes are draggable.
 /// Their connectors stay attached to the root and redraw as each child moves.
-fn build_demo_tree(svg: &SvgRoot) -> Result<(), Error> {
+fn build_demo_tree(svg: SvgRoot) -> Result<(), Error> {
     let scene = Rc::new(RefCell::new(Scene::new(svg)?));
 
     let box_size = Size::new(90.0, 50.0);
-    let root = scene.borrow_mut().add_node(svg, Point::new(155.0, 20.0), box_size, "Root")?;
-    let left = scene
-        .borrow_mut()
-        .add_node(svg, Point::new(25.0, 180.0), box_size, "Left child")?;
-    let right = scene
-        .borrow_mut()
-        .add_node(svg, Point::new(285.0, 180.0), box_size, "Right child")?;
+    let root = scene.borrow_mut().add_node(Point::new(155.0, 20.0), box_size, "Root")?;
+    let left = scene.borrow_mut().add_node(Point::new(25.0, 180.0), box_size, "Left child")?;
+    let right = scene.borrow_mut().add_node(Point::new(285.0, 180.0), box_size, "Right child")?;
 
-    scene.borrow_mut().add_edge(svg, root, left)?;
-    scene.borrow_mut().add_edge(svg, root, right)?;
+    scene.borrow_mut().add_edge(root, left)?;
+    scene.borrow_mut().add_edge(root, right)?;
 
     make_draggable(&scene, left)?;
     make_draggable(&scene, right)?;

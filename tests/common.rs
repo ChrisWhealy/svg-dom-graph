@@ -81,6 +81,24 @@ pub fn the_connector(container_id: &str) -> Result<web_sys::Element, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns the `id` attribute of every `<marker>` element under `container`, in document order.
+pub fn marker_ids(container_id: &str) -> Result<Vec<String>, String> {
+    let selector = format!("#{container_id} marker");
+    let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+
+    let mut ids = Vec::with_capacity(markers.length() as usize);
+    for i in 0..markers.length() {
+        let marker = markers
+            .get(i)
+            .ok_or("query_selector_all reported a length longer than it could actually return")?
+            .dyn_into::<web_sys::Element>()
+            .map_err(|_| "marker is not an Element")?;
+        ids.push(marker.get_attribute("id").ok_or("<marker> with no id attribute")?);
+    }
+    Ok(ids)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `attr` off `element` and parses it as `f64`.
 pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
     let value = element

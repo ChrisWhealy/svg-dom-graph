@@ -24,7 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Separate PoC structures from public API (`93e3aac`)
 - Depend on published `svg-dom` crate (`c3d4e5b`)
 - Switch publish flag (`574838f`)
-- Change node labels away from `&'static str` (``)
+- Change node labels away from `&'static str` (`15eecf6`)
+- `Scene` must genuinely own or bind to its SVG root (``)
 
 ## Added
 

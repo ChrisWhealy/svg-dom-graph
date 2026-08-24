@@ -15,6 +15,7 @@ use std::{
     cell::{Cell, RefCell},
     collections::HashMap,
     rc::Rc,
+    sync::atomic::{AtomicUsize, Ordering},
 };
 use svg_dom::{
     DominantBaseline, Error, MarkerUnits, SvgMarker, SvgNode, SvgRoot, TextAnchor,
@@ -37,14 +38,24 @@ fn box_centre(rect: Rect) -> Point {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` — and, so long as a
+/// caller's own document doesn't deliberately collide with this crate's naming, no unrelated content either — is
+/// likely to claim.
+static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Defines a small filled-triangle arrowhead marker in `<defs>` and returns its handle.
 ///
 /// `ref_x`/`ref_y` place the marker's anchor point (the tip of the triangle) at the very end of the line it attaches
 /// to.
 /// `orient("auto")` then rotates the marker to follow that line's own direction.
-fn define_arrow_marker(svg: &SvgRoot) -> Result<SvgMarker, Error> {
+///
+/// `marker_id` must be unique within `svg`'s document.
+/// A hardcoded id such as `"arrow"` would collide the moment a second `Scene` shares the same `<svg>`, or the
+/// caller's own document already defines an element with that id.
+fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Error> {
     let defs = svg.defs()?;
-    let marker = defs.marker("arrow")?;
+    let marker = defs.marker(marker_id)?;
 
     marker.set_units(MarkerUnits::UserSpaceOnUse)?;
     marker.set_marker_width(10.0)?;
@@ -86,7 +97,13 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str) -> Result<BoxHandles, Error>
 /// This owns everything DOM-specific, keyed by the same ids `Graph` hands out.
 /// `move_node` (called internally by [`make_draggable`]) is the one place that keeps a moved node's rectangle, its
 /// rendered box/label position, and its incident connectors all in sync.
+///
+/// A `Scene` owns the `SvgRoot` it renders into.
+/// `Scene::new(svg)` binds them for the `Scene`'s whole lifetime, so every node and edge in one `Scene` is
+/// guaranteed to live in the same `<svg>` document — there is no `svg` parameter on [`add_node`](Self::add_node) or
+/// [`add_edge`](Self::add_edge) through which a caller could pass a different root by mistake.
 pub struct Scene {
+    svg: SvgRoot,
     graph: Graph,
     node_handles: HashMap<NodeId, BoxHandles>,
     edge_handles: HashMap<EdgeId, SvgNode>,
@@ -98,9 +115,11 @@ impl Scene {
     ///
     /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared
     /// across all its edges.
-    pub fn new(svg: &SvgRoot) -> Result<Self, Error> {
-        let arrow = define_arrow_marker(svg)?;
+    pub fn new(svg: SvgRoot) -> Result<Self, Error> {
+        let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
+        let arrow = define_arrow_marker(&svg, &marker_id)?;
         Ok(Self {
+            svg,
             graph: Graph::new(),
             node_handles: HashMap::new(),
             edge_handles: HashMap::new(),
@@ -110,16 +129,10 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node to the graph, draws its box and label, and returns its id.
-    pub fn add_node(
-        &mut self,
-        svg: &SvgRoot,
-        top_left: Point,
-        size: Size,
-        label: impl Into<String>,
-    ) -> Result<NodeId, Error> {
+    pub fn add_node(&mut self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
         let label = label.into();
         let rect = Rect { origin: top_left, size };
-        let handles = draw_box(svg, rect, &label)?;
+        let handles = draw_box(&self.svg, rect, &label)?;
         let id = self.graph.add_node(rect, label);
         self.node_handles.insert(id, handles);
         Ok(id)
@@ -127,14 +140,14 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
-    pub fn add_edge(&mut self, svg: &SvgRoot, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
+    pub fn add_edge(&mut self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
         let from_rect = self.node_rect(from);
         let to_rect = self.node_rect(to);
 
         let start = boundary_point(from_rect, box_centre(to_rect));
         let end = boundary_point(to_rect, box_centre(from_rect));
 
-        let connector = svg.line(start, end)?;
+        let connector = self.svg.line(start, end)?;
         connector.set_stroke("#555")?;
         connector.set_stroke_width(1.5)?;
         connector.set_marker_end_ref(&self.arrow)?;

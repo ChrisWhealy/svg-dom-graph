@@ -7,9 +7,12 @@
 
 mod common;
 
-use common::{attr_f64, check_close, dispatch_pointer_event, make_svg, nth_group, the_connector};
+use common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, marker_ids, nth_group, the_connector};
 use std::{cell::RefCell, rc::Rc};
-use svg_dom::root::utils::{Point, Rect, Size};
+use svg_dom::{
+    SvgRoot,
+    root::utils::{Point, Rect, Size},
+};
 use svg_dom_graph::{
     geometry::boundary_point,
     scene::{Scene, make_draggable},
@@ -41,14 +44,12 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         size: Size::new(90.0, 50.0),
     };
 
-    let mut scene = Scene::new(&svg).map_err(|e| e.to_string())?;
-    let a = scene
-        .add_node(&svg, a_rect.origin, a_rect.size, "A")
-        .map_err(|e| e.to_string())?;
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene.add_node(a_rect.origin, a_rect.size, "A").map_err(|e| e.to_string())?;
     let b = scene
-        .add_node(&svg, b_rect_before.origin, b_rect_before.size, "B")
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
-    scene.add_edge(&svg, a, b).map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
 
     let scene = Rc::new(RefCell::new(scene));
     make_draggable(&scene, b).map_err(|e| e.to_string())?;
@@ -108,14 +109,14 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
         size: Size::new(45.0, 25.0),
     };
 
-    let mut scene = Scene::new(&svg).map_err(|e| e.to_string())?;
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
-        .add_node(&svg, Point::new(0.0, 0.0), Size::new(45.0, 25.0), "A")
+        .add_node(Point::new(0.0, 0.0), Size::new(45.0, 25.0), "A")
         .map_err(|e| e.to_string())?;
     let b = scene
-        .add_node(&svg, b_rect_before.origin, b_rect_before.size, "B")
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
-    scene.add_edge(&svg, a, b).map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
 
     let scene = Rc::new(RefCell::new(scene));
     make_draggable(&scene, b).map_err(|e| e.to_string())?;
@@ -147,14 +148,14 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
 fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
     let svg = make_svg("scene-lifetime", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
 
-    let mut scene = Scene::new(&svg).map_err(|e| e.to_string())?;
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
-        .add_node(&svg, Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
         .map_err(|e| e.to_string())?;
     let b = scene
-        .add_node(&svg, Point::new(200.0, 150.0), Size::new(90.0, 50.0), "B")
+        .add_node(Point::new(200.0, 150.0), Size::new(90.0, 50.0), "B")
         .map_err(|e| e.to_string())?;
-    scene.add_edge(&svg, a, b).map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
 
     let scene = Rc::new(RefCell::new(scene));
     let scene_weak = Rc::downgrade(&scene);
@@ -164,8 +165,35 @@ fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
 
     drop(scene); // the only strong handle the caller ever held
 
-    common::check(
+    check(
         scene_weak.upgrade().is_none(),
         "Scene was still alive after its only strong handle was dropped",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Two `Scene`s sharing one `<svg>` must not collide on their arrow marker's id.
+///
+/// A hardcoded id such as `"arrow"` would make the second `Scene::new` either fail outright or silently produce a
+/// second `<marker id="arrow">`, leaving both `Scene`s' connectors pointing at whichever one the browser resolves
+/// `url(#arrow)` to.
+#[wasm_bindgen_test]
+fn scenes_sharing_one_svg_get_distinct_arrow_marker_ids() -> Result<(), String> {
+    let svg1 = make_svg("shared-svg", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    // A second, independent `SvgRoot` handle attached to the same live `<svg id="shared-svg">` — exactly the
+    // "two Scenes exist in one SVG" scenario the marker id needs to survive.
+    let svg2 = SvgRoot::attach("shared-svg").map_err(|e| e.to_string())?;
+
+    let _scene1 = Scene::new(svg1).map_err(|e| e.to_string())?;
+    let _scene2 = Scene::new(svg2).map_err(|e| e.to_string())?;
+
+    let ids = marker_ids("shared-svg")?;
+    check(
+        ids.len() == 2,
+        &format!("expected exactly 2 <marker> elements, found {}", ids.len()),
+    )?;
+    check(
+        ids[0] != ids[1],
+        &format!("both Scenes' arrow markers share the same id: {ids:?}"),
     )
 }
