@@ -96,14 +96,14 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str) -> Result<BoxHandles, Error>
 ///
 /// `Graph` owns the topology.
 /// This owns everything DOM-specific, keyed by the same ids `Graph` hands out.
-/// `move_node` (called internally by [`make_draggable`]) is the one place that keeps a moved node's rectangle, its
-/// rendered box/label position, and its incident connectors all in sync.
+/// `move_node` (called internally by [`Scene::make_draggable`]) is the one place that keeps a moved node's rectangle,
+/// its rendered box/label position, and its incident connectors all in sync.
 ///
-/// A `Scene` owns the `SvgRoot` it renders into.
-/// `Scene::new(svg)` binds them for the `Scene`'s whole lifetime, so every node and edge in one `Scene` is
-/// guaranteed to live in the same `<svg>` document — there is no `svg` parameter on [`add_node`](Self::add_node) or
-/// [`add_edge`](Self::add_edge) through which a caller could pass a different root by mistake.
-pub struct Scene {
+/// Owns the `SvgRoot` it renders into.
+/// `Scene::new(svg)` binds them for the `SceneInner`'s whole lifetime, so every node and edge in one `Scene` is
+/// guaranteed to live in the same `<svg>` document — there is no `svg` parameter on [`Scene::add_node`] or
+/// [`Scene::add_edge`] through which a caller could pass a different root by mistake.
+struct SceneInner {
     svg: SvgRoot,
     graph: Graph,
     node_handles: HashMap<NodeId, BoxHandles>,
@@ -111,64 +111,7 @@ pub struct Scene {
     arrow: SvgMarker,
 }
 
-impl Scene {
-    /// Creates an empty scene, ready to hold nodes and edges within `svg`.
-    ///
-    /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared
-    /// across all its edges.
-    pub fn new(svg: SvgRoot) -> Result<Self, Error> {
-        let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
-        let arrow = define_arrow_marker(&svg, &marker_id)?;
-        Ok(Self {
-            svg,
-            graph: Graph::new(),
-            node_handles: HashMap::new(),
-            edge_handles: HashMap::new(),
-            arrow,
-        })
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a node to the graph, draws its box and label, and returns its id.
-    pub fn add_node(&mut self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
-        let label = label.into();
-        let rect = Rect { origin: top_left, size };
-        let handles = draw_box(&self.svg, rect, &label)?;
-        let id = self.graph.add_node(rect, label);
-        self.node_handles.insert(id, handles);
-        Ok(id)
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node — not yet supported, see that
-    /// variant's own doc comment for why.
-    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
-    /// `NodeId` from a different `Scene`.
-    pub fn add_edge(&mut self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
-        if from == to {
-            return Err(Error::SelfLoopUnsupported(from));
-        }
-
-        let from_rect = self.node_rect(from)?;
-        let to_rect = self.node_rect(to)?;
-
-        let start = boundary_point(from_rect, box_centre(to_rect));
-        let end = boundary_point(to_rect, box_centre(from_rect));
-
-        let connector = self.svg.line(start, end)?;
-        connector.set_stroke("#555")?;
-        connector.set_stroke_width(1.5)?;
-        connector.set_marker_end_ref(&self.arrow)?;
-
-        let id = self.graph.add_edge(from, to);
-        self.edge_handles.insert(id, connector);
-        Ok(id)
-    }
-
+impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current rectangle of node `id`.
     ///
@@ -235,6 +178,81 @@ impl Scene {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A cheap, cloneable handle to a rendered graph.
+///
+/// Internally an `Rc<RefCell<SceneInner>>` — this crate owns that sharing strategy, not the caller.
+/// A `Scene` can be cloned freely (every clone refers to the same underlying graph and DOM state) and its methods take
+/// `&self`, not `&mut self`, so a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
+/// [`make_draggable`](Self::make_draggable) or to share it with more than one closure.
+#[derive(Clone)]
+pub struct Scene {
+    inner: Rc<RefCell<SceneInner>>,
+}
+
+impl Scene {
+    /// Creates an empty scene, ready to hold nodes and edges within `svg`.
+    ///
+    /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared
+    /// across all its edges.
+    pub fn new(svg: SvgRoot) -> Result<Self, Error> {
+        let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
+        let arrow = define_arrow_marker(&svg, &marker_id)?;
+        Ok(Self {
+            inner: Rc::new(RefCell::new(SceneInner {
+                svg,
+                graph: Graph::new(),
+                node_handles: HashMap::new(),
+                edge_handles: HashMap::new(),
+                arrow,
+            })),
+        })
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Adds a node to the graph, draws its box and label, and returns its id.
+    pub fn add_node(&self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
+        let label = label.into();
+        let rect = Rect { origin: top_left, size };
+        let mut inner = self.inner.borrow_mut();
+        let handles = draw_box(&inner.svg, rect, &label)?;
+        let id = inner.graph.add_node(rect, label);
+        inner.node_handles.insert(id, handles);
+        Ok(id)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node — not yet supported, see that
+    /// variant's own doc comment for why.
+    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
+    /// `NodeId` from a different `Scene`.
+    pub fn add_edge(&self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
+        if from == to {
+            return Err(Error::SelfLoopUnsupported(from));
+        }
+
+        let mut inner = self.inner.borrow_mut();
+        let from_rect = inner.node_rect(from)?;
+        let to_rect = inner.node_rect(to)?;
+
+        let start = boundary_point(from_rect, box_centre(to_rect));
+        let end = boundary_point(to_rect, box_centre(from_rect));
+
+        let connector = inner.svg.line(start, end)?;
+        connector.set_stroke("#555")?;
+        connector.set_stroke_width(1.5)?;
+        connector.set_marker_end_ref(&inner.arrow)?;
+
+        let id = inner.graph.add_edge(from, to);
+        inner.edge_handles.insert(id, connector);
+        Ok(id)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
 ///
 /// A delta between the pointer's current position and `pointer` gives how far to move `box_origin`.
@@ -268,130 +286,134 @@ fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
     apply_matrix(inverse_ctm, client)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires up pointer dragging for node `id`.
-///
-/// Moves it, and redraws its incident connectors, via `scene` as the pointer moves.
-///
-/// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not `scene`'s user-space coordinates — the two only
-/// coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
-/// This converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in `geometry`), so dragging
-/// stays correct under scaling, a resized `viewBox`, or CSS transforms.
-///
-/// # Errors
-///
-/// Returns [`Error::UnknownNode`] if `id` does not name a node in `scene` — for example, a `NodeId` from a
-/// different `Scene`.
-pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
-    let group = scene
-        .borrow()
-        .node_handles
-        .get(&id)
-        .ok_or(Error::UnknownNode(id))?
-        .group
-        .clone();
-    group.set_attr("style", "cursor: grab; touch-action: none;")?;
+impl Scene {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Wires up pointer dragging for node `id`.
+    ///
+    /// Moves it, and redraws its incident connectors, as the pointer moves.
+    ///
+    /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not this scene's user-space coordinates — the
+    /// two only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
+    /// This converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in
+    /// `geometry`), so dragging stays correct under scaling, a resized `viewBox`, or CSS transforms.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
+    /// different `Scene`.
+    pub fn make_draggable(&self, id: NodeId) -> Result<(), Error> {
+        let group = self
+            .inner
+            .borrow()
+            .node_handles
+            .get(&id)
+            .ok_or(Error::UnknownNode(id))?
+            .group
+            .clone();
+        group.set_attr("style", "cursor: grab; touch-action: none;")?;
 
-    let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
+        let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
-    {
-        // Both `group` and `scene` are captured weakly, not as strong clones. `group` is the node this listener is
-        // registered on: a strong capture there would create a cycle (SvgNodeInner -> listener store -> closure ->
-        // SvgNode -> the same SvgNodeInner) that leaks the node and defeats its automatic listener cleanup. See
-        // `WeakSvgNode`'s doc comment.
-        // `scene` needs the same treatment one level up: `scene.node_handles` owns `group`, so a strong `scene`
-        // clone in this closure would close the cycle back through `Scene` itself (`Scene -> group ->
-        // listener store -> closure -> Scene`), leaking the whole `Scene` — everything it renders, and every
-        // listener on every node — even after every external `Rc<RefCell<Scene>>` is dropped.
-        let group_weak = group.downgrade();
-        let scene_weak = Rc::downgrade(scene);
-        let drag_start = drag_start.clone();
-        group.on_pointerdown(move |evt| {
-            let Some(group) = group_weak.upgrade() else { return };
-            let Some(scene) = scene_weak.upgrade() else { return };
-            // Can't route the drag without a way to convert client pixels into this group's own coordinates.
-            let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
-                return;
-            };
-            let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-            let pointer = client_to_user_space(client, inverse_ctm);
+        {
+            // Both `group` and `inner` are captured weakly, not as strong clones. `group` is the node this
+            // listener is registered on: a strong capture there would create a cycle (SvgNodeInner -> listener
+            // store -> closure -> SvgNode -> the same SvgNodeInner) that leaks the node and defeats its automatic
+            // listener cleanup. See `WeakSvgNode`'s doc comment.
+            // `inner` needs the same treatment one level up: `SceneInner::node_handles` owns `group`, so a strong
+            // `inner` clone in this closure would close the cycle back through `SceneInner` itself
+            // (`SceneInner -> group -> listener store -> closure -> SceneInner`), leaking the whole scene —
+            // everything it renders, and every listener on every node — even after every external `Scene` handle
+            // is dropped.
+            let group_weak = group.downgrade();
+            let inner_weak = Rc::downgrade(&self.inner);
+            let drag_start = drag_start.clone();
+            group.on_pointerdown(move |evt| {
+                let Some(group) = group_weak.upgrade() else { return };
+                let Some(inner) = inner_weak.upgrade() else { return };
+                // Can't route the drag without a way to convert client pixels into this group's own coordinates.
+                let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
+                    return;
+                };
+                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
+                let pointer = client_to_user_space(client, inverse_ctm);
 
-            let _ = group.as_element().set_pointer_capture(evt.pointer_id());
-            let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
-            let Some(box_origin) = scene.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
-                return;
-            };
-            drag_start.set(Some(DragStart {
-                pointer_id: evt.pointer_id(),
-                pointer,
-                box_origin,
-                inverse_ctm,
-            }));
-        })?;
+                let _ = group.as_element().set_pointer_capture(evt.pointer_id());
+                let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
+                let Some(box_origin) = inner.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
+                    return;
+                };
+                drag_start.set(Some(DragStart {
+                    pointer_id: evt.pointer_id(),
+                    pointer,
+                    box_origin,
+                    inverse_ctm,
+                }));
+            })?;
+        }
+
+        {
+            // Weak for the same reason as the pointerdown handler above.
+            let inner_weak = Rc::downgrade(&self.inner);
+            let drag_start = drag_start.clone();
+            // Reused across every pointermove call in this drag — and across drags, since the closure's
+            // environment persists between invocations — rather than allocating a fresh String each time. See
+            // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
+            let mut scratch = String::new();
+            group.on_pointermove(move |evt| {
+                let Some(inner) = inner_weak.upgrade() else { return };
+                let Some(start) = drag_start.get() else { return };
+                // Ignores a different pointer's move — for example a second finger touching this element mid-drag
+                // — rather than letting it drive the drag this pointer's own pointerdown started.
+                if evt.pointer_id() != start.pointer_id {
+                    return;
+                }
+                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
+                let pointer_now = client_to_user_space(client, start.inverse_ctm);
+
+                let new_origin = Point::new(
+                    start.box_origin.x + (pointer_now.x - start.pointer.x),
+                    start.box_origin.y + (pointer_now.y - start.pointer.y),
+                );
+
+                let _ = inner.borrow_mut().move_node(id, new_origin, &mut scratch);
+            })?;
+        }
+
+        {
+            // Weak for the same reason as the pointerdown handler above.
+            let group_weak = group.downgrade();
+            let drag_start = drag_start.clone();
+            group.on_pointerup(move |evt| {
+                let Some(group) = group_weak.upgrade() else { return };
+                // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's
+                // own pointer is still down — rather than ending a drag that pointer never started.
+                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
+                    return;
+                }
+                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
+                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
+                drag_start.set(None);
+            })?;
+        }
+
+        {
+            // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
+            // interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
+            // pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
+            let group_weak = group.downgrade();
+            let drag_start = drag_start.clone();
+            group.on_pointercancel(move |evt| {
+                let Some(group) = group_weak.upgrade() else { return };
+                // Same pointer_id check as pointerup, and for the same reason.
+                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
+                    return;
+                }
+                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
+                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
+                drag_start.set(None);
+            })?;
+        }
+
+        Ok(())
     }
-
-    {
-        // Weak for the same reason as the pointerdown handler above.
-        let scene_weak = Rc::downgrade(scene);
-        let drag_start = drag_start.clone();
-        // Reused across every pointermove call in this drag — and across drags, since the closure's environment
-        // persists between invocations — rather than allocating a fresh String each time. See
-        // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
-        let mut scratch = String::new();
-        group.on_pointermove(move |evt| {
-            let Some(scene) = scene_weak.upgrade() else { return };
-            let Some(start) = drag_start.get() else { return };
-            // Ignores a different pointer's move — for example a second finger touching this element mid-drag —
-            // rather than letting it drive the drag this pointer's own pointerdown started.
-            if evt.pointer_id() != start.pointer_id {
-                return;
-            }
-            let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-            let pointer_now = client_to_user_space(client, start.inverse_ctm);
-
-            let new_origin = Point::new(
-                start.box_origin.x + (pointer_now.x - start.pointer.x),
-                start.box_origin.y + (pointer_now.y - start.pointer.y),
-            );
-
-            let _ = scene.borrow_mut().move_node(id, new_origin, &mut scratch);
-        })?;
-    }
-
-    {
-        // Weak for the same reason as the pointerdown handler above.
-        let group_weak = group.downgrade();
-        let drag_start = drag_start.clone();
-        group.on_pointerup(move |evt| {
-            let Some(group) = group_weak.upgrade() else { return };
-            // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's own
-            // pointer is still down — rather than ending a drag that pointer never started.
-            if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
-                return;
-            }
-            let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-            let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
-            drag_start.set(None);
-        })?;
-    }
-
-    {
-        // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
-        // interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
-        // pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
-        let group_weak = group.downgrade();
-        let drag_start = drag_start.clone();
-        group.on_pointercancel(move |evt| {
-            let Some(group) = group_weak.upgrade() else { return };
-            // Same pointer_id check as pointerup, and for the same reason.
-            if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
-                return;
-            }
-            let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-            let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
-            drag_start.set(None);
-        })?;
-    }
-
-    Ok(())
 }

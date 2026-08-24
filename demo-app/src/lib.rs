@@ -4,15 +4,11 @@
 //! This crate — not the library — owns every demo-specific decision: which element to attach to, and what graph to
 //! build.
 
-use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
-use svg_dom_graph::{
-    Error,
-    scene::{Scene, make_draggable},
-};
+use svg_dom_graph::{Error, scene::Scene};
 use wasm_bindgen::prelude::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,18 +31,18 @@ fn build() -> Result<(), Error> {
 /// The two child boxes are draggable.
 /// Their connectors stay attached to the root and redraw as each child moves.
 fn build_demo_tree(svg: SvgRoot) -> Result<(), Error> {
-    let scene = Rc::new(RefCell::new(Scene::new(svg)?));
+    let scene = Scene::new(svg)?;
 
     let box_size = Size::new(90.0, 50.0);
-    let root = scene.borrow_mut().add_node(Point::new(155.0, 20.0), box_size, "Root")?;
-    let left = scene.borrow_mut().add_node(Point::new(25.0, 180.0), box_size, "Left child")?;
-    let right = scene.borrow_mut().add_node(Point::new(285.0, 180.0), box_size, "Right child")?;
+    let root = scene.add_node(Point::new(155.0, 20.0), box_size, "Root")?;
+    let left = scene.add_node(Point::new(25.0, 180.0), box_size, "Left child")?;
+    let right = scene.add_node(Point::new(285.0, 180.0), box_size, "Right child")?;
 
-    scene.borrow_mut().add_edge(root, left)?;
-    scene.borrow_mut().add_edge(root, right)?;
+    scene.add_edge(root, left)?;
+    scene.add_edge(root, right)?;
 
-    make_draggable(&scene, left)?;
-    make_draggable(&scene, right)?;
+    scene.make_draggable(left)?;
+    scene.make_draggable(right)?;
 
     Ok(())
 }

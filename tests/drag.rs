@@ -10,15 +10,11 @@ mod common;
 use common::{
     attr_f64, check, check_close, dispatch_pointer_event, line_count, make_svg, marker_ids, nth_group, the_connector,
 };
-use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
-use svg_dom_graph::{
-    geometry::boundary_point,
-    scene::{Scene, make_draggable},
-};
+use svg_dom_graph::{geometry::boundary_point, scene::Scene};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -46,15 +42,13 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         size: Size::new(90.0, 50.0),
     };
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene.add_node(a_rect.origin, a_rect.size, "A").map_err(|e| e.to_string())?;
     let b = scene
         .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
     scene.add_edge(a, b).map_err(|e| e.to_string())?;
-
-    let scene = Rc::new(RefCell::new(scene));
-    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("drag-1to1", 1)?; // B was added second.
     let rect_b = group_b
@@ -111,7 +105,7 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
         size: Size::new(45.0, 25.0),
     };
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(45.0, 25.0), "A")
         .map_err(|e| e.to_string())?;
@@ -119,9 +113,7 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
         .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
     scene.add_edge(a, b).map_err(|e| e.to_string())?;
-
-    let scene = Rc::new(RefCell::new(scene));
-    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("drag-scaled", 1)?;
     let rect_b = group_b
@@ -140,17 +132,20 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `make_draggable`'s listener closures must not keep the `Scene` alive on their own.
+/// `make_draggable`'s listener closures must not keep the scene's internal state alive on their own.
 ///
-/// Registers draggable handlers, then drops the caller's only strong `Rc<RefCell<Scene>>`.
-/// A `Weak` reference taken beforehand must fail to upgrade afterwards — proving nothing internal to `Scene` (a node's
-/// `SvgNode`, its listener closures, and so on) still holds a strong clone of `Scene` itself, which would otherwise
-/// keep the whole `Scene` alive forever, even with every external handle gone.
+/// `Scene` is a cheap handle around shared internal state, so an external test cannot hold a `Weak` reference the
+/// way it could when callers had to wrap `Scene` in `Rc<RefCell<_>>` themselves — that internal sharing strategy is
+/// no longer observable from outside the crate. Instead, this checks the same property behaviourally: registers
+/// draggable handlers, then drops every `Scene` handle this test holds before dragging. If a listener closure
+/// captured a strong reference to the scene's internal state (rather than a `Weak` one), the closure's
+/// `Weak::upgrade()` would still succeed and the drag would still move the box; a correctly weak-captured closure
+/// finds nothing left to upgrade to, and the drag becomes a silent no-op.
 #[wasm_bindgen_test]
-fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
+fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), String> {
     let svg = make_svg("scene-lifetime", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
         .map_err(|e| e.to_string())?;
@@ -159,18 +154,27 @@ fn dropping_the_last_scene_handle_frees_the_scene() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     scene.add_edge(a, b).map_err(|e| e.to_string())?;
 
-    let scene = Rc::new(RefCell::new(scene));
-    let scene_weak = Rc::downgrade(&scene);
+    scene.make_draggable(a).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
 
-    make_draggable(&scene, a).map_err(|e| e.to_string())?;
-    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+    let group_b = nth_group("scene-lifetime", 1)?;
+    let rect_b = group_b
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in B's group")?;
+    let x_before = attr_f64(&rect_b, "x")?;
+    let y_before = attr_f64(&rect_b, "y")?;
 
-    drop(scene); // the only strong handle the caller ever held
+    drop(scene); // every handle this test ever held
 
-    check(
-        scene_weak.upgrade().is_none(),
-        "Scene was still alive after its only strong handle was dropped",
-    )
+    dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
+
+    let leaked = "dragging still moved the box after every Scene handle was dropped, meaning a listener closure \
+        leaked a strong reference to the scene's internal state";
+    check_close(attr_f64(&rect_b, "x")?, x_before).map_err(|e| format!("{e} — {leaked}"))?;
+    check_close(attr_f64(&rect_b, "y")?, y_before).map_err(|e| format!("{e} — {leaked}"))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -190,7 +194,7 @@ fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), St
         size: Size::new(90.0, 50.0),
     };
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
         .map_err(|e| e.to_string())?;
@@ -198,9 +202,7 @@ fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), St
         .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
     scene.add_edge(a, b).map_err(|e| e.to_string())?;
-
-    let scene = Rc::new(RefCell::new(scene));
-    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("multi-pointer", 1)?;
     let rect_b = group_b
@@ -245,7 +247,7 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
         size: Size::new(90.0, 50.0),
     };
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
         .map_err(|e| e.to_string())?;
@@ -253,9 +255,7 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
         .add_node(b_rect_before.origin, b_rect_before.size, "B")
         .map_err(|e| e.to_string())?;
     scene.add_edge(a, b).map_err(|e| e.to_string())?;
-
-    let scene = Rc::new(RefCell::new(scene));
-    make_draggable(&scene, b).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("multi-pointer-cancel", 1)?;
     let rect_b = group_b
@@ -290,7 +290,7 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
 fn add_edge_rejects_a_self_loop() -> Result<(), String> {
     let svg = make_svg("self-loop", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
 
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
         .map_err(|e| e.to_string())?;
@@ -319,13 +319,13 @@ fn add_edge_rejects_a_self_loop() -> Result<(), String> {
 #[wasm_bindgen_test]
 fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Result<(), String> {
     let foreign_svg = make_svg("foreign-scene", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
-    let mut foreign_scene = Scene::new(foreign_svg).map_err(|e| e.to_string())?;
+    let foreign_scene = Scene::new(foreign_svg).map_err(|e| e.to_string())?;
     let foreign = foreign_scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Foreign")
         .map_err(|e| e.to_string())?;
 
     let svg = make_svg("local-scene", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
-    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let local = scene
         .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Local")
         .map_err(|e| e.to_string())?;
@@ -335,9 +335,8 @@ fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Res
         "add_edge silently accepted a NodeId from a different Scene",
     )?;
 
-    let scene = Rc::new(RefCell::new(scene));
     check(
-        make_draggable(&scene, foreign).is_err(),
+        scene.make_draggable(foreign).is_err(),
         "make_draggable silently accepted a NodeId from a different Scene",
     )
 }
