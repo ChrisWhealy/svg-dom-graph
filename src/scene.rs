@@ -8,7 +8,7 @@
 //! See the sibling `demo-app` crate for a small worked example.
 
 use crate::{
-    geometry::boundary_point,
+    geometry::{apply_matrix, boundary_point, invert_matrix},
     model::{EdgeId, Graph, NodeId},
 };
 use std::{
@@ -18,7 +18,7 @@ use std::{
 };
 use svg_dom::{
     DominantBaseline, Error, MarkerUnits, SvgMarker, SvgNode, SvgRoot, TextAnchor,
-    root::utils::{Point, Rect, Size},
+    root::utils::{Matrix2D, Point, Rect, Size},
 };
 
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
@@ -213,10 +213,26 @@ impl Scene {
 /// The pointer position and box origin recorded when a drag starts.
 ///
 /// A delta between the pointer's current position and `pointer` gives how far to move `box_origin`.
+/// Both are in the dragged box's own user-space coordinates, not viewport CSS pixels — see `inverse_ctm`.
 #[derive(Clone, Copy)]
 struct DragStart {
     pointer: Point,
     box_origin: Point,
+    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the rest of this drag.
+    ///
+    /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on
+    /// every pointermove.
+    /// Caching it here (rather than recomputing per drag) assumes the group's own transform, and any ancestor
+    /// transform up to the viewport, does not change mid-drag — true for this crate's current rendering, since
+    /// nothing sets a transform on a box's group after it is drawn.
+    inverse_ctm: Matrix2D,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Converts `client` (viewport CSS pixels, such as `PointerEvent::client_x`/`client_y`) into user-space
+/// coordinates, via `inverse_ctm`.
+fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
+    apply_matrix(inverse_ctm, client)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -224,9 +240,10 @@ struct DragStart {
 ///
 /// Moves it, and redraws its incident connectors, via `scene` as the pointer moves.
 ///
-/// Assumes `scene`'s `<svg>` has no CSS scaling and its `viewBox` matches its pixel size, so one CSS pixel of
-/// pointer movement equals one user-space unit.
-/// A scaled or resized `<svg>` would need to convert `clientX`/`clientY` through the SVG's current transform first.
+/// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not `scene`'s user-space coordinates — the two only
+/// coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
+/// This converts through the dragged group's own screen CTM (see [`invert_matrix`]/[`apply_matrix`]), so dragging
+/// stays correct under scaling, a resized `viewBox`, or CSS transforms.
 pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Error> {
     let group = scene
         .borrow()
@@ -249,12 +266,20 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
         let drag_start = drag_start.clone();
         group.on_pointerdown(move |evt| {
             let Some(group) = group_weak.upgrade() else { return };
+            // Can't route the drag without a way to convert client pixels into this group's own coordinates.
+            let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
+                return;
+            };
+            let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
+            let pointer = client_to_user_space(client, inverse_ctm);
+
             let _ = group.as_element().set_pointer_capture(evt.pointer_id());
             let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
             let box_origin = scene.borrow().node_rect(id).origin;
             drag_start.set(Some(DragStart {
-                pointer: Point::new(evt.client_x() as f64, evt.client_y() as f64),
+                pointer,
                 box_origin,
+                inverse_ctm,
             }));
         })?;
     }
@@ -268,8 +293,9 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
         let mut scratch = String::new();
         group.on_pointermove(move |evt| {
             let Some(start) = drag_start.get() else { return };
+            let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
+            let pointer_now = client_to_user_space(client, start.inverse_ctm);
 
-            let pointer_now = Point::new(evt.client_x() as f64, evt.client_y() as f64);
             let new_origin = Point::new(
                 start.box_origin.x + (pointer_now.x - start.pointer.x),
                 start.box_origin.y + (pointer_now.y - start.pointer.y),
@@ -284,6 +310,20 @@ pub fn make_draggable(scene: &Rc<RefCell<Scene>>, id: NodeId) -> Result<(), Erro
         let group_weak = group.downgrade();
         let drag_start = drag_start.clone();
         group.on_pointerup(move |evt| {
+            let Some(group) = group_weak.upgrade() else { return };
+            let _ = group.as_element().release_pointer_capture(evt.pointer_id());
+            let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
+            drag_start.set(None);
+        })?;
+    }
+
+    {
+        // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
+        // interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
+        // pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
+        let group_weak = group.downgrade();
+        let drag_start = drag_start.clone();
+        group.on_pointercancel(move |evt| {
             let Some(group) = group_weak.upgrade() else { return };
             let _ = group.as_element().release_pointer_capture(evt.pointer_id());
             let _ = group.set_attr("style", "cursor: grab; touch-action: none;");

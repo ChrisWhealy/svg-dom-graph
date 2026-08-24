@@ -12,12 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct README (`4f7c534`)
 - Remove `SvgNode` ownership cycle (`af00332`)
+- Implement pointer -> user-space coordinate conversion (``)
 
 ## Changed
 
 - Define authoritative graph model (`95f32aa`)
 - Detach demo from `svg-dom-graph` library (`720d4b1`)
-- Separate PoC structures from public API (``)
+- Separate PoC structures from public API (`93e3aac`)
 
 ## Added
 
