@@ -4,13 +4,17 @@
 //! A graph may be cyclic or acyclic, directed or undirected.
 //! As boxes move, their connectors stay correctly routed.
 //!
-//! This first demo keeps that scope minimal: a static directed tree of three boxes.
-//! It demonstrates the box/connector rendering and the boundary-routing geometry that later features will extend.
+//! [`model::Graph`] holds the topology: nodes, edges, and incidence, with no DOM dependency of its own.
+//! [`scene`] renders a `Graph` onto the DOM, and keeps each node's and edge's rendered SVG handles in sync as nodes
+//! move.
 //!
-//! See [`geometry::boundary_point`] for the routing math and [`graph::build_demo_tree`] for the demo scene itself.
+//! This first demo keeps scope minimal: a directed tree of three boxes, with the two child boxes draggable.
+//!
+//! See [`geometry::boundary_point`] for the routing math and [`scene::build_demo_tree`] for the demo scene itself.
 
 pub mod geometry;
-pub mod graph;
+pub mod model;
+pub mod scene;
 
 use svg_dom::SvgRoot;
 use wasm_bindgen::prelude::*;
@@ -25,5 +29,5 @@ pub fn run() -> Result<(), JsValue> {
 fn build() -> Result<(), svg_dom::Error> {
     // Attach to <svg id="diagram"> already present in index.html.
     let svg = SvgRoot::attach("diagram")?;
-    graph::build_demo_tree(&svg)
+    scene::build_demo_tree(&svg)
 }

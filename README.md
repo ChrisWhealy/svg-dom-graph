@@ -12,7 +12,8 @@ The two child boxes are draggable.
 Dragging one redraws its connector on every pointer-move, so it stays attached to the root.
 
 - `src/geometry/` — pure, DOM-free routing math (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`.
-- `src/graph.rs` — the demo scene: box/label rendering, the arrow marker, connector drawing, and pointer-driven dragging.
+- `src/model/` — the graph's topology (`Graph`, `Node`, `Edge`, `NodeId`, `EdgeId`), also DOM-free and unit-tested in `unit_tests.rs`.
+- `src/scene.rs` — renders a `Graph` onto the DOM: box/label rendering, the arrow marker, connector drawing, and pointer-driven dragging.
 - `src/lib.rs` — the `wasm_bindgen(start)` entry point.
 
 ## Running the demo

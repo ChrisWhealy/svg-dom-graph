@@ -11,10 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct README (`4f7c534`)
+- Remove `SvgNode` ownership cycle (`af00332`)
 
 ## Changed
 
-- Remove `SvgNode` ownership cycle (``)
+- Define authoritative graph model (``)
 
 ## Added
 
