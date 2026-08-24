@@ -34,4 +34,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `Scene` must genuinely own or bind to its SVG root (`dd421e8`)
 - `NodeId` identifies the graph to which it belongs (`2fe939e`)
 - Track the active `pointer_id` (`5733572`)
-- Add an MSRV 1.85 job to CI (``)
+- Add an MSRV 1.85 job to CI (`811cd64`)
