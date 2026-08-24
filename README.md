@@ -1,6 +1,6 @@
 # svg-dom-graph
 
-Dynamically re-routable connectors between SVG boxes, built using [`svg-dom`](../svg-dom).
+Dynamically re-routable connectors between SVG boxes, built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 
 The goal is to draw a set of labelled boxes arranged in a graph that may be cyclic or acyclic, directed or undirected.
 As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically.
