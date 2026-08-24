@@ -7,7 +7,9 @@
 
 mod common;
 
-use common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, marker_ids, nth_group, the_connector};
+use common::{
+    attr_f64, check, check_close, dispatch_pointer_event, line_count, make_svg, marker_ids, nth_group, the_connector,
+};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
@@ -274,6 +276,37 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
     };
     check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
     check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `add_edge(node, node)` must be rejected, not silently accepted as a zero-length connector.
+///
+/// Both endpoints of a self-edge share one rectangle, so `boundary_point` (which returns a rectangle's own centre
+/// when the target point is already the centre) would compute the same point for both ends — a real `<line>`
+/// element with no visible extent, not a meaningful connector. Checks both that the call returns `Err` and that it
+/// drew nothing, since a caller could otherwise still end up with invisible connector elements accumulating in the
+/// DOM.
+#[wasm_bindgen_test]
+fn add_edge_rejects_a_self_loop() -> Result<(), String> {
+    let svg = make_svg("self-loop", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let mut scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+
+    let result = scene.add_edge(a, a);
+    check(result.is_err(), "add_edge(node, node) unexpectedly succeeded")?;
+    let message = result.unwrap_err().to_string();
+    check(
+        message.contains("not yet supported"),
+        &format!("unexpected error message for a self-loop: {message:?}"),
+    )?;
+
+    check(
+        line_count("self-loop")? == 0,
+        "add_edge(node, node) drew a connector despite returning Err",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

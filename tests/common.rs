@@ -81,6 +81,14 @@ pub fn the_connector(container_id: &str) -> Result<web_sys::Element, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns how many `<line>` children `container` has.
+pub fn line_count(container_id: &str) -> Result<u32, String> {
+    let selector = format!("#{container_id} > line");
+    let lines = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+    Ok(lines.length())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns the `id` attribute of every `<marker>` element under `container`, in document order.
 pub fn marker_ids(container_id: &str) -> Result<Vec<String>, String> {
     let selector = format!("#{container_id} marker");

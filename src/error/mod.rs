@@ -21,6 +21,14 @@ pub enum Error {
     ///
     /// See [`Error::UnknownNode`] for why this can happen.
     UnknownEdge(EdgeId),
+    /// `Scene::add_edge` was asked to connect a node to itself.
+    ///
+    /// Not supported yet: both ends of a self-edge share one rectangle, so both endpoints resolve to that
+    /// rectangle's own centre — `geometry::boundary_point` returns the centre unchanged when the target point is
+    /// already the centre. The result would be a zero-length line, not a real connector. Rejecting the call now,
+    /// rather than silently returning an `EdgeId` for a connector nobody can see, keeps room to add real loop-edge
+    /// routing later as an additive relaxation of this same method.
+    SelfLoopUnsupported(NodeId),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -30,6 +38,7 @@ impl fmt::Display for Error {
             Error::Svg(err) => write!(f, "{err}"),
             Error::UnknownNode(id) => write!(f, "node {id:?} does not belong to this Scene"),
             Error::UnknownEdge(id) => write!(f, "edge {id:?} does not belong to this Scene"),
+            Error::SelfLoopUnsupported(id) => write!(f, "self-loop on node {id:?} is not yet supported"),
         }
     }
 }

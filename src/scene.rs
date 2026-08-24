@@ -144,9 +144,15 @@ impl Scene {
     ///
     /// # Errors
     ///
+    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node — not yet supported, see that
+    /// variant's own doc comment for why.
     /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
     /// `NodeId` from a different `Scene`.
     pub fn add_edge(&mut self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
+        if from == to {
+            return Err(Error::SelfLoopUnsupported(from));
+        }
+
         let from_rect = self.node_rect(from)?;
         let to_rect = self.node_rect(to)?;
 

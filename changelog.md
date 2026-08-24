@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement pointer -> user-space coordinate conversion (`b00e9f9`)
 - Remove `Scene` ownership cycle (`d5aaf42`)
 - Restrict visibility of geometry helpers (`f4cae07`)
+- Remove internal functionality from public API (``)
 
 ## Changed
 
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Depend on published `svg-dom` crate (`c3d4e5b`)
 - Switch publish flag (`574838f`)
 - Change node labels away from `&'static str` (`15eecf6`)
-- Ensure `NodeId` and `EdgeId` are only crate public (``)
+- Ensure `NodeId` and `EdgeId` are only crate public (`cbcf27e`)
 
 ## Added
 

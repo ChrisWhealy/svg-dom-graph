@@ -50,6 +50,13 @@ fn unknown_edge_display_says_it_does_not_belong_to_this_scene() {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn self_loop_unsupported_display_says_it_is_not_yet_supported() {
+    let message = Error::SelfLoopUnsupported(a_node_id()).to_string();
+    assert!(message.contains("not yet supported"), "{message}");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn svg_error_display_passes_through_the_wrapped_message() {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();
