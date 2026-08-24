@@ -9,15 +9,15 @@ use std::collections::HashMap;
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Identifies one node in a [`Graph`].
+/// Identifies one node in a graph.
 ///
-/// Opaque on purpose: only [`Graph::add_node`] can produce one.
+/// Opaque on purpose: only the crate-internal topology model can produce one.
 /// So a `NodeId` can never be confused with a plain `usize`, or with an [`EdgeId`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId(usize);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Identifies one edge in a [`Graph`].
+/// Identifies one edge in a graph.
 ///
 /// See [`NodeId`] for why this is a distinct type rather than a bare `usize`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
@@ -27,6 +27,10 @@ pub struct EdgeId(usize);
 /// One node's data: its position and its label.
 pub struct Node {
     pub rect: Rect,
+    // Not read anywhere yet: nothing re-queries a node's label after creation, only its rect (for redraw-on-move).
+    // Kept as node data regardless, since a label is part of a node's identity, not just a one-shot render
+    // parameter — a future feature such as re-rendering or editing labels would need it stored here.
+    #[allow(dead_code)]
     pub label: &'static str,
 }
 

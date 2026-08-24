@@ -16,8 +16,8 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 | Module | Decsription |
 |---|---|
 | `src/geometry/` | A pure, DOM-free routing math (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
-| `src/model/`  | the graph's topology (`Graph`, `Node`, `Edge`, `NodeId`, `EdgeId`), also DOM-free and unit-tested in `unit_tests.rs`
-| `src/scene.rs` | renders a `Graph` onto the DOM: `Scene` (box/label rendering, connector drawing) and `make_draggable`
+| `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
+| `src/scene.rs` | Renders a graph onto the DOM: `Scene` (box/label rendering, connector drawing) and `make_draggable`
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 

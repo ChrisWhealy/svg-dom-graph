@@ -1,6 +1,7 @@
-//! Renders a [`Graph`] onto the DOM, and keeps each node's and edge's rendered SVG handles alongside it.
+//! Renders a graph onto the DOM, and keeps each node's and edge's rendered SVG handles alongside it.
 //!
-//! [`Graph`] owns the topology and is the single source of truth for it.
+//! The topology model (crate-private while this crate's API is still taking shape) owns the topology and is the
+//! single source of truth for it.
 //! This module pairs each of its ids with a rendered handle, and keeps both in sync as nodes move.
 //!
 //! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
@@ -79,7 +80,7 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &'static str) -> Result<BoxHandles
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A rendered [`Graph`], paired with each node's and edge's own SVG handles.
+/// A rendered `Graph`, paired with each node's and edge's own SVG handles.
 ///
 /// `Graph` owns the topology.
 /// This owns everything DOM-specific, keyed by the same ids `Graph` hands out.
