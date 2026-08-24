@@ -39,4 +39,13 @@ cargo test
 ```
 
 Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs` and `src/model/unit_tests.rs`.
-There is no browser test suite yet.
+
+```sh
+wasm-pack test --headless --firefox
+```
+
+Runs the browser integration tests in `tests/drag.rs`.
+These drive a real `pointerdown`/`pointermove`/`pointerup` sequence at the actual rendered DOM.
+They assert on the resulting `<rect>`/`<text>`/`<line>` attributes.
+One test uses a `viewBox` matching the `<svg>`'s pixel size 1:1.
+The other uses a scaled `viewBox`, proving the client-pixel-to-user-space conversion.

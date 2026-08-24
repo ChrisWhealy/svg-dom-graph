@@ -16,3 +16,20 @@ publish = false
 
 [dependencies]
 svg-dom = "0.2"
+
+[dev-dependencies]
+wasm-bindgen = "0.2"
+wasm-bindgen-test = "0.3"
+
+[dev-dependencies.web-sys]
+version = "0.3"
+features = [
+    "Document",
+    "Element",
+    "EventTarget",
+    "Node",
+    "NodeList",
+    "PointerEvent",
+    "PointerEventInit",
+    "Window",
+]

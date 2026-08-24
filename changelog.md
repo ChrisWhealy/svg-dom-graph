@@ -19,10 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Define authoritative graph model (`95f32aa`)
 - Detach demo from `svg-dom-graph` library (`720d4b1`)
 - Separate PoC structures from public API (`93e3aac`)
-- Depend on published `svg-dom` crate (``)
+- Depend on published `svg-dom` crate (`c3d4e5b`)
 
 ## Added
 
 - Initial commit (`04d5cd7`)
+- Add browser-level test layer and CI testing (``)
 
 # [Released]

@@ -10,5 +10,5 @@ crate-type = ["cdylib"]
 
 [dependencies]
 svg-dom-graph = { path = ".." }
-svg-dom = { path = "../../svg-dom" }
+svg-dom = "0.2"
 wasm-bindgen = "0.2"

@@ -1,0 +1,92 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+env:
+  CARGO_TERM_COLOR: always
+
+jobs:
+  lint-test:
+    name: fmt · clippy · test · doc
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: rustfmt, clippy
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Formatting
+        run: cargo fmt --all --check
+
+      - name: Clippy (library + tests)
+        run: cargo clippy --lib --tests -- -D warnings
+
+      - name: Unit tests
+        run: cargo test --all-features
+
+      - name: Docs (deny warnings)
+        run: cargo doc --no-deps --all-features
+        env:
+          RUSTDOCFLAGS: -D warnings
+
+  wasm:
+    name: wasm build (library · demo-app)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+
+      - name: Clippy (library, wasm32 target)
+        run: cargo clippy --lib --target wasm32-unknown-unknown -- -D warnings
+
+      - name: Build library for wasm32
+        run: cargo build --lib --target wasm32-unknown-unknown
+
+      # demo-app is a separate workspace member consuming svg-dom-graph only through its public API — building and
+      # linting it here is a standing check that the library's public surface is sufficient for a real consumer, the
+      # same reasoning svg-dom's own CI applies to its demo-app job.
+      - name: Clippy (demo-app, wasm32 target)
+        run: cargo clippy -p svg-dom-graph-demo --target wasm32-unknown-unknown -- -D warnings
+
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          # Pinned rather than left at the action's default "latest" — see svg-dom's own CI for the full rationale
+          # (reproducibility, avoiding an extra release-lookup round-trip). Bump deliberately when needed.
+          version: "v0.15.0"
+
+      - name: wasm-pack build (demo-app, the published web artifact)
+        run: wasm-pack build demo-app --target web --out-dir ../pkg
+
+  browser-tests:
+    name: wasm-pack test (${{ matrix.browser }})
+    runs-on: ubuntu-latest
+    strategy:
+      # Don't let one engine failing cancel the other — we want to see which broke.
+      fail-fast: false
+      matrix:
+        browser: [firefox, chrome]
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      # ubuntu-latest runners default to Ubuntu 24.04, which enables AppArmor's unprivileged-user-namespace
+      # restriction by default. Firefox's (and Chromium's) content sandbox needs one, so headless launch fails
+      # without this. Tracked upstream at https://github.com/actions/runner-images/issues/10015.
+      - name: Allow unprivileged user namespaces (Firefox/Chromium sandbox needs this on Ubuntu 24.04 runners)
+        run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          version: "v0.15.0"
+      - name: Run the browser integration tests
+        run: wasm-pack test --headless --${{ matrix.browser }}
