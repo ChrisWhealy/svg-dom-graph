@@ -11,8 +11,8 @@ use svg_dom::root::utils::Rect;
 /// sequence number — `Graph::node` simply will not find it there.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct NodeId {
-    pub graph: usize,
-    pub index: usize,
+    pub(crate) graph: usize,
+    pub(crate) index: usize,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

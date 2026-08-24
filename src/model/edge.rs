@@ -14,6 +14,6 @@ pub struct Edge {
 /// id as well as a sequence number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EdgeId {
-    pub graph: usize,
-    pub index: usize,
+    pub(crate) graph: usize,
+    pub(crate) index: usize,
 }
