@@ -1,0 +1,16 @@
+[package]
+authors = ["Chris Whealy <chris@whealy.com>"]
+name = "svg-dom-graph"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Dynamically re-routable connectors between SVG boxes, built on svg-dom"
+license = "MIT"
+publish = false
+
+[lib]
+crate-type = ["cdylib", "rlib"]
+
+[dependencies]
+svg-dom = { path = "../svg-dom" }
+wasm-bindgen = "0.2"

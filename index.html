@@ -1,0 +1,27 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <title>svg-dom-graph — directed graph demo</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 2rem;
+      }
+      svg {
+        border: 1px solid #ccc;
+        background: #fafafa;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>svg-dom-graph</h1>
+    <p>A minimal directed graph: three boxes connected by arrow-tipped connectors.</p>
+    <svg id="diagram" width="400" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <script type="module">
+      import init from "./pkg/svg_dom_graph.js";
+      init();
+    </script>
+  </body>
+</html>
