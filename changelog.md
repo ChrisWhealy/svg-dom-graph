@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove `SvgNode` ownership cycle (`af00332`)
 - Implement pointer -> user-space coordinate conversion (`b00e9f9`)
 - Remove `Scene` ownership cycle (`d5aaf42`)
+- Restrict visibility of geometry helpers (``)
 
 ## Changed
 
@@ -32,4 +33,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add browser-level test layer and CI testing (`9eee6e7`)
 - `Scene` must genuinely own or bind to its SVG root (`dd421e8`)
 - `NodeId` identifies the graph to which it belongs (`2fe939e`)
-- Track the active `pointer_id` (``)
+- Track the active `pointer_id` (`5733572`)

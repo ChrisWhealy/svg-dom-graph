@@ -1,6 +1,9 @@
 # svg-dom-graph
 
-Dynamically re-routable connectors between SVG boxes, built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
+Draws graphs with dynamically re-routable connectors between SVG boxes.
+Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
+
+***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
 
 The goal is to draw a set of labelled boxes arranged in a graph that may be cyclic or acyclic, directed or undirected.
 As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically.
@@ -13,9 +16,9 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
-| Module | Decsription |
+| Module | Description |
 |---|---|
-| `src/geometry/` | A pure, DOM-free routing math (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
+| `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/scene.rs` | Renders a graph onto the DOM: `Scene` (box/label rendering, connector drawing) and `make_draggable`
 

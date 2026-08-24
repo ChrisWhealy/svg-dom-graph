@@ -45,7 +45,10 @@ pub fn boundary_point(rect: Rect, towards: Point) -> Point {
 ///
 /// Returns `None` if `matrix` is not invertible: a zero determinant, meaning a degenerate transform such as zero scale
 /// on one axis.
-pub fn invert_matrix(matrix: Matrix2D) -> Option<Matrix2D> {
+///
+/// Crate-private: implementation machinery for [`crate::scene`]'s pointer-coordinate conversion, not part of this
+/// crate's graph-drawing API.
+pub(crate) fn invert_matrix(matrix: Matrix2D) -> Option<Matrix2D> {
     let det = matrix.h_scale * matrix.v_scale - matrix.v_skew * matrix.h_skew;
     if det == 0.0 {
         return None;
@@ -63,7 +66,9 @@ pub fn invert_matrix(matrix: Matrix2D) -> Option<Matrix2D> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Applies `matrix` to `point`, mapping it from `matrix`'s source coordinate space into its destination space.
-pub fn apply_matrix(matrix: Matrix2D, point: Point) -> Point {
+///
+/// Crate-private: see [`invert_matrix`] for why.
+pub(crate) fn apply_matrix(matrix: Matrix2D, point: Point) -> Point {
     Point::new(
         matrix.h_scale * point.x + matrix.h_skew * point.y + matrix.h_trans,
         matrix.v_skew * point.x + matrix.v_scale * point.y + matrix.v_trans,

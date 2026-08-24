@@ -10,9 +10,16 @@ name = "svg-dom-graph"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
-description = "Dynamically re-routable connectors between SVG boxes, built on svg-dom"
+description = "Plot SVG graphs using svg-dom"
+keywords = ["svg", "wasm", "browser", "dom", "graph"]
+categories = ["wasm", "web-programming", "rendering"]
+repository = "https://github.com/ChrisWhealy/svg-dom-graph"
 license = "MIT"
-publish = true
+readme = "README.md"
+exclude = [
+    ".github/",
+    "rustfmt.toml",
+]
 
 [dependencies]
 svg-dom = "0.2"

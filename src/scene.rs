@@ -269,7 +269,7 @@ fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
 ///
 /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not `scene`'s user-space coordinates — the two only
 /// coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
-/// This converts through the dragged group's own screen CTM (see [`invert_matrix`]/[`apply_matrix`]), so dragging
+/// This converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in `geometry`), so dragging
 /// stays correct under scaling, a resized `viewBox`, or CSS transforms.
 ///
 /// # Errors
