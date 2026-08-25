@@ -9,6 +9,7 @@ use std::fmt;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An error from a `svg-dom-graph` operation.
 #[derive(Debug)]
+#[non_exhaustive]
 pub enum Error {
     /// An error from the underlying `svg-dom` library: DOM creation, an attribute write, and so on.
     Svg(svg_dom::Error),

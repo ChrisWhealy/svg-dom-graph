@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Restrict visibility of geometry helpers (`f4cae07`)
 - Handle self-edges (`3192203`)
 - Correct test docs in README (`e8ae56e`)
-- Prevent a second `pointerdown` from stealing the active drag (``)
+- Prevent a second `pointerdown` from stealing the active drag (`6d7ae74`)
 
 ## Changed
 
@@ -40,3 +40,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `NodeId` identifies the graph to which it belongs (`2fe939e`)
 - Track the active `pointer_id` (`5733572`)
 - Add an MSRV 1.85 job to CI (`811cd64`)
+- Add `#[non_exhaustive]` to `Error` to allow for future error cases (``)
