@@ -166,9 +166,8 @@ impl SceneInner {
         handles.label_el.set_attr_display(scratch, "x", centre.x)?;
         handles.label_el.set_attr_display(scratch, "y", centre.y)?;
 
-        let incident = self.graph.incident_edges(id).to_vec();
-        for edge_id in incident {
-            self.redraw_edge(edge_id, scratch)?;
+        for edge_id in self.graph.incident_edges(id) {
+            self.redraw_edge(*edge_id, scratch)?;
         }
 
         Ok(())
