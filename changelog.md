@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add CDP integration tests to CI (``)
+- Add CDP integration tests to CI (`2da6a4f`)
+- Implement a `CollisionPolicy` rather than a hard-coded gap in `make_draggable()` (``)
 
 # [Released]
 

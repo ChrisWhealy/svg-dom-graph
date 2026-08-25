@@ -15,7 +15,10 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
-use svg_dom_graph::{geometry::boundary_point, scene::Scene};
+use svg_dom_graph::{
+    geometry::boundary_point,
+    scene::{CollisionPolicy, DragOptions, Scene},
+};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
@@ -471,5 +474,47 @@ fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> 
     dispatch_pointer_event(&group_mover, "pointerup", 340, 170, 1)?;
 
     check_close(attr_f64(&rect_mover, "x")?, 214.0)?;
+    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `CollisionPolicy::Allow` leaves a dropped node exactly where the pointer released it, even where that overlaps
+/// another node — the push-clear correction the previous test checks is opt-in, not `make_draggable_with`'s only
+/// behaviour.
+///
+/// Same drag as `dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position`, so the same 280-pixel
+/// move lands mover's rect exactly on blocker's own origin (300, 150) if nothing corrects it afterwards.
+#[wasm_bindgen_test]
+fn dropping_a_dragged_node_onto_another_with_allow_policy_leaves_them_overlapping() -> Result<(), String> {
+    let svg = make_svg("drag-overlap-allow", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
+    let box_size = Size::new(80.0, 40.0);
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    scene
+        .add_node(Point::new(300.0, 150.0), box_size, "blocker")
+        .map_err(|e| e.to_string())?;
+    let mover = scene
+        .add_node(Point::new(20.0, 150.0), box_size, "mover")
+        .map_err(|e| e.to_string())?;
+    scene
+        .make_draggable_with(
+            mover,
+            DragOptions {
+                collision: CollisionPolicy::Allow,
+            },
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group_mover = nth_group("drag-overlap-allow", 1)?; // mover was added second.
+    let rect_mover = group_mover
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in mover's group")?;
+
+    dispatch_pointer_event(&group_mover, "pointerdown", 60, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointermove", 340, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointerup", 340, 170, 1)?;
+
+    check_close(attr_f64(&rect_mover, "x")?, 300.0)?;
     check_close(attr_f64(&rect_mover, "y")?, 150.0)
 }

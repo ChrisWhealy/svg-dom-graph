@@ -16,6 +16,39 @@ const GRAB_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -
 const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What [`Scene::make_draggable_with`] does when a drop leaves the dragged node overlapping another one.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub enum CollisionPolicy {
+    /// Leaves the dropped node exactly where the pointer released it, even if that overlaps another node.
+    ///
+    /// Choose this when overlapping nodes are a legitimate outcome for the caller's own graph — this crate does
+    /// not otherwise have an opinion on whether nodes may overlap.
+    Allow,
+    /// Pushes the dropped node back along the line from its pre-drag position, clear of whatever it overlaps.
+    PushClear {
+        /// Extra clearance kept between the dropped node and whatever it overlapped, in this scene's user-space
+        /// units, so the two end up with a visible gap rather than touching edges.
+        padding: f64,
+    },
+}
+
+/// Configures the pointer-drag behaviour [`Scene::make_draggable_with`] wires up for one node.
+#[derive(Debug, Clone, Copy, PartialEq)]
+pub struct DragOptions {
+    /// What happens when a drop leaves the dragged node overlapping another one — see [`CollisionPolicy`].
+    pub collision: CollisionPolicy,
+}
+
+impl Default for DragOptions {
+    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding: [`Scene::make_draggable`]'s behaviour.
+    fn default() -> Self {
+        Self {
+            collision: CollisionPolicy::PushClear { padding: 6.0 },
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
 ///
 /// The delta between the pointer's current position and `pointer` describes how far to move `box_origin`. Both are in
@@ -46,9 +79,25 @@ struct DragStart {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
-    /// Wires up pointer dragging for node `id`.
+    /// Wires up pointer dragging for node `id`, with [`DragOptions::default`]'s collision behaviour: a drop that
+    /// overlaps another node is pushed back clear of it, along the line to where the drag started, plus 6
+    /// user-space units of padding.
     ///
-    /// Moves it, and redraws its incident connectors, as the pointer moves.
+    /// See [`make_draggable_with`](Self::make_draggable_with) to allow overlapping nodes, or to use different
+    /// padding.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
+    /// different `Scene`.
+    pub fn make_draggable(&self, id: NodeId) -> Result<(), Error> {
+        self.make_draggable_with(id, DragOptions::default())
+    }
+
+    /// Wires up pointer dragging for node `id`, with `options` controlling what happens when a drop leaves it
+    /// overlapping another node — see [`CollisionPolicy`].
+    ///
+    /// Moves the node, and redraws its incident connectors, as the pointer moves.
     ///
     /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not this scene's user-space coordinates — the
     /// two only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
@@ -59,7 +108,7 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
     /// different `Scene`.
-    pub fn make_draggable(&self, id: NodeId) -> Result<(), Error> {
+    pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
         let group = self
             .inner
             .borrow()
@@ -161,6 +210,7 @@ impl Scene {
             let group_weak = group.downgrade();
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
+            let collision = options.collision;
             // Reused for the corrective `move_node` call this handler makes when a drop overlaps another node —
             // same reasoning as the pointermove handler's own `scratch` above.
             let mut scratch = String::new();
@@ -177,10 +227,12 @@ impl Scene {
                 let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
 
-                // If the drop overlaps another node, push this node back to a clear position along the line to
-                // where it started this drag, rather than leaving it overlapping.
+                // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to
+                // do. `PushClear` pushes this node back to a clear position, along the line to where it started
+                // this drag, if the drop overlaps another node.
+                let CollisionPolicy::PushClear { padding } = collision else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
-                let corrected = inner.borrow().resolve_overlap(id, start.box_origin);
+                let corrected = inner.borrow().resolve_overlap(id, start.box_origin, padding);
                 if let Some(corrected_origin) = corrected {
                     let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
                 }

@@ -9,6 +9,8 @@
 
 pub(crate) mod drag;
 
+pub use drag::{CollisionPolicy, DragOptions};
+
 use crate::{
     error::Error,
     geometry::{apply_matrix, boundary_point, nearest_clear_centre, rects_overlap},
@@ -52,11 +54,6 @@ fn box_centre(rect: Rect) -> Point {
 /// caller's own document doesn't deliberately collide with this crate's naming, no unrelated content either — is
 /// likely to claim.
 static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Extra clearance kept between a node dropped after overlap-resolution and the node it overlapped, in this
-/// scene's user-space units, so the two end up with a visible gap rather than touching edges.
-const OVERLAP_RESOLUTION_PADDING: f64 = 6.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The squared distance between `a` and `b`.
@@ -206,7 +203,7 @@ impl SceneInner {
     ///
     /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the
     /// drag that produced its current, overlapping position — through the overlapped node's centre, stopping just
-    /// clear of that node's boundary, plus [`OVERLAP_RESOLUTION_PADDING`].
+    /// clear of that node's boundary, plus `padding` user-space units.
     ///
     /// When `id`'s rect overlaps more than one other node, resolves against whichever overlapping node's centre is
     /// nearest to `id`'s own current centre.
@@ -215,7 +212,7 @@ impl SceneInner {
     ///
     /// Returns `None` if `id`'s current rect does not overlap any other node, or if `id` does not name a node in
     /// this scene.
-    fn resolve_overlap(&self, id: NodeId, pre_drag_origin: Point) -> Option<Point> {
+    fn resolve_overlap(&self, id: NodeId, pre_drag_origin: Point, padding: f64) -> Option<Point> {
         let dragged = self.graph.node(id)?.rect;
         let dragged_centre = box_centre(dragged);
 
@@ -233,7 +230,7 @@ impl SceneInner {
             origin: pre_drag_origin,
             size: dragged.size,
         });
-        let new_centre = nearest_clear_centre(blocker, dragged.size, pre_drag_centre, OVERLAP_RESOLUTION_PADDING);
+        let new_centre = nearest_clear_centre(blocker, dragged.size, pre_drag_centre, padding);
         Some(Point::new(
             new_centre.x - dragged.size.width / 2.0,
             new_centre.y - dragged.size.height / 2.0,
