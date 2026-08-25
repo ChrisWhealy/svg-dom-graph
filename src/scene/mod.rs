@@ -7,13 +7,15 @@
 //! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
 //! See the sibling `demo-app` crate for a small worked example.
 
+pub(crate) mod drag;
+
 use crate::{
     error::Error,
-    geometry::{apply_matrix, boundary_point, invert_matrix},
+    geometry::{apply_matrix, boundary_point},
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     collections::HashMap,
     rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
@@ -30,6 +32,13 @@ struct BoxHandles {
     group: SvgNode,
     rect_el: SvgNode,
     label_el: SvgNode,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Converts `client` (viewport CSS pixels, such as `PointerEvent::client_x`/`client_y`) into user-space
+/// coordinates, via `inverse_ctm`.
+fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
+    apply_matrix(inverse_ctm, client)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -251,179 +260,5 @@ impl Scene {
         let id = inner.graph.add_edge(from, to);
         inner.edge_handles.insert(id, connector);
         Ok(id)
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The pointer position and box origin recorded when a drag starts.
-///
-/// A delta between the pointer's current position and `pointer` gives how far to move `box_origin`.
-/// Both are in the dragged box's own user-space coordinates, not viewport CSS pixels — see `inverse_ctm`.
-#[derive(Clone, Copy)]
-struct DragStart {
-    /// The pointer that started this drag.
-    ///
-    /// A pointer's own `pointerdown` grants it exclusive capture (see `set_pointer_capture` below), but a `pointermove`
-    /// `pointerup` or `pointercancel` for a *different*, unrelated pointer can still reach this same listener. For
-    /// example a second finger touching the same element mid-drag.
-    ///
-    /// Checking this field against each such event's own id keeps one pointer from driving, or ending, another
-    /// pointer's drag.
-    pointer_id: i32,
-    pointer: Point,
-    box_origin: Point,
-    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the rest of this drag.
-    ///
-    /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. Caching it here (rather than recomputing it per drag event) assumes that the group's own transform,
-    /// and any ancestor transform up to the viewport, does not change mid-drag. This is true for this crate's current
-    /// rendering, since nothing sets a transform on a box's group after it is drawn.
-    inverse_ctm: Matrix2D,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Converts `client` (viewport CSS pixels, such as `PointerEvent::client_x`/`client_y`) into user-space
-/// coordinates, via `inverse_ctm`.
-fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
-    apply_matrix(inverse_ctm, client)
-}
-
-impl Scene {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Wires up pointer dragging for node `id`.
-    ///
-    /// Moves it, and redraws its incident connectors, as the pointer moves.
-    ///
-    /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not this scene's user-space coordinates — the
-    /// two only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
-    /// This converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in
-    /// `geometry`), so dragging stays correct under scaling, a resized `viewBox`, or CSS transforms.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
-    /// different `Scene`.
-    pub fn make_draggable(&self, id: NodeId) -> Result<(), Error> {
-        let group = self
-            .inner
-            .borrow()
-            .node_handles
-            .get(&id)
-            .ok_or(Error::UnknownNode(id))?
-            .group
-            .clone();
-        group.set_attr("style", "cursor: grab; touch-action: none;")?;
-
-        let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
-
-        {
-            // Both `group` and `inner` are captured weakly, not as strong clones. `group` is the node this
-            // listener is registered on: a strong capture there would create a cycle (SvgNodeInner -> listener
-            // store -> closure -> SvgNode -> the same SvgNodeInner) that leaks the node and defeats its automatic
-            // listener cleanup. See `WeakSvgNode`'s doc comment.
-            // `inner` needs the same treatment one level up: `SceneInner::node_handles` owns `group`, so a strong
-            // `inner` clone in this closure would close the cycle back through `SceneInner` itself
-            // (`SceneInner -> group -> listener store -> closure -> SceneInner`), leaking the whole scene —
-            // everything it renders, and every listener on every node — even after every external `Scene` handle
-            // is dropped.
-            let group_weak = group.downgrade();
-            let inner_weak = Rc::downgrade(&self.inner);
-            let drag_start = drag_start.clone();
-            group.on_pointerdown(move |evt| {
-                // Ignores a pointerdown while a drag is already active, otherwise a second pointer touching this
-                // element mid-drag would silently steal it, overwriting the first pointer's `DragStart` before that
-                // pointer's own pointerup/pointercancel ever fires.
-                // Also ignores anything but the primary button — `button() == 0` is left mouse, touch, or ordinary pen
-                // contact; 1 is middle mouse and 2 is right mouse, neither of which should start a drag.
-                if drag_start.get().is_some() || evt.button() != 0 {
-                    return;
-                }
-                let Some(group) = group_weak.upgrade() else { return };
-                let Some(inner) = inner_weak.upgrade() else { return };
-                // Can't route the drag without a way to convert client pixels into this group's own coordinates.
-                let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
-                    return;
-                };
-                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-                let pointer = client_to_user_space(client, inverse_ctm);
-
-                let _ = group.as_element().set_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
-                let Some(box_origin) = inner.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
-                    return;
-                };
-                drag_start.set(Some(DragStart {
-                    pointer_id: evt.pointer_id(),
-                    pointer,
-                    box_origin,
-                    inverse_ctm,
-                }));
-            })?;
-        }
-
-        {
-            // Weak for the same reason as the pointerdown handler above.
-            let inner_weak = Rc::downgrade(&self.inner);
-            let drag_start = drag_start.clone();
-            // Reused across every pointermove call in this drag — and across drags, since the closure's
-            // environment persists between invocations — rather than allocating a fresh String each time. See
-            // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
-            let mut scratch = String::new();
-            group.on_pointermove(move |evt| {
-                let Some(inner) = inner_weak.upgrade() else { return };
-                let Some(start) = drag_start.get() else { return };
-                // Ignores a different pointer's move — for example a second finger touching this element mid-drag
-                // — rather than letting it drive the drag this pointer's own pointerdown started.
-                if evt.pointer_id() != start.pointer_id {
-                    return;
-                }
-                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-                let pointer_now = client_to_user_space(client, start.inverse_ctm);
-
-                let new_origin = Point::new(
-                    start.box_origin.x + (pointer_now.x - start.pointer.x),
-                    start.box_origin.y + (pointer_now.y - start.pointer.y),
-                );
-
-                let _ = inner.borrow_mut().move_node(id, new_origin, &mut scratch);
-            })?;
-        }
-
-        {
-            // Weak for the same reason as the pointerdown handler above.
-            let group_weak = group.downgrade();
-            let drag_start = drag_start.clone();
-            group.on_pointerup(move |evt| {
-                let Some(group) = group_weak.upgrade() else { return };
-                // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's
-                // own pointer is still down — rather than ending a drag that pointer never started.
-                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
-                    return;
-                }
-                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
-                drag_start.set(None);
-            })?;
-        }
-
-        {
-            // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
-            // interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
-            // pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
-            let group_weak = group.downgrade();
-            let drag_start = drag_start.clone();
-            group.on_pointercancel(move |evt| {
-                let Some(group) = group_weak.upgrade() else { return };
-                // Same pointer_id check as pointerup, and for the same reason.
-                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
-                    return;
-                }
-                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
-                drag_start.set(None);
-            })?;
-        }
-
-        Ok(())
     }
 }
