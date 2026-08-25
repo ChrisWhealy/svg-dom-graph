@@ -1,17 +1,7 @@
 use super::*;
 use svg_dom::root::utils::Size;
 
-fn identity() -> Matrix2D {
-    Matrix2D {
-        h_scale: 1.0,
-        v_scale: 1.0,
-        h_skew: 0.0,
-        v_skew: 0.0,
-        h_trans: 0.0,
-        v_trans: 0.0,
-    }
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), String> {
     if got == expected {
         Ok(())
@@ -73,7 +63,10 @@ fn boundary_point_at_own_centre_returns_the_centre() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn apply_matrix_identity_leaves_a_point_unchanged() -> Result<(), String> {
-    check_eq(apply_matrix(identity(), Point::new(12.0, 34.0)), Point::new(12.0, 34.0))
+    check_eq(
+        apply_matrix(Matrix2D::identity(), Point::new(12.0, 34.0)),
+        Point::new(12.0, 34.0),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -82,7 +75,7 @@ fn apply_matrix_translate_only_shifts_a_point() -> Result<(), String> {
     let translate = Matrix2D {
         h_trans: 10.0,
         v_trans: 20.0,
-        ..identity()
+        ..Matrix2D::identity()
     };
     check_eq(apply_matrix(translate, Point::new(5.0, 5.0)), Point::new(15.0, 25.0))
 }
@@ -93,7 +86,7 @@ fn apply_matrix_scale_only_scales_a_point() -> Result<(), String> {
     let scale = Matrix2D {
         h_scale: 2.0,
         v_scale: 3.0,
-        ..identity()
+        ..Matrix2D::identity()
     };
     check_eq(apply_matrix(scale, Point::new(5.0, 5.0)), Point::new(10.0, 15.0))
 }
@@ -105,7 +98,7 @@ fn invert_matrix_of_translate_maps_the_translated_point_back_to_the_origin() -> 
     let translate = Matrix2D {
         h_trans: 10.0,
         v_trans: 20.0,
-        ..identity()
+        ..Matrix2D::identity()
     };
     let inverse = invert_matrix(translate).ok_or("translate(10, 20) is invertible but invert_matrix returned None")?;
     check_eq(apply_matrix(inverse, Point::new(10.0, 20.0)), Point::new(0.0, 0.0))
@@ -119,7 +112,7 @@ fn invert_matrix_then_apply_round_trips_a_point_through_a_scale_and_translate() 
         v_scale: 0.5,
         h_trans: 7.0,
         v_trans: -3.0,
-        ..identity()
+        ..Matrix2D::identity()
     };
     let inverse =
         invert_matrix(matrix).ok_or("a scale+translate matrix is invertible but invert_matrix returned None")?;
@@ -138,7 +131,98 @@ fn invert_matrix_returns_none_for_a_singular_matrix() -> Result<(), String> {
     let singular = Matrix2D {
         h_scale: 0.0,
         v_scale: 0.0,
-        ..identity()
+        ..Matrix2D::identity()
     };
     check_eq(invert_matrix(singular), None)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn rects_overlap_is_true_for_clearly_overlapping_rects() -> Result<(), String> {
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(20.0, 10.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(rects_overlap(a, b), true)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn rects_overlap_is_false_for_clearly_separate_rects() -> Result<(), String> {
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(1000.0, 1000.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(rects_overlap(a, b), false)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn rects_overlap_is_false_for_rects_that_only_touch_edges() -> Result<(), String> {
+    // b starts exactly where a ends — a shared boundary line, not an overlapping area.
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(40.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(rects_overlap(a, b), false)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn nearest_clear_centre_pushes_straight_back_along_a_horizontal_approach() -> Result<(), String> {
+    // blocker's centre is (20, 10); half-extents (20, 10).
+    let blocker = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    // Approaching from due west (dy = 0) at dx = -100 from blocker's centre: inflated half-width is
+    // 20 + moving_size.width / 2 = 25, and 25 / 100 = 0.25 lands the boundary point exactly on -5.0, no
+    // floating-point rounding.
+    let previous_centre = Point::new(-80.0, 10.0);
+    let got = nearest_clear_centre(blocker, Size::new(10.0, 10.0), previous_centre, 6.0);
+    // Boundary at x = -5 (blocker's own centre 20, minus inflated half-width 25), then 6 more units further west.
+    check_eq(got, Point::new(-11.0, 10.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn nearest_clear_centre_result_does_not_overlap_the_blocker() -> Result<(), String> {
+    let blocker = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let moving_size = Size::new(10.0, 10.0);
+    let previous_centre = Point::new(-80.0, 10.0);
+    let new_centre = nearest_clear_centre(blocker, moving_size, previous_centre, 6.0);
+
+    let moved_rect = Rect {
+        origin: Point::new(new_centre.x - moving_size.width / 2.0, new_centre.y - moving_size.height / 2.0),
+        size: moving_size,
+    };
+    check_eq(rects_overlap(moved_rect, blocker), false)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn nearest_clear_centre_at_the_blockers_own_centre_returns_that_centre() -> Result<(), String> {
+    let blocker = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    // previous_centre exactly at blocker's own centre: no direction to push along.
+    let previous_centre = Point::new(20.0, 10.0);
+    let got = nearest_clear_centre(blocker, Size::new(10.0, 10.0), previous_centre, 6.0);
+    check_eq(got, Point::new(20.0, 10.0))
 }

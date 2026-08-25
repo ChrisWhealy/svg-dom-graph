@@ -436,3 +436,40 @@ fn scenes_sharing_one_svg_get_distinct_arrow_marker_ids() -> Result<(), String> 
         &format!("both Scenes' arrow markers share the same id: {ids:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dropping a dragged node so it overlaps another pushes it back to a clear position, along the line from the blocker's
+/// centre to where the drag started, plus padding.
+///
+/// Same geometry as `cdp-integration-test`'s `overlap_resolution` test, so the expected result there — worked out by
+/// hand in that test's own doc comment — applies unchanged here: mover (20, 150), blocker (300, 150), both 80x40,
+/// dropped on blocker's centre lands mover's origin at (214, 150).
+#[wasm_bindgen_test]
+fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> Result<(), String> {
+    let svg = make_svg("drag-overlap", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
+    let box_size = Size::new(80.0, 40.0);
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    scene
+        .add_node(Point::new(300.0, 150.0), box_size, "blocker")
+        .map_err(|e| e.to_string())?;
+    let mover = scene
+        .add_node(Point::new(20.0, 150.0), box_size, "mover")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(mover).map_err(|e| e.to_string())?;
+
+    let group_mover = nth_group("drag-overlap", 1)?; // mover was added second.
+    let rect_mover = group_mover
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in mover's group")?;
+
+    // Drag mover's centre (60, 170) onto blocker's centre (340, 170) — a 280-pixel move right, 1:1 client-pixel
+    // to user-space here.
+    dispatch_pointer_event(&group_mover, "pointerdown", 60, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointermove", 340, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointerup", 340, 170, 1)?;
+
+    check_close(attr_f64(&rect_mover, "x")?, 214.0)?;
+    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+}

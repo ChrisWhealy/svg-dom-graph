@@ -4,12 +4,25 @@
 //! This crate — not the library — owns every demo-specific decision: which element to attach to, and what graph to
 //! build.
 
+use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
 use svg_dom_graph::{Error, scene::Scene};
 use wasm_bindgen::prelude::*;
+
+thread_local! {
+    // `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only
+    // `Weak` references back to it. A strong self-reference there would leak the whole scene forever. That means
+    // nothing keeps a `Scene` alive once the function that built it returns: a `Scene` created, used, and simply let go
+    // out of scope (the natural shape of a `#[wasm_bindgen(start)]` function) drops there and then — long before the
+    // user ever gets a chance to click anything.  Thus it silently kills every listener with no panic and no console
+    // output.
+    //
+    // `SCENE` keeps this demo's only `Scene` handle alive for the page's whole lifetime.
+    static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen(start)]
@@ -25,11 +38,10 @@ fn build() -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo scene: a root box with two children, connected by directed, arrow-tipped edges.
-/// This is a minimal directed tree — the simplest case of the general graph `svg-dom-graph` targets.
+/// Builds the demo scene: a root box with two children, connected by directed, arrow-tipped edges. This is a minimal
+/// directed tree — the simplest case of the general graph `svg-dom-graph` targets.
 ///
-/// The two child boxes are draggable.
-/// Their connectors stay attached to the root and redraw as each child moves.
+/// The two child boxes are draggable. Their connectors stay attached to the root and redraw as each child moves.
 fn build_demo_tree(svg: SvgRoot) -> Result<(), Error> {
     let scene = Scene::new(svg)?;
 
@@ -43,6 +55,9 @@ fn build_demo_tree(svg: SvgRoot) -> Result<(), Error> {
 
     scene.make_draggable(left)?;
     scene.make_draggable(right)?;
+
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment above.
+    SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 
     Ok(())
 }

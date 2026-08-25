@@ -1,0 +1,14 @@
+[package]
+name = "cdp-test-fixture"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+svg-dom-graph = { path = ".." }
+svg-dom = "0.2"
+wasm-bindgen = "0.2"

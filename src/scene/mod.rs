@@ -11,7 +11,7 @@ pub(crate) mod drag;
 
 use crate::{
     error::Error,
-    geometry::{apply_matrix, boundary_point},
+    geometry::{apply_matrix, boundary_point, nearest_clear_centre, rects_overlap},
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
@@ -52,6 +52,22 @@ fn box_centre(rect: Rect) -> Point {
 /// caller's own document doesn't deliberately collide with this crate's naming, no unrelated content either — is
 /// likely to claim.
 static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Extra clearance kept between a node dropped after overlap-resolution and the node it overlapped, in this
+/// scene's user-space units, so the two end up with a visible gap rather than touching edges.
+const OVERLAP_RESOLUTION_PADDING: f64 = 6.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The squared distance between `a` and `b`.
+///
+/// Squared, not the true distance, since every caller only compares distances against each other — skipping the
+/// square root avoids the extra work without changing which comparison wins.
+fn distance_sq(a: Point, b: Point) -> f64 {
+    let dx = a.x - b.x;
+    let dy = a.y - b.y;
+    dx * dx + dy * dy
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Defines a small filled-triangle arrowhead marker in `<defs>` and returns its handle.
@@ -184,6 +200,45 @@ impl SceneInner {
 
         Ok(())
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// If node `id`'s current rect overlaps another node's, returns a corrected origin that resolves the overlap.
+    ///
+    /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the
+    /// drag that produced its current, overlapping position — through the overlapped node's centre, stopping just
+    /// clear of that node's boundary, plus [`OVERLAP_RESOLUTION_PADDING`].
+    ///
+    /// When `id`'s rect overlaps more than one other node, resolves against whichever overlapping node's centre is
+    /// nearest to `id`'s own current centre.
+    /// This does not attempt to resolve every simultaneous overlap in one pass — a resolved position could still
+    /// overlap a different node than the one resolved against.
+    ///
+    /// Returns `None` if `id`'s current rect does not overlap any other node, or if `id` does not name a node in
+    /// this scene.
+    fn resolve_overlap(&self, id: NodeId, pre_drag_origin: Point) -> Option<Point> {
+        let dragged = self.graph.node(id)?.rect;
+        let dragged_centre = box_centre(dragged);
+
+        let blocker = self
+            .graph
+            .nodes
+            .iter()
+            .filter(|&(&other_id, other)| other_id != id && rects_overlap(dragged, other.rect))
+            .map(|(_, other)| other.rect)
+            .min_by(|a, b| {
+                distance_sq(dragged_centre, box_centre(*a)).total_cmp(&distance_sq(dragged_centre, box_centre(*b)))
+            })?;
+
+        let pre_drag_centre = box_centre(Rect {
+            origin: pre_drag_origin,
+            size: dragged.size,
+        });
+        let new_centre = nearest_clear_centre(blocker, dragged.size, pre_drag_centre, OVERLAP_RESOLUTION_PADDING);
+        Some(Point::new(
+            new_centre.x - dragged.size.width / 2.0,
+            new_centre.y - dragged.size.height / 2.0,
+        ))
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -193,6 +248,35 @@ impl SceneInner {
 /// A `Scene` can be cloned freely (every clone refers to the same underlying graph and DOM state) and its methods take
 /// `&self`, not `&mut self`, so a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
 /// [`make_draggable`](Self::make_draggable) or to share it with more than one closure.
+///
+/// # Keep at least one handle alive for as long as the scene should stay interactive
+///
+/// [`make_draggable`](Self::make_draggable)'s own listener closures deliberately hold only `Weak` references back
+/// to this scene's shared state, not strong ones — a strong self-reference there would leak the whole scene (and
+/// every node, edge, and DOM element it owns) forever, since nothing would ever be able to drop the last strong
+/// handle.
+///
+/// The consequence: once every `Scene` handle a caller holds is dropped, the scene's shared state is freed
+/// immediately, and every listener silently stops responding — no panic, nothing in the console. This is easy to
+/// trip over in exactly the shape a `#[wasm_bindgen(start)]` entry point naturally takes:
+///
+/// ```rust,no_run
+/// # use svg_dom::{SvgRoot, root::utils::{Point, Size}};
+/// # use svg_dom_graph::{Error, scene::Scene};
+/// fn build() -> Result<(), Error> {
+///     let svg = SvgRoot::attach("diagram")?;
+///     let scene = Scene::new(svg)?;
+///     let node = scene.add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Node")?;
+///     scene.make_draggable(node)?;
+///     Ok(())
+///     // `scene` drops here, at the end of this function — which for a `#[wasm_bindgen(start)]` entry point
+///     // happens at page load, long before the user ever gets a chance to click anything. Dragging silently
+///     // does nothing.
+/// }
+/// ```
+///
+/// Keep a handle alive somewhere that outlives the function that built it — for example, in a `thread_local!` for
+/// the page's whole lifetime, as `demo-app`'s own `SCENE` does.
 #[derive(Clone)]
 pub struct Scene {
     inner: Rc<RefCell<SceneInner>>,

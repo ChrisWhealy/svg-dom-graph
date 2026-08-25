@@ -11,7 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Refactor the `Scene` module (`61961b6`)
-- Adjust `Scene::make_draggable` Rust docs (``)
+- Adjust `Scene::make_draggable` Rust docs (`3ace11b`)
+
+## Added
+
+- Add CDP test fixture for testing drag behaviour (``)
 
 # [Released]
 

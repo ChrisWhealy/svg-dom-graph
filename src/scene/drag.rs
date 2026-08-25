@@ -4,6 +4,18 @@ use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::{Matrix2D, Point};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Style applied while a box is idle: a grab cursor, no touch scrolling/panning, and no native text selection.
+///
+/// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine — Safari in
+/// particular has still started one with only the CSS property set — so `make_draggable` also calls
+/// `prevent_default()` on `pointerdown`/`pointermove`. The two are kept together: CSS blocks selection from a mouse
+/// drag that starts outside this element and passes over it without ever firing this element's own `pointerdown`,
+/// while `prevent_default()` blocks it for the drag this element's own listeners actually see.
+const GRAB_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;";
+/// Style applied while a box is actively being dragged — same as [`GRAB_STYLE`], but with a grabbing cursor.
+const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
 ///
 /// The delta between the pointer's current position and `pointer` describes how far to move `box_origin`. Both are in
@@ -56,7 +68,7 @@ impl Scene {
             .ok_or(Error::UnknownNode(id))?
             .group
             .clone();
-        group.set_attr("style", "cursor: grab; touch-action: none;")?;
+        group.set_attr("style", GRAB_STYLE)?;
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
@@ -86,6 +98,8 @@ impl Scene {
                 if drag_start.get().is_some() || evt.button() != 0 {
                     return;
                 }
+                // Stops the browser starting its own text-selection drag from this pointerdown — see `GRAB_STYLE`.
+                evt.prevent_default();
                 let Some(group) = group_weak.upgrade() else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
                 // Can't route the drag without a way to convert client pixels into this group's own coordinates.
@@ -96,7 +110,7 @@ impl Scene {
                 let pointer = client_to_user_space(client, inverse_ctm);
 
                 let _ = group.as_element().set_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grabbing; touch-action: none;");
+                let _ = group.set_attr("style", GRABBING_STYLE);
                 let Some(box_origin) = inner.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
                     return;
                 };
@@ -127,6 +141,8 @@ impl Scene {
                 if evt.pointer_id() != start.pointer_id {
                     return;
                 }
+                // Same reason as the pointerdown handler's own call — see `GRAB_STYLE`.
+                evt.prevent_default();
                 let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
                 let pointer_now = client_to_user_space(client, start.inverse_ctm);
 
@@ -143,18 +159,31 @@ impl Scene {
         // Weak clone used for the same reason as the pointerdown handler above.
         {
             let group_weak = group.downgrade();
+            let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
+            // Reused for the corrective `move_node` call this handler makes when a drop overlaps another node —
+            // same reasoning as the pointermove handler's own `scratch` above.
+            let mut scratch = String::new();
 
             group.on_pointerup(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
                 // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's
                 // own pointer is still down — rather than ending a drag that pointer never started.
-                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
+                let Some(start) = drag_start.get() else { return };
+                if start.pointer_id != evt.pointer_id() {
                     return;
                 }
                 let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
+                let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
+
+                // If the drop overlaps another node, push this node back to a clear position along the line to
+                // where it started this drag, rather than leaving it overlapping.
+                let Some(inner) = inner_weak.upgrade() else { return };
+                let corrected = inner.borrow().resolve_overlap(id, start.box_origin);
+                if let Some(corrected_origin) = corrected {
+                    let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
+                }
             })?;
         }
 
@@ -173,7 +202,7 @@ impl Scene {
                     return;
                 }
                 let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", "cursor: grab; touch-action: none;");
+                let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
             })?;
         }
