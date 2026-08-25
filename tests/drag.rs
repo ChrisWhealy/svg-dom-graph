@@ -383,6 +383,34 @@ fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `add_edge(foreign, foreign)` — the same foreign id used for both endpoints — must be reported as an unknown
+/// node, not a self-loop.
+///
+/// `foreign` names no node at all in `scene`, so `UnknownNode` is the correct diagnosis even though `from == to`.
+/// Checking membership before the self-loop comparison is what makes this so: reversing that order would report
+/// `SelfLoopUnsupported` instead, which is misleading — the id does not belong to this scene at all, let alone
+/// name a node connected to itself.
+#[wasm_bindgen_test]
+fn add_edge_with_the_same_foreign_id_twice_is_reported_as_unknown_not_a_self_loop() -> Result<(), String> {
+    let foreign_svg = make_svg("foreign-self-pair", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let foreign_scene = Scene::new(foreign_svg).map_err(|e| e.to_string())?;
+    let foreign = foreign_scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "Foreign")
+        .map_err(|e| e.to_string())?;
+
+    let svg = make_svg("local-only", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    let result = scene.add_edge(foreign, foreign);
+    check(result.is_err(), "add_edge(foreign, foreign) unexpectedly succeeded")?;
+    let message = result.unwrap_err().to_string();
+    check(
+        message.contains("does not belong to this Scene"),
+        &format!("expected an UnknownNode-style message, got {message:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two `Scene`s sharing one `<svg>` must not collide on their arrow marker's id.
 ///
 /// A hardcoded id such as `"arrow"` would make the second `Scene::new` either fail outright or silently produce a

@@ -225,18 +225,20 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node — not yet supported, see that
-    /// variant's own doc comment for why.
     /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
     /// `NodeId` from a different `Scene`.
+    /// Checked before the self-loop check below, so a foreign id is always reported as unknown, even if `from` and
+    /// `to` are the same foreign id.
+    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node in this scene — not yet
+    /// supported, see that variant's own doc comment for why.
     pub fn add_edge(&self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
-        if from == to {
-            return Err(Error::SelfLoopUnsupported(from));
-        }
-
         let mut inner = self.inner.borrow_mut();
         let from_rect = inner.node_rect(from)?;
         let to_rect = inner.node_rect(to)?;
+
+        if from == to {
+            return Err(Error::SelfLoopUnsupported(from));
+        }
 
         let start = boundary_point(from_rect, box_centre(to_rect));
         let end = boundary_point(to_rect, box_centre(from_rect));
