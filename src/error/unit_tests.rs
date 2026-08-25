@@ -64,6 +64,13 @@ fn already_draggable_display_says_the_node_is_already_draggable() {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_collision_padding_display_names_the_rejected_value() {
+    let message = Error::InvalidCollisionPadding(f64::NAN).to_string();
+    assert!(message.contains("NaN"), "{message}");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn svg_error_display_passes_through_the_wrapped_message() {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();

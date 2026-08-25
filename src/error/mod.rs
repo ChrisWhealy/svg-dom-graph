@@ -36,6 +36,14 @@ pub enum Error {
     /// second, independent set of pointer listeners and drag-state alongside it, both responding to the same events.
     /// Rejecting the second call keeps that from happening silently.
     AlreadyDraggable(NodeId),
+    /// `Scene::make_draggable_with` was given a `CollisionPolicy::PushClear` padding that is not a finite value
+    /// `>= 0.0`.
+    ///
+    /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending
+    /// it, and a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into
+    /// the resulting coordinates. Rejected before any other state changes, so the scene's existing nodes are left
+    /// exactly as they were.
+    InvalidCollisionPadding(f64),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -47,6 +55,9 @@ impl fmt::Display for Error {
             Error::UnknownEdge(id) => write!(f, "edge {id:?} does not belong to this Scene"),
             Error::SelfLoopUnsupported(id) => write!(f, "self-loop on node {id:?} is not yet supported"),
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
+            Error::InvalidCollisionPadding(padding) => {
+                write!(f, "collision padding {padding} is not a finite value >= 0.0")
+            },
         }
     }
 }

@@ -122,7 +122,17 @@ impl Scene {
     /// a second time for the same node does not replace the first installation, so this is rejected outright rather
     /// than silently doubling up its listeners and drag-state. Reusing `id` after such an error is safe: the first
     /// installation is untouched.
+    ///
+    /// Returns [`Error::InvalidCollisionPadding`] if `options.collision` is [`CollisionPolicy::PushClear`] with a
+    /// `padding` that is not a finite value `>= 0.0`. Checked before anything else, so this scene's existing state
+    /// is left untouched either way.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
+        if let CollisionPolicy::PushClear { padding } = options.collision {
+            if !(padding.is_finite() && padding >= 0.0) {
+                return Err(Error::InvalidCollisionPadding(padding));
+            }
+        }
+
         let group = {
             let mut inner = self.inner.borrow_mut();
             let handles = inner.node_handles.get_mut(&id).ok_or(Error::UnknownNode(id))?;

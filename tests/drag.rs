@@ -599,3 +599,55 @@ fn a_second_make_draggable_call_for_the_same_node_is_rejected() -> Result<(), St
     check_close(attr_f64(&rect, "x")?, before.x + 50.0)?;
     check_close(attr_f64(&rect, "y")?, before.y + 30.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `make_draggable_with` rejects a `CollisionPolicy::PushClear` padding that is not a finite value `>= 0.0`, before
+/// changing any state — a rejected call never marks the node draggable, so the same node can be retried (here, with
+/// several different invalid values in a row) without ever hitting `Error::AlreadyDraggable` instead.
+#[wasm_bindgen_test]
+fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), String> {
+    let svg = make_svg("drag-padding", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(80.0, 40.0), "node")
+        .map_err(|e| e.to_string())?;
+
+    for padding in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let result = scene.make_draggable_with(
+            node,
+            DragOptions {
+                collision: CollisionPolicy::PushClear { padding },
+            },
+        );
+        check(
+            matches!(result, Err(Error::InvalidCollisionPadding(_))),
+            &format!(
+                "padding {padding} should have been rejected as Err(Error::InvalidCollisionPadding(_)), got {result:?}"
+            ),
+        )?;
+    }
+
+    // 0.0 is the boundary — valid, not rejected.
+    scene
+        .make_draggable_with(
+            node,
+            DragOptions {
+                collision: CollisionPolicy::PushClear { padding: 0.0 },
+            },
+        )
+        .map_err(|e| e.to_string())?;
+
+    // A distinct, non-default positive padding is also valid, on a separate node (the one above is now already
+    // draggable).
+    let other = scene
+        .add_node(Point::new(200.0, 0.0), Size::new(80.0, 40.0), "other")
+        .map_err(|e| e.to_string())?;
+    scene
+        .make_draggable_with(
+            other,
+            DragOptions {
+                collision: CollisionPolicy::PushClear { padding: 42.5 },
+            },
+        )
+        .map_err(|e| e.to_string())
+}
