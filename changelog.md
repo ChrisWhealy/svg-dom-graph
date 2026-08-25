@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactor the `Scene` module (``)
+- Refactor the `Scene` module (`61961b6`)
+- Adjust `Scene::make_draggable` Rust docs (``)
 
 # [Released]
 

@@ -6,8 +6,8 @@ use svg_dom::root::utils::{Matrix2D, Point};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
 ///
-/// A delta between the pointer's current position and `pointer` gives how far to move `box_origin`.
-/// Both are in the dragged box's own user-space coordinates, not viewport CSS pixels — see `inverse_ctm`.
+/// The delta between the pointer's current position and `pointer` describes how far to move `box_origin`. Both are in
+/// the dragged box's own user-space coordinates, not viewport CSS pixels — see `inverse_ctm`.
 #[derive(Clone, Copy)]
 struct DragStart {
     /// The pointer that started this drag.
@@ -16,22 +16,24 @@ struct DragStart {
     /// `pointerup` or `pointercancel` for a *different*, unrelated pointer can still reach this same listener. For
     /// example a second finger touching the same element mid-drag.
     ///
-    /// Checking this field against each such event's own id keeps one pointer from driving, or ending, another
-    /// pointer's drag.
+    /// Checking this field against each such event's own id avoids the case in which a different pointer attempte to
+    /// drive or end another pointer's drag event.
     pointer_id: i32,
     pointer: Point,
     box_origin: Point,
-    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the rest of this drag.
+    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag event.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. Caching it here (rather than recomputing it per drag event) assumes that the group's own transform,
-    /// and any ancestor transform up to the viewport, does not change mid-drag. This is true for this crate's current
-    /// rendering, since nothing sets a transform on a box's group after it is drawn.
+    /// pointermove. Caching it here (rather than recomputing it per drag event) assumes that neither the group's own
+    /// transform nor any ancestor transform up to the viewport, changes mid-drag.
+    ///
+    /// This is true for this crate's current rendering, since nothing sets a transform on a box's group after it has
+    /// been drawn.
     inverse_ctm: Matrix2D,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Wires up pointer dragging for node `id`.
     ///
     /// Moves it, and redraws its incident connectors, as the pointer moves.
@@ -58,19 +60,23 @@ impl Scene {
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Both `group` and `inner` must be captured as weak clones to avoid creating an ownership cycle.
+        //
+        // `group` is the node on which this listener is registered: using a strong capture would create a cycle
+        // (SvgNodeInner -> listener store -> closure -> SvgNode -> the same SvgNodeInner) that leaks the node and
+        // defeats its automatic listener cleanup. See `WeakSvgNode`'s doc comment.
+        //
+        // `inner` needs the same treatment one level up: `SceneInner::node_handles` owns `group`, so a strong `inner`
+        // clone in this closure would create the cycle back through `SceneInner` itself (`SceneInner -> group ->
+        // listener store -> closure -> SceneInner`), leaking the whole scene (plus everything it renders along  every
+        // listener on every node in that scene).  This would happend even after every external `Scene` handle has been
+        // dropped.
         {
-            // Both `group` and `inner` are captured weakly, not as strong clones. `group` is the node this
-            // listener is registered on: a strong capture there would create a cycle (SvgNodeInner -> listener
-            // store -> closure -> SvgNode -> the same SvgNodeInner) that leaks the node and defeats its automatic
-            // listener cleanup. See `WeakSvgNode`'s doc comment.
-            // `inner` needs the same treatment one level up: `SceneInner::node_handles` owns `group`, so a strong
-            // `inner` clone in this closure would close the cycle back through `SceneInner` itself
-            // (`SceneInner -> group -> listener store -> closure -> SceneInner`), leaking the whole scene —
-            // everything it renders, and every listener on every node — even after every external `Scene` handle
-            // is dropped.
             let group_weak = group.downgrade();
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
+
             group.on_pointerdown(move |evt| {
                 // Ignores a pointerdown while a drag is already active, otherwise a second pointer touching this
                 // element mid-drag would silently steal it, overwriting the first pointer's `DragStart` before that
@@ -103,14 +109,16 @@ impl Scene {
             })?;
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Weak clone used for the same reason as the pointerdown handler above.
         {
-            // Weak for the same reason as the pointerdown handler above.
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
             // Reused across every pointermove call in this drag — and across drags, since the closure's
             // environment persists between invocations — rather than allocating a fresh String each time. See
             // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
             let mut scratch = String::new();
+
             group.on_pointermove(move |evt| {
                 let Some(inner) = inner_weak.upgrade() else { return };
                 let Some(start) = drag_start.get() else { return };
@@ -131,10 +139,12 @@ impl Scene {
             })?;
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Weak clone used for the same reason as the pointerdown handler above.
         {
-            // Weak for the same reason as the pointerdown handler above.
             let group_weak = group.downgrade();
             let drag_start = drag_start.clone();
+
             group.on_pointerup(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
                 // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's
@@ -148,12 +158,14 @@ impl Scene {
             })?;
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag interrupted
+        // by a system gesture. Without this handler, drag_start would stay set, so a later stray pointermove (including
+        // one for an unrelated pointer_id) would move the box using a stale drag.
         {
-            // The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
-            // interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
-            // pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
             let group_weak = group.downgrade();
             let drag_start = drag_start.clone();
+
             group.on_pointercancel(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
                 // Same pointer_id check as pointerup, and for the same reason.
