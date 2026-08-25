@@ -96,6 +96,9 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
     /// different `Scene`.
+    ///
+    /// Returns [`Error::AlreadyDraggable`] if `id` is already draggable — see
+    /// [`make_draggable_with`](Self::make_draggable_with)'s own `# Errors` section for why.
     pub fn make_draggable(&self, id: NodeId) -> Result<(), Error> {
         self.make_draggable_with(id, DragOptions::default())
     }
@@ -114,15 +117,21 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
     /// different `Scene`.
+    ///
+    /// Returns [`Error::AlreadyDraggable`] if `id` is already draggable — calling this (or [`Scene::make_draggable`])
+    /// a second time for the same node does not replace the first installation, so this is rejected outright rather
+    /// than silently doubling up its listeners and drag-state. Reusing `id` after such an error is safe: the first
+    /// installation is untouched.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
-        let group = self
-            .inner
-            .borrow()
-            .node_handles
-            .get(&id)
-            .ok_or(Error::UnknownNode(id))?
-            .group
-            .clone();
+        let group = {
+            let mut inner = self.inner.borrow_mut();
+            let handles = inner.node_handles.get_mut(&id).ok_or(Error::UnknownNode(id))?;
+            if handles.draggable {
+                return Err(Error::AlreadyDraggable(id));
+            }
+            handles.draggable = true;
+            handles.group.clone()
+        };
         group.set_attr("style", GRAB_STYLE)?;
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));

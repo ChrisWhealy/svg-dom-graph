@@ -57,6 +57,13 @@ fn self_loop_unsupported_display_says_it_is_not_yet_supported() {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn already_draggable_display_says_the_node_is_already_draggable() {
+    let message = Error::AlreadyDraggable(a_node_id()).to_string();
+    assert!(message.contains("already draggable"), "{message}");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn svg_error_display_passes_through_the_wrapped_message() {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();

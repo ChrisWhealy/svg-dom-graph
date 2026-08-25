@@ -30,6 +30,12 @@ pub enum Error {
     /// rather than silently returning an `EdgeId` for a connector nobody can see, keeps room to add real loop-edge
     /// routing later as an additive relaxation of this same method.
     SelfLoopUnsupported(NodeId),
+    /// `Scene::make_draggable`/`Scene::make_draggable_with` was called more than once for the same node.
+    ///
+    /// `svg-dom`'s listener registration is append-only — a second call would not replace the first, it would add a
+    /// second, independent set of pointer listeners and drag-state alongside it, both responding to the same events.
+    /// Rejecting the second call keeps that from happening silently.
+    AlreadyDraggable(NodeId),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -40,6 +46,7 @@ impl fmt::Display for Error {
             Error::UnknownNode(id) => write!(f, "node {id:?} does not belong to this Scene"),
             Error::UnknownEdge(id) => write!(f, "edge {id:?} does not belong to this Scene"),
             Error::SelfLoopUnsupported(id) => write!(f, "self-loop on node {id:?} is not yet supported"),
+            Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
         }
     }
 }

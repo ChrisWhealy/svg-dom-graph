@@ -16,6 +16,7 @@ use svg_dom::{
     root::utils::{Point, Rect, Size},
 };
 use svg_dom_graph::{
+    Error,
     geometry::boundary_point,
     scene::{CollisionPolicy, DragOptions, Scene},
 };
@@ -553,4 +554,48 @@ fn dropping_a_node_whose_pre_drag_centre_coincides_with_the_blockers_centre_reve
 
     check_close(attr_f64(&rect_mover, "x")?, same_origin.x)?;
     check_close(attr_f64(&rect_mover, "y")?, same_origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A second `make_draggable`/`make_draggable_with` call for the same node is rejected with
+/// `Error::AlreadyDraggable`, rather than silently installing a second, independent set of pointer listeners
+/// alongside the first.
+///
+/// Also drags the node afterwards and checks it moved by exactly the drag delta, not double it — the strongest
+/// available proof that the rejected second call did not sneak a duplicate `move_node` call onto every
+/// `pointermove` alongside the first installation's own.
+#[wasm_bindgen_test]
+fn a_second_make_draggable_call_for_the_same_node_is_rejected() -> Result<(), String> {
+    let svg = make_svg("drag-twice", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let box_size = Size::new(80.0, 40.0);
+    let before = Point::new(20.0, 20.0);
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene.add_node(before, box_size, "node").map_err(|e| e.to_string())?;
+    scene.make_draggable(node).map_err(|e| e.to_string())?;
+
+    let second = scene.make_draggable(node);
+    check(
+        matches!(second, Err(Error::AlreadyDraggable(_))),
+        &format!("expected Err(Error::AlreadyDraggable(_)) from a second make_draggable call, got {second:?}"),
+    )?;
+    let third = scene.make_draggable_with(node, DragOptions::default());
+    check(
+        matches!(third, Err(Error::AlreadyDraggable(_))),
+        &format!("expected Err(Error::AlreadyDraggable(_)) from a second make_draggable_with call, got {third:?}"),
+    )?;
+
+    let group = nth_group("drag-twice", 0)?;
+    let rect = group
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in node's group")?;
+
+    // A 50x30 client-pixel drag, 1:1 with user-space here.
+    dispatch_pointer_event(&group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group, "pointerup", 150, 130, 1)?;
+
+    check_close(attr_f64(&rect, "x")?, before.x + 50.0)?;
+    check_close(attr_f64(&rect, "y")?, before.y + 30.0)
 }

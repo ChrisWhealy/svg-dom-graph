@@ -34,6 +34,11 @@ struct BoxHandles {
     group: SvgNode,
     rect_el: SvgNode,
     label_el: SvgNode,
+    /// Whether `Scene::make_draggable`/`Scene::make_draggable_with` has already been called for this node.
+    ///
+    /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
+    /// pointer listeners rather than replacing the first — see [`crate::Error::AlreadyDraggable`].
+    draggable: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -110,7 +115,12 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str) -> Result<BoxHandles, Error>
     group.append(&rect_el)?;
     group.append(&label_el)?;
 
-    Ok(BoxHandles { group, rect_el, label_el })
+    Ok(BoxHandles {
+        group,
+        rect_el,
+        label_el,
+        draggable: false,
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
