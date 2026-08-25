@@ -18,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adjust overlap resolver to make non-overlap a best guess, not a guarantee (`c7619f2`)
 - Add test settle time to account for slow CI-runner (`16754e2`)
 - Remove unecessary allocation from hot-path (`5e67a0f`)
-- Ensure `make_draggable()` can only be installed once per node (``)
+- Ensure `make_draggable()` can only be installed once per node (`9f5cf74`)
+- Doc only: Update README (``)
 
 # [Released]
 

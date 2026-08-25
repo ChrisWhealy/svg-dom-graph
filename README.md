@@ -26,11 +26,13 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene.rs` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, and `make_draggable`
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, `make_draggable`, and `make_draggable_with` (configurable drop-collision handling — see `DragOptions`/`CollisionPolicy`)
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
 - `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">`, and builds a specific demo graph (a directed tree of three boxes, with the two children draggable).
+
+`cdp-test-fixture/` and `cdp-integration-test/` are a further pair of on-demand workspace members, used only by `cargo test -p cdp-integration-test` (see [Testing](#testing) below) — neither is built by a plain `cargo build`/`cargo test`.
 
 ## Running the demo
 
@@ -65,3 +67,15 @@ The test suite covers:
 - self-loop rejection
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
+- drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
+
+```sh
+cargo test -p cdp-integration-test
+```
+
+Runs a further, heavier integration layer against a real, local Chrome instance over the Chrome DevTools Protocol (via [`headless_chrome`](https://crates.io/crates/headless_chrome)), dispatching real `Input.dispatchMouseEvent` sequences rather than `EventTarget::dispatchEvent`.
+Unlike `wasm-pack test`'s synthetic events, this goes through the browser's own hit-testing, pointer capture and default-action machinery.
+This is the only way to catch, for example, a missing `prevent_default()` that lets a drag fall through to the browser's native text-selection gesture.
+
+Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
+Needs a local Chrome/Chromium binary.
