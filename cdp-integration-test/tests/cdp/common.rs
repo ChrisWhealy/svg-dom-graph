@@ -68,6 +68,8 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
 /// up, and any in between are intermediate `mousemove`s while the button is held.  Real drags rarely jump straight from
 /// their start location to the end location in one move, and some of what this suite exists to catch (pointer capture,
 /// default-action suppression) only manifests itself once the pointer actually leaves its starting element.
+///
+/// A short pause follows each dispatched event — see [`SETTLE`]'s own doc comment for why.
 pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
     let (first, rest) = waypoints.split_first().ok_or("drag needs at least two waypoints")?;
     let (last, moves) = rest.split_last().ok_or("drag needs at least two waypoints")?;
@@ -81,6 +83,19 @@ pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
     mouse_event(tab, Input::DispatchMouseEventTypeOption::MouseReleased, *last, Some(0))?;
     Ok(())
 }
+
+/// A short pause inserted after every individual `Input.dispatchMouseEvent` call this suite makes.
+///
+/// `Tab::call_method` returns once Chrome's browser process has accepted the CDP command, not once the corresponding JS
+/// event has actually finished running in the page's renderer process — those two processes talk over IPC, and dispatch
+/// is not guaranteed to keep up with a tight, back-to-back loop of commands under load. On a slower or busier machine
+/// (observed on a GitHub Actions runner, not reproduced locally), a `pointermove` or `pointerup` this suite fires can
+/// be coalesced or arrive before this crate's own listener has processed the one before it — for `pointerup`, its
+/// dropped-overlap correction depends on `move_node` from every prior `pointermove` already having applied, so losing
+/// even one mid-drag step can leave the model in a state the pointerup handler never expected. This pause is cheap (a
+/// handful of milliseconds per waypoint, negligible next to launching Chrome and building the wasm fixture) relative to
+/// how expensive an intermittent CI failure is to track down.
+const SETTLE: Duration = Duration::from_millis(50);
 
 fn mouse_event(
     tab: &Tab,
@@ -109,5 +124,6 @@ fn mouse_event(
         pointer_Type: None,
     })
     .map_err(|e| format!("{kind_description} at ({x}, {y}) failed: {e}"))?;
+    std::thread::sleep(SETTLE);
     Ok(())
 }
