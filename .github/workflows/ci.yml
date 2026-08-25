@@ -104,3 +104,51 @@ jobs:
           version: "v0.15.0"
       - name: Run the browser integration tests
         run: wasm-pack test --headless --${{ matrix.browser }}
+
+  cdp-integration-test:
+    name: CDP browser integration tests (Chrome)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      # Unlike `browser-tests`, this job does not need the AppArmor/unprivileged-userns workaround: the shared
+      # `launch_browser` helper (cdp-integration-test/src/lib.rs) launches Chrome with `.sandbox(false)`, precisely
+      # so it never attempts the AppArmor-dependent sandbox initialisation that workaround exists for — see
+      # `tests/cdp/main.rs`'s own `# Why the browser is launched with sandbox(false)` doc section. The
+      # `sudo sysctl` step `browser-tests` needs has no effect here and is deliberately omitted.
+      - name: Install wasm-pack
+        uses: jetli/wasm-pack-action@v0.4.0
+        with:
+          # Pinned rather than left at the action's default "latest" — see the other `wasm-pack` steps above for
+          # the full rationale (reproducibility, avoiding an extra release-lookup round-trip).
+          version: "v0.15.0"
+
+      - name: Chrome version (diagnostic — the runner image ships one, nothing to install)
+        run: google-chrome --version || google-chrome-stable --version || chromium-browser --version
+
+      # cdp-test-fixture is a `cdylib` (wasm-bindgen crate) with no test targets of its own, so a plain `-p`
+      # invocation under the wasm32 target already covers all its compiled code.
+      - name: Clippy (cdp-test-fixture)
+        run: cargo clippy -p cdp-test-fixture --target wasm32-unknown-unknown -- -D warnings
+
+      # Native, not `--target wasm32-unknown-unknown`: cdp-integration-test itself runs on the host (it drives a
+      # real local Chrome via headless_chrome), so its own compiled code — including the `cdp` test binary under
+      # `tests/cdp/` — only exists under the native target. --all-targets, not a plain `-p cdp-integration-test`:
+      # #[cfg(test)] code (the `cdp` test binary) is only compiled in test mode, so a plain clippy invocation here
+      # would silently never lint it at all.
+      - name: Clippy (cdp-integration-test)
+        run: cargo clippy -p cdp-integration-test --all-targets -- -D warnings
+
+      # Builds the cdp-test-fixture wasm package, serves it locally, and drives the runner's own Chrome over the
+      # DevTools Protocol — see the module doc comment in cdp-integration-test/tests/cdp/main.rs for what this
+      # verifies and why it's a separate job rather than folded into `browser-tests`: it needs headless_chrome and
+      # a real local Chrome binary, neither of which the wasm-bindgen-test-based browser tests require, and
+      # keeping it isolated means a failure here doesn't obscure results from the other jobs. This single command
+      # runs the crate's one `cdp` test binary, covering every scenario module (small drag, overlap resolution,
+      # text-selection prevention) — see cdp-integration-test/tests/cdp/main.rs's own module doc comment for the
+      # current list, rather than duplicating (and re-drifting) it here.
+      - name: Run the CDP integration tests (real pointer drag, driven through the actual browser)
+        run: cargo test -p cdp-integration-test
