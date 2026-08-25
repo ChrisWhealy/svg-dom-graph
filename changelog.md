@@ -15,7 +15,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add CDP test fixture for testing drag behaviour (``)
+- Add CDP test fixture for testing drag behaviour (`5ee8a28`)
+
+## Fixed
+
+- Correct broken `svg-dom` reference in `Cargo.toml` (``)
 
 # [Released]
 

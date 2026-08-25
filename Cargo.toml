@@ -24,13 +24,8 @@ exclude = [
 ]
 
 [dependencies]
-svg-dom = "0.2"
-
-# TEMPORARY: svg-dom's published 0.2.13 does not yet have Matrix2D::identity(), added locally alongside this
-# crate's own change to use it. Remove this patch once a new svg-dom version containing it is published, and bump
-# the version requirement above accordingly.
-[patch.crates-io]
-svg-dom = { path = "../svg-dom" }
+# 0.2.14 is the first version with Matrix2D::identity(), which this crate's tests use.
+svg-dom = "0.2.14"
 
 [dev-dependencies]
 wasm-bindgen = "0.2"
