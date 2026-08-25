@@ -518,3 +518,39 @@ fn dropping_a_dragged_node_onto_another_with_allow_policy_leaves_them_overlappin
     check_close(attr_f64(&rect_mover, "x")?, 300.0)?;
     check_close(attr_f64(&rect_mover, "y")?, 150.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A `PushClear` drop whose pre-drag centre coincides exactly with the blocker's own centre reverts to the
+/// pre-drag origin, rather than landing somewhere still overlapping.
+///
+/// mover and blocker start at the same origin (so `add_node` allows an overlapping starting position, and their
+/// centres coincide exactly), then mover is dragged a short distance that leaves it still overlapping blocker.
+/// `resolve_overlap`'s own doc comment (`src/scene/mod.rs`) works out that this specific case is numerically
+/// identical whether or not it is handled as an explicit fallback — the point of handling it explicitly is not to
+/// change this outcome but to stop it depending on an algebraic coincidence inside `nearest_clear_centre`. This
+/// test locks the outcome in either way, so a future change to either function that broke it would be caught here.
+#[wasm_bindgen_test]
+fn dropping_a_node_whose_pre_drag_centre_coincides_with_the_blockers_centre_reverts_the_drag() -> Result<(), String> {
+    let svg = make_svg("drag-degenerate", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let box_size = Size::new(80.0, 40.0);
+    let same_origin = Point::new(50.0, 50.0);
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    scene.add_node(same_origin, box_size, "blocker").map_err(|e| e.to_string())?;
+    let mover = scene.add_node(same_origin, box_size, "mover").map_err(|e| e.to_string())?;
+    scene.make_draggable(mover).map_err(|e| e.to_string())?;
+
+    let group_mover = nth_group("drag-degenerate", 1)?; // mover was added second.
+    let rect_mover = group_mover
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in mover's group")?;
+
+    // A short drag that leaves mover still overlapping blocker — mover and blocker started fully coincident.
+    dispatch_pointer_event(&group_mover, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_mover, "pointermove", 105, 105, 1)?;
+    dispatch_pointer_event(&group_mover, "pointerup", 105, 105, 1)?;
+
+    check_close(attr_f64(&rect_mover, "x")?, same_origin.x)?;
+    check_close(attr_f64(&rect_mover, "y")?, same_origin.y)
+}

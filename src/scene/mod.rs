@@ -208,7 +208,17 @@ impl SceneInner {
     /// When `id`'s rect overlaps more than one other node, resolves against whichever overlapping node's centre is
     /// nearest to `id`'s own current centre.
     /// This does not attempt to resolve every simultaneous overlap in one pass — a resolved position could still
-    /// overlap a different node than the one resolved against.
+    /// overlap a different node than the one resolved against. See [`CollisionPolicy::PushClear`]'s own doc comment
+    /// for why this is a best-effort correction, not a guarantee.
+    ///
+    /// If `pre_drag_origin`'s centre coincides exactly with the blocking node's own centre, there is no direction
+    /// to retreat along, and [`nearest_clear_centre`] returns the blocker's own centre unchanged. This is handled
+    /// explicitly by falling back to `pre_drag_origin` here, rather than converting that returned centre back to
+    /// an origin via `dragged`'s size and relying on the two being numerically identical — which they always are
+    /// in this case (`blocker_centre - dragged.size / 2 == pre_drag_origin` follows directly from
+    /// `pre_drag_centre == blocker_centre`), but only because of that algebraic identity, not because the
+    /// conversion was written with this case in mind. Spelling it out here keeps that guarantee from depending on
+    /// `nearest_clear_centre`'s internals never changing.
     ///
     /// Returns `None` if `id`'s current rect does not overlap any other node, or if `id` does not name a node in
     /// this scene.
@@ -230,6 +240,10 @@ impl SceneInner {
             origin: pre_drag_origin,
             size: dragged.size,
         });
+        if pre_drag_centre == box_centre(blocker) {
+            return Some(pre_drag_origin);
+        }
+
         let new_centre = nearest_clear_centre(blocker, dragged.size, pre_drag_centre, padding);
         Some(Point::new(
             new_centre.x - dragged.size.width / 2.0,
