@@ -40,6 +40,8 @@ pub fn make_svg(id: &str, viewport: Size, view_box: Size) -> SvgRoot {
 /// Dispatches a synthetic pointer event with `client_x`/`client_y`/`pointer_id` set, directly to `element`.
 ///
 /// Dispatched straight at `element` (not a descendant), so this does not rely on event bubbling.
+/// `button` is the primary button (`0`): left mouse, touch, or ordinary pen contact.
+/// See [`dispatch_pointer_event_with_button`] to dispatch with a different button.
 pub fn dispatch_pointer_event(
     element: &web_sys::Element,
     event_type: &str,
@@ -47,10 +49,27 @@ pub fn dispatch_pointer_event(
     client_y: i32,
     pointer_id: i32,
 ) -> Result<(), String> {
+    dispatch_pointer_event_with_button(element, event_type, client_x, client_y, pointer_id, 0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Same as [`dispatch_pointer_event`], but with an explicit `button`.
+///
+/// `button` follows the Pointer Events convention: `0` is the primary button (left mouse, touch, ordinary pen contact),
+/// `1` is the middle mouse button, `2` is the right mouse button (or a pen's barrel button).
+pub fn dispatch_pointer_event_with_button(
+    element: &web_sys::Element,
+    event_type: &str,
+    client_x: i32,
+    client_y: i32,
+    pointer_id: i32,
+    button: i16,
+) -> Result<(), String> {
     let init = web_sys::PointerEventInit::new();
     init.set_client_x(client_x);
     init.set_client_y(client_y);
     init.set_pointer_id(pointer_id);
+    init.set_button(button);
 
     let event = web_sys::PointerEvent::new_with_event_init_dict(event_type, &init).map_err(|e| format!("{e:?}"))?;
     element.dispatch_event(&event).map_err(|e| format!("{e:?}"))?;

@@ -8,7 +8,8 @@
 mod common;
 
 use common::{
-    attr_f64, check, check_close, dispatch_pointer_event, line_count, make_svg, marker_ids, nth_group, the_connector,
+    attr_f64, check, check_close, dispatch_pointer_event, dispatch_pointer_event_with_button, line_count, make_svg,
+    marker_ids, nth_group, the_connector,
 };
 use svg_dom::{
     SvgRoot,
@@ -178,15 +179,14 @@ fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), Str
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A second, unrelated pointer must not be able to drive an already-active drag, nor end it by lifting off.
+/// A second pointer touching the same element mid-drag must not steal the drag, drive it, or end it by lifting off.
 ///
-/// `pointermove`/`pointerup` reach a group's listener for any pointer, not only the one that started the drag —
-/// for example a second finger touching the same element mid-drag.
-/// Without checking the event's own `pointer_id` against the one recorded at `pointerdown`, pointer 2's move would
-/// reposition the box using pointer 1's drag state, and pointer 2's pointerup would end pointer 1's drag out from
-/// under it.
+/// Sends a real `pointerdown` for the second pointer too, not just a stray `pointermove`/`pointerup` — a `pointerdown`
+/// that doesn't check for an already-active drag would silently overwrite the first pointer's `DragStart`, after which
+/// pointer 2's own `pointermove` would then legitimately match and drive the box, since the `pointer_id` guards defined
+/// elsewhere only check against whichever `DragStart` is currently stored.
 #[wasm_bindgen_test]
-fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), String> {
+fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<(), String> {
     let svg = make_svg("multi-pointer", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
 
     let b_rect_before = Rect {
@@ -213,15 +213,16 @@ fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), St
     // Pointer 1 starts the drag.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
 
-    // An unrelated pointer 2 moves. Must not drive pointer 1's drag.
-    dispatch_pointer_event(&group_b, "pointermove", 500, 500, 2)?;
+    // Pointer 2 touches down on the same element, then moves. Must not steal or drive pointer 1's drag.
+    dispatch_pointer_event(&group_b, "pointerdown", 500, 500, 2)?;
+    dispatch_pointer_event(&group_b, "pointermove", 550, 550, 2)?;
     check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x)?;
     check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y)?;
 
     // Pointer 2 lifts off. Must not end pointer 1's still-active drag.
-    dispatch_pointer_event(&group_b, "pointerup", 500, 500, 2)?;
+    dispatch_pointer_event(&group_b, "pointerup", 550, 550, 2)?;
 
-    // Pointer 1 keeps moving. This only works if pointer 2's pointerup left pointer 1's drag state alone.
+    // Pointer 1 keeps moving and finishes the drag. This only works if pointer 2 never gained control of it.
     dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
 
@@ -231,6 +232,46 @@ fn a_second_pointer_cannot_drive_or_end_another_pointers_drag() -> Result<(), St
     };
     check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
     check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A non-primary pointerdown (a right or middle mouse button, `button() != 0`) must not start a drag.
+///
+/// Pointer Events use `0` for the primary button — left mouse, touch, or ordinary pen contact — `1` for the middle
+/// mouse button, and `2` for the right mouse button or a pen's barrel button.
+/// Right-clicking a node (for example, to open a context menu) must not put it into drag mode.
+#[wasm_bindgen_test]
+fn a_non_primary_button_pointerdown_does_not_start_a_drag() -> Result<(), String> {
+    let svg = make_svg("non-primary-button", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let b_rect_before = Rect {
+        origin: Point::new(200.0, 150.0),
+        size: Size::new(90.0, 50.0),
+    };
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
+
+    let group_b = nth_group("non-primary-button", 1)?;
+    let rect_b = group_b
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in B's group")?;
+
+    // A right-click (button 2) followed by a move under the same pointer_id must not move the box.
+    dispatch_pointer_event_with_button(&group_b, "pointerdown", 100, 100, 1, 2)?;
+    dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
+
+    check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -328,6 +328,14 @@ impl Scene {
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
             group.on_pointerdown(move |evt| {
+                // Ignores a pointerdown while a drag is already active, otherwise a second pointer touching this
+                // element mid-drag would silently steal it, overwriting the first pointer's `DragStart` before that
+                // pointer's own pointerup/pointercancel ever fires.
+                // Also ignores anything but the primary button — `button() == 0` is left mouse, touch, or ordinary pen
+                // contact; 1 is middle mouse and 2 is right mouse, neither of which should start a drag.
+                if drag_start.get().is_some() || evt.button() != 0 {
+                    return;
+                }
                 let Some(group) = group_weak.upgrade() else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
                 // Can't route the drag without a way to convert client pixels into this group's own coordinates.
