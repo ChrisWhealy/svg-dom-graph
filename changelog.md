@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement a `CollisionPolicy` rather than a hard-coded gap in `make_draggable()` (`b472e95`)
 - Validate `CollisionPolicy::PushClear::padding` (`e8a9593`)
 - Validate geometry passed to `Scene::add_node()` (`61099bd`)
+- Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (``)
 
 ## Fixed
 
@@ -24,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Update README (`9a7197d`)
 - Remove Node 20 deprecation warning in CI wasm-pack action (`4b316d9`)
 - Correct broken doc comment references (`4b7512a`)
-- Ensure draggable installation rollbacks to original state on failure (`ce1bde8`)
+- Ensure draggable installation rolls back to original state on failure (`ce1bde8`)
 - Edge case: Fix nondeterministic collision resolution for two, equidistant blockers (`09ddcb1`)
 
 ## Changed

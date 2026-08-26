@@ -498,12 +498,7 @@ fn dropping_a_dragged_node_onto_another_with_allow_policy_leaves_them_overlappin
         .add_node(Point::new(20.0, 150.0), box_size, "mover")
         .map_err(|e| e.to_string())?;
     scene
-        .make_draggable_with(
-            mover,
-            DragOptions {
-                collision: CollisionPolicy::Allow,
-            },
-        )
+        .make_draggable_with(mover, DragOptions::default().with_collision(CollisionPolicy::Allow))
         .map_err(|e| e.to_string())?;
 
     let group_mover = nth_group("drag-overlap-allow", 1)?; // mover was added second.
@@ -615,9 +610,7 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
     for padding in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         let result = scene.make_draggable_with(
             node,
-            DragOptions {
-                collision: CollisionPolicy::PushClear { padding },
-            },
+            DragOptions::default().with_collision(CollisionPolicy::PushClear { padding }),
         );
         check(
             matches!(result, Err(Error::InvalidCollisionPadding(_))),
@@ -631,9 +624,7 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
     scene
         .make_draggable_with(
             node,
-            DragOptions {
-                collision: CollisionPolicy::PushClear { padding: 0.0 },
-            },
+            DragOptions::default().with_collision(CollisionPolicy::PushClear { padding: 0.0 }),
         )
         .map_err(|e| e.to_string())?;
 
@@ -645,9 +636,7 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
     scene
         .make_draggable_with(
             other,
-            DragOptions {
-                collision: CollisionPolicy::PushClear { padding: 42.5 },
-            },
+            DragOptions::default().with_collision(CollisionPolicy::PushClear { padding: 42.5 }),
         )
         .map_err(|e| e.to_string())
 }

@@ -2,7 +2,11 @@
 /// What [`crate::scene::Scene::make_draggable_with`] does when a drop event leaves the dragged node overlapping
 /// some other node.
 /// Without this, this crate does not otherwise have any opinion on whether nodes may or may not overlap.
+///
+/// `#[non_exhaustive]` is used here because this type is expected to grow as future collision strategies are added.
+/// Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub enum CollisionPolicy {
     /// Leaves the dropped node exactly where the pointer released it, even if that overlaps another node.
     /// Choose this when overlapping nodes are a legitimate outcome for the caller's own graph.

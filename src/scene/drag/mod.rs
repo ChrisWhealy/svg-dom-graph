@@ -26,10 +26,34 @@ const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures the pointer-drag behaviour [`Scene::make_draggable_with`] wires up for one node.
+///
+/// In the same way that [`CollisionPolicy`] uses `#[non_exhaustive]`, it is also used here.
+///
+/// [`DragOptions`] is expected to grow as further drag configuration are added such as constraints, snapping and axis
+/// restriction etc.
+/// 
+/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision). 
+/// A struct literal does not compile outside this crate.
 #[derive(Debug, Clone, Copy, PartialEq)]
+#[non_exhaustive]
 pub struct DragOptions {
     /// What happens when a drop leaves the dragged node overlapping another one — see [`CollisionPolicy`].
     pub collision: CollisionPolicy,
+}
+
+impl DragOptions {
+    /// Returns `self` with `collision` set to `collision`.
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::{CollisionPolicy, DragOptions};
+    /// let options = DragOptions::default().with_collision(CollisionPolicy::Allow);
+    /// assert_eq!(options.collision, CollisionPolicy::Allow);
+    /// ```
+    #[must_use]
+    pub fn with_collision(mut self, collision: CollisionPolicy) -> Self {
+        self.collision = collision;
+        self
+    }
 }
 
 impl Default for DragOptions {
