@@ -21,10 +21,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove unecessary allocation from hot-path (`5e67a0f`)
 - Ensure `make_draggable()` can only be installed once per node (`9f5cf74`)
 - Doc only: Update README (`9a7197d`)
+- Remove Node 20 deprecation warning in CI wasm-pack action (``)
 
 ## Changed
 
-- Mark `draggable` as `true` only after listeners have been added successfully (``)
+- Mark `draggable` as `true` only after listeners have been added successfully (`8872d35`)
 
 # [Released]
 

@@ -55,12 +55,16 @@ jobs:
       - name: Clippy (demo-app, wasm32 target)
         run: cargo clippy -p svg-dom-graph-demo --target wasm32-unknown-unknown -- -D warnings
 
+      # jetli/wasm-pack-action was previously used here, but its last release (v0.4.0, 2022) declares a `node16`
+      # runtime, which GitHub has deprecated — every job using it now emits a dependency-maintenance warning even
+      # though CI itself stays green, and there is no newer release to bump to. taiki-e/install-action is actively
+      # maintained, already used elsewhere for other Rust tools, and installs wasm-pack straight from its own
+      # GitHub Releases — pinning the tool version here (rather than the action's own "latest") keeps the same
+      # reproducibility the previous pin gave. Bump deliberately when needed.
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
+        uses: taiki-e/install-action@v2
         with:
-          # Pinned rather than left at the action's default "latest" — see svg-dom's own CI for the full rationale
-          # (reproducibility, avoiding an extra release-lookup round-trip). Bump deliberately when needed.
-          version: "v0.15.0"
+          tool: wasm-pack@0.15.0
 
       - name: wasm-pack build (demo-app, the published web artifact)
         run: wasm-pack build demo-app --target web --out-dir ../pkg
@@ -98,10 +102,12 @@ jobs:
       # without this. Tracked upstream at https://github.com/actions/runner-images/issues/10015.
       - name: Allow unprivileged user namespaces (Firefox/Chromium sandbox needs this on Ubuntu 24.04 runners)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
+      # See the `wasm` job's own `Install wasm-pack` step for why this uses taiki-e/install-action rather than
+      # jetli/wasm-pack-action.
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
+        uses: taiki-e/install-action@v2
         with:
-          version: "v0.15.0"
+          tool: wasm-pack@0.15.0
       - name: Run the browser integration tests
         run: wasm-pack test --headless --${{ matrix.browser }}
 
@@ -119,12 +125,12 @@ jobs:
       # so it never attempts the AppArmor-dependent sandbox initialisation that workaround exists for — see
       # `tests/cdp/main.rs`'s own `# Why the browser is launched with sandbox(false)` doc section. The
       # `sudo sysctl` step `browser-tests` needs has no effect here and is deliberately omitted.
+      # See the `wasm` job's own `Install wasm-pack` step for why this uses taiki-e/install-action rather than
+      # jetli/wasm-pack-action.
       - name: Install wasm-pack
-        uses: jetli/wasm-pack-action@v0.4.0
+        uses: taiki-e/install-action@v2
         with:
-          # Pinned rather than left at the action's default "latest" — see the other `wasm-pack` steps above for
-          # the full rationale (reproducibility, avoiding an extra release-lookup round-trip).
-          version: "v0.15.0"
+          tool: wasm-pack@0.15.0
 
       - name: Chrome version (diagnostic — the runner image ships one, nothing to install)
         run: google-chrome --version || google-chrome-stable --version || chromium-browser --version

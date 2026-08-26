@@ -1,5 +1,5 @@
-use svg_dom::SvgNode;
 use super::DRAG_EVENT_TYPES;
+use svg_dom::SvgNode;
 
 /// Removes every listener [`Scene::make_draggable_with`] may have registered on `group`, unless [`disarm`](Self::disarm)
 /// is called first.
