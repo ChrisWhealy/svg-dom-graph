@@ -651,3 +651,63 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
         )
         .map_err(|e| e.to_string())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `add_node` rejects non-finite or non-positive geometry before drawing anything or touching the graph's model —
+/// a rejected call leaves the scene with no rendered `<g>` at all, and a later, valid `add_node` call still lands
+/// as the scene's first (and only) node, not a second one after some partially-added ghost.
+#[wasm_bindgen_test]
+fn add_node_rejects_invalid_geometry_before_touching_the_scene() -> Result<(), String> {
+    let svg = make_svg("add-node-geometry", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let box_size = Size::new(80.0, 40.0);
+    let origin = Point::new(20.0, 20.0);
+
+    let invalid_sizes = [
+        Size::new(-80.0, 40.0),             // negative width
+        Size::new(80.0, -40.0),             // negative height
+        Size::new(0.0, 40.0),               // zero width
+        Size::new(80.0, 0.0),               // zero height
+        Size::new(f64::NAN, 40.0),          // NaN width
+        Size::new(80.0, f64::NAN),          // NaN height
+        Size::new(f64::INFINITY, 40.0),     // +inf width
+        Size::new(f64::NEG_INFINITY, 40.0), // -inf width
+    ];
+    for size in invalid_sizes {
+        let result = scene.add_node(origin, size, "invalid");
+        check(
+            matches!(result, Err(Error::InvalidNodeGeometry(_))),
+            &format!("size {size:?} should have been rejected as Err(Error::InvalidNodeGeometry(_)), got {result:?}"),
+        )?;
+    }
+
+    let invalid_origins = [
+        Point::new(f64::NAN, 20.0),
+        Point::new(20.0, f64::NAN),
+        Point::new(f64::INFINITY, 20.0),
+        Point::new(20.0, f64::NEG_INFINITY),
+    ];
+    for invalid_origin in invalid_origins {
+        let result = scene.add_node(invalid_origin, box_size, "invalid");
+        check(
+            matches!(result, Err(Error::InvalidNodeGeometry(_))),
+            &format!(
+                "origin {invalid_origin:?} should have been rejected as Err(Error::InvalidNodeGeometry(_)), got {result:?}"
+            ),
+        )?;
+    }
+
+    // None of the rejected calls above touched the scene — no <g> has been rendered yet.
+    check(
+        nth_group("add-node-geometry", 0).is_err(),
+        "a rejected add_node call left a <g> rendered in the scene",
+    )?;
+
+    // A valid call afterwards still lands as the scene's first node.
+    scene.add_node(origin, box_size, "valid").map_err(|e| e.to_string())?;
+    nth_group("add-node-geometry", 0)?;
+    check(
+        nth_group("add-node-geometry", 1).is_err(),
+        "expected exactly one <g> after the rejected calls and one valid add_node call",
+    )
+}

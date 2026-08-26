@@ -323,9 +323,26 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node to the graph, draws its box and label, and returns its id.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite, or
+    /// if `size`'s width or height is not strictly positive — see that variant's own doc comment for why. Checked
+    /// before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it
+    /// was.
     pub fn add_node(&self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
-        let label = label.into();
         let rect = Rect { origin: top_left, size };
+        if !top_left.x.is_finite()
+            || !top_left.y.is_finite()
+            || !size.width.is_finite()
+            || !size.height.is_finite()
+            || size.width <= 0.0
+            || size.height <= 0.0
+        {
+            return Err(Error::InvalidNodeGeometry(rect));
+        }
+
+        let label = label.into();
         let mut inner = self.inner.borrow_mut();
         let handles = draw_box(&inner.svg, rect, &label)?;
         let id = inner.graph.add_node(rect, label);

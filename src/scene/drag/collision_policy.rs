@@ -8,7 +8,7 @@ pub enum CollisionPolicy {
     /// Choose this when overlapping nodes are a legitimate outcome for the caller's own graph.
     Allow,
     /// The dropped node is pushed back along the line between its pre-drag position and the centre of the about-to-be
-    /// overlapped node, plus a padding distance..
+    /// overlapped node, plus a padding distance.
     ///
     /// This can be useful if it is not appropriate for a node to be dropped at the `on_pointerup` location after
     /// a drag operation.

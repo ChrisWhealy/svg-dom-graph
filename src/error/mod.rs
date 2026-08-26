@@ -5,6 +5,7 @@
 
 use crate::model::{edge::EdgeId, node::NodeId};
 use std::fmt;
+use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An error from a `svg-dom-graph` operation.
@@ -13,10 +14,9 @@ use std::fmt;
 pub enum Error {
     /// An error from the underlying `svg-dom` library: DOM creation, an attribute write, and so on.
     Svg(svg_dom::Error),
-    /// A `NodeId` does not name a node in the `Scene` it was used with.
-    ///
-    /// This happens when a `NodeId` from one `Scene` is passed to a different `Scene` — each `Scene` recognises
-    /// only the ids its own node-adding methods produced.
+    /// The `NodeId` cannot be found in the `Scene`.
+    /// All `NodeId`'s are `Scene`-specific: a `NodeId` from scene `a` cannot be used in scene `b`. So this
+    /// error can occur if a `NodeId` is accidentally passed to some other scene.
     UnknownNode(NodeId),
     /// An `EdgeId` does not name an edge in the `Scene` it was used with.
     ///
@@ -44,6 +44,18 @@ pub enum Error {
     /// the resulting coordinates. Rejected before any other state changes, so the scene's existing nodes are left
     /// exactly as they were.
     InvalidCollisionPadding(f64),
+    /// `Scene::add_node` was given an origin or size that is not valid rectangle geometry.
+    ///
+    /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal, and a
+    /// non-finite coordinate or dimension would otherwise sit in the graph's model and contaminate every later
+    /// geometry calculation it takes part in — `box_centre`, `boundary_point`, overlap detection, connector
+    /// routing, and collision resolution all use it. `width` and `height` must also both be strictly positive: a
+    /// zero-sized node has no visible box, and gives connector routing no direction to point at it in
+    /// (`boundary_point` needs a well-defined interior to aim a ray at).
+    ///
+    /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly
+    /// as it was.
+    InvalidNodeGeometry(Rect),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -57,6 +69,12 @@ impl fmt::Display for Error {
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
             Error::InvalidCollisionPadding(padding) => {
                 write!(f, "collision padding {padding} is not a finite value >= 0.0")
+            },
+            Error::InvalidNodeGeometry(rect) => {
+                write!(
+                    f,
+                    "node geometry {rect:?} is invalid: origin and size must be finite, and width/height must both be > 0.0"
+                )
             },
         }
     }

@@ -71,6 +71,17 @@ fn invalid_collision_padding_display_names_the_rejected_value() {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_node_geometry_display_names_the_rejected_rect() {
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(-1.0, 1.0),
+    };
+    let message = Error::InvalidNodeGeometry(rect).to_string();
+    assert!(message.contains("-1"), "{message}");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn svg_error_display_passes_through_the_wrapped_message() {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();

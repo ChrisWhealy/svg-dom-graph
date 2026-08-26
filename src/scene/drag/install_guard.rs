@@ -1,14 +1,15 @@
 use super::DRAG_EVENT_TYPES;
 use svg_dom::SvgNode;
 
-/// Removes every listener [`Scene::make_draggable_with`] may have registered on `group`, unless [`disarm`](Self::disarm)
-/// is called first.
+/// Removes every listener [`Scene::make_draggable_with`] may have registered on `group`, unless
+/// [`disarm`](Self::disarm) is called first.
 ///
-/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) — `set_attr`, or any one of the
-/// four listener registrations — drops this still-armed, unwinding installation back to exactly the state it
-/// found `group` in. `SvgNode::remove_listeners` is a no-op for an event type nothing was registered for, so
-/// unconditionally removing all four here is always safe, whether registration got partway through or never
-/// started.
+/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) (Which may be `set_attr`, or any one of
+/// the four listener registrations) drops this `groups`'s still-armed, unwinding installation back to exactly its
+/// previous state.
+///
+/// Since `SvgNode::remove_listeners` is a no-op for an event type for which nothing has been registered,
+/// unconditionally removing all four here is always safe, irrespective of progress (including not started).
 pub struct InstallGuard {
     pub group: SvgNode,
     pub armed: bool,
