@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (`53eac9b`)
 - Add browser test for `pointercancel` (`43638f2`)
 - Implement `std::error::Error::source()` to expose underlying `svg-dom::Error` (`1c9548b`)
+- Doc only: Explain choice to implement `Copy` on `#[non_exhaustive]` `struct`s and `enum`s (``)
 
 ## Fixed
 

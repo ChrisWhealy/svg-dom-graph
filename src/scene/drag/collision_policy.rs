@@ -5,6 +5,13 @@
 ///
 /// `#[non_exhaustive]` is used here because this type is expected to grow as future collision strategies are added.
 /// Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
+///
+/// ***A note on `Copy`***
+///
+/// Deriving `Copy` is a deliberate compatibility commitment and has potential consequences for a non-exhaustive `enum`.
+/// Removing `Copy` later is a breaking change, so every field this type gains must also implement `Copy`.
+///
+/// See the same note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub enum CollisionPolicy {

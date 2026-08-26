@@ -34,6 +34,18 @@ const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", 
 ///
 /// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision).
 /// A struct literal does not compile outside this crate.
+///
+/// ***A note on `Copy`***
+///
+/// Deriving `Copy` is a deliberate compatibility commitment and has potential consequences for a non-exhaustive
+/// `struct`. Removing `Copy` later is a breaking change, so every field this type gains must also implement `Copy`.
+///
+/// This type is expected to grow to include drag features such as constraints, snapping and axis restriction.
+/// Since these can be represented using plain enums, numbers, points and rectangles, the choice to implement `Copy` is
+/// expected to hold.
+/// 
+/// A future field that needs something like a closure, an owned collection or a user-defined strategy object would
+/// force `Copy` to be dropped from this type and result in a breaking release.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub struct DragOptions {
