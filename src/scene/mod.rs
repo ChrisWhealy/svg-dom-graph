@@ -63,8 +63,8 @@ static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The squared distance between `a` and `b`.
 ///
-/// Squared, not the true distance, since every caller only compares distances against each other — skipping the
-/// square root avoids the extra work without changing which comparison wins.
+/// The distance squared, not the actual distance. Every caller only compares the square of the distance, so all
+/// comparisons can still function but without the expensive square root operation.
 fn distance_sq(a: Point, b: Point) -> f64 {
     let dx = a.x - b.x;
     let dy = a.y - b.y;
