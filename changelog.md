@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure `make_draggable()` can only be installed once per node (`9f5cf74`)
 - Doc only: Update README (`9a7197d`)
 - Remove Node 20 deprecation warning in CI wasm-pack action (`4b316d9`)
-- Correct broken doc comment references (``)
+- Correct broken doc comment references (`4b7512a`)
 
 ## Changed
 
