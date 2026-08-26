@@ -31,8 +31,8 @@ const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", 
 ///
 /// [`DragOptions`] is expected to grow as further drag configuration are added such as constraints, snapping and axis
 /// restriction etc.
-/// 
-/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision). 
+///
+/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision).
 /// A struct literal does not compile outside this crate.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]

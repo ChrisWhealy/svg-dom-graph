@@ -324,6 +324,65 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A `pointercancel` belonging to the drag's own active pointer ends that drag: a further move from the same
+/// pointer no longer moves the node, and starting an entirely new drag afterwards still works normally.
+///
+/// The complement to `an_unrelated_pointers_pointercancel_does_not_end_the_active_drag`, which only checks that an
+/// unrelated pointer's `pointercancel` is ignored — this checks the positive path `pointercancel` exists for:
+/// clearing `drag_start` for the pointer it actually belongs to.
+#[wasm_bindgen_test]
+fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> {
+    let svg = make_svg("pointer-cancel-active", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let b_rect_before = Rect {
+        origin: Point::new(200.0, 150.0),
+        size: Size::new(90.0, 50.0),
+    };
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(b_rect_before.origin, b_rect_before.size, "B")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
+
+    let group_b = nth_group("pointer-cancel-active", 0)?; // B was added first.
+    let rect_b = group_b
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in B's group")?;
+
+    // Start a drag with pointer 1, move it, then cancel that same pointer.
+    dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointercancel", 150, 130, 1)?;
+
+    let b_rect_cancelled = Rect {
+        origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
+        size: b_rect_before.size,
+    };
+    check_close(attr_f64(&rect_b, "x")?, b_rect_cancelled.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_cancelled.origin.y)?;
+
+    // Further movement from the same, now-cancelled pointer must not move the node any further.
+    dispatch_pointer_event(&group_b, "pointermove", 200, 200, 1)?;
+    check_close(attr_f64(&rect_b, "x")?, b_rect_cancelled.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_cancelled.origin.y)?;
+
+    // A brand new drag afterwards — even reusing the same pointer_id, since pointercancel released it — still
+    // works normally.
+    dispatch_pointer_event(&group_b, "pointerdown", 150, 130, 1)?;
+    dispatch_pointer_event(&group_b, "pointermove", 200, 160, 1)?;
+    dispatch_pointer_event(&group_b, "pointerup", 200, 160, 1)?;
+
+    let b_rect_after = Rect {
+        origin: Point::new(b_rect_cancelled.origin.x + 50.0, b_rect_cancelled.origin.y + 30.0),
+        size: b_rect_before.size,
+    };
+    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
+    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `add_edge(node, node)` must be rejected, not silently accepted as a zero-length connector.
 ///
 /// Both endpoints of a self-edge share one rectangle, so `boundary_point` (which returns a rectangle's own centre

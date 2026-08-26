@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement a `CollisionPolicy` rather than a hard-coded gap in `make_draggable()` (`b472e95`)
 - Validate `CollisionPolicy::PushClear::padding` (`e8a9593`)
 - Validate geometry passed to `Scene::add_node()` (`61099bd`)
-- Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (``)
+- Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (`53eac9b`)
+- Add browser test for `pointercancel` (``)
 
 ## Fixed
 
