@@ -25,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove Node 20 deprecation warning in CI wasm-pack action (`4b316d9`)
 - Correct broken doc comment references (`4b7512a`)
 - Ensure draggable installation rollbacks to original state on failure (`ce1bde8`)
-- Edge case: Fix nondeterministic collision resolution for two, equidistant blockers (``)
+- Edge case: Fix nondeterministic collision resolution for two, equidistant blockers (`09ddcb1`)
 
 ## Changed
 
