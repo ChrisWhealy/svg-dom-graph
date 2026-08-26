@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Validate geometry passed to `Scene::add_node()` (`61099bd`)
 - Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (`53eac9b`)
 - Add browser test for `pointercancel` (`43638f2`)
+- Implement `std::error::Error::source()` to expose underlying `svg-dom::Error` (``)
 
 ## Fixed
 
@@ -77,7 +78,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Initial commit (`04d5cd7`)
+- Initial commit (`eeb1f16`)
 - Add browser-level test layer and CI testing (`9eee6e7`)
 - `Scene` must genuinely own or bind to its SVG root (`dd421e8`)
 - `NodeId` identifies the graph to which it belongs (`2fe939e`)

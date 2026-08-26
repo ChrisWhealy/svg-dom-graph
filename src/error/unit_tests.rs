@@ -1,5 +1,5 @@
 use super::*;
-use crate::model::graph::Graph;
+use crate::{model::graph::Graph, test_support::check};
 use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -36,55 +36,79 @@ fn an_edge_id() -> EdgeId {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn unknown_node_display_says_it_does_not_belong_to_this_scene() {
+fn unknown_node_display_says_it_does_not_belong_to_this_scene() -> Result<(), String> {
     let message = Error::UnknownNode(a_node_id()).to_string();
-    assert!(message.contains("does not belong to this Scene"), "{message}");
+    check(message.contains("does not belong to this Scene"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn unknown_edge_display_says_it_does_not_belong_to_this_scene() {
+fn unknown_edge_display_says_it_does_not_belong_to_this_scene() -> Result<(), String> {
     let message = Error::UnknownEdge(an_edge_id()).to_string();
-    assert!(message.contains("does not belong to this Scene"), "{message}");
+    check(message.contains("does not belong to this Scene"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn self_loop_unsupported_display_says_it_is_not_yet_supported() {
+fn self_loop_unsupported_display_says_it_is_not_yet_supported() -> Result<(), String> {
     let message = Error::SelfLoopUnsupported(a_node_id()).to_string();
-    assert!(message.contains("not yet supported"), "{message}");
+    check(message.contains("not yet supported"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn already_draggable_display_says_the_node_is_already_draggable() {
+fn already_draggable_display_says_the_node_is_already_draggable() -> Result<(), String> {
     let message = Error::AlreadyDraggable(a_node_id()).to_string();
-    assert!(message.contains("already draggable"), "{message}");
+    check(message.contains("already draggable"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn invalid_collision_padding_display_names_the_rejected_value() {
+fn invalid_collision_padding_display_names_the_rejected_value() -> Result<(), String> {
     let message = Error::InvalidCollisionPadding(f64::NAN).to_string();
-    assert!(message.contains("NaN"), "{message}");
+    check(message.contains("NaN"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn invalid_node_geometry_display_names_the_rejected_rect() {
+fn invalid_node_geometry_display_names_the_rejected_rect() -> Result<(), String> {
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(-1.0, 1.0),
     };
     let message = Error::InvalidNodeGeometry(rect).to_string();
-    assert!(message.contains("-1"), "{message}");
+    check(message.contains("-1"), &message)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn svg_error_display_passes_through_the_wrapped_message() {
+fn svg_error_display_passes_through_the_wrapped_message() -> Result<(), String> {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();
     let wrapped = Error::from(svg_err).to_string();
-    assert_eq!(wrapped, expected);
+    check(wrapped == expected, &format!("expected {expected:?}, got {wrapped:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn svg_error_source_returns_the_wrapped_error() -> Result<(), String> {
+    use std::error::Error as _;
+    let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
+    let expected = svg_err.to_string();
+    let wrapped = Error::from(svg_err);
+    let source = wrapped
+        .source()
+        .ok_or("Error::Svg should expose its wrapped error via source()")?;
+    let got = source.to_string();
+    check(got == expected, &format!("expected {expected:?}, got {got:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_variant_that_does_not_wrap_another_error_has_no_source() -> Result<(), String> {
+    use std::error::Error as _;
+    check(
+        Error::UnknownNode(a_node_id()).source().is_none(),
+        "UnknownNode should not expose a source",
+    )
 }

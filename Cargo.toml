@@ -24,7 +24,8 @@ exclude = [
 ]
 
 [dependencies]
-# Must use a version >= 0.2.14. Matrix2D::identity() is used by tests.
+# 0.2.14 implements Matrix2D::identity() - used by tests.
+# 0.2.16 implements std::error::Error for svg-dom Error.
 svg-dom = "^0.2.14"
 
 [dev-dependencies]

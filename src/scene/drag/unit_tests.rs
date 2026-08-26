@@ -1,4 +1,5 @@
 use super::*;
+use crate::test_support::check;
 use svg_dom::{SvgRoot, root::utils::Size};
 use wasm_bindgen_test::*;
 
@@ -36,7 +37,7 @@ fn dispatch(element: &web_sys::Element, event_type: &str) {
 /// `make_draggable_with` can be left in partway through installation (some, not all, of `DRAG_EVENT_TYPES`
 /// registered) when a later registration fails and the `?` operator drops the guard on the way out.
 #[wasm_bindgen_test]
-fn dropping_an_armed_guard_removes_every_listener_it_covers() {
+fn dropping_an_armed_guard_removes_every_listener_it_covers() -> Result<(), String> {
     let svg = make_svg("install-guard-rollback");
     let group = svg.group().unwrap();
 
@@ -56,21 +57,21 @@ fn dropping_an_armed_guard_removes_every_listener_it_covers() {
     dispatch(group.as_element(), "pointerdown");
     dispatch(group.as_element(), "pointermove");
 
-    assert!(
+    check(
         !saw_pointerdown.get(),
-        "pointerdown listener still fired after an armed InstallGuard was dropped"
-    );
-    assert!(
+        "pointerdown listener still fired after an armed InstallGuard was dropped",
+    )?;
+    check(
         !saw_pointermove.get(),
-        "pointermove listener still fired after an armed InstallGuard was dropped"
-    );
+        "pointermove listener still fired after an armed InstallGuard was dropped",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The counterpart to the test above: a disarmed guard leaves its listeners installed, so a successful
 /// `make_draggable_with` call is not accidentally rolled back by its own cleanup on the way out.
 #[wasm_bindgen_test]
-fn disarming_a_guard_leaves_its_listeners_installed() {
+fn disarming_a_guard_leaves_its_listeners_installed() -> Result<(), String> {
     let svg = make_svg("install-guard-disarm");
     let group = svg.group().unwrap();
 
@@ -84,8 +85,8 @@ fn disarming_a_guard_leaves_its_listeners_installed() {
 
     dispatch(group.as_element(), "pointerdown");
 
-    assert!(
+    check(
         saw_pointerdown.get(),
-        "pointerdown listener was removed even though the guard was disarmed"
-    );
+        "pointerdown listener was removed even though the guard was disarmed",
+    )
 }

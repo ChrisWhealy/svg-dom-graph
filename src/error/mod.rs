@@ -80,7 +80,20 @@ impl fmt::Display for Error {
     }
 }
 
-impl std::error::Error for Error {}
+impl std::error::Error for Error {
+    /// Exposes the wrapped [`svg_dom::Error`] for [`Error::Svg`], so error-reporting tools and callers walking the
+    /// standard error chain can discover it. `Display` already forwards its message, but that alone does not help code
+    /// that specifically walks using `source()`.
+    ///
+    /// Every other variant originates in this crate itself, not from wrapping another error, so `None` is correct for
+    /// them.  This is the default this method would return without being overridden at all.
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::Svg(err) => Some(err),
+            _ => None,
+        }
+    }
+}
 
 impl From<svg_dom::Error> for Error {
     fn from(err: svg_dom::Error) -> Self {

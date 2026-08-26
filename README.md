@@ -79,3 +79,8 @@ This is the only way to catch, for example, a missing `prevent_default()` that l
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 Needs a local Chrome/Chromium binary.
+
+### Error Handling
+
+All tests in this crate follow the convention that they all return `Result<(), String>` rather than simply panicking if an assertion fails.
+This makes errors much easier to read by removing the console cluttering created by reams of stack trace output.
