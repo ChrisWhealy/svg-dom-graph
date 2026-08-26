@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Validate geometry passed to `Scene::add_node()` (`61099bd`)
 - Implement `#[non_exhaustive]` for `CollisionPolicy` and `DragOptions` to allow for future growth (`53eac9b`)
 - Add browser test for `pointercancel` (`43638f2`)
-- Implement `std::error::Error::source()` to expose underlying `svg-dom::Error` (``)
+- Implement `std::error::Error::source()` to expose underlying `svg-dom::Error` (`1c9548b`)
 
 ## Fixed
 
