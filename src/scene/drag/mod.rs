@@ -1,5 +1,10 @@
+pub(crate) mod collision_policy;
+mod install_guard;
+
 use super::{Scene, client_to_user_space};
 use crate::{error::Error, geometry::invert_matrix, model::node::NodeId};
+use collision_policy::CollisionPolicy;
+use install_guard::InstallGuard;
 use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::{Matrix2D, Point};
 
@@ -16,28 +21,10 @@ const GRAB_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -
 const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What [`Scene::make_draggable_with`] does when a drop leaves the dragged node overlapping another one.
-#[derive(Debug, Clone, Copy, PartialEq)]
-pub enum CollisionPolicy {
-    /// Leaves the dropped node exactly where the pointer released it, even if that overlaps another node.
-    ///
-    /// Choose this when overlapping nodes are a legitimate outcome for the caller's own graph — this crate does
-    /// not otherwise have an opinion on whether nodes may overlap.
-    Allow,
-    /// Pushes the dropped node back along the line from its pre-drag position, clear of whatever it overlaps.
-    ///
-    /// This is a best-effort, single-pass correction, not a guarantee that the node ends up clear of every other
-    /// node. It resolves against only the nearest node the drop overlaps — the corrected position can still
-    /// overlap a different node than the one it was pushed clear of. [`Scene::add_node`] also does not itself
-    /// reject an overlapping starting position, so a hard "nodes never overlap" invariant is not achievable by
-    /// this policy in general, only reduced.
-    PushClear {
-        /// Extra clearance kept between the dropped node and whatever it overlapped, in this scene's user-space
-        /// units, so the two end up with a visible gap rather than touching edges.
-        padding: f64,
-    },
-}
+/// The pointer event types [`Scene::make_draggable_with`] registers a listener for, in registration order.
+const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", "pointercancel"];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures the pointer-drag behaviour [`Scene::make_draggable_with`] wires up for one node.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub struct DragOptions {
@@ -126,6 +113,11 @@ impl Scene {
     /// Returns [`Error::InvalidCollisionPadding`] if `options.collision` is [`CollisionPolicy::PushClear`] with a
     /// `padding` that is not a finite value `>= 0.0`. Checked before anything else, so this scene's existing state
     /// is left untouched either way.
+    ///
+    /// If `set_attr` or any one of the four pointer-listener registrations this method makes fails partway
+    /// through — expected to be extremely rare, since it means the underlying `addEventListener` DOM call itself
+    /// failed — `id` is left exactly as it was before the call: not marked draggable, and with none of this
+    /// method's own listeners left dangling on it. A failed call can safely be retried.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
         if let CollisionPolicy::PushClear { padding } = options.collision {
             if !(padding.is_finite() && padding >= 0.0) {
@@ -134,14 +126,14 @@ impl Scene {
         }
 
         let group = {
-            let mut inner = self.inner.borrow_mut();
-            let handles = inner.node_handles.get_mut(&id).ok_or(Error::UnknownNode(id))?;
+            let inner = self.inner.borrow();
+            let handles = inner.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
             if handles.draggable {
                 return Err(Error::AlreadyDraggable(id));
             }
-            handles.draggable = true;
             handles.group.clone()
         };
+        let guard = InstallGuard::new(group.clone());
         group.set_attr("style", GRAB_STYLE)?;
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
@@ -284,6 +276,19 @@ impl Scene {
             })?;
         }
 
+        // Every listener registered successfully — nothing left for `guard` to roll back.
+        guard.disarm();
+        self.inner
+            .borrow_mut()
+            .node_handles
+            .get_mut(&id)
+            .ok_or(Error::UnknownNode(id))?
+            .draggable = true;
+
         Ok(())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

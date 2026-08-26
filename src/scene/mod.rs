@@ -9,7 +9,7 @@
 
 pub(crate) mod drag;
 
-pub use drag::{CollisionPolicy, DragOptions};
+pub use drag::{collision_policy::CollisionPolicy, DragOptions};
 
 use crate::{
     error::Error,

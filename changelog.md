@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add CDP integration tests to CI (`2da6a4f`)
 - Implement a `CollisionPolicy` rather than a hard-coded gap in `make_draggable()` (`b472e95`)
-- Validate `CollisionPolicy::PushClear::padding` (``)
+- Validate `CollisionPolicy::PushClear::padding` (`e8a9593`)
 
 ## Fixed
 
@@ -21,6 +21,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove unecessary allocation from hot-path (`5e67a0f`)
 - Ensure `make_draggable()` can only be installed once per node (`9f5cf74`)
 - Doc only: Update README (`9a7197d`)
+
+## Changed
+
+- Mark `draggable` as `true` only after listeners have been added successfully (``)
 
 # [Released]
 
@@ -72,4 +76,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `NodeId` identifies the graph to which it belongs (`2fe939e`)
 - Track the active `pointer_id` (`5733572`)
 - Add an MSRV 1.85 job to CI (`811cd64`)
-- Add `#[non_exhaustive]` to `Error` to allow for future error cases (``)
+- Add `#[non_exhaustive]` to `Error` to allow for future error cases (`388048e`)
