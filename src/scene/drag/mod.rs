@@ -43,7 +43,7 @@ const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", 
 /// This type is expected to grow to include drag features such as constraints, snapping and axis restriction.
 /// Since these can be represented using plain enums, numbers, points and rectangles, the choice to implement `Copy` is
 /// expected to hold.
-/// 
+///
 /// A future field that needs something like a closure, an owned collection or a user-defined strategy object would
 /// force `Copy` to be dropped from this type and result in a breaking release.
 #[derive(Debug, Clone, Copy, PartialEq)]
