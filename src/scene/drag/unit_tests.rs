@@ -36,7 +36,7 @@ fn dispatch(element: &web_sys::Element, event_type: &str) {
 /// `make_draggable_with` can be left in partway through installation (some, not all, of `DRAG_EVENT_TYPES`
 /// registered) when a later registration fails and the `?` operator drops the guard on the way out.
 #[wasm_bindgen_test]
-fn dropping_an_unarmed_guard_removes_every_listener_it_covers() {
+fn dropping_an_armed_guard_removes_every_listener_it_covers() {
     let svg = make_svg("install-guard-rollback");
     let group = svg.group().unwrap();
 
@@ -58,11 +58,11 @@ fn dropping_an_unarmed_guard_removes_every_listener_it_covers() {
 
     assert!(
         !saw_pointerdown.get(),
-        "pointerdown listener still fired after an unarmed InstallGuard was dropped"
+        "pointerdown listener still fired after an armed InstallGuard was dropped"
     );
     assert!(
         !saw_pointermove.get(),
-        "pointermove listener still fired after an unarmed InstallGuard was dropped"
+        "pointermove listener still fired after an armed InstallGuard was dropped"
     );
 }
 

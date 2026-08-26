@@ -54,8 +54,8 @@ struct DragStart {
     /// `pointerup` or `pointercancel` for a *different*, unrelated pointer can still reach this same listener. For
     /// example a second finger touching the same element mid-drag.
     ///
-    /// Checking this field against each such event's own id avoids the case in which a different pointer attempte to
-    /// drive or end another pointer's drag event.
+    /// Checking this field against each event's own id avoids the case in which a different pointer attempts to drive
+    /// or end another pointer's drag event.
     pointer_id: i32,
     pointer: Point,
     box_origin: Point,
@@ -134,7 +134,6 @@ impl Scene {
             handles.group.clone()
         };
         let guard = InstallGuard::new(group.clone());
-        group.set_attr("style", GRAB_STYLE)?;
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
 
@@ -148,7 +147,7 @@ impl Scene {
         // `inner` needs the same treatment one level up: `SceneInner::node_handles` owns `group`, so a strong `inner`
         // clone in this closure would create the cycle back through `SceneInner` itself (`SceneInner -> group ->
         // listener store -> closure -> SceneInner`), leaking the whole scene (plus everything it renders along  every
-        // listener on every node in that scene).  This would happend even after every external `Scene` handle has been
+        // listener on every node in that scene).  This would happen even after every external `Scene` handle has been
         // dropped.
         {
             let group_weak = group.downgrade();
@@ -276,7 +275,14 @@ impl Scene {
             })?;
         }
 
-        // Every listener registered successfully — nothing left for `guard` to roll back.
+        // Every listener has now registered successfully.
+        //
+        // Only now should the idle style be set, since a listener-registration failure above must leave `group` with no
+        // style change at all, matching `InstallGuard`'s own promise to unwind back to exactly the state it found
+        // `group` in.
+        //
+        // Since this function runs synchronously, no pointer event can interleave between this call and `disarm` below.
+        group.set_attr("style", GRAB_STYLE)?;
         guard.disarm();
         self.inner
             .borrow_mut()

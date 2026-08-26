@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.1.2] - 2026-08-25
+## [0.1.2] - 2026-08-26
 
 ## Added
 
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Update README (`9a7197d`)
 - Remove Node 20 deprecation warning in CI wasm-pack action (`4b316d9`)
 - Correct broken doc comment references (`4b7512a`)
+- Ensure draggable installation rollbacks to original state on failure (``)
 
 ## Changed
 

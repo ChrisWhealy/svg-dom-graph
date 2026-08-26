@@ -17,7 +17,7 @@ pub enum CollisionPolicy {
     ///
     /// This is a best-effort, single-pass correction, not a guarantee that the node ends up clear of every other node.
     /// It resolves against only the nearest node the drop overlaps. The corrected position might still overlap some
-    /// other node in the proiximity of the one that would be overlapped.
+    /// other node in the proximity of the one for which the overlap has been avoided.
     ///
     /// [`crate::scene::Scene::add_node`] also does not itself reject an overlapping starting position, so it is not
     /// possible to offer a "nodes never overlap" guarantee.  All we can say is that the likelihood of overlap is
