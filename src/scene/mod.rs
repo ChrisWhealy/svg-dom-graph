@@ -214,11 +214,13 @@ impl SceneInner {
     /// drag that produced its current, overlapping position — through the overlapped node's centre, stopping just
     /// clear of that node's boundary, plus `padding` user-space units.
     ///
-    /// When `id`'s rect overlaps more than one other node, resolves against whichever overlapping node's centre is
-    /// nearest to `id`'s own current centre.
-    /// This does not attempt to resolve every simultaneous overlap in one pass — a resolved position could still
-    /// overlap a different node than the one resolved against. See [`CollisionPolicy::PushClear`]'s own doc comment
-    /// for why this is a best-effort correction, not a guarantee.
+    /// When `id`'s rect overlaps more than one other node, it resolves against whichever overlapping node's centre is
+    /// nearest to `id`'s own current centre. Ties are broken by `NodeId`'s index, so the choice stays deterministic
+    /// rather than depending on `HashMap`'s unspecified iteration order.
+    ///
+    /// This does not attempt to resolve every simultaneous overlap in one pass: a resolved position could still overlap
+    /// a different node than the one resolved against. See [`CollisionPolicy::PushClear`]'s own doc comment for why
+    /// this is a best-effort correction, not a guarantee.
     ///
     /// If `pre_drag_origin`'s centre coincides exactly with the blocking node's own centre, there is no direction
     /// to retreat along, and [`nearest_clear_centre`] returns the blocker's own centre unchanged. This is handled
@@ -240,10 +242,14 @@ impl SceneInner {
             .nodes
             .iter()
             .filter(|&(&other_id, other)| other_id != id && rects_overlap(dragged, other.rect))
-            .map(|(_, other)| other.rect)
-            .min_by(|a, b| {
-                distance_sq(dragged_centre, box_centre(*a)).total_cmp(&distance_sq(dragged_centre, box_centre(*b)))
-            })?;
+            .min_by(|&(&id_a, a), &(&id_b, b)| {
+                // Ties (two blockers exactly equidistant from `dragged_centre`) break on `index`, so the choice is
+                // deterministic — otherwise it would depend on `HashMap`'s unspecified iteration order.
+                distance_sq(dragged_centre, box_centre(a.rect))
+                    .total_cmp(&distance_sq(dragged_centre, box_centre(b.rect)))
+                    .then_with(|| id_a.index.cmp(&id_b.index))
+            })
+            .map(|(_, other)| other.rect)?;
 
         let pre_drag_centre = box_centre(Rect {
             origin: pre_drag_origin,

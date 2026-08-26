@@ -711,3 +711,55 @@ fn add_node_rejects_invalid_geometry_before_touching_the_scene() -> Result<(), S
         "expected exactly one <g> after the rejected calls and one valid add_node call",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// When a drop overlaps two blockers exactly equidistant from its centre, `resolve_overlap` breaks the tie by
+/// choosing the lower `NodeId` index, not by `HashMap`'s unspecified iteration order.
+///
+/// `blocker_a` and `blocker_b` sit symmetrically either side of where `mover` lands, both exactly 40 user-space
+/// units from its centre and both genuinely overlapping it. Resolving against `blocker_a` (added first, the lower
+/// index) and against `blocker_b` (added second) push in opposite directions and land at different, hand-worked
+/// positions — (134, 150) vs (214, 150) — so this test can tell which one actually won, not just that the result
+/// avoided both.
+///
+/// Worked out with `blocker_a`'s own geometry, mirroring `overlap_resolution.rs`'s CDP test: mover starts at
+/// (20, 150), size (80, 40) — pre-drag centre (60, 170), on the same horizontal line as every box here, so the
+/// approach direction and every intermediate calculation stay purely horizontal (no diagonal rounding). `mover` is
+/// dragged so its centre lands at (300, 170) — origin (260, 150). `blocker_a`, size (80, 40), centred at
+/// (260, 170) (origin (220, 150)), inflated by half of `mover`'s size on every side spans x: [180, 340],
+/// y: [130, 210], centre (260, 170). The approach line from (60, 170) is horizontal, crossing that inflated
+/// boundary at x = 180. Padding (6.0, the default) pushes another 6 units left, to (174, 170) — `mover`'s final
+/// origin (174 - 40, 170 - 20) = (134, 150).
+#[wasm_bindgen_test]
+fn dropping_between_two_equidistant_blockers_resolves_to_the_lower_index() -> Result<(), String> {
+    let svg = make_svg("drag-tiebreak", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
+    let box_size = Size::new(80.0, 40.0);
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let mover = scene
+        .add_node(Point::new(20.0, 150.0), box_size, "mover")
+        .map_err(|e| e.to_string())?;
+    // Centre (260, 170) — 40 units left of where mover will land.
+    scene
+        .add_node(Point::new(220.0, 150.0), box_size, "blocker_a")
+        .map_err(|e| e.to_string())?;
+    // Centre (340, 170) — 40 units right of where mover will land. Equidistant from (300, 170) as blocker_a.
+    scene
+        .add_node(Point::new(300.0, 150.0), box_size, "blocker_b")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(mover).map_err(|e| e.to_string())?;
+
+    let group_mover = nth_group("drag-tiebreak", 0)?; // mover was added first.
+    let rect_mover = group_mover
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in mover's group")?;
+
+    // Drag mover's centre (60, 170) to (300, 170) — a 240-pixel move right, 1:1 client-pixel to user-space here.
+    dispatch_pointer_event(&group_mover, "pointerdown", 60, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointermove", 300, 170, 1)?;
+    dispatch_pointer_event(&group_mover, "pointerup", 300, 170, 1)?;
+
+    check_close(attr_f64(&rect_mover, "x")?, 134.0)?;
+    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+}
