@@ -3,10 +3,10 @@
 use super::{ConnectorHandle, Scene};
 use crate::{
     error::Error,
-    geometry::{elbow_path_into, elbow_vertices, straight_vertices},
+    geometry::{Route, elbow_path_into, elbow_vertices, straight_vertices},
     model::{edge::EdgeId, node::NodeId},
 };
-use svg_dom::root::utils::{Point, Rect};
+use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`Scene::add_edge_with`]/[`Scene::set_connector_type`] routes a connector.
@@ -102,7 +102,7 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 /// `from` and `to`.
 ///
 /// A [`ConnectorType::Straight`] connector has no corners to round, so its radius is always `0.0`.
-pub(crate) fn route(connector_type: ConnectorType, from: Rect, to: Rect) -> (Vec<Point>, f64) {
+pub(crate) fn route(connector_type: ConnectorType, from: Rect, to: Rect) -> (Route, f64) {
     match connector_type {
         ConnectorType::Straight => (straight_vertices(from, to), 0.0),
         ConnectorType::Elbow { corner_radius } => (elbow_vertices(from, to), corner_radius),

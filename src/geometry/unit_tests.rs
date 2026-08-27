@@ -11,6 +11,16 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds a [`Route`] from `points`, for comparison against `elbow_vertices`/`straight_vertices` in tests below.
+fn route(points: &[Point]) -> Route {
+    let mut route = Route::new();
+    for &point in points {
+        route.push(point);
+    }
+    route
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn boundary_point_straight_down_lands_on_bottom_edge() -> Result<(), String> {
     let rect = Rect {
@@ -72,7 +82,10 @@ fn straight_vertices_between_level_boxes_lands_on_each_sides_own_midpoint() -> R
         origin: Point::new(100.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(straight_vertices(a, b), vec![Point::new(40.0, 10.0), Point::new(100.0, 10.0)])
+    check_eq(
+        straight_vertices(a, b),
+        route(&[Point::new(40.0, 10.0), Point::new(100.0, 10.0)]),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -89,7 +102,10 @@ fn straight_vertices_between_diagonal_boxes_lands_on_each_rays_own_crossing() ->
         origin: Point::new(40.0, 100.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(straight_vertices(a, b), vec![Point::new(24.0, 20.0), Point::new(56.0, 100.0)])
+    check_eq(
+        straight_vertices(a, b),
+        route(&[Point::new(24.0, 20.0), Point::new(56.0, 100.0)]),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -322,7 +338,7 @@ fn elbow_vertices_between_level_boxes_is_one_straight_horizontal_segment() -> Re
         origin: Point::new(100.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(elbow_vertices(a, b), vec![Point::new(40.0, 10.0), Point::new(100.0, 10.0)])
+    check_eq(elbow_vertices(a, b), route(&[Point::new(40.0, 10.0), Point::new(100.0, 10.0)]))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -336,7 +352,7 @@ fn elbow_vertices_between_stacked_boxes_is_one_straight_vertical_segment() -> Re
         origin: Point::new(0.0, 100.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(elbow_vertices(a, b), vec![Point::new(20.0, 20.0), Point::new(20.0, 100.0)])
+    check_eq(elbow_vertices(a, b), route(&[Point::new(20.0, 20.0), Point::new(20.0, 100.0)]))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -356,7 +372,7 @@ fn elbow_vertices_between_mismatched_aspect_boxes_bends_once() -> Result<(), Str
     };
     check_eq(
         elbow_vertices(a, b),
-        vec![Point::new(20.0, 20.0), Point::new(110.0, 20.0), Point::new(110.0, 110.0)],
+        route(&[Point::new(20.0, 20.0), Point::new(110.0, 20.0), Point::new(110.0, 110.0)]),
     )
 }
 
@@ -375,12 +391,12 @@ fn elbow_vertices_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Re
     };
     check_eq(
         elbow_vertices(a, b),
-        vec![
+        route(&[
             Point::new(40.0, 10.0),
             Point::new(70.0, 10.0),
             Point::new(70.0, 60.0),
             Point::new(100.0, 60.0),
-        ],
+        ]),
     )
 }
 
