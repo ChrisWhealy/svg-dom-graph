@@ -62,6 +62,38 @@ fn boundary_point_at_own_centre_returns_the_centre() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn straight_vertices_between_level_boxes_lands_on_each_sides_own_midpoint() -> Result<(), String> {
+    // Level boxes: the ray and the elbow's side-midpoint rule agree here, since the offset is purely horizontal.
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(100.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(straight_vertices(a, b), vec![Point::new(40.0, 10.0), Point::new(100.0, 10.0)])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn straight_vertices_between_diagonal_boxes_lands_on_each_rays_own_crossing() -> Result<(), String> {
+    // Same rect and direction as `boundary_point_diagonal_exits_through_the_nearer_axis`: A's own end lands at the
+    // same (24, 20) that test already established.
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    // Centred at (60, 110), so the direction from A's centre (20, 10) is exactly (40, 100).
+    let b = Rect {
+        origin: Point::new(40.0, 100.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(straight_vertices(a, b), vec![Point::new(24.0, 20.0), Point::new(56.0, 100.0)])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn apply_matrix_identity_leaves_a_point_unchanged() -> Result<(), String> {
     check_eq(
         apply_matrix(Matrix2D::identity(), Point::new(12.0, 34.0)),
@@ -225,4 +257,177 @@ fn nearest_clear_centre_at_the_blockers_own_centre_returns_that_centre() -> Resu
     let previous_centre = Point::new(20.0, 10.0);
     let got = nearest_clear_centre(blocker, Size::new(10.0, 10.0), previous_centre, 6.0);
     check_eq(got, Point::new(20.0, 10.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn edge_anchor_straight_down_picks_the_south_side() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let (point, side) = edge_anchor(rect, Point::new(20.0, 1000.0));
+    check_eq(point, Point::new(20.0, 20.0))?;
+    check_eq(side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn edge_anchor_straight_right_picks_the_east_side() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let (point, side) = edge_anchor(rect, Point::new(1000.0, 10.0));
+    check_eq(point, Point::new(40.0, 10.0))?;
+    check_eq(side, Side::East)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn edge_anchor_diagonal_returns_the_chosen_sides_own_midpoint_not_boundary_points_crossing() -> Result<(), String> {
+    // Same rect and direction as `boundary_point_diagonal_exits_through_the_nearer_axis`.
+    // `boundary_point` exits at (24, 20) — the exact ray crossing.
+    // `edge_anchor` picks the same side (south, since the vertical half-extent is reached first) but anchors at
+    // that side's own midpoint, (20, 20), not the ray's crossing point.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let (point, side) = edge_anchor(rect, Point::new(60.0, 110.0));
+    check_eq(point, Point::new(20.0, 20.0))?;
+    check_eq(side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn edge_anchor_at_own_centre_returns_the_centre_and_east() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(10.0, 10.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let (point, side) = edge_anchor(rect, Point::new(30.0, 20.0));
+    check_eq(point, Point::new(30.0, 20.0))?;
+    check_eq(side, Side::East)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_vertices_between_level_boxes_is_one_straight_horizontal_segment() -> Result<(), String> {
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(100.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(elbow_vertices(a, b), vec![Point::new(40.0, 10.0), Point::new(100.0, 10.0)])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_vertices_between_stacked_boxes_is_one_straight_vertical_segment() -> Result<(), String> {
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(0.0, 100.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(elbow_vertices(a, b), vec![Point::new(20.0, 20.0), Point::new(20.0, 100.0)])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_vertices_between_mismatched_aspect_boxes_bends_once() -> Result<(), String> {
+    // A is taller than it is wide, so a 45-degree offset anchors it on its east side — see `edge_anchor`'s own
+    // aspect-aware rule.
+    // B is wider than it is tall, so the same offset anchors it on its north side instead.
+    // One horizontal exit and one vertical entry bend the route exactly once.
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(20.0, 40.0),
+    };
+    let b = Rect {
+        origin: Point::new(90.0, 110.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(
+        elbow_vertices(a, b),
+        vec![Point::new(20.0, 20.0), Point::new(110.0, 20.0), Point::new(110.0, 110.0)],
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_vertices_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Result<(), String> {
+    // Both boxes are the same size, so both ends anchor on the same axis (east/west here). Their anchors do not
+    // share a y coordinate, so the route jogs across the midpoint between them instead of bending only once.
+    let a = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let b = Rect {
+        origin: Point::new(100.0, 50.0),
+        size: Size::new(40.0, 20.0),
+    };
+    check_eq(
+        elbow_vertices(a, b),
+        vec![
+            Point::new(40.0, 10.0),
+            Point::new(70.0, 10.0),
+            Point::new(70.0, 60.0),
+            Point::new(100.0, 60.0),
+        ],
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_path_into_with_zero_radius_draws_a_sharp_polyline() -> Result<(), String> {
+    let vertices = [Point::new(0.0, 0.0), Point::new(10.0, 0.0), Point::new(10.0, 10.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 0.0, &mut d);
+    check_eq(d, "M 0 0 L 10 0 L 10 10".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_path_into_with_two_points_ignores_radius_and_draws_a_straight_line() -> Result<(), String> {
+    let vertices = [Point::new(0.0, 0.0), Point::new(10.0, 0.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 5.0, &mut d);
+    check_eq(d, "M 0 0 L 10 0".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_path_into_rounds_a_right_then_down_corner_with_a_clockwise_sweep() -> Result<(), String> {
+    let vertices = [Point::new(0.0, 0.0), Point::new(10.0, 0.0), Point::new(10.0, 10.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 2.0, &mut d);
+    check_eq(d, "M 0 0 L 8 0 A 2 2 0 0 1 10 2 L 10 10".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_path_into_rounds_a_down_then_left_corner_with_a_counter_clockwise_sweep() -> Result<(), String> {
+    let vertices = [Point::new(0.0, 0.0), Point::new(0.0, 10.0), Point::new(-10.0, 10.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 3.0, &mut d);
+    check_eq(d, "M 0 0 L 0 7 A 3 3 0 0 1 -3 10 L -10 10".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_path_into_shrinks_a_radius_that_would_overshoot_a_short_segment() -> Result<(), String> {
+    // Each segment here is only 4 units long.
+    // A requested radius of 10 shrinks to 2 — half of the shorter adjacent segment — instead of overshooting the
+    // far endpoint.
+    let vertices = [Point::new(0.0, 0.0), Point::new(4.0, 0.0), Point::new(4.0, 4.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 10.0, &mut d);
+    check_eq(d, "M 0 0 L 2 0 A 2 2 0 0 1 4 2 L 4 4".to_owned())
 }

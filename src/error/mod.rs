@@ -44,6 +44,13 @@ pub enum Error {
     /// the resulting coordinates. Rejected before any other state changes, so the scene's existing nodes are left
     /// exactly as they were.
     InvalidCollisionPadding(f64),
+    /// `Scene::add_edge_with` or `Scene::set_connector_type` was given a `ConnectorType::Elbow` corner radius that
+    /// is not a finite value `>= 0.0`.
+    ///
+    /// A negative radius has no meaning for a rounded corner, and a non-finite value (`NaN`, `+inf`, `-inf`)
+    /// propagates straight through `elbow_path_into` into the resulting path data. Rejected before any other
+    /// state changes, so the scene's existing nodes and edges are left exactly as they were.
+    InvalidCornerRadius(f64),
     /// `Scene::add_node` was given an origin or size that is not valid rectangle geometry.
     ///
     /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal, and a
@@ -69,6 +76,9 @@ impl fmt::Display for Error {
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
             Error::InvalidCollisionPadding(padding) => {
                 write!(f, "collision padding {padding} is not a finite value >= 0.0")
+            },
+            Error::InvalidCornerRadius(radius) => {
+                write!(f, "corner radius {radius} is not a finite value >= 0.0")
             },
             Error::InvalidNodeGeometry(rect) => {
                 write!(

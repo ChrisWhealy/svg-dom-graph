@@ -6,6 +6,7 @@
 [![Rust](https://img.shields.io/badge/rust-1.85.0%2B-blue.svg?maxAge=3600)](https://github.com/ChrisWhealy/svg-dom-graph)
 
 Draws graphs with dynamically re-routable connectors between SVG boxes.
+Each connector routes as a straight line or an elbow, with a configurable corner radius.
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 
 ***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
@@ -15,22 +16,27 @@ As a box is dragged, the connectors between it and its connected nodes are redra
 
 ## Initial Scope is Minimal
 
-This first demo keeps the scope minimal: a directed tree of three boxes (one root, two children), connected by arrow-tipped connectors.
+This first demo keeps the scope minimal: a directed tree of three boxes (one root, two children), connected by straight, arrow-tipped connectors.
 The two child boxes are draggable.
 Dragging one redraws its connector on every pointer-move, so it stays attached to the root.
+
+Each further feature this crate gains ships with its own small demo scene, alongside this first one.
+`index.html`'s "Connector routing" section is the first example: two boxes, a straight/elbow toggle, and a slider controlling the elbow's corner radius live.
+Drag a box to see it reroute.
+Increase the radius, then drag the boxes close together to see the rendered corners shrink to fit, with no error.
 
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
 | Module | Description |
 |---|---|
-| `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`), unit-tested in `unit_tests.rs` with a plain `cargo test`
+| `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, `make_draggable`, and `make_draggable_with` (configurable drop-collision handling — see `DragOptions`/`CollisionPolicy`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling — see `DragOptions`/`CollisionPolicy`)
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
-- `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">`, and builds a specific demo graph (a directed tree of three boxes, with the two children draggable).
+- `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">` and `<svg id="elbow-diagram">`, and builds each feature's own small demo scene: the directed tree, and the connector-routing demo.
 
 `cdp-test-fixture/` and `cdp-integration-test/` are a further pair of on-demand workspace members, used only by `cargo test -p cdp-integration-test` (see [Testing](#testing) below) — neither is built by a plain `cargo build`/`cargo test`.
 
@@ -41,7 +47,8 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 ```
 
 This builds the wasm package, then serves this directory.
-Open <http://127.0.0.1:8000/> in a browser, then drag either child box.
+Open <http://127.0.0.1:8000/> in a browser.
+Drag either child box in the first demo, or explore the connector-routing demo below it.
 
 ## Testing
 
@@ -57,7 +64,7 @@ wasm-pack test --headless --firefox
 
 Runs the browser integration tests in `tests/drag.rs`.
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences at the actual rendered DOM.
-They assert on the resulting `<rect>`, `<text>` ,`<line>` and `<marker>` attributes, not on the internal Rust state that produced them.
+They assert on the resulting `<rect>`, `<text>`, `<path>` and `<marker>` attributes, not on the internal Rust state that produced them.
 
 The test suite covers:
 
@@ -68,6 +75,7 @@ The test suite covers:
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
+- straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
 
 ```sh
 cargo test -p cdp-integration-test

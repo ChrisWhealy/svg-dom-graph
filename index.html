@@ -12,12 +12,38 @@
         border: 1px solid #ccc;
         background: #fafafa;
       }
+      .controls {
+        margin: 1rem 0;
+      }
+      .controls input[type="range"] {
+        width: 20rem;
+        vertical-align: middle;
+      }
+      .controls label {
+        margin-right: 1.5rem;
+      }
     </style>
   </head>
   <body>
     <h1>svg-dom-graph</h1>
-    <p>A minimal directed graph: three boxes connected by arrow-tipped connectors.</p>
+    <p>A minimal directed graph: three boxes connected by straight, arrow-tipped connectors.</p>
     <svg id="diagram" width="400" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"></svg>
+
+    <h2>Connector routing</h2>
+    <p>Drag either box. The connector reroutes automatically, whichever routing style is selected below.</p>
+    <p>Switch to "Elbow", then drag the slider to round its corners.
+      Increase the radius, then drag the boxes close together — the rendered corners shrink to fit, with no error.
+      Drag the boxes apart again, and the full requested radius returns automatically.</p>
+    <p class="controls">
+      <span>Connector type:</span>
+      <label><input type="radio" name="connector-type" id="connector-type-straight" value="straight" /> Straight</label>
+      <label><input type="radio" name="connector-type" id="connector-type-elbow" value="elbow" checked /> Elbow</label>
+    </p>
+    <p class="controls">
+      <label for="corner-radius">Corner radius: <output id="corner-radius-value">0</output></label><br />
+      <input type="range" id="corner-radius" min="0" max="80" step="1" value="0" />
+    </p>
+    <svg id="elbow-diagram" width="420" height="300" viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg"></svg>
 
     <script type="module">
       import init from "./pkg/svg_dom_graph_demo.js";

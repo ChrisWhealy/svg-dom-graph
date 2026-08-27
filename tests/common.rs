@@ -90,21 +90,47 @@ pub fn nth_group(container_id: &str, n: u32) -> Result<web_sys::Element, String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns the sole `<line>` child of `container`, as an `Element`.
+/// Returns the sole `<path>` connector child of `container`, as an `Element`.
 pub fn the_connector(container_id: &str) -> Result<web_sys::Element, String> {
-    let selector = format!("#{container_id} > line");
+    let selector = format!("#{container_id} > path");
     document()
         .query_selector(&selector)
         .map_err(|e| format!("{e:?}"))?
-        .ok_or_else(|| format!("no <line> connector found under #{container_id}"))
+        .ok_or_else(|| format!("no <path> connector found under #{container_id}"))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns how many `<line>` children `container` has.
-pub fn line_count(container_id: &str) -> Result<u32, String> {
-    let selector = format!("#{container_id} > line");
-    let lines = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
-    Ok(lines.length())
+/// Returns how many `<path>` connector children `container` has.
+pub fn connector_count(container_id: &str) -> Result<u32, String> {
+    let selector = format!("#{container_id} > path");
+    let paths = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+    Ok(paths.length())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Reads `element`'s `d` attribute.
+pub fn path_d(element: &web_sys::Element) -> Result<String, String> {
+    element.get_attribute("d").ok_or_else(|| "missing attribute \"d\"".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The final `x y` coordinate pair written into a path `d` string.
+///
+/// Every command this crate writes — `M`, `L`, and the arc endpoint of `A` — ends with an `x y` pair. The last two
+/// whitespace-separated tokens in `d` are always the path's own endpoint, regardless of which command wrote them.
+pub fn last_point_of_path(d: &str) -> Result<(f64, f64), String> {
+    let tokens: Vec<&str> = d.split_whitespace().collect();
+    let len = tokens.len();
+    if len < 2 {
+        return Err(format!("path data {d:?} has fewer than 2 tokens"));
+    }
+    let x = tokens[len - 2]
+        .parse::<f64>()
+        .map_err(|e| format!("path data {d:?}: last x token did not parse as f64: {e}"))?;
+    let y = tokens[len - 1]
+        .parse::<f64>()
+        .map_err(|e| format!("path data {d:?}: last y token did not parse as f64: {e}"))?;
+    Ok((x, y))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

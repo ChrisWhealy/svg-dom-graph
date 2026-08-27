@@ -3,6 +3,7 @@
 //! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`.
 //! This mirrors how `svg-dom` itself separates pure geometry math from its DOM-facing code.
 
+use std::fmt::Write as _;
 use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,6 +35,17 @@ pub fn boundary_point(rect: Rect, towards: Point) -> Point {
     let scale = scale_x.min(scale_y);
 
     Point::new(centre.x + dx * scale, centre.y + dy * scale)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The two endpoints of a straight connector between `from` and `to`.
+///
+/// Each end sits where the ray from that box's own centre toward the other box's centre crosses its boundary — see
+/// [`boundary_point`]. Always exactly two points, unlike [`elbow_vertices`].
+pub(crate) fn straight_vertices(from: Rect, to: Rect) -> Vec<Point> {
+    let from_centre = Point::new(from.origin.x + from.size.width / 2.0, from.origin.y + from.size.height / 2.0);
+    let to_centre = Point::new(to.origin.x + to.size.width / 2.0, to.origin.y + to.size.height / 2.0);
+    vec![boundary_point(from, to_centre), boundary_point(to, from_centre)]
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -128,6 +140,154 @@ pub(crate) fn nearest_clear_centre(blocker: Rect, moving_size: Size, previous_ce
     }
 
     Point::new(boundary.x + dx / dist * padding, boundary.y + dy / dist * padding)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One side of a box's boundary.
+///
+/// Anchors an elbowed connector so it leaves a box exactly horizontally or exactly vertically.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum Side {
+    North,
+    South,
+    East,
+    West,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// True for `East`/`West`.
+///
+/// These are the sides a horizontal connector segment leaves from or arrives at.
+pub(crate) fn is_horizontal(side: Side) -> bool {
+    matches!(side, Side::East | Side::West)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The midpoint of `rect`'s side nearest `towards`, and which side that is.
+///
+/// Picks the side the same way [`boundary_point`] picks its crossing point: whichever axis's offset from `rect`'s
+/// centre reaches that axis's half-extent first.
+///
+/// The result sits at the exact midpoint of the chosen side, not at the ray's own crossing point. This lets an elbowed
+/// connector leave a box travelling exactly horizontally or exactly vertically.
+///
+/// Returns `rect`'s centre and `Side::East` when `towards` is exactly the centre. Direction is undefined at zero
+/// distance.
+pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
+    let centre = Point::new(rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0);
+    let dx = towards.x - centre.x;
+    let dy = towards.y - centre.y;
+
+    if dx == 0.0 && dy == 0.0 {
+        return (centre, Side::East);
+    }
+
+    let half_w = rect.size.width / 2.0;
+    let half_h = rect.size.height / 2.0;
+
+    let scale_x = if dx == 0.0 { f64::INFINITY } else { half_w / dx.abs() };
+    let scale_y = if dy == 0.0 { f64::INFINITY } else { half_h / dy.abs() };
+
+    if scale_x <= scale_y {
+        let side = if dx >= 0.0 { Side::East } else { Side::West };
+        (Point::new(centre.x + half_w.copysign(dx), centre.y), side)
+    } else {
+        let side = if dy >= 0.0 { Side::South } else { Side::North };
+        (Point::new(centre.x, centre.y + half_h.copysign(dy)), side)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The corner points of an elbowed connector between `from` and `to`, before any corner rounding.
+///
+/// Anchors each end at [`edge_anchor`]'s midpoint. Joins the two anchors with horizontal and vertical segments
+/// only:
+///
+/// - Both anchors already share an x or y coordinate: one straight segment.
+/// - One anchor leaves horizontally and the other vertically: one bend.
+/// - Both anchors leave along the same axis but do not align: two bends, through the midpoint between them.
+///
+/// Returns 2 to 4 points. The first point is always `from`'s anchor. The last is always `to`'s.
+pub(crate) fn elbow_vertices(from: Rect, to: Rect) -> Vec<Point> {
+    let from_centre = Point::new(from.origin.x + from.size.width / 2.0, from.origin.y + from.size.height / 2.0);
+    let to_centre = Point::new(to.origin.x + to.size.width / 2.0, to.origin.y + to.size.height / 2.0);
+
+    let (start, start_side) = edge_anchor(from, to_centre);
+    let (end, end_side) = edge_anchor(to, from_centre);
+
+    let mut points = vec![start];
+    match (is_horizontal(start_side), is_horizontal(end_side)) {
+        (true, true) if start.y != end.y => {
+            let mid_x = (start.x + end.x) / 2.0;
+            points.push(Point::new(mid_x, start.y));
+            points.push(Point::new(mid_x, end.y));
+        },
+        (false, false) if start.x != end.x => {
+            let mid_y = (start.y + end.y) / 2.0;
+            points.push(Point::new(start.x, mid_y));
+            points.push(Point::new(end.x, mid_y));
+        },
+        (true, false) => points.push(Point::new(end.x, start.y)),
+        (false, true) => points.push(Point::new(start.x, end.y)),
+        _ => {},
+    }
+    points.push(end);
+    points.dedup();
+    points
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes `vertices` into `out` as an SVG path `d` string. Rounds every interior corner to `radius` units.
+///
+/// Clears `out` first, then writes into it. A caller can reuse one buffer across many redraws.
+///
+/// `radius` at or below zero draws every corner sharp: a plain polyline through `vertices`. A positive `radius`
+/// shrinks at each corner, so it never reaches past half of either segment meeting there. A tight elbow rounds
+/// less. It never passes its own endpoint or a neighbouring corner.
+///
+/// `vertices` must alternate a horizontal segment with a vertical one at every corner. This is exactly what
+/// [`elbow_vertices`] produces. Fewer than two points writes an empty string.
+pub(crate) fn elbow_path_into(vertices: &[Point], radius: f64, out: &mut String) {
+    out.clear();
+    if vertices.len() < 2 {
+        return;
+    }
+
+    let _ = write!(out, "M {} {}", vertices[0].x, vertices[0].y);
+
+    if radius <= 0.0 {
+        for p in &vertices[1..] {
+            let _ = write!(out, " L {} {}", p.x, p.y);
+        }
+        return;
+    }
+
+    for i in 1..vertices.len() - 1 {
+        let prev = vertices[i - 1];
+        let corner = vertices[i];
+        let next = vertices[i + 1];
+
+        let len_in = (corner.x - prev.x).hypot(corner.y - prev.y);
+        let len_out = (next.x - corner.x).hypot(next.y - corner.y);
+        let r = radius.min(len_in / 2.0).min(len_out / 2.0);
+
+        let in_x = (corner.x - prev.x) / len_in;
+        let in_y = (corner.y - prev.y) / len_in;
+        let out_x = (next.x - corner.x) / len_out;
+        let out_y = (next.y - corner.y) / len_out;
+
+        let before = Point::new(corner.x - in_x * r, corner.y - in_y * r);
+        let after = Point::new(corner.x + out_x * r, corner.y + out_y * r);
+        // All corners here turn a plain 90 degrees, so the arc is always the small one: large-arc-flag is always 0.
+        // The sweep flag alone then picks the turn's direction, via the sign of the incoming/outgoing cross product.
+        let sweep = if in_x * out_y - in_y * out_x > 0.0 { 1 } else { 0 };
+
+        let _ = write!(out, " L {} {}", before.x, before.y);
+        let _ = write!(out, " A {r} {r} 0 0 {sweep} {} {}", after.x, after.y);
+    }
+
+    let last = vertices[vertices.len() - 1];
+    let _ = write!(out, " L {} {}", last.x, last.y);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

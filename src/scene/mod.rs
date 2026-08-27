@@ -7,13 +7,15 @@
 //! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
 //! See the sibling `demo-app` crate for a small worked example.
 
+pub(crate) mod connector;
 pub(crate) mod drag;
 
+pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 
 use crate::{
     error::Error,
-    geometry::{apply_matrix, boundary_point, nearest_clear_centre, rects_overlap},
+    geometry::{apply_matrix, elbow_path_into, nearest_clear_centre, rects_overlap},
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
@@ -39,6 +41,16 @@ struct BoxHandles {
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
     /// pointer listeners rather than replacing the first — see [`crate::Error::AlreadyDraggable`].
     draggable: bool,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The rendered `<path>` for one edge's connector, plus the [`ConnectorType`] it was created with.
+///
+/// `redraw_edge` has no other way to learn an edge's connector type once a node move forces a reroute. This value
+/// must live alongside the rendered handle, not just get used once at creation.
+struct ConnectorHandle {
+    path: SvgNode,
+    connector_type: ConnectorType,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -139,7 +151,7 @@ struct SceneInner {
     svg: SvgRoot,
     graph: Graph,
     node_handles: HashMap<NodeId, BoxHandles>,
-    edge_handles: HashMap<EdgeId, SvgNode>,
+    edge_handles: HashMap<EdgeId, ConnectorHandle>,
     arrow: SvgMarker,
 }
 
@@ -184,7 +196,10 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Recomputes both endpoints of edge `id` from its current node positions, and rewrites its line coordinates.
+    /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
+    ///
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
+    /// event.
     ///
     /// # Errors
     ///
@@ -194,15 +209,10 @@ impl SceneInner {
         let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
         let from_rect = self.node_rect(edge.from)?;
         let to_rect = self.node_rect(edge.to)?;
-
-        let start = boundary_point(from_rect, box_centre(to_rect));
-        let end = boundary_point(to_rect, box_centre(from_rect));
-
-        let connector = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
-        connector.set_attr_display(scratch, "x1", start.x)?;
-        connector.set_attr_display(scratch, "y1", start.y)?;
-        connector.set_attr_display(scratch, "x2", end.x)?;
-        connector.set_attr_display(scratch, "y2", end.y)?;
+        let handle = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
+        let (vertices, radius) = connector::route(handle.connector_type, from_rect, to_rect);
+        elbow_path_into(&vertices, radius, scratch);
+        handle.path.set_attr("d", scratch)?;
 
         Ok(())
     }
@@ -353,39 +363,6 @@ impl Scene {
         let handles = draw_box(&inner.svg, rect, &label)?;
         let id = inner.graph.add_node(rect, label);
         inner.node_handles.insert(id, handles);
-        Ok(id)
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a directed edge to the graph, draws its arrow-tipped connector, and returns its id.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
-    /// `NodeId` from a different `Scene`.
-    /// Checked before the self-loop check below, so a foreign id is always reported as unknown, even if `from` and
-    /// `to` are the same foreign id.
-    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node in this scene — not yet
-    /// supported, see that variant's own doc comment for why.
-    pub fn add_edge(&self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
-        let mut inner = self.inner.borrow_mut();
-        let from_rect = inner.node_rect(from)?;
-        let to_rect = inner.node_rect(to)?;
-
-        if from == to {
-            return Err(Error::SelfLoopUnsupported(from));
-        }
-
-        let start = boundary_point(from_rect, box_centre(to_rect));
-        let end = boundary_point(to_rect, box_centre(from_rect));
-
-        let connector = inner.svg.line(start, end)?;
-        connector.set_stroke("#555")?;
-        connector.set_stroke_width(1.5)?;
-        connector.set_marker_end_ref(&inner.arrow)?;
-
-        let id = inner.graph.add_edge(from, to);
-        inner.edge_handles.insert(id, connector);
         Ok(id)
     }
 }

@@ -12,9 +12,10 @@
 //! - [`small_drag`] — a node can be dragged a small distance with no overlap involved.
 //! - [`overlap_resolution`] — dropping a node onto another pushes it back to the expected clear position.
 //! - [`text_selection`] — dragging a node does not leave its label text selected.
+//! - [`connectors`] — an elbowed connector's rendered path matches its hand-worked route, before and after a drag.
 //!
-//! Both drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once, served
-//! locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
+//! All four drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
+//! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
 //!
 //! # Why this lives in its own on-demand workspace member
 //!
@@ -30,6 +31,7 @@
 
 mod common;
 
+mod connectors;
 mod overlap_resolution;
 mod small_drag;
 mod text_selection;
