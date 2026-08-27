@@ -413,7 +413,7 @@ fn elbow_path_into_rounds_a_right_then_down_corner_with_a_clockwise_sweep() -> R
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn elbow_path_into_rounds_a_down_then_left_corner_with_a_counter_clockwise_sweep() -> Result<(), String> {
+fn elbow_path_into_rounds_a_down_then_left_corner_with_a_clockwise_sweep() -> Result<(), String> {
     let vertices = [Point::new(0.0, 0.0), Point::new(0.0, 10.0), Point::new(-10.0, 10.0)];
     let mut d = String::new();
     elbow_path_into(&vertices, 3.0, &mut d);

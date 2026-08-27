@@ -189,13 +189,15 @@ impl Scene {
     /// connector exactly as it was.
     ///
     /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
+    ///
+    /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails
+    /// once underway. The stored connector type is only updated once the new path has actually been written. A
+    /// failure here leaves `id` rendered and recorded exactly as it was before the call.
     pub fn set_connector_type(&self, id: EdgeId, connector_type: ConnectorType) -> Result<(), Error> {
         validate_connector_type(connector_type)?;
 
         let mut inner = self.inner.borrow_mut();
-        inner.edge_handles.get_mut(&id).ok_or(Error::UnknownEdge(id))?.connector_type = connector_type;
-
         let mut scratch = String::new();
-        inner.redraw_edge(id, &mut scratch)
+        inner.redraw_edge_with_type(id, connector_type, &mut scratch)
     }
 }

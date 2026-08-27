@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add elbowed connectors and demo server example (`5e82e4f`)
+- `Scene::add_edge()` now creates a sharp elbow connector by default. Add demo-app server example (`fef8894`)
+- `SceneInner::redraw_edge_with_type`, computes new route & writes the <path>'s d attribute only after `set_attr` succeeds (``)
 
 ## Changed
 

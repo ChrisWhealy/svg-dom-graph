@@ -218,6 +218,39 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Redraws edge `id` with `connector_type`, and only then records it as the edge's new type.
+    ///
+    /// Writing the path before committing the type keeps `Scene::set_connector_type` transactional. If the DOM
+    /// write fails partway through — [`SvgNode::set_attr`] can itself fail — the stored `connector_type` is left
+    /// exactly as it was. It never claims a route the rendered path does not actually show.
+    ///
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
+    /// event.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if
+    /// either of its endpoints no longer does.
+    fn redraw_edge_with_type(
+        &mut self,
+        id: EdgeId,
+        connector_type: ConnectorType,
+        scratch: &mut String,
+    ) -> Result<(), Error> {
+        let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
+        let from_rect = self.node_rect(edge.from)?;
+        let to_rect = self.node_rect(edge.to)?;
+        let (vertices, radius) = connector::route(connector_type, from_rect, to_rect);
+        elbow_path_into(&vertices, radius, scratch);
+
+        let handle = self.edge_handles.get_mut(&id).ok_or(Error::UnknownEdge(id))?;
+        handle.path.set_attr("d", scratch)?;
+        handle.connector_type = connector_type;
+
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// If node `id`'s current rect overlaps another node's, returns a corrected origin that resolves the overlap.
     ///
     /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the
