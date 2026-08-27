@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Correct doc comment about how elbow anchor choice is evaluated (`9b93829`)
 - Remove repeated `Vec<Point>` allocation during rerouting (`be7de3b`)
 - Doc only: Correct stale wording for `Error::SelfLoopUnsupported` (`a105825`)
-- Doc only: Improve wording of `edge_anchor()`'s functionality (``)
+- Doc only: Improve wording of `edge_anchor()`'s functionality (`84dcd77`)
 
 ## Added
 
