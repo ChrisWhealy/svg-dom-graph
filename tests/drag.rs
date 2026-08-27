@@ -946,6 +946,43 @@ fn set_connector_type_clamps_to_available_room_and_restores_when_room_returns() 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Scene::add_edge_with` rejects a non-finite or negative `ConnectorType::Elbow` corner radius, before drawing
+/// anything or touching the graph.
+///
+/// `Scene::set_connector_type`'s own equivalent test (`set_connector_type_rejects_a_non_finite_or_negative_radius`)
+/// already proves this validation rule against an existing edge. `add_edge_with` is the other public entry point that
+/// accepts a `ConnectorType`. It shares the same `validate_connector_type` call internally, but that internal sharing
+/// is not itself part of this crate's public contract. A direct test here guarantees `add_edge_with`'s own transactional
+/// behaviour — a rejected call draws no connector at all — independently of how its validation happens to be implemented.
+#[wasm_bindgen_test]
+fn add_edge_with_rejects_a_non_finite_or_negative_radius() -> Result<(), String> {
+    let svg = make_svg("add-edge-with-invalid-radius", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(80.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(140.0, 90.0), Size::new(80.0, 40.0), "B")
+        .map_err(|e| e.to_string())?;
+
+    for corner_radius in [-1.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        let options = ConnectorOptions::default().with_connector_type(ConnectorType::Elbow { corner_radius });
+        let result = scene.add_edge_with(a, b, options);
+        check(
+            matches!(result, Err(Error::InvalidCornerRadius(_))),
+            &format!(
+                "radius {corner_radius} should have been rejected as Err(Error::InvalidCornerRadius(_)), got {result:?}"
+            ),
+        )?;
+    }
+
+    check(
+        connector_count("add-edge-with-invalid-radius")? == 0,
+        "add_edge_with drew a connector despite every call returning Err",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `ConnectorType::Straight` draws the crate's original, pre-elbow connector style: a straight line between the
 /// two boxes' own ray/boundary crossings, not an elbowed route.
 ///
