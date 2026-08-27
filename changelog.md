@@ -16,7 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add native arc-direction test (`475f641`)
-- Add public-API regression test for `add_edge_with()` (``)
+- Add public-API regression test for `add_edge_with()` (`59482a9`)
+
+## Changed
+
+- Refactor drag test module (``)
 
 # [Released]
 

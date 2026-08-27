@@ -62,9 +62,15 @@ Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`, `src/model
 wasm-pack test --headless --firefox
 ```
 
-Runs the browser integration tests in `tests/drag.rs`.
-These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences at the actual rendered DOM.
-They assert on the resulting `<rect>`, `<text>`, `<path>` and `<marker>` attributes, not on the internal Rust state that produced them.
+Runs the browser integration tests in `tests/drag/`, split by category:
+
+* `drag_basics.rs`
+* `collision_resolution.rs`
+* `scene_validation.rs`
+* `connectors.rs`
+
+These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
+They make assertions about attributes of the resulting `<rect>`, `<text>`, `<path>` and `<marker>` elements, not on the internal Rust state that produced them.
 
 The test suite covers:
 

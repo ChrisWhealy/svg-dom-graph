@@ -1,6 +1,6 @@
 //! Chrome-DevTools-Protocol (CDP) integration tests for `svg-dom-graph`, in one Cargo test binary.
 //!
-//! `wasm-bindgen-test`'s browser suite (`tests/drag.rs`, run via `wasm-pack test`) dispatches synthetic `PointerEvent`s
+//! `wasm-bindgen-test`'s browser suite (`tests/drag/`, run via `wasm-pack test`) dispatches synthetic `PointerEvent`s
 //! straight at a target element via `EventTarget::dispatchEvent`. This can prove that drag *mathematics* is correct,
 //! but it entirely bypasses the browser's own hit-testing, pointer capture and default-action machinery. It cannot
 //! prove real mouse input actually reaches the drag handlers the way a user's mouse does.
