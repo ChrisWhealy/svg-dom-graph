@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.1] - 2026-08-27
 
 ## Fixed
@@ -23,8 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Refactor drag test module (`88e0450`)
-
-# [Released]
 
 ## [0.2.0] - 2026-08-27
 
