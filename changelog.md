@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add elbowed connectors and demo server example (``)
+- Add elbowed connectors and demo server example (`5e82e4f`)
 
 # [Released]
 
