@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add elbowed connectors and demo server example (`5e82e4f`)
 
+## Changed
+
+- Bump `svg-dom` version requirement to `^0.2.16` (``)
+
 # [Released]
 
 ## [0.1.2] - 2026-08-26

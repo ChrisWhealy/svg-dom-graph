@@ -26,7 +26,7 @@ exclude = [
 [dependencies]
 # 0.2.14 implements Matrix2D::identity() - used by tests.
 # 0.2.16 implements std::error::Error for svg-dom Error.
-svg-dom = "^0.2.14"
+svg-dom = "^0.2.16"
 
 [dev-dependencies]
 wasm-bindgen = "0.2"
