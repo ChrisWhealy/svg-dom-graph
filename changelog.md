@@ -6,18 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.0] - 2026-08-27
 
 ## Added
 
 - `Scene::add_edge()` now creates a sharp elbow connector by default. Add demo-app server example (`fef8894`)
-- `SceneInner::redraw_edge_with_type`, computes new route & writes the <path>'s d attribute only after `set_attr` succeeds (``)
+- `SceneInner::redraw_edge_with_type`, computes new route & writes the <path>'s d attribute only after `set_attr` succeeds (`8e9f97d`)
 
 ## Changed
 
 - Bump `svg-dom` version requirement to `^0.2.16` (`13ceef1`)
-
-# [Released]
 
 ## [0.1.2] - 2026-08-26
 
