@@ -30,8 +30,8 @@ pub enum ConnectorType {
     Straight,
     /// Horizontal and vertical segments only, joined at 90-degree corners.
     ///
-    /// Each end leaves from the midpoint of whichever horizontal or vertical side of its box sits closest to the
-    /// other box.
+    /// Each end is anchored at the midpoint of the horizontal or vertical side intersected first by a ray from that
+    /// box's centre toward the other box's centre.
     Elbow {
         /// How far to round each corner, in this scene's user-space units. `0.0` draws a sharp corner.
         ///

@@ -9,7 +9,7 @@ default-members = ["."]
 [package]
 authors = ["Chris Whealy <chris@whealy.com>"]
 name = "svg-dom-graph"
-version = "0.2.0"
+version = "0.2.1"
 edition = "2024"
 rust-version = "1.85"
 description = "Plot SVG graphs using svg-dom"
