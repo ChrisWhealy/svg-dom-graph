@@ -428,6 +428,19 @@ fn elbow_path_into_rounds_a_right_then_down_corner_with_a_clockwise_sweep() -> R
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The clockwise case's own mirror image: the same right-then-turn corner, but turning up instead of down.
+/// A regression in the cross-product/sweep calculation now fails a plain `cargo test`.
+/// The CDP suite's own rounded connector already exercises both sweep directions, but only as a side effect of
+/// its own scenario, not as its direct purpose.
+#[test]
+fn elbow_path_into_rounds_a_right_then_up_corner_with_a_counter_clockwise_sweep() -> Result<(), String> {
+    let vertices = [Point::new(0.0, 0.0), Point::new(10.0, 0.0), Point::new(10.0, -10.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 2.0, &mut d);
+    check_eq(d, "M 0 0 L 8 0 A 2 2 0 0 0 10 -2 L 10 -10".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn elbow_path_into_rounds_a_down_then_left_corner_with_a_clockwise_sweep() -> Result<(), String> {
     let vertices = [Point::new(0.0, 0.0), Point::new(0.0, 10.0), Point::new(-10.0, 10.0)];

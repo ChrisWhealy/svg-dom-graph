@@ -287,7 +287,7 @@ pub(crate) fn elbow_vertices(from: Rect, to: Rect) -> Route {
 
     let mut route = Route::new();
     route.push(start);
-    
+
     match (is_horizontal(start_side), is_horizontal(end_side)) {
         (true, true) if start.y != end.y => {
             let mid_x = (start.x + end.x) / 2.0;
