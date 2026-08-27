@@ -24,11 +24,12 @@ pub enum Error {
     UnknownEdge(EdgeId),
     /// `Scene::add_edge` was asked to connect a node to itself.
     ///
-    /// Not supported yet: both ends of a self-edge share one rectangle, so both endpoints resolve to that
-    /// rectangle's own centre — `geometry::boundary_point` returns the centre unchanged when the target point is
-    /// already the centre. The result would be a zero-length line, not a real connector. Rejecting the call now,
-    /// rather than silently returning an `EdgeId` for a connector nobody can see, keeps room to add real loop-edge
-    /// routing later as an additive relaxation of this same method.
+    /// Having both endpoints connect to the same node is not supported yet.
+    ///
+    /// Rejecting the call now keeps room to add real loop-edge routing later, as an additive relaxation of this same
+    /// method.
+    ///
+    /// Silently returning an `EdgeId` for a connector nobody can see would be worse.
     SelfLoopUnsupported(NodeId),
     /// `Scene::make_draggable`/`Scene::make_draggable_with` was called more than once for the same node.
     ///

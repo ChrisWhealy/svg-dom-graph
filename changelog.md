@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Doc only: Correct doc comment about how elbow anchor choice is evaluated (`9b93829`)
-- Remove repeated `Vec<Point>` allocation during rerouting (``)
+- Remove repeated `Vec<Point>` allocation during rerouting (`be7de3b`)
+- Doc only: Correct stale wording for `Error::SelfLoopUnsupported` (``)
 
 ## Added
 
@@ -20,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactor drag test module (``)
+- Refactor drag test module (`88e0450`)
 
 # [Released]
 
