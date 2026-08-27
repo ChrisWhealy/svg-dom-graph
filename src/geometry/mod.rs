@@ -233,7 +233,8 @@ pub(crate) fn is_horizontal(side: Side) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The midpoint of `rect`'s side nearest `towards`, and which side that is.
+/// The midpoint of the side of `rect` first intersected by a ray from its centre towards towards, and which side that
+/// is.
 ///
 /// Picks the side the same way [`boundary_point`] picks its crossing point: whichever axis's offset from `rect`'s
 /// centre reaches that axis's half-extent first.

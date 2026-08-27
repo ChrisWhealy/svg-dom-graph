@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Correct doc comment about how elbow anchor choice is evaluated (`9b93829`)
 - Remove repeated `Vec<Point>` allocation during rerouting (`be7de3b`)
 - Doc only: Correct stale wording for `Error::SelfLoopUnsupported` (`a105825`)
+- Doc only: Improve wording of `edge_anchor()`'s functionality (``)
 
 ## Added
 
@@ -30,6 +31,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - `Scene::add_edge()` now creates a sharp elbow connector by default. Add demo-app server example (`fef8894`)
+
+## Fixed
+
 - `SceneInner::redraw_edge_with_type`, computes new route & writes the <path>'s d attribute only after `set_attr` succeeds (`8e9f97d`)
 
 ## Changed
