@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.2] - 2026-09-12
 
 ## Added
@@ -19,8 +21,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Correct description of rendering difference between `Some(EdgeAnchors(1))` and `None` (`caaabc4`)
 - Doc only; Clarify doc comments for `EdgeAnchors` (`90f848d`)
 - Doc only: Explain the special meaning of `EdgeAnchors(1)` (``)
-
-# [Released]
+- Doc only: Update stale docs and correct typos (`fa4e1f7`)
+- Doc only: Update coincident-centre behaviour (`7d88992`)
+- Doc only: Correct more typos (`b122aaf`)
 
 ## [0.2.1] - 2026-08-27
 
@@ -33,9 +36,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Correct `InvalidEdgeAnchors` error message (`33795f4`)
 - Doc only: Correct stale documentation (`bdb5010`)
 - Doc only: Doc comment correction (`005a37c`)
-- Doc only: Update stale docs and correct typos (`fa4e1f7`)
-- Doc only: Update coincident-centre behaviour (`7d88992`)
-- Doc only: Correct more typos (`b122aaf`)
 
 ## Added
 
