@@ -2,14 +2,23 @@
 //! candidate, and live redraws via `Scene::set_edge_anchors`.
 
 use crate::common::{
-    check, check_close, connector_count, first_point_of_path, make_svg, nth_connector, nth_group, path_d, the_connector,
+    check, check_close, connector_count, first_point_of_path, last_point_of_path, make_svg, nth_connector, nth_group,
+    path_d, the_connector,
 };
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{EdgeAnchors, NodeOptions, Scene},
+    scene::{ConnectorOptions, ConnectorType, EdgeAnchors, NodeOptions, Scene},
 };
 use wasm_bindgen_test::wasm_bindgen_test;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `true` if `d` is exactly a straight, unrounded two-point path: `M x y L x y`, no elbow bends and no rounded-corner
+/// `A` commands.
+fn is_straight_two_point_path(d: &str) -> bool {
+    let tokens: Vec<&str> = d.split_whitespace().collect();
+    tokens.len() == 6 && tokens[0] == "M" && tokens[3] == "L"
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Scene::add_node_with` rejects `Some(EdgeAnchors(0))` before drawing anything or touching the graph's model — a
@@ -99,14 +108,13 @@ fn set_edge_anchors_rejects_an_unknown_node() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// For an elbow connector specifically, `Some(EdgeAnchors(1))` renders in a way that is similar, but not identical, to
-/// `None`.  If EdgeConnectors is `Noen`, then the straight connector always binds to the centre of the node.  This in
-/// turn means that the location of the connector along the node's edge varies based on the straight line between the
-/// centres of the two nodes.
+/// For an elbow connector specifically, `Some(EdgeAnchors(1))` renders identically to `None`: one fixing point is
+/// always the crossed side's own midpoint, exactly the default rule `edge_anchor` already applies.
 ///
-/// For `Some(EdgeAnchors(1))` however, a straight connector will always anchors to the centre of the node's edge. This
-/// is visually slightly different from the EdgeConnectors `None` case. See the "Fixing Points" demo to see the rendered
-/// difference.
+/// This does *not* generalise to a straight connector, whose default (`boundary_point`) is the continuous
+/// ray/boundary crossing rather than a side's midpoint — `EdgeAnchors(1)` still snaps a straight connector onto
+/// that midpoint, which usually differs from where the unsnapped ray would have landed. This test uses
+/// `add_edge`, whose default connector is an elbow, specifically to exercise the elbow case.
 #[wasm_bindgen_test]
 fn edge_anchors_one_matches_default_elbow_midpoint() -> Result<(), String> {
     let default_svg = make_svg("edge-anchors-one-default", Size::new(300.0, 300.0), Size::new(300.0, 300.0));
@@ -198,4 +206,68 @@ fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() ->
         connector_count("edge-anchors-live")? == 2,
         "set_edge_anchors changed how many connectors are rendered",
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `EdgeAnchors` on a [`ConnectorType::Straight`] connector, not just an elbow — the elbow-only equivalence in
+/// [`edge_anchors_one_matches_default_elbow_midpoint`] does not generalise to `Straight`, whose own default anchor
+/// (`None`) is the continuous ray/boundary crossing, not a side's midpoint. This is the distinct `straight_anchor`
+/// branch of `connector::route`, so it needs its own coverage rather than relying on the elbow tests above.
+///
+/// # Expected anchors, worked by hand
+///
+/// `A` is `(0, 0)`, size `(40, 20)` — centre `(20, 10)`, half-extents `(20, 10)`.
+/// `B` is `(60, 100)`, size `(40, 20)` — centre `(80, 110)`.
+///
+/// From `A` toward `B`: `dx = 60`, `dy = 100`. `half_h / |dy| = 0.1` is smaller than `half_w / |dx| = 0.333`, so the
+/// ray leaves through `A`'s south side, at `y = 20`, crossing at `x = 20 + 60 * 0.1 = 26`.
+///
+/// With `None` (the default), the connector starts at that exact crossing: `(26, 20)`. With `EdgeAnchors(3)`, `A`'s
+/// south side offers three candidates at `x = 10, 20, 30`; `26` snaps to the nearest, `30`. So `(26, 20)` for
+/// `None` and `(30, 20)` for `EdgeAnchors(3)` are genuinely different points, not the same one reached two ways.
+///
+/// `B` keeps `None` throughout, so its own end of the connector — `(74, 100)`, by the same ray/boundary
+/// arithmetic — never moves. This isolates the change to the endpoint whose `EdgeAnchors` was actually
+/// reconfigured.
+#[wasm_bindgen_test]
+fn set_edge_anchors_snaps_a_straight_connector_off_its_boundary_crossing() -> Result<(), String> {
+    let svg = make_svg("edge-anchors-straight", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(40.0, 20.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(60.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    scene
+        .add_edge_with(a, b, ConnectorOptions::default().with_connector_type(ConnectorType::Straight))
+        .map_err(|e| e.to_string())?;
+
+    let connector = the_connector("edge-anchors-straight")?;
+    let before_d = path_d(&connector)?;
+    check(
+        is_straight_two_point_path(&before_d),
+        &format!("expected a straight two-point path before set_edge_anchors, got {before_d:?}"),
+    )?;
+    let (before_x, before_y) = first_point_of_path(&before_d)?;
+    let (before_end_x, before_end_y) = last_point_of_path(&before_d)?;
+    check_close(before_x, 26.0)?;
+    check_close(before_y, 20.0)?;
+    check_close(before_end_x, 74.0)?;
+    check_close(before_end_y, 100.0)?;
+
+    scene.set_edge_anchors(a, Some(EdgeAnchors(3))).map_err(|e| e.to_string())?;
+
+    let after_d = path_d(&connector)?;
+    check(
+        is_straight_two_point_path(&after_d),
+        &format!("expected set_edge_anchors to leave a straight two-point path, got {after_d:?}"),
+    )?;
+    let (after_x, after_y) = first_point_of_path(&after_d)?;
+    let (after_end_x, after_end_y) = last_point_of_path(&after_d)?;
+    check_close(after_x, 30.0)?;
+    check_close(after_y, 20.0)?;
+    check_close(after_end_x, 74.0)?;
+    check_close(after_end_y, 100.0)
 }
