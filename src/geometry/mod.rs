@@ -7,6 +7,12 @@ use std::fmt::Write as _;
 use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The centre point of `rect`.
+pub(crate) fn centre(rect: Rect) -> Point {
+    Point::new(rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The point where the ray from `rect`'s centre toward `towards` crosses `rect`'s boundary.
 ///
 /// This is the standard rectangle/ray intersection.
@@ -19,7 +25,7 @@ use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 ///
 /// Returns `rect`'s centre if `towards` is exactly the centre, since the direction is undefined at zero distance.
 pub fn boundary_point(rect: Rect, towards: Point) -> Point {
-    let centre = Point::new(rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0);
+    let centre = centre(rect);
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 
@@ -41,8 +47,8 @@ pub fn boundary_point(rect: Rect, towards: Point) -> Point {
 /// Up to four connector route points, stored inline rather than on the heap.
 ///
 /// Every route this crate computes has at most four points: a straight connector always has two, an elbow has two to
-/// four — see [`straight_vertices`] and [`elbow_vertices`]. A fixed-size buffer avoids a heap allocation on every
-/// redraw, which matters here since a drag redraws every incident edge on every pointer-move.
+/// four — see [`straight_route`] and [`elbow_route`]. A fixed-size buffer avoids a heap allocation on every redraw,
+/// which matters here since a drag redraws every incident edge on every pointer-move.
 ///
 /// Derefs to `&[Point]`, so it can be used almost anywhere a point slice is expected.
 #[derive(Clone, Copy)]
@@ -105,16 +111,15 @@ impl std::fmt::Debug for Route {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The two endpoints of a straight connector between `from` and `to`.
+/// A two-point route between two already-anchored endpoints.
 ///
-/// Each end sits where the ray from that box's own centre toward the other box's centre crosses its boundary — see
-/// [`boundary_point`]. Always exactly two points, unlike [`elbow_vertices`].
-pub(crate) fn straight_vertices(from: Rect, to: Rect) -> Route {
-    let from_centre = Point::new(from.origin.x + from.size.width / 2.0, from.origin.y + from.size.height / 2.0);
-    let to_centre = Point::new(to.origin.x + to.size.width / 2.0, to.origin.y + to.size.height / 2.0);
+/// Takes `start`/`end` as plain arguments, rather than computing them itself, so the same two-point route works
+/// whichever rule chose the anchors — [`boundary_point`]'s own continuous crossing, or [`snapped_anchor`]'s
+/// evenly-spaced candidates.
+pub(crate) fn straight_route(start: Point, end: Point) -> Route {
     let mut route = Route::new();
-    route.push(boundary_point(from, to_centre));
-    route.push(boundary_point(to, from_centre));
+    route.push(start);
+    route.push(end);
     route
 }
 
@@ -198,13 +203,11 @@ pub(crate) fn nearest_clear_centre(blocker: Rect, moving_size: Size, previous_ce
     };
     let boundary = boundary_point(inflated, previous_centre);
 
-    let centre = Point::new(
-        blocker.origin.x + blocker.size.width / 2.0,
-        blocker.origin.y + blocker.size.height / 2.0,
-    );
+    let centre = centre(blocker);
     let dx = boundary.x - centre.x;
     let dy = boundary.y - centre.y;
     let dist = (dx * dx + dy * dy).sqrt();
+
     if dist == 0.0 {
         return boundary;
     }
@@ -245,7 +248,7 @@ pub(crate) fn is_horizontal(side: Side) -> bool {
 /// Returns `rect`'s centre and `Side::East` when `towards` is exactly the centre. Direction is undefined at zero
 /// distance.
 pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
-    let centre = Point::new(rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0);
+    let centre = centre(rect);
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 
@@ -269,23 +272,75 @@ pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The corner points of an elbowed connector between `from` and `to`, before any corner rounding.
+/// The side of `rect` first intersected by a ray from its centre towards `towards`. The returned point snaps to
+/// whichever of `fixing_points` evenly-spaced candidates on that side sits nearest the ray's own crossing point.
 ///
-/// Anchors each end at [`edge_anchor`]'s midpoint. Joins the two anchors with horizontal and vertical segments
-/// only:
+/// Picks the side the same way [`edge_anchor`] does. Divides that side into `fixing_points + 1` equal segments,
+/// and returns whichever of the `fixing_points` internal division points is closest to the continuous crossing
+/// position [`boundary_point`] would have returned.
+///
+/// `fixing_points == 1` always lands on the side's own midpoint — the same point [`edge_anchor`] always returns,
+/// regardless of `towards`.
+///
+/// Returns `rect`'s centre and `Side::East` when `towards` is exactly the centre. Direction is undefined at zero
+/// distance. `fixing_points` is treated as at least `1`; the caller validates `>= 1` before this is ever reached.
+pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (Point, Side) {
+    let centre = centre(rect);
+    let dx = towards.x - centre.x;
+    let dy = towards.y - centre.y;
+
+    if dx == 0.0 && dy == 0.0 {
+        return (centre, Side::East);
+    }
+
+    let half_w = rect.size.width / 2.0;
+    let half_h = rect.size.height / 2.0;
+
+    let scale_x = if dx == 0.0 { f64::INFINITY } else { half_w / dx.abs() };
+    let scale_y = if dy == 0.0 { f64::INFINITY } else { half_h / dy.abs() };
+
+    // At least 1, so `divisions` below is always `>= 2` and the clamp a few lines down always has `min <= max`.
+    let candidates = f64::from(fixing_points.max(1));
+    let divisions = candidates + 1.0;
+
+    if scale_x <= scale_y {
+        let side = if dx >= 0.0 { Side::East } else { Side::West };
+        let x = centre.x + half_w.copysign(dx);
+        let crossing_y = centre.y + dy * scale_x;
+        let top = rect.origin.y;
+        let index = ((crossing_y - top) / rect.size.height * divisions)
+            .round()
+            .clamp(1.0, candidates);
+        let y = top + rect.size.height * index / divisions;
+        (Point::new(x, y), side)
+    } else {
+        let side = if dy >= 0.0 { Side::South } else { Side::North };
+        let y = centre.y + half_h.copysign(dy);
+        let crossing_x = centre.x + dx * scale_y;
+        let left = rect.origin.x;
+        let index = ((crossing_x - left) / rect.size.width * divisions)
+            .round()
+            .clamp(1.0, candidates);
+        let x = left + rect.size.width * index / divisions;
+        (Point::new(x, y), side)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The corner points of an elbowed connector between two already-anchored endpoints, before any corner rounding.
+///
+/// Joins `start` and `end` with horizontal and vertical segments only:
 ///
 /// - Both anchors already share an x or y coordinate: one straight segment.
 /// - One anchor leaves horizontally and the other vertically: one bend.
 /// - Both anchors leave along the same axis but do not align: two bends, through the midpoint between them.
 ///
-/// Returns 2 to 4 points. The first point is always `from`'s anchor. The last is always `to`'s.
-pub(crate) fn elbow_vertices(from: Rect, to: Rect) -> Route {
-    let from_centre = Point::new(from.origin.x + from.size.width / 2.0, from.origin.y + from.size.height / 2.0);
-    let to_centre = Point::new(to.origin.x + to.size.width / 2.0, to.origin.y + to.size.height / 2.0);
-
-    let (start, start_side) = edge_anchor(from, to_centre);
-    let (end, end_side) = edge_anchor(to, from_centre);
-
+/// Returns 2 to 4 points. The first point is always `start`. The last is always `end`.
+///
+/// Takes `start`/`end` and their sides as plain arguments, rather than computing them itself. The same
+/// corner-building logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or
+/// [`snapped_anchor`]'s evenly-spaced candidates.
+pub(crate) fn elbow_route(start: Point, start_side: Side, end: Point, end_side: Side) -> Route {
     let mut route = Route::new();
     route.push(start);
 
@@ -318,7 +373,7 @@ pub(crate) fn elbow_vertices(from: Rect, to: Rect) -> Route {
 /// passes its own endpoint or a neighbouring corner.
 ///
 /// `vertices` must alternate a horizontal segment with a vertical one at every corner. This is exactly what
-/// [`elbow_vertices`] produces. Fewer than two points writes an empty string.
+/// [`elbow_route`] produces. Fewer than two points writes an empty string.
 pub(crate) fn elbow_path_into(vertices: &[Point], radius: f64, out: &mut String) {
     out.clear();
     if vertices.len() < 2 {

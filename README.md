@@ -25,18 +25,26 @@ Each further feature this crate gains ships with its own small demo scene, along
 Drag a box to see it reroute.
 Increase the radius, then drag the boxes close together to see the rendered corners shrink to fit, with no error.
 
+`index.html`'s "Fixing points" section demonstrates `EdgeAnchors`: a slider from `0` to `5` sets how many evenly spaced connector fixing points a node's own sides offer.
+`0` maps to `None`, keeping each connector's own default anchor rule.
+`1` and above snap the connector onto the nearest of that many candidates.
+The number of visible children always matches the slider, down to a minimum of one.
+Raising it reveals more children, each settling on its own fixing point.
+Lowering it hides them again.
+This section has its own straight/elbow toggle too, independent of the first demo's.
+
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
 | Module | Description |
 |---|---|
-| `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
+| `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling — see `DragOptions`/`CollisionPolicy`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling — see `DragOptions`/`CollisionPolicy`)
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
-- `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">` and `<svg id="elbow-diagram">`, and builds each feature's own small demo scene: the directed tree, and the connector-routing demo.
+- `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">`, `<svg id="elbow-diagram">`, and `<svg id="edge-anchors-diagram">`, and builds each feature's own small demo scene: the directed tree, the connector-routing demo, and the fixing-points demo.
 
 `cdp-test-fixture/` and `cdp-integration-test/` are a further pair of on-demand workspace members, used only by `cargo test -p cdp-integration-test` (see [Testing](#testing) below) — neither is built by a plain `cargo build`/`cargo test`.
 
@@ -48,7 +56,7 @@ Increase the radius, then drag the boxes close together to see the rendered corn
 
 This builds the wasm package, then serves this directory.
 Open <http://127.0.0.1:8000/> in a browser.
-Drag either child box in the first demo, or explore the connector-routing demo below it.
+Drag either child box in the first demo, or explore the connector-routing and fixing-points demos below it.
 
 ## Testing
 
@@ -68,6 +76,7 @@ Runs the browser integration tests in `tests/drag/`, split by category:
 * `collision_resolution.rs`
 * `scene_validation.rs`
 * `connectors.rs`
+* `edge_anchors.rs`
 
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
 They make assertions about attributes of the resulting `<rect>`, `<text>`, `<path>` and `<marker>` elements, not on the internal Rust state that produced them.
@@ -82,6 +91,7 @@ The test suite covers:
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
+- per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the default anchor at one fixing point, and live reconfiguration via `set_edge_anchors` reaching every incident edge
 
 ```sh
 cargo test -p cdp-integration-test
@@ -90,6 +100,7 @@ cargo test -p cdp-integration-test
 Runs a further, heavier integration layer against a real, local Chrome instance over the Chrome DevTools Protocol (via [`headless_chrome`](https://crates.io/crates/headless_chrome)), dispatching real `Input.dispatchMouseEvent` sequences rather than `EventTarget::dispatchEvent`.
 Unlike `wasm-pack test`'s synthetic events, this goes through the browser's own hit-testing, pointer capture and default-action machinery.
 This is the only way to catch, for example, a missing `prevent_default()` that lets a drag fall through to the browser's native text-selection gesture.
+Its own `edge_anchors.rs` scenario proves a real drag re-snaps a connector onto a different fixing point, through this same real pointer pipeline.
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 Needs a local Chrome/Chromium binary.

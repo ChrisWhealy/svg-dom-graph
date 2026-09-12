@@ -9,14 +9,17 @@
 //! - [`collision_resolution`] — dropping a dragged node onto another: `CollisionPolicy`, ties, degenerate cases.
 //! - [`scene_validation`] — self-loop rejection, cross-scene id isolation, node geometry validation.
 //! - [`connectors`] — `ConnectorType`: corner-radius validation, live updates, clamping, `Straight`/`Elbow` toggling.
+//! - [`edge_anchors`] — `EdgeAnchors`/`NodeOptions`: validation, per-edge snapping, live redraws via
+//!   `set_edge_anchors`.
 //!
-//! All four drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All five drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
 mod collision_resolution;
 mod connectors;
 mod drag_basics;
+mod edge_anchors;
 mod scene_validation;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

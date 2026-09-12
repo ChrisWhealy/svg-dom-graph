@@ -1,12 +1,14 @@
 //! Connector configuration and the `Scene` methods that draw a connector.
 
-use super::{ConnectorHandle, Scene};
+use super::{ConnectorHandle, Scene, node::EdgeAnchors};
 use crate::{
     error::Error,
-    geometry::{Route, elbow_path_into, elbow_vertices, straight_vertices},
+    geometry::{
+        Route, Side, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, snapped_anchor, straight_route,
+    },
     model::{edge::EdgeId, node::NodeId},
 };
-use svg_dom::root::utils::Rect;
+use svg_dom::root::utils::{Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`Scene::add_edge_with`]/[`Scene::set_connector_type`] routes a connector.
@@ -98,14 +100,58 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One endpoint's anchor point for a straight connector, honouring `anchors`.
+///
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None`
+/// keeps [`ConnectorType::Straight`]'s own default: the continuous ray crossing — see [`boundary_point`].
+fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> Point {
+    match anchors {
+        Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n).0,
+        None => boundary_point(rect, towards),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One endpoint's anchor point and side for an elbowed connector, honouring `anchors`.
+///
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None`
+/// keeps [`ConnectorType::Elbow`]'s own default: the crossed side's own midpoint — see [`edge_anchor`].
+fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Point, Side) {
+    match anchors {
+        Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n),
+        None => edge_anchor(rect, towards),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The connector's own corner points, and the corner radius to round them by, for `connector_type` between
-/// `from` and `to`.
+/// `from` (with its own `from_anchors`) and `to` (with its own `to_anchors`).
 ///
 /// A [`ConnectorType::Straight`] connector has no corners to round, so its radius is always `0.0`.
-pub(crate) fn route(connector_type: ConnectorType, from: Rect, to: Rect) -> (Route, f64) {
+///
+/// `from_anchors`/`to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
+/// endpoint's — one endpoint can use `None` while the other uses `Some`.
+pub(crate) fn route(
+    connector_type: ConnectorType,
+    from: Rect,
+    from_anchors: Option<EdgeAnchors>,
+    to: Rect,
+    to_anchors: Option<EdgeAnchors>,
+) -> (Route, f64) {
+    let from_centre = centre(from);
+    let to_centre = centre(to);
+
     match connector_type {
-        ConnectorType::Straight => (straight_vertices(from, to), 0.0),
-        ConnectorType::Elbow { corner_radius } => (elbow_vertices(from, to), corner_radius),
+        ConnectorType::Straight => {
+            let start = straight_anchor(from, to_centre, from_anchors);
+            let end = straight_anchor(to, from_centre, to_anchors);
+            (straight_route(start, end), 0.0)
+        },
+        ConnectorType::Elbow { corner_radius } => {
+            let (start, start_side) = elbow_anchor(from, to_centre, from_anchors);
+            let (end, end_side) = elbow_anchor(to, from_centre, to_anchors);
+            (elbow_route(start, start_side, end, end_side), corner_radius)
+        },
     }
 }
 
@@ -148,13 +194,15 @@ impl Scene {
 
         let mut inner = self.inner.borrow_mut();
         let from_rect = inner.node_rect(from)?;
+        let from_anchors = inner.node_edge_anchors(from)?;
         let to_rect = inner.node_rect(to)?;
+        let to_anchors = inner.node_edge_anchors(to)?;
 
         if from == to {
             return Err(Error::SelfLoopUnsupported(from));
         }
 
-        let (vertices, radius) = route(options.connector_type, from_rect, to_rect);
+        let (vertices, radius) = route(options.connector_type, from_rect, from_anchors, to_rect, to_anchors);
         let mut d = String::new();
         elbow_path_into(&vertices, radius, &mut d);
 

@@ -8,18 +8,21 @@
 //!   and connector reroute.
 //! - `#elbow-diagram` — [`build_elbow_demo`]: two boxes, a straight/elbow toggle, and a corner-radius slider —
 //!   see that function's own doc comment for exactly what it demonstrates.
+//! - `#edge-anchors-diagram` — [`build_edge_anchors_demo`]: a parent with a growing and shrinking set of children, a
+//!   fixing-point slider, and a straight/elbow toggle — see that function's own doc comment for exactly what it
+//!   demonstrates.
 //!
 //! Each feature this crate gains should keep this pattern: land alongside a small demo scene of its own, not just a
 //! line in the changelog.
 
-use std::cell::RefCell;
+use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
 use svg_dom_graph::{
     EdgeId, Error,
-    scene::{ConnectorOptions, ConnectorType, Scene},
+    scene::{ConnectorOptions, ConnectorType, EdgeAnchors, NodeOptions, Scene},
 };
 use wasm_bindgen::{JsCast, prelude::*};
 use web_sys::HtmlInputElement;
@@ -36,6 +39,8 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
     // Same reasoning, for `build_elbow_demo`'s own, separate `Scene`.
     static ELBOW_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    // Same reasoning, for `build_edge_anchors_demo`'s own, separate `Scene`.
+    static EDGE_ANCHORS_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -50,7 +55,8 @@ fn build() -> Result<(), Error> {
     build_demo_tree(diagram)?;
 
     let elbow_diagram = SvgRoot::attach("elbow-diagram")?;
-    build_elbow_demo(elbow_diagram)
+    build_elbow_demo(elbow_diagram)?;
+    build_edge_anchors_demo()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -181,4 +187,208 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) {
             .expect("could not attach a connector-control listener");
     }
     closure.forget();
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The most children this demo can show at once. Matches `index.html`'s `#edge-anchors-fixing-points` slider's own
+/// `max` attribute.
+const MAX_FIXING_POINTS: u8 = 5;
+
+/// `Parent`'s own fixed position and size, and every child's fixed size and row.
+const PARENT_X: f64 = 155.0;
+const PARENT_Y: f64 = 20.0;
+const PARENT_WIDTH: f64 = 90.0;
+const PARENT_HEIGHT: f64 = 50.0;
+const CHILD_WIDTH: f64 = 60.0;
+const CHILD_HEIGHT: f64 = 34.0;
+const CHILD_Y: f64 = 180.0;
+
+/// The live scene [`wire_edge_anchors_controls`]' two listeners share, replaced whole every time the fixing-points
+/// slider moves — see [`rebuild_edge_anchors_scene`].
+struct EdgeAnchorsDemo {
+    scene: Scene,
+    edges: Vec<EdgeId>,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the fixing-points demo: `Parent`, starting with one draggable child, `Child 1`.
+///
+/// Demonstrates [`EdgeAnchors`]:
+///
+/// 1. The `#edge-anchors-fixing-points` slider, `0` to [`MAX_FIXING_POINTS`], controls two things at once: how many
+///    children are visible, and every visible node's own [`EdgeAnchors`].
+/// 2. The visible child count is always `max(1, slider value)`, so at least `Child 1` stays on screen.
+/// 3. `0` maps to `None`. `Parent` and `Child 1` then aim their straight connector at each other's own centre,
+///    stopping at whichever boundary point that ray crosses first.
+/// 4. `1..=`[`MAX_FIXING_POINTS`] map to `Some(EdgeAnchors(n))`. Moving the slider to `1` snaps the connector onto
+///    the exact midpoint of the side it crosses. Moving it higher reveals more children, spread evenly across the
+///    diagram, and `Parent`'s south side then offers that many evenly spaced fixing points, one per child.
+/// 5. `#edge-anchors-type-straight`/`#edge-anchors-type-elbow` switch every edge live between
+///    [`ConnectorType::Straight`] and [`ConnectorType::Elbow`].
+///
+/// `Scene` has no node-move or node-removal API, so a different child count needs each child spread across a new
+/// set of positions, not just some hidden.
+/// See [`rebuild_edge_anchors_scene`] for why this rebuilds the whole scene from scratch on every slider move,
+/// instead of adjusting the one already built.
+fn build_edge_anchors_demo() -> Result<(), Error> {
+    let document = web_sys::window()
+        .expect("no global window")
+        .document()
+        .expect("no document on window");
+
+    let demo = rebuild_edge_anchors_scene(&document, 0, ConnectorType::Straight)?;
+    EDGE_ANCHORS_SCENE.with_borrow_mut(|slot| *slot = Some(demo.scene.clone()));
+
+    wire_edge_anchors_controls(document, RefCell::new(demo).into());
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `visible_count` evenly spaced x-coordinates for a row of [`CHILD_WIDTH`]-wide boxes, spanning the same width the
+/// diagram's own `viewBox` offers.
+///
+/// A single child centres under `Parent`. Two or more spread edge-to-edge, with equal gaps between them and equal
+/// margins on both sides.
+fn child_x_positions(visible_count: u8) -> Vec<f64> {
+    const MARGIN: f64 = 20.0;
+    const VIEWBOX_WIDTH: f64 = 400.0;
+    let usable_width = VIEWBOX_WIDTH - 2.0 * MARGIN;
+
+    if visible_count <= 1 {
+        return vec![MARGIN + (usable_width - CHILD_WIDTH) / 2.0];
+    }
+
+    let count = f64::from(visible_count);
+    let gap = (usable_width - CHILD_WIDTH * count) / (count - 1.0);
+    (0..visible_count)
+        .map(|i| MARGIN + f64::from(i) * (CHILD_WIDTH + gap))
+        .collect()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Clears `#edge-anchors-diagram` and rebuilds it from scratch: `Parent`, `max(1, fixing_points)` draggable
+/// children spread by [`child_x_positions`], and `connector_type` connectors between `Parent` and each child.
+///
+/// Every node's own [`EdgeAnchors`] is `None` if `fixing_points` is `0`, or `Some(EdgeAnchors(fixing_points))`
+/// otherwise.
+///
+/// `Scene` has no node-move API, so a fixing-point count with a different child spread needs a fresh `Scene` built
+/// over fresh positions, not an adjustment to the one already rendered. Clearing `#edge-anchors-diagram` first
+/// discards the previous scene's own rendered elements; the previous `Scene` handle itself drops once its caller
+/// replaces its own reference, taking its listeners with it.
+fn rebuild_edge_anchors_scene(
+    document: &web_sys::Document,
+    fixing_points: u8,
+    connector_type: ConnectorType,
+) -> Result<EdgeAnchorsDemo, Error> {
+    let container = document
+        .get_element_by_id("edge-anchors-diagram")
+        .expect("index.html must define #edge-anchors-diagram");
+    container.set_inner_html("");
+
+    let svg = SvgRoot::attach("edge-anchors-diagram")?;
+    let scene = Scene::new(svg)?;
+
+    let edge_anchors = if fixing_points == 0 { None } else { Some(EdgeAnchors(fixing_points)) };
+    let node_options = NodeOptions::default().with_edge_anchors(edge_anchors);
+    let connector_options = ConnectorOptions::default().with_connector_type(connector_type);
+
+    let parent_origin = Point::new(PARENT_X, PARENT_Y);
+    let parent_size = Size::new(PARENT_WIDTH, PARENT_HEIGHT);
+    let parent = scene.add_node_with(parent_origin, parent_size, "Parent", node_options)?;
+
+    let child_size = Size::new(CHILD_WIDTH, CHILD_HEIGHT);
+    let visible_count = fixing_points.max(1);
+    let mut edges = Vec::with_capacity(visible_count as usize);
+    for (i, x) in child_x_positions(visible_count).into_iter().enumerate() {
+        let label = format!("Child {}", i + 1);
+        let child = scene.add_node_with(Point::new(x, CHILD_Y), child_size, label, node_options)?;
+        scene.make_draggable(child)?;
+        edges.push(scene.add_edge_with(parent, child, connector_options)?);
+    }
+
+    Ok(EdgeAnchorsDemo { scene, edges })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Wires `#edge-anchors-fixing-points`, `#edge-anchors-type-straight`, and `#edge-anchors-type-elbow` to `state`.
+///
+/// The slider's own handler rebuilds the whole scene via [`rebuild_edge_anchors_scene`] on every move, replacing
+/// `state`'s contents. The radio buttons' shared handler applies the current connector type to every edge `state`
+/// currently knows about, without rebuilding. Both installed closures capture `state` and are never dropped —
+/// `Closure::forget` leaks them deliberately, for the page's whole lifetime, the same span `EDGE_ANCHORS_SCENE`
+/// itself covers.
+///
+/// # Panics
+///
+/// Panics if `index.html` does not define all four of `#edge-anchors-fixing-points`,
+/// `#edge-anchors-fixing-points-value`, `#edge-anchors-type-straight`, and `#edge-anchors-type-elbow`, with the
+/// first, third, and fourth as `<input>` elements. This is demo markup this crate controls, not user input, so a
+/// missing element is a bug in this crate, not a runtime condition to recover from.
+fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<EdgeAnchorsDemo>>) {
+    let input = |id: &str| -> HtmlInputElement {
+        document
+            .get_element_by_id(id)
+            .unwrap_or_else(|| panic!("index.html must define #{id}"))
+            .dyn_into::<HtmlInputElement>()
+            .unwrap_or_else(|_| panic!("#{id} must be an <input>"))
+    };
+
+    let fixing_points_slider = input("edge-anchors-fixing-points");
+    let fixing_points_output = document
+        .get_element_by_id("edge-anchors-fixing-points-value")
+        .expect("index.html must define #edge-anchors-fixing-points-value");
+    let straight_radio = input("edge-anchors-type-straight");
+    let elbow_radio = input("edge-anchors-type-elbow");
+
+    let slider_state = state.clone();
+    let slider_document = document.clone();
+    let slider = fixing_points_slider.clone();
+    let slider_straight_radio = straight_radio.clone();
+    let slider_closure = Closure::<dyn FnMut()>::new(move || {
+        let value = slider.value();
+        fixing_points_output.set_text_content(Some(&value));
+        let fixing_points: u8 = value.parse().unwrap_or(0).min(MAX_FIXING_POINTS);
+
+        let connector_type = if slider_straight_radio.checked() {
+            ConnectorType::Straight
+        } else {
+            ConnectorType::Elbow { corner_radius: 0.0 }
+        };
+
+        // This demo's own geometry is always valid, so this never fails in practice. The rebuild is still chained
+        // through `if let`, not unwrapped: on failure the previous scene stays rendered and live, rather than the
+        // page crashing on a stray input event.
+        if let Ok(demo) = rebuild_edge_anchors_scene(&slider_document, fixing_points, connector_type) {
+            EDGE_ANCHORS_SCENE.with_borrow_mut(|slot| *slot = Some(demo.scene.clone()));
+            *slider_state.borrow_mut() = demo;
+        }
+    });
+    fixing_points_slider
+        .add_event_listener_with_callback("input", slider_closure.as_ref().unchecked_ref())
+        .expect("could not attach the fixing-points slider listener");
+    slider_closure.forget();
+
+    let type_state = state;
+    let type_listeners = [straight_radio.clone(), elbow_radio.clone()];
+    let type_closure = Closure::<dyn FnMut()>::new(move || {
+        let demo = type_state.borrow();
+        let connector_type = if straight_radio.checked() {
+            ConnectorType::Straight
+        } else {
+            ConnectorType::Elbow { corner_radius: 0.0 }
+        };
+
+        // Same reasoning as the slider handler above: these calls cannot fail in practice. Errors are still
+        // ignored rather than unwrapped, so a live page never panics from a stray input event.
+        for &edge in &demo.edges {
+            let _ = demo.scene.set_connector_type(edge, connector_type);
+        }
+    });
+    for target in &type_listeners {
+        target
+            .add_event_listener_with_callback("change", type_closure.as_ref().unchecked_ref())
+            .expect("could not attach an edge-anchors connector-type listener");
+    }
+    type_closure.forget();
 }

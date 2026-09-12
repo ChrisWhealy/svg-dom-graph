@@ -52,6 +52,11 @@ pub enum Error {
     /// propagates straight through `elbow_path_into` into the resulting path data. Rejected before any other
     /// state changes, so the scene's existing nodes and edges are left exactly as they were.
     InvalidCornerRadius(f64),
+    /// `Scene::add_node_with` or `Scene::set_edge_anchors` was given `Some(EdgeAnchors(0))`.
+    ///
+    /// Zero fixing points has no meaning: a side with no candidate point cannot anchor a connector. Use `None`
+    /// instead, to keep each connector's own default anchor rule.
+    InvalidEdgeAnchors(u8),
     /// `Scene::add_node` was given an origin or size that is not valid rectangle geometry.
     ///
     /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal, and a
@@ -80,6 +85,9 @@ impl fmt::Display for Error {
             },
             Error::InvalidCornerRadius(radius) => {
                 write!(f, "corner radius {radius} is not a finite value >= 0.0")
+            },
+            Error::InvalidEdgeAnchors(n) => {
+                write!(f, "edge anchors {n} is not a positive value >= 1")
             },
             Error::InvalidNodeGeometry(rect) => {
                 write!(

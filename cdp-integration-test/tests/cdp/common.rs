@@ -44,8 +44,8 @@ fn shared() -> Result<&'static Shared, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Opens a fresh tab on the shared fixture page and waits for the last node (`mover`, the third and final one added by
-/// the fixture) before returning it.  Since the fixture builds every node synchronously, that node's presence proves
+/// Opens a fresh tab on the shared fixture page and waits for the last node (`branch_b`, the sixth and final one added
+/// by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence proves
 /// the whole scene finished building.
 pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
     let shared = shared()?;
@@ -54,7 +54,7 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
         .map_err(|e| format!("failed to navigate to fixture page: {e}"))?;
     tab.bring_to_front().map_err(|e| format!("failed to bring tab to front: {e}"))?;
     tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
-    tab.wait_for_element_with_custom_timeout("#diagram > g:nth-of-type(3)", Duration::from_secs(10))
+    tab.wait_for_element_with_custom_timeout("#diagram > g:nth-of-type(6)", Duration::from_secs(10))
         .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
     Ok(tab)
 }
@@ -64,10 +64,10 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
 /// OS-level mouse drag produces — unlike `EventTarget::dispatchEvent(new PointerEvent(...))`, this goes through the
 /// browser's actual hit-testing, pointer capture, and default-action machinery.
 ///
-/// `waypoints` must have at least two points: the first is where the button goes down, the last is where it comes back
+/// A `waypoint` must have at least two points: the first is where the button goes down, the last is where it comes back
 /// up, and any in between are intermediate `mousemove`s while the button is held.  Real drags rarely jump straight from
 /// their start location to the end location in one move, and some of what this suite exists to catch (pointer capture,
-/// default-action suppression) only manifests itself once the pointer actually leaves its starting element.
+/// default-action suppression etc) only manifests itself once the pointer actually leaves its starting element.
 ///
 /// A short pause follows each dispatched event — see [`SETTLE`]'s own doc comment for why.
 pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
@@ -84,17 +84,18 @@ pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A short pause inserted after every individual `Input.dispatchMouseEvent` call this suite makes.
 ///
 /// `Tab::call_method` returns once Chrome's browser process has accepted the CDP command, not once the corresponding JS
 /// event has actually finished running in the page's renderer process — those two processes talk over IPC, and dispatch
 /// is not guaranteed to keep up with a tight, back-to-back loop of commands under load. On a slower or busier machine
-/// (observed on a GitHub Actions runner, not reproduced locally), a `pointermove` or `pointerup` this suite fires can
-/// be coalesced or arrive before this crate's own listener has processed the one before it — for `pointerup`, its
-/// dropped-overlap correction depends on `move_node` from every prior `pointermove` already having applied, so losing
-/// even one mid-drag step can leave the model in a state the pointerup handler never expected. This pause is cheap (a
-/// handful of milliseconds per waypoint, negligible next to launching Chrome and building the wasm fixture) relative to
-/// how expensive an intermittent CI failure is to track down.
+/// (for example, a GitHub Actions runner), a `pointermove` or `pointerup` fired by this suite can be coalesced or
+/// arrive before this crate's own listener has processed the one before it. For `pointerup`, dropped-overlap correction
+/// depends on all previous `move_node` from `pointermove` already having been applied, so losing even one mid-drag step
+/// can leave the model in an implausible state (i.e. one the pointerup handler never expected).
+/// This pause is cheap, costing a handful of milliseconds per waypoint and is negligible in comparison to launching
+/// Chrome and building the wasm fixture, as opposed to the cost of trying to track down an intermittent CI failure.
 const SETTLE: Duration = Duration::from_millis(50);
 
 fn mouse_event(

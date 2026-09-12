@@ -13,6 +13,10 @@
 //! 1. `solo` — draggable, far from every other node. Used to prove an ordinary drag with no overlap involved.
 //! 2. `blocker` — not draggable, fixed in place. The node `mover` is dragged onto.
 //! 3. `mover` — draggable, starts far from `blocker`. Used to prove overlap resolution on drop.
+//! 4. `hub` — not draggable, fixed in place. Its own `EdgeAnchors(3)` offers three fixing points along each side.
+//! 5. `branch_a` — draggable, connected to `hub`. Used to prove a live drag re-snaps to a different fixing point.
+//! 6. `branch_b` — not draggable, connected to `hub`. Stays put, so its own connector isolates `branch_a`'s drag as
+//!    the only thing that moved.
 //!
 //! Connectors, in add order (`#diagram > path:nth-of-type(N)`):
 //!
@@ -20,6 +24,10 @@
 //!    offset, so this connector bends — see `connectors.rs` for the hand-worked path.
 //! 2. `solo` to `blocker` again, rounded corners (`Scene::add_edge_with`, `corner_radius: 8.0`). Same route as
 //!    connector 1, so the two isolate corner rounding as the only difference between them.
+//! 3. `hub` to `branch_a`, sharp corners. `hub`'s own `EdgeAnchors(3)` snaps this connector's `hub`-end onto one of
+//!    three fixing points along `hub`'s south side — see `edge_anchors.rs` for the hand-worked path.
+//! 4. `hub` to `branch_b`, sharp corners. Shares `hub`'s same three fixing points, but lands on a different one —
+//!    proving sibling edges sharing one node do not all crowd onto the same spot.
 //!
 //! `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only `Weak`
 //! references back to it (so a dropped `Scene` cannot leak the whole page's DOM forever). That means a `Scene` built
@@ -37,7 +45,7 @@ use svg_dom::{
 };
 use svg_dom_graph::{
     Error,
-    scene::{ConnectorOptions, ConnectorType, Scene},
+    scene::{ConnectorOptions, ConnectorType, EdgeAnchors, NodeOptions, Scene},
 };
 use wasm_bindgen::prelude::*;
 
@@ -72,6 +80,15 @@ fn build() -> Result<(), Error> {
         blocker,
         ConnectorOptions::default().with_connector_type(ConnectorType::Elbow { corner_radius: 8.0 }),
     )?;
+
+    let hub_options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3)));
+    let hub = scene.add_node_with(Point::new(210.0, 220.0), box_size, "hub", hub_options)?;
+    let branch_a = scene.add_node(Point::new(60.0, 340.0), box_size, "branch_a")?;
+    let branch_b = scene.add_node(Point::new(360.0, 340.0), box_size, "branch_b")?;
+    scene.make_draggable(branch_a)?;
+
+    scene.add_edge(hub, branch_a)?;
+    scene.add_edge(hub, branch_b)?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 

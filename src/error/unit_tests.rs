@@ -78,6 +78,13 @@ fn invalid_corner_radius_display_names_the_rejected_value() -> Result<(), String
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_edge_anchors_display_names_the_rejected_value() -> Result<(), String> {
+    let message = Error::InvalidEdgeAnchors(0).to_string();
+    check(message.contains('0'), &message)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn invalid_node_geometry_display_names_the_rejected_rect() -> Result<(), String> {
     let rect = Rect {
         origin: Point::new(0.0, 0.0),

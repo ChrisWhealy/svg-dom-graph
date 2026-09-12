@@ -108,6 +108,18 @@ pub fn connector_count(container_id: &str) -> Result<u32, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns the `n`th `<path>` connector child of `container` (0-indexed), in the order each was added.
+pub fn nth_connector(container_id: &str, n: u32) -> Result<web_sys::Element, String> {
+    let selector = format!("#{container_id} > path");
+    let paths = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+    let path = paths
+        .get(n)
+        .ok_or_else(|| format!("expected at least {} <path> children of #{container_id}, found fewer", n + 1))?;
+    path.dyn_into::<web_sys::Element>()
+        .map_err(|_| "connector is not an Element".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `element`'s `d` attribute.
 pub fn path_d(element: &web_sys::Element) -> Result<String, String> {
     element.get_attribute("d").ok_or_else(|| "missing attribute \"d\"".to_owned())
@@ -130,6 +142,22 @@ pub fn last_point_of_path(d: &str) -> Result<(f64, f64), String> {
     let y = tokens[len - 1]
         .parse::<f64>()
         .map_err(|e| format!("path data {d:?}: last y token did not parse as f64: {e}"))?;
+    Ok((x, y))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The first `x y` coordinate pair written into a path `d` string — the point right after its leading `M`.
+pub fn first_point_of_path(d: &str) -> Result<(f64, f64), String> {
+    let tokens: Vec<&str> = d.split_whitespace().collect();
+    if tokens.len() < 3 {
+        return Err(format!("path data {d:?} has fewer than 3 tokens"));
+    }
+    let x = tokens[1]
+        .parse::<f64>()
+        .map_err(|e| format!("path data {d:?}: first x token did not parse as f64: {e}"))?;
+    let y = tokens[2]
+        .parse::<f64>()
+        .map_err(|e| format!("path data {d:?}: first y token did not parse as f64: {e}"))?;
     Ok((x, y))
 }
 

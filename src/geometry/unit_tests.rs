@@ -11,7 +11,7 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds a [`Route`] from `points`, for comparison against `elbow_vertices`/`straight_vertices` in tests below.
+/// Builds a [`Route`] from `points`, as the expected value in the tests below.
 fn route(points: &[Point]) -> Route {
     let mut route = Route::new();
     for &point in points {
@@ -72,40 +72,12 @@ fn boundary_point_at_own_centre_returns_the_centre() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn straight_vertices_between_level_boxes_lands_on_each_sides_own_midpoint() -> Result<(), String> {
-    // Level boxes: the ray and the elbow's side-midpoint rule agree here, since the offset is purely horizontal.
-    let a = Rect {
-        origin: Point::new(0.0, 0.0),
-        size: Size::new(40.0, 20.0),
-    };
-    let b = Rect {
-        origin: Point::new(100.0, 0.0),
-        size: Size::new(40.0, 20.0),
-    };
-    check_eq(
-        straight_vertices(a, b),
-        route(&[Point::new(40.0, 10.0), Point::new(100.0, 10.0)]),
-    )
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn straight_vertices_between_diagonal_boxes_lands_on_each_rays_own_crossing() -> Result<(), String> {
-    // Same rect and direction as `boundary_point_diagonal_exits_through_the_nearer_axis`: A's own end lands at the
-    // same (24, 20) that test already established.
-    let a = Rect {
-        origin: Point::new(0.0, 0.0),
-        size: Size::new(40.0, 20.0),
-    };
-    // Centred at (60, 110), so the direction from A's centre (20, 10) is exactly (40, 100).
-    let b = Rect {
-        origin: Point::new(40.0, 100.0),
-        size: Size::new(40.0, 20.0),
-    };
-    check_eq(
-        straight_vertices(a, b),
-        route(&[Point::new(24.0, 20.0), Point::new(56.0, 100.0)]),
-    )
+fn straight_route_joins_two_already_anchored_points() -> Result<(), String> {
+    // `boundary_point`'s own tests already cover the anchor math. This checks only that `straight_route` wraps
+    // two already-computed points, in order, and nothing more.
+    let start = Point::new(24.0, 20.0);
+    let end = Point::new(56.0, 100.0);
+    check_eq(straight_route(start, end), route(&[start, end]))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -329,7 +301,72 @@ fn edge_anchor_at_own_centre_returns_the_centre_and_east() -> Result<(), String>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn elbow_vertices_between_level_boxes_is_one_straight_horizontal_segment() -> Result<(), String> {
+fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_straight_down() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let towards = Point::new(20.0, 1000.0);
+    check_eq(snapped_anchor(rect, towards, 1), edge_anchor(rect, towards))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_diagonal() -> Result<(), String> {
+    // Same rect and direction as `edge_anchor_diagonal_returns_the_chosen_sides_own_midpoint_not_boundary_points_crossing`.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let towards = Point::new(60.0, 110.0);
+    check_eq(snapped_anchor(rect, towards, 1), edge_anchor(rect, towards))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint() -> Result<(), String> {
+    // South side (height 20), divided into 4 equal segments by 3 fixing points: candidates at y = 5, 10, 15.
+    // The ray's own continuous crossing lands at x = 30 (worked out the same way `edge_anchor`'s own diagonal test
+    // works its crossing out), closer to the third candidate than the midpoint.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let (point, side) = snapped_anchor(rect, Point::new(35.0, 20.0), 3);
+    check_eq(point, Point::new(30.0, 20.0))?;
+    check_eq(side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn snapped_anchor_with_two_fixing_points_lands_on_the_nearest_candidate() -> Result<(), String> {
+    // East side (height 30), divided into 3 equal segments by 2 fixing points: candidates at y = 10, 20.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 30.0),
+    };
+    let (point, side) = snapped_anchor(rect, Point::new(80.0, 50.0), 2);
+    check_eq(point, Point::new(40.0, 20.0))?;
+    check_eq(side, Side::East)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn snapped_anchor_clamps_to_the_nearest_candidate_instead_of_the_corner() -> Result<(), String> {
+    // The ray's own continuous crossing lands exactly on the top-right corner (y = 0), but the nearest of the two
+    // candidates (y = 10, y = 20) is y = 10 — snapping never reaches all the way to a corner.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 30.0),
+    };
+    let (point, side) = snapped_anchor(rect, Point::new(60.0, -15.0), 2);
+    check_eq(point, Point::new(40.0, 10.0))?;
+    check_eq(side, Side::East)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_route_between_level_boxes_is_one_straight_horizontal_segment() -> Result<(), String> {
     let a = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -338,12 +375,17 @@ fn elbow_vertices_between_level_boxes_is_one_straight_horizontal_segment() -> Re
         origin: Point::new(100.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(elbow_vertices(a, b), route(&[Point::new(40.0, 10.0), Point::new(100.0, 10.0)]))
+    let (start, start_side) = edge_anchor(a, centre(b));
+    let (end, end_side) = edge_anchor(b, centre(a));
+    check_eq(
+        elbow_route(start, start_side, end, end_side),
+        route(&[Point::new(40.0, 10.0), Point::new(100.0, 10.0)]),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn elbow_vertices_between_stacked_boxes_is_one_straight_vertical_segment() -> Result<(), String> {
+fn elbow_route_between_stacked_boxes_is_one_straight_vertical_segment() -> Result<(), String> {
     let a = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -352,12 +394,17 @@ fn elbow_vertices_between_stacked_boxes_is_one_straight_vertical_segment() -> Re
         origin: Point::new(0.0, 100.0),
         size: Size::new(40.0, 20.0),
     };
-    check_eq(elbow_vertices(a, b), route(&[Point::new(20.0, 20.0), Point::new(20.0, 100.0)]))
+    let (start, start_side) = edge_anchor(a, centre(b));
+    let (end, end_side) = edge_anchor(b, centre(a));
+    check_eq(
+        elbow_route(start, start_side, end, end_side),
+        route(&[Point::new(20.0, 20.0), Point::new(20.0, 100.0)]),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn elbow_vertices_between_mismatched_aspect_boxes_bends_once() -> Result<(), String> {
+fn elbow_route_between_mismatched_aspect_boxes_bends_once() -> Result<(), String> {
     // A is taller than it is wide, so a 45-degree offset anchors it on its east side — see `edge_anchor`'s own
     // aspect-aware rule.
     // B is wider than it is tall, so the same offset anchors it on its north side instead.
@@ -370,15 +417,17 @@ fn elbow_vertices_between_mismatched_aspect_boxes_bends_once() -> Result<(), Str
         origin: Point::new(90.0, 110.0),
         size: Size::new(40.0, 20.0),
     };
+    let (start, start_side) = edge_anchor(a, centre(b));
+    let (end, end_side) = edge_anchor(b, centre(a));
     check_eq(
-        elbow_vertices(a, b),
+        elbow_route(start, start_side, end, end_side),
         route(&[Point::new(20.0, 20.0), Point::new(110.0, 20.0), Point::new(110.0, 110.0)]),
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn elbow_vertices_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Result<(), String> {
+fn elbow_route_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Result<(), String> {
     // Both boxes are the same size, so both ends anchor on the same axis (east/west here). Their anchors do not
     // share a y coordinate, so the route jogs across the midpoint between them instead of bending only once.
     let a = Rect {
@@ -389,8 +438,10 @@ fn elbow_vertices_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Re
         origin: Point::new(100.0, 50.0),
         size: Size::new(40.0, 20.0),
     };
+    let (start, start_side) = edge_anchor(a, centre(b));
+    let (end, end_side) = edge_anchor(b, centre(a));
     check_eq(
-        elbow_vertices(a, b),
+        elbow_route(start, start_side, end, end_side),
         route(&[
             Point::new(40.0, 10.0),
             Point::new(70.0, 10.0),

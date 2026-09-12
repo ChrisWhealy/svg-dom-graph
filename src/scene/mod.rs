@@ -9,9 +9,11 @@
 
 pub(crate) mod connector;
 pub(crate) mod drag;
+pub(crate) mod node;
 
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
+pub use node::{EdgeAnchors, NodeOptions};
 
 use crate::{
     error::Error,
@@ -25,8 +27,8 @@ use std::{
     sync::atomic::{AtomicUsize, Ordering},
 };
 use svg_dom::{
-    DominantBaseline, MarkerUnits, SvgMarker, SvgNode, SvgRoot, TextAnchor,
-    root::utils::{Matrix2D, Point, Rect, Size},
+    MarkerUnits, SvgMarker, SvgNode, SvgRoot,
+    root::utils::{Matrix2D, Point, Rect},
 };
 
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
@@ -41,13 +43,18 @@ struct BoxHandles {
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
     /// pointer listeners rather than replacing the first — see [`crate::Error::AlreadyDraggable`].
     draggable: bool,
+    /// How many evenly spaced connector fixing points this node's own sides offer — see [`EdgeAnchors`].
+    ///
+    /// `redraw_edge` has no other way to learn a node's own anchor configuration once an incident edge needs a reroute.
+    /// This value must live alongside the rendered handle, not just get used once at creation.
+    edge_anchors: Option<EdgeAnchors>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered `<path>` for one edge's connector, plus the [`ConnectorType`] it was created with.
 ///
-/// `redraw_edge` has no other way to learn an edge's connector type once a node move forces a reroute. This value
-/// must live alongside the rendered handle, not just get used once at creation.
+/// `redraw_edge` has no other way to learn an edge's connector type once a node move forces a reroute. This value must
+/// live alongside the rendered handle, not just get used once at creation.
 struct ConnectorHandle {
     path: SvgNode,
     connector_type: ConnectorType,
@@ -109,33 +116,6 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
-fn draw_box(svg: &SvgRoot, rect: Rect, label: &str) -> Result<BoxHandles, Error> {
-    let group = svg.group()?;
-
-    let rect_el = svg.rect(rect.origin, rect.size)?;
-    rect_el.set_fill("#eef4ff")?;
-    rect_el.set_stroke("#2a5db0")?;
-    rect_el.set_stroke_width(1.5)?;
-
-    let label_el = svg.text(box_centre(rect), label)?;
-    label_el.set_text_anchor(TextAnchor::Middle)?;
-    label_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    label_el.set_font_size(14.0)?;
-    label_el.set_fill("#1b1b1b")?;
-
-    group.append(&rect_el)?;
-    group.append(&label_el)?;
-
-    Ok(BoxHandles {
-        group,
-        rect_el,
-        label_el,
-        draggable: false,
-    })
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A rendered `Graph`, paired with each node's and edge's own SVG handles.
 ///
 /// `Graph` owns the topology.
@@ -165,6 +145,19 @@ impl SceneInner {
     /// from a different `Scene`.
     fn node_rect(&self, id: NodeId) -> Result<Rect, Error> {
         self.graph.node(id).map(|node| node.rect).ok_or(Error::UnknownNode(id))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The current [`EdgeAnchors`] configuration of node `id`.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    fn node_edge_anchors(&self, id: NodeId) -> Result<Option<EdgeAnchors>, Error> {
+        self.node_handles
+            .get(&id)
+            .map(|handles| handles.edge_anchors)
+            .ok_or(Error::UnknownNode(id))
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -208,9 +201,11 @@ impl SceneInner {
     fn redraw_edge(&self, id: EdgeId, scratch: &mut String) -> Result<(), Error> {
         let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
         let from_rect = self.node_rect(edge.from)?;
+        let from_anchors = self.node_edge_anchors(edge.from)?;
         let to_rect = self.node_rect(edge.to)?;
+        let to_anchors = self.node_edge_anchors(edge.to)?;
         let handle = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
-        let (vertices, radius) = connector::route(handle.connector_type, from_rect, to_rect);
+        let (vertices, radius) = connector::route(handle.connector_type, from_rect, from_anchors, to_rect, to_anchors);
         elbow_path_into(&vertices, radius, scratch);
         handle.path.set_attr("d", scratch)?;
 
@@ -239,8 +234,10 @@ impl SceneInner {
     ) -> Result<(), Error> {
         let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
         let from_rect = self.node_rect(edge.from)?;
+        let from_anchors = self.node_edge_anchors(edge.from)?;
         let to_rect = self.node_rect(edge.to)?;
-        let (vertices, radius) = connector::route(connector_type, from_rect, to_rect);
+        let to_anchors = self.node_edge_anchors(edge.to)?;
+        let (vertices, radius) = connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors);
         elbow_path_into(&vertices, radius, scratch);
 
         let handle = self.edge_handles.get_mut(&id).ok_or(Error::UnknownEdge(id))?;
@@ -368,34 +365,5 @@ impl Scene {
                 arrow,
             })),
         })
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a node to the graph, draws its box and label, and returns its id.
-    ///
-    /// # Errors
-    ///
-    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite, or
-    /// if `size`'s width or height is not strictly positive — see that variant's own doc comment for why. Checked
-    /// before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it
-    /// was.
-    pub fn add_node(&self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
-        let rect = Rect { origin: top_left, size };
-        if !top_left.x.is_finite()
-            || !top_left.y.is_finite()
-            || !size.width.is_finite()
-            || !size.height.is_finite()
-            || size.width <= 0.0
-            || size.height <= 0.0
-        {
-            return Err(Error::InvalidNodeGeometry(rect));
-        }
-
-        let label = label.into();
-        let mut inner = self.inner.borrow_mut();
-        let handles = draw_box(&inner.svg, rect, &label)?;
-        let id = inner.graph.add_node(rect, label);
-        inner.node_handles.insert(id, handles);
-        Ok(id)
     }
 }
