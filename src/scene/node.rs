@@ -15,7 +15,7 @@ use svg_dom::{
 ///
 /// `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with [`Error::InvalidEdgeAnchors`] — a side with no
 /// candidate point cannot anchor a connector, so `0` has no meaning here.
-/// 
+///
 /// Consequently, you must use `None` rather than `Some(EdgeAnchors(0))` to keep a connector's own default anchor rule.
 ///
 /// # How a connector picks one of the `n` candidates
@@ -45,7 +45,7 @@ use svg_dom::{
 /// Every connector touching this node makes this choice independently, from its own other endpoint's position alone.
 /// Fixing points are not reserved or assigned: nothing stops two, or all, of a node's incident connectors from landing
 /// on the same point — there is no occupancy tracking or one-connector-per-point allocation.
-/// 
+///
 /// `EdgeAnchors(5)` means "five candidate positions per side," not "capacity for five edges."
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EdgeAnchors(pub u8);
