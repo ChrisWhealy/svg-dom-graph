@@ -99,10 +99,16 @@ fn set_edge_anchors_rejects_an_unknown_node() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Some(EdgeAnchors(1))` renders identically to `None`: one fixing point is always the crossed side's own
-/// midpoint, exactly the default rule `edge_anchor` already applies.
+/// For an elbow connector specifically, `Some(EdgeAnchors(1))` renders in a way that is similar, but not identical, to
+/// `None`.  If EdgeConnectors is `Noen`, then the straight connector always binds to the centre of the node.  This in
+/// turn means that the location of the connector along the node's edge varies based on the straight line between the
+/// centres of the two nodes.
+///
+/// For `Some(EdgeAnchors(1))` however, a straight connector will always anchors to the centre of the node's edge. This
+/// is visually slightly different from the EdgeConnectors `None` case. See the "Fixing Points" demo to see the rendered
+/// difference.
 #[wasm_bindgen_test]
-fn edge_anchors_with_one_fixing_point_matches_the_default_midpoint_anchor() -> Result<(), String> {
+fn edge_anchors_one_matches_default_elbow_midpoint() -> Result<(), String> {
     let default_svg = make_svg("edge-anchors-one-default", Size::new(300.0, 300.0), Size::new(300.0, 300.0));
     let default_scene = Scene::new(default_svg).map_err(|e| e.to_string())?;
     let a1 = default_scene

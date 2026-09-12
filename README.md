@@ -91,7 +91,7 @@ The test suite covers:
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
-- per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the default anchor at one fixing point, and live reconfiguration via `set_edge_anchors` reaching every incident edge
+- per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the elbow connector's default midpoint anchor at one fixing point (this does not hold for a straight connector, whose unsnapped default is the continuous ray/boundary crossing), and live reconfiguration via `set_edge_anchors` reaching every incident edge
 
 ```sh
 cargo test -p cdp-integration-test

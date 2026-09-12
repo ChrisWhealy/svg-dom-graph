@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add configurable edge fixing points (``)
+- Add configurable edge fixing points (`a344b5b`)
+
+## Fixed
+
+- Doc only: Correct description of rendering difference between `Some(EdgeAnchors(1))` and `None` (``)
 
 # [Released]
 
