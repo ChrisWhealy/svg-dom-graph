@@ -57,7 +57,7 @@ pub enum Error {
     /// Zero fixing points has no meaning: a side with no candidate point cannot anchor a connector. Use `None`
     /// instead, to keep each connector's own default anchor rule.
     InvalidEdgeAnchors(u8),
-    /// `Scene::add_node` was given an origin or size that is not valid rectangle geometry.
+    /// `Scene::add_node` or `Scene::add_node_with` was given an origin or size that is not valid rectangle geometry.
     ///
     /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal, and a
     /// non-finite coordinate or dimension would otherwise sit in the graph's model and contaminate every later
@@ -87,7 +87,7 @@ impl fmt::Display for Error {
                 write!(f, "corner radius {radius} is not a finite value >= 0.0")
             },
             Error::InvalidEdgeAnchors(n) => {
-                write!(f, "edge anchors {n} is not a positive value >= 1")
+                write!(f, "edge anchor count {n} must be >= 1")
             },
             Error::InvalidNodeGeometry(rect) => {
                 write!(
