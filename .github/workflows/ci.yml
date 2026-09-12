@@ -28,6 +28,26 @@ jobs:
       - name: Unit tests
         run: cargo test --all-features
 
+      # The workspace's default-members is just the root package, so none of the above select demo-server — it
+      # needs an explicit `-p` invocation, same as cdp-integration-test already gets in its own job below. It
+      # builds and runs natively (it's an Actix static-file server, not wasm), so it belongs here rather than in
+      # the `wasm` job, which is about the wasm32 *target* build specifically.
+      - name: Clippy (demo-server)
+        # --all-targets, not a plain `-p demo-server`: #[cfg(test)] code (build/unit_tests.rs) is only compiled in
+        # test mode, so a plain clippy invocation here would silently never lint it at all.
+        run: cargo clippy -p demo-server --all-targets -- -D warnings
+
+      - name: Unit tests (demo-server)
+        run: cargo test -p demo-server
+
+      # demo-server's own unit tests (build::unit_tests) already cover prepare_stage in isolation against the real
+      # project, but this exercises the actual `cargo demo`-facing entry point — the same `--prepare-only` path CI
+      # or a developer would use to check staging without paying for a full `wasm-pack build` (the `wasm` job below
+      # already covers that separately). See demo-server/src/build/mod.rs's doc comment for why prepare_stage is
+      # split out from build_demo.
+      - name: Demo staging check (copy index.html, no wasm build)
+        run: cargo run -p demo-server -- --prepare-only
+
       - name: Docs (deny warnings)
         run: cargo doc --no-deps --all-features
         env:
