@@ -32,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Improve wording of `edge_anchor()`'s functionality (`84dcd77`)
 - Doc only: Correct `InvalidEdgeAnchors` error message (`33795f4`)
 - Doc only: Correct stale documentation (`bdb5010`)
-- Doc only: Doc comment correction (``)
+- Doc only: Doc comment correction (`005a37c`)
 
 ## Added
 
