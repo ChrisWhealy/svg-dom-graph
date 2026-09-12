@@ -58,3 +58,37 @@ fn prepare_stage_reports_a_missing_source_index_html() -> Result<(), String> {
         other => Err(format!("expected Err(BuildError::CopyIndexHtml), got {other:?}")),
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A failed refresh must leave the previously staged `index.html` completely untouched — the guarantee `main`'s
+/// per-request middleware documents. Proves `prepare_stage` writes through a temporary file and `rename`s it into
+/// place, rather than copying straight onto the live destination, where a failure partway could leave a truncated
+/// file being served instead of the old, good one.
+#[test]
+fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Result<(), String> {
+    let root = workspace_root()?;
+    let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    let stage = StagePaths::new(stage_root.path());
+
+    prepare_stage(&root, &stage).map_err(|e| format!("initial prepare_stage failed: {e}"))?;
+    let before =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+
+    // A source directory with no index.html at all, so the copy step fails before any rename is attempted.
+    let broken_root = stage_root.path().join("no-such-root");
+    match prepare_stage(&broken_root, &stage) {
+        Err(BuildError::CopyIndexHtml { .. }) => {},
+        other => {
+            return Err(format!(
+                "expected the second prepare_stage call to fail with CopyIndexHtml, got {other:?}"
+            ));
+        },
+    }
+
+    let after =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+    if after != before {
+        return Err("a failed refresh changed the previously staged index.html".to_owned());
+    }
+    Ok(())
+}

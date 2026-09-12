@@ -113,7 +113,9 @@ async fn main() -> std::io::Result<()> {
             //
             // A refresh failure (e.g. index.html was left mid-edit) is only logged, not fatal: the previously
             // staged file is left in place and keeps being served, the same file-not-found-yet tolerance an
-            // editor's own autosave already needs.
+            // editor's own autosave already needs. This is a real guarantee, not just a likely outcome —
+            // prepare_stage's own doc comment explains why it writes through a temporary file and renames it into
+            // place, rather than copying straight onto the live index.html.
             .wrap_fn(move |req, srv| {
                 if let Err(err) = build::prepare_stage(&root, &stage) {
                     eprintln!("warning: could not refresh the staged demo ({err})");

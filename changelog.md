@@ -10,7 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Rebuild demo server as separate crate (``)
+- Rebuild demo server as separate crate (`ce0ac19`)
+- Rebuild demo server as separate crate (`e3085ea`)
+
+## Fixed
+
+- Improve live-refresh guarantee in demo server (``)
 
 # [Released]
 
