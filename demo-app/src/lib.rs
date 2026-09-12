@@ -1,6 +1,6 @@
 //! Wasm entry point for `svg-dom-graph`'s demos.
 //!
-//! Attaches to two `<svg>` elements already present in `index.html`, and builds one small demo scene in each.
+//! Attaches to three `<svg>` elements already present in `index.html`, and builds one small demo scene in each.
 //! This crate — not the library — owns every demo-specific decision: which elements to attach to, and what each
 //! scene contains.
 //!
