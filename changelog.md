@@ -11,11 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add configurable edge fixing points (`a344b5b`)
+- Add automated straight-connector fixing-point test (`989994f`)
+- Test restoring `None` edge anchors after `set_edge_anchors` (``)
 
 ## Fixed
 
 - Doc only: Correct description of rendering difference between `Some(EdgeAnchors(1))` and `None` (`caaabc4`)
-- Add automated straight-connector fixing-point test (``)
 
 # [Released]
 

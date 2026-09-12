@@ -214,6 +214,11 @@ fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() ->
 /// (`None`) is the continuous ray/boundary crossing, not a side's midpoint. This is the distinct `straight_anchor`
 /// branch of `connector::route`, so it needs its own coverage rather than relying on the elbow tests above.
 ///
+/// Also proves the round trip back to `None`: `None` is not "zero anchors", it is *this connector type's own
+/// default anchoring rule*, and `set_edge_anchors` must restore exactly that rule, not just leave the last
+/// snapped point behind. `Some(EdgeAnchors(3))` and a later `None` on the same node must therefore land at
+/// different points, and the second call must reproduce the original, unconfigured coordinates exactly.
+///
 /// # Expected anchors, worked by hand
 ///
 /// `A` is `(0, 0)`, size `(40, 20)` — centre `(20, 10)`, half-extents `(20, 10)`.
@@ -225,12 +230,13 @@ fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() ->
 /// With `None` (the default), the connector starts at that exact crossing: `(26, 20)`. With `EdgeAnchors(3)`, `A`'s
 /// south side offers three candidates at `x = 10, 20, 30`; `26` snaps to the nearest, `30`. So `(26, 20)` for
 /// `None` and `(30, 20)` for `EdgeAnchors(3)` are genuinely different points, not the same one reached two ways.
+/// Setting `None` again must snap straight back to `(26, 20)`.
 ///
 /// `B` keeps `None` throughout, so its own end of the connector — `(74, 100)`, by the same ray/boundary
 /// arithmetic — never moves. This isolates the change to the endpoint whose `EdgeAnchors` was actually
 /// reconfigured.
 #[wasm_bindgen_test]
-fn set_edge_anchors_snaps_a_straight_connector_off_its_boundary_crossing() -> Result<(), String> {
+fn set_edge_anchors_round_trips_a_straight_connector_through_none_and_back() -> Result<(), String> {
     let svg = make_svg("edge-anchors-straight", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
 
@@ -269,5 +275,19 @@ fn set_edge_anchors_snaps_a_straight_connector_off_its_boundary_crossing() -> Re
     check_close(after_x, 30.0)?;
     check_close(after_y, 20.0)?;
     check_close(after_end_x, 74.0)?;
-    check_close(after_end_y, 100.0)
+    check_close(after_end_y, 100.0)?;
+
+    scene.set_edge_anchors(a, None).map_err(|e| e.to_string())?;
+
+    let restored_d = path_d(&connector)?;
+    check(
+        is_straight_two_point_path(&restored_d),
+        &format!("expected set_edge_anchors(None) to leave a straight two-point path, got {restored_d:?}"),
+    )?;
+    let (restored_x, restored_y) = first_point_of_path(&restored_d)?;
+    let (restored_end_x, restored_end_y) = last_point_of_path(&restored_d)?;
+    check_close(restored_x, 26.0)?;
+    check_close(restored_y, 20.0)?;
+    check_close(restored_end_x, 74.0)?;
+    check_close(restored_end_y, 100.0)
 }
