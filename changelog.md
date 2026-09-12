@@ -34,7 +34,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Correct stale documentation (`bdb5010`)
 - Doc only: Doc comment correction (`005a37c`)
 - Doc only: Update stale docs and correct typos (`fa4e1f7`)
-- Doc only: Update coincident-centre behaviour (``)
+- Doc only: Update coincident-centre behaviour (`7d88992`)
+- Doc only: Correct more typos (``)
 
 ## Added
 

@@ -236,8 +236,8 @@ pub(crate) fn is_horizontal(side: Side) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The midpoint of the side of `rect` first intersected by a ray from its centre towards towards, and which side that
-/// is.
+/// The midpoint of the side of `rect` first intersected by a ray from its centre towards `towards` (i.e. the centre of
+/// the target node), and which side that is.
 ///
 /// Picks the side the same way [`boundary_point`] picks its crossing point: whichever axis's offset from `rect`'s
 /// centre reaches that axis's half-extent first.
@@ -245,8 +245,8 @@ pub(crate) fn is_horizontal(side: Side) -> bool {
 /// The result sits at the exact midpoint of the chosen side, not at the ray's own crossing point. This lets an elbowed
 /// connector leave a box travelling exactly horizontally or exactly vertically.
 ///
-/// Returns `rect`'s centre and `Side::East` when `towards` is exactly the centre. Direction is undefined at zero
-/// distance.
+/// Since direction is undefined at zero distance, this function arbitrarily returns `rect`'s centre and `Side::East`
+/// when `towards` is exactly the centre.
 pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
     let centre = centre(rect);
     let dx = towards.x - centre.x;
