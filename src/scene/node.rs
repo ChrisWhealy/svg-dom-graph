@@ -8,15 +8,15 @@ use svg_dom::{
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// edge Anchors ` defines the number of evenly spaced connector fixing points each of a node's four sides. This can be
-/// configured instead of the default single anchor point every connector already uses.
+/// `EdgeAnchors` defines the number of evenly spaced connector fixing points available on each of a node's four sides.
+/// This can be configured instead of the default single anchor point every connector uses by default.
 ///
 /// The wrapped value must be `>= 1`.
 ///
 /// `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with [`Error::InvalidEdgeAnchors`] — a side with no
 /// candidate point cannot anchor a connector, so `0` has no meaning here.
 /// 
-/// Consequently, use must use `None` rather than `Some(EdgeAnchors(0))` to keep a connector's own default anchor rule.
+/// Consequently, you must use `None` rather than `Some(EdgeAnchors(0))` to keep a connector's own default anchor rule.
 ///
 /// # How a connector picks one of the `n` candidates
 ///
@@ -35,7 +35,7 @@ use svg_dom::{
 /// midpoint, so `Some(EdgeAnchors(1))` and `None` render identically.
 ///
 /// For a straight connector however, this does *not* generally hold: its default (`None`) is the ray's own exact
-/// boundary crossing, which would only lands on the midpoint by coincidence. `Some(EdgeAnchors(1))` forces a straight
+/// boundary crossing, which would only land on the midpoint by coincidence. `Some(EdgeAnchors(1))` forces a straight
 /// connector onto the midpoint regardless, so the two will often render at visibly different points.
 ///
 /// Every connector touching this node makes this choice independently, from its own other endpoint's position alone.

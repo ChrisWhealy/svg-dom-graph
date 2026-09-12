@@ -153,8 +153,8 @@ jobs:
       # verifies and why it's a separate job rather than folded into `browser-tests`: it needs headless_chrome and
       # a real local Chrome binary, neither of which the wasm-bindgen-test-based browser tests require, and
       # keeping it isolated means a failure here doesn't obscure results from the other jobs. This single command
-      # runs the crate's one `cdp` test binary, covering every scenario module (small drag, overlap resolution,
-      # text-selection prevention) — see cdp-integration-test/tests/cdp/main.rs's own module doc comment for the
-      # current list, rather than duplicating (and re-drifting) it here.
+      # runs the crate's one `cdp` test binary, covering every scenario module — see
+      # cdp-integration-test/tests/cdp/main.rs's own module doc comment for the current list, rather than
+      # duplicating (and re-drifting) it here.
       - name: Run the CDP integration tests (real pointer drag, driven through the actual browser)
         run: cargo test -p cdp-integration-test

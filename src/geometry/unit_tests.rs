@@ -325,9 +325,9 @@ fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_diagonal() -> Result
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint() -> Result<(), String> {
-    // South side (height 20), divided into 4 equal segments by 3 fixing points: candidates at y = 5, 10, 15.
-    // The ray's own continuous crossing lands at x = 30 (worked out the same way `edge_anchor`'s own diagonal test
-    // works its crossing out), closer to the third candidate than the midpoint.
+    // South side (width 40), divided into 4 equal segments by 3 fixing points: candidates at x = 10, 20, 30.
+    // The ray's own continuous crossing lands at x = 35 (worked out the same way `edge_anchor`'s own diagonal test
+    // works its crossing out), closer to the third candidate (30) than the midpoint (20).
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
