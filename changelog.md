@@ -12,11 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add configurable edge fixing points (`a344b5b`)
 - Add automated straight-connector fixing-point test (`989994f`)
-- Test restoring `None` edge anchors after `set_edge_anchors` (``)
+- Test restoring `None` edge anchors after `set_edge_anchors` (`784a9c2`)
 
 ## Fixed
 
 - Doc only: Correct description of rendering difference between `Some(EdgeAnchors(1))` and `None` (`caaabc4`)
+- Doc only; Clarify doc comments for `EdgeAnchors` (``)
 
 # [Released]
 

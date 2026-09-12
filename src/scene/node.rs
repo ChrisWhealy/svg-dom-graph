@@ -8,15 +8,31 @@ use svg_dom::{
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How many evenly spaced connector fixing points each of a node's four sides offers, instead of the default
-/// single anchor point every connector already uses on its own.
+/// edge Anchors ` defines the number of evenly spaced connector fixing points each of a node's four sides. This can be
+/// configured instead of the default single anchor point every connector already uses.
 ///
-/// The wrapped value must be `>= 1`. `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with
-/// [`Error::InvalidEdgeAnchors`] — a side with no candidate point cannot anchor a connector, so `0` has no
-/// meaning here. Use `None`, not `Some(EdgeAnchors(0))`, to keep a connector's own default anchor rule.
+/// The wrapped value must be `>= 1`.
 ///
-/// See [`crate::geometry`]'s own `snapped_anchor` for exactly how a connector picks one of the `n` candidates on
-/// whichever side it would otherwise have crossed.
+/// `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with [`Error::InvalidEdgeAnchors`] — a side with no
+/// candidate point cannot anchor a connector, so `0` has no meaning here.
+/// 
+/// Consequently, use must use `None` rather than `Some(EdgeAnchors(0))` to keep a connector's own default anchor rule.
+///
+/// # How a connector picks one of the `n` candidates
+///
+/// A connector still picks *which side* to leave from exactly as it always does: by the ray from this node's own centre
+/// toward the other endpoint's centre, and whichever side that ray crosses first. `EdgeAnchors` only changes *where on
+/// that side* the connector lands.
+///
+/// That side is divided into `n + 1` equal segments, giving `n` internal division points — the two corners bounding the
+/// side are never candidates. The connector then snaps to whichever of those `n` points sits closest to where the
+/// unsnapped ray would have crossed.
+///
+/// Every connector touching this node makes this choice independently, from its own other endpoint's position alone.
+/// Fixing points are not reserved or assigned: nothing stops two, or all, of a node's incident connectors from landing
+/// on the same point — there is no occupancy tracking or one-connector-per-point allocation.
+/// 
+/// `EdgeAnchors(5)` means "five candidate positions per side," not "capacity for five edges."
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct EdgeAnchors(pub u8);
 
