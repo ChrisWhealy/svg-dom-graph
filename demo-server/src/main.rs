@@ -68,8 +68,10 @@ async fn main() -> std::io::Result<()> {
         .ok_or_else(|| std::io::Error::other("demo-server must live inside the project"))?
         .to_path_buf();
 
-    // Respects a `CARGO_TARGET_DIR` override the same way `cargo build` itself would, rather than assuming the
-    // target directory always sits directly under the project root.
+    // Respects a `CARGO_TARGET_DIR` environment variable override, rather than assuming the target directory
+    // always sits directly under the project root. This is not the full resolution `cargo build` itself performs
+    // — it does not consult `build.target-dir` from `.cargo/config.toml` or user-level Cargo configuration — so an
+    // unusual Cargo configuration using one of those instead of the environment variable is not picked up here.
     let target_dir = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target"));

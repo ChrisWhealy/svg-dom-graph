@@ -77,7 +77,23 @@ impl fmt::Display for BuildError {
     }
 }
 
-impl std::error::Error for BuildError {}
+impl std::error::Error for BuildError {
+    /// Exposes the wrapped `io::Error` for every variant that has one, so error-reporting tools and callers
+    /// walking the standard error chain can discover it — `Display` already forwards its message inline, but that
+    /// alone does not help code that specifically walks using `source()`.
+    ///
+    /// `WasmBuildFailed` wraps an `ExitStatus`, not an `io::Error`, so `None` is correct for it — there is no
+    /// underlying error to expose, just a non-zero exit code `Display` already reports in full.
+    fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
+        match self {
+            Self::CreateStageDir { source, .. }
+            | Self::CopyIndexHtml { source, .. }
+            | Self::RenameIndexHtml { source, .. }
+            | Self::WasmSpawn(source) => Some(source),
+            Self::WasmBuildFailed(_) => None,
+        }
+    }
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stages `index.html` for serving: creates `stage.stage_dir` if it does not already exist, then atomically
