@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Improve live-refresh guarantee in demo server (`5a3d7ed`)
-- Remove unnecessary refresh before serving each demo request (``)
+- Remove unnecessary refresh before serving each demo request (`b45fd62`)
+- Doc only: Correct README description of demo server (``)
 
 # [Released]
 

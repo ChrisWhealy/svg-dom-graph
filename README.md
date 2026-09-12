@@ -46,7 +46,7 @@ This section has its own straight/elbow toggle too, independent of the first dem
 
 - `demo-app/src/lib.rs` — the `wasm_bindgen(start)` entry point, attaches to `<svg id="diagram">`, `<svg id="elbow-diagram">`, and `<svg id="edge-anchors-diagram">`, and builds each feature's own small demo scene: the directed tree, the connector-routing demo, and the fixing-points demo.
 
-`demo-server/` is a further on-demand workspace member, used only by `cargo demo` (see [Running the demo](#running-the-demo) below) — a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that rebuilds the wasm package and serves it, with no dependency on Python or any other external tooling.
+`demo-server/` is a further on-demand workspace member, used only by `cargo demo` (see [Running the demo](#running-the-demo) below) — a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that rebuilds the wasm package and serves it, with no dependency on external HTTP-server tooling; `wasm-pack` remains required to build the demo.
 
 `cdp-test-fixture/` and `cdp-integration-test/` are a further pair of on-demand workspace members, used only by `cargo test -p cdp-integration-test` (see [Testing](#testing) below) — neither is built by a plain `cargo build`/`cargo test`.
 
