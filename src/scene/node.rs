@@ -28,6 +28,10 @@ use svg_dom::{
 /// side are never candidates. The connector then snaps to whichever of those `n` points sits closest to where the
 /// unsnapped ray would have crossed.
 ///
+/// If the two nodes' centres exactly coincide, that ray has no direction to pick a side from. This is the same
+/// pre-existing degenerate case ordinary, unconfigured routing already has to handle, and `EdgeAnchors` resolves
+/// it the same way: falling back to this node's own centre and `Side::East`, rather than an actual fixing point.
+///
 /// # `EdgeAnchors(1)` does not always match `None`
 ///
 /// With `n = 1`, `n + 1 = 2` and this makes the segment's internal division point identical to the side's midpoint.
