@@ -28,6 +28,16 @@ use svg_dom::{
 /// side are never candidates. The connector then snaps to whichever of those `n` points sits closest to where the
 /// unsnapped ray would have crossed.
 ///
+/// # `EdgeAnchors(1)` does not always match `None`
+///
+/// With `n = 1`, `n + 1 = 2` and this makes the segment's internal division point identical to the side's midpoint.
+/// For an elbow connector this is no change at all — the default (`None`) elbow rule already always anchors at the same
+/// midpoint, so `Some(EdgeAnchors(1))` and `None` render identically.
+///
+/// For a straight connector however, this does *not* generally hold: its default (`None`) is the ray's own exact
+/// boundary crossing, which would only lands on the midpoint by coincidence. `Some(EdgeAnchors(1))` forces a straight
+/// connector onto the midpoint regardless, so the two will often render at visibly different points.
+///
 /// Every connector touching this node makes this choice independently, from its own other endpoint's position alone.
 /// Fixing points are not reserved or assigned: nothing stops two, or all, of a node's incident connectors from landing
 /// on the same point — there is no occupancy tracking or one-connector-per-point allocation.

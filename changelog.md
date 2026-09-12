@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Doc only: Correct description of rendering difference between `Some(EdgeAnchors(1))` and `None` (`caaabc4`)
-- Doc only; Clarify doc comments for `EdgeAnchors` (``)
+- Doc only; Clarify doc comments for `EdgeAnchors` (`90f848d`)
+- Doc only: Explain the special meaning of `EdgeAnchors(1)` (``)
 
 # [Released]
 
