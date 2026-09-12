@@ -12,10 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Rebuild demo server as separate crate (`ce0ac19`)
 - Rebuild demo server as separate crate (`e3085ea`)
+- Test demo server build pipeline in CI (``)
 
 ## Fixed
 
-- Improve live-refresh guarantee in demo server (``)
+- Improve live-refresh guarantee in demo server (`5a3d7ed`)
 
 # [Released]
 

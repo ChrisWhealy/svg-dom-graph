@@ -42,6 +42,13 @@
 //! Run with `--prepare-only` (`cargo run -p demo-server -- --prepare-only`) to run [`build::prepare_stage`] alone
 //! — stage `index.html` — and exit, without rebuilding the wasm package or starting the server. This is what lets
 //! CI exercise the staging copy without paying for a full wasm build every run.
+//!
+//! Run with `--build-only` (`cargo run -p demo-server -- --build-only`) to run the full [`build::build_demo`]
+//! pipeline — stage `index.html` and rebuild the wasm package — and exit, without starting the server. CI's `wasm`
+//! job uses this instead of invoking `wasm-pack build demo-app ...` directly, so it exercises the exact command
+//! `build::build_wasm` actually constructs (working directory, argument order, the absolute `--out-dir` computed
+//! from `StagePaths`) rather than a hand-written approximation of it that could quietly drift out of step with
+//! what `cargo demo` really runs.
 mod build;
 
 use actix_files::Files;
@@ -84,6 +91,15 @@ async fn main() -> std::io::Result<()> {
             process::exit(1);
         }
         println!("demo staged successfully at {}", stage.stage_dir.display());
+        return Ok(());
+    }
+
+    if std::env::args().any(|arg| arg == "--build-only") {
+        if let Err(err) = build::build_demo(&root, &stage) {
+            eprintln!("aborting: {err}");
+            process::exit(1);
+        }
+        println!("demo built successfully at {}", stage.stage_dir.display());
         return Ok(());
     }
 

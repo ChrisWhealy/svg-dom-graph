@@ -86,8 +86,16 @@ jobs:
         with:
           tool: wasm-pack@0.15.0
 
-      - name: wasm-pack build (demo-app, the published web artifact)
-        run: wasm-pack build demo-app --target web --out-dir ../pkg
+      # `cargo run -p demo-server -- --build-only`, not a hand-written `wasm-pack build demo-app ...` invocation
+      # directly: demo-server's own build::build_wasm constructs that command programmatically (working directory,
+      # argument order, an absolute --out-dir derived from StagePaths), and a hand-written approximation here could
+      # drift out of step with it — a regression in build_wasm (wrong argument, wrong directory, wrong pkg_dir)
+      # could then leave this job green while `cargo demo` was actually broken. --build-only runs demo-server's
+      # real build_demo pipeline (stage index.html, then that exact wasm-pack invocation) without starting Actix,
+      # so this exercises the precise path `cargo demo` uses. Runs natively — demo-server is a host binary, not
+      # something built for wasm32 — despite this job's toolchain also carrying the wasm32 target above.
+      - name: Build the demo (cargo demo's own pipeline, without starting the server)
+        run: cargo run -p demo-server -- --build-only
 
   msrv:
     name: MSRV (1.85)
