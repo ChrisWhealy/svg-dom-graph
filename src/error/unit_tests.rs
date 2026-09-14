@@ -71,6 +71,17 @@ fn invalid_collision_padding_display_names_the_rejected_value() -> Result<(), St
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_drag_bounds_display_names_the_rejected_rect() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(f64::NAN, 0.0),
+        size: Size::new(100.0, 100.0),
+    };
+    let message = Error::InvalidDragBounds(rect).to_string();
+    check(message.contains("NaN"), &message)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn invalid_corner_radius_display_names_the_rejected_value() -> Result<(), String> {
     let message = Error::InvalidCornerRadius(f64::NAN).to_string();
     check(message.contains("NaN"), &message)

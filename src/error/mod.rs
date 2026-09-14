@@ -40,34 +40,42 @@ pub enum Error {
     /// `Scene::make_draggable_with` was given a `CollisionPolicy::PushClear` padding that is not a finite value
     /// `>= 0.0`.
     ///
-    /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending
-    /// it, and a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into
-    /// the resulting coordinates. Rejected before any other state changes, so the scene's existing nodes are left
-    /// exactly as they were.
+    /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending it, and
+    /// a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into the resulting
+    /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as they were.
     InvalidCollisionPadding(f64),
-    /// `Scene::add_edge_with` or `Scene::set_connector_type` was given a `ConnectorType::Elbow` corner radius that
-    /// is not a finite value `>= 0.0`.
+    /// `Scene::make_draggable_with` was given an invalid `DragOptions::bounds` value. The origin and size must be
+    /// constructed from finite, non-negative values.
     ///
-    /// A negative radius has no meaning for a rounded corner, and a non-finite value (`NaN`, `+inf`, `-inf`)
-    /// propagates straight through `elbow_path_into` into the resulting path data. Rejected before any other
-    /// state changes, so the scene's existing nodes and edges are left exactly as they were.
+    /// A non-finite coordinate propagates straight through `clamp_to_bounds` into the clamped origin it returns on
+    /// every drag move. A negative width or height has no meaning as a bounding rectangle.
+    ///
+    /// Zero width or height is allowed. `clamp_to_bounds` already gives that case a deterministic result: the dragged
+    /// node pins to `bounds`'s own near edge on that axis.
+    InvalidDragBounds(Rect),
+    /// `Scene::add_edge_with` or `Scene::set_connector_type` was given a `ConnectorType::Elbow` corner radius that is
+    /// not a finite value `>= 0.0`.
+    ///
+    /// A negative radius has no meaning for a rounded corner, and a non-finite value (`NaN`, `+inf`, `-inf`) propagates
+    /// straight through `elbow_path_into` into the resulting path data. Rejected before any other state changes, so the
+    /// scene's existing nodes and edges are left exactly as they were.
     InvalidCornerRadius(f64),
     /// `Scene::add_node_with` or `Scene::set_edge_anchors` was given `Some(EdgeAnchors(0))`.
     ///
-    /// Zero fixing points has no meaning: a side with no candidate point cannot anchor a connector. Use `None`
-    /// instead, to keep each connector's own default anchor rule.
+    /// Zero fixing points has no meaning: a side with no candidate point cannot anchor a connector. Use `None` instead,
+    /// to keep each connector's own default anchor rule.
     InvalidEdgeAnchors(u8),
     /// `Scene::add_node` or `Scene::add_node_with` was given an origin or size that is not valid rectangle geometry.
     ///
-    /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal, and a
-    /// non-finite coordinate or dimension would otherwise sit in the graph's model and contaminate every later
-    /// geometry calculation it takes part in — `box_centre`, `boundary_point`, overlap detection, connector
-    /// routing, and collision resolution all use it. `width` and `height` must also both be strictly positive: a
-    /// zero-sized node has no visible box, and gives connector routing no direction to point at it in
-    /// (`boundary_point` needs a well-defined interior to aim a ray at).
+    /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal. An infinite
+    /// coordinate or dimension would otherwise sit in the graph's model and contaminate every later geometry
+    /// calculation in which it takes part — `box_centre`, `boundary_point`, overlap detection, connector routing, and
+    /// collision resolution all use it. `width` and `height` must also both be strictly positive: a zero-sized node has
+    /// no visible box, and gives connector routing no direction to point at it in (`boundary_point` needs a
+    /// well-defined interior to aim a ray at).
     ///
-    /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly
-    /// as it was.
+    /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as
+    /// it was.
     InvalidNodeGeometry(Rect),
 }
 
@@ -82,6 +90,12 @@ impl fmt::Display for Error {
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
             Error::InvalidCollisionPadding(padding) => {
                 write!(f, "collision padding {padding} is not a finite value >= 0.0")
+            },
+            Error::InvalidDragBounds(rect) => {
+                write!(
+                    f,
+                    "drag bounds {rect:?} is invalid: origin and size must be finite, and width/height must be positive"
+                )
             },
             Error::InvalidCornerRadius(radius) => {
                 write!(f, "corner radius {radius} is not a finite value >= 0.0")

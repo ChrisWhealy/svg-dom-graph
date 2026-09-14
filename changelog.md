@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct MSRV failure in CI build (``)
+- Correct MSRV failure in CI build (`6354036`)
+- Validate `DragOptions::bounds` (``)
 
 # [Released]
 

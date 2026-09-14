@@ -60,6 +60,11 @@ pub struct DragOptions {
     /// `Some(bounds)` clamps every drag move, and any collision-resolution push, to stay inside `bounds`. A
     /// node larger than `bounds` on some axis pins to `bounds`'s own near edge on that axis instead — see
     /// [`crate::geometry`]'s own `clamp_to_bounds` for the exact rule.
+    ///
+    /// `Scene::make_draggable_with` rejects a `Some(bounds)` whose origin or size is not finite, or whose
+    /// width or height is negative, with [`Error::InvalidDragBounds`] — see that method's own `# Errors`
+    /// section. A zero width or height is accepted: `clamp_to_bounds` already gives that a deterministic
+    /// result.
     pub bounds: Option<Rect>,
 }
 
@@ -101,6 +106,25 @@ impl Default for DragOptions {
             collision: CollisionPolicy::PushClear { padding: 6.0 },
             bounds: None,
         }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::InvalidDragBounds`] if `bounds` is `Some` with a non-finite origin or size, or a negative
+/// width or height. `None`, and every finite rect with a non-negative width and height, are valid — including a
+/// zero width or height, which [`clamp_to_bounds`] already handles deterministically.
+fn validate_bounds(bounds: Option<Rect>) -> Result<(), Error> {
+    let Some(bounds) = bounds else { return Ok(()) };
+
+    let finite = bounds.origin.x.is_finite()
+        && bounds.origin.y.is_finite()
+        && bounds.size.width.is_finite()
+        && bounds.size.height.is_finite();
+
+    if finite && bounds.size.width >= 0.0 && bounds.size.height >= 0.0 {
+        Ok(())
+    } else {
+        Err(Error::InvalidDragBounds(bounds))
     }
 }
 
@@ -174,8 +198,12 @@ impl Scene {
     /// installation is untouched.
     ///
     /// Returns [`Error::InvalidCollisionPadding`] if `options.collision` is [`CollisionPolicy::PushClear`] with a
-    /// `padding` that is not a finite value `>= 0.0`. Checked before anything else, so this scene's existing state
-    /// is left untouched either way.
+    /// `padding` that is not a finite value `>= 0.0`.
+    ///
+    /// Returns [`Error::InvalidDragBounds`] if `options.bounds` is `Some` with an origin or size that is not
+    /// finite, or a negative width or height.
+    ///
+    /// Both are checked before anything else, so this scene's existing state is left untouched either way.
     ///
     /// If `set_attr` or any one of the four pointer-listener registrations this method makes fails partway
     /// through — expected to be extremely rare, since it means the underlying `addEventListener` DOM call itself
@@ -187,6 +215,7 @@ impl Scene {
                 return Err(Error::InvalidCollisionPadding(padding));
             }
         }
+        validate_bounds(options.bounds)?;
 
         let group = {
             let inner = self.inner.borrow();
