@@ -326,14 +326,20 @@ fn refresh_radius_limit(
     // unwrapped, for the same reason `wire_connector_controls`'s own closure already ignores
     // `set_connector_type`'s result: a failed update should not crash a page the user is actively dragging.
     let _ = scene.set_connector_type(edge, ConnectorType::Elbow { corner_radius: RADIUS_PROBE });
-    let max_radius = max_renderable_radius(connector_path).unwrap_or(FALLBACK_MAX_RADIUS);
 
-    let max_str = max_radius.floor().to_string();
+    // Floored once, then reused for both the slider's own `max` attribute and the clamp below — not two separate
+    // computations of "the limit". `#corner-radius` declares `step="1"`, an integer slider; a fractional `max` (say
+    // `22.7`) would let `applied` land on a value (`22.7`) the slider itself could never actually represent, so the
+    // displayed value, the slider's declared maximum, and the connector's own request would each tell a different
+    // story about the same drag.
+    let available = max_renderable_radius(connector_path).unwrap_or(FALLBACK_MAX_RADIUS).floor();
+
+    let max_str = available.to_string();
     if radius_slider.get_attribute("max").as_deref() != Some(max_str.as_str()) {
         let _ = radius_slider.set_attribute("max", &max_str);
     }
 
-    let applied = desired.min(max_radius);
+    let applied = desired.min(available);
     if (applied - desired).abs() > f64::EPSILON {
         let value = applied.to_string();
         radius_slider.set_value(&value);
