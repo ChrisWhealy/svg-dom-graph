@@ -11,11 +11,14 @@
 //! - [`connectors`] — `ConnectorType`: corner-radius validation, live updates, clamping, `Straight`/`Elbow` toggling.
 //! - [`edge_anchors`] — `EdgeAnchors`/`NodeOptions`: validation, per-edge snapping, live redraws via
 //!   `set_edge_anchors`.
+//! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
+//!   clamped to its edge.
 //!
-//! All five drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All six drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
+mod bounds;
 mod collision_resolution;
 mod connectors;
 mod drag_basics;

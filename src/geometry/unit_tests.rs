@@ -201,6 +201,72 @@ fn rects_overlap_is_false_for_rects_that_only_touch_edges() -> Result<(), String
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn clamp_to_bounds_leaves_an_origin_already_inside_untouched() -> Result<(), String> {
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 300.0),
+    };
+    let size = Size::new(90.0, 50.0);
+    check_eq(
+        clamp_to_bounds(Point::new(100.0, 100.0), size, bounds),
+        Point::new(100.0, 100.0),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn clamp_to_bounds_pulls_a_negative_origin_back_to_the_near_edge() -> Result<(), String> {
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 300.0),
+    };
+    let size = Size::new(90.0, 50.0);
+    check_eq(clamp_to_bounds(Point::new(-40.0, -20.0), size, bounds), Point::new(0.0, 0.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn clamp_to_bounds_pulls_a_far_origin_back_to_the_far_edge() -> Result<(), String> {
+    // The box's own bottom-right corner, not its origin, must stay within bounds: max x is 400 - 90 = 310, max y
+    // is 300 - 50 = 250.
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 300.0),
+    };
+    let size = Size::new(90.0, 50.0);
+    check_eq(
+        clamp_to_bounds(Point::new(1000.0, 1000.0), size, bounds),
+        Point::new(310.0, 250.0),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn clamp_to_bounds_respects_a_bounds_rect_not_at_the_origin() -> Result<(), String> {
+    let bounds = Rect {
+        origin: Point::new(50.0, 20.0),
+        size: Size::new(200.0, 100.0),
+    };
+    let size = Size::new(30.0, 30.0);
+    // Both axes pushed past bounds's own far edge: max x = 50 + 200 - 30 = 220, max y = 20 + 100 - 30 = 90.
+    check_eq(clamp_to_bounds(Point::new(500.0, 500.0), size, bounds), Point::new(220.0, 90.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn clamp_to_bounds_pins_an_oversized_box_to_the_near_edge() -> Result<(), String> {
+    // The box is wider than bounds itself: 500 > 400. The clamp range on x would be [0, -100], which is empty, so
+    // x pins to bounds's own near edge, 0, instead.
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 300.0),
+    };
+    let size = Size::new(500.0, 50.0);
+    check_eq(clamp_to_bounds(Point::new(200.0, 100.0), size, bounds), Point::new(0.0, 100.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn nearest_clear_centre_pushes_straight_back_along_a_horizontal_approach() -> Result<(), String> {
     // blocker's centre is (20, 10); half-extents (20, 10).
     let blocker = Rect {

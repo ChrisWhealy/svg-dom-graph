@@ -13,32 +13,31 @@ use svg_dom::root::utils::{Point, Rect};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`Scene::add_edge_with`]/[`Scene::set_connector_type`] routes a connector.
 ///
-/// `#[non_exhaustive]` is used here because this type is expected to grow: a Bezier-curved connector is a likely
-/// future addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant is
-/// unaffected.
+/// `#[non_exhaustive]` is used here because this type is expected to grow: a Bezier-curved connector is a likely future
+/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
 ///
 /// ***A note on `Copy`***
 ///
 /// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a breaking
-/// change, so every field any variant gains — including a future variant — must itself stay `Copy`. See the same
-/// note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
+/// change, so every field any variant gains (including some future variant) must itself also implement `Copy`.
+/// See the same note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub enum ConnectorType {
     /// A straight line from one box's boundary to the other's.
     ///
-    /// Each end lands where the ray from that box's own centre toward the other box's centre crosses its boundary —
-    /// this is the crate's original, pre-elbow connector style.
+    /// Each end lands where the ray between the box's centres crosses the boundaries.
     Straight,
-    /// Horizontal and vertical segments only, joined at 90-degree corners.
+    /// Horizontal and vertical segments only, joined at corners whose radius varies from 0 pixels (90º corner) up to
+    /// half the connector's length.
     ///
-    /// Each end is anchored at the midpoint of the horizontal or vertical side intersected first by a ray from that
-    /// box's centre toward the other box's centre.
+    /// Unless fixing points are defined for the node's edges, each end is anchored at the midpoint of the horizontal or
+    /// vertical side first intersected by a ray cast between the box's centres.
     Elbow {
-        /// How far to round each corner, in this scene's user-space units. `0.0` draws a sharp corner.
+        /// How far to round each corner, in this scene's user-space units. `0.0` draws a sharp, 90º corner.
         ///
-        /// Shrinks at each corner so it never reaches past half the length of either segment meeting there. A
-        /// tight elbow rounds less. It never passes its own endpoint or a neighbouring corner.
+        /// Shrinks at each corner so it never reaches past half the length of either segment meeting there. A tight
+        /// elbow rounds less. It never passes its own endpoint or a neighbouring corner.
         corner_radius: f64,
     },
 }
@@ -46,8 +45,7 @@ pub enum ConnectorType {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures how [`Scene::add_edge_with`] draws a connector.
 ///
-/// Build one either with [`ConnectorOptions::default`] or with
-/// [`with_connector_type`](Self::with_connector_type).
+/// Build one either with [`ConnectorOptions::default`] or with [`with_connector_type`](Self::with_connector_type).
 /// A struct literal does not compile outside this crate.
 ///
 /// ***A note on `Copy`***
@@ -79,7 +77,7 @@ impl ConnectorOptions {
 }
 
 impl Default for ConnectorOptions {
-    /// An elbowed connector with a sharp, unrounded corner: [`ConnectorType::Elbow`] with `corner_radius: 0.0`.
+    /// An elbowed connector with a sharp, 90º corner: i.e. [`ConnectorType::Elbow`] with `corner_radius: 0.0`.
     fn default() -> Self {
         Self {
             connector_type: ConnectorType::Elbow { corner_radius: 0.0 },
@@ -89,7 +87,8 @@ impl Default for ConnectorOptions {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that
-/// is not a finite value `>= 0.0`. Every other variant has nothing to validate.
+/// is not a finite, non-negative value `>= 0.0`.
+/// No validation is required for the other `ConnectorType` variants.
 fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
     match connector_type {
         ConnectorType::Elbow { corner_radius } if !corner_radius.is_finite() || corner_radius < 0.0 => {
@@ -102,8 +101,9 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One endpoint's anchor point for a straight connector, honouring `anchors`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None`
-/// keeps [`ConnectorType::Straight`]'s own default: the continuous ray crossing — see [`boundary_point`].
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
+/// `None` keeps [`ConnectorType::Straight`]'s own default calculated as a continuous ray crossing — see
+/// [`boundary_point`].
 fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> Point {
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n).0,
@@ -114,8 +114,9 @@ fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One endpoint's anchor point and side for an elbowed connector, honouring `anchors`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None`
-/// keeps [`ConnectorType::Elbow`]'s own default: the crossed side's own midpoint — see [`edge_anchor`].
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
+/// `None` keeps [`ConnectorType::Elbow`]'s own default calculated as the crossed side's own midpoint — see
+/// [`edge_anchor`].
 fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Point, Side) {
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n),
@@ -124,12 +125,13 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Po
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The connector's own corner points, and the corner radius to round them by, for `connector_type` between
-/// `from` (with its own `from_anchors`) and `to` (with its own `to_anchors`).
+/// A connector's own corner points and the corner radius by which it might be rounded.
+/// Exists for a `connector_type` between `from` and `to`, each of which have their respective `from_anchors` and
+/// `to_anchors`.
 ///
-/// A [`ConnectorType::Straight`] connector has no corners to round, so its radius is always `0.0`.
+/// A [`ConnectorType::Straight`] connector cannot have a corner radius, so its radius is always `0.0`.
 ///
-/// `from_anchors`/`to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
+/// `from_anchors` / `to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
 /// endpoint's — one endpoint can use `None` while the other uses `Some`.
 pub(crate) fn route(
     connector_type: ConnectorType,

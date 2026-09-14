@@ -178,6 +178,19 @@ pub(crate) fn rects_overlap(a: Rect, b: Rect) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Clamps `origin` — a box's own top-left — so a box of `size` stays fully inside `bounds`.
+///
+/// Each axis clamps independently, to the range `[bounds start, bounds start + bounds size - box size]`. If `size`
+/// is larger than `bounds` on some axis, that range is empty. This pins the box to `bounds`'s own near edge on
+/// that axis instead, rather than clamping to a negative-width range — the box still overflows `bounds`, but at a
+/// fixed, predictable edge rather than free to drift arbitrarily far past it.
+pub(crate) fn clamp_to_bounds(origin: Point, size: Size, bounds: Rect) -> Point {
+    let max_x = (bounds.origin.x + bounds.size.width - size.width).max(bounds.origin.x);
+    let max_y = (bounds.origin.y + bounds.size.height - size.height).max(bounds.origin.y);
+    Point::new(origin.x.clamp(bounds.origin.x, max_x), origin.y.clamp(bounds.origin.y, max_y))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where to re-centre a `moving_size`-sized rectangle so it clears the `blocker` node. The rule is to move it back
 /// along the line between `blocker`'s own centre and the `previous_centre` by some padding distance.
 ///

@@ -2,11 +2,15 @@ pub(crate) mod collision_policy;
 mod install_guard;
 
 use super::{Scene, client_to_user_space};
-use crate::{error::Error, geometry::invert_matrix, model::node::NodeId};
+use crate::{
+    error::Error,
+    geometry::{clamp_to_bounds, invert_matrix},
+    model::node::NodeId,
+};
 use collision_policy::CollisionPolicy;
 use install_guard::InstallGuard;
 use std::{cell::Cell, rc::Rc};
-use svg_dom::root::utils::{Matrix2D, Point};
+use svg_dom::root::utils::{Matrix2D, Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Style applied while a box is idle: a grab cursor, no touch scrolling/panning, and no native text selection.
@@ -27,30 +31,36 @@ const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures the pointer-drag behaviour [`Scene::make_draggable_with`] wires up for one node.
 ///
-/// In the same way that [`CollisionPolicy`] uses `#[non_exhaustive]`, it is also used here.
+/// `#[non_exhaustive]` is used here for the same reason as [`CollisionPolicy`]. This type is expected to grow.
+/// Further drag configuration — snapping, axis restriction — is likely to follow `bounds`.
 ///
-/// [`DragOptions`] is expected to grow as further drag configuration are added such as constraints, snapping and axis
-/// restriction etc.
-///
-/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision).
-/// A struct literal does not compile outside this crate.
+/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision) and
+/// [`with_bounds`](Self::with_bounds). A struct literal does not compile outside this crate.
 ///
 /// ***A note on `Copy`***
 ///
-/// Deriving `Copy` is a deliberate compatibility commitment and has potential consequences for a non-exhaustive
-/// `struct`. Removing `Copy` later is a breaking change, so every field this type gains must also implement `Copy`.
+/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a
+/// breaking change, so every field this type gains must also implement `Copy`.
 ///
-/// This type is expected to grow to include drag features such as constraints, snapping and axis restriction.
-/// Since these can be represented using plain enums, numbers, points and rectangles, the choice to implement `Copy` is
-/// expected to hold.
-///
-/// A future field that needs something like a closure, an owned collection or a user-defined strategy object would
-/// force `Copy` to be dropped from this type and result in a breaking release.
+/// Plain enums, numbers, points, and rectangles all stay `Copy`, so this commitment is expected to hold. A
+/// future field needing a closure, an owned collection, or a user-defined strategy object would force `Copy`
+/// to be dropped, and that would be a breaking release.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub struct DragOptions {
     /// What happens when a drop leaves the dragged node overlapping another one — see [`CollisionPolicy`].
     pub collision: CollisionPolicy,
+    /// Confines the dragged node's own top-left corner so the whole box stays inside `bounds`, for as long
+    /// as this node stays draggable.
+    ///
+    /// `None` (the default) leaves dragging unconstrained: a node can be dropped anywhere, including outside
+    /// its own `<svg>`'s visible area. Once dropped there, it stays rendered but clipped, so it can no
+    /// longer be clicked to pick it up again.
+    ///
+    /// `Some(bounds)` clamps every drag move, and any collision-resolution push, to stay inside `bounds`. A
+    /// node larger than `bounds` on some axis pins to `bounds`'s own near edge on that axis instead — see
+    /// [`crate::geometry`]'s own `clamp_to_bounds` for the exact rule.
+    pub bounds: Option<Rect>,
 }
 
 impl DragOptions {
@@ -66,13 +76,30 @@ impl DragOptions {
         self.collision = collision;
         self
     }
+
+    /// Returns `self` with `bounds` set to `bounds`.
+    ///
+    /// ```
+    /// use svg_dom::root::utils::{Point, Rect, Size};
+    /// use svg_dom_graph::scene::DragOptions;
+    /// let bounds = Rect { origin: Point::new(0.0, 0.0), size: Size::new(400.0, 300.0) };
+    /// let options = DragOptions::default().with_bounds(Some(bounds));
+    /// assert_eq!(options.bounds, Some(bounds));
+    /// ```
+    #[must_use]
+    pub fn with_bounds(mut self, bounds: Option<Rect>) -> Self {
+        self.bounds = bounds;
+        self
+    }
 }
 
 impl Default for DragOptions {
-    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding: [`Scene::make_draggable`]'s behaviour.
+    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding, and no `bounds` — unconstrained
+    /// dragging, [`Scene::make_draggable`]'s own behaviour.
     fn default() -> Self {
         Self {
             collision: CollisionPolicy::PushClear { padding: 6.0 },
+            bounds: None,
         }
     }
 }
@@ -229,6 +256,7 @@ impl Scene {
         {
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
+            let bounds = options.bounds;
             // Reused across every pointermove call in this drag — and across drags, since the closure's
             // environment persists between invocations — rather than allocating a fresh String each time. See
             // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
@@ -252,6 +280,20 @@ impl Scene {
                     start.box_origin.y + (pointer_now.y - start.pointer.y),
                 );
 
+                // Clamps before the move, not after: this keeps a bounded node from ever being rendered outside
+                // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters —
+                // a node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked
+                // to pick up again.
+                let new_origin = match bounds {
+                    Some(bounds) => {
+                        let Ok(size) = inner.borrow().node_rect(id).map(|rect| rect.size) else {
+                            return;
+                        };
+                        clamp_to_bounds(new_origin, size, bounds)
+                    },
+                    None => new_origin,
+                };
+
                 let _ = inner.borrow_mut().move_node(id, new_origin, &mut scratch);
             })?;
         }
@@ -263,6 +305,7 @@ impl Scene {
             let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
             let collision = options.collision;
+            let bounds = options.bounds;
             // Reused for the corrective `move_node` call this handler makes when a drop overlaps another node —
             // same reasoning as the pointermove handler's own `scratch` above.
             let mut scratch = String::new();
@@ -284,10 +327,21 @@ impl Scene {
                 // this drag, if the drop overlaps another node.
                 let CollisionPolicy::PushClear { padding } = collision else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
-                let corrected = inner.borrow().resolve_overlap(id, start.box_origin, padding);
-                if let Some(corrected_origin) = corrected {
-                    let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
-                }
+                let Some(corrected_origin) = inner.borrow().resolve_overlap(id, start.box_origin, padding) else {
+                    return;
+                };
+                // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not
+                // just pointermove's, so this correction can never undo pointermove's own clamping.
+                let corrected_origin = match bounds {
+                    Some(bounds) => {
+                        let Ok(size) = inner.borrow().node_rect(id).map(|rect| rect.size) else {
+                            return;
+                        };
+                        clamp_to_bounds(corrected_origin, size, bounds)
+                    },
+                    None => corrected_origin,
+                };
+                let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
             })?;
         }
 
