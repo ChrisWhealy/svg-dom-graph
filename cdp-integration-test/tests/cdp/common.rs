@@ -44,9 +44,9 @@ fn shared() -> Result<&'static Shared, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Opens a fresh tab on the shared fixture page and waits for the last node (`branch_b`, the sixth and final one added
-/// by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence proves
-/// the whole scene finished building.
+/// Opens a fresh tab on the shared fixture page and waits for the last node (`bounded`, the seventh and final one
+/// added by the fixture) before returning it. Since the fixture builds every node synchronously, that node's
+/// presence proves the whole scene finished building.
 pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
     let shared = shared()?;
     let tab = shared.browser.new_tab().map_err(|e| format!("failed to open a new tab: {e}"))?;
@@ -54,7 +54,7 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
         .map_err(|e| format!("failed to navigate to fixture page: {e}"))?;
     tab.bring_to_front().map_err(|e| format!("failed to bring tab to front: {e}"))?;
     tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
-    tab.wait_for_element_with_custom_timeout("#diagram > g:nth-of-type(6)", Duration::from_secs(10))
+    tab.wait_for_element_with_custom_timeout("#diagram > g:nth-of-type(7)", Duration::from_secs(10))
         .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
     Ok(tab)
 }

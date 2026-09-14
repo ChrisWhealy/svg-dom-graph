@@ -252,3 +252,52 @@ fn make_draggable_with_accepts_a_zero_width_bounds() -> Result<(), String> {
 
     check_close(attr_f64(&rect_a, "x")?, 50.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `CollisionPolicy::PushClear`'s own corrective `move_node` call is clamped to `bounds` too, not just the
+/// `pointermove` that preceded it. This proves the ordering in `Scene::make_draggable_with`'s own pointerup handler
+/// actually holds, rather than assuming it from reading the code. It resolves the collision, *then* clamps its result.
+///
+/// # Expected result, worked by hand
+///
+/// `blocker` is `(30, 100)`, size `(80, 40)` — centre `(70, 120)`.
+/// `A` starts at `(0, 100)`, size `(90, 50)` — pre-drag centre `(45, 125)`, already on `blocker`'s own west side.
+///
+/// Dragging `A`'s centre from `(45, 125)` to `(55, 125)` — a small, deliberate 10-unit move — lands `A`'s new rect
+/// at `(10, 100)`, overlapping `blocker`. `CollisionPolicy::PushClear`'s default 6-unit padding then pushes `A`
+/// back along the line from `blocker`'s centre through `A`'s own *pre-drag* centre — continuing further west, not
+/// back toward where it was just dropped. That push alone would land `A`'s corrected origin at roughly
+/// `(-65.9, 113.2)` — far past `bounds`'s own `x = 0` edge. With `bounds` in effect, the corrected origin clamps
+/// to `x = 0`, leaving `y` (`113.18`, well inside `bounds`) untouched.
+#[wasm_bindgen_test]
+fn collision_pushback_near_an_edge_stays_within_bounds() -> Result<(), String> {
+    let svg = make_svg("bounds-collision-pushback", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 260.0),
+    };
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    scene
+        .add_node(Point::new(30.0, 100.0), Size::new(80.0, 40.0), "blocker")
+        .map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 100.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let options = DragOptions::default().with_bounds(Some(bounds));
+    scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
+
+    let group_a = nth_group("bounds-collision-pushback", 1)?; // A was added second.
+    let rect_a = group_a
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in A's group")?;
+
+    // Drags A's centre (45, 125) to (55, 125): a small, deliberate move that overlaps blocker.
+    dispatch_pointer_event(&group_a, "pointerdown", 45, 125, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", 55, 125, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", 55, 125, 1)?;
+
+    check_close(attr_f64(&rect_a, "x")?, 0.0)?;
+    check_close(attr_f64(&rect_a, "y")?, 113.1767)
+}

@@ -17,6 +17,10 @@
 //! 5. `branch_a` — draggable, connected to `hub`. Used to prove a live drag re-snaps to a different fixing point.
 //! 6. `branch_b` — not draggable, connected to `hub`. Stays put, so its own connector isolates `branch_a`'s drag as
 //!    the only thing that moved.
+//! 7. `bounded` — draggable with `DragOptions::bounds` set to the diagram's own viewBox, `(0, 0, 500, 400)`. Placed
+//!    in the top-right corner, far from every other node, so a drag past the viewBox's own right/bottom edge has
+//!    nothing else to collide with on the way. Used to prove a real mouse drag past the visible area clamps to the
+//!    edge, and that the clamped node stays real-hit-testable — see `bounds.rs`.
 //!
 //! Connectors, in add order (`#diagram > path:nth-of-type(N)`):
 //!
@@ -41,11 +45,11 @@
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
-    root::utils::{Point, Size},
+    root::utils::{Point, Rect, Size},
 };
 use svg_dom_graph::{
     Error,
-    scene::{ConnectorOptions, ConnectorType, EdgeAnchors, NodeOptions, Scene},
+    scene::{ConnectorOptions, ConnectorType, DragOptions, EdgeAnchors, NodeOptions, Scene},
 };
 use wasm_bindgen::prelude::*;
 
@@ -89,6 +93,14 @@ fn build() -> Result<(), Error> {
 
     scene.add_edge(hub, branch_a)?;
     scene.add_edge(hub, branch_b)?;
+
+    // Far from every other node, in the top-right corner — see this module's own doc comment for why.
+    let view_box = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(500.0, 400.0),
+    };
+    let bounded = scene.add_node(Point::new(400.0, 20.0), box_size, "bounded")?;
+    scene.make_draggable_with(bounded, DragOptions::default().with_bounds(Some(view_box)))?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 

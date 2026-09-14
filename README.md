@@ -97,7 +97,7 @@ The test suite covers:
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
-- `DragOptions::bounds`: clamping a drag to a rectangle at both edges, leaving an unbounded drag unconstrained, a node clamped to the edge remaining draggable afterward — the exact bug this feature fixes — rejecting a non-finite origin or a negative width/height, accepting a zero-width/height rectangle, and a rejected `bounds` leaving the node not draggable at all
+- `DragOptions::bounds`: clamping a drag to a rectangle at both edges, leaving an unbounded drag unconstrained, a node clamped to the edge remaining draggable afterward — the exact bug this feature fixes — rejecting a non-finite origin or a negative width/height, accepting a zero-width/height rectangle, a rejected `bounds` leaving the node not draggable at all, and `CollisionPolicy::PushClear`'s own corrective push staying within `bounds` too, not just the pointermove that preceded it
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
 - per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the elbow connector's default midpoint anchor at one fixing point (this does not hold for a straight connector, whose unsnapped default is the continuous ray/boundary crossing), a straight connector's own snap onto a fixing point and its exact round trip back to `None`'s boundary crossing, and live reconfiguration via `set_edge_anchors` reaching every incident edge
 
@@ -111,6 +111,7 @@ Unlike `wasm-pack test`'s synthetic events, this goes through the browser's own 
 This is the only way to catch, for example, a missing `prevent_default()` that lets a drag fall through to the browser's native text-selection gesture.
 
 Its own `edge_anchors.rs` scenario proves a real drag re-snaps a connector onto a different fixing point, through this same real pointer pipeline.
+Its own `bounds.rs` scenario proves the property `wasm-bindgen-test`'s synthetic dispatch cannot: a real drag past the view box clamps to the edge, and the clamped node stays real-hit-testable for a second, separately hit-tested drag.
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 Needs a local Chrome/Chromium binary.

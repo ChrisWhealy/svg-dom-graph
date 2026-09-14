@@ -86,14 +86,23 @@ pub fn serve(dir: PathBuf) -> u16 {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Launches Chrome with its sandbox disabled.
+/// Launches Chrome with its sandbox disabled and a generously large window.
 ///
 /// `ubuntu-latest` CI runners restrict unprivileged user namespaces via `AppArmor`, which breaks Chrome's own sandbox
 /// initialisation unless `--no-sandbox` is passed. Every scenario here only ever loads a local fixture page built by
 /// this crate, so there is no untrusted content to be sandboxed. This is disabled unconditionally, not just in CI, so
 /// local and CI runs stay on the same code path.
+///
+/// `window_size` is set explicitly, rather than left at Chrome's own headless default (small enough that a
+/// deliberately large drag delta — `bounds.rs` drags a node hundreds of pixels past the fixture's own view box —
+/// can otherwise land short of, or land at an unrelated point past, the actual window edge). Every other scenario
+/// here only ever uses deltas relative to an element's own midpoint, so a larger window changes nothing for them.
 pub fn launch_browser() -> Result<Browser, Box<dyn std::error::Error>> {
     let path = default_executable().map_err(|e| format!("could not locate a Chrome/Chromium binary: {e}"))?;
-    let launch_options = LaunchOptions::default_builder().path(Some(path)).sandbox(false).build()?;
+    let launch_options = LaunchOptions::default_builder()
+        .path(Some(path))
+        .sandbox(false)
+        .window_size(Some((1200, 900)))
+        .build()?;
     Ok(Browser::new(launch_options)?)
 }
