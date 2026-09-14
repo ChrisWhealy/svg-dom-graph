@@ -255,10 +255,14 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
     let mut min_radius: Option<f64> = None;
 
     while let Some(token) = tokens.next() {
-        if token == "A"
-            && let Some(r) = tokens.next().and_then(|s| s.parse::<f64>().ok())
-        {
-            min_radius = Some(min_radius.map_or(r, |m: f64| m.min(r)));
+        // Not collapsed into a `&&`-chained `if let` (clippy's own preference on a modern toolchain): let-chains
+        // are not yet stable on this crate's declared MSRV (1.85) — see the `msrv` CI job, which builds demo-app
+        // too, not just the library.
+        #[allow(clippy::collapsible_if)]
+        if token == "A" {
+            if let Some(r) = tokens.next().and_then(|s| s.parse::<f64>().ok()) {
+                min_radius = Some(min_radius.map_or(r, |m: f64| m.min(r)));
+            }
         }
     }
     min_radius
