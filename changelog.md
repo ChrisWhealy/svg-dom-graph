@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct MSRV failure in CI build (`6354036`)
 - Validate `DragOptions::bounds` (`9f0ec17`)
-- Add CDP drag bound clamping tests (``)
+- Add CDP drag bound clamping tests (`5fb2c1d`)
+- Doc only: Correct stale documentation (``)
 
 # [Released]
 

@@ -185,14 +185,15 @@ fn build_demo_tree(svg: SvgRoot) -> Result<(), String> {
 /// 2. The `#connector-type-straight`/`#connector-type-elbow` radio buttons switch live between
 ///    [`ConnectorType::Straight`] and [`ConnectorType::Elbow`].
 /// 3. The `#corner-radius` slider adjusts an elbow's corner radius live.
-/// 4. `P` and `Q` start close enough that a radius past about `22` already exceeds the available room. That
-///    room is half the shorter of the two segments meeting at the connector's one bend — the same limit
+/// 4. `P` and `Q` start close enough that a radius past about `22` already exceeds the available room. That room is
+///    half the shorter of the two segments meeting at the connector's one bend — the same limit that
 ///    `elbow_path_into`'s own doc comment describes.
-/// 5. This demo goes further than the library itself. The library just renders whatever fits, silently
-///    shrinking an over-large request. This demo also keeps the slider's own `max`, and its value if that
-///    value no longer fits, in step with the true limit — see [`refresh_radius_limit`] for how.
-/// 6. Dragging `P` or `Q` further apart gives the same requested radius more room. The full, unclamped
-///    radius returns on its own, raising the slider's own ceiling back up with it.
+/// 5. This demo goes further than the library itself. The library just renders whatever fits, silently shrinking an
+///    over-large request. This demo also keeps the slider's own `max`, and its value if that value no longer fits, in
+///    step with the true limit — see [`refresh_radius_limit`] for how.
+/// 6. Dragging `P` or `Q` further apart dynamically raises the slider's own ceiling. The slider's *value* does not
+///    follow it back up on its own: it represents the currently applicable radius, not some previously remembered
+///    value — see [`refresh_radius_limit`]'s own doc comment for why that is the chosen behaviour, not an oversight.
 ///
 /// # Errors
 ///
@@ -279,6 +280,17 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 ///
 /// This is what point 5 of [`build_elbow_demo`] means by "further than the library". This function finds today's true
 /// ceiling, and makes the slider itself reflect it, not just the rendered path.
+///
+/// # The slider has no memory of a larger request
+///
+/// Reading `radius_slider`'s own current value as `desired` (below), rather than some separately tracked "last value
+/// requested by the user" is deliberate. If room shrinks and this function pulls the slider down from, say, `60` to
+/// `25`, the slider *becomes* `25`: the previous value of `60` is not hidden away in some cache. If room later returns,
+/// only the slider's own `max` rises back up; its value stays at `25` until the user moves it again.
+///
+/// The alternative of silently restoring the previous value of `60` once room returns would move the control without
+/// the user having touched it, which is considered to be the more surprising of the two slider behaviours a user can
+/// experience.
 ///
 /// Only called while `Elbow` is selected. `Straight` has no corner to round, so this function leaves the limit
 /// untouched until `Elbow` is reselected. It is then recomputed fresh, from whatever room the boxes occupy at that

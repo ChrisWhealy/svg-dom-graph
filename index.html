@@ -1,71 +1,86 @@
 <!doctype html>
 <html lang="en">
-  <head>
+
+<head>
     <meta charset="utf-8" />
     <title>svg-dom-graph — directed graph demo</title>
     <style>
-      body {
-        font-family: system-ui, sans-serif;
-        margin: 2rem;
-      }
-      svg {
-        border: 1px solid #ccc;
-        background: #fafafa;
-      }
-      .controls {
-        margin: 1rem 0;
-      }
-      .controls input[type="range"] {
-        width: 20rem;
-        vertical-align: middle;
-      }
-      .controls label {
-        margin-right: 1.5rem;
-      }
+        body {
+            font-family: system-ui, sans-serif;
+            margin: 2rem;
+        }
+
+        svg {
+            border: 1px solid #ccc;
+            background: #fafafa;
+        }
+
+        .controls {
+            margin: 1rem 0;
+        }
+
+        .controls input[type="range"] {
+            width: 20rem;
+            vertical-align: middle;
+        }
+
+        .controls label {
+            margin-right: 1.5rem;
+        }
     </style>
-  </head>
-  <body>
+</head>
+
+<body>
     <h1>svg-dom-graph</h1>
     <p>A minimal directed graph: three boxes connected by straight, arrow-tipped connectors.</p>
     <svg id="diagram" width="400" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"></svg>
 
     <h2>Connector routing</h2>
     <p>Drag either box. The connector reroutes automatically, whichever routing style is selected below.</p>
-    <p>Switch to "Elbow", then drag the slider to round its corners.
-      Increase the radius, then drag the boxes close together — the rendered corners shrink to fit, with no error.
-      Drag the boxes apart again, and the full requested radius returns automatically.</p>
+    <p>Switch to "Elbow", then drag the slider to round its corners.</p>
+    <p>Increase the radius, then drag the boxes close together and the slider's max maximum is pulled down to whatever
+        radius still fits, with no error.</p>
+    <p>Drag the boxes apart again, and the slider's own ceiling dynamically rises — but its value stays where it was
+        left, since it now represents the currently applicable radius, not some remembered value from a previous
+        request. Move the slider again to reclaim any of the room that's returned.</p>
     <p class="controls">
-      <span>Connector type:</span>
-      <label><input type="radio" name="connector-type" id="connector-type-straight" value="straight" /> Straight</label>
-      <label><input type="radio" name="connector-type" id="connector-type-elbow" value="elbow" checked /> Elbow</label>
+        <span>Connector type:</span>
+        <label><input type="radio" name="connector-type" id="connector-type-straight" value="straight" />
+            Straight</label>
+        <label><input type="radio" name="connector-type" id="connector-type-elbow" value="elbow" checked />
+            Elbow</label>
     </p>
     <p class="controls">
-      <label for="corner-radius">Corner radius: <output id="corner-radius-value">0</output></label><br />
-      <input type="range" id="corner-radius" min="0" max="80" step="1" value="0" />
+        <label for="corner-radius">Corner radius: <output id="corner-radius-value">0</output></label><br />
+        <input type="range" id="corner-radius" min="0" max="80" step="1" value="0" />
     </p>
     <svg id="elbow-diagram" width="420" height="300" viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg"></svg>
 
     <h2>Fixing points</h2>
     <p>The parent starts with one child. Their straight connector aims at each box's centre, stopping at whichever
-      boundary point that ray crosses first.</p>
+        boundary point that ray crosses first.</p>
     <p>Move the slider to 1, and the connector snaps onto the exact midpoint of the side it crosses.
-      Move it higher, and more children appear, sharing the same parent — each connector then settles on its own
-      evenly spaced fixing point along the parent's side. Move it back down, and children disappear again, always
-      leaving at least one.</p>
+        Move it higher, and more children appear, sharing the same parent — each connector then settles on its own
+        evenly spaced fixing point along the parent's side. Move it back down, and children disappear again, always
+        leaving at least one.</p>
     <p class="controls">
-      <span>Connector type:</span>
-      <label><input type="radio" name="edge-anchors-type" id="edge-anchors-type-straight" value="straight" checked /> Straight</label>
-      <label><input type="radio" name="edge-anchors-type" id="edge-anchors-type-elbow" value="elbow" /> Elbow</label>
+        <span>Connector type:</span>
+        <label><input type="radio" name="edge-anchors-type" id="edge-anchors-type-straight" value="straight" checked />
+            Straight</label>
+        <label><input type="radio" name="edge-anchors-type" id="edge-anchors-type-elbow" value="elbow" /> Elbow</label>
     </p>
     <p class="controls">
-      <label for="edge-anchors-fixing-points">Fixing points: <output id="edge-anchors-fixing-points-value">0</output></label><br />
-      <input type="range" id="edge-anchors-fixing-points" min="0" max="5" step="1" value="0" />
+        <label for="edge-anchors-fixing-points">Fixing points: <output
+                id="edge-anchors-fixing-points-value">0</output></label><br />
+        <input type="range" id="edge-anchors-fixing-points" min="0" max="5" step="1" value="0" />
     </p>
-    <svg id="edge-anchors-diagram" width="400" height="260" viewBox="0 0 400 260" xmlns="http://www.w3.org/2000/svg"></svg>
+    <svg id="edge-anchors-diagram" width="400" height="260" viewBox="0 0 400 260"
+        xmlns="http://www.w3.org/2000/svg"></svg>
 
     <script type="module">
-      import init from "./pkg/svg_dom_graph_demo.js";
-      init();
+        import init from "./pkg/svg_dom_graph_demo.js";
+        init();
     </script>
-  </body>
+</body>
+
 </html>
