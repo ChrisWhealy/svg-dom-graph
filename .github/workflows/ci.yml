@@ -40,12 +40,19 @@ jobs:
       - name: Unit tests (demo-server)
         run: cargo test -p demo-server
 
+      # demo-app is a cdylib (wasm-bindgen crate), but its highlight::unit_tests and
+      # unit_tests::every_registered_demo_has_extractable_source are plain, DOM-free `#[test]`s that run natively —
+      # the latter is what actually catches a demo_gallery! entry whose source text demo_fn_source can no longer
+      # locate, so it needs to run somewhere in CI, not just pass locally.
+      - name: Unit tests (demo-app)
+        run: cargo test -p svg-dom-graph-demo
+
       # demo-server's own unit tests (build::unit_tests) already cover prepare_stage in isolation against the real
       # project, but this exercises the actual `cargo demo`-facing entry point — the same `--prepare-only` path CI
       # or a developer would use to check staging without paying for a full `wasm-pack build` (the `wasm` job below
       # already covers that separately). See demo-server/src/build/mod.rs's doc comment for why prepare_stage is
       # split out from build_demo.
-      - name: Demo staging check (copy index.html, no wasm build)
+      - name: Demo staging check (assemble index.html from demo/, no wasm build)
         run: cargo run -p demo-server -- --prepare-only
 
       - name: Docs (deny warnings)

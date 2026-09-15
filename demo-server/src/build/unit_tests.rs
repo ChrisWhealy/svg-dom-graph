@@ -9,20 +9,30 @@ fn workspace_root() -> Result<PathBuf, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn prepare_stage_copies_the_real_index_html_verbatim() -> Result<(), String> {
-    let root = workspace_root()?;
-    let expected = fs::read_to_string(root.join("index.html")).map_err(|e| format!("read source index.html: {e:?}"))?;
+// prepare_stage — the end-to-end staging check: everything build_demo does except the wasm rebuild, run against
+// the real project. This is what actually proves catalogue validation, template assembly, and asset copying stay
+// wired together correctly as one pipeline, not just that each phase's own unit tests (in panels::unit_tests and
+// validate::unit_tests) pass in isolation.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+#[test]
+fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> {
+    let root = workspace_root()?;
     let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
     let stage = StagePaths::new(stage_root.path());
 
     prepare_stage(&root, &stage).map_err(|e| format!("prepare_stage failed against the real project: {e}"))?;
 
-    let staged =
+    let html =
         fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
-    if staged != expected {
-        return Err("staged index.html does not match the source file verbatim".to_owned());
+    if !html.contains(r#"id="panel-tree""#) {
+        return Err("staged index.html is missing a known real panel".to_owned());
+    }
+    if html.contains("{{") {
+        return Err("staged index.html still contains an unresolved placeholder".to_owned());
+    }
+    if !stage.stage_dir.join("style.css").is_file() {
+        return Err("expected style.css to be staged alongside index.html".to_owned());
     }
     Ok(())
 }
@@ -46,24 +56,24 @@ fn prepare_stage_creates_a_stage_dir_that_does_not_already_exist() -> Result<(),
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn prepare_stage_reports_a_missing_source_index_html() -> Result<(), String> {
+fn prepare_stage_reports_a_missing_source_root() -> Result<(), String> {
     let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
     let stage = StagePaths::new(stage_root.path());
-    // `stage_root` itself has no `index.html`, so using it as both "root" and stage target is a convenient way to
-    // point `prepare_stage` at a source directory that definitely does not have one.
+    // `stage_root` itself has no `demo-app/src/lib.rs`, so using it as a fake root is a convenient way to point
+    // `prepare_stage` at a source tree that definitely fails at the very first phase, validation.
     let fake_root = stage_root.path().join("no-such-root");
 
     match prepare_stage(&fake_root, &stage) {
-        Err(BuildError::CopyIndexHtml { .. }) => Ok(()),
-        other => Err(format!("expected Err(BuildError::CopyIndexHtml), got {other:?}")),
+        Err(BuildError::Validate(_)) => Ok(()),
+        other => Err(format!("expected Err(BuildError::Validate(_)), got {other:?}")),
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A failed refresh must leave the previously staged `index.html` completely untouched — the guarantee `main`'s
-/// per-request middleware documents. Proves `prepare_stage` writes through a temporary file and `rename`s it into
-/// place, rather than copying straight onto the live destination, where a failure partway could leave a truncated
-/// file being served instead of the old, good one.
+/// per-request middleware documents. Proves `prepare_stage` assembles into a temporary file and `rename`s it into
+/// place, rather than writing straight onto the live destination, where a failure partway could leave a
+/// partially written file being served instead of the old, good one.
 #[test]
 fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Result<(), String> {
     let root = workspace_root()?;
@@ -74,13 +84,13 @@ fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Res
     let before =
         fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
 
-    // A source directory with no index.html at all, so the copy step fails before any rename is attempted.
+    // A source root with no demo-app/src/lib.rs at all, so validation fails before assembly is ever attempted.
     let broken_root = stage_root.path().join("no-such-root");
     match prepare_stage(&broken_root, &stage) {
-        Err(BuildError::CopyIndexHtml { .. }) => {},
+        Err(BuildError::Validate(_)) => {},
         other => {
             return Err(format!(
-                "expected the second prepare_stage call to fail with CopyIndexHtml, got {other:?}"
+                "expected the second prepare_stage call to fail with Validate, got {other:?}"
             ));
         },
     }

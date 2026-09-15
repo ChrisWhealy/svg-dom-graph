@@ -1,0 +1,110 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>svg-dom-graph — directed graph demo</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<body>
+    <div id="app">
+        <nav id="menu">
+            <h1 class="brand">svg-dom-graph</h1>
+
+{{MENU}}
+        </nav>
+
+        <header id="title">
+            <h1>Directed Graph Demos</h1>
+            <p class="subtitle">
+                Every demo is created programmatically from Rust/WebAssembly, using the <code>svg-dom-graph</code>
+                crate. Pick a demo from the menu on the left.
+            </p>
+            <div id="error-banner"></div>
+        </header>
+
+        <main id="stage">
+{{PANELS}}
+        </main>
+    </div>
+
+    <script type="module">
+        import init, { init_panel } from "./pkg/svg_dom_graph_demo.js"
+
+        // wasmReady remains `false` until the WASM module finishes loading.
+        // This guards against a menu click or hashchange event that arrives before `init_panel` exists.
+        let wasmReady = false
+
+        // The full set of valid panel ids, taken directly from the rendered menu.
+        // The menu itself is generated server-side, from the same catalogue the panel fragments come from
+        // (`MANIFEST` in `demo-server/src/panels/mod.rs`), so this list cannot drift from the real panel set.
+        const menuItems = [...document.querySelectorAll('#menu .menu-item')]
+        const validPanelIds = new Set(menuItems.map(item => item.dataset.target))
+
+        // Shows target's section, marks its menu button current, and builds its content.
+        // The caller must first confirm the id is in validPanelIds — see route below, the only caller.
+        const selectDemo = target => {
+            for (const section of document.querySelectorAll('#stage .section')) {
+                section.classList.toggle('active', section.id === target)
+            }
+
+            for (const item of menuItems) {
+                const isActive = item.dataset.target === target
+                item.classList.toggle('active', isActive)
+                if (isActive) {
+                    item.setAttribute('aria-current', 'page')
+                } else {
+                    item.removeAttribute('aria-current')
+                }
+            }
+            // init_panel does nothing if this panel was already built on an earlier visit, so switching between
+            // panels never rebuilds one that already exists.
+            if (wasmReady) init_panel(target)
+        }
+
+        // Every panel selection goes through this one routing path: a menu click, a deep link, the browser's
+        // back/forward buttons, and the initial load below. A hash that does not name a real panel is rejected
+        // here, rather than reaching selectDemo and clearing every section's own active state.
+        const route = target => {
+            if (validPanelIds.has(target)) selectDemo(target)
+        }
+
+        // A menu click updates the URL instead of selecting the panel directly, so every selection — including
+        // this one — flows through the same hashchange -> route path below, giving every click a bookmarkable,
+        // shareable URL.
+        for (const item of menuItems) {
+            item.addEventListener('click', () => {
+                location.hash = item.dataset.target
+            })
+        }
+
+        window.addEventListener('hashchange', () => route(location.hash.slice(1)))
+
+        try {
+            await init()
+            wasmReady = true
+        } catch (err) {
+            const banner = document.getElementById('error-banner')
+            banner.style.display = 'block'
+            banner.textContent = `WASM error: ${err}`
+            console.error(err)
+        }
+
+        // Route to the panel named by the URL fragment, or the first panel if the fragment names none.
+        // Assigning location.hash its own current value would not reliably fire a hashchange, so this calls
+        // route directly and syncs the URL via replaceState instead, adding no extra back-button stop.
+        const requested = location.hash.slice(1)
+        const initial = validPanelIds.has(requested) ? requested : menuItems[0]?.dataset.target
+
+        if (initial) {
+            route(initial)
+            if (location.hash.slice(1) !== initial) {
+                history.replaceState(null, '', `#${initial}`)
+            }
+        }
+    </script>
+</body>
+
+</html>

@@ -3,7 +3,7 @@
 use super::{BoxHandles, Scene, box_centre};
 use crate::{error::Error, model::node::NodeId};
 use svg_dom::{
-    DominantBaseline, SvgRoot, TextAnchor,
+    DominantBaseline, SvgNode, SvgRoot, TextAnchor,
     root::utils::{Point, Rect, Size},
 };
 
@@ -95,6 +95,39 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
     }
 }
 
+/// The label's default font size, in user-space units, before [`shrink_label_to_fit`] ever considers scaling it
+/// down.
+const LABEL_FONT_SIZE: f64 = 14.0;
+
+/// The minimum gap, in user-space units, kept clear between a label's own rendered edges and its node's four
+/// sides. [`shrink_label_to_fit`] shrinks the label's font size, proportionally, whenever it would otherwise come
+/// closer than this to the box — a label short enough to fit at [`LABEL_FONT_SIZE`] is left untouched.
+const LABEL_MARGIN: f64 = 5.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shrinks `label`'s own font size, proportionally, so its rendered bounding box fits within `size` once
+/// [`LABEL_MARGIN`] is kept clear on every side — otherwise a label close to as wide (or tall) as its box renders
+/// with its text sitting flush against, or spilling past, the box's own edges.
+///
+/// Reads `label`'s real, rendered bounding box (`getBBox()`, via [`SvgNode::bounding_box`]) rather than estimating
+/// character widths, so this stays correct for whatever font the browser actually substitutes, with no per-glyph
+/// metrics table to keep in sync. Only ever shrinks — a label that already fits at [`LABEL_FONT_SIZE`] keeps that
+/// size exactly, rather than being nudged to fill the available room.
+fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
+    let bbox = label.bounding_box()?;
+    let max_width = (size.width - 2.0 * LABEL_MARGIN).max(0.0);
+    let max_height = (size.height - 2.0 * LABEL_MARGIN).max(0.0);
+
+    let width_scale = if bbox.size.width > 0.0 { max_width / bbox.size.width } else { 1.0 };
+    let height_scale = if bbox.size.height > 0.0 { max_height / bbox.size.height } else { 1.0 };
+    let scale = width_scale.min(height_scale).min(1.0);
+
+    if scale < 1.0 {
+        label.set_font_size(LABEL_FONT_SIZE * scale)?;
+    }
+    Ok(())
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
@@ -108,8 +141,9 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     let label_el = svg.text(box_centre(rect), label)?;
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    label_el.set_font_size(14.0)?;
+    label_el.set_font_size(LABEL_FONT_SIZE)?;
     label_el.set_fill("#1b1b1b")?;
+    shrink_label_to_fit(&label_el, rect.size)?;
 
     group.append(&rect_el)?;
     group.append(&label_el)?;

@@ -1,0 +1,26 @@
+<section class="section" id="panel-elbow">
+    <h2>Connector routing</h2>
+    <p>As you drag either box, the connector reroutes automatically. The connector will reroute using the selected
+        routing style.</p>
+    <p>Switch to "Elbow", then drag the slider to round its corners.</p>
+    <p>Increase the radius, then drag the boxes close together and the slider's max maximum is pulled down to
+        accommodate whatever radius will fit in the available space.</p>
+    <p>Drag the boxes apart again, and the slider's own ceiling dynamically rises, but its value stays where it was
+        left, since it now represents the currently applicable radius, not some remembered value from a previous
+        request. Move the slider again to reclaim any of the room that repositioning the nodes have returned.
+    </p>
+    <p class="controls">
+        <span>Connector type:</span>
+        <label><input type="radio" name="connector-type" id="connector-type-straight" value="straight" />
+            Straight</label>
+        <label><input type="radio" name="connector-type" id="connector-type-elbow" value="elbow" checked />
+            Elbow</label>
+    </p>
+    <p class="controls">
+        <label for="corner-radius">Corner radius: <output id="corner-radius-value">0</output></label><br />
+        <input type="range" id="corner-radius" min="0" max="80" step="1" value="0" />
+    </p>
+    <div class="canvas">
+        <svg id="elbow-diagram" width="420" height="300" viewBox="0 0 420 300" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

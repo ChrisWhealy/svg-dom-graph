@@ -1,22 +1,24 @@
 //! Wasm entry point for `svg-dom-graph`'s demos.
 //!
-//! Attaches to three `<svg>` elements already present in `index.html`. Builds one small demo scene in each.
-//! This crate owns every demo-specific decision, not the library — which elements to attach to, and what
-//! each scene contains.
+//! Each panel builds its own small demo scene the first time it is selected in the gallery — see [`init_panel`],
+//! called from JavaScript by `demo/index.template.html`'s own `selectDemo`, not eagerly at page load. This crate
+//! owns every demo-specific decision, not the library — which elements to attach to, and what each scene
+//! contains.
 //!
-//! - `#diagram` — [`build_demo_tree`]: a minimal directed tree with straight connectors. Shows ordinary
-//!   dragging and connector reroute.
-//! - `#elbow-diagram` — [`build_elbow_demo`]: two boxes, a straight/elbow toggle, and a corner-radius slider.
-//!   See that function's own doc comment for what it demonstrates.
-//! - `#edge-anchors-diagram` — [`build_edge_anchors_demo`]: a parent with a growing and shrinking set of
-//!   children, a fixing-point slider, and a straight/elbow toggle. See that function's own doc comment for
-//!   what it demonstrates.
+//! - `panel-tree` / `#diagram` — [`build_demo_tree`]: a minimal directed tree with straight connectors. Shows
+//!   ordinary dragging and connector reroute.
+//! - `panel-elbow` / `#elbow-diagram` — [`build_elbow_demo`]: two boxes, a straight/elbow toggle, and a
+//!   corner-radius slider. See that function's own doc comment for what it demonstrates.
+//! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`build_edge_anchors_demo`]: a parent with a growing and
+//!   shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own doc
+//!   comment for what it demonstrates.
 //!
-//! Each feature this crate gains should keep this pattern. Land it alongside a small demo scene of its own,
-//! not just a line in the changelog.
+//! Each feature this crate gains should keep this pattern: land it alongside a small demo scene of its own, add
+//! a `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
 //!
 //! No function in this file panics. Every failure — a missing DOM element, a failed listener attach, or a
-//! library `Error` — returns as a `Result`. `run` reports it to the browser console instead of trapping.
+//! library `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
+//! [`report_panel_error`]) instead of trapping.
 
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
@@ -29,6 +31,8 @@ use svg_dom_graph::{
 };
 use wasm_bindgen::{JsCast, prelude::*};
 use web_sys::{Element, HtmlInputElement};
+
+mod highlight;
 
 thread_local! {
     // `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only
@@ -44,12 +48,6 @@ thread_local! {
     static ELBOW_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
     // Same reasoning, for `build_edge_anchors_demo`'s own, separate `Scene`.
     static EDGE_ANCHORS_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[wasm_bindgen(start)]
-pub fn run() -> Result<(), JsValue> {
-    build().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -129,14 +127,190 @@ fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn build() -> Result<(), String> {
-    let diagram = SvgRoot::attach("diagram").map_err(stringify)?;
-    build_demo_tree(diagram)?;
+// Source-code frames
+//
+// Each demo panel gets a collapsible frame below it showing the formatted Rust source of the function that built
+// it, appended by `build` itself right after that function returns successfully. The source text is embedded at
+// compile time (`LIB_SOURCE`, via `include_str!`), so it never drifts from what is actually running — there is no
+// separate copy of it kept in sync by hand. Mirrors `svg-dom`'s own demo gallery, which does the same thing for
+// each of its own many demo files; this crate has only the one file all three demos live in, so there is only one
+// entry here, not one per demo, and no module-path lookup is needed to tell same-named functions in different
+// files apart.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-    let elbow_diagram = SvgRoot::attach("elbow-diagram").map_err(stringify)?;
-    build_elbow_demo(elbow_diagram)?;
+/// This file's own full source, embedded at compile time. [`demo_fn_source`] slices a single top-level function's
+/// body out of this text; nothing here is ever hand-copied elsewhere, so it cannot go stale.
+const LIB_SOURCE: &str = include_str!("lib.rs");
 
-    build_edge_anchors_demo()
+/// `(panel id, build function, build function name)` for every demo, generated by [`demo_gallery`] below so a
+/// panel's id, the function [`init_panel`] calls to build it, and the function name shown in its source frame can
+/// never drift apart the way three independently hand-maintained lists could — mirrors `svg-dom`'s own
+/// `demo_gallery!`, minus the module-path half `LIB_SOURCE`'s single shared file has no need for.
+///
+/// The panel id is also the id of the `<section>` (see `demo/panels/*.html`) that [`init_panel`] builds into and
+/// [`append_demo_source`] appends the source frame to.
+macro_rules! demo_gallery {
+    ( $( $panel_id:literal => $name:ident ),+ $(,)? ) => {
+        const DEMO_PANELS: &[(&str, fn() -> Result<(), String>, &str)] = &[
+            $( ($panel_id, $name, stringify!($name)) ),+
+        ];
+    };
+}
+
+demo_gallery! {
+    "panel-tree" => build_demo_tree,
+    "panel-elbow" => build_elbow_demo,
+    "panel-edge-anchors" => build_edge_anchors_demo,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns the source text of the top-level `fn {name}` item in [`LIB_SOURCE`], from its signature line through
+/// its closing brace, or `None` if it cannot be located.
+///
+/// Relies on `rustfmt`'s guarantee that a top-level item's own closing brace always sits in column 0, while every
+/// brace nested inside the body (including one inside a `format!` string) does not. Scanning for the first line
+/// that is exactly `}` after the signature therefore finds the function's end without parsing anything. Mirrors
+/// `svg-dom`'s own `demo_fn_source` exactly, bar the module-path lookup a single shared source file has no need
+/// for.
+fn demo_fn_source(name: &str) -> Option<&'static str> {
+    let needle = format!("fn {name}(");
+    let hit = LIB_SOURCE.find(&needle)?;
+    let start = LIB_SOURCE[..hit].rfind('\n').map_or(0, |i| i + 1);
+    let tail = &LIB_SOURCE[hit..];
+    let mut from = 0;
+
+    loop {
+        let rel = tail[from..].find("\n}")?;
+        let close = from + rel + 1; // index of the '}' within `tail`
+        let after = close + 1;
+        // A genuine top-level close: the '}' stands alone on its line (next byte is a newline or end of file).
+        if tail.as_bytes().get(after).is_none_or(|&b| b == b'\n') {
+            return Some(&LIB_SOURCE[start..hit + after]);
+        }
+        from = after;
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds `<details class="source" open><summary>...</summary><pre><code>...</code></pre></details>` and appends
+/// it to `panel_id`'s own `<section>`, showing the exact source of the function that just built that panel.
+/// Mirrors `svg-dom`'s own `append_source_frame`.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#{panel_id}`, if `panel_id` is not registered in [`DEMO_PANELS`], if
+/// its function's source cannot be located in [`LIB_SOURCE`] (see [`demo_fn_source`]), or if building any of the
+/// DOM nodes below fails.
+fn append_demo_source(document: &web_sys::Document, panel_id: &str) -> Result<(), String> {
+    let section = required_element(document, panel_id)?;
+    let &(_, _, fn_name) = DEMO_PANELS
+        .iter()
+        .find(|(id, ..)| *id == panel_id)
+        .ok_or_else(|| format!("{panel_id} is not registered in DEMO_PANELS"))?;
+    let source = demo_fn_source(fn_name).ok_or_else(|| format!("source not found for fn {fn_name}"))?;
+
+    let create = |tag: &str| {
+        document
+            .create_element(tag)
+            .map_err(|e| format!("create_element({tag:?}): {e:?}"))
+    };
+
+    let details = create("details")?;
+    details.set_attribute("class", "source").map_err(|e| format!("{e:?}"))?;
+    details.set_attribute("open", "").map_err(|e| format!("{e:?}"))?;
+
+    let summary = create("summary")?;
+    summary.set_text_content(Some(&format!("Rust source — fn {fn_name}")));
+    details.append_child(&summary).map_err(|e| format!("{e:?}"))?;
+
+    let pre = create("pre")?;
+    let code = create("code")?;
+    // `rust_to_html` returns `<span>`-wrapped, HTML-escaped tokens, so angle brackets and ampersands in the code
+    // still render verbatim while keywords, strings, etc. are coloured by `demo/style.css`.
+    code.set_inner_html(&highlight::rust_to_html(source));
+    pre.append_child(&code).map_err(|e| format!("{e:?}"))?;
+    details.append_child(&pre).map_err(|e| format!("{e:?}"))?;
+
+    section.append_child(&details).map_err(|e| format!("{e:?}"))?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted"
+/// (attribute absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`) and skip
+/// rebuilding a panel that has already been built once — rebuilding it again would duplicate its contents rather
+/// than replace them, since each `build_*` function always appends a fresh `<svg>`/child set into its own
+/// container. Mirrors `svg-dom`'s own `PANEL_STATE_ATTR`.
+const PANEL_STATE_ATTR: &str = "data-panel-state";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds one demo panel's content the first time it is selected, rather than every panel eagerly at page load —
+/// which is what this gallery used to do, even though at most one panel is ever visible at once (every other
+/// `<section>` sits behind `display: none`; see `.section`/`.section.active` in `style.css`). Mirrors `svg-dom`'s
+/// own `init_panel`.
+///
+/// Call this from JavaScript each time a panel becomes the active one (see `demo/index.template.html`'s
+/// `selectDemo`). It is idempotent — see [`PANEL_STATE_ATTR`] — so calling it again for an already-initialised
+/// panel, e.g. navigating back to one visited earlier, is a no-op rather than a duplicate rebuild.
+///
+/// A demo that fails to build is recorded as `"failed"` rather than retried on a later visit; [`run_panel`] and
+/// [`report_panel_error`] are what surface that failure in the gallery itself. A missing or mismatched panel id is
+/// a different kind of problem — a catalogue error rather than a demo runtime error — and is caught at server
+/// startup instead, before the gallery is ever served (see `demo-server/src/validate/mod.rs` and
+/// `demo-server/src/panels/mod.rs`'s `assemble`), so `init_panel` never has to distinguish the two: by the time it
+/// runs, the catalogue has already been validated.
+#[wasm_bindgen]
+pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
+    let document = document().map_err(|e| JsValue::from_str(&e))?;
+
+    let Some(section) = document.get_element_by_id(panel_id) else { return Ok(()) };
+    if section.has_attribute(PANEL_STATE_ATTR) {
+        return Ok(());
+    }
+    let Some(&(_, build, _)) = DEMO_PANELS.iter().find(|(id, ..)| *id == panel_id) else {
+        return Ok(());
+    };
+
+    let state = if run_panel(panel_id, build) { "ready" } else { "failed" };
+    section
+        .set_attribute(PANEL_STATE_ATTR, state)
+        .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
+
+    // Show the Rust source of the function that just built this panel — including when it failed to build; the
+    // source is still worth seeing even when the demo itself broke.
+    append_demo_source(&document, panel_id).map_err(|e| JsValue::from_str(&e))?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Runs one demo's build function, catching its error rather than letting it propagate, and reports whether it
+/// succeeded so [`init_panel`] can record that as the panel's state. A broken demo is this function's own runtime
+/// behaviour, not a missing or mismatched panel — see [`init_panel`]'s doc comment for why those are handled
+/// differently.
+fn run_panel(panel_id: &str, build: fn() -> Result<(), String>) -> bool {
+    match build() {
+        Ok(()) => true,
+        Err(err) => {
+            report_panel_error(panel_id, &err);
+            false
+        },
+    }
+}
+
+/// Appends a visible failure banner to `panel_id`'s own `<section>`, so a demo that fails to build is immediately
+/// obvious in the gallery itself instead of just leaving that panel's canvas blank. This is a development and
+/// verification tool; a silently empty panel is exactly the outcome worth avoiding here.
+///
+/// Silently does nothing if the panel section itself cannot be found — by construction (see [`run_panel`]'s doc
+/// comment) that cannot happen through the normal `cargo demo` pipeline, so this mirrors [`append_demo_source`]'s
+/// own defensive fallback rather than treating an already-impossible case as fatal.
+fn report_panel_error(panel_id: &str, message: &str) {
+    let Ok(document) = document() else { return };
+    let Some(section) = document.get_element_by_id(panel_id) else { return };
+    let Ok(banner) = document.create_element("p") else { return };
+    banner.set_attribute("class", "demo-error").ok();
+    banner.set_text_content(Some(&format!("This demo failed to build: {message}")));
+    let _ = section.append_child(&banner);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -147,7 +321,8 @@ fn build() -> Result<(), String> {
 /// connector style — [`build_elbow_demo`] is where the elbow style, added later, gets its own demonstration.
 ///
 /// The two child boxes are draggable. Their connectors stay attached to the root and redraw as each child moves.
-fn build_demo_tree(svg: SvgRoot) -> Result<(), String> {
+fn build_demo_tree() -> Result<(), String> {
+    let svg = SvgRoot::attach("diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
@@ -199,7 +374,8 @@ fn build_demo_tree(svg: SvgRoot) -> Result<(), String> {
 ///
 /// Returns `Err` if any library call fails, or if [`wire_connector_controls`] cannot wire up its controls
 /// (see that function's own `# Errors` section).
-fn build_elbow_demo(svg: SvgRoot) -> Result<(), String> {
+fn build_elbow_demo() -> Result<(), String> {
+    let svg = SvgRoot::attach("elbow-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
@@ -665,3 +841,8 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
 
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// These tests only prove every demo function's source is extractable — see `unit_tests.rs`'s own doc comment.
+#[cfg(test)]
+mod unit_tests;

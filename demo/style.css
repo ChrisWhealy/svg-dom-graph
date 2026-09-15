@@ -1,0 +1,498 @@
+*,
+*::before,
+*::after {
+    box-sizing: border-box;
+    margin: 0;
+    padding: 0;
+}
+
+body {
+    font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
+    background: #0d1117;
+    color: #c9d1d9;
+    min-height: 100vh;
+}
+
+/* App shell. The menu spans the full height on the left. The title sits above the stage on the right. */
+#app {
+    display: grid;
+    grid-template-columns: 240px minmax(0, 1fr);
+    grid-template-rows: auto minmax(0, 1fr);
+    grid-template-areas:
+        "menu title"
+        "menu stage";
+    min-height: 100vh;
+}
+
+/* Menu panel */
+#menu {
+    grid-area: menu;
+    border-right: 1px solid #21262d;
+    padding: 1.5rem 1rem;
+    overflow-y: auto;
+}
+
+.brand {
+    font-size: 1.2rem;
+    color: #58a6ff;
+    margin-bottom: 1rem;
+}
+
+/* Each category is a native <details> disclosure widget.
+   This makes the menu read as an expandable tree, instead of a single long list of undifferentiated items.
+   See demo/index.html's nav comment for the category list.
+   All groups start collapsed. Expanding a group requires a user choice.
+   The first item of the first group is still selected on load. See the script at the bottom of index.html.
+   This happens even though that group starts closed. */
+.menu-group {
+    margin: 1.25rem 0 0.4rem;
+}
+
+.menu-group>summary {
+    display: flex;
+    align-items: center;
+    gap: 0.35rem;
+    color: #6e7681;
+    font-size: 0.7rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    list-style: none;
+    user-select: none;
+}
+
+.menu-group>summary::-webkit-details-marker {
+    display: none;
+}
+
+/* This is a custom disclosure triangle. The default marker is hidden above.
+   This custom triangle can share the group label's muted colour.
+   It also rotates on open and close, instead of the browser's own triangle or pointer glyphs. */
+.menu-group>summary::before {
+    content: "▸";
+    display: inline-block;
+    font-size: 0.65rem;
+    line-height: 1;
+    transition: transform 0.15s ease;
+}
+
+.menu-group[open]>summary::before {
+    transform: rotate(90deg);
+}
+
+.menu-group>summary:hover {
+    color: #8b949e;
+}
+
+.menu-item {
+    display: block;
+    width: 100%;
+    text-align: left;
+    font: inherit;
+    font-size: 0.85rem;
+    color: #c9d1d9;
+    background: none;
+    border: none;
+    border-radius: 6px;
+    padding: 0.4rem 0.6rem;
+    cursor: pointer;
+}
+
+.menu-item:hover {
+    background: #161b22;
+}
+
+.menu-item.active {
+    background: #161b22;
+    color: #58a6ff;
+    box-shadow: inset 2px 0 0 #58a6ff;
+}
+
+/* Title panel */
+#title {
+    grid-area: title;
+    padding: 1.75rem 2rem;
+    border-bottom: 1px solid #21262d;
+}
+
+#title h1 {
+    font-size: 1.6rem;
+    color: #58a6ff;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle {
+    color: #8b949e;
+    font-size: 0.85rem;
+    max-width: 120ch;
+    margin-bottom: 0.5rem;
+}
+
+.subtitle code {
+    color: #f0883e;
+    background: #161b22;
+    padding: 0.1em 0.4em;
+    border-radius: 3px;
+}
+
+/* Stage (demo) panel */
+#stage {
+    grid-area: stage;
+    padding: 1.75rem 2rem;
+    overflow: auto;
+}
+
+/* Only the selected demo is shown. */
+.section {
+    display: none;
+}
+
+.section.active {
+    display: block;
+}
+
+h2 {
+    font-size: 1rem;
+    color: #79c0ff;
+    margin-bottom: 0.8rem;
+    padding-bottom: 0.3rem;
+    border-bottom: 1px solid #21262d;
+}
+
+h2 code {
+    color: #f0883e;
+}
+
+figure {
+    margin: 0;
+}
+
+/* Each demo section injects an <svg> into the matching <div>.
+   The <svg> sizes itself from its own width/height attributes.
+   Rust sets those attributes via SvgRoot::create_in (see W/H in demo-app/src/lib.rs).
+   That is the single source of truth, so the dimensions are deliberately not repeated here.
+   .canvas is inline-block, so its border hugs the canvas.
+   The stage scrolls if the window is too narrow. */
+.canvas {
+    display: inline-block;
+    border-radius: 6px;
+    overflow: hidden;
+    border: 1px solid #21262d;
+    user-select: none;
+}
+
+.canvas svg {
+    display: block;
+    background: #ffffee;
+}
+
+/* A few panels, for example set_view_box, compare several mini canvases side by side.
+   Each canvas still gets its own .canvas border, from the markup.
+   This rule only lays the canvases out in a row.
+   It also lets them wrap on a narrow window, instead of overflowing. */
+.canvas-row {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 12px;
+}
+
+figcaption {
+    font-size: 0.82rem;
+    color: #6e7681;
+    margin-top: 0.6rem;
+    max-width: 120ch;
+}
+
+figcaption strong {
+    color: #8b949e;
+}
+
+figcaption code {
+    color: #f0883e;
+}
+
+/* p, ul, ol and li inside a figcaption all share the same paragraph spacing.
+   Only li's line-height and ul/ol's left indent differ per element.
+   ol's indent is wider, to allow for two-digit numbers. */
+figcaption p,
+figcaption ul,
+figcaption ol,
+figcaption li {
+    margin-bottom: 0.5rem;
+}
+
+figcaption p,
+figcaption li {
+    line-height: 1.15rem;
+}
+
+figcaption ul {
+    margin-left: 1.1rem;
+}
+
+figcaption ol {
+    margin-left: 1.3rem;
+}
+
+/* classList demo (Event handling, CSS class toggle, demo-app/src/events.rs).
+   Rust only ever calls toggle_class on the tile's class attribute.
+   This rule is what makes that change visible.
+   The gold stroke appears because the browser matches .tile.selected.
+   No Rust code touches fill or stroke directly. */
+#demo-events-classlist .tile {
+    stroke: transparent;
+    stroke-width: 4px;
+    transition: stroke 120ms ease;
+}
+
+#demo-events-classlist .tile.selected {
+    stroke: gold;
+}
+
+/* #error-banner and .demo-error share the same red error colours.
+   #error-banner reports a whole-page WASM load failure.
+   .demo-error reports one panel's demo function failing at runtime.
+   report_panel_error in demo-app/src/lib.rs appends .demo-error.
+   Only their sizing and appearance differ.
+   #error-banner starts hidden, and JS toggles it visible.
+   .demo-error only ever appears when there is something to show. */
+#error-banner,
+.demo-error {
+    background: #3d1e1e;
+    border: 1px solid #f85149;
+    border-radius: 6px;
+    color: #f85149;
+    font-size: 0.85rem;
+}
+
+#error-banner {
+    display: none;
+    padding: 0.75rem 1rem;
+    margin-top: 1rem;
+}
+
+.demo-error {
+    padding: 0.6rem 0.9rem;
+    margin-top: 0.75rem;
+}
+
+/* This is the source-code frame init_panel injects below each demo (see demo-app/src/lib.rs).
+   The <code> element holds the exact Rust function that built the demo above it.
+   This text is embedded at compile time, so it never drifts from the running code. */
+.source {
+    margin-top: 1.25rem;
+    max-width: 110ch;
+    border: 1px solid #21262d;
+    border-radius: 6px;
+    background: #161b22;
+}
+
+.source>summary {
+    cursor: pointer;
+    padding: 0.5rem 0.8rem;
+    color: #8b949e;
+    font-size: 0.8rem;
+    user-select: none;
+}
+
+.source>summary:hover {
+    color: #c9d1d9;
+}
+
+.source[open]>summary {
+    border-bottom: 1px solid #21262d;
+}
+
+.source pre {
+    margin: 0;
+    padding: 0.8rem;
+    overflow: auto;
+    max-height: 28rem;
+}
+
+.source code {
+    font-family: inherit;
+    font-size: 0.78rem;
+    line-height: 1.5;
+    color: #c9d1d9;
+    white-space: pre;
+    tab-size: 4;
+}
+
+/* Syntax-highlight token colours emitted by rust_to_html (demo-app/src/highlight/mod.rs). */
+.source code .com {
+    color: #8b949e;
+    font-style: italic;
+}
+
+/* Keywords and lifetimes share a colour. Macros and call-position identifiers share a different colour.
+   The highlighter keeps each pair as a separate token class. This is the highlighter's own choice, see
+   highlight/mod.rs. That choice holds even though each pair looks the same colour, in every browser. */
+.source code .kw,
+.source code .lif {
+    color: #ff7b72;
+}
+
+.source code .str {
+    color: #B3D862;
+}
+
+.source code .num {
+    color: #79c0ff;
+}
+
+.source code .typ {
+    color: #ffa657;
+}
+
+.source code .mac,
+.source code .fnc {
+    color: #d2a8ff;
+}
+
+/* Plain HTML controls demo-app/src builds inside <foreignObject> elements.
+   See demo-app/src/foreign_html.rs and its callers for the current list of controls.
+   These shared classes keep the dark-theme colours those controls use in one place.
+   Every other themed element on this page follows the same rule.
+   Without these classes, each interactive demo would repeat the same inline style strings in Rust.
+   Like the rest of this file, these rules use pixel sizes, not rem units.
+   These controls sit inside an SVG canvas at a fixed scale, set by W/H in demo-app/src/lib.rs.
+   The page's own root font size does not affect them. */
+.demo-control-group {
+    display: flex;
+    flex-direction: column;
+    gap: 6px;
+    font: 13px sans-serif;
+    color: #c9d1d9;
+    border: none;
+    margin: 0;
+    padding: 0;
+}
+
+.demo-control-group>legend {
+    font-size: 11px;
+    color: #8b949e;
+    padding: 0;
+    margin: 0 0 4px;
+}
+
+.demo-control-row {
+    display: flex;
+    align-items: center;
+    gap: 6px;
+    cursor: pointer;
+}
+
+.demo-slider-container {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+/* select_dropdown's own container is a <label>, not a <div>: build_h_slider's own range-input container shares
+   this same class but stays a plain <div>, so this selector's own element-type qualifier keeps the pointer cursor
+   scoped to the actual clickable label, rather than every .demo-slider-container everywhere. */
+label.demo-slider-container {
+    cursor: pointer;
+}
+
+.demo-slider {
+    width: 100%;
+}
+
+/* A native <select>, built by `foreign_html::select_dropdown` for a control whose own option count (for example
+   `demo_blend`'s sixteen BlendMode keywords) would make a `.demo-control-group` radio list too tall. Matches
+   `.demo-slider`'s own width and this file's dark theme, rather than the browser's default light-chrome look. */
+.demo-select {
+    width: 100%;
+    font: 13px sans-serif;
+    color: #c9d1d9;
+    background: #161b22;
+    border: 1px solid #30363d;
+    border-radius: 4px;
+    padding: 3px 4px;
+}
+
+/* The visible caption above a .demo-slider, matching .demo-control-group>legend's own look so every labelled
+   control in this file reads consistently. */
+.demo-slider-label {
+    font-size: 11px;
+    color: #8b949e;
+}
+
+/* Centres the vertical-shift slider (see .demo-slider-vertical below) within its own narrow, tall foreignObject
+   box, both before and after that slider's own rotation. */
+.demo-slider-vertical-wrap {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+/* A vertical range input, built by `paint::build_v_slider` (demo-app/src/paint/mod.rs) for the linearGradient
+   and radialGradient demos' own vertical-shift sliders and the filter demo's dy slider: a plain horizontal
+   <input type="range">, rotated 90 degrees with `transform`, rather than styled vertical with `writing-mode`.
+   `transform` is universally supported; `writing-mode` on a range input is not -- Chrome only gained it recently
+   and Safari's support is still unreliable, and this control needs to actually render vertically in every browser.
+   Its own pre-rotation width is set inline, per instance, by `build_v_slider` itself (to that caller's own track
+   length), not hard-coded here -- this class only supplies the rotation, shared across however many differently
+   sized vertical sliders call it.
+   rotate(90deg), not -90deg: that maps the pre-rotation left end (the slider's minimum) to the top, so dragging the
+   thumb up decreases the value -- matching each caller's own "up is smaller" framing, whether that value is a
+   gradient stop's offset/fraction (smaller sits higher in the gradient) or a signed pixel offset like the filter
+   demo's dy (a smaller, more negative value shifts the shadow further up).
+   flex-shrink: 0 is required, not cosmetic: .demo-slider-vertical-wrap's own width is only the track's thickness
+   (16px), far narrower than a native <input type="range">'s own intrinsic content width (~129px in Chromium).
+   Row-direction flexbox shrinks an overflowing child towards fitting its container, but never below that
+   intrinsic width -- so without this, any track_length request past ~129px is silently capped there instead of
+   reaching the caller's own requested length, confirmed empirically once a track long enough to expose it (196px)
+   was requested. */
+.demo-slider-vertical {
+    transform: rotate(90deg);
+    flex-shrink: 0;
+}
+
+/* This row is exactly as wide as .demo-slider.
+   It holds one .demo-tick-mark span per tick.
+   See demo_text_path's own doc comment for why these marks are hand-drawn, rather than a <datalist>. */
+.demo-tick-row {
+    position: relative;
+    height: 6px;
+}
+
+.demo-tick-mark {
+    position: absolute;
+    top: 0;
+    width: 1px;
+    height: 6px;
+    background: #8b949e;
+    transform: translateX(-50%);
+    /* Rust sets `left` inline, per mark.
+       This is the one property that is genuinely dynamic per tick.
+       Rust computes it from the tick's value, as a fraction of the slider's max. */
+}
+
+.demo-endpoint-labels {
+    display: flex;
+    justify-content: space-between;
+    font-size: 11px;
+    color: #8b949e;
+}
+
+/* svg-dom-graph's own addition, not part of svg-dom's original stylesheet above.
+   svg-dom builds every interactive control inside its SVG canvas via foreignObject (see .demo-control-group and
+   friends above); svg-dom-graph's demos instead use plain HTML radios and range inputs alongside the canvas
+   (see demo/panels/panel-elbow.html and panel-edge-anchors.html), so those need their own layout rule instead. */
+.controls {
+    margin: 0.75rem 0;
+}
+
+.controls input[type="range"] {
+    width: 20rem;
+    vertical-align: middle;
+}
+
+.controls label {
+    margin-right: 1.5rem;
+}

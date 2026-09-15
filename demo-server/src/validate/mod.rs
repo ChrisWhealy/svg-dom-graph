@@ -1,0 +1,167 @@
+//! Cross-checks `demo-server`'s own panel manifest ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!`
+//! list, so the two id lists — declared in separate crates, in different forms (HTML-oriented here,
+//! function-oriented there), for reasons explained in each one's own doc comment — cannot silently drift apart.
+//! Mirrors `svg-dom`'s own `demo-server/src/validate/mod.rs`.
+//!
+//! This reads `demo-app/src/lib.rs` as plain text and extracts every panel id from the `demo_gallery!`
+//! invocation, rather than depending on `demo-app` as a library: that crate builds to a wasm `cdylib` for the
+//! browser, not something a native binary like `demo-server` can link against.
+
+use crate::panels;
+use std::{
+    collections::HashSet,
+    fmt, fs, io,
+    path::{Path, PathBuf},
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Everything that can go wrong cross-checking the two catalogues, mirroring how [`panels::AssembleError`] reports
+/// its own failures — `main` is responsible for deciding what a failure means for the process, this module just
+/// reports what went wrong.
+#[derive(Debug)]
+pub enum ValidationError {
+    /// `demo-app/src/lib.rs` could not be read.
+    Io { path: PathBuf, source: io::Error },
+    /// The same panel id appears in `demo_gallery!` more than once.
+    DuplicateGalleryId(String),
+    /// `demo-server`'s panel manifest and `demo-app`'s `demo_gallery!` are not the same set of ids.
+    CatalogueMismatch(String),
+}
+
+impl fmt::Display for ValidationError {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        match self {
+            Self::Io { path, source } => write!(f, "could not read {} ({source})", path.display()),
+            Self::DuplicateGalleryId(id) => {
+                write!(f, "demo-app's demo_gallery! contains the panel id {id:?} more than once")
+            },
+            Self::CatalogueMismatch(detail) => {
+                write!(
+                    f,
+                    "demo-server's panel manifest and demo-app's demo_gallery! have drifted apart\n{detail}"
+                )
+            },
+        }
+    }
+}
+
+impl std::error::Error for ValidationError {}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks that every panel id in `demo-server`'s [`panels::panel_ids`] has a matching `demo_gallery!` entry in
+/// `demo-app/src/lib.rs`, and vice versa.
+///
+/// A failure here is fatal, the same as a stale `index.html` or a failed wasm build: better to refuse to serve a
+/// gallery already known to be inconsistent than to leave someone debugging a blank panel by hand — but, as with
+/// [`panels::assemble`], deciding *how* to treat that fatality (report and exit) is `main`'s job, not this
+/// function's.
+pub fn validate(root: &Path) -> Result<(), ValidationError> {
+    let lib_rs_path = root.join("demo-app").join("src").join("lib.rs");
+    let lib_rs =
+        fs::read_to_string(&lib_rs_path).map_err(|source| ValidationError::Io { path: lib_rs_path, source })?;
+
+    let gallery_ids = extract_gallery_panel_ids(&lib_rs);
+
+    if let Some(dup) = find_duplicate_gallery_id(&gallery_ids) {
+        return Err(ValidationError::DuplicateGalleryId(dup.to_owned()));
+    }
+
+    let manifest_ids = panels::panel_ids();
+
+    let missing_from_gallery: Vec<_> = manifest_ids.iter().filter(|id| !gallery_ids.iter().any(|g| g == *id)).collect();
+    let missing_from_manifest: Vec<_> = gallery_ids.iter().filter(|id| !manifest_ids.contains(&id.as_str())).collect();
+
+    if missing_from_gallery.is_empty() && missing_from_manifest.is_empty() {
+        return Ok(());
+    }
+
+    let mut detail = Vec::new();
+    if !missing_from_gallery.is_empty() {
+        detail.push(format!(
+            "  in demo-server/src/panels/mod.rs's MANIFEST but missing from demo-app's demo_gallery!: {missing_from_gallery:?}"
+        ));
+    }
+    if !missing_from_manifest.is_empty() {
+        detail.push(format!(
+            "  in demo-app's demo_gallery! but missing from demo-server/src/panels/mod.rs's MANIFEST: {missing_from_manifest:?}"
+        ));
+    }
+    Err(ValidationError::CatalogueMismatch(detail.join("\n")))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Extracts every `"panel-..."` string literal immediately followed by `=>` from inside
+/// [`gallery_invocation_body`] — not from anywhere in `lib.rs` — so a doc comment that merely mentions the same
+/// `"id" => name` shape is never mistaken for a real gallery entry.
+fn extract_gallery_panel_ids(lib_rs: &str) -> Vec<String> {
+    let Some(body) = gallery_invocation_body(lib_rs) else { return Vec::new() };
+
+    let mut ids = Vec::new();
+    let mut rest = body;
+    while let Some(start) = rest.find("\"panel-") {
+        let after_open_quote = &rest[start + 1..];
+        let Some(close) = after_open_quote.find('"') else { break };
+        let id = &after_open_quote[..close];
+        let after_id = &after_open_quote[close + 1..];
+        if after_id.trim_start().starts_with("=>") {
+            ids.push(id.to_owned());
+        }
+        rest = after_id;
+    }
+    ids
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Locates the text between `demo_gallery!`'s outermost `{` and its matching `}` — the macro's actual invocation
+/// body — skipping any earlier occurrence of the literal text `demo_gallery!` not immediately followed (after
+/// whitespace) by `{`, such as this file's own doc comments that merely mention the macro by name rather than
+/// invoking it.
+///
+/// Counts braces instead of parsing Rust, which is safe here only because `demo_gallery!`'s own doc comment
+/// guarantees its invocation body is currently just a flat, comma-separated entry list with no nested `{`/`}` of
+/// its own.
+fn gallery_invocation_body(lib_rs: &str) -> Option<&str> {
+    const NEEDLE: &str = "demo_gallery!";
+    let mut search_from = 0;
+    loop {
+        let hit = search_from + lib_rs[search_from..].find(NEEDLE)?;
+        let after_bang = lib_rs[hit + NEEDLE.len()..].trim_start();
+        let Some(body) = after_bang.strip_prefix('{') else {
+            search_from = hit + NEEDLE.len();
+            continue;
+        };
+
+        let mut depth = 1;
+        for (i, b) in body.bytes().enumerate() {
+            match b {
+                b'{' => depth += 1,
+                b'}' => {
+                    depth -= 1;
+                    if depth == 0 {
+                        return Some(&body[..i]);
+                    }
+                },
+                _ => {},
+            }
+        }
+        return None;
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns the first id in `ids` that occurs more than once. Without this check, a `demo_gallery!` entry
+/// duplicated in `demo-app/src/lib.rs` would pass every set comparison in [`validate`] — the id is present in both
+/// catalogues, just twice in one of them — while at runtime `DEMO_PANELS.iter().find()` would always return the
+/// first match, leaving the second entry silently unreachable.
+fn find_duplicate_gallery_id(ids: &[String]) -> Option<&str> {
+    let mut seen = HashSet::new();
+    for id in ids {
+        if !seen.insert(id.as_str()) {
+            return Some(id.as_str());
+        }
+    }
+    None
+}
+
+#[cfg(test)]
+mod unit_tests;
