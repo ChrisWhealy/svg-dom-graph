@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Improve demos: drag bounds checking, dynamically adjust radius slider max, and remove all code panics (`760a08f`) 
+- Improve demos: drag bounds checking, dynamically adjust radius slider max, and remove all code panics (`760a08f`)
+- Doc only: Explain why demo is coupled to scanning the string created by `elbow_path_into` (``)
 
 ## Fixed
 
@@ -18,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Validate `DragOptions::bounds` (`9f0ec17`)
 - Add CDP drag bound clamping tests (`5fb2c1d`)
 - Doc only: Correct stale documentation (`6176165`)
-- Correct bug to fractional radius value exceeding slider maximum (``)
+- Correct bug to fractional radius value exceeding slider maximum (`29b1353`)
 
 # [Released]
 

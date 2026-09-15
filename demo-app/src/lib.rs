@@ -250,6 +250,20 @@ const FALLBACK_MAX_RADIUS: f64 = 80.0;
 ///
 /// A route with two corners reports the smaller of the two. One `corner_radius` value on [`ConnectorType::Elbow`]
 /// applies to both alike, so the slider cannot ask for more than either allows.
+///
+/// # PoC coupling between `elbow_path_into` and `max_renderable_radius`, acceptable here
+///
+/// The demo has been coupled to `elbow_path_into`'s serialization. `d` must be scanned in order to locate the `A`
+/// token, which then identifies the elbow point. A future change such as different whitespace, a relative `a` command
+/// etc, would not break compilation, but it would make this function quietly stop finding the `A` token and incorrectly
+/// return `None`. It would then fall back to [`FALLBACK_MAX_RADIUS`] which represents a silent wrong answer rather than
+/// a loud failure.
+///
+/// This is acceptable for one demo control, and is preferable to reimplementing the elbow-routing geometry simply to
+/// avoid it. However, it is anticpated that in future, a real application will probably need the public API shape to
+/// include the query "how much room is actually left".  At that point, it is appropriate to implement a proper library
+/// method reporting it directly and removing this string coupling and the resulting doubled render that
+/// [`refresh_radius_limit`]'s probe technique costs on every call.
 fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
     let d = connector_path.get_attribute("d")?;
     let mut tokens = d.split_whitespace();
