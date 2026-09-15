@@ -388,6 +388,8 @@ impl Scene {
     ///
     /// Returns [`Error::EmptyNodeContent`] if `content` holds no values — there is no grid to draw.
     ///
+    /// Returns [`Error::InvalidGridLayout`] if `content`'s own [`GridLayout`](crate::scene::GridLayout) wraps `0`.
+    ///
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite.
     pub fn add_data_node(&self, top_left: Point, content: DataNodeContent) -> Result<NodeId, Error> {
         self.add_data_node_with(top_left, content, NodeOptions::default())
@@ -403,6 +405,9 @@ impl Scene {
     ///
     /// Returns [`Error::EmptyNodeContent`] if `content` holds no values. Also checked before drawing anything.
     ///
+    /// Returns [`Error::InvalidGridLayout`] if `content`'s own [`GridLayout`](crate::scene::GridLayout) wraps `0` —
+    /// `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`. Also checked before drawing anything.
+    ///
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Unlike
     /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always
     /// sized to fit `content`.
@@ -416,6 +421,9 @@ impl Scene {
 
         if content.len() == 0 {
             return Err(Error::EmptyNodeContent);
+        }
+        if !content.layout().is_valid() {
+            return Err(Error::InvalidGridLayout(content.layout()));
         }
         if !top_left.x.is_finite() || !top_left.y.is_finite() {
             return Err(Error::InvalidNodeGeometry(Rect {

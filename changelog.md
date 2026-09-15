@@ -11,10 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Display node data as a formatted, colour-coded grid (`da014eb`)
+- Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (``)
 
 ## Changed
 
-- Retains data node content in `model::node::NodeContent::Data`. Move a node by rewriting `<g>` transform instead of each child's coordinates (``)
+- Retain data node content in `model::node::NodeContent::Data`. Move node by rewriting `<g>` transform instead of child coordinates (`a11d969`)
 
 # [Released]
 

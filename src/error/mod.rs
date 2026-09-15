@@ -83,6 +83,12 @@ pub enum Error {
     /// This condition is rejected before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene unchanged.
     EmptyNodeContent,
+    /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] whose
+    /// [`crate::scene::GridLayout`] wraps `0` — `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`.
+    ///
+    /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing
+    /// anything or touching the graph's model, so a rejected call leaves the scene unchanged.
+    InvalidGridLayout(crate::scene::GridLayout),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -116,6 +122,9 @@ impl fmt::Display for Error {
                 )
             },
             Error::EmptyNodeContent => write!(f, "DataNodeContent must have at least one value to display"),
+            Error::InvalidGridLayout(layout) => {
+                write!(f, "grid layout {layout:?} must use a column/row count >= 1")
+            },
         }
     }
 }

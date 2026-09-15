@@ -1,6 +1,6 @@
 //! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid rather than
-//! a plain text label — rendering, colour-coded value cells, auto-sizing, empty-content rejection, dragging every
-//! cell (not just the box), and ordinary connector routing to/from one.
+//! a plain text label — rendering, colour-coded value cells, auto-sizing, `GridLayout` overrides, empty-content and
+//! bad-layout rejection, dragging every cell (not just the box), and ordinary connector routing to/from one.
 
 use crate::common::{
     attr_f64, check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group, the_connector,
@@ -8,7 +8,7 @@ use crate::common::{
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DataFormat, DataNodeContent, NodeValues, Scene},
+    scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene},
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -150,6 +150,74 @@ fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(),
     check(
         nth_group("data-node-empty", 1).is_err(),
         "expected exactly one <g> after the rejected call and one valid add_data_node call",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `DataNodeContent::with_layout(GridLayout::MaxColumns(n))` overrides `GridLayout::Automatic`'s own cell-count-only
+/// choice — 8 values render as 2 rows of 4 under `Automatic` (see `grid_shape_of_eight_values_prefers_two_rows_of_four`
+/// in `model::content::unit_tests`), but `MaxColumns(2)` caps that at 2 columns, giving 4 rows of 2 instead. Checked
+/// by counting each inner cell's own distinct `x`/`y` — the row/column count, not any specific pixel value.
+#[wasm_bindgen_test]
+fn with_layout_max_columns_overrides_automatics_own_shape() -> Result<(), String> {
+    let svg = make_svg("data-node-max-columns", Size::new(400.0, 400.0), Size::new(400.0, 400.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6, 7, 8]), DataFormat::Decimal)
+        .with_layout(GridLayout::MaxColumns(2));
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-max-columns", 0)?;
+    let rects = rect_children(&group)?;
+    check(
+        rects.len() == 9,
+        &format!("expected 1 outer + 8 inner cell rects, found {}", rects.len()),
+    )?;
+
+    // rects[0] is the outer box; the 8 inner cells follow.
+    let mut xs: Vec<i64> = rects[1..]
+        .iter()
+        .map(|r| attr_f64(r, "x").map(|x| x.round() as i64))
+        .collect::<Result<_, _>>()?;
+    let mut ys: Vec<i64> = rects[1..]
+        .iter()
+        .map(|r| attr_f64(r, "y").map(|y| y.round() as i64))
+        .collect::<Result<_, _>>()?;
+    xs.sort_unstable();
+    xs.dedup();
+    ys.sort_unstable();
+    ys.dedup();
+
+    check(
+        xs.len() == 2,
+        &format!("expected 2 distinct column positions under MaxColumns(2), found {}", xs.len()),
+    )?;
+    check(
+        ys.len() == 4,
+        &format!("expected 4 distinct row positions under MaxColumns(2), found {}", ys.len()),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Scene::add_data_node`/`add_data_node_with` rejects a `GridLayout` wrapping `0` before drawing anything or
+/// touching the graph's model — mirrors `add_data_node_rejects_empty_content_before_touching_the_scene` above.
+#[wasm_bindgen_test]
+fn add_data_node_rejects_a_zero_grid_layout_before_touching_the_scene() -> Result<(), String> {
+    let svg = make_svg("data-node-bad-layout", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    for layout in [GridLayout::Columns(0), GridLayout::Rows(0), GridLayout::MaxColumns(0)] {
+        let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal).with_layout(layout);
+        let result = scene.add_data_node(Point::new(10.0, 10.0), content);
+        check(
+            matches!(result, Err(Error::InvalidGridLayout(_))),
+            &format!("expected Err(Error::InvalidGridLayout(_)) for {layout:?}, got {result:?}"),
+        )?;
+    }
+    check(
+        nth_group("data-node-bad-layout", 0).is_err(),
+        "a rejected add_data_node call left a <g> rendered in the scene",
     )
 }
 
