@@ -24,7 +24,7 @@ The first panel, "Directed tree", keeps the scope minimal: a directed tree of th
 The two child boxes are draggable.
 Dragging one redraws its connector on every pointer-move, so it stays attached to the root.
 
-"Connector routing" shows two boxes andradio buttons to toggle between straight and elbow connectors.
+"Connector routing" shows two boxes and radio buttons to toggle between straight and elbow connectors.
 When the elbow connector is selected, the slider dynamically controls the elbow's corner radius up to a maximum that fits the available space.
 
 Drag a box to see the connector reroute.

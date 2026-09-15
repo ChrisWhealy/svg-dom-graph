@@ -147,9 +147,10 @@ async fn main() -> std::io::Result<()> {
             //
             // A refresh failure (e.g. index.html was left mid-edit) is only logged, not fatal: the previously
             // staged file is left in place and keeps being served, the same file-not-found-yet tolerance an
-            // editor's own autosave already needs. This is a real guarantee, not just a likely outcome —
-            // prepare_stage's own doc comment explains why it writes through a temporary file and renames it into
-            // place, rather than copying straight onto the live index.html.
+            // editor's own autosave already needs — prepare_stage's own doc comment explains why it writes
+            // through a temporary file and renames it into place, rather than copying straight onto the live
+            // index.html. That guarantee assumes only one refresh ever runs at a time, which is exactly what
+            // `.workers(1)` below exists to guarantee — see its own comment for why.
             .wrap_fn(move |req, srv| {
                 if matches!(req.path(), "/" | "/index.html")
                     && let Err(err) = build::prepare_stage(&root, &stage)
@@ -160,6 +161,15 @@ async fn main() -> std::io::Result<()> {
             })
             .service(Files::new("/", stage_dir.clone()).index_file("index.html"))
     })
+    // A single worker, deliberately: prepare_stage's own temporary file (index.html.tmp) is a fixed, shared path
+    // within stage_dir, not one made unique per request. Two workers refreshing it for two near-simultaneous
+    // requests to `/` or `/index.html` could otherwise interleave their own assemble-then-rename sequences over
+    // that same path — one worker's rename landing on the other's still-being-written temporary file, or the two
+    // renames racing each other. A single worker makes every request, including that refresh, run strictly one at
+    // a time, which removes the race outright rather than merely making it unlikely. This demo server has no
+    // throughput requirement multiple workers would ever be serving — see this module's own doc comment for what
+    // it actually needs to handle.
+    .workers(1)
     .bind(addr)?
     .run()
     .await

@@ -8,9 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.2.5] - 2026-09-15
 
+## Fixed
+
+- Doc only: Explain concurrency race edge-case when rendering `index.html` (``)
+
 ## Changed
 
-- Refactor demo to align with `svg-dom` demo architecture (``)
+- Refactor demo to align with `svg-dom` demo architecture (`34aab89`)
 
 # [Released]
 

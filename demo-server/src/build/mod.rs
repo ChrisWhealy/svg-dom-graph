@@ -120,6 +120,13 @@ impl From<panels::AssembleError> for BuildError {
 /// predecessor used for a plain file copy: `rename` within one directory means every request either sees the old
 /// `index.html` or the new one, never a partially written one, and a failure partway leaves the previous
 /// `index.html` completely untouched.
+///
+/// That guarantee is only sound when at most one call to this function runs at a time: `tmp_index` below is a
+/// fixed, shared path, not made unique per call, so two concurrent calls could interleave their own
+/// assemble-then-rename sequences over the same temporary file. `main`'s `.workers(1)` is what keeps every
+/// request — including the refresh that calls this function — strictly sequential, so that race cannot happen in
+/// practice; see its own comment for why a single worker is the right fix here rather than a mutex or a
+/// per-call-unique temporary file.
 pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> {
     fs::create_dir_all(&stage.stage_dir).map_err(|source| BuildError::CreateStageDir {
         path: stage.stage_dir.clone(),
