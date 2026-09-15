@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.4] - 2026-09-15
 
 ## Added
@@ -20,8 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add CDP drag bound clamping tests (`5fb2c1d`)
 - Doc only: Correct stale documentation (`6176165`)
 - Correct bug to fractional radius value exceeding slider maximum (`29b1353`)
-
-# [Released]
 
 ## [0.2.3] - 2026-09-13
 
