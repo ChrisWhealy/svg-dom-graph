@@ -164,3 +164,55 @@ fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Resu
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The exact gap an external review flagged: a failure copying `style.css` must leave the previously staged
+/// `index.html` untouched too, not just `style.css`. Proves `prepare_stage` stages both files into temporary
+/// files before promoting either, rather than promoting `index.html` first and only then attempting `style.css` —
+/// which would otherwise let this exact scenario silently replace `index.html` even though the overall call
+/// fails.
+#[test]
+fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Result<(), String> {
+    let real_root = workspace_root()?;
+    let temp_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    copy_minimal_source_root(&real_root, temp_root.path())?;
+
+    let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    let stage = StagePaths::new(stage_root.path());
+
+    prepare_stage(temp_root.path(), &stage).map_err(|e| format!("first prepare_stage failed: {e}"))?;
+    let before_index =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+    let before_style =
+        fs::read_to_string(stage.stage_dir.join("style.css")).map_err(|e| format!("read staged style.css: {e:?}"))?;
+
+    // Edit the fragment too, so a bug that promotes index.html before checking style.css would actually be
+    // visible below: the staged index.html would change even though the whole call is expected to fail.
+    const MARKER: &str = "<!-- prepare-stage-style-failure-marker -->";
+    let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
+    let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;
+    fragment.push_str(MARKER);
+    fs::write(&fragment_path, &fragment).map_err(|e| format!("write edited panel-tree.html: {e:?}"))?;
+
+    // Remove the copied source style.css so the asset-copy phase fails, after assembly has already succeeded.
+    fs::remove_file(temp_root.path().join("demo").join("style.css"))
+        .map_err(|e| format!("remove copied style.css: {e:?}"))?;
+
+    match prepare_stage(temp_root.path(), &stage) {
+        Err(BuildError::CopyAsset { .. }) => {},
+        other => return Err(format!("expected Err(BuildError::CopyAsset(_)), got {other:?}")),
+    }
+
+    let after_index =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+    let after_style =
+        fs::read_to_string(stage.stage_dir.join("style.css")).map_err(|e| format!("read staged style.css: {e:?}"))?;
+
+    if after_index != before_index {
+        return Err("a style.css copy failure changed the previously staged index.html".to_owned());
+    }
+    if after_style != before_style {
+        return Err("a style.css copy failure changed the previously staged style.css".to_owned());
+    }
+    Ok(())
+}

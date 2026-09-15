@@ -145,12 +145,13 @@ async fn main() -> std::io::Result<()> {
             // wasm-pack is far too slow to run per request and editing Rust source already requires restarting
             // cargo demo regardless.
             //
-            // A refresh failure (e.g. index.html was left mid-edit) is only logged, not fatal: the previously
-            // staged file is left in place and keeps being served, the same file-not-found-yet tolerance an
-            // editor's own autosave already needs — prepare_stage's own doc comment explains why it writes
-            // through a temporary file and renames it into place, rather than copying straight onto the live
-            // index.html. That guarantee assumes only one refresh ever runs at a time, which is exactly what
-            // `.workers(1)` below exists to guarantee — see its own comment for why.
+            // A refresh failure (e.g. index.html was left mid-edit, or style.css went missing) is only logged, not
+            // fatal: the previously staged index.html and style.css are both left in place and keep being served,
+            // the same file-not-found-yet tolerance an editor's own autosave already needs — prepare_stage's own
+            // doc comment explains why it stages both files into temporary files and only promotes them once both
+            // have been prepared successfully, rather than writing either straight onto its live destination. That
+            // guarantee assumes only one refresh ever runs at a time, which is exactly what `.workers(1)` below
+            // exists to guarantee — see its own comment for why.
             .wrap_fn(move |req, srv| {
                 if matches!(req.path(), "/" | "/index.html")
                     && let Err(err) = build::prepare_stage(&root, &stage)

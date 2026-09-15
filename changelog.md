@@ -11,12 +11,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Fully implement defensive validation during demo server build (`2671efc`)
-- Test normal demo server replacement of `index.html` (``)
+- Test normal demo server replacement of `index.html` (`b4cfb21`)
 
 ## Fixed
 
 - Doc only: Explain concurrency race edge-case when rendering `index.html` (`4ed93cb`)
 - Doc only: Update stale docs (`201825e`)
+- Close atomic staging gap for demo server files and fix stale docs(``)
 
 ## Changed
 

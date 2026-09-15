@@ -4,8 +4,9 @@
 //!
 //! Mirrors `svg-dom`'s own `demo-server/src/build/mod.rs`, including its two-layer split:
 //!  - [`prepare_stage`] runs every phase except the wasm build: validate the catalogue, assemble `index.html`,
-//!    copy `style.css`. This is the part a plain `wasm-pack build demo-app ...` (the invocation CI's `wasm` job
-//!    runs to build the wasm package) does not exercise at all.
+//!    copy `style.css`. This is the part a plain `wasm-pack build demo-app ...` invocation does not exercise at
+//!    all — CI's own `wasm` job no longer makes that invocation directly either; see its `--build-only` step
+//!    below (and `main`'s own doc comment) for what it runs instead.
 //!  - [`build_demo`] runs [`prepare_stage`] and then rebuilds the wasm package, which is what `cargo demo`
 //!    actually needs to serve the page.
 //!
@@ -53,10 +54,10 @@ pub enum BuildError {
     /// `index.html` could not be assembled from `demo/index.template.html` and its panel fragments — see
     /// [`panels::AssembleError`].
     Assemble(panels::AssembleError),
-    /// The assembled temporary file could not be renamed into place over the previously staged `index.html` —
-    /// see [`prepare_stage`]'s own doc comment for why there is a temporary file at all.
-    RenameIndexHtml { src: PathBuf, dest: PathBuf, source: io::Error },
-    /// A static asset (`style.css`) could not be copied into the staging directory.
+    /// A staged temporary file could not be renamed into place over the previously staged file at `dest` — see
+    /// [`prepare_stage`]'s own doc comment for why there is a temporary file at all.
+    PromoteStagedFile { src: PathBuf, dest: PathBuf, source: io::Error },
+    /// A static asset (`style.css`) could not be copied into its own temporary file in the staging directory.
     CopyAsset { src: PathBuf, dest: PathBuf, source: io::Error },
     /// `wasm-pack` could not even be started (e.g. not on `PATH`).
     WasmSpawn(io::Error),
@@ -70,7 +71,7 @@ impl fmt::Display for BuildError {
             Self::CreateStageDir { path, source } => write!(f, "could not create {} ({source})", path.display()),
             Self::Validate(err) => write!(f, "{err}"),
             Self::Assemble(err) => write!(f, "{err}"),
-            Self::RenameIndexHtml { src, dest, source } => {
+            Self::PromoteStagedFile { src, dest, source } => {
                 write!(f, "could not rename {} to {} ({source})", src.display(), dest.display())
             },
             Self::CopyAsset { src, dest, source } => {
@@ -86,7 +87,7 @@ impl std::error::Error for BuildError {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::CreateStageDir { source, .. }
-            | Self::RenameIndexHtml { source, .. }
+            | Self::PromoteStagedFile { source, .. }
             | Self::CopyAsset { source, .. } => Some(source),
             Self::Validate(err) => Some(err),
             Self::Assemble(err) => Some(err),
@@ -115,18 +116,23 @@ impl From<panels::AssembleError> for BuildError {
 /// Returns as soon as any phase fails, via `?`: a stale catalogue is caught before `index.html` is ever
 /// assembled, and a broken assembly is caught before it is ever written into place.
 ///
-/// `index.html` is assembled into a temporary file in `stage.stage_dir` first, then `fs::rename`-d into place
-/// only once that assembly has fully succeeded — the same atomic-replace reasoning this function's own
-/// predecessor used for a plain file copy: `rename` within one directory means every request either sees the old
-/// `index.html` or the new one, never a partially written one, and a failure partway leaves the previous
-/// `index.html` completely untouched.
+/// Both `index.html` and `style.css` are staged into temporary files in `stage.stage_dir` first, and neither of
+/// the two *live* filenames is touched until both temporary files have been prepared successfully. Only then are
+/// both promoted (`fs::rename`-d) into place. This is what makes the failure guarantee exact: a failure preparing
+/// either file — a broken template/fragment, or a missing `style.css` — leaves the previously staged `index.html`
+/// *and* `style.css` both completely untouched, not just the one that happened to fail. Promoting `index.html`
+/// first and then discovering the `style.css` copy had failed would otherwise leave a live `index.html` already
+/// replaced while its `style.css` was not, however narrow that window in practice for a local development server.
 ///
-/// That guarantee is only sound when at most one call to this function runs at a time: `tmp_index` below is a
-/// fixed, shared path, not made unique per call, so two concurrent calls could interleave their own
-/// assemble-then-rename sequences over the same temporary file. `main`'s `.workers(1)` is what keeps every
+/// Each promotion is itself a same-directory `rename`, so every request either sees the old file or the new one,
+/// never a partially written one.
+///
+/// That guarantee is only sound when at most one call to this function runs at a time: the temporary paths below
+/// are fixed, not made unique per call, so two concurrent calls could interleave their own
+/// stage-then-promote sequences over the same temporary files. `main`'s `.workers(1)` is what keeps every
 /// request — including the refresh that calls this function — strictly sequential, so that race cannot happen in
-/// practice; see its own comment for why a single worker is the right fix here rather than a mutex or a
-/// per-call-unique temporary file.
+/// practice; see its own comment for why a single worker is the right fix here rather than a mutex or
+/// per-call-unique temporary files.
 pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> {
     fs::create_dir_all(&stage.stage_dir).map_err(|source| BuildError::CreateStageDir {
         path: stage.stage_dir.clone(),
@@ -138,19 +144,31 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
     validate::validate(root)?;
 
     let source_demo_dir = root.join("demo");
-    let dest_index = stage.stage_dir.join("index.html");
-    // Same directory as `dest_index`, so the rename below is guaranteed to be a same-filesystem, atomic replace.
+
+    // Stage everything into temporary files first. Nothing under stage.stage_dir's live filenames is touched
+    // until this point, so a failure preparing either file below leaves both previously staged files untouched.
     let tmp_index = stage.stage_dir.join("index.html.tmp");
     panels::assemble(&source_demo_dir, &tmp_index)?;
-    fs::rename(&tmp_index, &dest_index).map_err(|source| BuildError::RenameIndexHtml {
-        src: tmp_index,
-        dest: dest_index,
-        source,
-    })?;
 
     // style.css is not generated — it is a static asset index.html references by a plain relative path, so it
     // needs to sit alongside the assembled file in the staging directory too.
-    copy_asset(&source_demo_dir.join("style.css"), &stage.stage_dir.join("style.css"))
+    let tmp_style = stage.stage_dir.join("style.css.tmp");
+    copy_asset(&source_demo_dir.join("style.css"), &tmp_style)?;
+
+    // Both temporary files are ready — promote them together.
+    promote(&tmp_index, &stage.stage_dir.join("index.html"))?;
+    promote(&tmp_style, &stage.stage_dir.join("style.css"))
+}
+
+/// Renames `tmp` into place over `dest` — a same-directory, atomic replace. See [`prepare_stage`]'s own doc
+/// comment for why every staged file goes through a temporary file rather than being written straight onto its
+/// live destination.
+fn promote(tmp: &Path, dest: &Path) -> Result<(), BuildError> {
+    fs::rename(tmp, dest).map_err(|source| BuildError::PromoteStagedFile {
+        src: tmp.to_path_buf(),
+        dest: dest.to_path_buf(),
+        source,
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
