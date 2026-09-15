@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.5] - 2026-09-15
 
 ## Added
@@ -17,13 +19,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Doc only: Explain concurrency race edge-case when rendering `index.html` (`4ed93cb`)
 - Doc only: Update stale docs (`201825e`)
-- Close atomic staging gap for demo server files and fix stale docs(``)
+- Close atomic staging gap for demo server files and fix stale docs (`2376599`)
 
 ## Changed
 
 - Refactor demo to align with `svg-dom` demo architecture (`34aab89`)
-
-# [Released]
 
 ## [0.2.4] - 2026-09-15
 
