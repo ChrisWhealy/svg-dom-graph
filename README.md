@@ -45,6 +45,20 @@ Lowering it hides them again.
 
 This panel has its own straight/elbow toggle too, independent of the "Connector routing" one.
 
+"Data node" demonstrates `NodeContent`: a node whose visible content is a grid of typed numeric values (`u8`/`u16`/`u32`/`u64`, shown as decimal, hexadecimal, or binary) rather than a plain text label.
+
+Values are arranged into a grid that prefers a power-of-two row count over a plain "as square as possible" one, since that better matches the row/column groupings most commonly seen in memory dumps and register views: eight values become two rows of four rather than a 3×3 square with one slot left blank, and twenty values become four rows of five.
+
+When a power-of-two row count cannot evenly divide the value count, the grid falls back to the plain closest-to-square shape — a single value is one row, two values stack into two rows of one column, and twenty-five values form a 5×5 square.
+
+A byte-group string alone cannot say where one value ends and the next begins, so each value gets its own small box, coloured by its own type — a gentle pastel shade per `u8`/`u16`/`u32`/`u64`. A single value has no sibling to be told apart from, so that colour is applied straight to the node's own box instead of a redundant inner one.
+
+Each value's bytes are shown most-significant-byte first, space-separated, with no `0x` prefix (`"F0 E1 D2 C3 B4 A5 96 87"` for a `u64` in hexadecimal); binary further splits each byte into its own upper and lower nybble (`"1111 0000"` for one byte).
+
+The box itself needs no caller-supplied size: it is always sized to fit its own content automatically, computed from the grid's real rendered width and row count.
+
+Both nodes in this panel are draggable, exactly like any other node — connector routing and drag-collision handling apply to a data node exactly as they would to a plain label node, since both only ever look at a node's `Rect`, never its content.
+
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
 | Module | Description |
@@ -52,13 +66,13 @@ This panel has its own straight/elbow toggle too, independent of the "Connector 
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, `clamp_to_bounds`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `NodeContent` grid of values rather than a plain label, self-sizing to fit — see `NodeContent`/`NodeValues`/`DataFormat`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
 
 `demo/` holds the demo's own HTML, assembled at stage time rather than hand-maintained as one file: `index.template.html` (the page shell, with a `{{MENU}}` and a `{{PANELS}}` placeholder), `panels/*.html` (one fragment per demo panel), and `style.css` — the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share one visual style.
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
-- `demo-app/src/lib.rs` — exports `init_panel`, called from `demo/index.template.html`'s own script each time a menu click or a deep link selects a panel. Builds that one panel's small demo scene — the directed tree, the connector-routing demo, or the fixing-points demo — the first time it is selected, not eagerly at page load; a later reselection is a no-op. It also embeds its own source at compile time and, once a panel is built, appends a `<details>` block showing the exact Rust function that built it — see the `highlight` module and `demo_gallery!` macro in that file for how.
+- `demo-app/src/lib.rs` — exports `init_panel`, called from `demo/index.template.html`'s own script each time a menu click or a deep link selects a panel. Builds that one panel's small demo scene — the directed tree, the connector-routing demo, the fixing-points demo, or the data-node demo — the first time it is selected, not eagerly at page load; a later reselection is a no-op. It also embeds its own source at compile time and, once a panel is built, appends a `<details>` block showing the exact Rust function that built it — see the `highlight` module and `demo_gallery!` macro in that file for how.
 
 `demo-server/` is a further on-demand workspace member, used only by `cargo demo` (see [Running the demo](#running-the-demo) below) — a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`, validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package, and serves the result, with no dependency on external HTTP-server tooling; `wasm-pack` remains required to build the demo.
 
@@ -74,7 +88,7 @@ Validates the panel catalogue, assembles `index.html` from `demo/index.template.
 
 Open <http://127.0.0.1:8000/> in a browser.
 
-Pick a demo from the menu on the left — "Directed tree", "Connector routing", or "Fixing points" — each one builds the first time it is selected. The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
+Pick a demo from the menu on the left — "Directed tree", "Connector routing", "Fixing points", or "Data node" — each one builds the first time it is selected. The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
 Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is picked up on the next browser refresh; editing any Rust source needs a `cargo demo` restart, the same as any other wasm rebuild.
 
 ## Testing
@@ -106,6 +120,7 @@ Runs the browser integration tests in `tests/drag/`, split by category:
 * `connectors.rs`
 * `edge_anchors.rs`
 * `bounds.rs`
+* `data_node.rs`
 
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
 They make assertions about attributes of the resulting `<rect>`, `<text>`, `<path>` and `<marker>` elements, not on the internal Rust state that produced them.
@@ -122,6 +137,7 @@ The test suite covers:
 - `DragOptions::bounds`: clamping a drag to a rectangle at both edges, leaving an unbounded drag unconstrained, a node clamped to the edge remaining draggable afterward — the exact bug this feature fixes — rejecting a non-finite origin or a negative width/height, accepting a zero-width/height rectangle, a rejected `bounds` leaving the node not draggable at all, and `CollisionPolicy::PushClear`'s own corrective push staying within `bounds` too, not just the pointermove that preceded it
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
 - per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the elbow connector's default midpoint anchor at one fixing point (this does not hold for a straight connector, whose unsnapped default is the continuous ray/boundary crossing), a straight connector's own snap onto a fixing point and its exact round trip back to `None`'s boundary crossing, and live reconfiguration via `set_edge_anchors` reaching every incident edge
+- data nodes (`NodeContent`/`Scene::add_data_node`): correct colour-coded cell rendering and auto-sizing for one and two values, empty-content rejection before touching the scene, dragging a data node moving every cell (not just the first), and ordinary connector routing to/from one
 
 ```sh
 cargo test -p cdp-integration-test

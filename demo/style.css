@@ -163,6 +163,14 @@ h2 code {
     color: #f0883e;
 }
 
+/* svg-dom-graph's own addition: svg-dom's panels keep their explanatory text inside <figcaption> (see that rule's
+   own margin-bottom below), but svg-dom-graph's own panels write plain <p> tags directly under .section instead.
+   The global box-sizing reset at the top of this file zeroes every element's own margin, so without this those
+   paragraphs would render with no gap between them at all. */
+.section > p {
+    margin-bottom: 0.5rem;
+}
+
 figure {
     margin: 0;
 }

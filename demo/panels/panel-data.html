@@ -1,0 +1,26 @@
+<section class="section" id="panel-data">
+    <h2>Data node</h2>
+    <p>A node can also display a grid of typed numeric values instead of a plain text label — see
+        <code>NodeContent</code>.
+        Each value's bytes are shown in big-endian format (most-significant-byte first), space-separated, with no
+        <code>0x</code> prefix.
+    </p>
+    <p>A byte-group string alone cannot say where one value ends and the next begins, so each value gets its own
+        small box, coloured by its own type — a pastel shade per <code>u8</code>/<code>u16</code>/<code>u32</code>/
+        <code>u64</code>. With a single value, that colour is applied straight to the node's own box instead, since
+        there is no sibling value to tell it apart from.
+    </p>
+    <p>Each row below shows one integer width as both a single value (left) and several values (right).</p>
+    <p>The multi-value counts are deliberately varied to cover every shape the grid layout rule can produce:
+        <code>u8</code>
+        uses 8 values, which divides evenly by a power of two (2 rows of 4); <code>u16</code> uses 5, which has no
+        power-of-two divisor at all, so it falls back to the closest-to-square shape (3 rows of 2, one slot left blank);
+        <code>u32</code> uses 9, a perfect square with no power-of-two divisor either, which that same fallback happens
+        to fit exactly (3 rows of 3); and <code>u64</code> uses 4, both a perfect square and evenly divisible by a power
+        of two, where the two rules agree on the same 2×2 shape. Every box is sized to fit its own content automatically,
+        and every box is draggable, exactly like any other node.
+    </p>
+    <div class="canvas" style="margin-top: 1.5rem;">
+        <svg id="data-diagram" width="750" height="600" viewBox="0 0 750 600" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

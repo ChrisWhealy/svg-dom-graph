@@ -13,14 +13,17 @@
 //!   `set_edge_anchors`.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
 //!   clamped to its edge.
+//! - [`data_node`] — `NodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
+//!   dragging every row, and ordinary connector routing.
 //!
-//! All six drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All seven drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
 mod bounds;
 mod collision_resolution;
 mod connectors;
+mod data_node;
 mod drag_basics;
 mod edge_anchors;
 mod scene_validation;

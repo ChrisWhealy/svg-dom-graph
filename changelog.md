@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.6] - 2026-09-15
+
+## Added
+
+- Display node data as a formatted, colour-coded grid (``)
+
 # [Released]
 
 ## [0.2.5] - 2026-09-15

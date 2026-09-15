@@ -1,6 +1,6 @@
 //! Node configuration and the `Scene` methods that add or reconfigure a node.
 
-use super::{BoxHandles, Scene, box_centre};
+use super::{BoxHandles, GridCell, NodeContent, NodeVisual, Scene, box_centre};
 use crate::{error::Error, model::node::NodeId};
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -151,10 +151,168 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     Ok(BoxHandles {
         group,
         rect_el,
-        label_el,
+        visual: NodeVisual::Label(label_el),
         draggable: false,
         edge_anchors,
     })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Data nodes — a grid of typed values instead of a plain text label. See `super::content` for the pure
+// grid-shape/formatting logic; everything DOM-specific (rendering the grid, sizing the box to fit it) lives here.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Font size for a data node's cell text, in user-space units. Deliberately smaller than [`LABEL_FONT_SIZE`]: a
+/// byte-group value (e.g. `"F0 E1 D2 C3 B4 A5 96 87"`) is far longer than a typical plain label, so a slightly
+/// smaller size keeps a modest grid from demanding an oversized box by default.
+const GRID_FONT_SIZE: f64 = 13.0;
+
+/// A generic monospace font stack. Digits render at a uniform width under a monospace font — a proportional font
+/// would render `"1"` narrower than `"8"`, throwing off a byte-group's own internal alignment. Several names are
+/// offered since not every browser/OS ships the same monospace font; `monospace` itself is the universally
+/// supported fallback.
+const GRID_FONT_FAMILY: &str = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
+
+/// The height of one value's own cell, in user-space units — a fixed multiple of [`GRID_FONT_SIZE`], not measured.
+///
+/// Unlike a cell's width — which depends entirely on how many characters its own value holds, and so is measured
+/// via [`SvgNode::bounding_box`] — a monospace font's own line height at one fixed size is predictable enough
+/// that measuring it separately for every node would only add overhead, not accuracy.
+const CELL_HEIGHT: f64 = GRID_FONT_SIZE * 1.4;
+
+/// The gap kept clear, on every side, between one value's own text and that value's own cell edges.
+const CELL_PADDING: f64 = 6.0;
+
+/// The gap left between adjacent value cells in a multi-value grid, so the node's own background colour shows
+/// through as a visible seam between them — this, together with each cell's own [`NodeValues::type_color`], is
+/// what lets a reader tell where one value ends and the next begins, rather than reading a wall of digits with no
+/// indication of which byte belongs to which value.
+///
+/// [`NodeValues`]: super::content::NodeValues
+const CELL_GAP: f64 = 6.0;
+
+/// The gap kept clear, on every side, between a multi-value grid's own cells and the node's outer box edges.
+const OUTER_PADDING: f64 = 10.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
+/// alongside the box's own final `Rect` — computed here, not supplied by the caller.
+///
+/// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]); its real, rendered width is
+/// read back via [`SvgNode::bounding_box`] — the same "measure, don't estimate" approach [`shrink_label_to_fit`]
+/// already uses for plain labels, and for the same reason: it stays correct for whatever font the browser
+/// actually substitutes. Every cell shares one uniform size, the widest value's own measured width plus
+/// [`CELL_PADDING`], so the grid's rows and columns actually line up even when [`DataFormat::Decimal`] values
+/// differ in digit count.
+///
+/// [`content::NodeContent::is_single_value`] decides which of two layouts is drawn:
+///
+/// - A single value has no sibling to be told apart from, so it gets no inner cell box at all — the node's own
+///   `rect_el` is filled directly with [`NodeValues::type_color`], and the value's text sits centred in it.
+/// - Two or more values each get their own small [`NodeValues::type_color`]-filled `<rect>`, arranged into the
+///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer
+///   box.
+///
+/// [`DataFormat::Decimal`]: super::content::DataFormat
+/// [`NodeValues`]: super::content::NodeValues
+/// [`content::NodeContent::is_single_value`]: super::content::NodeContent::is_single_value
+fn draw_content_box(
+    svg: &SvgRoot,
+    top_left: Point,
+    content: &NodeContent,
+    edge_anchors: Option<EdgeAnchors>,
+) -> Result<(BoxHandles, Rect), Error> {
+    let group = svg.group()?;
+    let type_color = content.type_color();
+
+    // Render every value's text first, at a placeholder position — bounding_box() reports each element's own
+    // local geometry (font, content, styling), unaffected by where it currently sits, so the true final position
+    // is not needed yet.
+    let mut texts = Vec::new();
+    let mut max_width: f64 = 0.0;
+    for cell_text in &content.cells() {
+        let text = svg.text(top_left, cell_text)?;
+        text.set_text_anchor(TextAnchor::Middle)?;
+        text.set_dominant_baseline(DominantBaseline::Middle)?;
+        text.set_font_family(GRID_FONT_FAMILY)?;
+        text.set_font_size(GRID_FONT_SIZE)?;
+        text.set_fill("#1b1b1b")?;
+        max_width = max_width.max(text.bounding_box()?.size.width);
+        texts.push(text);
+    }
+
+    let cell_size = Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
+    let single_value = content.is_single_value();
+
+    let size = if single_value {
+        cell_size
+    } else {
+        let (grid_rows, grid_cols) = content.shape();
+        #[allow(clippy::cast_precision_loss)]
+        Size::new(
+            grid_cols as f64 * cell_size.width + (grid_cols as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
+            grid_rows as f64 * cell_size.height + (grid_rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
+        )
+    };
+    let rect = Rect { origin: top_left, size };
+
+    let rect_el = svg.rect(rect.origin, rect.size)?;
+    rect_el.set_fill(if single_value { type_color } else { "#eef4ff" })?;
+    rect_el.set_stroke("#2a5db0")?;
+    rect_el.set_stroke_width(1.5)?;
+    group.append(&rect_el)?;
+
+    let mut cells = Vec::with_capacity(texts.len());
+    let mut scratch = String::new();
+    if single_value {
+        let text = texts
+            .into_iter()
+            .next()
+            .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_content_box: expected exactly one value".into())))?;
+        let offset = Point::new(0.0, 0.0);
+        text.set_attr_display(&mut scratch, "x", top_left.x + cell_size.width / 2.0)?;
+        text.set_attr_display(&mut scratch, "y", top_left.y + cell_size.height / 2.0)?;
+        group.append(&text)?;
+        cells.push(GridCell { rect: None, text, offset });
+    } else {
+        let (_, grid_cols) = content.shape();
+        for (i, text) in texts.into_iter().enumerate() {
+            #[allow(clippy::cast_precision_loss)]
+            let (row, col) = (i / grid_cols, i % grid_cols);
+            #[allow(clippy::cast_precision_loss)]
+            let offset = Point::new(
+                OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
+                OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
+            );
+
+            let cell_rect = svg.rect(Point::new(top_left.x + offset.x, top_left.y + offset.y), cell_size)?;
+            cell_rect.set_fill(type_color)?;
+            cell_rect.set_stroke("#2a5db0")?;
+            cell_rect.set_stroke_width(1.0)?;
+            group.append(&cell_rect)?;
+
+            text.set_attr_display(&mut scratch, "x", top_left.x + offset.x + cell_size.width / 2.0)?;
+            text.set_attr_display(&mut scratch, "y", top_left.y + offset.y + cell_size.height / 2.0)?;
+            group.append(&text)?;
+
+            cells.push(GridCell {
+                rect: Some(cell_rect),
+                text,
+                offset,
+            });
+        }
+    }
+
+    Ok((
+        BoxHandles {
+            group,
+            rect_el,
+            visual: NodeVisual::Grid { cells, cell_size },
+            draggable: false,
+            edge_anchors,
+        },
+        rect,
+    ))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -207,6 +365,65 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         let handles = draw_box(&inner.svg, rect, &label, options.edge_anchors)?;
         let id = inner.graph.add_node(rect, label);
+        inner.node_handles.insert(id, handles);
+        Ok(id)
+    }
+
+    /// Adds a data node to the graph — one whose visible content is `content`'s own grid of values (see
+    /// [`NodeContent`]) rather than a plain text label — and returns its id.
+    ///
+    /// Unlike [`add_node`](Self::add_node), there is no `size` parameter: the box is always sized to fit
+    /// `content`'s rendered grid exactly — see [`NodeContent`]'s own doc comment for the layout and formatting
+    /// rules, and `draw_content_box`'s own doc comment for how the fit is computed.
+    ///
+    /// Equivalent to [`add_data_node_with`](Self::add_data_node_with) with [`NodeOptions::default`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptyNodeContent`] if `content` holds no values — there is no grid to draw.
+    ///
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite.
+    pub fn add_data_node(&self, top_left: Point, content: NodeContent) -> Result<NodeId, Error> {
+        self.add_data_node_with(top_left, content, NodeOptions::default())
+    }
+
+    /// Adds a data node to the graph, as [`add_data_node`](Self::add_data_node), but with `options` controlling
+    /// how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidEdgeAnchors`] if `options.edge_anchors` is `Some(EdgeAnchors(0))`. Checked before
+    /// drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it was.
+    ///
+    /// Returns [`Error::EmptyNodeContent`] if `content` holds no values. Also checked before drawing anything.
+    ///
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Unlike
+    /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always
+    /// sized to fit `content`.
+    pub fn add_data_node_with(
+        &self,
+        top_left: Point,
+        content: NodeContent,
+        options: NodeOptions,
+    ) -> Result<NodeId, Error> {
+        validate_edge_anchors(options.edge_anchors)?;
+
+        if content.len() == 0 {
+            return Err(Error::EmptyNodeContent);
+        }
+        if !top_left.x.is_finite() || !top_left.y.is_finite() {
+            return Err(Error::InvalidNodeGeometry(Rect {
+                origin: top_left,
+                size: Size::new(0.0, 0.0),
+            }));
+        }
+
+        let mut inner = self.inner.borrow_mut();
+        let (handles, rect) = draw_content_box(&inner.svg, top_left, &content, options.edge_anchors)?;
+        // Data nodes have no plain-text label — the graph model's own `label` field is unused storage kept for a
+        // hypothetical future feature (see `model::node::Node`'s own doc comment), so an empty string costs
+        // nothing here.
+        let id = inner.graph.add_node(rect, String::new());
         inner.node_handles.insert(id, handles);
         Ok(id)
     }
