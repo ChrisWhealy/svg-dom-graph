@@ -14,7 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Fully implement defensive validation during demo server build (`2671efc`)
 - Test normal demo server replacement of `index.html` (`b4cfb21`)
-- Add `webdriver.json` to prevent headless Chrome/chromedriver from being killed by a SIGKILL (``)
+- Add `webdriver.json` to prevent headless Chrome/chromedriver from being killed by a SIGKILL (`2022d5c`)
 
 ## Fixed
 
