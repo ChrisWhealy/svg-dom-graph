@@ -9,6 +9,29 @@ fn workspace_root() -> Result<PathBuf, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Copies just the files `prepare_stage` actually reads — `demo-app/src/lib.rs` (for [`validate::validate`]) and
+/// `demo/` (for [`panels::assemble`]) — from `src_root` into `dst_root`, so a test can freely edit a copied
+/// fragment afterwards without ever touching the real project's own source tree.
+fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), String> {
+    let copy = |rel: &str| -> Result<(), String> {
+        let src = src_root.join(rel);
+        let dst = dst_root.join(rel);
+        if let Some(parent) = dst.parent() {
+            fs::create_dir_all(parent).map_err(|e| format!("create_dir_all({}): {e:?}", parent.display()))?;
+        }
+        fs::copy(&src, &dst).map_err(|e| format!("copy {rel}: {e:?}")).map(|_| ())
+    };
+
+    copy("demo-app/src/lib.rs")?;
+    copy("demo/index.template.html")?;
+    copy("demo/style.css")?;
+    for id in panels::panel_ids() {
+        copy(&format!("demo/panels/{id}.html"))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // prepare_stage — the end-to-end staging check: everything build_demo does except the wasm rebuild, run against
 // the real project. This is what actually proves catalogue validation, template assembly, and asset copying stay
 // wired together correctly as one pipeline, not just that each phase's own unit tests (in panels::unit_tests and
@@ -99,6 +122,45 @@ fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Res
         fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
     if after != before {
         return Err("a failed refresh changed the previously staged index.html".to_owned());
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The successful counterpart to
+/// [`prepare_stage_leaves_the_previously_staged_file_untouched_on_failure`]: two successful calls against the
+/// same stage directory, with a source fragment edited in between, must actually replace the previously staged
+/// `index.html` with content reflecting that edit — not just leave the old one in place, and not just fail to
+/// error. Runs against a copied source root (see [`copy_minimal_source_root`]) rather than the real project's own
+/// `demo/`, so this test can freely edit a fragment without ever touching a real source file.
+#[test]
+fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Result<(), String> {
+    let real_root = workspace_root()?;
+    let temp_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    copy_minimal_source_root(&real_root, temp_root.path())?;
+
+    let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    let stage = StagePaths::new(stage_root.path());
+
+    prepare_stage(temp_root.path(), &stage).map_err(|e| format!("first prepare_stage failed: {e}"))?;
+    let before =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+
+    const MARKER: &str = "<!-- prepare-stage-regression-test-marker -->";
+    let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
+    let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;
+    fragment.push_str(MARKER);
+    fs::write(&fragment_path, &fragment).map_err(|e| format!("write edited panel-tree.html: {e:?}"))?;
+
+    prepare_stage(temp_root.path(), &stage).map_err(|e| format!("second prepare_stage failed: {e}"))?;
+    let after =
+        fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
+
+    if before.contains(MARKER) {
+        return Err("marker unexpectedly present before the fragment was ever edited".to_owned());
+    }
+    if !after.contains(MARKER) {
+        return Err("staged index.html was not replaced with the edited fragment's content".to_owned());
     }
     Ok(())
 }
