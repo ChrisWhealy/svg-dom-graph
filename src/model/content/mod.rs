@@ -59,6 +59,16 @@
 //! box it sits in, not something a reader has to count bytes to infer. With two or more values that box sits inside the
 //! node's own (unchanged, light blue) box; with exactly one value, [`DataNodeContent::is_single_value`]'s own doc comment
 //! explains why the inner box is dropped and the type colour is applied directly.
+//!
+//! # Colour is not the only way to tell a type apart
+//!
+//! `type_color` distinguishes one width from another visually, but colour alone is invisible to assistive
+//! technology and unreliable for a colour-blind reader — and this crate offers no caller-facing way to look the
+//! colour up and map it back to a type name. So `scene::node::draw_content_box` also attaches each value cell's
+//! own type name (`NodeValues::type_name`, crate-private — "u8"/"u16"/"u32"/"u64") as an SVG `<title>` (a native
+//! browser tooltip, and part of the cell's own accessible-name computation), and the whole node's own `<g>` gets
+//! an `aria-label` summarising its type and value count. Neither clutters the rendered digits themselves — the
+//! type is discoverable, not displayed.
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The values a [`DataNodeContent`] displays, each variant naming the Rust integer type they were captured as — this
@@ -134,6 +144,22 @@ impl NodeValues {
             Self::U16(_) => "#dcefdc", // pastel mint
             Self::U32(_) => "#e6dcf5", // pastel lavender
             Self::U64(_) => "#f5dce4", // pastel rose
+        }
+    }
+
+    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64").
+    ///
+    /// [`type_color`](Self::type_color) is the only thing distinguishing one width from another in a data node's
+    /// own rendering — a caller who cannot distinguish the colours (or is using assistive technology, which does
+    /// not perceive fill colour at all) has no other way to recover the type from the diagram alone. `scene::node`
+    /// attaches this as each value cell's own `<title>` (and its parent's `aria-label`) precisely so that
+    /// information exists as text somewhere, not only as colour.
+    pub(crate) fn type_name(&self) -> &'static str {
+        match self {
+            Self::U8(_) => "u8",
+            Self::U16(_) => "u16",
+            Self::U32(_) => "u32",
+            Self::U64(_) => "u64",
         }
     }
 }
@@ -405,6 +431,11 @@ impl DataNodeContent {
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
     pub(crate) fn type_color(&self) -> &'static str {
         self.values.type_color()
+    }
+
+    /// This content's own type name ("u8"/"u16"/"u32"/"u64") — see [`NodeValues::type_name`].
+    pub(crate) fn type_name(&self) -> &'static str {
+        self.values.type_name()
     }
 }
 

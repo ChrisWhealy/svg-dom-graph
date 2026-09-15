@@ -243,6 +243,7 @@ fn draw_content_box(
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
     let type_color = content.type_color();
+    let type_name = content.type_name();
     let origin = Point::origin();
 
     // Render every value's text first, at a placeholder position — bounding_box() reports each element's own
@@ -284,6 +285,10 @@ fn draw_content_box(
 
     let mut scratch = String::new();
     if single_value {
+        // The outer box itself is the value's own cell here (see this function's own doc comment) — its `<title>`
+        // is this cell's only textual type indicator, since `type_color` alone is not perceivable by assistive
+        // technology or a colour-blind reader.
+        rect_el.set_title(type_name)?;
         let text = texts
             .into_iter()
             .next()
@@ -306,6 +311,9 @@ fn draw_content_box(
             cell_rect.set_fill(type_color)?;
             cell_rect.set_stroke("#2a5db0")?;
             cell_rect.set_stroke_width(1.0)?;
+            // Same reasoning as the single-value case above: each cell's own colour carries semantic type
+            // information, so each cell also carries that same information as text.
+            cell_rect.set_title(type_name)?;
             group.append(&cell_rect)?;
 
             text.set_attr_display(&mut scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
@@ -316,6 +324,15 @@ fn draw_content_box(
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
+
+    // Names the whole node for assistive technology that announces a group before its children, rather than
+    // relying on a reader to visit every individual cell's own `<title>` to learn the node's type.
+    let node_label = if single_value {
+        format!("{type_name} value")
+    } else {
+        format!("{type_name} data grid, {} values", content.len())
+    };
+    group.set_attr("aria-label", &node_label)?;
 
     Ok((
         BoxHandles {

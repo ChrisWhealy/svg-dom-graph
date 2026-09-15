@@ -11,10 +11,10 @@ pub(crate) mod connector;
 pub(crate) mod drag;
 pub(crate) mod node;
 
+pub use crate::model::content::{ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
-pub use crate::model::content::{ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues};
 
 use crate::{
     error::Error,

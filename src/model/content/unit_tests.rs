@@ -339,3 +339,23 @@ fn every_width_gets_a_distinct_type_color() -> Result<(), String> {
     unique.dedup();
     check_eq(unique.len(), colors.len())
 }
+
+#[test]
+fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
+    check_eq(
+        DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).type_name(),
+        "u8",
+    )?;
+    check_eq(
+        DataNodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal).type_name(),
+        "u16",
+    )?;
+    check_eq(
+        DataNodeContent::new(NodeValues::U32(vec![1]), DataFormat::Decimal).type_name(),
+        "u32",
+    )?;
+    check_eq(
+        DataNodeContent::new(NodeValues::U64(vec![1]), DataFormat::Decimal).type_name(),
+        "u64",
+    )
+}

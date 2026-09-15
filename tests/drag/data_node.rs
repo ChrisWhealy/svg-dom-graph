@@ -126,6 +126,70 @@ fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `<title>` child text, or `None` if `element` has no direct `<title>` child.
+fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
+    Ok(element
+        .query_selector(":scope > title")
+        .map_err(|e| format!("{e:?}"))?
+        .map(|title| title.text_content().unwrap_or_default()))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A data node's type colour is not the only place its type is recorded — a single-value node's own outer box
+/// (which doubles as that one value's own cell) carries a `<title>` naming its type, and the node's own `<g>`
+/// carries an `aria-label` summarising it — both readable by assistive technology or a browser tooltip, neither
+/// visible in the rendered digits themselves.
+#[wasm_bindgen_test]
+fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(), String> {
+    let svg = make_svg("data-node-a11y-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-a11y-single", 0)?;
+    check(
+        group.get_attribute("aria-label").as_deref() == Some("u64 value"),
+        &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
+    )?;
+
+    let rects = rect_children(&group)?;
+    check(
+        title_of(&rects[0])?.as_deref() == Some("u64"),
+        &format!("unexpected outer box <title>: {:?}", title_of(&rects[0])?),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The multi-value counterpart of the test above: every inner cell carries its own `<title>`, and the group's own
+/// `aria-label` also reports how many values the node holds.
+#[wasm_bindgen_test]
+fn a_multi_value_data_node_names_its_type_on_every_cell_and_the_group() -> Result<(), String> {
+    let svg = make_svg("data-node-a11y-multi", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(vec![0xAA, 0xBB]), DataFormat::Hexadecimal);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-a11y-multi", 0)?;
+    check(
+        group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 values"),
+        &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
+    )?;
+
+    let rects = rect_children(&group)?;
+    for (i, cell_rect) in rects[1..].iter().enumerate() {
+        check(
+            title_of(cell_rect)?.as_deref() == Some("u8"),
+            &format!("unexpected <title> on inner cell {i}: {:?}", title_of(cell_rect)?),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Scene::add_data_node`/`add_data_node_with` rejects an empty `DataNodeContent` before drawing anything or touching
 /// the graph's model — mirrors `add_node_with`'s own `EdgeAnchors(0)` rejection test.
 #[wasm_bindgen_test]
