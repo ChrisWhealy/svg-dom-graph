@@ -21,6 +21,54 @@ fn check_unique_manifest_ids_rejects_a_duplicate() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn check_panel_id_format_rejects_an_id_missing_the_panel_prefix() -> Result<(), String> {
+    let entries = [("not-a-panel", "Label")];
+    match check_panel_id_format(&entries) {
+        Err(AssembleError::InvalidPanelId("not-a-panel")) => Ok(()),
+        other => Err(format!("expected Err(InvalidPanelId(\"not-a-panel\")), got {other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn check_panel_id_format_rejects_an_uppercase_id() -> Result<(), String> {
+    let entries = [("panel-Foo", "Label")];
+    match check_panel_id_format(&entries) {
+        Err(AssembleError::InvalidPanelId("panel-Foo")) => Ok(()),
+        other => Err(format!("expected Err(InvalidPanelId(\"panel-Foo\")), got {other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn check_panel_id_format_accepts_a_valid_id() -> Result<(), String> {
+    let entries = [("panel-tree-2", "Label")];
+    match check_panel_id_format(&entries) {
+        Ok(()) => Ok(()),
+        other => Err(format!("expected Ok(()), got {other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn check_no_leftover_placeholders_rejects_an_unresolved_token() -> Result<(), String> {
+    match check_no_leftover_placeholders("<body>{{OOPS}}</body>") {
+        Err(AssembleError::LeftoverPlaceholder(context)) => check(context.contains("{{OOPS}}"), &context),
+        other => Err(format!("expected Err(LeftoverPlaceholder(_)), got {other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn check_no_leftover_placeholders_accepts_clean_output() -> Result<(), String> {
+    match check_no_leftover_placeholders("<body>all resolved</body>") {
+        Ok(()) => Ok(()),
+        other => Err(format!("expected Ok(()), got {other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn check_catalogue_consistency_rejects_a_fragment_missing_from_disk() -> Result<(), String> {
     let manifest = [("panel-a", "A"), ("panel-b", "B")];
     let fragment_ids = vec!["panel-a".to_owned()];

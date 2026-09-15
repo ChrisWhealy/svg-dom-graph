@@ -66,6 +66,9 @@ pub enum AssembleError {
     },
     /// The same panel id appears in [`MANIFEST`] more than once.
     DuplicateManifestId(&'static str),
+    /// A panel id does not match `panel-[a-z0-9-]+` — see [`check_panel_id_format`] for why that pattern is
+    /// enforced up front rather than escaped at each place an id is emitted.
+    InvalidPanelId(&'static str),
     /// A fragment's own content does not contain `id="{id}"` for the id it is filed under — it may have been
     /// copy-pasted from another panel's fragment and never updated.
     FragmentIdMismatch { id: &'static str, fragment_path: PathBuf },
@@ -73,6 +76,9 @@ pub enum AssembleError {
     /// orphaned fragment (removed from `MANIFEST` but left on disk) or a missing one (added to `MANIFEST` but
     /// never created) gets caught.
     CatalogueMismatch(String),
+    /// The fully assembled output still contains a `{{...}}` token after both placeholders were substituted —
+    /// evidence of a typo'd or unexpected placeholder that no check above already caught.
+    LeftoverPlaceholder(String),
 }
 
 impl fmt::Display for AssembleError {
@@ -94,6 +100,10 @@ impl fmt::Display for AssembleError {
                 )
             },
             Self::DuplicateManifestId(id) => write!(f, "MANIFEST contains the panel id {id:?} more than once"),
+            Self::InvalidPanelId(id) => write!(
+                f,
+                "MANIFEST contains the panel id {id:?}, which does not match panel-[a-z0-9-]+"
+            ),
             Self::FragmentIdMismatch { id, fragment_path } => {
                 write!(
                     f,
@@ -103,6 +113,12 @@ impl fmt::Display for AssembleError {
             },
             Self::CatalogueMismatch(detail) => {
                 write!(f, "MANIFEST and demo/panels/ disagree about which panels exist:\n{detail}")
+            },
+            Self::LeftoverPlaceholder(context) => {
+                write!(
+                    f,
+                    "assembled index.html still contains an unresolved placeholder near: {context:?}"
+                )
             },
         }
     }
@@ -121,6 +137,7 @@ pub fn assemble(source_demo_dir: &Path, out_path: &Path) -> Result<(), AssembleE
     let template_path = source_demo_dir.join("index.template.html");
 
     check_unique_manifest_ids(MANIFEST)?;
+    check_panel_id_format(MANIFEST)?;
 
     let template = read_to_string(&template_path)?;
     check_placeholder_count(&template, &template_path, PANELS_PLACEHOLDER)?;
@@ -133,6 +150,7 @@ pub fn assemble(source_demo_dir: &Path, out_path: &Path) -> Result<(), AssembleE
     let menu_body = render_menu();
     let assembled = template.replacen(PANELS_PLACEHOLDER, &panels_body, 1);
     let assembled = assembled.replacen(MENU_PLACEHOLDER, &menu_body, 1);
+    check_no_leftover_placeholders(&assembled)?;
 
     fs::write(out_path, &assembled).map_err(|source| AssembleError::Io {
         path: out_path.to_path_buf(),
@@ -156,6 +174,32 @@ fn check_unique_manifest_ids(entries: &[(&'static str, &'static str)]) -> Result
         }
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every panel id among `entries` must match `panel-[a-z0-9-]+`.
+///
+/// Ids are emitted verbatim into both HTML attribute values and Rust match arms: `id="{id}"` in each fragment,
+/// `data-target="{id}"` in the generated menu, and `"panel-..." => name` in `demo-app/src/lib.rs`'s
+/// `demo_gallery!`. This restricts them to a known-safe ASCII pattern up front, meaning that downstream —
+/// [`render_menu`], a fragment file, `demo_gallery!` — never has to escape or re-validate an id itself.
+///
+/// Unlike labels (see [`escape_text`]), ids are not free text, so a fixed character set is the natural fit rather
+/// than an escaper. Mirrors `svg-dom`'s own `check_panel_id_format`.
+fn check_panel_id_format(entries: &[(&'static str, &'static str)]) -> Result<(), AssembleError> {
+    for &(id, _) in entries {
+        if !is_valid_panel_id(id) {
+            return Err(AssembleError::InvalidPanelId(id));
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn is_valid_panel_id(id: &str) -> bool {
+    id.strip_prefix("panel-").is_some_and(|rest| {
+        !rest.is_empty() && rest.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-')
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -234,6 +278,18 @@ fn check_catalogue_consistency(
         detail.push(format!("  in demo/panels/ but missing from MANIFEST: {orphan_fragment:?}"));
     }
     Err(AssembleError::CatalogueMismatch(detail.join("\n")))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The assembled output must not contain any `{{...}}` token once both placeholders have been substituted — a
+/// leftover one means a typo'd or unexpected placeholder that none of the checks above already caught. Mirrors
+/// `svg-dom`'s own `check_no_leftover_placeholders`.
+fn check_no_leftover_placeholders(assembled: &str) -> Result<(), AssembleError> {
+    if let Some(start) = assembled.find("{{") {
+        let end = (start + 40).min(assembled.len());
+        return Err(AssembleError::LeftoverPlaceholder(assembled[start..end].to_owned()));
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
