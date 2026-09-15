@@ -40,13 +40,13 @@ impl Graph {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node and returns its id.
-    pub fn add_node(&mut self, rect: Rect, label: impl Into<String>) -> NodeId {
+    pub fn add_node(&mut self, rect: Rect, content: impl Into<NodeContent>) -> NodeId {
         let id = NodeId {
             graph: self.id,
             index: self.next_node_id,
         };
         self.next_node_id += 1;
-        self.nodes.insert(id, Node { rect, label: label.into() });
+        self.nodes.insert(id, Node { rect, content: content.into() });
         self.incident.insert(id, Vec::new());
         id
     }

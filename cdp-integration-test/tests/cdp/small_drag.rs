@@ -4,29 +4,21 @@
 //! overlap-resolution logic can be in play. This isolates whether ordinary dragging itself works under a real mouse
 //! sequence, before `overlap_resolution.rs` layers the drop-onto-another-node case on top.
 
-use crate::common::{drag, new_tab};
+use crate::common::{drag, group_translate, new_tab};
 use std::time::Duration;
 
 #[test]
 fn solo_node_can_be_dragged_a_small_distance() -> Result<(), String> {
     let tab = new_tab()?;
 
+    let group = tab
+        .find_element("#diagram > g:nth-of-type(1)")
+        .map_err(|e| format!("could not find solo's <g>: {e}"))?;
+    let (before_x, before_y) = group_translate(&group)?;
+
     let rect = tab
         .find_element("#diagram > g:nth-of-type(1) rect")
         .map_err(|e| format!("could not find solo's <rect>: {e}"))?;
-    let before_x: f64 = rect
-        .get_attribute_value("x")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("solo's <rect> has no x attribute")?
-        .parse()
-        .map_err(|e| format!("x did not parse as f64: {e}"))?;
-    let before_y: f64 = rect
-        .get_attribute_value("y")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("solo's <rect> has no y attribute")?
-        .parse()
-        .map_err(|e| format!("y did not parse as f64: {e}"))?;
-
     let midpoint = rect.get_midpoint().map_err(|e| format!("could not get solo's midpoint: {e}"))?;
 
     // A real drag: press, several intermediate moves, release — not a single instantaneous jump.
@@ -43,21 +35,10 @@ fn solo_node_can_be_dragged_a_small_distance() -> Result<(), String> {
     // Give the page a moment to process the dispatched events before reading the result back.
     std::thread::sleep(Duration::from_millis(100));
 
-    let rect = tab
-        .find_element("#diagram > g:nth-of-type(1) rect")
-        .map_err(|e| format!("could not re-find solo's <rect> after the drag: {e}"))?;
-    let after_x: f64 = rect
-        .get_attribute_value("x")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("solo's <rect> has no x attribute after the drag")?
-        .parse()
-        .map_err(|e| format!("x did not parse as f64: {e}"))?;
-    let after_y: f64 = rect
-        .get_attribute_value("y")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("solo's <rect> has no y attribute after the drag")?
-        .parse()
-        .map_err(|e| format!("y did not parse as f64: {e}"))?;
+    let group = tab
+        .find_element("#diagram > g:nth-of-type(1)")
+        .map_err(|e| format!("could not re-find solo's <g> after the drag: {e}"))?;
+    let (after_x, after_y) = group_translate(&group)?;
 
     let expected_x = before_x + dx;
     let expected_y = before_y + dy;
@@ -65,7 +46,7 @@ fn solo_node_can_be_dragged_a_small_distance() -> Result<(), String> {
 
     if !close(after_x, expected_x) || !close(after_y, expected_y) {
         return Err(format!(
-            "expected solo's <rect> to move to approximately ({expected_x}, {expected_y}), got ({after_x}, {after_y}) \
+            "expected solo's <g> to move to approximately ({expected_x}, {expected_y}), got ({after_x}, {after_y}) \
              — started at ({before_x}, {before_y}), dragged by ({dx}, {dy})"
         ));
     }

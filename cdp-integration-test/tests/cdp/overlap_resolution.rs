@@ -23,7 +23,7 @@
 //!
 //! `mover`'s final origin is that centre minus half its own size: `(254 - 40, 170 - 20) = (214, 150)`.
 
-use crate::common::{drag, new_tab};
+use crate::common::{drag, group_translate, new_tab};
 use std::time::Duration;
 
 #[test]
@@ -61,21 +61,10 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
     // resolve_overlap triggers on pointerup, before reading the result back.
     std::thread::sleep(Duration::from_millis(100));
 
-    let mover_rect = tab
-        .find_element("#diagram > g:nth-of-type(3) rect")
-        .map_err(|e| format!("could not re-find mover's <rect> after the drag: {e}"))?;
-    let after_x: f64 = mover_rect
-        .get_attribute_value("x")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("mover's <rect> has no x attribute after the drag")?
-        .parse()
-        .map_err(|e| format!("x did not parse as f64: {e}"))?;
-    let after_y: f64 = mover_rect
-        .get_attribute_value("y")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("mover's <rect> has no y attribute after the drag")?
-        .parse()
-        .map_err(|e| format!("y did not parse as f64: {e}"))?;
+    let mover_group = tab
+        .find_element("#diagram > g:nth-of-type(3)")
+        .map_err(|e| format!("could not re-find mover's <g> after the drag: {e}"))?;
+    let (after_x, after_y) = group_translate(&mover_group)?;
 
     let (expected_x, expected_y) = (214.0, 150.0);
     let close = |got: f64, expected: f64| (got - expected).abs() <= 1.0;
@@ -86,21 +75,10 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
         ));
     }
 
-    let blocker_rect = tab
-        .find_element("#diagram > g:nth-of-type(2) rect")
-        .map_err(|e| format!("could not re-find blocker's <rect>: {e}"))?;
-    let blocker_x: f64 = blocker_rect
-        .get_attribute_value("x")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("blocker's <rect> has no x attribute")?
-        .parse()
-        .map_err(|e| format!("x did not parse as f64: {e}"))?;
-    let blocker_y: f64 = blocker_rect
-        .get_attribute_value("y")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("blocker's <rect> has no y attribute")?
-        .parse()
-        .map_err(|e| format!("y did not parse as f64: {e}"))?;
+    let blocker_group = tab
+        .find_element("#diagram > g:nth-of-type(2)")
+        .map_err(|e| format!("could not re-find blocker's <g>: {e}"))?;
+    let (blocker_x, blocker_y) = group_translate(&blocker_group)?;
     // mover: (80, 40) at (after_x, after_y); blocker: (80, 40) at (blocker_x, blocker_y).
     let overlaps = after_x < blocker_x + 80.0
         && after_x + 80.0 > blocker_x

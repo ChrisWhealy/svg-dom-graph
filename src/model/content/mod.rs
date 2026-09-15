@@ -1,14 +1,14 @@
-//! [`NodeContent`]: a node whose visible content is a grid of typed numeric values, rather than a plain text label —
-//! see [`Scene::add_data_node`](super::Scene::add_data_node) and [`Scene::add_data_node_with`](super::Scene::add_data_node_with).
+//! [`DataNodeContent`]: a node whose visible content is a grid of typed numeric values, rather than a plain text label —
+//! see [`Scene::add_data_node`](crate::scene::Scene::add_data_node) and [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with).
 //!
 //! This module contains pure data and formatting logic, with no DOM of its own. It is unit-tested with a plain
 //! `cargo test`, following the same convention used by [`crate::geometry`] for its own DOM-free routing mathematics.
-//! The job of turning a [`NodeContent`] into actual `<rect>`/`<text>` elements and sizing the node's box belongs to
+//! The job of turning a [`DataNodeContent`] into actual `<rect>`/`<text>` elements and sizing the node's box belongs to
 //! `scene::node` instead (see that module's own `draw_content_box`).
 //!
 //! # Grid shape
 //!
-//! For `n` values, [`NodeContent::shape`] fills the grid row-major, with any leftover slots in the last row left blank,
+//! For `n` values, [`DataNodeContent::shape`] fills the grid row-major, with any leftover slots in the last row left blank,
 //! and picks between two rules for the shape itself:
 //!
 //! 1. If some power of two, strictly between `1` and `n`, divides `n` evenly, [`best_power_of_two_rows`] picks the one
@@ -46,11 +46,11 @@
 //! whitespace to imply a boundary, `scene::node::draw_content_box` gives each value its own, inner box, coloured by its
 //! own type (`NodeValues::type_color`, crate-private). A value's own width and boundaries are then a property of the
 //! box it sits in, not something a reader has to count bytes to infer. With two or more values that box sits inside the
-//! node's own (unchanged, light blue) box; with exactly one value, [`NodeContent::is_single_value`]'s own doc comment
+//! node's own (unchanged, light blue) box; with exactly one value, [`DataNodeContent::is_single_value`]'s own doc comment
 //! explains why the inner box is dropped and the type colour is applied directly.
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The values a [`NodeContent`] displays, each variant naming the Rust integer type they were captured as — this
+/// The values a [`DataNodeContent`] displays, each variant naming the Rust integer type they were captured as — this
 /// determines how many bytes [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`] split each value into, and which
 /// colour it is assigned (`NodeValues::type_color`, crate-private).
 ///
@@ -77,7 +77,7 @@ impl NodeValues {
     }
 
     /// Every value, formatted per `format`, in the same order they were supplied — one cell per value, not yet
-    /// arranged into a grid (see [`NodeContent::shape`] for that).
+    /// arranged into a grid (see [`DataNodeContent::shape`] for that).
     fn cell_strings(&self, format: DataFormat) -> Vec<String> {
         match self {
             Self::U8(v) => v
@@ -131,7 +131,7 @@ fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataForma
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How [`NodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
+/// How [`DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
 /// variant produces.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub enum DataFormat {
@@ -144,8 +144,8 @@ pub enum DataFormat {
 /// The grid shape for `n` values — see this module's own doc comment for the reasoning behind both rules below,
 /// and [`best_power_of_two_rows`] for how the first one picks a row count.
 ///
-/// Returns `(0, 0)` for `n = 0` — [`Scene::add_data_node_with`](super::Scene::add_data_node_with) rejects an
-/// empty [`NodeContent`] before this is ever reached, so that case has no real grid to compute anyway.
+/// Returns `(0, 0)` for `n = 0` — [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with) rejects an
+/// empty [`DataNodeContent`] before this is ever reached, so that case has no real grid to compute anyway.
 fn grid_shape(n: usize) -> (usize, usize) {
     if n == 0 {
         return (0, 0);
@@ -198,23 +198,23 @@ fn best_power_of_two_rows(n: usize) -> Option<usize> {
 /// A node's content: a set of typed numeric values, displayed as a grid as close to square as the value count
 /// allows — see this module's own doc comment for the exact layout, formatting, and colouring rules.
 ///
-/// Build one with [`NodeContent::new`]. Unlike [`NodeOptions`](super::NodeOptions)/
-/// [`DragOptions`](super::DragOptions), there is no sensible all-default state to build one on top of — the
+/// Build one with [`DataNodeContent::new`]. Unlike [`NodeOptions`](crate::scene::NodeOptions)/
+/// [`DragOptions`](crate::scene::DragOptions), there is no sensible all-default state to build one on top of — the
 /// values are mandatory — so this is a plain constructor rather than a `default()` plus `with_*` builder.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub struct NodeContent {
+pub struct DataNodeContent {
     values: NodeValues,
     format: DataFormat,
 }
 
-impl NodeContent {
-    /// Builds a [`NodeContent`] displaying `values`, formatted as `format`.
+impl DataNodeContent {
+    /// Builds a [`DataNodeContent`] displaying `values`, formatted as `format`.
     ///
     /// An empty `values` is accepted here — the same deferred-validation convention
-    /// [`DragOptions::with_bounds`](super::DragOptions::with_bounds)/
-    /// [`NodeOptions::with_edge_anchors`](super::NodeOptions::with_edge_anchors) already follow — but is rejected
+    /// [`DragOptions::with_bounds`](crate::scene::DragOptions::with_bounds)/
+    /// [`NodeOptions::with_edge_anchors`](crate::scene::NodeOptions::with_edge_anchors) already follow — but is rejected
     /// with [`Error::EmptyNodeContent`](crate::error::Error::EmptyNodeContent) by
-    /// [`Scene::add_data_node_with`](super::Scene::add_data_node_with), which is the only place it would actually
+    /// [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with), which is the only place it would actually
     /// need a grid to draw.
     #[must_use]
     pub fn new(values: NodeValues, format: DataFormat) -> Self {
@@ -241,7 +241,7 @@ impl NodeContent {
     }
 
     /// Every value's own formatted cell text, in the same order they were supplied — one string per value, ready
-    /// for `draw_content_box` to place one at a time into the grid [`NodeContent::shape`] describes.
+    /// for `draw_content_box` to place one at a time into the grid [`DataNodeContent::shape`] describes.
     pub(crate) fn cells(&self) -> Vec<String> {
         self.values.cell_strings(self.format)
     }
@@ -252,5 +252,6 @@ impl NodeContent {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

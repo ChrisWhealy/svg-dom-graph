@@ -1,6 +1,6 @@
 //! Node configuration and the `Scene` methods that add or reconfigure a node.
 
-use super::{BoxHandles, GridCell, NodeContent, NodeVisual, Scene, box_centre};
+use super::{BoxHandles, DataNodeContent, Scene, box_centre};
 use crate::{error::Error, model::node::NodeId};
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -130,28 +130,37 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
+///
+/// Every child is drawn in local coordinates, relative to `(0, 0)` — not `rect.origin` — and the group itself
+/// carries `rect.origin` as a `transform="translate(...)"`. Moving the box later (see [`SceneInner::move_node`])
+/// then only ever needs to update this one transform, regardless of how many children the group holds.
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
+    let local_rect = Rect {
+        origin: Point::origin(),
+        size: rect.size,
+    };
 
-    let rect_el = svg.rect(rect.origin, rect.size)?;
+    let rect_el = svg.rect(local_rect.origin, local_rect.size)?;
     rect_el.set_fill("#eef4ff")?;
     rect_el.set_stroke("#2a5db0")?;
     rect_el.set_stroke_width(1.5)?;
 
-    let label_el = svg.text(box_centre(rect), label)?;
+    let label_el = svg.text(box_centre(local_rect), label)?;
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
     label_el.set_font_size(LABEL_FONT_SIZE)?;
     label_el.set_fill("#1b1b1b")?;
-    shrink_label_to_fit(&label_el, rect.size)?;
+    shrink_label_to_fit(&label_el, local_rect.size)?;
 
     group.append(&rect_el)?;
     group.append(&label_el)?;
 
+    let mut scratch = String::new();
+    group.set_translate(&mut scratch, rect.origin.x, rect.origin.y)?;
+
     Ok(BoxHandles {
         group,
-        rect_el,
-        visual: NodeVisual::Label(label_el),
         draggable: false,
         edge_anchors,
     })
@@ -205,7 +214,7 @@ const OUTER_PADDING: f64 = 10.0;
 /// [`CELL_PADDING`], so the grid's rows and columns actually line up even when [`DataFormat::Decimal`] values
 /// differ in digit count.
 ///
-/// [`content::NodeContent::is_single_value`] decides which of two layouts is drawn:
+/// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
 /// - A single value has no sibling to be told apart from, so it gets no inner cell box at all — the node's own
 ///   `rect_el` is filled directly with [`NodeValues::type_color`], and the value's text sits centred in it.
@@ -213,17 +222,23 @@ const OUTER_PADDING: f64 = 10.0;
 ///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer
 ///   box.
 ///
-/// [`DataFormat::Decimal`]: super::content::DataFormat
-/// [`NodeValues`]: super::content::NodeValues
-/// [`content::NodeContent::is_single_value`]: super::content::NodeContent::is_single_value
+/// [`DataFormat::Decimal`]: crate::model::content::DataFormat
+/// [`NodeValues`]: crate::model::content::NodeValues
+/// [`DataNodeContent::is_single_value`]: crate::model::content::DataNodeContent::is_single_value
+///
+/// Every child — the outer box and every cell's own rect/text — is drawn in local coordinates, relative to
+/// `(0, 0)`, not `top_left`. The group itself carries `top_left` as a `transform="translate(...)"` instead. A
+/// grid can hold arbitrarily many cells; without this, moving the node later (see [`SceneInner::move_node`])
+/// would mean rewriting every cell's own `x`/`y` attributes on every pointer move.
 fn draw_content_box(
     svg: &SvgRoot,
     top_left: Point,
-    content: &NodeContent,
+    content: &DataNodeContent,
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
     let type_color = content.type_color();
+    let origin = Point::origin();
 
     // Render every value's text first, at a placeholder position — bounding_box() reports each element's own
     // local geometry (font, content, styling), unaffected by where it currently sits, so the true final position
@@ -231,7 +246,7 @@ fn draw_content_box(
     let mut texts = Vec::new();
     let mut max_width: f64 = 0.0;
     for cell_text in &content.cells() {
-        let text = svg.text(top_left, cell_text)?;
+        let text = svg.text(origin, cell_text)?;
         text.set_text_anchor(TextAnchor::Middle)?;
         text.set_dominant_baseline(DominantBaseline::Middle)?;
         text.set_font_family(GRID_FONT_FAMILY)?;
@@ -256,58 +271,49 @@ fn draw_content_box(
     };
     let rect = Rect { origin: top_left, size };
 
-    let rect_el = svg.rect(rect.origin, rect.size)?;
+    let rect_el = svg.rect(origin, size)?;
     rect_el.set_fill(if single_value { type_color } else { "#eef4ff" })?;
     rect_el.set_stroke("#2a5db0")?;
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
 
-    let mut cells = Vec::with_capacity(texts.len());
     let mut scratch = String::new();
     if single_value {
         let text = texts
             .into_iter()
             .next()
             .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_content_box: expected exactly one value".into())))?;
-        let offset = Point::new(0.0, 0.0);
-        text.set_attr_display(&mut scratch, "x", top_left.x + cell_size.width / 2.0)?;
-        text.set_attr_display(&mut scratch, "y", top_left.y + cell_size.height / 2.0)?;
+        text.set_attr_display(&mut scratch, "x", cell_size.width / 2.0)?;
+        text.set_attr_display(&mut scratch, "y", cell_size.height / 2.0)?;
         group.append(&text)?;
-        cells.push(GridCell { rect: None, text, offset });
     } else {
         let (_, grid_cols) = content.shape();
         for (i, text) in texts.into_iter().enumerate() {
             #[allow(clippy::cast_precision_loss)]
             let (row, col) = (i / grid_cols, i % grid_cols);
             #[allow(clippy::cast_precision_loss)]
-            let offset = Point::new(
+            let cell_origin = Point::new(
                 OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
                 OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
             );
 
-            let cell_rect = svg.rect(Point::new(top_left.x + offset.x, top_left.y + offset.y), cell_size)?;
+            let cell_rect = svg.rect(cell_origin, cell_size)?;
             cell_rect.set_fill(type_color)?;
             cell_rect.set_stroke("#2a5db0")?;
             cell_rect.set_stroke_width(1.0)?;
             group.append(&cell_rect)?;
 
-            text.set_attr_display(&mut scratch, "x", top_left.x + offset.x + cell_size.width / 2.0)?;
-            text.set_attr_display(&mut scratch, "y", top_left.y + offset.y + cell_size.height / 2.0)?;
+            text.set_attr_display(&mut scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
+            text.set_attr_display(&mut scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
             group.append(&text)?;
-
-            cells.push(GridCell {
-                rect: Some(cell_rect),
-                text,
-                offset,
-            });
         }
     }
+
+    group.set_translate(&mut scratch, top_left.x, top_left.y)?;
 
     Ok((
         BoxHandles {
             group,
-            rect_el,
-            visual: NodeVisual::Grid { cells, cell_size },
             draggable: false,
             edge_anchors,
         },
@@ -370,10 +376,10 @@ impl Scene {
     }
 
     /// Adds a data node to the graph — one whose visible content is `content`'s own grid of values (see
-    /// [`NodeContent`]) rather than a plain text label — and returns its id.
+    /// [`DataNodeContent`]) rather than a plain text label — and returns its id.
     ///
     /// Unlike [`add_node`](Self::add_node), there is no `size` parameter: the box is always sized to fit
-    /// `content`'s rendered grid exactly — see [`NodeContent`]'s own doc comment for the layout and formatting
+    /// `content`'s rendered grid exactly — see [`DataNodeContent`]'s own doc comment for the layout and formatting
     /// rules, and `draw_content_box`'s own doc comment for how the fit is computed.
     ///
     /// Equivalent to [`add_data_node_with`](Self::add_data_node_with) with [`NodeOptions::default`].
@@ -383,7 +389,7 @@ impl Scene {
     /// Returns [`Error::EmptyNodeContent`] if `content` holds no values — there is no grid to draw.
     ///
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite.
-    pub fn add_data_node(&self, top_left: Point, content: NodeContent) -> Result<NodeId, Error> {
+    pub fn add_data_node(&self, top_left: Point, content: DataNodeContent) -> Result<NodeId, Error> {
         self.add_data_node_with(top_left, content, NodeOptions::default())
     }
 
@@ -403,7 +409,7 @@ impl Scene {
     pub fn add_data_node_with(
         &self,
         top_left: Point,
-        content: NodeContent,
+        content: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
@@ -420,10 +426,7 @@ impl Scene {
 
         let mut inner = self.inner.borrow_mut();
         let (handles, rect) = draw_content_box(&inner.svg, top_left, &content, options.edge_anchors)?;
-        // Data nodes have no plain-text label — the graph model's own `label` field is unused storage kept for a
-        // hypothetical future feature (see `model::node::Node`'s own doc comment), so an empty string costs
-        // nothing here.
-        let id = inner.graph.add_node(rect, String::new());
+        let id = inner.graph.add_node(rect, content);
         inner.node_handles.insert(id, handles);
         Ok(id)
     }

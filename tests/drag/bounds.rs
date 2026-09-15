@@ -2,7 +2,7 @@
 //! `<svg>`'s viewBox). This avoids a usability bug in which a node could be dragged outside its own `<svg>`'s visible
 //! area, then dropped. This clips the node making it unclickable.
 
-use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, nth_group};
+use crate::common::{check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     Error,
@@ -29,18 +29,15 @@ fn dragging_past_the_near_edge_clamps_to_bounds_origin() -> Result<(), String> {
     scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-near-edge", 0)?;
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     // Drags A 1000 client-pixels up and to the left — far past the top-left corner of the view box.
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", -900, -900, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", -900, -900, 1)?;
 
-    check_close(attr_f64(&rect_a, "x")?, 0.0)?;
-    check_close(attr_f64(&rect_a, "y")?, 0.0)
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 0.0)?;
+    check_close(y, 0.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -62,17 +59,14 @@ fn dragging_past_the_far_edge_clamps_to_bounds_own_far_corner() -> Result<(), St
     scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-far-edge", 0)?;
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", 1100, 1100, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", 1100, 1100, 1)?;
 
-    check_close(attr_f64(&rect_a, "x")?, 310.0)?;
-    check_close(attr_f64(&rect_a, "y")?, 210.0)
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 310.0)?;
+    check_close(y, 210.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -89,17 +83,14 @@ fn dragging_without_bounds_stays_unconstrained() -> Result<(), String> {
     scene.make_draggable(a).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-none", 0)?;
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", -900, -900, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", -900, -900, 1)?;
 
-    check_close(attr_f64(&rect_a, "x")?, -900.0)?;
-    check_close(attr_f64(&rect_a, "y")?, -900.0)
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, -900.0)?;
+    check_close(y, -900.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -123,29 +114,27 @@ fn a_node_clamped_to_the_edge_can_still_be_dragged_again() -> Result<(), String>
     scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-redrag", 0)?;
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     // First drag: far past the near edge, clamped to (0, 0).
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", -900, -900, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", -900, -900, 1)?;
-    check_close(attr_f64(&rect_a, "x")?, 0.0)?;
-    check_close(attr_f64(&rect_a, "y")?, 0.0)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 0.0)?;
+    check_close(y, 0.0)?;
 
     // Second drag, starting from wherever the node now sits: moves it by (40, 20), still comfortably in bounds.
     dispatch_pointer_event(&group_a, "pointerdown", 0, 0, 2)?;
     dispatch_pointer_event(&group_a, "pointermove", 40, 20, 2)?;
     dispatch_pointer_event(&group_a, "pointerup", 40, 20, 2)?;
 
+    let (x, y) = group_translate(&group_a)?;
     check(
-        attr_f64(&rect_a, "x")? > 1.0 && attr_f64(&rect_a, "y")? > 1.0,
+        x > 1.0 && y > 1.0,
         "a node clamped to the edge by one drag did not respond to a later, separate drag",
     )?;
-    check_close(attr_f64(&rect_a, "x")?, 40.0)?;
-    check_close(attr_f64(&rect_a, "y")?, 20.0)
+    check_close(x, 40.0)?;
+    check_close(y, 20.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -241,16 +230,13 @@ fn make_draggable_with_accepts_a_zero_width_bounds() -> Result<(), String> {
     scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-zero-width", 0)?;
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", 500, 500, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", 500, 500, 1)?;
 
-    check_close(attr_f64(&rect_a, "x")?, 50.0)
+    let (x, _y) = group_translate(&group_a)?;
+    check_close(x, 50.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -288,16 +274,13 @@ fn collision_pushback_near_an_edge_stays_within_bounds() -> Result<(), String> {
     scene.make_draggable_with(a, options).map_err(|e| e.to_string())?;
 
     let group_a = nth_group("bounds-collision-pushback", 1)?; // A was added second.
-    let rect_a = group_a
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in A's group")?;
 
     // Drags A's centre (45, 125) to (55, 125): a small, deliberate move that overlaps blocker.
     dispatch_pointer_event(&group_a, "pointerdown", 45, 125, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", 55, 125, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", 55, 125, 1)?;
 
-    check_close(attr_f64(&rect_a, "x")?, 0.0)?;
-    check_close(attr_f64(&rect_a, "y")?, 113.1767)
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 0.0)?;
+    check_close(y, 113.1767)
 }

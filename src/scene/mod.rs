@@ -8,15 +8,14 @@
 //! See the sibling `demo-app` crate for a small worked example.
 
 pub(crate) mod connector;
-pub(crate) mod content;
 pub(crate) mod drag;
 pub(crate) mod node;
 
 pub use connector::{ConnectorOptions, ConnectorType};
-pub use content::{DataFormat, NodeContent, NodeValues};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
 
+pub use crate::model::content::{DataFormat, DataNodeContent, NodeValues};
 use crate::{
     error::Error,
     geometry::{apply_matrix, elbow_path_into, nearest_clear_centre, rects_overlap},
@@ -30,46 +29,20 @@ use std::{
 };
 use svg_dom::{
     MarkerUnits, SvgMarker, SvgNode, SvgRoot,
-    root::utils::{Matrix2D, Point, Rect, Size},
+    root::utils::{Matrix2D, Point, Rect},
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One value's own rendered cell within a [`NodeVisual::Grid`] — its text, its own colour-coded box (if any), and
-/// where it sits, so [`SceneInner::move_node`] can reposition it when the box moves.
-///
-/// `rect` is `None` for a single-value [`NodeContent`]: [`NodeContent::is_single_value`]'s own doc comment
-/// explains why the whole node's own box is coloured directly there, rather than nesting a redundant inner box
-/// inside it. `offset` is this cell's own top-left corner, relative to the node's own `origin` — for the
-/// single-value case that is always `(0, 0)`, and `cell_size` is the whole node's own size, so the same
-/// `offset + cell_size / 2` arithmetic centres the text correctly in both cases.
-struct GridCell {
-    rect: Option<SvgNode>,
-    text: SvgNode,
-    offset: Point,
-}
-
-/// A box's visible content: either the single plain-text label [`node::draw_box`] renders, or the grid of
-/// individually coloured value cells [`node::draw_content_box`] renders for a [`NodeContent`] node.
-///
-/// Kept as an enum, rather than always storing a `Vec<GridCell>`, so an ordinary label node pays no cost — no
-/// `Vec` allocation, no per-cell bookkeeping — for a feature it never uses.
-enum NodeVisual {
-    /// A single centred `<text>` label.
-    Label(SvgNode),
-    /// One [`GridCell`] per value, plus every cell's shared size — needed alongside each cell's own `offset` so
-    /// [`SceneInner::move_node`] can reposition every cell's rect and text when the box moves, not just the
-    /// first one.
-    Grid { cells: Vec<GridCell>, cell_size: Size },
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
+///
+/// Every one of a box's own children — its outer rect, its label or grid cells — is drawn once, at creation, in
+/// local coordinates relative to `(0, 0)`. `group`'s own `transform="translate(...)"` is the only thing that ever
+/// changes afterward: [`SceneInner::move_node`] repositions a box by rewriting this one transform, regardless of
+/// how many children `group` holds — a data node with hundreds of value cells moves exactly as cheaply as a
+/// plain label. So `BoxHandles` itself needs no handle to any individual child; `group` is enough.
 struct BoxHandles {
-    /// The `<g>` wrapping `rect_el` and `visual`.
-    /// Event listeners attach here, so a click on either child starts a drag.
+    /// Event listeners attach here, so a click on any child starts a drag.
     group: SvgNode,
-    rect_el: SvgNode,
-    visual: NodeVisual,
     /// Whether `Scene::make_draggable`/`Scene::make_draggable_with` has already been called for this node.
     ///
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
@@ -193,10 +166,16 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Moves node `id` to `new_origin`: updates the graph, the rendered box/label, and every incident connector.
+    /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
+    ///
+    /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at
+    /// creation, in local coordinates relative to `(0, 0)` (see [`node::draw_box`]/[`node::draw_content_box`]).
+    /// So moving the node only ever means rewriting the group's own `transform`, never any child's own
+    /// coordinates — this stays exactly as cheap for a data node with hundreds of value cells as for a plain
+    /// label.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move.
-    /// See [`SvgNode::set_attr_display`].
+    /// See [`SvgNode::set_translate`].
     ///
     /// # Errors
     ///
@@ -206,28 +185,7 @@ impl SceneInner {
         self.graph.set_node_rect(id, Rect { origin: new_origin, size });
 
         let handles = self.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
-        handles.rect_el.set_attr_display(scratch, "x", new_origin.x)?;
-        handles.rect_el.set_attr_display(scratch, "y", new_origin.y)?;
-
-        let centre = box_centre(Rect { origin: new_origin, size });
-        match &handles.visual {
-            NodeVisual::Label(label) => {
-                label.set_attr_display(scratch, "x", centre.x)?;
-                label.set_attr_display(scratch, "y", centre.y)?;
-            },
-            NodeVisual::Grid { cells, cell_size } => {
-                for cell in cells {
-                    let x = new_origin.x + cell.offset.x;
-                    let y = new_origin.y + cell.offset.y;
-                    if let Some(rect) = &cell.rect {
-                        rect.set_attr_display(scratch, "x", x)?;
-                        rect.set_attr_display(scratch, "y", y)?;
-                    }
-                    cell.text.set_attr_display(scratch, "x", x + cell_size.width / 2.0)?;
-                    cell.text.set_attr_display(scratch, "y", y + cell_size.height / 2.0)?;
-                }
-            },
-        }
+        handles.group.set_translate(scratch, new_origin.x, new_origin.y)?;
 
         for edge_id in self.graph.incident_edges(id) {
             self.redraw_edge(*edge_id, scratch)?;

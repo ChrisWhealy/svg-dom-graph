@@ -191,6 +191,36 @@ pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute — the world-space origin every node box
+/// carries there instead of on its individual children. See `svg_dom::SvgNode::set_translate`'s own doc comment
+/// for why: every child (a label, or a data node's grid cells) is drawn once, in local coordinates relative to
+/// `(0, 0)`, and only this one transform ever changes as the node moves.
+///
+/// `(0.0, 0.0)` if `group` has no `transform` attribute at all — a node that was never moved still carries one
+/// (written once at creation), so this only matters for an element that was never a node's own group.
+pub fn group_translate(group: &web_sys::Element) -> Result<(f64, f64), String> {
+    let Some(value) = group.get_attribute("transform") else {
+        return Ok((0.0, 0.0));
+    };
+    let inner = value
+        .strip_prefix("translate(")
+        .and_then(|s| s.strip_suffix(')'))
+        .ok_or_else(|| format!("transform {value:?} is not a translate(...) expression"))?;
+    let mut parts = inner.split(',').map(str::trim);
+    let x = parts
+        .next()
+        .ok_or_else(|| format!("transform {value:?} has no x component"))?
+        .parse::<f64>()
+        .map_err(|e| format!("transform {value:?}: x did not parse as f64: {e}"))?;
+    let y = parts
+        .next()
+        .ok_or_else(|| format!("transform {value:?} has no y component"))?
+        .parse::<f64>()
+        .map_err(|e| format!("transform {value:?}: y did not parse as f64: {e}"))?;
+    Ok((x, y))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns `Err(msg)` when `condition` is `false`.
 pub fn check(condition: bool, msg: &str) -> Result<(), String> {
     if condition { Ok(()) } else { Err(msg.into()) }

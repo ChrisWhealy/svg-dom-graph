@@ -112,59 +112,59 @@ fn best_power_of_two_rows_is_none_when_the_only_divisor_is_the_trivial_one() -> 
 
 #[test]
 fn hexadecimal_u64_matches_the_feature_requests_own_example() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
     check_eq(content.cells(), vec!["F0 E1 D2 C3 B4 A5 96 87".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u8_is_a_single_byte_group() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal);
     check_eq(content.cells(), vec!["AB".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u16_is_two_byte_groups_big_endian() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U16(vec![0xABCD]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U16(vec![0xABCD]), DataFormat::Hexadecimal);
     check_eq(content.cells(), vec!["AB CD".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u32_is_four_byte_groups_big_endian() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal);
     check_eq(content.cells(), vec!["AA BB CC DD".to_owned()])
 }
 
 #[test]
 fn binary_u8_splits_into_upper_and_lower_nybbles() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U8(vec![0xF0]), DataFormat::Binary);
+    let content = DataNodeContent::new(NodeValues::U8(vec![0xF0]), DataFormat::Binary);
     check_eq(content.cells(), vec!["1111 0000".to_owned()])
 }
 
 #[test]
 fn binary_u16_splits_every_bytes_own_nybbles_big_endian() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U16(vec![0xF00F]), DataFormat::Binary);
+    let content = DataNodeContent::new(NodeValues::U16(vec![0xF00F]), DataFormat::Binary);
     check_eq(content.cells(), vec!["1111 0000 0000 1111".to_owned()])
 }
 
 #[test]
 fn decimal_does_not_split_into_bytes() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal);
     check_eq(content.cells(), vec!["1234567".to_owned()])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// NodeContent::cells — one string per value, not yet arranged into rows
+// DataNodeContent::cells — one string per value, not yet arranged into rows
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn a_single_value_produces_one_cell() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
     check_eq(content.cells().len(), 1)
 }
 
 #[test]
 fn two_values_produce_two_cells_in_order() -> Result<(), String> {
-    let content = NodeContent::new(
+    let content = DataNodeContent::new(
         NodeValues::U64(vec![0x1111111111111111, 0x2222222222222222]),
         DataFormat::Hexadecimal,
     );
@@ -177,7 +177,7 @@ fn two_values_produce_two_cells_in_order() -> Result<(), String> {
 #[test]
 fn twenty_five_values_produce_twenty_five_cells_arranged_as_a_five_by_five_grid() -> Result<(), String> {
     let values = (0..25u64).collect();
-    let content = NodeContent::new(NodeValues::U64(values), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U64(values), DataFormat::Decimal);
     check_eq(content.cells().len(), 25)?;
     check_eq(content.shape(), (5, 5))
 }
@@ -187,14 +187,14 @@ fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> 
     // 7 values -> a 3x3 grid (see grid_shape_of_seven_values above), with 2 blank slots in the last row —
     // cells() itself has no concept of blanks, it is draw_content_box's job to stop after the 7th.
     let values = (0..7u8).collect();
-    let content = NodeContent::new(NodeValues::U8(values), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U8(values), DataFormat::Decimal);
     check_eq(content.cells().len(), 7)?;
     check_eq(content.shape(), (3, 3))
 }
 
 #[test]
 fn len_reports_the_value_count_regardless_of_width() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U16(vec![1, 2, 3]), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U16(vec![1, 2, 3]), DataFormat::Decimal);
     check_eq(content.len(), 3)
 }
 
@@ -204,23 +204,23 @@ fn len_reports_the_value_count_regardless_of_width() -> Result<(), String> {
 
 #[test]
 fn a_single_value_is_reported_as_such() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
     check_eq(content.is_single_value(), true)
 }
 
 #[test]
 fn two_values_are_not_reported_as_a_single_value() -> Result<(), String> {
-    let content = NodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal);
     check_eq(content.is_single_value(), false)
 }
 
 #[test]
 fn every_width_gets_a_distinct_type_color() -> Result<(), String> {
     let colors = [
-        NodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).type_color(),
-        NodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal).type_color(),
-        NodeContent::new(NodeValues::U32(vec![1]), DataFormat::Decimal).type_color(),
-        NodeContent::new(NodeValues::U64(vec![1]), DataFormat::Decimal).type_color(),
+        DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).type_color(),
+        DataNodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal).type_color(),
+        DataNodeContent::new(NodeValues::U32(vec![1]), DataFormat::Decimal).type_color(),
+        DataNodeContent::new(NodeValues::U64(vec![1]), DataFormat::Decimal).type_color(),
     ];
     let mut unique = colors.to_vec();
     unique.sort_unstable();

@@ -5,8 +5,8 @@
 //! whole pipeline actually reaches the browser, not just that `svg-dom-graph`'s own Rust state changed correctly.
 
 use crate::common::{
-    attr_f64, check, check_close, dispatch_pointer_event, dispatch_pointer_event_with_button, last_point_of_path,
-    make_svg, nth_group, path_d, the_connector,
+    attr_f64, check, check_close, dispatch_pointer_event, dispatch_pointer_event_with_button, group_translate,
+    last_point_of_path, make_svg, nth_group, path_d, the_connector,
 };
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
@@ -15,15 +15,9 @@ use svg_dom_graph::{
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
-/// The centre point of a box's rectangle.
-/// Mirrors `scene`'s own private `box_centre`, so the expected connector position can be computed independently,
-/// from outside the crate.
-fn centre(rect: Rect) -> Point {
-    Point::new(rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0)
-}
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a node moves its rendered `<rect>` and `<text>` label, and reroutes its connector's far end.
+/// Dragging a node moves its own `<g>` (via its `transform`), which carries its rendered `<rect>` and `<text>`
+/// label along with it, and reroutes its connector's far end.
 /// The `<svg>`'s `viewBox` matches its pixel size 1:1 here, so a client-pixel drag is a same-sized user-space move.
 #[wasm_bindgen_test]
 fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), String> {
@@ -57,6 +51,12 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         .ok_or("no <text> in B's group")?;
     let connector = the_connector("drag-1to1")?;
 
+    // The rect and label are drawn once, in local coordinates relative to (0, 0) — the rect at the origin, the
+    // label at the box's own local centre — and never touched again by a move. Only the group's own transform
+    // changes.
+    let local_rect_xy_before = (attr_f64(&rect_b, "x")?, attr_f64(&rect_b, "y")?);
+    let local_label_xy_before = (attr_f64(&label_b, "x")?, attr_f64(&label_b, "y")?);
+
     // pointerdown -> pointer capture -> pointermove: drag by 50 client-pixels right, 30 down.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
@@ -67,14 +67,17 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         size: b_rect_before.size,
     };
 
-    // The rect moved by exactly the drag delta (1:1 client-pixel-to-user-space here).
-    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)?;
+    // The group's own translate moved by exactly the drag delta (1:1 client-pixel-to-user-space here).
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_after.origin.x)?;
+    check_close(group_y, b_rect_after.origin.y)?;
 
-    // The label re-centred on the rect's new position.
-    let new_centre = centre(b_rect_after);
-    check_close(attr_f64(&label_b, "x")?, new_centre.x)?;
-    check_close(attr_f64(&label_b, "y")?, new_centre.y)?;
+    // Neither the rect's nor the label's own local coordinates changed — the whole box moved as one, via the
+    // group's transform, not by rewriting every child.
+    check_close(attr_f64(&rect_b, "x")?, local_rect_xy_before.0)?;
+    check_close(attr_f64(&rect_b, "y")?, local_rect_xy_before.1)?;
+    check_close(attr_f64(&label_b, "x")?, local_label_xy_before.0)?;
+    check_close(attr_f64(&label_b, "y")?, local_label_xy_before.1)?;
 
     // The connector's B-end rerouted to sit at the midpoint of one of B's new rect's four sides.
     // This is the anchor rule every elbowed connector follows, checked here independently of the crate's own
@@ -124,10 +127,6 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("drag-scaled", 1)?;
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
 
     // 100 x 60 CLIENT pixels of movement...
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
@@ -135,8 +134,9 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
     dispatch_pointer_event(&group_b, "pointerup", 200, 160, 1)?;
 
     // ...must land as 50 x 30 USER-SPACE units, since 1 user unit = 2 client pixels under this viewBox.
-    check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x + 50.0)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y + 30.0)
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_before.origin.x + 50.0)?;
+    check_close(group_y, b_rect_before.origin.y + 30.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -166,12 +166,7 @@ fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), Str
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("scene-lifetime", 1)?;
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
-    let x_before = attr_f64(&rect_b, "x")?;
-    let y_before = attr_f64(&rect_b, "y")?;
+    let (x_before, y_before) = group_translate(&group_b)?;
 
     drop(scene); // every handle this test ever held
 
@@ -181,8 +176,9 @@ fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), Str
 
     let leaked = "dragging still moved the box after every Scene handle was dropped, meaning a listener closure \
         leaked a strong reference to the scene's internal state";
-    check_close(attr_f64(&rect_b, "x")?, x_before).map_err(|e| format!("{e} — {leaked}"))?;
-    check_close(attr_f64(&rect_b, "y")?, y_before).map_err(|e| format!("{e} — {leaked}"))
+    let (x_after, y_after) = group_translate(&group_b)?;
+    check_close(x_after, x_before).map_err(|e| format!("{e} — {leaked}"))?;
+    check_close(y_after, y_before).map_err(|e| format!("{e} — {leaked}"))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -212,10 +208,6 @@ fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("multi-pointer", 1)?;
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
 
     // Pointer 1 starts the drag.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
@@ -223,8 +215,9 @@ fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<
     // Pointer 2 touches down on the same element, then moves. Must not steal or drive pointer 1's drag.
     dispatch_pointer_event(&group_b, "pointerdown", 500, 500, 2)?;
     dispatch_pointer_event(&group_b, "pointermove", 550, 550, 2)?;
-    check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y)?;
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_before.origin.x)?;
+    check_close(group_y, b_rect_before.origin.y)?;
 
     // Pointer 2 lifts off. Must not end pointer 1's still-active drag.
     dispatch_pointer_event(&group_b, "pointerup", 550, 550, 2)?;
@@ -237,8 +230,9 @@ fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<
         origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
         size: b_rect_before.size,
     };
-    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_after.origin.x)?;
+    check_close(group_y, b_rect_after.origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -267,18 +261,15 @@ fn a_non_primary_button_pointerdown_does_not_start_a_drag() -> Result<(), String
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("non-primary-button", 1)?;
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
 
     // A right-click (button 2) followed by a move under the same pointer_id must not move the box.
     dispatch_pointer_event_with_button(&group_b, "pointerdown", 100, 100, 1, 2)?;
     dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointerup", 150, 130, 1)?;
 
-    check_close(attr_f64(&rect_b, "x")?, b_rect_before.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_before.origin.y)
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_before.origin.x)?;
+    check_close(group_y, b_rect_before.origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -306,10 +297,6 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("multi-pointer-cancel", 1)?;
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
 
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_b, "pointercancel", 0, 0, 2)?; // an unrelated pointer
@@ -322,8 +309,9 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
         origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
         size: b_rect_before.size,
     };
-    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_after.origin.x)?;
+    check_close(group_y, b_rect_after.origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -349,10 +337,6 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
     scene.make_draggable(b).map_err(|e| e.to_string())?;
 
     let group_b = nth_group("pointer-cancel-active", 0)?; // B was added first.
-    let rect_b = group_b
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in B's group")?;
 
     // Start a drag with pointer 1, move it, then cancel that same pointer.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
@@ -363,13 +347,15 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
         origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
         size: b_rect_before.size,
     };
-    check_close(attr_f64(&rect_b, "x")?, b_rect_cancelled.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_cancelled.origin.y)?;
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_cancelled.origin.x)?;
+    check_close(group_y, b_rect_cancelled.origin.y)?;
 
     // Further movement from the same, now-cancelled pointer must not move the node any further.
     dispatch_pointer_event(&group_b, "pointermove", 200, 200, 1)?;
-    check_close(attr_f64(&rect_b, "x")?, b_rect_cancelled.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_cancelled.origin.y)?;
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_cancelled.origin.x)?;
+    check_close(group_y, b_rect_cancelled.origin.y)?;
 
     // A brand new drag afterwards — even reusing the same pointer_id, since pointercancel released it — still
     // works normally.
@@ -381,8 +367,9 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
         origin: Point::new(b_rect_cancelled.origin.x + 50.0, b_rect_cancelled.origin.y + 30.0),
         size: b_rect_before.size,
     };
-    check_close(attr_f64(&rect_b, "x")?, b_rect_after.origin.x)?;
-    check_close(attr_f64(&rect_b, "y")?, b_rect_after.origin.y)
+    let (group_x, group_y) = group_translate(&group_b)?;
+    check_close(group_x, b_rect_after.origin.x)?;
+    check_close(group_y, b_rect_after.origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -415,18 +402,15 @@ fn a_second_make_draggable_call_for_the_same_node_is_rejected() -> Result<(), St
     )?;
 
     let group = nth_group("drag-twice", 0)?;
-    let rect = group
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in node's group")?;
 
     // A 50x30 client-pixel drag, 1:1 with user-space here.
     dispatch_pointer_event(&group, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group, "pointermove", 150, 130, 1)?;
     dispatch_pointer_event(&group, "pointerup", 150, 130, 1)?;
 
-    check_close(attr_f64(&rect, "x")?, before.x + 50.0)?;
-    check_close(attr_f64(&rect, "y")?, before.y + 30.0)
+    let (group_x, group_y) = group_translate(&group)?;
+    check_close(group_x, before.x + 50.0)?;
+    check_close(group_y, before.y + 30.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

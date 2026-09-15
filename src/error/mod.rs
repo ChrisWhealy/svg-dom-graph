@@ -77,7 +77,7 @@ pub enum Error {
     /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as
     /// it was.
     InvalidNodeGeometry(Rect),
-    /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::NodeContent`] with no values.
+    /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] with no values.
     ///
     /// If there is no data to draw inside a grid, then no sensible box size can be computed.
     /// This condition is rejected before drawing anything or touching the graph's model, so a rejected call leaves the
@@ -115,7 +115,7 @@ impl fmt::Display for Error {
                     "node geometry {rect:?} is invalid: origin and size must be finite, and width/height must both be > 0.0"
                 )
             },
-            Error::EmptyNodeContent => write!(f, "NodeContent must have at least one value to display"),
+            Error::EmptyNodeContent => write!(f, "DataNodeContent must have at least one value to display"),
         }
     }
 }

@@ -1,3 +1,4 @@
+use super::content::DataNodeContent;
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -16,12 +17,42 @@ pub struct NodeId {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One node's data: its position and its label.
+/// A node's semantic content holding either the plain text label of an ordinary node or the typed numeric values of a
+/// data node.
+///
+/// The graph model retains this regardless of how a node was rendered, so the generated SVG does not need to be read in
+/// order to discover the node's actual content.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum NodeContent {
+    Label(String),
+    Data(DataNodeContent),
+}
+
+impl From<String> for NodeContent {
+    fn from(label: String) -> Self {
+        Self::Label(label)
+    }
+}
+
+impl From<&str> for NodeContent {
+    fn from(label: &str) -> Self {
+        Self::Label(label.to_string())
+    }
+}
+
+impl From<DataNodeContent> for NodeContent {
+    fn from(data: DataNodeContent) -> Self {
+        Self::Data(data)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One node's data: its position and its [`NodeContent`].
 pub struct Node {
     pub rect: Rect,
-    // Not read anywhere yet: nothing re-queries a node's label after creation, only its rect (for redraw-on-move).
-    // Kept as node data regardless, since a label is part of a node's identity, not just a one-shot render
-    // parameter — a future feature such as re-rendering or editing labels would need it stored here.
+    // Not read anywhere yet outside tests: nothing re-queries a node's content after creation, only its rect (for
+    // redraw-on-move). Kept as node data regardless, since content is part of a node's identity, not just a
+    // one-shot render parameter — see `NodeContent`'s own doc comment for the features that will need it.
     #[allow(dead_code)]
-    pub label: String,
+    pub content: NodeContent,
 }

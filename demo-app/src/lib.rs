@@ -12,7 +12,7 @@
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`build_edge_anchors_demo`]: a parent with a growing and
 //!   shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own doc
 //!   comment for what it demonstrates.
-//! - `panel-data` / `#data-diagram` — [`build_data_demo`]: draggable nodes whose content is a [`NodeContent`]
+//! - `panel-data` / `#data-diagram` — [`build_data_demo`]: draggable nodes whose content is a [`DataNodeContent`]
 //!   grid of values rather than a plain text label — one single-value and one multi-value node per integer
 //!   width (`u8`/`u16`/`u32`/`u64`), the multi-value counts chosen to cover every combination the grid layout
 //!   rule can produce. See that function's own doc comment for exactly which.
@@ -32,8 +32,8 @@ use svg_dom::{
 use svg_dom_graph::{
     EdgeId,
     scene::{
-        ConnectorOptions, ConnectorType, DataFormat, DragOptions, EdgeAnchors, NodeContent, NodeOptions, NodeValues,
-        Scene,
+        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, NodeOptions,
+        NodeValues, Scene,
     },
 };
 use wasm_bindgen::{JsCast, prelude::*};
@@ -858,7 +858,7 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
 /// automatically, unlike [`build_demo_tree`]'s caller-sized boxes.
 ///
 /// The four multi-value counts are deliberately chosen to cover every combination
-/// [`NodeContent::shape`](svg_dom_graph::scene::NodeContent::shape)'s layout rule can produce:
+/// [`DataNodeContent::shape`](svg_dom_graph::scene::DataNodeContent::shape)'s layout rule can produce:
 ///
 /// - `u8`, 8 values: divides evenly by a power of two (`2`) but is not itself a square — renders as 2 rows of 4.
 /// - `u16`, 5 values: no power-of-two divisor at all — falls back to the closest-to-square shape, 3 rows of 2 (one slot
@@ -884,7 +884,7 @@ fn build_data_demo() -> Result<(), String> {
     const X_SINGLE: f64 = 20.0;
     const X_MULTI: f64 = 260.0;
 
-    let place = |x: f64, y: f64, content: NodeContent| -> Result<(), String> {
+    let place = |x: f64, y: f64, content: DataNodeContent| -> Result<(), String> {
         let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
         scene.make_draggable_with(node, drag_options).map_err(stringify)
     };
@@ -893,12 +893,12 @@ fn build_data_demo() -> Result<(), String> {
     place(
         X_SINGLE,
         20.0,
-        NodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal),
+        DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal),
     )?;
     place(
         X_MULTI,
         20.0,
-        NodeContent::new(
+        DataNodeContent::new(
             NodeValues::U8(vec![0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77]),
             DataFormat::Binary,
         ),
@@ -910,12 +910,12 @@ fn build_data_demo() -> Result<(), String> {
     place(
         X_SINGLE,
         140.0,
-        NodeContent::new(NodeValues::U16(vec![0x1234]), DataFormat::Hexadecimal),
+        DataNodeContent::new(NodeValues::U16(vec![0x1234]), DataFormat::Hexadecimal),
     )?;
     place(
         X_MULTI,
         140.0,
-        NodeContent::new(NodeValues::U16(vec![100, 250, 500, 1000, 65535]), DataFormat::Decimal),
+        DataNodeContent::new(NodeValues::U16(vec![100, 250, 500, 1000, 65535]), DataFormat::Decimal),
     )?;
 
     // u32: a single value, and 9 values — a perfect square with no power-of-two divisor, landing on an exact 3x3
@@ -923,12 +923,12 @@ fn build_data_demo() -> Result<(), String> {
     place(
         X_SINGLE,
         290.0,
-        NodeContent::new(NodeValues::U32(vec![0xDEAD_BEEF]), DataFormat::Hexadecimal),
+        DataNodeContent::new(NodeValues::U32(vec![0xDEAD_BEEF]), DataFormat::Hexadecimal),
     )?;
     place(
         X_MULTI,
         290.0,
-        NodeContent::new(
+        DataNodeContent::new(
             NodeValues::U32(vec![
                 0x1111_1111, 0x2222_2222, 0x3333_3333, 0x4444_4444, 0x5555_5555, 0x6666_6666, 0x7777_7777, 0x8888_8888,
                 0x9999_9999,
@@ -942,12 +942,12 @@ fn build_data_demo() -> Result<(), String> {
     place(
         X_SINGLE,
         440.0,
-        NodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal),
+        DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal),
     )?;
     place(
         X_MULTI,
         440.0,
-        NodeContent::new(
+        DataNodeContent::new(
             NodeValues::U64(vec![
                 0x0011223344556677,
                 0x8899AABBCCDDEEFF,

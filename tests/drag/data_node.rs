@@ -1,12 +1,14 @@
-//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`NodeContent`] grid rather than
+//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid rather than
 //! a plain text label — rendering, colour-coded value cells, auto-sizing, empty-content rejection, dragging every
 //! cell (not just the box), and ordinary connector routing to/from one.
 
-use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, nth_group, the_connector};
+use crate::common::{
+    attr_f64, check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group, the_connector,
+};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DataFormat, NodeContent, NodeValues, Scene},
+    scene::{DataFormat, DataNodeContent, NodeValues, Scene},
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -45,7 +47,7 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell() -> Result<(), String> {
     let svg = make_svg("data-node-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
-    let content = NodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
     scene
         .add_data_node(Point::new(10.0, 10.0), content)
         .map_err(|e| e.to_string())?;
@@ -88,7 +90,7 @@ fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell
 fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Result<(), String> {
     let svg = make_svg("data-node-two", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
-    let content = NodeContent::new(NodeValues::U8(vec![0xAA, 0xBB]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U8(vec![0xAA, 0xBB]), DataFormat::Hexadecimal);
     scene
         .add_data_node(Point::new(10.0, 10.0), content)
         .map_err(|e| e.to_string())?;
@@ -124,14 +126,14 @@ fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::add_data_node`/`add_data_node_with` rejects an empty `NodeContent` before drawing anything or touching
+/// `Scene::add_data_node`/`add_data_node_with` rejects an empty `DataNodeContent` before drawing anything or touching
 /// the graph's model — mirrors `add_node_with`'s own `EdgeAnchors(0)` rejection test.
 #[wasm_bindgen_test]
 fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg("data-node-empty", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
 
-    let empty = NodeContent::new(NodeValues::U8(vec![]), DataFormat::Decimal);
+    let empty = DataNodeContent::new(NodeValues::U8(vec![]), DataFormat::Decimal);
     let result = scene.add_data_node(Point::new(10.0, 10.0), empty);
     check(
         matches!(result, Err(Error::EmptyNodeContent)),
@@ -142,7 +144,7 @@ fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(),
         "a rejected add_data_node call left a <g> rendered in the scene",
     )?;
 
-    let valid = NodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+    let valid = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
     scene.add_data_node(Point::new(10.0, 10.0), valid).map_err(|e| e.to_string())?;
     nth_group("data-node-empty", 0)?;
     check(
@@ -152,15 +154,19 @@ fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a data node moves every value's own text and inner cell rect, not just the outer box or the first
-/// value — the regression this test exists for: a data node's `BoxHandles` holds a `Vec` of per-cell elements
-/// instead of a single label, and it would be easy for a move to only update some of them.
+/// Dragging a data node moves the whole box — every value's own text and inner cell rect included — by moving
+/// just the node's own `<g>` `transform`, not by rewriting every cell's own coordinates.
+///
+/// Every cell is drawn once, at creation, in local coordinates relative to `(0, 0)` (see `draw_content_box`'s own
+/// doc comment) — a data node with hundreds of cells moves exactly as cheaply as one with a handful, since a
+/// pointer move only ever rewrites the group's one `transform`. This checks both halves of that: the group's
+/// translate changes by the drag delta, and every cell's own local `x`/`y` stays exactly as it was.
 #[wasm_bindgen_test]
 fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), String> {
     let svg = make_svg("data-node-drag", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     // 4 values -> a 2x2 grid (see grid_shape), so four inner cells exist to prove all four moved.
-    let content = NodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
     let node = scene
         .add_data_node(Point::new(20.0, 20.0), content)
         .map_err(|e| e.to_string())?;
@@ -178,6 +184,7 @@ fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), Strin
         &format!("expected 4 texts for a 2x2 grid, found {}", texts.len()),
     )?;
 
+    let group_xy_before = group_translate(&group)?;
     let rect_positions_before: Vec<(f64, f64)> = rects
         .iter()
         .map(|r| Ok::<_, String>((attr_f64(r, "x")?, attr_f64(r, "y")?)))
@@ -191,15 +198,21 @@ fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), Strin
     dispatch_pointer_event(&group, "pointermove", 140, 125, 1)?;
     dispatch_pointer_event(&group, "pointerup", 140, 125, 1)?;
 
+    // The group's own translate moved by exactly the drag delta.
+    let (group_x_after, group_y_after) = group_translate(&group)?;
+    check_close(group_x_after, group_xy_before.0 + 40.0)?;
+    check_close(group_y_after, group_xy_before.1 + 25.0)?;
+
+    // Every cell's own local coordinates are untouched — the move never rewrote a single one of them.
     for (i, rect) in rects.iter().enumerate() {
         let (before_x, before_y) = rect_positions_before[i];
-        check_close(attr_f64(rect, "x")?, before_x + 40.0)?;
-        check_close(attr_f64(rect, "y")?, before_y + 25.0)?;
+        check_close(attr_f64(rect, "x")?, before_x)?;
+        check_close(attr_f64(rect, "y")?, before_y)?;
     }
     for (i, text) in texts.iter().enumerate() {
         let (before_x, before_y) = text_positions_before[i];
-        check_close(attr_f64(text, "x")?, before_x + 40.0)?;
-        check_close(attr_f64(text, "y")?, before_y + 25.0)?;
+        check_close(attr_f64(text, "x")?, before_x)?;
+        check_close(attr_f64(text, "y")?, before_y)?;
     }
     Ok(())
 }
@@ -215,7 +228,7 @@ fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String>
     let a = scene
         .add_node(Point::new(0.0, 0.0), Size::new(60.0, 30.0), "A")
         .map_err(|e| e.to_string())?;
-    let content = NodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
+    let content = DataNodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
     let b = scene
         .add_data_node(Point::new(200.0, 150.0), content)
         .map_err(|e| e.to_string())?;
@@ -228,8 +241,8 @@ fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String>
 
     let group_b = nth_group("data-node-connector", 1)?; // B was added second.
     let rect_b = &rect_children(&group_b)?[0]; // the outer box — B holds a single value, so it is the only rect.
-    let bx = attr_f64(rect_b, "x")?;
-    let by = attr_f64(rect_b, "y")?;
+    // The rect itself is drawn at local (0, 0); B's world-space box origin lives on the group's own transform.
+    let (bx, by) = group_translate(&group_b)?;
     let bw = attr_f64(rect_b, "width")?;
     let bh = attr_f64(rect_b, "height")?;
 

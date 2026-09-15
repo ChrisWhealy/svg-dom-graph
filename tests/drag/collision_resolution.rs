@@ -1,7 +1,7 @@
 //! Dropping a dragged node so it overlaps another: `CollisionPolicy::PushClear`/`Allow`, degenerate cases, and the
 //! equidistant-blockers tie-break.
 
-use crate::common::{attr_f64, check_close, dispatch_pointer_event, make_svg, nth_group};
+use crate::common::{check_close, dispatch_pointer_event, group_translate, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::scene::{CollisionPolicy, DragOptions, Scene};
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -28,10 +28,6 @@ fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> 
     scene.make_draggable(mover).map_err(|e| e.to_string())?;
 
     let group_mover = nth_group("drag-overlap", 1)?; // mover was added second.
-    let rect_mover = group_mover
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in mover's group")?;
 
     // Drag mover's centre (60, 170) onto blocker's centre (340, 170) — a 280-pixel move right, 1:1 client-pixel
     // to user-space here.
@@ -39,8 +35,9 @@ fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> 
     dispatch_pointer_event(&group_mover, "pointermove", 340, 170, 1)?;
     dispatch_pointer_event(&group_mover, "pointerup", 340, 170, 1)?;
 
-    check_close(attr_f64(&rect_mover, "x")?, 214.0)?;
-    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+    let (x, y) = group_translate(&group_mover)?;
+    check_close(x, 214.0)?;
+    check_close(y, 150.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -67,17 +64,14 @@ fn dropping_a_dragged_node_onto_another_with_allow_policy_leaves_them_overlappin
         .map_err(|e| e.to_string())?;
 
     let group_mover = nth_group("drag-overlap-allow", 1)?; // mover was added second.
-    let rect_mover = group_mover
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in mover's group")?;
 
     dispatch_pointer_event(&group_mover, "pointerdown", 60, 170, 1)?;
     dispatch_pointer_event(&group_mover, "pointermove", 340, 170, 1)?;
     dispatch_pointer_event(&group_mover, "pointerup", 340, 170, 1)?;
 
-    check_close(attr_f64(&rect_mover, "x")?, 300.0)?;
-    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+    let (x, y) = group_translate(&group_mover)?;
+    check_close(x, 300.0)?;
+    check_close(y, 150.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -102,18 +96,15 @@ fn dropping_a_node_whose_pre_drag_centre_coincides_with_the_blockers_centre_reve
     scene.make_draggable(mover).map_err(|e| e.to_string())?;
 
     let group_mover = nth_group("drag-degenerate", 1)?; // mover was added second.
-    let rect_mover = group_mover
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in mover's group")?;
 
     // A short drag that leaves mover still overlapping blocker — mover and blocker started fully coincident.
     dispatch_pointer_event(&group_mover, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_mover, "pointermove", 105, 105, 1)?;
     dispatch_pointer_event(&group_mover, "pointerup", 105, 105, 1)?;
 
-    check_close(attr_f64(&rect_mover, "x")?, same_origin.x)?;
-    check_close(attr_f64(&rect_mover, "y")?, same_origin.y)
+    let (x, y) = group_translate(&group_mover)?;
+    check_close(x, same_origin.x)?;
+    check_close(y, same_origin.y)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -154,16 +145,13 @@ fn dropping_between_two_equidistant_blockers_resolves_to_the_lower_index() -> Re
     scene.make_draggable(mover).map_err(|e| e.to_string())?;
 
     let group_mover = nth_group("drag-tiebreak", 0)?; // mover was added first.
-    let rect_mover = group_mover
-        .query_selector("rect")
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or("no <rect> in mover's group")?;
 
     // Drag mover's centre (60, 170) to (300, 170) — a 240-pixel move right, 1:1 client-pixel to user-space here.
     dispatch_pointer_event(&group_mover, "pointerdown", 60, 170, 1)?;
     dispatch_pointer_event(&group_mover, "pointermove", 300, 170, 1)?;
     dispatch_pointer_event(&group_mover, "pointerup", 300, 170, 1)?;
 
-    check_close(attr_f64(&rect_mover, "x")?, 134.0)?;
-    check_close(attr_f64(&rect_mover, "y")?, 150.0)
+    let (x, y) = group_translate(&group_mover)?;
+    check_close(x, 134.0)?;
+    check_close(y, 150.0)
 }

@@ -24,27 +24,18 @@
 //! right next to `branch_b`) would let that same push run unexamined, and silently change what this test is
 //! actually demonstrating.
 
-use crate::common::{drag, new_tab};
+use crate::common::{drag, group_translate, new_tab};
 use std::time::Duration;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `bounded`'s current world-space origin — its own `<g>`'s `transform`, not its `<rect>`'s local coordinates (which
+/// are drawn once, at `(0, 0)`, and never rewritten as the node moves — see `svg_dom_graph::scene::node::draw_box`'s
+/// own doc comment).
 fn rect_origin(tab: &headless_chrome::Tab) -> Result<(f64, f64), String> {
-    let rect = tab
-        .find_element("#diagram > g:nth-of-type(7) rect")
-        .map_err(|e| format!("could not find bounded's <rect>: {e}"))?;
-    let x: f64 = rect
-        .get_attribute_value("x")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("bounded's <rect> has no x attribute")?
-        .parse()
-        .map_err(|e| format!("x did not parse as f64: {e}"))?;
-    let y: f64 = rect
-        .get_attribute_value("y")
-        .map_err(|e| format!("{e}"))?
-        .ok_or("bounded's <rect> has no y attribute")?
-        .parse()
-        .map_err(|e| format!("y did not parse as f64: {e}"))?;
-    Ok((x, y))
+    let group = tab
+        .find_element("#diagram > g:nth-of-type(7)")
+        .map_err(|e| format!("could not find bounded's <g>: {e}"))?;
+    group_translate(&group)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -79,7 +70,7 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
     let close = |got: f64, expected: f64| (got - expected).abs() <= 1.0;
     if !close(clamped_x, 420.0) || !close(clamped_y, 0.0) {
         return Err(format!(
-            "expected bounded's <rect> to clamp to approximately (420, 0), got ({clamped_x}, {clamped_y})"
+            "expected bounded's <g> to clamp to approximately (420, 0), got ({clamped_x}, {clamped_y})"
         ));
     }
 

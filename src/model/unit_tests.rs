@@ -1,5 +1,5 @@
 use super::edge::EdgeId;
-use crate::model::graph::Graph;
+use crate::model::{graph::Graph, node::NodeContent};
 use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -182,5 +182,11 @@ fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
     let owned_label = format!("node-{}", 42);
     let id = graph.add_node(test_rect(0.0, 0.0), owned_label.as_str());
 
-    check_eq(graph.node(id).map(|n| n.label.as_str()), Some("node-42"))
+    check_eq(
+        graph.node(id).map(|n| match &n.content {
+            NodeContent::Label(label) => label.as_str(),
+            NodeContent::Data(_) => "<data>",
+        }),
+        Some("node-42"),
+    )
 }
