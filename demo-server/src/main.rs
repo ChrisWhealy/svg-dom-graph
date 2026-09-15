@@ -39,9 +39,9 @@
 //!
 //! [`build::prepare_stage`] also reruns before every request for `/` or `/index.html`, not just once at startup —
 //! see `main`'s own middleware for why it is scoped to just those two paths rather than every request the server
-//! handles. So editing `index.html`'s own template or panel fragments is visible on the next browser refresh
-//! alone. Nothing restages the wasm package per request: `wasm-pack` is too slow for that, and editing Rust
-//! source needs a restart regardless, for the wasm rebuild to even happen.
+//! handles. So editing `index.html`'s own template, its panel fragments, or `style.css` is visible on the next
+//! browser refresh alone. Nothing restages the wasm package per request: `wasm-pack` is too slow for that, and
+//! editing Rust source needs a restart regardless, for the wasm rebuild to even happen.
 //!
 //! The build pipeline itself — resolving staging paths through to a wasm package ready to serve — lives in
 //! [`build`], as a `Result`-returning [`build::build_demo`] rather than something that reports errors and exits on
@@ -136,14 +136,14 @@ async fn main() -> std::io::Result<()> {
 
         App::new()
             .wrap(Logger::default())
-            // Re-stages index.html so an edit to it is visible on the very next browser refresh. Only when the
-            // request is actually for the page itself (`/` or `/index.html`) — the only staged file this ever
-            // regenerates. Every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified static
-            // asset that a fresh copy of index.html could never change, so skipping the check there avoids a
-            // needless filesystem stat/copy/rename on every one of those requests, not just the page load that
-            // triggers them. build_demo's wasm rebuild is deliberately not repeated here at all, for either kind
-            // of request: wasm-pack is far too slow to run per request and editing Rust source already requires
-            // restarting cargo demo regardless.
+            // Re-runs prepare_stage — re-assembling index.html and re-copying style.css — so an edit to either is
+            // visible on the very next browser refresh. Only when the request is actually for the page itself
+            // (`/` or `/index.html`): every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified
+            // static asset neither of those could ever change, so skipping the refresh there avoids a needless
+            // filesystem stat/write on every one of those requests, not just the page load that triggers them.
+            // build_demo's wasm rebuild is deliberately not repeated here at all, for either kind of request:
+            // wasm-pack is far too slow to run per request and editing Rust source already requires restarting
+            // cargo demo regardless.
             //
             // A refresh failure (e.g. index.html was left mid-edit) is only logged, not fatal: the previously
             // staged file is left in place and keeps being served, the same file-not-found-yet tolerance an

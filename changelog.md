@@ -10,11 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Fully implement defensive validation during demo server build (``)
+- Fully implement defensive validation during demo server build (`2671efc`)
 
 ## Fixed
 
 - Doc only: Explain concurrency race edge-case when rendering `index.html` (`4ed93cb`)
+- Doc only: Update stale docs (``)
 
 ## Changed
 
