@@ -22,6 +22,7 @@ readme = "README.md"
 exclude = [
     ".github/",
     "rustfmt.toml",
+    "webdriver.json",
 ]
 
 [dependencies]

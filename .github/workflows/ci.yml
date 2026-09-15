@@ -143,6 +143,14 @@ jobs:
         uses: taiki-e/install-action@v2
         with:
           tool: wasm-pack@0.15.0
+      # wasm-bindgen-test-runner reads webdriver.json (at the repo root, next to Cargo.toml) for extra per-browser
+      # capabilities. It adds Chrome's --disable-dev-shm-usage. Since the container default shared memory is small, if a
+      # headless Chrome/chromedriver on this runner tries to allocate too much memory, it will be killed outright by a
+      # SIGKILL and result in the error message "driver failed to bind port during startup".  This is a known
+      # headless-Chrome-in-CI failure mode that is distinct from the AppArmor/unprivileged-userns issue the sysctl step
+      # above addresses.
+      #
+      # Firefox is unaffected, since webdriver.json currently contains no moz:firefoxOptions.
       - name: Run the browser integration tests
         run: wasm-pack test --headless --${{ matrix.browser }}
 
