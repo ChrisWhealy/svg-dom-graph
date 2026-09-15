@@ -175,7 +175,8 @@ impl SceneInner {
     /// label.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move.
-    /// See [`SvgNode::set_translate`].
+    /// See [`SvgNode::set_transform_fmt`] — not [`SvgNode::set_translate`], whose fixed one-decimal-place
+    /// precision would quantise the rendered position away from `new_origin`, by up to 0.05 user-space units.
     ///
     /// # Errors
     ///
@@ -185,7 +186,9 @@ impl SceneInner {
         self.graph.set_node_rect(id, Rect { origin: new_origin, size });
 
         let handles = self.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
-        handles.group.set_translate(scratch, new_origin.x, new_origin.y)?;
+        handles
+            .group
+            .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
 
         for edge_id in self.graph.incident_edges(id) {
             self.redraw_edge(*edge_id, scratch)?;

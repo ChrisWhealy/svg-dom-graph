@@ -157,7 +157,12 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     group.append(&label_el)?;
 
     let mut scratch = String::new();
-    group.set_translate(&mut scratch, rect.origin.x, rect.origin.y)?;
+    // Not `set_translate`: its fixed one-decimal-place precision would quantise the rendered position away from
+    // the model's own `rect.origin`, by up to 0.05 user-space units — harmless to the eye, but a real mismatch
+    // for anything that re-derives a position from the rendered DOM (as several of this crate's own browser tests
+    // do) rather than the model. `set_transform_fmt` writes `Display`'s full precision instead, at the cost of a
+    // (typically) longer attribute string.
+    group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
     Ok(BoxHandles {
         group,
@@ -309,7 +314,8 @@ fn draw_content_box(
         }
     }
 
-    group.set_translate(&mut scratch, top_left.x, top_left.y)?;
+    // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
+    group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     Ok((
         BoxHandles {

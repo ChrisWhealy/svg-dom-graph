@@ -11,11 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Display node data as a formatted, colour-coded grid (`da014eb`)
-- Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (``)
+- Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (`b0f2adf`)
 
 ## Changed
 
 - Retain data node content in `model::node::NodeContent::Data`. Move node by rewriting `<g>` transform instead of child coordinates (`a11d969`)
+
+## Fixed
+
+- Correct wasm-pack tests after switching from `SvgNode::set_attr_display` to `SvgNode::set_translate` (``)
 
 # [Released]
 
