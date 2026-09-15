@@ -60,6 +60,19 @@
 ///
 /// Only the widths a caller is actually likely to want to inspect byte-by-byte are supported. A wider type (for
 /// example `u128`) can be added the same way later, additively, if it turns out to be needed.
+///
+/// # Deliberately one width per node
+///
+/// A `NodeValues` holds exactly one variant, so every value in a given [`DataNodeContent`] shares the same integer
+/// width — a node can display `[u32, u32, u32, u32]`, never `[u8, u16, u32, u64]`. This is a deliberate scope
+/// decision, not a limitation to lift later: the intended abstraction here is "display an array/vector of
+/// homogeneous numeric values" (a memory dump, a register bank, a typed buffer), not a general, per-cell-typed
+/// data inspector. Every value in one node getting the same `type_color` follows directly from that: colour
+/// identifies the node's own type, not each individual cell's.
+///
+/// A heterogeneous node (`Vec<NodeValue>` with one width per value, à la a tagged-union cell type) is a
+/// legitimate, larger feature in its own right, not an incremental change to this one — building it later, should
+/// a real caller need it, is expected to sit alongside this type rather than replace it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum NodeValues {
@@ -137,7 +150,11 @@ fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataForma
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
 /// variant produces.
+///
+/// `#[non_exhaustive]` for the same reason as [`NodeValues`]: a plausible future addition (`Octal`, `Ascii`, ...)
+/// should stay additive, not a source-breaking change for a caller who exhaustively matched this before it existed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
 pub enum DataFormat {
     Decimal,
     Hexadecimal,

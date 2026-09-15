@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Display node data as a formatted, colour-coded grid (`da014eb`)
 - Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (`b0f2adf`)
+- Allow for future `DataFormat` types (``)
 
 ## Changed
 
