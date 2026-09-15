@@ -209,6 +209,46 @@ fn decimal_does_not_split_into_bytes() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ByteOrder
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn new_defaults_to_big_endian_byte_order() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal);
+    check_eq(content.cells(), vec!["AA BB CC DD".to_owned()])
+}
+
+#[test]
+fn with_byte_order_little_endian_reverses_the_byte_groups() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal)
+        .with_byte_order(ByteOrder::LittleEndian);
+    check_eq(content.cells(), vec!["DD CC BB AA".to_owned()])
+}
+
+#[test]
+fn little_endian_also_reverses_binary_byte_groups() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U16(vec![0xF00F]), DataFormat::Binary)
+        .with_byte_order(ByteOrder::LittleEndian);
+    check_eq(content.cells(), vec!["0000 1111 1111 0000".to_owned()])
+}
+
+#[test]
+fn byte_order_has_no_visible_effect_on_a_single_byte_value() -> Result<(), String> {
+    let big_endian = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal);
+    let little_endian = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal)
+        .with_byte_order(ByteOrder::LittleEndian);
+    check_eq(big_endian.cells(), little_endian.cells())
+}
+
+#[test]
+fn byte_order_has_no_visible_effect_under_decimal_format() -> Result<(), String> {
+    let big_endian = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal);
+    let little_endian = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal)
+        .with_byte_order(ByteOrder::LittleEndian);
+    check_eq(big_endian.cells(), little_endian.cells())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // DataNodeContent::cells — one string per value, not yet arranged into rows
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

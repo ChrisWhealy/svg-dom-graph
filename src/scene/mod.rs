@@ -14,8 +14,8 @@ pub(crate) mod node;
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
+pub use crate::model::content::{ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues};
 
-pub use crate::model::content::{DataFormat, DataNodeContent, GridLayout, NodeValues};
 use crate::{
     error::Error,
     geometry::{apply_matrix, elbow_path_into, nearest_clear_centre, rects_overlap},

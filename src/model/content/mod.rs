@@ -31,17 +31,24 @@
 //!
 //! # Formatting
 //!
-//! Each value is formatted using its own type's big-endian byte representation (`to_be_bytes()` — most
-//! significant byte first, regardless of host endianness, so the displayed digits always read the same way a
-//! human would write the number down):
+//! Each value is formatted using its own type's byte representation, ordered per [`ByteOrder`] —
+//! [`ByteOrder::BigEndian`] (the default, used unless [`DataNodeContent::with_byte_order`] overrides it) is most
+//! significant byte first, *regardless of host endianness*, so the displayed digits always read the same way a
+//! human would write the number down (and the same way on every host, not whichever one happened to build it):
 //!
 //! - [`DataFormat::Hexadecimal`]: every byte as two uppercase hex digits, space-separated, no `0x` prefix — e.g.
-//!   `"F0 E1 D2 C3 B4 A5 96 87"` for a `u64`.
+//!   `"F0 E1 D2 C3 B4 A5 96 87"` for a `u64` under `BigEndian`.
 //! - [`DataFormat::Binary`]: every byte as eight binary digits, space-separated, with a further gap splitting each
 //!   byte's own upper and lower nybble — e.g. `"1111 0000"` for one byte, so a reader can pick out a nybble at a
 //!   glance rather than counting along an unbroken run of eight digits.
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number — decimal has no natural byte boundary
-//!   to split on, unlike hexadecimal and binary.
+//!   to split on, unlike hexadecimal and binary, so [`ByteOrder`] has no visible effect under `Decimal`: the same
+//!   number reads the same regardless of which byte order produced it.
+//!
+//! [`ByteOrder::BigEndian`]'s determinism (independent of host endianness) is the right default for register/value
+//! display, where a reader expects the digits to read the same way a number is normally written down. A caller
+//! visualising an actual in-memory byte layout — where byte order is a property of the data being inspected, not
+//! a display preference — instead wants [`ByteOrder::LittleEndian`] to match it.
 //!
 //! # Telling values apart
 //!
@@ -93,25 +100,25 @@ impl NodeValues {
         }
     }
 
-    /// Every value, formatted per `format`, in the same order they were supplied — one cell per value, not yet
-    /// arranged into a grid (see [`DataNodeContent::shape`] for that).
-    fn cell_strings(&self, format: DataFormat) -> Vec<String> {
+    /// Every value, formatted per `format` and `byte_order`, in the same order they were supplied — one cell per
+    /// value, not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
+    fn cell_strings(&self, format: DataFormat, byte_order: ByteOrder) -> Vec<String> {
         match self {
             Self::U8(v) => v
                 .iter()
-                .map(|&x| format_value(x.to_be_bytes(), u128::from(x), format))
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
                 .collect(),
             Self::U16(v) => v
                 .iter()
-                .map(|&x| format_value(x.to_be_bytes(), u128::from(x), format))
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
                 .collect(),
             Self::U32(v) => v
                 .iter()
-                .map(|&x| format_value(x.to_be_bytes(), u128::from(x), format))
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
                 .collect(),
             Self::U64(v) => v
                 .iter()
-                .map(|&x| format_value(x.to_be_bytes(), u128::from(x), format))
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
                 .collect(),
         }
     }
@@ -132,7 +139,37 @@ impl NodeValues {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats one value's already-big-endian `bytes`, or its `decimal` value directly for
+/// The byte order `DataNodeContent::cells` splits each value into, for [`DataFormat::Hexadecimal`]/
+/// [`DataFormat::Binary`] — see this module's own doc comment ("Formatting") for why `BigEndian` is the default,
+/// and when a caller wants `LittleEndian` instead.
+///
+/// Has no visible effect under [`DataFormat::Decimal`]: a plain decimal number reads the same regardless of which
+/// byte order produced it.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+#[non_exhaustive]
+pub enum ByteOrder {
+    /// Most significant byte first — independent of host endianness, so the displayed digits always read the same
+    /// way a human would write the number, on every host. The right choice for register/value display.
+    #[default]
+    BigEndian,
+    /// Least significant byte first. The right choice when a value's own byte order is a property of the data being
+    /// inspected — an actual in-memory layout — rather than a display preference.
+    LittleEndian,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
+/// `LittleEndian`. A single-byte array (`N = 1`, i.e. `u8`) is unaffected either way: byte order is meaningless for
+/// one byte.
+fn order_bytes<const N: usize>(mut bytes: [u8; N], order: ByteOrder) -> [u8; N] {
+    if order == ByteOrder::LittleEndian {
+        bytes.reverse();
+    }
+    bytes
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for
 /// [`DataFormat::Decimal`] — generic over the byte width so [`NodeValues::cell_strings`] needs one call site per
 /// variant, not one formatting implementation per width.
 fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat) -> String {
@@ -288,11 +325,13 @@ pub struct DataNodeContent {
     values: NodeValues,
     format: DataFormat,
     layout: GridLayout,
+    byte_order: ByteOrder,
 }
 
 impl DataNodeContent {
     /// Builds a [`DataNodeContent`] displaying `values`, formatted as `format`, arranged per
-    /// [`GridLayout::Automatic`] — see [`with_layout`](Self::with_layout) to override that.
+    /// [`GridLayout::Automatic`] — see [`with_layout`](Self::with_layout) to override that — and byte-ordered per
+    /// [`ByteOrder::BigEndian`] — see [`with_byte_order`](Self::with_byte_order) to override that.
     ///
     /// An empty `values` is accepted here — the same deferred-validation convention
     /// [`DragOptions::with_bounds`](crate::scene::DragOptions::with_bounds)/
@@ -306,6 +345,7 @@ impl DataNodeContent {
             values,
             format,
             layout: GridLayout::default(),
+            byte_order: ByteOrder::default(),
         }
     }
 
@@ -320,6 +360,15 @@ impl DataNodeContent {
     #[must_use]
     pub fn with_layout(mut self, layout: GridLayout) -> Self {
         self.layout = layout;
+        self
+    }
+
+    /// Returns `self` with `byte_order` overriding [`ByteOrder::BigEndian`]'s own default — see [`ByteOrder`]'s
+    /// own doc comment for what each variant does, and this module's own doc comment ("Formatting") for when
+    /// `LittleEndian` is the right choice.
+    #[must_use]
+    pub fn with_byte_order(mut self, byte_order: ByteOrder) -> Self {
+        self.byte_order = byte_order;
         self
     }
 
@@ -350,7 +399,7 @@ impl DataNodeContent {
     /// Every value's own formatted cell text, in the same order they were supplied — one string per value, ready
     /// for `draw_content_box` to place one at a time into the grid [`DataNodeContent::shape`] describes.
     pub(crate) fn cells(&self) -> Vec<String> {
-        self.values.cell_strings(self.format)
+        self.values.cell_strings(self.format, self.byte_order)
     }
 
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
