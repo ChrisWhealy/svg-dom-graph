@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.8] - 2026-09-17
 
 ## Added
@@ -25,8 +27,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove unnecessary allocation during cell selection (`0aa9a4f`)
 - Update stale docs and add `DemoPanel` struct (`0d5a8fe`)
 - Doc only: Correct stale README and doc comments (`d95e910`)
-
-# [Released]
 
 ## [0.2.7] - 2026-09-16
 
