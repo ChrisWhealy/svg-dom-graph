@@ -566,6 +566,49 @@ fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_c
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Selection::describe
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn describe_of_none_is_empty() -> Result<(), String> {
+    check_eq(Selection::None.describe(), String::new())
+}
+
+#[test]
+fn describe_of_a_cell_names_its_own_index() -> Result<(), String> {
+    check_eq(Selection::Cell(3).describe(), ", cell 3 selected".to_owned())
+}
+
+#[test]
+fn describe_of_a_row_with_no_cell_names_only_the_row() -> Result<(), String> {
+    check_eq(Selection::Row { row: 2, col: None }.describe(), ", row 2 selected".to_owned())
+}
+
+#[test]
+fn describe_of_a_row_with_a_cell_names_both() -> Result<(), String> {
+    check_eq(
+        Selection::Row { row: 2, col: Some(1) }.describe(),
+        ", row 2 selected, column 1 focused".to_owned(),
+    )
+}
+
+#[test]
+fn describe_of_a_column_with_no_cell_names_only_the_column() -> Result<(), String> {
+    check_eq(
+        Selection::Column { col: 2, row: None }.describe(),
+        ", column 2 selected".to_owned(),
+    )
+}
+
+#[test]
+fn describe_of_a_column_with_a_cell_names_both() -> Result<(), String> {
+    check_eq(
+        Selection::Column { col: 2, row: Some(1) }.describe(),
+        ", column 2 selected, row 1 focused".to_owned(),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // UnaryOperator::label / BinaryOperator::label
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

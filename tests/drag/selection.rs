@@ -2,7 +2,7 @@
 //! stepping through an array's values, e.g. via "previous"/"next" controls, and marking where processing currently
 //! is.
 
-use crate::common::{check, make_svg};
+use crate::common::{attr_f64, check, make_svg};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
@@ -245,5 +245,97 @@ fn set_selection_rejects_out_of_range_indices() -> Result<(), String> {
     check(
         scene.set_selection(node, Selection::Column { col: 0, row: Some(2) }).is_err(),
         "expected an out-of-range row within a valid column to be rejected",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A band and a focus are each also distinguishable by stroke width alone, not just by fill colour — the same
+/// "not colour alone" reasoning `NodeValues::type_color`'s own `<title>`/`aria-label` pairing already follows.
+#[wasm_bindgen_test]
+fn selection_gives_band_and_focus_cells_a_thicker_stroke_than_the_default() -> Result<(), String> {
+    let svg = make_svg("selection-stroke-width", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+                .with_layout(GridLayout::Rows(2)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-stroke-width", 0)?;
+    let rects = rect_children(&group)?;
+    let cells = &rects[1..]; // flat, row-major: [row0: 0,1,2][row1: 3,4,5]
+
+    let default_width = attr_f64(&cells[0], "stroke-width")?;
+
+    scene
+        .set_selection(node, Selection::Row { row: 1, col: Some(2) })
+        .map_err(|e| e.to_string())?;
+
+    let untouched_width = attr_f64(&cells[0], "stroke-width")?;
+    let band_width = attr_f64(&cells[3], "stroke-width")?;
+    let focus_width = attr_f64(&cells[5], "stroke-width")?;
+
+    check(
+        (untouched_width - default_width).abs() < f64::EPSILON,
+        &format!("expected an unselected cell to keep its own default stroke width, got {untouched_width}"),
+    )?;
+    check(
+        band_width > default_width,
+        &format!("expected a banded cell's stroke to thicken beyond the default {default_width}, got {band_width}"),
+    )?;
+    check(
+        focus_width > band_width,
+        &format!("expected the focused cell's stroke ({focus_width}) to thicken beyond the band's own ({band_width})"),
+    )?;
+
+    // `Selection::None` restores every cell's own default stroke width, not just its fill.
+    scene.set_selection(node, Selection::None).map_err(|e| e.to_string())?;
+    for (i, cell) in cells.iter().enumerate() {
+        let width = attr_f64(cell, "stroke-width")?;
+        check(
+            (width - default_width).abs() < f64::EPSILON,
+            &format!("cell {i}: expected the default stroke width restored, got {width}"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The current selection is also exposed as text, via the node's own `aria-label`, not only through colour and
+/// stroke width.
+#[wasm_bindgen_test]
+fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
+    let svg = make_svg("selection-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+                .with_layout(GridLayout::Rows(2)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-aria-label", 0)?;
+    let base_label = group
+        .get_attribute("aria-label")
+        .ok_or("expected an aria-label to already be set at creation")?;
+
+    scene
+        .set_selection(node, Selection::Row { row: 1, col: Some(2) })
+        .map_err(|e| e.to_string())?;
+    let selected_label = group.get_attribute("aria-label").unwrap_or_default();
+    check(
+        selected_label == format!("{base_label}, row 1 selected, column 2 focused"),
+        &format!("got aria-label {selected_label:?}"),
+    )?;
+
+    // `Selection::None` restores exactly the original label, with no leftover selection text.
+    scene.set_selection(node, Selection::None).map_err(|e| e.to_string())?;
+    let cleared_label = group.get_attribute("aria-label").unwrap_or_default();
+    check(
+        cleared_label == base_label,
+        &format!("expected the original aria-label {base_label:?} restored, got {cleared_label:?}"),
     )
 }

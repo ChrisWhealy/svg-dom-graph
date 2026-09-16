@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add cell selection functionality (`0769ff6`)
 - Expand selection test coverage for incomplete rows (`fc72be8`)
+- Add accessibility descriptions for cell selection (``)
 
 ## Changed
 
@@ -19,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Remove unnecessary allocation during cell selection (``)
+- Remove unnecessary allocation during cell selection (`0aa9a4f`)
 
 # [Released]
 

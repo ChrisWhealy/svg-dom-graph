@@ -31,6 +31,27 @@ pub enum Selection {
     Column { col: usize, row: Option<usize> },
 }
 
+impl Selection {
+    /// A short, human-readable description of this selection, suitable for appending to a node's own
+    /// `aria-label`.
+    ///
+    /// Empty for [`Selection::None`], so the label reads exactly as it did before any selection was made.
+    /// `Scene::set_selection` uses this so the current selection is exposed as text, not only as colour.
+    ///
+    /// Colour alone conveys nothing to assistive technology or a colour-blind reader — the same reasoning
+    /// [`super::NodeValues::type_color`]'s own `<title>`/`aria-label` pairing already follows.
+    pub(crate) fn describe(self) -> String {
+        match self {
+            Self::None => String::new(),
+            Self::Cell(i) => format!(", cell {i} selected"),
+            Self::Row { row, col: None } => format!(", row {row} selected"),
+            Self::Row { row, col: Some(col) } => format!(", row {row} selected, column {col} focused"),
+            Self::Column { col, row: None } => format!(", column {col} selected"),
+            Self::Column { col, row: Some(row) } => format!(", column {col} selected, row {row} focused"),
+        }
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A [`Selection::Row`]/[`Selection::Column`] already resolved against its own content's actual grid shape, in a form
 /// that [`Scene::set_selection`](crate::scene::Scene::set_selection) can test cheaply, one flat cell at a time.

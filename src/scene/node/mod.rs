@@ -140,6 +140,8 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
         edge_anchors,
         binary_operator_inputs: None,
         cell_rects: Vec::new(),
+        cell_stroke_width: 0.0,
+        base_aria_label: String::new(),
     })
 }
 
@@ -189,6 +191,19 @@ const SELECTION_BAND_COLOR: &str = "#ffe066";
 /// [`SELECTION_BAND_COLOR`] for the one cell a [`Selection::Cell`], or a `Row`/`Column`'s own optional cell, names.
 /// Marks "and specifically this element."
 const SELECTION_FOCUS_COLOR: &str = "#ff6b4a";
+
+/// `Scene::set_selection`'s own row/column-level stroke width, thicker than every cell's own default border (see
+/// [`BoxHandles::cell_stroke_width`](super::BoxHandles::cell_stroke_width)).
+///
+/// Colour alone is not a reliable channel: it conveys nothing to assistive technology, and can be hard to tell
+/// apart for a colour-blind reader. A band is therefore also distinguishable by its own thicker border, the same
+/// "not colour alone" reasoning [`NodeValues::type_color`](super::content::NodeValues::type_color)'s own
+/// `<title>`/`aria-label` pairing already follows.
+const SELECTION_BAND_STROKE_WIDTH: f64 = 2.0;
+
+/// `Scene::set_selection`'s own cell-level stroke width, thicker again than [`SELECTION_BAND_STROKE_WIDTH`], so the
+/// focused cell stays visually distinct from a plain band even with colour perception set aside entirely.
+const SELECTION_FOCUS_STROKE_WIDTH: f64 = 3.5;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
@@ -349,6 +364,8 @@ fn draw_content_box(
             edge_anchors,
             binary_operator_inputs: None,
             cell_rects,
+            cell_stroke_width: if single_value { 1.5 } else { 1.0 },
+            base_aria_label: node_label,
         },
         rect,
     ))
@@ -444,7 +461,8 @@ fn draw_operator_box(
     // type to neither assistive technology nor a colour-blind reader.
     group.set_title(type_name)?;
     group.set_attr("role", "group")?;
-    group.set_attr("aria-label", &format!("{label} result, {type_name}"))?;
+    let node_label = format!("{label} result, {type_name}");
+    group.set_attr("aria-label", &node_label)?;
 
     guard.disarm();
     Ok((
@@ -454,6 +472,8 @@ fn draw_operator_box(
             edge_anchors,
             binary_operator_inputs: None,
             cell_rects: vec![value_row_el],
+            cell_stroke_width: 1.0,
+            base_aria_label: node_label,
         },
         rect,
     ))
@@ -626,6 +646,11 @@ impl Scene {
     /// every one of `id`'s own cells from scratch, not just the ones a previous call touched. So there is no need
     /// to clear before setting a new selection.
     ///
+    /// Also gives the focused cell, and, less strongly, a banded row/column, a thicker stroke than its own default
+    /// border. It also rebuilds the node's own `aria-label` to describe the current selection as text. Neither
+    /// depends on colour alone — the same reasoning `NodeValues::type_color`'s own `<title>`/`aria-label` pairing
+    /// already follows.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
@@ -651,15 +676,20 @@ impl Scene {
 
         let handles = inner.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
         for (i, cell) in handles.cell_rects.iter().enumerate() {
-            let color = if Some(i) == focus {
-                SELECTION_FOCUS_COLOR
+            let (color, stroke_width) = if Some(i) == focus {
+                (SELECTION_FOCUS_COLOR, SELECTION_FOCUS_STROKE_WIDTH)
             } else if band.contains(i) {
-                SELECTION_BAND_COLOR
+                (SELECTION_BAND_COLOR, SELECTION_BAND_STROKE_WIDTH)
             } else {
-                base_color
+                (base_color, handles.cell_stroke_width)
             };
             cell.set_fill(color)?;
+            cell.set_stroke_width(stroke_width)?;
         }
+
+        let label = format!("{}{}", handles.base_aria_label, selection.describe());
+        handles.group.set_attr("aria-label", &label)?;
+
         Ok(())
     }
 

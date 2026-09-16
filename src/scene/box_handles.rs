@@ -40,4 +40,20 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_selection` is the only reader — nothing else needs to reach an individual cell again once it is
     /// drawn.
     pub(crate) cell_rects: Vec<SvgNode>,
+    /// Every entry in `cell_rects`' own stroke width, as drawn — `1.5` for a single-value node's own outer box,
+    /// `1.0` for a multi-value grid's inner cells or an operator's own result row. Unused (`0.0`) for a plain
+    /// label node, which has no `cell_rects` to begin with.
+    ///
+    /// `Scene::set_selection` restores this on every cell it does not band or focus. That way a selection's own
+    /// thicker stroke never lingers once a cell is deselected — see that method's own doc comment for why it uses
+    /// one.
+    pub(crate) cell_stroke_width: f64,
+    /// The `aria-label` `draw_content_box`/`draw_operator_box` gave this node at creation, before any selection —
+    /// e.g. `"u8 data grid, 7 values"`. Unused (empty) for a plain label node, whose own visible text already
+    /// serves as its accessible name.
+    ///
+    /// `Scene::set_selection` rebuilds the node's own live `aria-label` from this plus
+    /// [`Selection::describe`](crate::scene::Selection::describe) on every call, so the current selection is
+    /// exposed as text alongside its own colour, not only through it.
+    pub(crate) base_aria_label: String,
 }
