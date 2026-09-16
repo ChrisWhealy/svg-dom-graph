@@ -129,24 +129,85 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Unless [`disarm`](Self::disarm) is called first, this removes `group` and every element tracked via
+/// [`track`](Self::track) from the DOM.
+///
+/// `SvgRoot::rect`/`SvgRoot::text`/`SvgRoot::group` each attach their new element to the document immediately,
+/// not just once a caller appends it into its intended parent. So a `?` failing between an element's creation
+/// and its `group.append(...)` call would otherwise leave that element behind, as a stray sibling of `group`
+/// rather than a child of it. [`track`](Self::track) covers exactly that window.
+///
+/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) — creating an element, measuring
+/// its bounding box, or setting an attribute — drops this guard while still armed. That unwinds a partially
+/// built node back to nothing rendered, instead of leaving stray elements in the document.
+/// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s
+/// own (also being removed) subtree is harmless.
+///
+/// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener
+/// installation.
+struct RenderGuard {
+    group: SvgNode,
+    loose: Vec<SvgNode>,
+    armed: bool,
+}
+
+impl RenderGuard {
+    fn new(group: SvgNode) -> Self {
+        Self {
+            group,
+            loose: Vec::new(),
+            armed: true,
+        }
+    }
+
+    /// Tracks `node` for rollback. Call this right after creating `node`, before any other fallible step — in
+    /// particular, before `group.append(&node)`, which is exactly the gap this guard exists to cover.
+    fn track(&mut self, node: SvgNode) {
+        self.loose.push(node);
+    }
+
+    /// Rendering finished successfully — do not roll it back on drop.
+    fn disarm(mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for RenderGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            self.group.remove();
+            for node in &self.loose {
+                node.remove();
+            }
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
 ///
 /// Every child is drawn in local coordinates, relative to `(0, 0)`, not `rect.origin`. The group itself carries
 /// `rect.origin` as a `transform="translate(...)"` instead. So moving the box later only ever updates this one
 /// transform, regardless of how many children the group holds. See [`SceneInner::move_node`].
+///
+/// A [`RenderGuard`] covers this function's own DOM construction: any `?` failing partway through removes
+/// whatever was already created, rather than leaving stray elements behind.
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
+    let mut guard = RenderGuard::new(group.clone());
     let local_rect = Rect {
         origin: Point::origin(),
         size: rect.size,
     };
 
     let rect_el = svg.rect(local_rect.origin, local_rect.size)?;
+    guard.track(rect_el.clone());
     rect_el.set_fill("#eef4ff")?;
     rect_el.set_stroke("#2a5db0")?;
     rect_el.set_stroke_width(1.5)?;
 
     let label_el = svg.text(box_centre(local_rect), label)?;
+    guard.track(label_el.clone());
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
     label_el.set_font_size(LABEL_FONT_SIZE)?;
@@ -164,6 +225,7 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     // precision instead, at the cost of a (typically) longer attribute string.
     group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
+    guard.disarm();
     Ok(BoxHandles {
         group,
         draggable: false,
@@ -236,6 +298,10 @@ const OUTER_PADDING: f64 = 10.0;
 ///
 /// A grid can hold arbitrarily many cells. Without local coordinates, moving the node later would mean rewriting
 /// every cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
+///
+/// A [`RenderGuard`] covers this function's own DOM construction. This matters more here than in [`draw_box`].
+/// A grid can measure many cells before any of them is appended into `group`. That widens the window in which a
+/// `?` failing partway through would otherwise leave stray elements behind.
 fn draw_content_box(
     svg: &SvgRoot,
     top_left: Point,
@@ -243,6 +309,7 @@ fn draw_content_box(
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
+    let mut guard = RenderGuard::new(group.clone());
     let type_color = content.type_color();
     let type_name = content.type_name();
     let origin = Point::origin();
@@ -254,6 +321,7 @@ fn draw_content_box(
     let mut max_width: f64 = 0.0;
     for cell_text in &content.cells() {
         let text = svg.text(origin, cell_text)?;
+        guard.track(text.clone());
         text.set_text_anchor(TextAnchor::Middle)?;
         text.set_dominant_baseline(DominantBaseline::Middle)?;
         text.set_font_family(GRID_FONT_FAMILY)?;
@@ -279,6 +347,7 @@ fn draw_content_box(
     let rect = Rect { origin: top_left, size };
 
     let rect_el = svg.rect(origin, size)?;
+    guard.track(rect_el.clone());
     rect_el.set_fill(if single_value { type_color } else { "#eef4ff" })?;
     rect_el.set_stroke("#2a5db0")?;
     rect_el.set_stroke_width(1.5)?;
@@ -305,6 +374,7 @@ fn draw_content_box(
             );
 
             let cell_rect = svg.rect(cell_origin, cell_size)?;
+            guard.track(cell_rect.clone());
             cell_rect.set_fill(type_color)?;
             cell_rect.set_stroke("#2a5db0")?;
             cell_rect.set_stroke_width(1.0)?;
@@ -342,6 +412,7 @@ fn draw_content_box(
     };
     group.set_attr("aria-label", &node_label)?;
 
+    guard.disarm();
     Ok((
         BoxHandles {
             group,
@@ -501,3 +572,7 @@ impl Scene {
         Ok(())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;
