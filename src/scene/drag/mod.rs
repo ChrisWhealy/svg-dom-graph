@@ -1,4 +1,6 @@
 pub(crate) mod collision_policy;
+mod drag_options;
+mod drag_start;
 mod install_guard;
 
 use super::{Scene, client_to_user_space};
@@ -8,9 +10,11 @@ use crate::{
     model::node::NodeId,
 };
 use collision_policy::CollisionPolicy;
+pub use drag_options::DragOptions;
+use drag_start::DragStart;
 use install_guard::InstallGuard;
 use std::{cell::Cell, rc::Rc};
-use svg_dom::root::utils::{Matrix2D, Point, Rect};
+use svg_dom::root::utils::{Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine: Safari in
@@ -26,87 +30,6 @@ const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select:
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer event types [`Scene::make_draggable_with`] registers a listener for, in registration order.
 const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", "pointercancel"];
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Configures the pointer-drag behaviour [`Scene::make_draggable_with`] wires up for one node.
-///
-/// `#[non_exhaustive]` is used here for the same reason as [`CollisionPolicy`]. This type is expected to grow.
-/// Further drag configuration — snapping, axis restriction — is likely to follow `bounds`.
-///
-/// Build one either with [`DragOptions::default`] or with [`with_collision`](Self::with_collision) and
-/// [`with_bounds`](Self::with_bounds). A struct literal does not compile outside this crate.
-///
-/// ***A note on `Copy`***
-///
-/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a
-/// breaking change, so every field this type gains must also implement `Copy`.
-///
-/// Plain enums, numbers, points, and rectangles all stay `Copy`, so this commitment is expected to hold. A
-/// future field needing a closure, an owned collection, or a user-defined strategy object would force `Copy`
-/// to be dropped, and that would be a breaking release.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
-pub struct DragOptions {
-    /// What happens when a drop leaves the dragged node overlapping another one — see [`CollisionPolicy`].
-    pub collision: CollisionPolicy,
-    /// Confines the dragged node's own top-left corner so the whole box stays inside `bounds`, for as long
-    /// as this node stays draggable.
-    ///
-    /// `None` (the default) leaves dragging unconstrained: a node can be dropped anywhere, including outside
-    /// its own `<svg>`'s visible area. Once dropped there, it stays rendered but clipped, so it can no
-    /// longer be clicked to pick it up again.
-    ///
-    /// `Some(bounds)` clamps every drag move, and any collision-resolution push, to stay inside `bounds`. A
-    /// node larger than `bounds` on some axis pins to `bounds`'s own near edge on that axis instead — see
-    /// [`crate::geometry`]'s own `clamp_to_bounds` for the exact rule.
-    ///
-    /// `Scene::make_draggable_with` rejects a `Some(bounds)` whose origin or size is not finite, or whose
-    /// width or height is negative, with [`Error::InvalidDragBounds`] — see that method's own `# Errors`
-    /// section. A zero width or height is accepted: `clamp_to_bounds` already gives that a deterministic
-    /// result.
-    pub bounds: Option<Rect>,
-}
-
-impl DragOptions {
-    /// Returns `self` with `collision` set to `collision`.
-    ///
-    /// ```
-    /// use svg_dom_graph::scene::{CollisionPolicy, DragOptions};
-    /// let options = DragOptions::default().with_collision(CollisionPolicy::Allow);
-    /// assert_eq!(options.collision, CollisionPolicy::Allow);
-    /// ```
-    #[must_use]
-    pub fn with_collision(mut self, collision: CollisionPolicy) -> Self {
-        self.collision = collision;
-        self
-    }
-
-    /// Returns `self` with `bounds` set to `bounds`.
-    ///
-    /// ```
-    /// use svg_dom::root::utils::{Point, Rect, Size};
-    /// use svg_dom_graph::scene::DragOptions;
-    /// let bounds = Rect { origin: Point::new(0.0, 0.0), size: Size::new(400.0, 300.0) };
-    /// let options = DragOptions::default().with_bounds(Some(bounds));
-    /// assert_eq!(options.bounds, Some(bounds));
-    /// ```
-    #[must_use]
-    pub fn with_bounds(mut self, bounds: Option<Rect>) -> Self {
-        self.bounds = bounds;
-        self
-    }
-}
-
-impl Default for DragOptions {
-    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding, and no `bounds` — unconstrained
-    /// dragging, [`Scene::make_draggable`]'s own behaviour.
-    fn default() -> Self {
-        Self {
-            collision: CollisionPolicy::PushClear { padding: 6.0 },
-            bounds: None,
-        }
-    }
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidDragBounds`] if `bounds` is `Some` with a non-finite origin or size, or a negative
@@ -125,35 +48,6 @@ fn validate_bounds(bounds: Option<Rect>) -> Result<(), Error> {
     } else {
         Err(Error::InvalidDragBounds(bounds))
     }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The pointer position and box origin recorded when a drag starts.
-///
-/// The delta between the pointer's current position and `pointer` describes how far to move `box_origin`. Both are in
-/// the dragged box's own user-space coordinates, not viewport CSS pixels — see `inverse_ctm`.
-#[derive(Clone, Copy)]
-struct DragStart {
-    /// The pointer that started this drag.
-    ///
-    /// A pointer's own `pointerdown` grants it exclusive capture (see `set_pointer_capture` below), but a `pointermove`
-    /// `pointerup` or `pointercancel` for a *different*, unrelated pointer can still reach this same listener. For
-    /// example a second finger touching the same element mid-drag.
-    ///
-    /// Checking this field against each event's own id avoids the case in which a different pointer attempts to drive
-    /// or end another pointer's drag event.
-    pointer_id: i32,
-    pointer: Point,
-    box_origin: Point,
-    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag event.
-    ///
-    /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. Caching it here (rather than recomputing it per drag event) assumes that neither the group's own
-    /// transform nor any ancestor transform up to the viewport, changes mid-drag.
-    ///
-    /// This is true for this crate's current rendering, since nothing sets a transform on a box's group after it has
-    /// been drawn.
-    inverse_ctm: Matrix2D,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

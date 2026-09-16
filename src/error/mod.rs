@@ -129,6 +129,7 @@ impl fmt::Display for Error {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl std::error::Error for Error {
     /// Exposes the wrapped [`svg_dom::Error`] for [`Error::Svg`], so error-reporting tools and callers walking the
     /// standard error chain can discover it. `Display` already forwards its message, but that alone does not help code
@@ -144,6 +145,7 @@ impl std::error::Error for Error {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl From<svg_dom::Error> for Error {
     fn from(err: svg_dom::Error) -> Self {
         Error::Svg(err)

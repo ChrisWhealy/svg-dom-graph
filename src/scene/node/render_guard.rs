@@ -1,0 +1,57 @@
+use svg_dom::SvgNode;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Unless [`disarm`](Self::disarm) is called first, this removes `group` and every element tracked via
+/// [`track`](Self::track) from the DOM.
+///
+/// `SvgRoot::rect`/`SvgRoot::text`/`SvgRoot::group` each attach their new element to the document immediately,
+/// not just once a caller appends it into its intended parent. So a `?` failing between an element's creation
+/// and its `group.append(...)` call would otherwise leave that element behind, as a stray sibling of `group`
+/// rather than a child of it. [`track`](Self::track) covers exactly that window.
+///
+/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) — creating an element, measuring
+/// its bounding box, or setting an attribute — drops this guard while still armed. That unwinds a partially
+/// built node back to nothing rendered, instead of leaving stray elements in the document.
+/// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s
+/// own (also being removed) subtree is harmless.
+///
+/// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener
+/// installation.
+pub struct RenderGuard {
+    group: SvgNode,
+    loose: Vec<SvgNode>,
+    armed: bool,
+}
+
+impl RenderGuard {
+    pub fn new(group: SvgNode) -> Self {
+        Self {
+            group,
+            loose: Vec::new(),
+            armed: true,
+        }
+    }
+
+    /// Tracks `node` for rollback. Call this right after creating `node`, before any other fallible step — in
+    /// particular, before `group.append(&node)`, which is exactly the gap this guard exists to cover.
+    pub fn track(&mut self, node: SvgNode) {
+        self.loose.push(node);
+    }
+
+    /// Rendering finished successfully — do not roll it back on drop.
+    pub fn disarm(mut self) {
+        self.armed = false;
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl Drop for RenderGuard {
+    fn drop(&mut self) {
+        if self.armed {
+            self.group.remove();
+            for node in &self.loose {
+                node.remove();
+            }
+        }
+    }
+}

@@ -1,89 +1,21 @@
 //! Connector configuration and the `Scene` methods that draw a connector.
+mod connector_handle;
+mod connector_options;
+mod connector_type;
 
-use super::{ConnectorHandle, Scene, node::EdgeAnchors};
+use super::{Scene, node::EdgeAnchors};
 use crate::{
     error::Error,
     geometry::{
-        Route, Side, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, snapped_anchor, straight_route,
+        boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, route::Route, route::straight_route,
+        side::Side, snapped_anchor,
     },
     model::{edge::EdgeId, node::NodeId},
 };
+pub use connector_handle::ConnectorHandle;
+pub use connector_options::ConnectorOptions;
+pub use connector_type::ConnectorType;
 use svg_dom::root::utils::{Point, Rect};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How [`Scene::add_edge_with`]/[`Scene::set_connector_type`] routes a connector.
-///
-/// `#[non_exhaustive]` is used here because this type is expected to grow: a Bezier-curved connector is a likely future
-/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
-///
-/// ***A note on `Copy`***
-///
-/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a breaking
-/// change, so every field any variant gains (including some future variant) must itself also implement `Copy`.
-/// See the same note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
-pub enum ConnectorType {
-    /// A straight line from one box's boundary to the other's.
-    ///
-    /// Each end lands where the ray between the box's centres crosses the boundaries.
-    Straight,
-    /// Horizontal and vertical segments only, joined at corners whose radius varies from 0 pixels (90º corner) up to
-    /// half the connector's length.
-    ///
-    /// Unless fixing points are defined for the node's edges, each end is anchored at the midpoint of the horizontal or
-    /// vertical side first intersected by a ray cast between the box's centres.
-    Elbow {
-        /// How far to round each corner, in this scene's user-space units. `0.0` draws a sharp, 90º corner.
-        ///
-        /// Shrinks at each corner so it never reaches past half the length of either segment meeting there. A tight
-        /// elbow rounds less. It never passes its own endpoint or a neighbouring corner.
-        corner_radius: f64,
-    },
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Configures how [`Scene::add_edge_with`] draws a connector.
-///
-/// Build one either with [`ConnectorOptions::default`] or with [`with_connector_type`](Self::with_connector_type).
-/// A struct literal does not compile outside this crate.
-///
-/// ***A note on `Copy`***
-///
-/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight: removing `Copy` later is a breaking
-/// change, so every field this type gains must itself stay `Copy`. See the same note on
-/// [`ConnectorType`], which this type carries, and on [`DragOptions`](crate::scene::DragOptions), which shares the
-/// same commitment.
-#[derive(Debug, Clone, Copy, PartialEq)]
-#[non_exhaustive]
-pub struct ConnectorOptions {
-    /// How this connector routes — see [`ConnectorType`].
-    pub connector_type: ConnectorType,
-}
-
-impl ConnectorOptions {
-    /// Returns `self` with `connector_type` set to `connector_type`.
-    ///
-    /// ```
-    /// use svg_dom_graph::scene::{ConnectorOptions, ConnectorType};
-    /// let options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
-    /// assert_eq!(options.connector_type, ConnectorType::Straight);
-    /// ```
-    #[must_use]
-    pub fn with_connector_type(mut self, connector_type: ConnectorType) -> Self {
-        self.connector_type = connector_type;
-        self
-    }
-}
-
-impl Default for ConnectorOptions {
-    /// An elbowed connector with a sharp, 90º corner: i.e. [`ConnectorType::Elbow`] with `corner_radius: 0.0`.
-    fn default() -> Self {
-        Self {
-            connector_type: ConnectorType::Elbow { corner_radius: 0.0 },
-        }
-    }
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that

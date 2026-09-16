@@ -3,6 +3,9 @@
 //! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`.
 //! This mirrors how `svg-dom` itself separates pure geometry math from its DOM-facing code.
 
+pub(crate) mod route;
+pub(crate) mod side;
+
 use std::fmt::Write as _;
 use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 
@@ -41,86 +44,6 @@ pub fn boundary_point(rect: Rect, towards: Point) -> Point {
     let scale = scale_x.min(scale_y);
 
     Point::new(centre.x + dx * scale, centre.y + dy * scale)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Up to four connector route points, stored inline rather than on the heap.
-///
-/// Every route this crate computes has at most four points: a straight connector always has two, an elbow has two to
-/// four — see [`straight_route`] and [`elbow_route`]. A fixed-size buffer avoids a heap allocation on every redraw,
-/// which matters here since a drag redraws every incident edge on every pointer-move.
-///
-/// Derefs to `&[Point]`, so it can be used almost anywhere a point slice is expected.
-#[derive(Clone, Copy)]
-pub(crate) struct Route {
-    points: [Point; 4],
-    len: usize,
-}
-
-impl Route {
-    fn new() -> Self {
-        Self {
-            points: [Point::new(0.0, 0.0); 4],
-            len: 0,
-        }
-    }
-
-    /// Appends `point`, unless it exactly repeats the route's own last point.
-    ///
-    /// Mirrors `Vec::dedup`'s consecutive-only rule. A bend that collapses onto an anchor still leaves a straight
-    /// route, not a zero-length segment.
-    ///
-    /// # Panics
-    ///
-    /// Panics if the route already holds four points. Every caller in this module pushes at most four, so this can only
-    /// fire from a bug in this module itself, not from anything external.
-    fn push(&mut self, point: Point) {
-        if self.len > 0 && self.points[self.len - 1] == point {
-            return;
-        }
-        assert!(
-            self.len < self.points.len(),
-            "Route cannot hold more than {} points",
-            self.points.len()
-        );
-        self.points[self.len] = point;
-        self.len += 1;
-    }
-}
-
-impl std::ops::Deref for Route {
-    type Target = [Point];
-
-    fn deref(&self) -> &[Point] {
-        &self.points[..self.len]
-    }
-}
-
-impl PartialEq for Route {
-    /// Compares the two routes' own points, in order. Unused capacity past each route's own length is never compared.
-    fn eq(&self, other: &Self) -> bool {
-        self.points[..self.len] == other.points[..other.len]
-    }
-}
-
-impl std::fmt::Debug for Route {
-    /// Shows only the route's own points, not its unused capacity.
-    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        f.debug_tuple("Route").field(&&self.points[..self.len]).finish()
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A two-point route between two already-anchored endpoints.
-///
-/// Takes `start`/`end` as plain arguments, rather than computing them itself, so the same two-point route works
-/// whichever rule chose the anchors — [`boundary_point`]'s own continuous crossing, or [`snapped_anchor`]'s
-/// evenly-spaced candidates.
-pub(crate) fn straight_route(start: Point, end: Point) -> Route {
-    let mut route = Route::new();
-    route.push(start);
-    route.push(end);
-    route
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -229,23 +152,11 @@ pub(crate) fn nearest_clear_centre(blocker: Rect, moving_size: Size, previous_ce
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One side of a box's boundary.
-///
-/// Anchors an elbowed connector so it leaves a box exactly horizontally or exactly vertically.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum Side {
-    North,
-    South,
-    East,
-    West,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// True for `East`/`West`.
 ///
 /// These are the sides a horizontal connector segment leaves from or arrives at.
-pub(crate) fn is_horizontal(side: Side) -> bool {
-    matches!(side, Side::East | Side::West)
+pub(crate) fn is_horizontal(side: side::Side) -> bool {
+    matches!(side, side::Side::East | side::Side::West)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -260,13 +171,13 @@ pub(crate) fn is_horizontal(side: Side) -> bool {
 ///
 /// Since direction is undefined at zero distance, this function arbitrarily returns `rect`'s centre and `Side::East`
 /// when `towards` is exactly the centre.
-pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
+pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, side::Side) {
     let centre = centre(rect);
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 
     if dx == 0.0 && dy == 0.0 {
-        return (centre, Side::East);
+        return (centre, side::Side::East);
     }
 
     let half_w = rect.size.width / 2.0;
@@ -276,10 +187,10 @@ pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
     let scale_y = if dy == 0.0 { f64::INFINITY } else { half_h / dy.abs() };
 
     if scale_x <= scale_y {
-        let side = if dx >= 0.0 { Side::East } else { Side::West };
+        let side = if dx >= 0.0 { side::Side::East } else { side::Side::West };
         (Point::new(centre.x + half_w.copysign(dx), centre.y), side)
     } else {
-        let side = if dy >= 0.0 { Side::South } else { Side::North };
+        let side = if dy >= 0.0 { side::Side::South } else { side::Side::North };
         (Point::new(centre.x, centre.y + half_h.copysign(dy)), side)
     }
 }
@@ -297,13 +208,13 @@ pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, Side) {
 ///
 /// Returns `rect`'s centre and `Side::East` when `towards` is exactly the centre. Direction is undefined at zero
 /// distance. `fixing_points` is treated as at least `1`; the caller validates `>= 1` before this is ever reached.
-pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (Point, Side) {
+pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (Point, side::Side) {
     let centre = centre(rect);
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 
     if dx == 0.0 && dy == 0.0 {
-        return (centre, Side::East);
+        return (centre, side::Side::East);
     }
 
     let half_w = rect.size.width / 2.0;
@@ -317,7 +228,7 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
     let divisions = candidates + 1.0;
 
     if scale_x <= scale_y {
-        let side = if dx >= 0.0 { Side::East } else { Side::West };
+        let side = if dx >= 0.0 { side::Side::East } else { side::Side::West };
         let x = centre.x + half_w.copysign(dx);
         let crossing_y = centre.y + dy * scale_x;
         let top = rect.origin.y;
@@ -327,7 +238,7 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
         let y = top + rect.size.height * index / divisions;
         (Point::new(x, y), side)
     } else {
-        let side = if dy >= 0.0 { Side::South } else { Side::North };
+        let side = if dy >= 0.0 { side::Side::South } else { side::Side::North };
         let y = centre.y + half_h.copysign(dy);
         let crossing_x = centre.x + dx * scale_y;
         let left = rect.origin.x;
@@ -353,8 +264,8 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 /// Takes `start`/`end` and their sides as plain arguments, rather than computing them itself. The same
 /// corner-building logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or
 /// [`snapped_anchor`]'s evenly-spaced candidates.
-pub(crate) fn elbow_route(start: Point, start_side: Side, end: Point, end_side: Side) -> Route {
-    let mut route = Route::new();
+pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
+    let mut route = route::Route::new();
     route.push(start);
 
     match (is_horizontal(start_side), is_horizontal(end_side)) {

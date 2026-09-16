@@ -1,4 +1,8 @@
 use super::*;
+use crate::geometry::{
+    route::{Route, straight_route},
+    side::Side,
+};
 use svg_dom::root::utils::Size;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
