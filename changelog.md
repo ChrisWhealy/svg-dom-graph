@@ -30,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correctly apply `<title>` to data nodes (`14cda9f`)
 - Improve README accuracy (`d07c5a1`)
 - Add ARIA role to items using `aria-label` (`e345e96`)
-- Update all doc comments to use full line length. Fix `cargo doc` errors (``)
+- Update all doc comments to use full line length. Fix `cargo doc` errors (`cab9423`)
 
 # [Released]
 
