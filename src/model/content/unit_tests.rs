@@ -453,6 +453,77 @@ fn resolve_selection_of_a_column_with_an_out_of_range_row_is_none() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// resolve_selection — incomplete grids (a row/column index within shape, but the flat cell it names is blank)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Seven values under `Automatic` render as a 3×3 grid with the last two positions blank:
+///
+/// ```text
+/// 0 1 2
+/// 3 4 5
+/// 6 - -
+/// ```
+fn seven_values_as_a_three_by_three_grid() -> DataNodeContent {
+    DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6, 7]), DataFormat::Decimal)
+}
+
+#[test]
+fn resolve_selection_of_a_row_focusing_a_real_cell_in_an_incomplete_grid_succeeds() -> Result<(), String> {
+    let content = seven_values_as_a_three_by_three_grid();
+    // Row 2, column 0 is flat index 6 — the grid's own real last value.
+    check_eq(
+        content.resolve_selection(Selection::Row { row: 2, col: Some(0) }),
+        Some((vec![6], Some(6))),
+    )
+}
+
+#[test]
+fn resolve_selection_of_a_row_focusing_a_blank_cell_in_an_incomplete_grid_is_none() -> Result<(), String> {
+    let content = seven_values_as_a_three_by_three_grid();
+    // Row 2, column 1 is flat index 7 — within the 3×3 shape, but past the content's own 7 real values.
+    check_eq(content.resolve_selection(Selection::Row { row: 2, col: Some(1) }), None)
+}
+
+#[test]
+fn resolve_selection_of_a_column_focusing_a_real_cell_in_an_incomplete_grid_succeeds() -> Result<(), String> {
+    let content = seven_values_as_a_three_by_three_grid();
+    // Column 2, row 1 is flat index 5 — a real value.
+    check_eq(
+        content.resolve_selection(Selection::Column { col: 2, row: Some(1) }),
+        Some((vec![2, 5], Some(5))),
+    )
+}
+
+#[test]
+fn resolve_selection_of_a_column_focusing_a_blank_cell_in_an_incomplete_grid_is_none() -> Result<(), String> {
+    let content = seven_values_as_a_three_by_three_grid();
+    // Column 2, row 2 is flat index 8 — within the 3×3 shape, but blank.
+    check_eq(content.resolve_selection(Selection::Column { col: 2, row: Some(2) }), None)
+}
+
+#[test]
+fn resolve_selection_of_a_row_with_no_focus_bands_only_its_real_cells() -> Result<(), String> {
+    let content = seven_values_as_a_three_by_three_grid();
+    // Row 2 is nominally indices 6, 7, 8 — only 6 is real, so the band excludes the other two.
+    check_eq(
+        content.resolve_selection(Selection::Row { row: 2, col: None }),
+        Some((vec![6], None)),
+    )
+}
+
+#[test]
+fn resolve_selection_of_an_entirely_blank_row_under_an_over_specified_layout_bands_nothing() -> Result<(), String> {
+    // `GridLayout::Rows(10)` with only 3 values legitimately creates a (10, 1) shape — rows 3 through 9 have no
+    // cell in them at all, not merely a short last row.
+    let content =
+        DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(10));
+    check_eq(
+        content.resolve_selection(Selection::Row { row: 5, col: None }),
+        Some((Vec::new(), None)),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // UnaryOperator::label / BinaryOperator::label
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

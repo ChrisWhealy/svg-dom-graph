@@ -120,6 +120,14 @@ impl DataNodeContent {
     /// Returns `None` if `selection` names an index out of range for this content's own value count
     /// ([`Selection::Cell`]) or grid shape ([`Selection::Row`]/[`Selection::Column`], and their own optional
     /// `col`/`row`).
+    ///
+    /// A row/column index within `rows`/`cols` is not always enough on its own. [`GridLayout::Automatic`] (and an
+    /// over-specified [`GridLayout::Rows`]/[`GridLayout::Columns`]) can legitimately leave the grid's own last row
+    /// or column short, or entirely empty, whenever this content's own value count does not divide evenly.
+    ///
+    /// Seven values arranged as a 3×3 grid, for example, leaves flat indices `7`/`8` with no real value at all.
+    /// Every flat index this method returns — in `band` or as `focus` — is therefore also checked against this
+    /// content's own actual `len`, not just against the grid's own row/column *shape*.
     pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(Vec<usize>, Option<usize>)> {
         let len = self.len();
         let (rows, cols) = self.shape();
@@ -131,15 +139,23 @@ impl DataNodeContent {
                 if row >= rows || col.is_some_and(|c| c >= cols) {
                     return None;
                 }
-                let band = (0..cols).map(|c| row * cols + c).collect();
-                Some((band, col.map(|c| row * cols + c)))
+                let focus = col.map(|c| row * cols + c);
+                if focus.is_some_and(|f| f >= len) {
+                    return None;
+                }
+                let band = (0..cols).map(|c| row * cols + c).filter(|&i| i < len).collect();
+                Some((band, focus))
             },
             Selection::Column { col, row } => {
                 if col >= cols || row.is_some_and(|r| r >= rows) {
                     return None;
                 }
-                let band = (0..rows).map(|r| r * cols + col).collect();
-                Some((band, row.map(|r| r * cols + col)))
+                let focus = row.map(|r| r * cols + col);
+                if focus.is_some_and(|f| f >= len) {
+                    return None;
+                }
+                let band = (0..rows).map(|r| r * cols + col).filter(|&i| i < len).collect();
+                Some((band, focus))
             },
         }
     }
