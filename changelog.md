@@ -6,14 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.6] - 2026-09-15
+## [0.2.6] - 2026-09-16
 
 ## Added
 
 - Display node data as a formatted, colour-coded grid (`da014eb`)
 - Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (`b0f2adf`)
 - Allow for future `DataFormat` types (`6acc35f`)
-- Use `<title>` and ARIA label text to describe data type colours (``)
+- Use `<title>` and ARIA label text to describe data type colours (`5579bf3`)
 
 ## Changed
 
@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct wasm-pack tests after switching from `SvgNode::set_attr_display` to `SvgNode::set_translate` (``)
+- Correct wasm-pack tests after switching from `SvgNode::set_attr_display` to `SvgNode::set_translate` (`4b04d8e`)
+- Correctly apply `<title>` to data nodes (``)
 
 # [Released]
 

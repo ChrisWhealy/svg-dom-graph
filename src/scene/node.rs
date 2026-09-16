@@ -131,9 +131,9 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a box's rectangle and its centred label, grouped under one `<g>`, and returns their handles.
 ///
-/// Every child is drawn in local coordinates, relative to `(0, 0)` — not `rect.origin` — and the group itself
-/// carries `rect.origin` as a `transform="translate(...)"`. Moving the box later (see [`SceneInner::move_node`])
-/// then only ever needs to update this one transform, regardless of how many children the group holds.
+/// Every child is drawn in local coordinates, relative to `(0, 0)`, not `rect.origin`. The group itself carries
+/// `rect.origin` as a `transform="translate(...)"` instead. So moving the box later only ever updates this one
+/// transform, regardless of how many children the group holds. See [`SceneInner::move_node`].
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
     let local_rect = Rect {
@@ -157,11 +157,11 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     group.append(&label_el)?;
 
     let mut scratch = String::new();
-    // Not `set_translate`: its fixed one-decimal-place precision would quantise the rendered position away from
-    // the model's own `rect.origin`, by up to 0.05 user-space units — harmless to the eye, but a real mismatch
-    // for anything that re-derives a position from the rendered DOM (as several of this crate's own browser tests
-    // do) rather than the model. `set_transform_fmt` writes `Display`'s full precision instead, at the cost of a
-    // (typically) longer attribute string.
+    // Not `set_translate`. Its fixed one-decimal-place precision would quantise the rendered position away from
+    // the model's own `rect.origin`, by up to 0.05 user-space units. That is harmless to the eye. But it is a
+    // real mismatch for code that re-derives a position from the rendered DOM, rather than from the model.
+    // Several of this crate's own browser tests do exactly that. `set_transform_fmt` writes `Display`'s full
+    // precision instead, at the cost of a (typically) longer attribute string.
     group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
     Ok(BoxHandles {
@@ -232,9 +232,10 @@ const OUTER_PADDING: f64 = 10.0;
 /// [`DataNodeContent::is_single_value`]: crate::model::content::DataNodeContent::is_single_value
 ///
 /// Every child — the outer box and every cell's own rect/text — is drawn in local coordinates, relative to
-/// `(0, 0)`, not `top_left`. The group itself carries `top_left` as a `transform="translate(...)"` instead. A
-/// grid can hold arbitrarily many cells; without this, moving the node later (see [`SceneInner::move_node`])
-/// would mean rewriting every cell's own `x`/`y` attributes on every pointer move.
+/// `(0, 0)`, not `top_left`. The group itself carries `top_left` as a `transform="translate(...)"` instead.
+///
+/// A grid can hold arbitrarily many cells. Without local coordinates, moving the node later would mean rewriting
+/// every cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
 fn draw_content_box(
     svg: &SvgRoot,
     top_left: Point,
@@ -285,10 +286,6 @@ fn draw_content_box(
 
     let mut scratch = String::new();
     if single_value {
-        // The outer box itself is the value's own cell here (see this function's own doc comment) — its `<title>`
-        // is this cell's only textual type indicator, since `type_color` alone is not perceivable by assistive
-        // technology or a colour-blind reader.
-        rect_el.set_title(type_name)?;
         let text = texts
             .into_iter()
             .next()
@@ -311,9 +308,6 @@ fn draw_content_box(
             cell_rect.set_fill(type_color)?;
             cell_rect.set_stroke("#2a5db0")?;
             cell_rect.set_stroke_width(1.0)?;
-            // Same reasoning as the single-value case above: each cell's own colour carries semantic type
-            // information, so each cell also carries that same information as text.
-            cell_rect.set_title(type_name)?;
             group.append(&cell_rect)?;
 
             text.set_attr_display(&mut scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
@@ -325,8 +319,22 @@ fn draw_content_box(
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
-    // Names the whole node for assistive technology that announces a group before its children, rather than
-    // relying on a reader to visit every individual cell's own `<title>` to learn the node's type.
+    // A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling.
+    // So it belongs on `group`, the one element every rect and every text drawn above actually shares as a
+    // parent. It does not belong on any individual cell's own rect. That rect is a sibling of that cell's text,
+    // not an ancestor of it. The two would never share the tooltip that way. This is exactly why an earlier
+    // version of this function attached a `<title>` to each rect/text individually. That version still failed to
+    // show a tooltip over the rendered digits. Putting the title on `group` instead also avoids a different
+    // problem: a `<title>` as one of `text`'s own DOM children would leak its text into `text.textContent`. That
+    // would mix the title text in with the actual rendered digits.
+    //
+    // One `<title>` for the whole node reads correctly for every cell here regardless. Every value in a
+    // `DataNodeContent` shares the same type — see [`NodeValues`]'s own doc comment on that. So `type_name` is
+    // the same string for every cell the mouse pointer could be hovering over.
+    group.set_title(type_name)?;
+
+    // This names the whole node for assistive technology. Assistive technology usually announces a group before
+    // its children. So a reader need not visit every individual cell to learn the node's type.
     let node_label = if single_value {
         format!("{type_name} value")
     } else {

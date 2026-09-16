@@ -16,9 +16,9 @@ use svg_dom_graph::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a node moves its own `<g>` (via its `transform`), which carries its rendered `<rect>` and `<text>`
-/// label along with it, and reroutes its connector's far end.
-/// The `<svg>`'s `viewBox` matches its pixel size 1:1 here, so a client-pixel drag is a same-sized user-space move.
+/// Dragging a node moves its own `<g>` via its `transform`. That transform carries its rendered `<rect>` and
+/// `<text>` label along with it. Dragging also reroutes its connector's far end.
+/// The `<svg>`'s `viewBox` matches its pixel size 1:1 here. So a client-pixel drag is a same-sized user-space move.
 #[wasm_bindgen_test]
 fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), String> {
     let svg = make_svg("drag-1to1", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -457,4 +457,39 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
             DragOptions::default().with_collision(CollisionPolicy::PushClear { padding: 42.5 }),
         )
         .map_err(|e| e.to_string())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `make_draggable` leaves the idle cursor alone. A node does not look grabbable before a caller has actually
+/// started dragging it. But it does show a grabbing cursor once a drag is actually in progress. It clears that
+/// cursor again once the drag ends.
+#[wasm_bindgen_test]
+fn make_draggable_sets_no_idle_cursor_but_shows_grabbing_mid_drag() -> Result<(), String> {
+    let svg = make_svg("drag-cursor", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(80.0, 40.0), "node")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(node).map_err(|e| e.to_string())?;
+
+    let group = nth_group("drag-cursor", 0)?;
+    let idle_style = group.get_attribute("style").unwrap_or_default();
+    check(
+        !idle_style.contains("cursor"),
+        &format!("expected no cursor styling before any drag, got style={idle_style:?}"),
+    )?;
+
+    dispatch_pointer_event(&group, "pointerdown", 40, 20, 1)?;
+    let dragging_style = group.get_attribute("style").unwrap_or_default();
+    check(
+        dragging_style.contains("cursor: grabbing"),
+        &format!("expected a grabbing cursor while dragging, got style={dragging_style:?}"),
+    )?;
+
+    dispatch_pointer_event(&group, "pointerup", 40, 20, 1)?;
+    let after_style = group.get_attribute("style").unwrap_or_default();
+    check(
+        !after_style.contains("cursor"),
+        &format!("expected the cursor styling cleared again after the drag ended, got style={after_style:?}"),
+    )
 }

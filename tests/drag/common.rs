@@ -191,13 +191,13 @@ pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute — the world-space origin every node box
-/// carries there instead of on its individual children. See `svg_dom::SvgNode::set_translate`'s own doc comment
-/// for why: every child (a label, or a data node's grid cells) is drawn once, in local coordinates relative to
-/// `(0, 0)`, and only this one transform ever changes as the node moves.
+/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node
+/// box carries there, instead of on its individual children. See `svg_dom::SvgNode::set_translate`'s own doc
+/// comment for why. Every child — a label, or a data node's grid cells — is drawn once, in local coordinates
+/// relative to `(0, 0)`. Only this one transform ever changes as the node moves.
 ///
-/// `(0.0, 0.0)` if `group` has no `transform` attribute at all — a node that was never moved still carries one
-/// (written once at creation), so this only matters for an element that was never a node's own group.
+/// `(0.0, 0.0)` if `group` has no `transform` attribute at all. A node that was never moved still carries one,
+/// written once at creation. So this only matters for an element that was never a node's own group.
 pub fn group_translate(group: &web_sys::Element) -> Result<(f64, f64), String> {
     let Some(value) = group.get_attribute("transform") else {
         return Ok((0.0, 0.0));

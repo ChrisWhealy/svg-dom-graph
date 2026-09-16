@@ -28,9 +28,9 @@ use crate::common::{drag, group_translate, new_tab};
 use std::time::Duration;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `bounded`'s current world-space origin — its own `<g>`'s `transform`, not its `<rect>`'s local coordinates (which
-/// are drawn once, at `(0, 0)`, and never rewritten as the node moves — see `svg_dom_graph::scene::node::draw_box`'s
-/// own doc comment).
+/// `bounded`'s current world-space origin: its own `<g>`'s `transform`, not its `<rect>`'s local coordinates.
+/// Those are drawn once, at `(0, 0)`, and never rewritten as the node moves. See
+/// `svg_dom_graph::scene::node::draw_box`'s own doc comment.
 fn rect_origin(tab: &headless_chrome::Tab) -> Result<(f64, f64), String> {
     let group = tab
         .find_element("#diagram > g:nth-of-type(7)")

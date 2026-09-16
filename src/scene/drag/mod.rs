@@ -13,15 +13,14 @@ use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::{Matrix2D, Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Style applied while a box is idle: a grab cursor, no touch scrolling/panning, and no native text selection.
-///
-/// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine — Safari in
-/// particular has still started one with only the CSS property set — so `make_draggable` also calls
+/// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine: Safari in
+/// particular has still started one with only the CSS property set. Consequently, `make_draggable` also calls
 /// `prevent_default()` on `pointerdown`/`pointermove`. The two are kept together: CSS blocks selection from a mouse
 /// drag that starts outside this element and passes over it without ever firing this element's own `pointerdown`,
 /// while `prevent_default()` blocks it for the drag this element's own listeners actually see.
-const GRAB_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -webkit-user-select: none;";
-/// Style applied while a box is actively being dragged — same as [`GRAB_STYLE`], but with a grabbing cursor.
+const GRAB_STYLE: &str = "touch-action: none; user-select: none; -webkit-user-select: none;";
+/// Style applied while a box is actively being dragged — same as [`GRAB_STYLE`], but with a grabbing cursor. A
+/// drag already in progress benefits from that feedback in a way merely hovering over the node does not.
 const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

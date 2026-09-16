@@ -37,9 +37,10 @@ use svg_dom::{
 ///
 /// Every one of a box's own children — its outer rect, its label or grid cells — is drawn once, at creation, in
 /// local coordinates relative to `(0, 0)`. `group`'s own `transform="translate(...)"` is the only thing that ever
-/// changes afterward: [`SceneInner::move_node`] repositions a box by rewriting this one transform, regardless of
-/// how many children `group` holds — a data node with hundreds of value cells moves exactly as cheaply as a
-/// plain label. So `BoxHandles` itself needs no handle to any individual child; `group` is enough.
+/// changes afterward. [`SceneInner::move_node`] repositions a box by rewriting this one transform. This cost
+/// stays the same regardless of how many children `group` holds. So a data node with hundreds of value cells
+/// moves exactly as cheaply as a plain label. `BoxHandles` itself needs no handle to any individual child;
+/// `group` is enough.
 struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
     group: SvgNode,
@@ -169,9 +170,9 @@ impl SceneInner {
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
     /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at
-    /// creation, in local coordinates relative to `(0, 0)` (see [`node::draw_box`]/[`node::draw_content_box`]).
-    /// So moving the node only ever means rewriting the group's own `transform`, never any child's own
-    /// coordinates — this stays exactly as cheap for a data node with hundreds of value cells as for a plain
+    /// creation, in local coordinates relative to `(0, 0)`. See [`node::draw_box`]/[`node::draw_content_box`].
+    /// So moving the node only ever means rewriting the group's own `transform`. It never touches any child's
+    /// own coordinates. This stays exactly as cheap for a data node with hundreds of value cells as for a plain
     /// label.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move.

@@ -20,8 +20,8 @@ pub struct NodeId {
 /// A node's semantic content holding either the plain text label of an ordinary node or the typed numeric values of a
 /// data node.
 ///
-/// The graph model retains this regardless of how a node was rendered, so the generated SVG does not need to be read in
-/// order to discover the node's actual content.
+/// The graph model retains this regardless of how a node was rendered. So a reader need not parse the generated
+/// SVG to recover the node's actual content.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub enum NodeContent {
     Label(String),

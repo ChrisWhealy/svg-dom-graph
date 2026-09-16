@@ -1,6 +1,7 @@
-//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid rather than
-//! a plain text label — rendering, colour-coded value cells, auto-sizing, `GridLayout` overrides, empty-content and
-//! bad-layout rejection, dragging every cell (not just the box), and ordinary connector routing to/from one.
+//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid, not a
+//! plain text label. Covers rendering, colour-coded value cells, auto-sizing, and `GridLayout` overrides. Also
+//! covers empty-content and bad-layout rejection, dragging every cell (not just the box), and ordinary connector
+//! routing to/from one.
 
 use crate::common::{
     attr_f64, check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group, the_connector,
@@ -135,10 +136,15 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A data node's type colour is not the only place its type is recorded — a single-value node's own outer box
-/// (which doubles as that one value's own cell) carries a `<title>` naming its type, and the node's own `<g>`
-/// carries an `aria-label` summarising it — both readable by assistive technology or a browser tooltip, neither
-/// visible in the rendered digits themselves.
+/// A data node's type colour is not the only place its type is recorded. The node's own `<g>` carries a
+/// `<title>`: a native browser tooltip when the mouse pointer hovers over any child — the rect or the digits,
+/// not just one of them.
+/// It also carries an `aria-label` summarising it. So a caller who cannot distinguish colours can still recover
+/// the type. Assistive technology cannot perceive fill colour at all either.
+///
+/// Neither is visible in the rendered digits themselves. Just as importantly, neither corrupts them. `<title>`
+/// sits on the group, not as a child of the `<text>` element. So `text_content()` on the digits stays exactly the
+/// formatted value, with nothing appended.
 #[wasm_bindgen_test]
 fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(), String> {
     let svg = make_svg("data-node-a11y-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -153,19 +159,25 @@ fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(
         group.get_attribute("aria-label").as_deref() == Some("u64 value"),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )?;
-
-    let rects = rect_children(&group)?;
     check(
-        title_of(&rects[0])?.as_deref() == Some("u64"),
-        &format!("unexpected outer box <title>: {:?}", title_of(&rects[0])?),
+        title_of(&group)?.as_deref() == Some("u64"),
+        &format!("unexpected <title> on the node's own <g>: {:?}", title_of(&group)?),
+    )?;
+
+    // The tooltip lives on the group, so it must not have leaked into the digits' own text content.
+    let texts = text_children(&group)?;
+    check(
+        texts[0].text_content().as_deref() == Some("F0 E1 D2 C3 B4 A5 96 87"),
+        &format!("digit text content was corrupted by the <title>: {:?}", texts[0].text_content()),
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The multi-value counterpart of the test above: every inner cell carries its own `<title>`, and the group's own
-/// `aria-label` also reports how many values the node holds.
+/// The multi-value counterpart of the test above. One `<title>` on the group still applies wherever the mouse
+/// pointer hovers, over any cell's rect or digits alike. Every value in a homogeneous [`DataNodeContent`] shares
+/// the same type. The group's own `aria-label` also reports how many values the node holds.
 #[wasm_bindgen_test]
-fn a_multi_value_data_node_names_its_type_on_every_cell_and_the_group() -> Result<(), String> {
+fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
     let svg = make_svg("data-node-a11y-multi", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let content = DataNodeContent::new(NodeValues::U8(vec![0xAA, 0xBB]), DataFormat::Hexadecimal);
@@ -178,15 +190,31 @@ fn a_multi_value_data_node_names_its_type_on_every_cell_and_the_group() -> Resul
         group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 values"),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )?;
+    check(
+        title_of(&group)?.as_deref() == Some("u8"),
+        &format!("unexpected <title> on the node's own <g>: {:?}", title_of(&group)?),
+    )?;
 
+    // Neither inner cell rect nor either digit run carries its own separate <title>. One shared title on the
+    // group is enough. Putting one on each rect instead would not even work: a rect is a sibling of its own
+    // text, not an ancestor of it. So the tooltip still would not appear when hovering over the digits
+    // themselves.
     let rects = rect_children(&group)?;
     for (i, cell_rect) in rects[1..].iter().enumerate() {
         check(
-            title_of(cell_rect)?.as_deref() == Some("u8"),
-            &format!("unexpected <title> on inner cell {i}: {:?}", title_of(cell_rect)?),
+            title_of(cell_rect)?.is_none(),
+            &format!("expected no <title> on inner cell {i}, found {:?}", title_of(cell_rect)?),
         )?;
     }
-    Ok(())
+    let texts = text_children(&group)?;
+    check(
+        texts[0].text_content().as_deref() == Some("AA"),
+        "digit text content 0 was corrupted",
+    )?;
+    check(
+        texts[1].text_content().as_deref() == Some("BB"),
+        "digit text content 1 was corrupted",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -219,9 +247,10 @@ fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(),
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `DataNodeContent::with_layout(GridLayout::MaxColumns(n))` overrides `GridLayout::Automatic`'s own cell-count-only
-/// choice — 8 values render as 2 rows of 4 under `Automatic` (see `grid_shape_of_eight_values_prefers_two_rows_of_four`
-/// in `model::content::unit_tests`), but `MaxColumns(2)` caps that at 2 columns, giving 4 rows of 2 instead. Checked
-/// by counting each inner cell's own distinct `x`/`y` — the row/column count, not any specific pixel value.
+/// choice. 8 values render as 2 rows of 4 under `Automatic` — see
+/// `grid_shape_of_eight_values_prefers_two_rows_of_four` in `model::content::unit_tests`. `MaxColumns(2)` caps
+/// that at 2 columns, giving 4 rows of 2 instead. This is checked by counting each inner cell's own distinct
+/// `x`/`y` — the row/column count, not any specific pixel value.
 #[wasm_bindgen_test]
 fn with_layout_max_columns_overrides_automatics_own_shape() -> Result<(), String> {
     let svg = make_svg("data-node-max-columns", Size::new(400.0, 400.0), Size::new(400.0, 400.0));
@@ -264,8 +293,8 @@ fn with_layout_max_columns_overrides_automatics_own_shape() -> Result<(), String
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::add_data_node`/`add_data_node_with` rejects a `GridLayout` wrapping `0` before drawing anything or
-/// touching the graph's model — mirrors `add_data_node_rejects_empty_content_before_touching_the_scene` above.
+/// `Scene::add_data_node`/`add_data_node_with` rejects a `GridLayout` wrapping `0`, before drawing anything or
+/// touching the graph's model. This mirrors `add_data_node_rejects_empty_content_before_touching_the_scene` above.
 #[wasm_bindgen_test]
 fn add_data_node_rejects_a_zero_grid_layout_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg("data-node-bad-layout", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -286,13 +315,13 @@ fn add_data_node_rejects_a_zero_grid_layout_before_touching_the_scene() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a data node moves the whole box — every value's own text and inner cell rect included — by moving
-/// just the node's own `<g>` `transform`, not by rewriting every cell's own coordinates.
+/// Dragging a data node moves the whole box — every value's own text and inner cell rect included. This works
+/// by moving just the node's own `<g>` `transform`, not by rewriting every cell's own coordinates.
 ///
-/// Every cell is drawn once, at creation, in local coordinates relative to `(0, 0)` (see `draw_content_box`'s own
-/// doc comment) — a data node with hundreds of cells moves exactly as cheaply as one with a handful, since a
-/// pointer move only ever rewrites the group's one `transform`. This checks both halves of that: the group's
-/// translate changes by the drag delta, and every cell's own local `x`/`y` stays exactly as it was.
+/// Every cell is drawn once, at creation, in local coordinates relative to `(0, 0)`. See `draw_content_box`'s own
+/// doc comment. So a data node with hundreds of cells moves exactly as cheaply as one with a handful. A pointer
+/// move only ever rewrites the group's one `transform`. This checks both halves of that: the group's translate
+/// changes by the drag delta, and every cell's own local `x`/`y` stays exactly as it was.
 #[wasm_bindgen_test]
 fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), String> {
     let svg = make_svg("data-node-drag", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

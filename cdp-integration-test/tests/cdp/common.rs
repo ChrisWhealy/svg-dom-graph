@@ -99,9 +99,9 @@ pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
 const SETTLE: Duration = Duration::from_millis(50);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute — the world-space origin every node box
-/// carries there instead of on its individual children (its rect, label, or grid cells) — every one of which is
-/// drawn once, in local coordinates relative to `(0, 0)`, and never rewritten as the node moves.
+/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node
+/// box carries there, instead of on its individual children — its rect, label, or grid cells. Every one of those
+/// is drawn once, in local coordinates relative to `(0, 0)`, and never rewritten as the node moves.
 pub(crate) fn group_translate(group: &Element<'_>) -> Result<(f64, f64), String> {
     let value = group
         .get_attribute_value("transform")
