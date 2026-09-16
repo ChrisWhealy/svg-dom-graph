@@ -1,3 +1,4 @@
+#![warn(unreachable_pub)]
 //! `svg-dom-graph` — dynamically re-routable connectors between SVG boxes, built with [`svg_dom`].
 //!
 //! The eventual goal is arbitrary graphs of boxes.

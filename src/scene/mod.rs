@@ -7,14 +7,15 @@
 //! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
 //! See the sibling `demo-app` crate for a small worked example.
 
-pub(crate) mod box_handles;
-pub(crate) mod connector;
+mod box_handles;
+mod connector;
 pub(crate) mod drag;
 pub(crate) mod node;
 
 pub use crate::model::content::{ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues};
-pub use box_handles::BoxHandles;
-pub use connector::{ConnectorHandle, ConnectorOptions, ConnectorType};
+pub(crate) use box_handles::BoxHandles;
+pub(crate) use connector::ConnectorHandle;
+pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
 

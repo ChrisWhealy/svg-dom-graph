@@ -17,14 +17,14 @@ use svg_dom::SvgNode;
 ///
 /// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener
 /// installation.
-pub struct RenderGuard {
+pub(super) struct RenderGuard {
     group: SvgNode,
     loose: Vec<SvgNode>,
     armed: bool,
 }
 
 impl RenderGuard {
-    pub fn new(group: SvgNode) -> Self {
+    pub(super) fn new(group: SvgNode) -> Self {
         Self {
             group,
             loose: Vec::new(),
@@ -34,12 +34,12 @@ impl RenderGuard {
 
     /// Tracks `node` for rollback. Call this right after creating `node`, before any other fallible step — in
     /// particular, before `group.append(&node)`, which is exactly the gap this guard exists to cover.
-    pub fn track(&mut self, node: SvgNode) {
+    pub(super) fn track(&mut self, node: SvgNode) {
         self.loose.push(node);
     }
 
     /// Rendering finished successfully — do not roll it back on drop.
-    pub fn disarm(mut self) {
+    pub(super) fn disarm(mut self) {
         self.armed = false;
     }
 }

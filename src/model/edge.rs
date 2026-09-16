@@ -2,7 +2,7 @@ use super::node::NodeId;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One directed edge between two nodes.
-pub struct Edge {
+pub(crate) struct Edge {
     pub from: NodeId,
     pub to: NodeId,
 }

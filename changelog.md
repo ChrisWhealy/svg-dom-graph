@@ -22,13 +22,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Retain data node content in `model::node::NodeContent::Data`. Move node by rewriting `<g>` transform instead of child coordinates (`a11d969`)
 - Allow for data format to have configurable byte order (`7c2e423`)
 - Refactor various structs into their own modules (`776dab7`)
+- Tighten up internal module visibility (``)
 
 ## Fixed
 
 - Correct wasm-pack tests after switching from `SvgNode::set_attr_display` to `SvgNode::set_translate` (`4b04d8e`)
 - Correctly apply `<title>` to data nodes (`14cda9f`)
 - Improve README accuracy (`d07c5a1`)
-- Add ARIA role to items using `aria-label` (``)
+- Add ARIA role to items using `aria-label` (`e345e96`)
 
 # [Released]
 

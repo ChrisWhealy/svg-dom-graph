@@ -12,7 +12,7 @@ use crate::{
     },
     model::{edge::EdgeId, node::NodeId},
 };
-pub use connector_handle::ConnectorHandle;
+pub(crate) use connector_handle::ConnectorHandle;
 pub use connector_options::ConnectorOptions;
 pub use connector_type::ConnectorType;
 use svg_dom::root::utils::{Point, Rect};

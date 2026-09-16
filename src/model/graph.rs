@@ -17,7 +17,7 @@ use svg_dom::root::utils::Rect;
 ///
 /// Carries no rendering state of its own.
 /// `crate::scene::Scene` pairs each id this graph hands out with its rendered SVG handles.
-pub struct Graph {
+pub(crate) struct Graph {
     pub id: usize,
     pub nodes: HashMap<NodeId, Node>,
     pub edges: HashMap<EdgeId, Edge>,
@@ -27,7 +27,7 @@ pub struct Graph {
 }
 
 impl Graph {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             id: NEXT_GRAPH_ID.fetch_add(1, Ordering::Relaxed),
             nodes: HashMap::new(),
@@ -40,7 +40,7 @@ impl Graph {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node and returns its id.
-    pub fn add_node(&mut self, rect: Rect, content: impl Into<NodeContent>) -> NodeId {
+    pub(crate) fn add_node(&mut self, rect: Rect, content: impl Into<NodeContent>) -> NodeId {
         let id = NodeId {
             graph: self.id,
             index: self.next_node_id,
@@ -56,7 +56,7 @@ impl Graph {
     ///
     /// Registers the edge as incident to both endpoints.
     /// So [`incident_edges`](Self::incident_edges) finds it from either side, regardless of direction.
-    pub fn add_edge(&mut self, from: NodeId, to: NodeId) -> EdgeId {
+    pub(crate) fn add_edge(&mut self, from: NodeId, to: NodeId) -> EdgeId {
         let id = EdgeId {
             graph: self.id,
             index: self.next_edge_id,
@@ -72,7 +72,7 @@ impl Graph {
     /// Returns `id`'s node data.
     ///
     /// Returns `None` if `id` does not name a node in this graph.
-    pub fn node(&self, id: NodeId) -> Option<&Node> {
+    pub(crate) fn node(&self, id: NodeId) -> Option<&Node> {
         self.nodes.get(&id)
     }
 
@@ -80,7 +80,7 @@ impl Graph {
     /// Overwrites `id`'s stored rectangle.
     ///
     /// Does nothing if `id` does not name a node in this graph.
-    pub fn set_node_rect(&mut self, id: NodeId, rect: Rect) {
+    pub(crate) fn set_node_rect(&mut self, id: NodeId, rect: Rect) {
         if let Some(node) = self.nodes.get_mut(&id) {
             node.rect = rect;
         }
@@ -90,7 +90,7 @@ impl Graph {
     /// Returns `id`'s edge data.
     ///
     /// Returns `None` if `id` does not name an edge in this graph.
-    pub fn edge(&self, id: EdgeId) -> Option<&Edge> {
+    pub(crate) fn edge(&self, id: EdgeId) -> Option<&Edge> {
         self.edges.get(&id)
     }
 
@@ -98,7 +98,7 @@ impl Graph {
     /// Returns every edge id incident to `id` — edges where `id` is either endpoint.
     ///
     /// Returns an empty slice for a node with no edges, or for an unknown `id`.
-    pub fn incident_edges(&self, id: NodeId) -> &[EdgeId] {
+    pub(crate) fn incident_edges(&self, id: NodeId) -> &[EdgeId] {
         self.incident.get(&id).map(Vec::as_slice).unwrap_or(&[])
     }
 }

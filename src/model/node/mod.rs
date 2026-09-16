@@ -1,14 +1,14 @@
-pub mod node_content;
-pub mod node_id;
+mod node_content;
+mod node_id;
 
-pub use node_content::NodeContent;
+pub(crate) use node_content::NodeContent;
 pub use node_id::NodeId;
 
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One node's data: its position and its [`NodeContent`].
-pub struct Node {
+pub(crate) struct Node {
     pub rect: Rect,
     // Not read anywhere yet outside tests: nothing re-queries a node's content after creation, only its rect (for
     // redraw-on-move). Kept as node data regardless, since content is part of a node's identity, not just a

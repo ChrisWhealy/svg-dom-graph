@@ -15,7 +15,7 @@ pub(crate) struct Route {
 }
 
 impl Route {
-    pub fn new() -> Self {
+    pub(crate) fn new() -> Self {
         Self {
             points: [Point::new(0.0, 0.0); 4],
             len: 0,
@@ -31,7 +31,7 @@ impl Route {
     ///
     /// Panics if the route already holds four points. Every caller in this module pushes at most four, so this can only
     /// fire from a bug in this module itself, not from anything external.
-    pub fn push(&mut self, point: Point) {
+    pub(crate) fn push(&mut self, point: Point) {
         if self.len > 0 && self.points[self.len - 1] == point {
             return;
         }

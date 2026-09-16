@@ -10,18 +10,18 @@ use svg_dom::SvgNode;
 ///
 /// Since `SvgNode::remove_listeners` is a no-op for an event type for which nothing has been registered,
 /// unconditionally removing all four here is always safe, irrespective of progress (including not started).
-pub struct InstallGuard {
-    pub group: SvgNode,
-    pub armed: bool,
+pub(super) struct InstallGuard {
+    group: SvgNode,
+    armed: bool,
 }
 
 impl InstallGuard {
-    pub fn new(group: SvgNode) -> Self {
+    pub(super) fn new(group: SvgNode) -> Self {
         Self { group, armed: true }
     }
 
     /// Installation finished successfully — do not roll it back on drop.
-    pub fn disarm(mut self) {
+    pub(super) fn disarm(mut self) {
         self.armed = false;
     }
 }

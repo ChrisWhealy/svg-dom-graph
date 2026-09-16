@@ -1,7 +1,7 @@
-pub mod content;
-pub mod edge;
-pub mod graph;
-pub mod node;
+pub(crate) mod content;
+pub(crate) mod edge;
+pub(crate) mod graph;
+pub(crate) mod node;
 
 use std::sync::atomic::AtomicUsize;
 

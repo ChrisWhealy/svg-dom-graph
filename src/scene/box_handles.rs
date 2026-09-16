@@ -10,17 +10,17 @@ use svg_dom::SvgNode;
 /// stays the same regardless of how many children `group` holds. So a data node with hundreds of value cells
 /// moves exactly as cheaply as a plain label. `BoxHandles` itself needs no handle to any individual child;
 /// `group` is enough.
-pub struct BoxHandles {
+pub(crate) struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
-    pub group: SvgNode,
+    pub(crate) group: SvgNode,
     /// Whether `Scene::make_draggable`/`Scene::make_draggable_with` has already been called for this node.
     ///
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
     /// pointer listeners rather than replacing the first — see [`crate::Error::AlreadyDraggable`].
-    pub draggable: bool,
+    pub(crate) draggable: bool,
     /// How many evenly spaced connector fixing points this node's own sides offer — see [`EdgeAnchors`].
     ///
     /// `redraw_edge` has no other way to learn a node's own anchor configuration once an incident edge needs a reroute.
     /// This value must live alongside the rendered handle, not just get used once at creation.
-    pub edge_anchors: Option<EdgeAnchors>,
+    pub(crate) edge_anchors: Option<EdgeAnchors>,
 }

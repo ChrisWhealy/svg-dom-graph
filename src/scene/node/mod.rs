@@ -8,7 +8,7 @@ use super::{BoxHandles, DataNodeContent, Scene, box_centre};
 use crate::{error::Error, model::node::NodeId};
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
-pub use render_guard::RenderGuard;
+use render_guard::RenderGuard;
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
     root::utils::{Point, Rect, Size},

@@ -7,7 +7,7 @@ use crate::model::content::DataNodeContent;
 /// The graph model retains this regardless of how a node was rendered. So a reader need not parse the generated
 /// SVG to recover the node's actual content.
 #[derive(Debug, Clone, PartialEq, Eq)]
-pub enum NodeContent {
+pub(crate) enum NodeContent {
     Label(String),
     Data(DataNodeContent),
 }
