@@ -21,8 +21,8 @@ pub(super) struct DragStart {
     /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag event.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. Caching it here (rather than recomputing it per drag event) assumes that neither the group's own
-    /// transform nor any ancestor transform up to the viewport, changes mid-drag.
+    /// pointermove. Caching it here assumes that ancestor transforms up to the viewport remain unchanged for the
+    /// duration of the drag. The dragged group's own translation is expected to change as the drag proceeds.
     ///
     /// The inverse CTM is captured at drag start so all pointer deltas remain expressed in a stable drag-start
     /// coordinate system. Ancestor transforms must remain unchanged during the drag; the node group's translation

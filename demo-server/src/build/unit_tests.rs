@@ -10,8 +10,8 @@ fn workspace_root() -> Result<PathBuf, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Copies just the files `prepare_stage` actually reads — `demo-app/src/lib.rs` (for [`validate::validate`]) and
-/// `demo/` (for [`panels::assemble`]) — from `src_root` into `dst_root`, so a test can freely edit a copied
-/// fragment afterwards without ever touching the real project's own source tree.
+/// `demo/` (for [`panels::assemble`]) — from `src_root` into `dst_root`, so a test can freely edit a copied fragment
+/// afterwards without ever touching the real project's own source tree.
 fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), String> {
     let copy = |rel: &str| -> Result<(), String> {
         let src = src_root.join(rel);
@@ -95,8 +95,8 @@ fn prepare_stage_reports_a_missing_source_root() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A failed refresh must leave the previously staged `index.html` completely untouched — the guarantee `main`'s
 /// per-request middleware documents. Proves `prepare_stage` assembles into a temporary file and `rename`s it into
-/// place, rather than writing straight onto the live destination, where a failure partway could leave a
-/// partially written file being served instead of the old, good one.
+/// place, rather than writing straight onto the live destination, where a failure partway could leave a partially
+/// written file being served instead of the old, good one.
 #[test]
 fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Result<(), String> {
     let root = workspace_root()?;
@@ -127,12 +127,11 @@ fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The successful counterpart to
-/// [`prepare_stage_leaves_the_previously_staged_file_untouched_on_failure`]: two successful calls against the
-/// same stage directory, with a source fragment edited in between, must actually replace the previously staged
-/// `index.html` with content reflecting that edit — not just leave the old one in place, and not just fail to
-/// error. Runs against a copied source root (see [`copy_minimal_source_root`]) rather than the real project's own
-/// `demo/`, so this test can freely edit a fragment without ever touching a real source file.
+/// The successful counterpart to [`prepare_stage_leaves_the_previously_staged_file_untouched_on_failure`]: two
+/// successful calls against the same stage directory, with a source fragment edited in between, must actually replace
+/// the previously staged `index.html` with content reflecting that edit — not just leave the old one in place, and not
+/// just fail to error. Runs against a copied source root (see [`copy_minimal_source_root`]) rather than the real
+/// project's own `demo/`, so this test can freely edit a fragment without ever touching a real source file.
 #[test]
 fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Result<(), String> {
     let real_root = workspace_root()?;
@@ -167,10 +166,9 @@ fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Resu
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The exact gap an external review flagged: a failure copying `style.css` must leave the previously staged
-/// `index.html` untouched too, not just `style.css`. Proves `prepare_stage` stages both files into temporary
-/// files before promoting either, rather than promoting `index.html` first and only then attempting `style.css` —
-/// which would otherwise let this exact scenario silently replace `index.html` even though the overall call
-/// fails.
+/// `index.html` untouched too, not just `style.css`. Proves `prepare_stage` stages both files into temporary files
+/// before promoting either, rather than promoting `index.html` first and only then attempting `style.css` — which would
+/// otherwise let this exact scenario silently replace `index.html` even though the overall call fails.
 #[test]
 fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Result<(), String> {
     let real_root = workspace_root()?;

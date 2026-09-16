@@ -1,9 +1,8 @@
 //! The graph's topology: nodes, edges, and incidence.
 //!
-//! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`.
-//! This is the single source of truth for what the graph contains.
-//! [`crate::scene`] renders it, and keeps a parallel map of DOM handles keyed by the same [`NodeId`]/[`EdgeId`]s this
-//! module hands out.
+//! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`. This is the single source of
+//! truth for what the graph contains. [`crate::scene`] renders it, and keeps a parallel map of DOM handles keyed by the
+//! same [`NodeId`]/[`EdgeId`]s this module hands out.
 
 use super::{NEXT_GRAPH_ID, edge::*, node::*};
 use std::{collections::HashMap, sync::atomic::Ordering};
@@ -12,11 +11,11 @@ use svg_dom::root::utils::Rect;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The graph's topology.
 ///
-/// Holds every node and edge, plus each node's incident edges.
-/// A caller can then find what connects to a node without scanning every edge in the graph.
+/// Holds every node and edge, plus each node's incident edges. A caller can then find what connects to a node without
+/// scanning every edge in the graph.
 ///
-/// Carries no rendering state of its own.
-/// `crate::scene::Scene` pairs each id this graph hands out with its rendered SVG handles.
+/// Carries no rendering state of its own. `crate::scene::Scene` pairs each id this graph hands out with its rendered
+/// SVG handles.
 pub(crate) struct Graph {
     pub id: usize,
     pub nodes: HashMap<NodeId, Node>,
@@ -54,8 +53,8 @@ impl Graph {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge from `from` to `to` and returns its id.
     ///
-    /// Registers the edge as incident to both endpoints.
-    /// So [`incident_edges`](Self::incident_edges) finds it from either side, regardless of direction.
+    /// Registers the edge as incident to both endpoints. So [`incident_edges`](Self::incident_edges) finds it from
+    /// either side, regardless of direction.
     pub(crate) fn add_edge(&mut self, from: NodeId, to: NodeId) -> EdgeId {
         let id = EdgeId {
             graph: self.id,

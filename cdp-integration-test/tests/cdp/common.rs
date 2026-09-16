@@ -44,9 +44,9 @@ fn shared() -> Result<&'static Shared, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Opens a fresh tab on the shared fixture page and waits for the last node (`bounded`, the seventh and final one
-/// added by the fixture) before returning it. Since the fixture builds every node synchronously, that node's
-/// presence proves the whole scene finished building.
+/// Opens a fresh tab on the shared fixture page and waits for the last node (`bounded`, the seventh and final one added
+/// by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence proves
+/// the whole scene finished building.
 pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
     let shared = shared()?;
     let tab = shared.browser.new_tab().map_err(|e| format!("failed to open a new tab: {e}"))?;
@@ -65,7 +65,7 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
 /// browser's actual hit-testing, pointer capture, and default-action machinery.
 ///
 /// A `waypoint` must have at least two points: the first is where the button goes down, the last is where it comes back
-/// up, and any in between are intermediate `mousemove`s while the button is held.  Real drags rarely jump straight from
+/// up, and any in between are intermediate `mousemove`s while the button is held. Real drags rarely jump straight from
 /// their start location to the end location in one move, and some of what this suite exists to catch (pointer capture,
 /// default-action suppression etc) only manifests itself once the pointer actually leaves its starting element.
 ///
@@ -93,15 +93,15 @@ pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
 /// (for example, a GitHub Actions runner), a `pointermove` or `pointerup` fired by this suite can be coalesced or
 /// arrive before this crate's own listener has processed the one before it. For `pointerup`, dropped-overlap correction
 /// depends on all previous `move_node` from `pointermove` already having been applied, so losing even one mid-drag step
-/// can leave the model in an implausible state (i.e. one the pointerup handler never expected).
-/// This pause is cheap, costing a handful of milliseconds per waypoint and is negligible in comparison to launching
-/// Chrome and building the wasm fixture, as opposed to the cost of trying to track down an intermittent CI failure.
+/// can leave the model in an implausible state (i.e. one the pointerup handler never expected). This pause is cheap,
+/// costing a handful of milliseconds per waypoint and is negligible in comparison to launching Chrome and building the
+/// wasm fixture, as opposed to the cost of trying to track down an intermittent CI failure.
 const SETTLE: Duration = Duration::from_millis(50);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node
-/// box carries there, instead of on its individual children — its rect, label, or grid cells. Every one of those
-/// is drawn once, in local coordinates relative to `(0, 0)`, and never rewritten as the node moves.
+/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node box
+/// carries there, instead of on its individual children — its rect, label, or grid cells. Every one of those is drawn
+/// once, in local coordinates relative to `(0, 0)`, and never rewritten as the node moves.
 pub(crate) fn group_translate(group: &Element<'_>) -> Result<(f64, f64), String> {
     let value = group
         .get_attribute_value("transform")

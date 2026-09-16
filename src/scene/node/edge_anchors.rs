@@ -4,8 +4,9 @@
 ///
 /// The wrapped value must be `>= 1`.
 ///
-/// `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with [`Error::InvalidEdgeAnchors`] — a side with no
-/// candidate point cannot anchor a connector, so `0` has no meaning here.
+/// `Scene::add_node_with`/`Scene::set_edge_anchors` reject `0` with
+/// [Error::InvalidEdgeAnchors](crate::error::Error::InvalidEdgeAnchors) — a side with no candidate point cannot anchor
+/// a connector, so `0` has no meaning here.
 ///
 /// Consequently, you must use `None` rather than `Some(EdgeAnchors(0))` to keep a connector's own default anchor rule.
 ///
@@ -20,13 +21,13 @@
 /// unsnapped ray would have crossed.
 ///
 /// If the two nodes' centres exactly coincide, that ray has no direction to pick a side from. This is the same
-/// pre-existing degenerate case ordinary, unconfigured routing already has to handle, and `EdgeAnchors` resolves
-/// it the same way: falling back to this node's own centre and `Side::East`, rather than an actual fixing point.
+/// pre-existing degenerate case ordinary, unconfigured routing already has to handle, and `EdgeAnchors` resolves it the
+/// same way: falling back to this node's own centre and `Side::East`, rather than an actual fixing point.
 ///
 /// # `EdgeAnchors(1)` does not always match `None`
 ///
-/// With `n = 1`, `n + 1 = 2` and this makes the segment's internal division point identical to the side's midpoint.
-/// For an elbow connector this is no change at all — the default (`None`) elbow rule already always anchors at the same
+/// With `n = 1`, `n + 1 = 2` and this makes the segment's internal division point identical to the side's midpoint. For
+/// an elbow connector this is no change at all — the default (`None`) elbow rule already always anchors at the same
 /// midpoint, so `Some(EdgeAnchors(1))` and `None` render identically.
 ///
 /// For a straight connector however, this does *not* generally hold: its default (`None`) is the ray's own exact

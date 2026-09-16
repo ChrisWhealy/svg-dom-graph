@@ -1,7 +1,7 @@
 //! Pure geometry helpers for routing connectors between graph boxes.
 //!
-//! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`.
-//! This mirrors how `svg-dom` itself separates pure geometry math from its DOM-facing code.
+//! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`. This mirrors how `svg-dom`
+//! itself separates pure geometry math from its DOM-facing code.
 
 pub(crate) mod route;
 pub(crate) mod side;
@@ -18,13 +18,12 @@ pub(crate) fn centre(rect: Rect) -> Point {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The point where the ray from `rect`'s centre toward `towards` crosses `rect`'s boundary.
 ///
-/// This is the standard rectangle/ray intersection.
-/// The function scales the direction vector by two ratios: half-width over `dx`, and half-height over `dy`.
-/// It uses the smaller of the two ratios.
-/// The smaller ratio reaches an edge first, before the ray would overshoot past a corner.
+/// This is the standard rectangle/ray intersection. The function scales the direction vector by two ratios: half-width
+/// over `dx`, and half-height over `dy`. It uses the smaller of the two ratios. The smaller ratio reaches an edge
+/// first, before the ray would overshoot past a corner.
 ///
-/// Used to route a connector so it starts and ends at each box's edge, not at its centre.
-/// The arrowhead then lands on the boundary of the box it points at, not over the box's interior.
+/// Used to route a connector so it starts and ends at each box's edge, not at its centre. The arrowhead then lands on
+/// the boundary of the box it points at, not over the box's interior.
 ///
 /// Returns `rect`'s centre if `towards` is exactly the centre, since the direction is undefined at zero distance.
 pub fn boundary_point(rect: Rect, towards: Point) -> Point {
@@ -103,10 +102,10 @@ pub(crate) fn rects_overlap(a: Rect, b: Rect) -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Clamps `origin` — a box's own top-left — so a box of `size` stays fully inside `bounds`.
 ///
-/// Each axis clamps independently, to the range `[bounds start, bounds start + bounds size - box size]`. If `size`
-/// is larger than `bounds` on some axis, that range is empty. This pins the box to `bounds`'s own near edge on
-/// that axis instead, rather than clamping to a negative-width range — the box still overflows `bounds`, but at a
-/// fixed, predictable edge rather than free to drift arbitrarily far past it.
+/// Each axis clamps independently, to the range `[bounds start, bounds start + bounds size - box size]`. If `size` is
+/// larger than `bounds` on some axis, that range is empty. This pins the box to `bounds`'s own near edge on that axis
+/// instead, rather than clamping to a negative-width range — the box still overflows `bounds`, but at a fixed,
+/// predictable edge rather than free to drift arbitrarily far past it.
 pub(crate) fn clamp_to_bounds(origin: Point, size: Size, bounds: Rect) -> Point {
     let max_x = (bounds.origin.x + bounds.size.width - size.width).max(bounds.origin.x);
     let max_y = (bounds.origin.y + bounds.size.height - size.height).max(bounds.origin.y);
@@ -125,8 +124,8 @@ pub(crate) fn clamp_to_bounds(origin: Point, size: Size, bounds: Rect) -> Point 
 /// `padding` then pushes the result a little further out, so the two rectangles are separated by a visible gap rather
 /// than touching edges.
 ///
-/// Returns `blocker`'s own centre, ignoring `padding`, if `previous_centre` coincides with it — there is no
-/// direction to push along in that degenerate case.
+/// Returns `blocker`'s own centre, ignoring `padding`, if `previous_centre` coincides with it — there is no direction
+/// to push along in that degenerate case.
 ///
 /// Crate-private: see [`rects_overlap`] for why.
 pub(crate) fn nearest_clear_centre(blocker: Rect, moving_size: Size, previous_centre: Point, padding: f64) -> Point {
@@ -199,9 +198,9 @@ pub(crate) fn edge_anchor(rect: Rect, towards: Point) -> (Point, side::Side) {
 /// The side of `rect` first intersected by a ray from its centre towards `towards`. The returned point snaps to
 /// whichever of `fixing_points` evenly-spaced candidates on that side sits nearest the ray's own crossing point.
 ///
-/// Picks the side the same way [`edge_anchor`] does. Divides that side into `fixing_points + 1` equal segments,
-/// and returns whichever of the `fixing_points` internal division points is closest to the continuous crossing
-/// position [`boundary_point`] would have returned.
+/// Picks the side the same way [`edge_anchor`] does. Divides that side into `fixing_points + 1` equal segments, and
+/// returns whichever of the `fixing_points` internal division points is closest to the continuous crossing position
+/// [`boundary_point`] would have returned.
 ///
 /// `fixing_points == 1` always lands on the side's own midpoint — the same point [`edge_anchor`] always returns,
 /// regardless of `towards`.
@@ -261,9 +260,9 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 ///
 /// Returns 2 to 4 points. The first point is always `start`. The last is always `end`.
 ///
-/// Takes `start`/`end` and their sides as plain arguments, rather than computing them itself. The same
-/// corner-building logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or
-/// [`snapped_anchor`]'s evenly-spaced candidates.
+/// Takes `start`/`end` and their sides as plain arguments, rather than computing them itself. The same corner-building
+/// logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or [`snapped_anchor`]'s
+/// evenly-spaced candidates.
 pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
     let mut route = route::Route::new();
     route.push(start);

@@ -15,17 +15,17 @@
 //! 3. `mover` — draggable, starts far from `blocker`. Used to prove overlap resolution on drop.
 //! 4. `hub` — not draggable, fixed in place. Its own `EdgeAnchors(3)` offers three fixing points along each side.
 //! 5. `branch_a` — draggable, connected to `hub`. Used to prove a live drag re-snaps to a different fixing point.
-//! 6. `branch_b` — not draggable, connected to `hub`. Stays put, so its own connector isolates `branch_a`'s drag as
-//!    the only thing that moved.
-//! 7. `bounded` — draggable with `DragOptions::bounds` set to the diagram's own viewBox, `(0, 0, 500, 400)`. Placed
-//!    in the top-right corner, far from every other node, so a drag past the viewBox's own right/bottom edge has
-//!    nothing else to collide with on the way. Used to prove a real mouse drag past the visible area clamps to the
-//!    edge, and that the clamped node stays real-hit-testable — see `bounds.rs`.
+//! 6. `branch_b` — not draggable, connected to `hub`. Stays put, so its own connector isolates `branch_a`'s drag as the
+//!    only thing that moved.
+//! 7. `bounded` — draggable with `DragOptions::bounds` set to the diagram's own viewBox, `(0, 0, 500, 400)`. Placed in
+//!    the top-right corner, far from every other node, so a drag past the viewBox's own right/bottom edge has nothing
+//!    else to collide with on the way. Used to prove a real mouse drag past the visible area clamps to the edge, and
+//!    that the clamped node stays real-hit-testable — see `bounds.rs`.
 //!
 //! Connectors, in add order (`#diagram > path:nth-of-type(N)`):
 //!
-//! 1. `solo` to `blocker`, sharp corners (`Scene::add_edge`'s default). `solo` and `blocker` sit at a diagonal
-//!    offset, so this connector bends — see `connectors.rs` for the hand-worked path.
+//! 1. `solo` to `blocker`, sharp corners (`Scene::add_edge`'s default). `solo` and `blocker` sit at a diagonal offset,
+//!    so this connector bends — see `connectors.rs` for the hand-worked path.
 //! 2. `solo` to `blocker` again, rounded corners (`Scene::add_edge_with`, `corner_radius: 8.0`). Same route as
 //!    connector 1, so the two isolate corner rounding as the only difference between them.
 //! 3. `hub` to `branch_a`, sharp corners. `hub`'s own `EdgeAnchors(3)` snaps this connector's `hub`-end onto one of

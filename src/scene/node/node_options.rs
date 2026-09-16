@@ -1,15 +1,15 @@
 use super::EdgeAnchors;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Configures how [`Scene::add_node_with`] anchors connectors to a node.
+/// Configures how [Scene::add_node_with](crate::scene::Scene::add_node_with) anchors connectors to a node.
 ///
-/// Build one either with [`NodeOptions::default`] or with [`with_edge_anchors`](Self::with_edge_anchors).
-/// A struct literal does not compile outside this crate.
+/// Build one either with [`NodeOptions::default`] or with [`with_edge_anchors`](Self::with_edge_anchors). A struct
+/// literal does not compile outside this crate.
 ///
 /// ***A note on `Copy`***
 ///
-/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a
-/// breaking change, so every field this type gains must itself stay `Copy`. See the same note on
+/// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a breaking
+/// change, so every field this type gains must itself stay `Copy`. See the same note on
 /// [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]

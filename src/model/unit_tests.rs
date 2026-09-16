@@ -196,9 +196,9 @@ fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The graph model retains a data node's own [`DataNodeContent`] unchanged, not just its rendered SVG. This is
-/// the fix for the review comment that started this: `add_data_node_with` used to store an empty label instead,
-/// discarding the actual values once the SVG was drawn — see [`NodeContent`]'s own doc comment.
+/// The graph model retains a data node's own [`DataNodeContent`] unchanged, not just its rendered SVG. This is the fix
+/// for the review comment that started this: `add_data_node_with` used to store an empty label instead, discarding the
+/// actual values once the SVG was drawn — see [`NodeContent`]'s own doc comment.
 #[test]
 fn add_node_retains_the_original_data_node_content() -> Result<(), String> {
     let mut graph = Graph::new();

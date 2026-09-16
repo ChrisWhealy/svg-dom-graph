@@ -4,12 +4,11 @@ use svg_dom::SvgNode;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
 ///
-/// Every one of a box's own children — its outer rect, its label or grid cells — is drawn once, at creation, in
-/// local coordinates relative to `(0, 0)`. `group`'s own `transform="translate(...)"` is the only thing that ever
-/// changes afterward. [`SceneInner::move_node`] repositions a box by rewriting this one transform. This cost
-/// stays the same regardless of how many children `group` holds. So a data node with hundreds of value cells
-/// moves exactly as cheaply as a plain label. `BoxHandles` itself needs no handle to any individual child;
-/// `group` is enough.
+/// Every one of a box's own children — its outer rect, its label or grid cells — is drawn once, at creation, in local
+/// coordinates relative to `(0, 0)`. `group`'s own `transform="translate(...)"` is the only thing that ever changes
+/// afterward. [`SceneInner::move_node`] repositions a box by rewriting this one transform. This cost stays the same
+/// regardless of how many children `group` holds. So a data node with hundreds of value cells moves exactly as cheaply
+/// as a plain label. `BoxHandles` itself needs no handle to any individual child; `group` is enough.
 pub(crate) struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
     pub(crate) group: SvgNode,

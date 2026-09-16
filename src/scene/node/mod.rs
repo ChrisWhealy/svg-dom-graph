@@ -24,24 +24,23 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
     }
 }
 
-/// The label's default font size, in user-space units, before [`shrink_label_to_fit`] ever considers scaling it
-/// down.
+/// The label's default font size, in user-space units, before [`shrink_label_to_fit`] ever considers scaling it down.
 const LABEL_FONT_SIZE: f64 = 14.0;
 
-/// The minimum gap, in user-space units, kept clear between a label's own rendered edges and its node's four
-/// sides. [`shrink_label_to_fit`] shrinks the label's font size, proportionally, whenever it would otherwise come
-/// closer than this to the box — a label short enough to fit at [`LABEL_FONT_SIZE`] is left untouched.
+/// The minimum gap, in user-space units, kept clear between a label's own rendered edges and its node's four sides.
+/// [`shrink_label_to_fit`] shrinks the label's font size, proportionally, whenever it would otherwise come closer than
+/// this to the box — a label short enough to fit at [`LABEL_FONT_SIZE`] is left untouched.
 const LABEL_MARGIN: f64 = 5.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shrinks `label`'s own font size, proportionally, so its rendered bounding box fits within `size` once
-/// [`LABEL_MARGIN`] is kept clear on every side — otherwise a label close to as wide (or tall) as its box renders
-/// with its text sitting flush against, or spilling past, the box's own edges.
+/// [`LABEL_MARGIN`] is kept clear on every side — otherwise a label close to as wide (or tall) as its box renders with
+/// its text sitting flush against, or spilling past, the box's own edges.
 ///
 /// Reads `label`'s real, rendered bounding box (`getBBox()`, via [`SvgNode::bounding_box`]) rather than estimating
 /// character widths, so this stays correct for whatever font the browser actually substitutes, with no per-glyph
-/// metrics table to keep in sync. Only ever shrinks — a label that already fits at [`LABEL_FONT_SIZE`] keeps that
-/// size exactly, rather than being nudged to fill the available room.
+/// metrics table to keep in sync. Only ever shrinks — a label that already fits at [`LABEL_FONT_SIZE`] keeps that size
+/// exactly, rather than being nudged to fill the available room.
 fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
     let bbox = label.bounding_box()?;
     let max_width = (size.width - 2.0 * LABEL_MARGIN).max(0.0);
@@ -64,8 +63,8 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 /// `rect.origin` as a `transform="translate(...)"` instead. So moving the box later only ever updates this one
 /// transform, regardless of how many children the group holds. See [`SceneInner::move_node`].
 ///
-/// A [`RenderGuard`] covers this function's own DOM construction: any `?` failing partway through removes
-/// whatever was already created, rather than leaving stray elements behind.
+/// A [`RenderGuard`] covers this function's own DOM construction: any `?` failing partway through removes whatever was
+/// already created, rather than leaving stray elements behind.
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
     let mut guard = RenderGuard::new(group.clone());
@@ -113,30 +112,29 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// Font size for a data node's cell text, in user-space units. Deliberately smaller than [`LABEL_FONT_SIZE`]: a
-/// byte-group value (e.g. `"F0 E1 D2 C3 B4 A5 96 87"`) is far longer than a typical plain label, so a slightly
-/// smaller size keeps a modest grid from demanding an oversized box by default.
+/// byte-group value (e.g. `"F0 E1 D2 C3 B4 A5 96 87"`) is far longer than a typical plain label, so a slightly smaller
+/// size keeps a modest grid from demanding an oversized box by default.
 const GRID_FONT_SIZE: f64 = 13.0;
 
-/// A generic monospace font stack. Digits render at a uniform width under a monospace font — a proportional font
-/// would render `"1"` narrower than `"8"`, throwing off a byte-group's own internal alignment. Several names are
-/// offered since not every browser/OS ships the same monospace font; `monospace` itself is the universally
-/// supported fallback.
+/// A generic monospace font stack. Digits render at a uniform width under a monospace font — a proportional font would
+/// render `"1"` narrower than `"8"`, throwing off a byte-group's own internal alignment. Several names are offered
+/// since not every browser/OS ships the same monospace font; `monospace` itself is the universally supported fallback.
 const GRID_FONT_FAMILY: &str = "ui-monospace, SFMono-Regular, Menlo, Consolas, monospace";
 
 /// The height of one value's own cell, in user-space units — a fixed multiple of [`GRID_FONT_SIZE`], not measured.
 ///
-/// Unlike a cell's width — which depends entirely on how many characters its own value holds, and so is measured
-/// via [`SvgNode::bounding_box`] — a monospace font's own line height at one fixed size is predictable enough
-/// that measuring it separately for every node would only add overhead, not accuracy.
+/// Unlike a cell's width — which depends entirely on how many characters its own value holds, and so is measured via
+/// [`SvgNode::bounding_box`] — a monospace font's own line height at one fixed size is predictable enough that
+/// measuring it separately for every node would only add overhead, not accuracy.
 const CELL_HEIGHT: f64 = GRID_FONT_SIZE * 1.4;
 
 /// The gap kept clear, on every side, between one value's own text and that value's own cell edges.
 const CELL_PADDING: f64 = 6.0;
 
-/// The gap left between adjacent value cells in a multi-value grid, so the node's own background colour shows
-/// through as a visible seam between them — this, together with each cell's own [`NodeValues::type_color`], is
-/// what lets a reader tell where one value ends and the next begins, rather than reading a wall of digits with no
-/// indication of which byte belongs to which value.
+/// The gap left between adjacent value cells in a multi-value grid, so the node's own background colour shows through
+/// as a visible seam between them — this, together with each cell's own [`NodeValues::type_color`], is what lets a
+/// reader tell where one value ends and the next begins, rather than reading a wall of digits with no indication of
+/// which byte belongs to which value.
 ///
 /// [`NodeValues`]: super::content::NodeValues
 const CELL_GAP: f64 = 6.0;
@@ -148,34 +146,32 @@ const OUTER_PADDING: f64 = 10.0;
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
 /// alongside the box's own final `Rect` — computed here, not supplied by the caller.
 ///
-/// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]); its real, rendered width is
-/// read back via [`SvgNode::bounding_box`] — the same "measure, don't estimate" approach [`shrink_label_to_fit`]
-/// already uses for plain labels, and for the same reason: it stays correct for whatever font the browser
-/// actually substitutes. Every cell shares one uniform size, the widest value's own measured width plus
-/// [`CELL_PADDING`], so the grid's rows and columns actually line up even when [`DataFormat::Decimal`] values
-/// differ in digit count.
+/// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]); its real, rendered width is read
+/// back via [`SvgNode::bounding_box`] — the same "measure, don't estimate" approach [`shrink_label_to_fit`] already
+/// uses for plain labels, and for the same reason: it stays correct for whatever font the browser actually substitutes.
+/// Every cell shares one uniform size, the widest value's own measured width plus [`CELL_PADDING`], so the grid's rows
+/// and columns actually line up even when [`DataFormat::Decimal`] values differ in digit count.
 ///
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
 /// - A single value has no sibling to be told apart from, so it gets no inner cell box at all — the node's own
 ///   `rect_el` is filled directly with [`NodeValues::type_color`], and the value's text sits centred in it.
 /// - Two or more values each get their own small [`NodeValues::type_color`]-filled `<rect>`, arranged into the
-///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer
-///   box.
+///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer box.
 ///
 /// [`DataFormat::Decimal`]: crate::model::content::DataFormat
 /// [`NodeValues`]: crate::model::content::NodeValues
 /// [`DataNodeContent::is_single_value`]: crate::model::content::DataNodeContent::is_single_value
 ///
-/// Every child — the outer box and every cell's own rect/text — is drawn in local coordinates, relative to
-/// `(0, 0)`, not `top_left`. The group itself carries `top_left` as a `transform="translate(...)"` instead.
+/// Every child — the outer box and every cell's own rect/text — is drawn in local coordinates, relative to `(0, 0)`,
+/// not `top_left`. The group itself carries `top_left` as a `transform="translate(...)"` instead.
 ///
-/// A grid can hold arbitrarily many cells. Without local coordinates, moving the node later would mean rewriting
-/// every cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
+/// A grid can hold arbitrarily many cells. Without local coordinates, moving the node later would mean rewriting every
+/// cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
 ///
-/// A [`RenderGuard`] covers this function's own DOM construction. This matters more here than in [`draw_box`].
-/// A grid can measure many cells before any of them is appended into `group`. That widens the window in which a
-/// `?` failing partway through would otherwise leave stray elements behind.
+/// A [`RenderGuard`] covers this function's own DOM construction. This matters more here than in [`draw_box`]. A grid
+/// can measure many cells before any of them is appended into `group`. That widens the window in which a `?` failing
+/// partway through would otherwise leave stray elements behind.
 fn draw_content_box(
     svg: &SvgRoot,
     top_left: Point,
@@ -311,24 +307,23 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite,
-    /// or if `size`'s width or height is not strictly positive — see that variant's own doc comment for why.
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite, or if
+    /// `size`'s width or height is not strictly positive — see that variant's own doc comment for why.
     pub fn add_node(&self, top_left: Point, size: Size, label: impl Into<String>) -> Result<NodeId, Error> {
         self.add_node_with(top_left, size, label, NodeOptions::default())
     }
 
-    /// Adds a node to the graph, draws its box and label, and returns its id. `options` controls how many
-    /// connector fixing points this node's sides offer — see [`EdgeAnchors`].
+    /// Adds a node to the graph, draws its box and label, and returns its id. `options` controls how many connector
+    /// fixing points this node's sides offer — see [`EdgeAnchors`].
     ///
     /// # Errors
     ///
     /// Returns [`Error::InvalidEdgeAnchors`] if `options.edge_anchors` is `Some(EdgeAnchors(0))`. Checked before
     /// drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it was.
     ///
-    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite,
-    /// or if `size`'s width or height is not strictly positive — see that variant's own doc comment for why.
-    /// Checked before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly
-    /// as it was.
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates or `size`'s dimensions are not finite, or if
+    /// `size`'s width or height is not strictly positive — see that variant's own doc comment for why. Checked before
+    /// drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it was.
     pub fn add_node_with(
         &self,
         top_left: Point,
@@ -360,9 +355,9 @@ impl Scene {
     /// Adds a data node to the graph — one whose visible content is `content`'s own grid of values (see
     /// [`DataNodeContent`]) rather than a plain text label — and returns its id.
     ///
-    /// Unlike [`add_node`](Self::add_node), there is no `size` parameter: the box is always sized to fit
-    /// `content`'s rendered grid exactly — see [`DataNodeContent`]'s own doc comment for the layout and formatting
-    /// rules, and `draw_content_box`'s own doc comment for how the fit is computed.
+    /// Unlike [`add_node`](Self::add_node), there is no `size` parameter: the box is always sized to fit `content`'s
+    /// rendered grid exactly — see [`DataNodeContent`]'s own doc comment for the layout and formatting rules, and
+    /// `draw_content_box`'s own doc comment for how the fit is computed.
     ///
     /// Equivalent to [`add_data_node_with`](Self::add_data_node_with) with [`NodeOptions::default`].
     ///
@@ -377,8 +372,8 @@ impl Scene {
         self.add_data_node_with(top_left, content, NodeOptions::default())
     }
 
-    /// Adds a data node to the graph, as [`add_data_node`](Self::add_data_node), but with `options` controlling
-    /// how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
+    /// Adds a data node to the graph, as [`add_data_node`](Self::add_data_node), but with `options` controlling how
+    /// many connector fixing points this node's sides offer — see [`EdgeAnchors`].
     ///
     /// # Errors
     ///
@@ -391,8 +386,8 @@ impl Scene {
     /// `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`. Also checked before drawing anything.
     ///
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Unlike
-    /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always
-    /// sized to fit `content`.
+    /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always sized
+    /// to fit `content`.
     pub fn add_data_node_with(
         &self,
         top_left: Point,
@@ -421,23 +416,23 @@ impl Scene {
         Ok(id)
     }
 
-    /// Updates node `id`'s [`EdgeAnchors`] configuration, and redraws every incident connector immediately with
-    /// the new value.
+    /// Updates node `id`'s [`EdgeAnchors`] configuration, and redraws every incident connector immediately with the
+    /// new value.
     ///
     /// This is the only way to change a node's anchor configuration after [`Scene::add_node`] or
     /// [`Scene::add_node_with`] first draws it — for example, from a live slider control.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. Checked before touching
-    /// the scene, so a rejected call leaves the node exactly as it was.
+    /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. Checked before touching the
+    /// scene, so a rejected call leaves the node exactly as it was.
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Also returns an error — [`Error::UnknownEdge`] or a wrapped [`Error::Svg`] — if redrawing an incident
-    /// connector fails partway through. A failure here can leave some incident connectors already redrawn and
-    /// others not. Dragging a node already carries this same property for its own incident redraws, so this is
-    /// not a new, weaker guarantee.
+    /// Also returns an error — [`Error::UnknownEdge`] or a wrapped [`Error::Svg`] — if redrawing an incident connector
+    /// fails partway through. A failure here can leave some incident connectors already redrawn and others not.
+    /// Dragging a node already carries this same property for its own incident redraws, so this is not a new,
+    /// weaker guarantee.
     pub fn set_edge_anchors(&self, id: NodeId, edge_anchors: Option<EdgeAnchors>) -> Result<(), Error> {
         validate_edge_anchors(edge_anchors)?;
 

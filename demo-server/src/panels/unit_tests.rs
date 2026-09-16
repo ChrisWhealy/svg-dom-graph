@@ -101,9 +101,9 @@ fn check_catalogue_consistency_accepts_a_matching_set() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The end-to-end check: `assemble` against the real project's own `demo/` directory, not a synthetic fixture —
-/// this is what actually proves `index.template.html` and every real `demo/panels/*.html` fragment stay wired
-/// together correctly, not just that each phase's own unit test above passes in isolation.
+/// The end-to-end check: `assemble` against the real project's own `demo/` directory, not a synthetic fixture — this is
+/// what actually proves `index.template.html` and every real `demo/panels/*.html` fragment stay wired together
+/// correctly, not just that each phase's own unit test above passes in isolation.
 #[test]
 fn assemble_produces_the_real_projects_index_html() -> Result<(), String> {
     let root = workspace_root()?;

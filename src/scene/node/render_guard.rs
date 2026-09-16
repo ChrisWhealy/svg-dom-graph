@@ -4,19 +4,18 @@ use svg_dom::SvgNode;
 /// Unless [`disarm`](Self::disarm) is called first, this removes `group` and every element tracked via
 /// [`track`](Self::track) from the DOM.
 ///
-/// `SvgRoot::rect`/`SvgRoot::text`/`SvgRoot::group` each attach their new element to the document immediately,
-/// not just once a caller appends it into its intended parent. So a `?` failing between an element's creation
-/// and its `group.append(...)` call would otherwise leave that element behind, as a stray sibling of `group`
-/// rather than a child of it. [`track`](Self::track) covers exactly that window.
+/// `SvgRoot::rect`/`SvgRoot::text`/`SvgRoot::group` each attach their new element to the document immediately, not just
+/// once a caller appends it into its intended parent. So a `?` failing between an element's creation and its
+/// `group.append(...)` call would otherwise leave that element behind, as a stray sibling of `group` rather than a
+/// child of it. [`track`](Self::track) covers exactly that window.
 ///
-/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) — creating an element, measuring
-/// its bounding box, or setting an attribute — drops this guard while still armed. That unwinds a partially
-/// built node back to nothing rendered, instead of leaving stray elements in the document.
-/// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s
-/// own (also being removed) subtree is harmless.
+/// A `?` on any fallible step between construction and [`disarm`](Self::disarm) — creating an element, measuring its
+/// bounding box, or setting an attribute — drops this guard while still armed. That unwinds a partially built node back
+/// to nothing rendered, instead of leaving stray elements in the document.
+/// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s own
+/// (also being removed) subtree is harmless.
 ///
-/// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener
-/// installation.
+/// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener installation.
 pub(super) struct RenderGuard {
     group: SvgNode,
     loose: Vec<SvgNode>,

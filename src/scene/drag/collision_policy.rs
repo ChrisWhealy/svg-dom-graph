@@ -1,7 +1,6 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What [`crate::scene::Scene::make_draggable_with`] does when a drop event leaves the dragged node overlapping
-/// some other node.
-/// Without this, this crate does not otherwise have any opinion on whether nodes may or may not overlap.
+/// What [`crate::scene::Scene::make_draggable_with`] does when a drop event leaves the dragged node overlapping some
+/// other node. Without this, this crate does not otherwise have any opinion on whether nodes may or may not overlap.
 ///
 /// `#[non_exhaustive]` is used here because this type is expected to grow as future collision strategies are added.
 /// Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
@@ -15,14 +14,14 @@
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub enum CollisionPolicy {
-    /// Leaves the dropped node exactly where the pointer released it, even if that overlaps another node.
-    /// Choose this when overlapping nodes are a legitimate outcome for the caller's own graph.
+    /// Leaves the dropped node exactly where the pointer released it, even if that overlaps another node. Choose this
+    /// when overlapping nodes are a legitimate outcome for the caller's own graph.
     Allow,
     /// The dropped node is pushed back along the line between its pre-drag position and the centre of the about-to-be
     /// overlapped node, plus a padding distance.
     ///
-    /// This can be useful if it is not appropriate for a node to be dropped at the `on_pointerup` location after
-    /// a drag operation.
+    /// This can be useful if it is not appropriate for a node to be dropped at the `on_pointerup` location after a
+    /// drag operation.
     ///
     /// ***IMPORTANT***
     ///
@@ -31,11 +30,11 @@ pub enum CollisionPolicy {
     /// other node in the proximity of the one for which the overlap has been avoided.
     ///
     /// [`crate::scene::Scene::add_node`] also does not itself reject an overlapping starting position, so it is not
-    /// possible to offer a "nodes never overlap" guarantee.  All we can say is that the likelihood of overlap is
-    /// reduced.
+    /// possible to offer a "nodes never overlap" guarantee. All we can say is that the likelihood of overlap
+    /// is reduced.
     PushClear {
-        /// Extra clearance kept between the dropped node and whatever it overlapped, in this scene's user-space
-        /// units, so the two end up with a visible gap rather than touching edges.
+        /// Extra clearance kept between the dropped node and whatever it overlapped, in this scene's user-space units,
+        /// so the two end up with a visible gap rather than touching edges.
         padding: f64,
     },
 }

@@ -18,9 +18,8 @@ pub use connector_type::ConnectorType;
 use svg_dom::root::utils::{Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that
-/// is not a finite, non-negative value `>= 0.0`.
-/// No validation is required for the other `ConnectorType` variants.
+/// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that is
+/// not a finite, non-negative value `>= 0.0`. No validation is required for the other `ConnectorType` variants.
 fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
     match connector_type {
         ConnectorType::Elbow { corner_radius } if !corner_radius.is_finite() || corner_radius < 0.0 => {
@@ -33,9 +32,8 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One endpoint's anchor point for a straight connector, honouring `anchors`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
-/// `None` keeps [`ConnectorType::Straight`]'s own default calculated as a continuous ray crossing — see
-/// [`boundary_point`].
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None` keeps
+/// [`ConnectorType::Straight`]'s own default calculated as a continuous ray crossing — see [`boundary_point`].
 fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> Point {
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n).0,
@@ -46,9 +44,8 @@ fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One endpoint's anchor point and side for an elbowed connector, honouring `anchors`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
-/// `None` keeps [`ConnectorType::Elbow`]'s own default calculated as the crossed side's own midpoint — see
-/// [`edge_anchor`].
+/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None` keeps
+/// [`ConnectorType::Elbow`]'s own default calculated as the crossed side's own midpoint — see [`edge_anchor`].
 fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Point, Side) {
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n),
@@ -57,9 +54,8 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Po
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A connector's own corner points and the corner radius by which it might be rounded.
-/// Exists for a `connector_type` between `from` and `to`, each of which have their respective `from_anchors` and
-/// `to_anchors`.
+/// A connector's own corner points and the corner radius by which it might be rounded. Exists for a `connector_type`
+/// between `from` and `to`, each of which have their respective `from_anchors` and `to_anchors`.
 ///
 /// A [`ConnectorType::Straight`] connector cannot have a corner radius, so its radius is always `0.0`.
 ///
@@ -98,31 +94,28 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
-    /// `NodeId` from a different `Scene`.
-    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node in this scene — not yet
-    /// supported, see that variant's own doc comment for why.
+    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a `NodeId`
+    /// from a different `Scene`. Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node in this
+    /// scene — not yet supported, see that variant's own doc comment for why.
     pub fn add_edge(&self, from: NodeId, to: NodeId) -> Result<EdgeId, Error> {
         self.add_edge_with(from, to, ConnectorOptions::default())
     }
 
-    /// Adds a directed edge to the graph, draws its arrow-tipped connector with `options` controlling how it
-    /// routes, and returns its id.
+    /// Adds a directed edge to the graph, draws its arrow-tipped connector with `options` controlling how it routes,
+    /// and returns its id.
     ///
     /// See [`ConnectorType`] for the routing styles available, and the anchor rule each one follows.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidCornerRadius`] if `options.connector_type` is [`ConnectorType::Elbow`] with a
-    /// corner radius that is not a finite value `>= 0.0`. Checked before drawing anything or touching the graph,
-    /// so a rejected call leaves the scene exactly as it was.
+    /// Returns [`Error::InvalidCornerRadius`] if `options.connector_type` is [`ConnectorType::Elbow`] with a corner
+    /// radius that is not a finite value `>= 0.0`. Checked before drawing anything or touching the graph, so a rejected
+    /// call leaves the scene exactly as it was.
     ///
-    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a
-    /// `NodeId` from a different `Scene`.
-    /// Checked before the self-loop check below, so a foreign id is always reported as unknown, even if `from` and
-    /// `to` are the same foreign id.
-    /// Returns [`Error::SelfLoopUnsupported`] if `from` and `to` are the same node in this scene — not yet
-    /// supported, see that variant's own doc comment for why.
+    /// Returns [`Error::UnknownNode`] if `from` or `to` does not name a node in this scene — for example, a `NodeId`
+    /// from a different `Scene`. Checked before the self-loop check below, so a foreign id is always reported as
+    /// unknown, even if `from` and `to` are the same foreign id. Returns [`Error::SelfLoopUnsupported`] if `from` and
+    /// `to` are the same node in this scene — not yet supported, see that variant's own doc comment for why.
     pub fn add_edge_with(&self, from: NodeId, to: NodeId, options: ConnectorOptions) -> Result<EdgeId, Error> {
         validate_connector_type(options.connector_type)?;
 
@@ -159,22 +152,22 @@ impl Scene {
 
     /// Updates edge `id`'s connector type, and redraws it immediately with the new value.
     ///
-    /// Every later reroute, as either endpoint moves, keeps using this new type. This is the only way to change
-    /// an edge's connector type after [`Scene::add_edge`] or [`Scene::add_edge_with`] first draws it. A live
-    /// control can use it to switch between [`ConnectorType::Straight`] and [`ConnectorType::Elbow`], or to adjust
-    /// an elbow's corner radius.
+    /// Every later reroute, as either endpoint moves, keeps using this new type. This is the only way to change an
+    /// edge's connector type after [`Scene::add_edge`] or [`Scene::add_edge_with`] first draws it. A live control can
+    /// use it to switch between [`ConnectorType::Straight`] and [`ConnectorType::Elbow`], or to adjust an elbow's
+    /// corner radius.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius
-    /// that is not a finite value `>= 0.0`. Checked before touching the scene, so a rejected call leaves the
-    /// connector exactly as it was.
+    /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that
+    /// is not a finite value `>= 0.0`. Checked before touching the scene, so a rejected call leaves the connector
+    /// exactly as it was.
     ///
     /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
     ///
-    /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails
-    /// once underway. The stored connector type is only updated once the new path has actually been written. A
-    /// failure here leaves `id` rendered and recorded exactly as it was before the call.
+    /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails once
+    /// underway. The stored connector type is only updated once the new path has actually been written. A failure here
+    /// leaves `id` rendered and recorded exactly as it was before the call.
     pub fn set_connector_type(&self, id: EdgeId, connector_type: ConnectorType) -> Result<(), Error> {
         validate_connector_type(connector_type)?;
 

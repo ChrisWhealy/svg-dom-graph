@@ -1,8 +1,8 @@
 //! Static file server for the `svg-dom-graph` demo gallery.
 //!
-//! Mirrors `svg-dom`'s own `demo-server`: a `<nav>`-driven gallery where each panel builds lazily the first time
-//! it is selected — see [`panels`]'s own doc comment for the one thing this crate's much smaller panel count
-//! still simplifies away (category dividers in the menu).
+//! Mirrors `svg-dom`'s own `demo-server`: a `<nav>`-driven gallery where each panel builds lazily the first time it is
+//! selected — see [`panels`]'s own doc comment for the one thing this crate's much smaller panel count still simplifies
+//! away (category dividers in the menu).
 //!
 //! Run from the project root with:
 //! ```sh
@@ -11,16 +11,15 @@
 //!
 //! The following steps are performed:
 //!
-//! 1. `demo-server`'s own panel manifest and `demo-app`'s `demo_gallery!` list must agree with each other (see
-//!    [`validate`])
-//! 1. Rebuilds `index.html` from `demo/index.template.html` and the various `demo/panels/*.html` files (see
-//!    [`panels`])
+//! 1. `demo-server`'s own panel manifest and `demo-app`'s `demo_gallery!` list must agree with each other
+//!    (see [`validate`])
+//! 1. Rebuilds `index.html` from `demo/index.template.html` and the various `demo/panels/*.html` files (see [`panels`])
 //! 1. Rebuilds the `svg-dom-graph-demo` crate's wasm package using `wasm-pack build demo-app --target web`
 //! 1. Serves the result at <http://127.0.0.1:8000/>
 //!
-//! The generated `index.html`, the copied `style.css`, and the wasm `pkg/` are kept under `target/demo-stage/`
-//! rather than written into the source tree (as the old `./demo` shell script did, alongside a
-//! `python3 -m http.server` to serve it) or served straight out of the project root. Concretely:
+//! The generated `index.html`, the copied `style.css`, and the wasm `pkg/` are kept under `target/demo-stage/` rather
+//! than written into the source tree (as the old `./demo` shell script did, alongside a `python3 -m http.server` to
+//! serve it) or served straight out of the project root. Concretely:
 //!
 //! ```text
 //! target/demo-stage/
@@ -37,28 +36,27 @@
 //!
 //! The port number can be overridden using the `PORT` environment variable, e.g. `PORT=9000 cargo demo`.
 //!
-//! [`build::prepare_stage`] also reruns before every request for `/` or `/index.html`, not just once at startup —
-//! see `main`'s own middleware for why it is scoped to just those two paths rather than every request the server
-//! handles. So editing `index.html`'s own template, its panel fragments, or `style.css` is visible on the next
-//! browser refresh alone. Nothing restages the wasm package per request: `wasm-pack` is too slow for that, and
-//! editing Rust source needs a restart regardless, for the wasm rebuild to even happen.
+//! [`build::prepare_stage`] also reruns before every request for `/` or `/index.html`, not just once at startup — see
+//! `main`'s own middleware for why it is scoped to just those two paths rather than every request the server handles.
+//! So editing `index.html`'s own template, its panel fragments, or `style.css` is visible on the next browser refresh
+//! alone. Nothing restages the wasm package per request: `wasm-pack` is too slow for that, and editing Rust source
+//! needs a restart regardless, for the wasm rebuild to even happen.
 //!
-//! The build pipeline itself — resolving staging paths through to a wasm package ready to serve — lives in
-//! [`build`], as a `Result`-returning [`build::build_demo`] rather than something that reports errors and exits on
-//! its own. That keeps every "how do we stage the demo" decision testable and reusable independently of Actix, and
-//! leaves `main` as the one place that decides what a build failure means for the process.
+//! The build pipeline itself — resolving staging paths through to a wasm package ready to serve — lives in [`build`],
+//! as a `Result`-returning [`build::build_demo`] rather than something that reports errors and exits on its own. That
+//! keeps every "how do we stage the demo" decision testable and reusable independently of Actix, and leaves `main` as
+//! the one place that decides what a build failure means for the process.
 //!
-//! Run with `--prepare-only` (`cargo run -p demo-server -- --prepare-only`) to run [`build::prepare_stage`] alone
-//! — validate the catalogue, assemble `index.html`, copy `style.css` — and exit, without rebuilding the wasm
-//! package or starting the server. This is what lets CI exercise the actual staging pipeline without paying for a
-//! full wasm build every run.
+//! Run with `--prepare-only` (`cargo run -p demo-server -- --prepare-only`) to run [`build::prepare_stage`] alone —
+//! validate the catalogue, assemble `index.html`, copy `style.css` — and exit, without rebuilding the wasm package or
+//! starting the server. This is what lets CI exercise the actual staging pipeline without paying for a full wasm build
+//! every run.
 //!
-//! Run with `--build-only` (`cargo run -p demo-server -- --build-only`) to run the full [`build::build_demo`]
-//! pipeline — stage everything and rebuild the wasm package — and exit, without starting the server. CI's `wasm`
-//! job uses this instead of invoking `wasm-pack build demo-app ...` directly, so it exercises the exact command
-//! `build::build_wasm` actually constructs (working directory, argument order, the absolute `--out-dir` computed
-//! from `StagePaths`) rather than a hand-written approximation of it that could quietly drift out of step with
-//! what `cargo demo` really runs.
+//! Run with `--build-only` (`cargo run -p demo-server -- --build-only`) to run the full [`build::build_demo`] pipeline
+//! — stage everything and rebuild the wasm package — and exit, without starting the server. CI's `wasm` job uses this
+//! instead of invoking `wasm-pack build demo-app ...` directly, so it exercises the exact command `build::build_wasm`
+//! actually constructs (working directory, argument order, the absolute `--out-dir` computed from `StagePaths`) rather
+//! than a hand-written approximation of it that could quietly drift out of step with what `cargo demo` really runs.
 mod build;
 mod panels;
 mod validate;

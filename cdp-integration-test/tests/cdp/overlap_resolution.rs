@@ -1,5 +1,4 @@
-//! Dropping a node onto another node pushes it back to the expected clear position, via real, CDP-driven mouse
-//! input.
+//! Dropping a node onto another node pushes it back to the expected clear position, via real, CDP-driven mouse input.
 //!
 //! Drags the fixture's `mover` node (`#diagram > g:nth-of-type(3)`) onto `blocker` (`#diagram > g:nth-of-type(2)`, not
 //! draggable, fixed in place), then checks that `mover`'s final position is the one the documented overlap-resolution
@@ -9,11 +8,11 @@
 //!
 //! # Expected position, worked by hand
 //!
-//! Fixture positions (`cdp-test-fixture/src/lib.rs`): `mover` starts at `(20, 150)`, size `(80, 40)` — centre
-//! `(60, 170)`. `blocker` sits at `(300, 150)`, same size — centre `(340, 170)`.
+//! Fixture positions (`cdp-test-fixture/src/lib.rs`): `mover` starts at `(20, 150)`, size `(80, 40)` — centre `(60,
+//! 170)`. `blocker` sits at `(300, 150)`, same size — centre `(340, 170)`.
 //!
-//! `blocker` inflated by half of `mover`'s size on every side: origin `(260, 130)`, size `(160, 80)` — spans
-//! `x: [260, 420]`, `y: [130, 210]`, same centre `(340, 170)`.
+//! `blocker` inflated by half of `mover`'s size on every side: origin `(260, 130)`, size `(160, 80)` — spans `x: [260,
+//! 420]`, `y: [130, 210]`, same centre `(340, 170)`.
 //!
 //! The approach line from `mover`'s pre-drag centre `(60, 170)` through `blocker`'s centre `(340, 170)` is purely
 //! horizontal (`dy = 0`), so it crosses the inflated rectangle's boundary at its left edge: `x = 260`, `y = 170`.

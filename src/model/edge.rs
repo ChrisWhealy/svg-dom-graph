@@ -10,8 +10,8 @@ pub(crate) struct Edge {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Identifies one edge in a graph.
 ///
-/// See [`NodeId`] for why this is a distinct type rather than a bare `usize`, and why it carries its owning graph's
-/// id as well as a sequence number.
+/// See [`NodeId`] for why this is a distinct type rather than a bare `usize`, and why it carries its owning graph's id
+/// as well as a sequence number.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub struct EdgeId {
     pub(crate) graph: usize,

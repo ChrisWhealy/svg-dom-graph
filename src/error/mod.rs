@@ -1,7 +1,7 @@
 //! This crate's own error type.
 //!
 //! Wraps [`svg_dom::Error`] for anything that comes from the underlying DOM library, and adds variants for graph-domain
-//! problems detected by this crate.  For example, a [`NodeId`]/[`EdgeId`] used with a `Scene` that did not create it.
+//! problems detected by this crate. For example, a [`NodeId`]/[`EdgeId`] used with a `Scene` that did not create it.
 
 use crate::model::{edge::EdgeId, node::NodeId};
 use std::fmt;
@@ -14,9 +14,8 @@ use svg_dom::root::utils::Rect;
 pub enum Error {
     /// An error from the underlying `svg-dom` library: DOM creation, an attribute write, and so on.
     Svg(svg_dom::Error),
-    /// The `NodeId` cannot be found in the `Scene`.
-    /// All `NodeId`'s are `Scene`-specific: a `NodeId` from scene `a` cannot be used in scene `b`. So this
-    /// error can occur if a `NodeId` is accidentally passed to some other scene.
+    /// The `NodeId` cannot be found in the `Scene`. All `NodeId`'s are `Scene`-specific: a `NodeId` from scene `a`
+    /// cannot be used in scene `b`. So this error can occur if a `NodeId` is accidentally passed to some other scene.
     UnknownNode(NodeId),
     /// An `EdgeId` does not name an edge in the `Scene` it was used with.
     ///
@@ -26,8 +25,8 @@ pub enum Error {
     ///
     /// Having both endpoints connect to the same node is not supported yet.
     ///
-    /// Rejecting the call now keeps room to add real loop-edge routing later, as an additive relaxation of this same
-    /// method.
+    /// Rejecting the call now keeps room to add real loop-edge routing later, as an additive relaxation of this
+    /// same method.
     ///
     /// Silently returning an `EdgeId` for a connector nobody can see would be worse.
     SelfLoopUnsupported(NodeId),
@@ -42,7 +41,8 @@ pub enum Error {
     ///
     /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending it, and
     /// a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into the resulting
-    /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as they were.
+    /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as
+    /// they were.
     InvalidCollisionPadding(f64),
     /// `Scene::make_draggable_with` was given an invalid `DragOptions::bounds` value. The origin and size must be
     /// constructed from finite, non-negative values.
@@ -79,15 +79,14 @@ pub enum Error {
     InvalidNodeGeometry(Rect),
     /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] with no values.
     ///
-    /// If there is no data to draw inside a grid, then no sensible box size can be computed.
-    /// This condition is rejected before drawing anything or touching the graph's model, so a rejected call leaves the
-    /// scene unchanged.
+    /// If there is no data to draw inside a grid, then no sensible box size can be computed. This condition is rejected
+    /// before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     EmptyNodeContent,
     /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] whose
     /// [`crate::scene::GridLayout`] wraps `0` — `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`.
     ///
-    /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing
-    /// anything or touching the graph's model, so a rejected call leaves the scene unchanged.
+    /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing anything or
+    /// touching the graph's model, so a rejected call leaves the scene unchanged.
     InvalidGridLayout(crate::scene::GridLayout),
 }
 
@@ -136,7 +135,7 @@ impl std::error::Error for Error {
     /// that specifically walks using `source()`.
     ///
     /// Every other variant originates in this crate itself, not from wrapping another error, so `None` is correct for
-    /// them.  This is the default this method would return without being overridden at all.
+    /// them. This is the default this method would return without being overridden at all.
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match self {
             Self::Svg(err) => Some(err),

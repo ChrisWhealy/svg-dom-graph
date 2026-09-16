@@ -1,11 +1,11 @@
 //! Renders a graph onto the DOM, and keeps each node's and edge's rendered SVG handles alongside it.
 //!
-//! The topology model (crate-private while this crate's API is still taking shape) owns the topology and is the
-//! single source of truth for it.
-//! This module pairs each of its ids with a rendered handle, and keeps both in sync as nodes move.
+//! The topology model (crate-private while this crate's API is still taking shape) owns the topology and is the single
+//! source of truth for it. This module pairs each of its ids with a rendered handle, and keeps both in sync as
+//! nodes move.
 //!
-//! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one.
-//! See the sibling `demo-app` crate for a small worked example.
+//! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one. See the
+//! sibling `demo-app` crate for a small worked example.
 
 mod box_handles;
 mod connector;
@@ -36,8 +36,8 @@ use svg_dom::{
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Converts `client` (viewport CSS pixels, such as `PointerEvent::client_x`/`client_y`) into user-space
-/// coordinates, via `inverse_ctm`.
+/// Converts `client` (viewport CSS pixels, such as `PointerEvent::client_x`/`client_y`) into user-space coordinates,
+/// via `inverse_ctm`.
 fn client_to_user_space(client: Point, inverse_ctm: Matrix2D) -> Point {
     apply_matrix(inverse_ctm, client)
 }
@@ -49,9 +49,9 @@ fn box_centre(rect: Rect) -> Point {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` — and, so long as a
-/// caller's own document doesn't deliberately collide with this crate's naming, no unrelated content either — is
-/// likely to claim.
+/// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` — and, so long as a caller's
+/// own document doesn't deliberately collide with this crate's naming, no unrelated content either — is likely
+/// to claim.
 static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -69,12 +69,10 @@ fn distance_sq(a: Point, b: Point) -> f64 {
 /// Defines a small filled-triangle arrowhead marker in `<defs>` and returns its handle.
 ///
 /// `ref_x`/`ref_y` place the marker's anchor point (the tip of the triangle) at the very end of the line it attaches
-/// to.
-/// `orient("auto")` then rotates the marker to follow that line's own direction.
+/// to. `orient("auto")` then rotates the marker to follow that line's own direction.
 ///
-/// `marker_id` must be unique within `svg`'s document.
-/// A hardcoded id such as `"arrow"` would collide the moment a second `Scene` shares the same `<svg>`, or the
-/// caller's own document already defines an element with that id.
+/// `marker_id` must be unique within `svg`'s document. A hardcoded id such as `"arrow"` would collide the moment a
+/// second `Scene` shares the same `<svg>`, or the caller's own document already defines an element with that id.
 fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Error> {
     let defs = svg.defs()?;
     let marker = defs.marker(marker_id)?;
@@ -93,15 +91,13 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A rendered `Graph`, paired with each node's and edge's own SVG handles.
 ///
-/// `Graph` owns the topology.
-/// This owns everything DOM-specific, keyed by the same ids `Graph` hands out.
-/// `move_node` (called internally by [`Scene::make_draggable`]) is the one place that keeps a moved node's rectangle,
-/// its rendered box/label position, and its incident connectors all in sync.
+/// `Graph` owns the topology. This owns everything DOM-specific, keyed by the same ids `Graph` hands out. `move_node`
+/// (called internally by [`Scene::make_draggable`]) is the one place that keeps a moved node's rectangle, its rendered
+/// box/label position, and its incident connectors all in sync.
 ///
-/// Owns the `SvgRoot` it renders into.
-/// `Scene::new(svg)` binds them for the `SceneInner`'s whole lifetime, so every node and edge in one `Scene` is
-/// guaranteed to live in the same `<svg>` document — there is no `svg` parameter on [`Scene::add_node`] or
-/// [`Scene::add_edge`] through which a caller could pass a different root by mistake.
+/// Owns the `SvgRoot` it renders into. `Scene::new(svg)` binds them for the `SceneInner`'s whole lifetime, so every
+/// node and edge in one `Scene` is guaranteed to live in the same `<svg>` document — there is no `svg` parameter on
+/// [`Scene::add_node`] or [`Scene::add_edge`] through which a caller could pass a different root by mistake.
 struct SceneInner {
     svg: SvgRoot,
     graph: Graph,
@@ -116,8 +112,8 @@ impl SceneInner {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene's graph — for example, a `NodeId`
-    /// from a different `Scene`.
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene's graph — for example, a `NodeId` from
+    /// a different `Scene`.
     fn node_rect(&self, id: NodeId) -> Result<Rect, Error> {
         self.graph.node(id).map(|node| node.rect).ok_or(Error::UnknownNode(id))
     }
@@ -138,15 +134,14 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
-    /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at
-    /// creation, in local coordinates relative to `(0, 0)`. See [`node::draw_box`]/[`node::draw_content_box`].
-    /// So moving the node only ever means rewriting the group's own `transform`. It never touches any child's
-    /// own coordinates. This stays exactly as cheap for a data node with hundreds of value cells as for a plain
-    /// label.
+    /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at creation,
+    /// in local coordinates relative to `(0, 0)`. See [`node::draw_box`]/[`node::draw_content_box`]. So moving the node
+    /// only ever means rewriting the group's own `transform`. It never touches any child's own coordinates. This stays
+    /// exactly as cheap for a data node with hundreds of value cells as for a plain label.
     ///
-    /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move.
-    /// See [`SvgNode::set_transform_fmt`] — not [`SvgNode::set_translate`], whose fixed one-decimal-place
-    /// precision would quantise the rendered position away from `new_origin`, by up to 0.05 user-space units.
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move. See
+    /// [`SvgNode::set_transform_fmt`] — not [`SvgNode::set_translate`], whose fixed one-decimal-place precision would
+    /// quantise the rendered position away from `new_origin`, by up to 0.05 user-space units.
     ///
     /// # Errors
     ///
@@ -170,13 +165,13 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
     ///
-    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
-    /// event.
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every
+    /// move event.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if
-    /// either of its endpoints no longer does.
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if either
+    /// of its endpoints no longer does.
     fn redraw_edge(&self, id: EdgeId, scratch: &mut String) -> Result<(), Error> {
         let edge = self.graph.edge(id).ok_or(Error::UnknownEdge(id))?;
         let from_rect = self.node_rect(edge.from)?;
@@ -194,17 +189,17 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Redraws edge `id` with `connector_type`, and only then records it as the edge's new type.
     ///
-    /// Writing the path before committing the type keeps `Scene::set_connector_type` transactional. If the DOM
-    /// write fails partway through — [`SvgNode::set_attr`] can itself fail — the stored `connector_type` is left
-    /// exactly as it was. It never claims a route the rendered path does not actually show.
+    /// Writing the path before committing the type keeps `Scene::set_connector_type` transactional. If the DOM write
+    /// fails partway through — [`SvgNode::set_attr`] can itself fail — the stored `connector_type` is left exactly as
+    /// it was. It never claims a route the rendered path does not actually show.
     ///
-    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
-    /// event.
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every
+    /// move event.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if
-    /// either of its endpoints no longer does.
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or [`Error::UnknownNode`] if either
+    /// of its endpoints no longer does.
     fn redraw_edge_with_type(
         &mut self,
         id: EdgeId,
@@ -229,9 +224,9 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// If node `id`'s current rect overlaps another node's, returns a corrected origin that resolves the overlap.
     ///
-    /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the
-    /// drag that produced its current, overlapping position — through the overlapped node's centre, stopping just
-    /// clear of that node's boundary, plus `padding` user-space units.
+    /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the drag
+    /// that produced its current, overlapping position — through the overlapped node's centre, stopping just clear of
+    /// that node's boundary, plus `padding` user-space units.
     ///
     /// When `id`'s rect overlaps more than one other node, it resolves against whichever overlapping node's centre is
     /// nearest to `id`'s own current centre. Ties are broken by `NodeId`'s index, so the choice stays deterministic
@@ -241,14 +236,14 @@ impl SceneInner {
     /// a different node than the one resolved against. See [`CollisionPolicy::PushClear`]'s own doc comment for why
     /// this is a best-effort correction, not a guarantee.
     ///
-    /// If `pre_drag_origin`'s centre coincides exactly with the blocking node's own centre, there is no direction
-    /// to retreat along, and [`nearest_clear_centre`] returns the blocker's own centre unchanged. This is handled
-    /// explicitly by falling back to `pre_drag_origin` here, rather than converting that returned centre back to
-    /// an origin via `dragged`'s size and relying on the two being numerically identical — which they always are
-    /// in this case (`blocker_centre - dragged.size / 2 == pre_drag_origin` follows directly from
-    /// `pre_drag_centre == blocker_centre`), but only because of that algebraic identity, not because the
-    /// conversion was written with this case in mind. Spelling it out here keeps that guarantee from depending on
-    /// `nearest_clear_centre`'s internals never changing.
+    /// If `pre_drag_origin`'s centre coincides exactly with the blocking node's own centre, there is no direction to
+    /// retreat along, and [`nearest_clear_centre`] returns the blocker's own centre unchanged. This is handled
+    /// explicitly by falling back to `pre_drag_origin` here, rather than converting that returned centre back to an
+    /// origin via `dragged`'s size and relying on the two being numerically identical — which they always are in this
+    /// case (`blocker_centre - dragged.size / 2 == pre_drag_origin` follows directly from `pre_drag_centre ==
+    /// blocker_centre`), but only because of that algebraic identity, not because the conversion was written with this
+    /// case in mind. Spelling it out here keeps that guarantee from depending on `nearest_clear_centre`'s internals
+    /// never changing.
     ///
     /// Returns `None` if `id`'s current rect does not overlap any other node, or if `id` does not name a node in
     /// this scene.
@@ -289,21 +284,20 @@ impl SceneInner {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A cheap, cloneable handle to a rendered graph.
 ///
-/// Internally an `Rc<RefCell<SceneInner>>` — this crate owns that sharing strategy, not the caller.
-/// A `Scene` can be cloned freely (every clone refers to the same underlying graph and DOM state) and its methods take
-/// `&self`, not `&mut self`, so a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
+/// Internally an `Rc<RefCell<SceneInner>>` — this crate owns that sharing strategy, not the caller. A `Scene` can be
+/// cloned freely (every clone refers to the same underlying graph and DOM state) and its methods take `&self`, not
+/// `&mut self`, so a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
 /// [`make_draggable`](Self::make_draggable) or to share it with more than one closure.
 ///
 /// # Keep at least one handle alive for as long as the scene should stay interactive
 ///
-/// [`make_draggable`](Self::make_draggable)'s own listener closures deliberately hold only `Weak` references back
-/// to this scene's shared state, not strong ones — a strong self-reference there would leak the whole scene (and
-/// every node, edge, and DOM element it owns) forever, since nothing would ever be able to drop the last strong
-/// handle.
+/// [`make_draggable`](Self::make_draggable)'s own listener closures deliberately hold only `Weak` references back to
+/// this scene's shared state, not strong ones — a strong self-reference there would leak the whole scene (and every
+/// node, edge, and DOM element it owns) forever, since nothing would ever be able to drop the last strong handle.
 ///
-/// The consequence: once every `Scene` handle a caller holds is dropped, the scene's shared state is freed
-/// immediately, and every listener silently stops responding — no panic, nothing in the console. This is easy to
-/// trip over in exactly the shape a `#[wasm_bindgen(start)]` entry point naturally takes:
+/// The consequence: once every `Scene` handle a caller holds is dropped, the scene's shared state is freed immediately,
+/// and every listener silently stops responding — no panic, nothing in the console. This is easy to trip over in
+/// exactly the shape a `#[wasm_bindgen(start)]` entry point naturally takes:
 ///
 /// ```rust,no_run
 /// # use svg_dom::{SvgRoot, root::utils::{Point, Size}};
@@ -320,8 +314,8 @@ impl SceneInner {
 /// }
 /// ```
 ///
-/// Keep a handle alive somewhere that outlives the function that built it — for example, in a `thread_local!` for
-/// the page's whole lifetime, as `demo-app`'s own `SCENE` does.
+/// Keep a handle alive somewhere that outlives the function that built it — for example, in a `thread_local!` for the
+/// page's whole lifetime, as `demo-app`'s own `SCENE` does.
 #[derive(Clone)]
 pub struct Scene {
     inner: Rc<RefCell<SceneInner>>,
@@ -330,8 +324,8 @@ pub struct Scene {
 impl Scene {
     /// Creates an empty scene, ready to hold nodes and edges within `svg`.
     ///
-    /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared
-    /// across all its edges.
+    /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared across
+    /// all its edges.
     pub fn new(svg: SvgRoot) -> Result<Self, Error> {
         let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
         let arrow = define_arrow_marker(&svg, &marker_id)?;

@@ -20,11 +20,11 @@ use svg_dom::root::utils::{Point, Rect};
 /// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine: Safari in
 /// particular has still started one with only the CSS property set. Consequently, `make_draggable` also calls
 /// `prevent_default()` on `pointerdown`/`pointermove`. The two are kept together: CSS blocks selection from a mouse
-/// drag that starts outside this element and passes over it without ever firing this element's own `pointerdown`,
-/// while `prevent_default()` blocks it for the drag this element's own listeners actually see.
+/// drag that starts outside this element and passes over it without ever firing this element's own `pointerdown`, while
+/// `prevent_default()` blocks it for the drag this element's own listeners actually see.
 const GRAB_STYLE: &str = "touch-action: none; user-select: none; -webkit-user-select: none;";
-/// Style applied while a box is actively being dragged — same as [`GRAB_STYLE`], but with a grabbing cursor. A
-/// drag already in progress benefits from that feedback in a way merely hovering over the node does not.
+/// Style applied while a box is actively being dragged — same as [`GRAB_STYLE`], but with a grabbing cursor. A drag
+/// already in progress benefits from that feedback in a way merely hovering over the node does not.
 const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -32,9 +32,9 @@ const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select:
 const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", "pointercancel"];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::InvalidDragBounds`] if `bounds` is `Some` with a non-finite origin or size, or a negative
-/// width or height. `None`, and every finite rect with a non-negative width and height, are valid — including a
-/// zero width or height, which [`clamp_to_bounds`] already handles deterministically.
+/// Returns [`Error::InvalidDragBounds`] if `bounds` is `Some` with a non-finite origin or size, or a negative width or
+/// height. `None`, and every finite rect with a non-negative width and height, are valid — including a zero width or
+/// height, which [`clamp_to_bounds`] already handles deterministically.
 fn validate_bounds(bounds: Option<Rect>) -> Result<(), Error> {
     let Some(bounds) = bounds else { return Ok(()) };
 
@@ -53,11 +53,10 @@ fn validate_bounds(bounds: Option<Rect>) -> Result<(), Error> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Wires up pointer dragging for node `id`, with [`DragOptions::default`]'s collision behaviour: a drop that
-    /// overlaps another node is pushed back clear of it, along the line to where the drag started, plus 6
-    /// user-space units of padding.
+    /// overlaps another node is pushed back clear of it, along the line to where the drag started, plus 6 user-space
+    /// units of padding.
     ///
-    /// See [`make_draggable_with`](Self::make_draggable_with) to allow overlapping nodes, or to use different
-    /// padding.
+    /// See [`make_draggable_with`](Self::make_draggable_with) to allow overlapping nodes, or to use different padding.
     ///
     /// # Errors
     ///
@@ -75,33 +74,33 @@ impl Scene {
     ///
     /// Moves the node, and redraws its incident connectors, as the pointer moves.
     ///
-    /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not this scene's user-space coordinates — the
-    /// two only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly.
-    /// This converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in
-    /// `geometry`), so dragging stays correct under scaling, a resized `viewBox`, or CSS transforms.
+    /// `PointerEvent::client_x`/`client_y` are viewport CSS pixels, not this scene's user-space coordinates — the two
+    /// only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly. This
+    /// converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in `geometry`), so
+    /// dragging stays correct under scaling, a resized `viewBox`, or CSS transforms.
     ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
     /// different `Scene`.
     ///
-    /// Returns [`Error::AlreadyDraggable`] if `id` is already draggable — calling this (or [`Scene::make_draggable`])
-    /// a second time for the same node does not replace the first installation, so this is rejected outright rather
-    /// than silently doubling up its listeners and drag-state. Reusing `id` after such an error is safe: the first
+    /// Returns [`Error::AlreadyDraggable`] if `id` is already draggable — calling this (or [`Scene::make_draggable`]) a
+    /// second time for the same node does not replace the first installation, so this is rejected outright rather than
+    /// silently doubling up its listeners and drag-state. Reusing `id` after such an error is safe: the first
     /// installation is untouched.
     ///
     /// Returns [`Error::InvalidCollisionPadding`] if `options.collision` is [`CollisionPolicy::PushClear`] with a
     /// `padding` that is not a finite value `>= 0.0`.
     ///
-    /// Returns [`Error::InvalidDragBounds`] if `options.bounds` is `Some` with an origin or size that is not
-    /// finite, or a negative width or height.
+    /// Returns [`Error::InvalidDragBounds`] if `options.bounds` is `Some` with an origin or size that is not finite, or
+    /// a negative width or height.
     ///
     /// Both are checked before anything else, so this scene's existing state is left untouched either way.
     ///
-    /// If `set_attr` or any one of the four pointer-listener registrations this method makes fails partway
-    /// through — expected to be extremely rare, since it means the underlying `addEventListener` DOM call itself
-    /// failed — `id` is left exactly as it was before the call: not marked draggable, and with none of this
-    /// method's own listeners left dangling on it. A failed call can safely be retried.
+    /// If `set_attr` or any one of the four pointer-listener registrations this method makes fails partway through —
+    /// expected to be extremely rare, since it means the underlying `addEventListener` DOM call itself failed — `id` is
+    /// left exactly as it was before the call: not marked draggable, and with none of this method's own listeners left
+    /// dangling on it. A failed call can safely be retried.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
         if let CollisionPolicy::PushClear { padding } = options.collision {
             if !(padding.is_finite() && padding >= 0.0) {

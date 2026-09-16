@@ -1,17 +1,16 @@
 use crate::scene::ConnectorType;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Configures how [`Scene::add_edge_with`] draws a connector.
+/// Configures how [Scene::add_edge_with](crate::scene::Scene::add_edge_with) draws a connector.
 ///
-/// Build one either with [`ConnectorOptions::default`] or with [`with_connector_type`](Self::with_connector_type).
-/// A struct literal does not compile outside this crate.
+/// Build one either with [`ConnectorOptions::default`] or with [`with_connector_type`](Self::with_connector_type). A
+/// struct literal does not compile outside this crate.
 ///
 /// ***A note on `Copy`***
 ///
 /// Deriving `Copy` is a deliberate compatibility commitment, not an oversight: removing `Copy` later is a breaking
-/// change, so every field this type gains must itself stay `Copy`. See the same note on
-/// [`ConnectorType`], which this type carries, and on [`DragOptions`](crate::scene::DragOptions), which shares the
-/// same commitment.
+/// change, so every field this type gains must itself stay `Copy`. See the same note on [`ConnectorType`], which this
+/// type carries, and on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub struct ConnectorOptions {

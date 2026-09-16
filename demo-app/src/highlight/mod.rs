@@ -1,10 +1,10 @@
 //! A small, Rust-only syntax highlighter for the demo source frames.
 //!
-//! The demo gallery only ever displays Rust, so this is deliberately a stripped-down lexer rather than a general-purpose
-//! highlighter: it recognises comments, strings, char literals, lifetimes, numbers, keywords, type-ish identifiers,
-//! macros and call-position identifiers, and passes everything else through verbatim. The output is an HTML string of
-//! `<span class="...">` tokens (with `&`, `<`, `>` escaped) suitable for `Element::set_inner_html`; the colours live in
-//! `demo/style.css`.
+//! The demo gallery only ever displays Rust, so this is deliberately a stripped-down lexer rather than a
+//! general-purpose highlighter: it recognises comments, strings, char literals, lifetimes, numbers, keywords, type-ish
+//! identifiers, macros and call-position identifiers, and passes everything else through verbatim. The output is an
+//! HTML string of `<span class="...">` tokens (with `&`, `<`, `>` escaped) suitable for `Element::set_inner_html`; the
+//! colours live in `demo/style.css`.
 //!
 //! It is not a full Rust parser and does not need to be — it only has to make the embedded demo functions readable. Raw
 //! strings (`r"..."`) are not special-cased because the demo source does not use them.

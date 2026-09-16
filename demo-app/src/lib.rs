@@ -1,27 +1,26 @@
 //! Wasm entry point for `svg-dom-graph`'s demos.
 //!
-//! Each panel builds its own small demo scene the first time it is selected in the gallery — see [`init_panel`],
-//! called from JavaScript by `demo/index.template.html`'s own `selectDemo`, not eagerly at page load. This crate
-//! owns every demo-specific decision, not the library — which elements to attach to, and what each scene
-//! contains.
+//! Each panel builds its own small demo scene the first time it is selected in the gallery — see [`init_panel`], called
+//! from JavaScript by `demo/index.template.html`'s own `selectDemo`, not eagerly at page load. This crate owns every
+//! demo-specific decision, not the library — which elements to attach to, and what each scene contains.
 //!
-//! - `panel-tree` / `#diagram` — [`build_demo_tree`]: a minimal directed tree with straight connectors. Shows
-//!   ordinary dragging and connector reroute.
-//! - `panel-elbow` / `#elbow-diagram` — [`build_elbow_demo`]: two boxes, a straight/elbow toggle, and a
-//!   corner-radius slider. See that function's own doc comment for what it demonstrates.
+//! - `panel-tree` / `#diagram` — [`build_demo_tree`]: a minimal directed tree with straight connectors. Shows ordinary
+//!   dragging and connector reroute.
+//! - `panel-elbow` / `#elbow-diagram` — [`build_elbow_demo`]: two boxes, a straight/elbow toggle, and a corner-radius
+//!   slider. See that function's own doc comment for what it demonstrates.
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`build_edge_anchors_demo`]: a parent with a growing and
-//!   shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own doc
-//!   comment for what it demonstrates.
-//! - `panel-data` / `#data-diagram` — [`build_data_demo`]: draggable nodes whose content is a [`DataNodeContent`]
-//!   grid of values rather than a plain text label — one single-value and one multi-value node per integer
-//!   width (`u8`/`u16`/`u32`/`u64`), the multi-value counts chosen to cover every combination the grid layout
-//!   rule can produce. See that function's own doc comment for exactly which.
+//!   shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own doc comment
+//!   for what it demonstrates.
+//! - `panel-data` / `#data-diagram` — [`build_data_demo`]: draggable nodes whose content is a [`DataNodeContent`] grid
+//!   of values rather than a plain text label — one single-value and one multi-value node per integer width
+//!   (`u8`/`u16`/`u32`/`u64`), the multi-value counts chosen to cover every combination the grid layout rule can
+//!   produce. See that function's own doc comment for exactly which.
 //!
-//! Each feature this crate gains should keep this pattern: land it alongside a small demo scene of its own, add
-//! a `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
+//! Each feature this crate gains should keep this pattern: land it alongside a small demo scene of its own, add a
+//! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
 //!
-//! No function in this file panics. Every failure — a missing DOM element, a failed listener attach, or a
-//! library `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
+//! No function in this file panics. Every failure — a missing DOM element, a failed listener attach, or a library
+//! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
 //! [`report_panel_error`]) instead of trapping.
 
 use std::{cell::RefCell, rc::Rc};
@@ -70,8 +69,8 @@ fn stringify<E: std::fmt::Display>(err: E) -> String {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The current page's `Document`, or `Err` if there is no global `window` or no `document` on it.
 ///
-/// Neither should be possible in a real browser. Returned as a graceful `Err` anyway, not a panic, since
-/// `run` already has a clean way to report a startup failure to the browser console.
+/// Neither should be possible in a real browser. Returned as a graceful `Err` anyway, not a panic, since `run` already
+/// has a clean way to report a startup failure to the browser console.
 fn document() -> Result<web_sys::Document, String> {
     web_sys::window()
         .ok_or_else(|| "no global window".to_owned())?
@@ -109,9 +108,9 @@ fn required_query(document: &web_sys::Document, selector: &str) -> Result<Elemen
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `svg`'s own `viewBox` attribute back as a [`Rect`], to bound dragging within it.
 ///
-/// `svg-dom`'s own `SvgRoot` deliberately does not cache `viewBox` — see that crate's own doc comment on
-/// `set_view_box` for why. Every demo here sets `viewBox` once, directly in `index.html`, so reading the
-/// attribute straight from the DOM is simpler than caching it a second time in this crate too.
+/// `svg-dom`'s own `SvgRoot` deliberately does not cache `viewBox` — see that crate's own doc comment on `set_view_box`
+/// for why. Every demo here sets `viewBox` once, directly in `index.html`, so reading the attribute straight from the
+/// DOM is simpler than caching it a second time in this crate too.
 ///
 /// # Errors
 ///
@@ -147,14 +146,14 @@ fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
 // files apart.
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/// This file's own full source, embedded at compile time. [`demo_fn_source`] slices a single top-level function's
-/// body out of this text; nothing here is ever hand-copied elsewhere, so it cannot go stale.
+/// This file's own full source, embedded at compile time. [`demo_fn_source`] slices a single top-level function's body
+/// out of this text; nothing here is ever hand-copied elsewhere, so it cannot go stale.
 const LIB_SOURCE: &str = include_str!("lib.rs");
 
-/// `(panel id, build function, build function name)` for every demo, generated by [`demo_gallery`] below so a
-/// panel's id, the function [`init_panel`] calls to build it, and the function name shown in its source frame can
-/// never drift apart the way three independently hand-maintained lists could — mirrors `svg-dom`'s own
-/// `demo_gallery!`, minus the module-path half `LIB_SOURCE`'s single shared file has no need for.
+/// `(panel id, build function, build function name)` for every demo, generated by [`demo_gallery`] below so a panel's
+/// id, the function [`init_panel`] calls to build it, and the function name shown in its source frame can never drift
+/// apart the way three independently hand-maintained lists could — mirrors `svg-dom`'s own `demo_gallery!`, minus the
+/// module-path half `LIB_SOURCE`'s single shared file has no need for.
 ///
 /// The panel id is also the id of the `<section>` (see `demo/panels/*.html`) that [`init_panel`] builds into and
 /// [`append_demo_source`] appends the source frame to.
@@ -174,14 +173,13 @@ demo_gallery! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns the source text of the top-level `fn {name}` item in [`LIB_SOURCE`], from its signature line through
-/// its closing brace, or `None` if it cannot be located.
+/// Returns the source text of the top-level `fn {name}` item in [`LIB_SOURCE`], from its signature line through its
+/// closing brace, or `None` if it cannot be located.
 ///
-/// Relies on `rustfmt`'s guarantee that a top-level item's own closing brace always sits in column 0, while every
-/// brace nested inside the body (including one inside a `format!` string) does not. Scanning for the first line
-/// that is exactly `}` after the signature therefore finds the function's end without parsing anything. Mirrors
-/// `svg-dom`'s own `demo_fn_source` exactly, bar the module-path lookup a single shared source file has no need
-/// for.
+/// Relies on `rustfmt`'s guarantee that a top-level item's own closing brace always sits in column 0, while every brace
+/// nested inside the body (including one inside a `format!` string) does not. Scanning for the first line that is
+/// exactly `}` after the signature therefore finds the function's end without parsing anything. Mirrors `svg-dom`'s own
+/// `demo_fn_source` exactly, bar the module-path lookup a single shared source file has no need for.
 fn demo_fn_source(name: &str) -> Option<&'static str> {
     let needle = format!("fn {name}(");
     let hit = LIB_SOURCE.find(&needle)?;
@@ -202,15 +200,15 @@ fn demo_fn_source(name: &str) -> Option<&'static str> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds `<details class="source" open><summary>...</summary><pre><code>...</code></pre></details>` and appends
-/// it to `panel_id`'s own `<section>`, showing the exact source of the function that just built that panel.
-/// Mirrors `svg-dom`'s own `append_source_frame`.
+/// Builds `<details class="source" open><summary>...</summary><pre><code>...</code></pre></details>` and appends it to
+/// `panel_id`'s own `<section>`, showing the exact source of the function that just built that panel. Mirrors
+/// `svg-dom`'s own `append_source_frame`.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#{panel_id}`, if `panel_id` is not registered in [`DEMO_PANELS`], if
-/// its function's source cannot be located in [`LIB_SOURCE`] (see [`demo_fn_source`]), or if building any of the
-/// DOM nodes below fails.
+/// Returns `Err` if `index.html` is missing `#{panel_id}`, if `panel_id` is not registered in [`DEMO_PANELS`], if its
+/// function's source cannot be located in [`LIB_SOURCE`] (see [`demo_fn_source`]), or if building any of the DOM nodes
+/// below fails.
 fn append_demo_source(document: &web_sys::Document, panel_id: &str) -> Result<(), String> {
     let section = required_element(document, panel_id)?;
     let &(_, _, fn_name) = DEMO_PANELS
@@ -246,27 +244,26 @@ fn append_demo_source(document: &web_sys::Document, panel_id: &str) -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted"
-/// (attribute absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`) and skip
-/// rebuilding a panel that has already been built once — rebuilding it again would duplicate its contents rather
-/// than replace them, since each `build_*` function always appends a fresh `<svg>`/child set into its own
-/// container. Mirrors `svg-dom`'s own `PANEL_STATE_ATTR`.
+/// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted" (attribute
+/// absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`) and skip rebuilding a panel that
+/// has already been built once — rebuilding it again would duplicate its contents rather than replace them, since each
+/// `build_*` function always appends a fresh `<svg>`/child set into its own container. Mirrors `svg-dom`'s
+/// own `PANEL_STATE_ATTR`.
 const PANEL_STATE_ATTR: &str = "data-panel-state";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds one demo panel's content the first time it is selected, rather than every panel eagerly at page load —
-/// which is what this gallery used to do, even though at most one panel is ever visible at once (every other
-/// `<section>` sits behind `display: none`; see `.section`/`.section.active` in `style.css`). Mirrors `svg-dom`'s
-/// own `init_panel`.
+/// Builds one demo panel's content the first time it is selected, rather than every panel eagerly at page load — which
+/// is what this gallery used to do, even though at most one panel is ever visible at once (every other `<section>` sits
+/// behind `display: none`; see `.section`/`.section.active` in `style.css`). Mirrors `svg-dom`'s own `init_panel`.
 ///
-/// Call this from JavaScript each time a panel becomes the active one (see `demo/index.template.html`'s
-/// `selectDemo`). It is idempotent — see [`PANEL_STATE_ATTR`] — so calling it again for an already-initialised
-/// panel, e.g. navigating back to one visited earlier, is a no-op rather than a duplicate rebuild.
+/// Call this from JavaScript each time a panel becomes the active one (see `demo/index.template.html`'s `selectDemo`).
+/// It is idempotent — see [`PANEL_STATE_ATTR`] — so calling it again for an already-initialised panel, e.g. navigating
+/// back to one visited earlier, is a no-op rather than a duplicate rebuild.
 ///
 /// A demo that fails to build is recorded as `"failed"` rather than retried on a later visit; [`run_panel`] and
-/// [`report_panel_error`] are what surface that failure in the gallery itself. A missing or mismatched panel id is
-/// a different kind of problem — a catalogue error rather than a demo runtime error — and is caught at server
-/// startup instead, before the gallery is ever served (see `demo-server/src/validate/mod.rs` and
+/// [`report_panel_error`] are what surface that failure in the gallery itself. A missing or mismatched panel id is a
+/// different kind of problem — a catalogue error rather than a demo runtime error — and is caught at server startup
+/// instead, before the gallery is ever served (see `demo-server/src/validate/mod.rs` and
 /// `demo-server/src/panels/mod.rs`'s `assemble`), so `init_panel` never has to distinguish the two: by the time it
 /// runs, the catalogue has already been validated.
 #[wasm_bindgen]
@@ -295,8 +292,8 @@ pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs one demo's build function, catching its error rather than letting it propagate, and reports whether it
 /// succeeded so [`init_panel`] can record that as the panel's state. A broken demo is this function's own runtime
-/// behaviour, not a missing or mismatched panel — see [`init_panel`]'s doc comment for why those are handled
-/// differently.
+/// behaviour, not a missing or mismatched panel — see [`init_panel`]'s doc comment for why those are
+/// handled differently.
 fn run_panel(panel_id: &str, build: fn() -> Result<(), String>) -> bool {
     match build() {
         Ok(()) => true,
@@ -312,8 +309,8 @@ fn run_panel(panel_id: &str, build: fn() -> Result<(), String>) -> bool {
 /// verification tool; a silently empty panel is exactly the outcome worth avoiding here.
 ///
 /// Silently does nothing if the panel section itself cannot be found — by construction (see [`run_panel`]'s doc
-/// comment) that cannot happen through the normal `cargo demo` pipeline, so this mirrors [`append_demo_source`]'s
-/// own defensive fallback rather than treating an already-impossible case as fatal.
+/// comment) that cannot happen through the normal `cargo demo` pipeline, so this mirrors [`append_demo_source`]'s own
+/// defensive fallback rather than treating an already-impossible case as fatal.
 fn report_panel_error(panel_id: &str, message: &str) {
     let Ok(document) = document() else { return };
     let Some(section) = document.get_element_by_id(panel_id) else { return };
@@ -324,8 +321,8 @@ fn report_panel_error(panel_id: &str, message: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo scene: a root box with two children, connected by directed, straight, arrow-tipped edges. This
-/// is a minimal directed tree — the simplest case of the general graph `svg-dom-graph` targets.
+/// Builds the demo scene: a root box with two children, connected by directed, straight, arrow-tipped edges. This is a
+/// minimal directed tree — the simplest case of the general graph `svg-dom-graph` targets.
 ///
 /// Uses [`ConnectorType::Straight`] deliberately, so this first, simplest demo also shows the crate's original
 /// connector style — [`build_elbow_demo`] is where the elbow style, added later, gets its own demonstration.
@@ -377,13 +374,13 @@ fn build_demo_tree() -> Result<(), String> {
 ///    over-large request. This demo also keeps the slider's own `max`, and its value if that value no longer fits, in
 ///    step with the true limit — see [`refresh_radius_limit`] for how.
 /// 6. Dragging `P` or `Q` further apart dynamically raises the slider's own ceiling. The slider's *value* does not
-///    follow it back up on its own: it represents the currently applicable radius, not some previously remembered
-///    value — see [`refresh_radius_limit`]'s own doc comment for why that is the chosen behaviour, not an oversight.
+///    follow it back up on its own: it represents the currently applicable radius, not some previously remembered value
+///    — see [`refresh_radius_limit`]'s own doc comment for why that is the chosen behaviour, not an oversight.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if [`wire_connector_controls`] cannot wire up its controls
-/// (see that function's own `# Errors` section).
+/// Returns `Err` if any library call fails, or if [`wire_connector_controls`] cannot wire up its controls (see that
+/// function's own `# Errors` section).
 fn build_elbow_demo() -> Result<(), String> {
     let svg = SvgRoot::attach("elbow-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
@@ -411,24 +408,24 @@ fn build_elbow_demo() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A corner radius large enough to exceed whatever room `P`/`Q` could ever realistically offer.
 ///
-/// [`refresh_radius_limit`] explains why this must be implausibly large, not just larger than the slider's own nominal
-/// range.
+/// [`refresh_radius_limit`] explains why this must be implausibly large, not just larger than the slider's own
+/// nominal range.
 const RADIUS_PROBE: f64 = 1_000_000.0;
 
 /// The corner-radius limit assumed when the current route has no corner to round at all — a straight, single-segment
-/// route. [`max_renderable_radius`] cannot read a limit there, since `elbow_path_into` never writes an `A` command for
-/// one.
+/// route. [`max_renderable_radius`] cannot read a limit there, since `elbow_path_into` never writes an `A` command
+/// for one.
 ///
 /// Matches `index.html`'s own `#corner-radius` `max` attribute: the slider's pre-wasm-load fallback.
 const FALLBACK_MAX_RADIUS: f64 = 80.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The smallest per-corner radius `elbow_path_into` actually renders into `connector_path`'s own `d` attribute.
-/// Returns `None` if the current route has no corner, or the connector is [`ConnectorType::Straight`].
+/// The smallest per-corner radius `elbow_path_into` actually renders into `connector_path`'s own `d` attribute. Returns
+/// `None` if the current route has no corner, or the connector is [`ConnectorType::Straight`].
 ///
-/// Every interior corner that `elbow_path_into` rounds writes an SVG arc command of the shape
-/// `A {r} {r} 0 0 {sweep} {x} {y}` into `d`. The token right after `A` is the exact radius used for that corner,
-/// already clamped to whatever room its own two segments allow.
+/// Every interior corner that `elbow_path_into` rounds writes an SVG arc command of the shape `A {r} {r} 0 0 {sweep}
+/// {x} {y}` into `d`. The token right after `A` is the exact radius used for that corner, already clamped to whatever
+/// room its own two segments allow.
 ///
 /// This needs no geometry of its own. It just reads back what the library already rendered. That is also why
 /// [`refresh_radius_limit`] requests [`RADIUS_PROBE`] first: an ordinary radius that already fits would only prove that
@@ -447,7 +444,7 @@ const FALLBACK_MAX_RADIUS: f64 = 80.0;
 ///
 /// This is acceptable for one demo control, and is preferable to reimplementing the elbow-routing geometry simply to
 /// avoid it. However, it is anticpated that in future, a real application will probably need the public API shape to
-/// include the query "how much room is actually left".  At that point, it is appropriate to implement a proper library
+/// include the query "how much room is actually left". At that point, it is appropriate to implement a proper library
 /// method reporting it directly and removing this string coupling and the resulting doubled render that
 /// [`refresh_radius_limit`]'s probe technique costs on every call.
 fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
@@ -489,8 +486,8 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 /// only the slider's own `max` rises back up; its value stays at `25` until the user moves it again.
 ///
 /// The alternative of silently restoring the previous value of `60` once room returns would move the control without
-/// the user having touched it, which is considered to be the more surprising of the two slider behaviours a user can
-/// experience.
+/// the user having touched it, which is considered to be the more surprising of the two slider behaviours a user
+/// can experience.
 ///
 /// Only called while `Elbow` is selected. `Straight` has no corner to round, so this function leaves the limit
 /// untouched until `Elbow` is reselected. It is then recomputed fresh, from whatever room the boxes occupy at that
@@ -564,15 +561,15 @@ fn refresh_radius_limit(
 /// connector-type/radius controls. Each one only ever reads the other two elements' live values, instead of relying on
 /// which control fired the event.
 ///
-/// One shared handler is enough for those three. The `pointermove` listener is a second, separate closure:
-/// it fires for pointer movement anywhere on the page, not just a change to one of these three controls.
+/// One shared handler is enough for those three. The `pointermove` listener is a second, separate closure: it fires for
+/// pointer movement anywhere on the page, not just a change to one of these three controls.
 ///
 /// # Errors
 ///
 /// Returns `Err` if:
 ///
-/// - `index.html` is missing `#connector-type-straight`, `#connector-type-elbow`, `#corner-radius`, or
-///   `#corner-radius-value`.
+/// - `index.html` is missing `#connector-type-straight`, `#connector-type-elbow`, `#corner-radius`,
+///   or `#corner-radius-value`.
 /// - Any of the first three is not an `<input>` element.
 /// - `edge`'s connector was not rendered as a `<path>` under `#elbow-diagram`.
 /// - A listener could not be attached to any control.
@@ -671,18 +668,17 @@ struct EdgeAnchorsDemo {
 /// 1. The `#edge-anchors-fixing-points` slider, `0` to [`MAX_FIXING_POINTS`], controls two things at once: how many
 ///    children are visible, and every visible node's own [`EdgeAnchors`].
 /// 2. The visible child count is always `max(1, slider value)`, so at least `Child 1` stays on screen.
-/// 3. `0` maps to `None`. `Parent` and `Child 1` then aim their straight connector at each other's own centre,
-///    stopping at whichever boundary point that ray crosses first.
-/// 4. `1..=`[`MAX_FIXING_POINTS`] map to `Some(EdgeAnchors(n))`. Moving the slider to `1` snaps the connector onto
-///    the exact midpoint of the side it crosses. Moving it higher reveals more children, spread evenly across the
-///    diagram, and `Parent`'s south side then offers that many evenly spaced fixing points, one per child.
+/// 3. `0` maps to `None`. `Parent` and `Child 1` then aim their straight connector at each other's own centre, stopping
+///    at whichever boundary point that ray crosses first.
+/// 4. `1..=`[`MAX_FIXING_POINTS`] map to `Some(EdgeAnchors(n))`. Moving the slider to `1` snaps the connector onto the
+///    exact midpoint of the side it crosses. Moving it higher reveals more children, spread evenly across the diagram,
+///    and `Parent`'s south side then offers that many evenly spaced fixing points, one per child.
 /// 5. `#edge-anchors-type-straight`/`#edge-anchors-type-elbow` switch every edge live between
 ///    [`ConnectorType::Straight`] and [`ConnectorType::Elbow`].
 ///
-/// `Scene` has no node-move or node-removal API, so a different child count needs each child spread across a new
-/// set of positions, not just some hidden.
-/// See [`rebuild_edge_anchors_scene`] for why this rebuilds the whole scene from scratch on every slider move,
-/// instead of adjusting the one already built.
+/// `Scene` has no node-move or node-removal API, so a different child count needs each child spread across a new set of
+/// positions, not just some hidden. See [`rebuild_edge_anchors_scene`] for why this rebuilds the whole scene from
+/// scratch on every slider move, instead of adjusting the one already built.
 ///
 /// # Errors
 ///
@@ -720,16 +716,16 @@ fn child_x_positions(visible_count: u8) -> Vec<f64> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Clears `#edge-anchors-diagram` and rebuilds it from scratch: `Parent`, `max(1, fixing_points)` draggable
-/// children spread by [`child_x_positions`], and `connector_type` connectors between `Parent` and each child.
+/// Clears `#edge-anchors-diagram` and rebuilds it from scratch: `Parent`, `max(1, fixing_points)` draggable children
+/// spread by [`child_x_positions`], and `connector_type` connectors between `Parent` and each child.
 ///
-/// Every node's own [`EdgeAnchors`] is `None` if `fixing_points` is `0`, or `Some(EdgeAnchors(fixing_points))`
-/// otherwise.
+/// Every node's own [`EdgeAnchors`] is `None` if `fixing_points` is `0`, or
+/// `Some(EdgeAnchors(fixing_points))` otherwise.
 ///
-/// `Scene` has no node-move API, so a fixing-point count with a different child spread needs a fresh `Scene` built
-/// over fresh positions, not an adjustment to the one already rendered. Clearing `#edge-anchors-diagram` first
-/// discards the previous scene's own rendered elements; the previous `Scene` handle itself drops once its caller
-/// replaces its own reference, taking its listeners with it.
+/// `Scene` has no node-move API, so a fixing-point count with a different child spread needs a fresh `Scene` built over
+/// fresh positions, not an adjustment to the one already rendered. Clearing `#edge-anchors-diagram` first discards the
+/// previous scene's own rendered elements; the previous `Scene` handle itself drops once its caller replaces its own
+/// reference, taking its listeners with it.
 ///
 /// # Errors
 ///
@@ -869,10 +865,10 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
 ///   on the same 2×2 shape either way.
 ///
 /// A fifth, standalone row below those four shows a single `u64` value under [`DataFormat::Binary`] — 64 digits,
-/// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes
-/// a grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
-/// cell-aspect-ratio case. That case motivates
-/// [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns) — see that type's own doc comment.
+/// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a
+/// grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
+/// cell-aspect-ratio case. That case motivates [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns)
+/// — see that type's own doc comment.
 ///
 /// # Errors
 ///

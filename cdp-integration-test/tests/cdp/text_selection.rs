@@ -9,8 +9,8 @@
 //!
 //! `svg-dom-graph`'s own box+label markup is exactly that shape, so the selection outcome can't distinguish a working
 //! `prevent_default()` from a missing one here since it would pass either way. Reading `defaultPrevented` instead
-//! checks the mechanism `svg-dom-graph`'s code is actually responsible for, independent of that browser/headless-mode
-//! quirk.
+//! checks the mechanism `svg-dom-graph`'s code is actually responsible for, independent of that
+//! browser/headless-mode quirk.
 
 use crate::common::{drag, new_tab};
 use std::time::Duration;

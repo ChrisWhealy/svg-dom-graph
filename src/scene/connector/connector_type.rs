@@ -1,14 +1,16 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How [`Scene::add_edge_with`]/[`Scene::set_connector_type`] routes a connector.
+/// How [Scene::add_edge_with](crate::scene::Scene::add_edge_with) and
+/// [Scene::set_connector_type](crate::scene::Scene::set_connector_type) route a connector.
 ///
 /// `#[non_exhaustive]` is used here because this type is expected to grow: a Bezier-curved connector is a likely future
-/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant is unaffected.
+/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant
+/// is unaffected.
 ///
 /// ***A note on `Copy`***
 ///
 /// Deriving `Copy` is a deliberate compatibility commitment, not an oversight. Removing `Copy` later is a breaking
-/// change, so every field any variant gains (including some future variant) must itself also implement `Copy`.
-/// See the same note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
+/// change, so every field any variant gains (including some future variant) must itself also implement `Copy`. See the
+/// same note on [`DragOptions`](crate::scene::DragOptions), which shares the same commitment.
 #[derive(Debug, Clone, Copy, PartialEq)]
 #[non_exhaustive]
 pub enum ConnectorType {

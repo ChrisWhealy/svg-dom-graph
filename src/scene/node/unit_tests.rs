@@ -23,9 +23,9 @@ fn make_svg(id: &str) -> SvgRoot {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dropping an armed `RenderGuard` removes both `group` and every element tracked via `track` from the
-/// document. `draw_box`/`draw_content_box` can be left in exactly that partial state. This happens when a later
-/// fallible step fails, and the `?` operator drops the guard on the way out.
+/// Dropping an armed `RenderGuard` removes both `group` and every element tracked via `track` from the document.
+/// `draw_box`/`draw_content_box` can be left in exactly that partial state. This happens when a later fallible step
+/// fails, and the `?` operator drops the guard on the way out.
 #[wasm_bindgen_test]
 fn dropping_an_armed_guard_removes_the_group_and_every_loose_element() -> Result<(), String> {
     let svg = make_svg("render-guard-rollback");
@@ -48,8 +48,7 @@ fn dropping_an_armed_guard_removes_the_group_and_every_loose_element() -> Result
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The counterpart to the test above: a disarmed guard leaves `group` and every tracked element attached. So a
-/// successful `draw_box`/`draw_content_box` call is not accidentally rolled back by its own cleanup on the way
-/// out.
+/// successful `draw_box`/`draw_content_box` call is not accidentally rolled back by its own cleanup on the way out.
 #[wasm_bindgen_test]
 fn disarming_a_guard_leaves_the_group_and_every_loose_element_attached() -> Result<(), String> {
     let svg = make_svg("render-guard-disarm");
@@ -71,8 +70,8 @@ fn disarming_a_guard_leaves_the_group_and_every_loose_element_attached() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dropping an armed guard that tracked nothing beyond `group` itself is still safe. `group.remove()` is a
-/// harmless no-op on an already-empty group.
+/// Dropping an armed guard that tracked nothing beyond `group` itself is still safe. `group.remove()` is a harmless
+/// no-op on an already-empty group.
 #[wasm_bindgen_test]
 fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Result<(), String> {
     let svg = make_svg("render-guard-empty");

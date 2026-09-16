@@ -1,11 +1,11 @@
-//! Cross-checks `demo-server`'s own panel manifest ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!`
-//! list, so the two id lists — declared in separate crates, in different forms (HTML-oriented here,
-//! function-oriented there), for reasons explained in each one's own doc comment — cannot silently drift apart.
-//! Mirrors `svg-dom`'s own `demo-server/src/validate/mod.rs`.
+//! Cross-checks `demo-server`'s own panel manifest ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!` list,
+//! so the two id lists — declared in separate crates, in different forms (HTML-oriented here, function-oriented there),
+//! for reasons explained in each one's own doc comment — cannot silently drift apart. Mirrors `svg-dom`'s
+//! own `demo-server/src/validate/mod.rs`.
 //!
-//! This reads `demo-app/src/lib.rs` as plain text and extracts every panel id from the `demo_gallery!`
-//! invocation, rather than depending on `demo-app` as a library: that crate builds to a wasm `cdylib` for the
-//! browser, not something a native binary like `demo-server` can link against.
+//! This reads `demo-app/src/lib.rs` as plain text and extracts every panel id from the `demo_gallery!` invocation,
+//! rather than depending on `demo-app` as a library: that crate builds to a wasm `cdylib` for the browser, not
+//! something a native binary like `demo-server` can link against.
 
 use crate::panels;
 use std::{
@@ -15,9 +15,9 @@ use std::{
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Everything that can go wrong cross-checking the two catalogues, mirroring how [`panels::AssembleError`] reports
-/// its own failures — `main` is responsible for deciding what a failure means for the process, this module just
-/// reports what went wrong.
+/// Everything that can go wrong cross-checking the two catalogues, mirroring how [`panels::AssembleError`] reports its
+/// own failures — `main` is responsible for deciding what a failure means for the process, this module just reports
+/// what went wrong.
 #[derive(Debug)]
 pub enum ValidationError {
     /// `demo-app/src/lib.rs` could not be read.
@@ -53,8 +53,7 @@ impl std::error::Error for ValidationError {}
 ///
 /// A failure here is fatal, the same as a stale `index.html` or a failed wasm build: better to refuse to serve a
 /// gallery already known to be inconsistent than to leave someone debugging a blank panel by hand — but, as with
-/// [`panels::assemble`], deciding *how* to treat that fatality (report and exit) is `main`'s job, not this
-/// function's.
+/// [`panels::assemble`], deciding *how* to treat that fatality (report and exit) is `main`'s job, not this function's.
 pub fn validate(root: &Path) -> Result<(), ValidationError> {
     let lib_rs_path = root.join("demo-app").join("src").join("lib.rs");
     let lib_rs =
@@ -90,9 +89,9 @@ pub fn validate(root: &Path) -> Result<(), ValidationError> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Extracts every `"panel-..."` string literal immediately followed by `=>` from inside
-/// [`gallery_invocation_body`] — not from anywhere in `lib.rs` — so a doc comment that merely mentions the same
-/// `"id" => name` shape is never mistaken for a real gallery entry.
+/// Extracts every `"panel-..."` string literal immediately followed by `=>` from inside [`gallery_invocation_body`] —
+/// not from anywhere in `lib.rs` — so a doc comment that merely mentions the same `"id" => name` shape is never
+/// mistaken for a real gallery entry.
 fn extract_gallery_panel_ids(lib_rs: &str) -> Vec<String> {
     let Some(body) = gallery_invocation_body(lib_rs) else { return Vec::new() };
 
@@ -112,14 +111,12 @@ fn extract_gallery_panel_ids(lib_rs: &str) -> Vec<String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Locates the text between `demo_gallery!`'s outermost `{` and its matching `}` — the macro's actual invocation
-/// body — skipping any earlier occurrence of the literal text `demo_gallery!` not immediately followed (after
-/// whitespace) by `{`, such as this file's own doc comments that merely mention the macro by name rather than
-/// invoking it.
+/// Locates the text between `demo_gallery!`'s outermost `{` and its matching `}` — the macro's actual invocation body —
+/// skipping any earlier occurrence of the literal text `demo_gallery!` not immediately followed (after whitespace) by
+/// `{`, such as this file's own doc comments that merely mention the macro by name rather than invoking it.
 ///
-/// Counts braces instead of parsing Rust, which is safe here only because `demo_gallery!`'s own doc comment
-/// guarantees its invocation body is currently just a flat, comma-separated entry list with no nested `{`/`}` of
-/// its own.
+/// Counts braces instead of parsing Rust, which is safe here only because `demo_gallery!`'s own doc comment guarantees
+/// its invocation body is currently just a flat, comma-separated entry list with no nested `{`/`}` of its own.
 fn gallery_invocation_body(lib_rs: &str) -> Option<&str> {
     const NEEDLE: &str = "demo_gallery!";
     let mut search_from = 0;
@@ -149,10 +146,10 @@ fn gallery_invocation_body(lib_rs: &str) -> Option<&str> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns the first id in `ids` that occurs more than once. Without this check, a `demo_gallery!` entry
-/// duplicated in `demo-app/src/lib.rs` would pass every set comparison in [`validate`] — the id is present in both
-/// catalogues, just twice in one of them — while at runtime `DEMO_PANELS.iter().find()` would always return the
-/// first match, leaving the second entry silently unreachable.
+/// Returns the first id in `ids` that occurs more than once. Without this check, a `demo_gallery!` entry duplicated in
+/// `demo-app/src/lib.rs` would pass every set comparison in [`validate`] — the id is present in both catalogues, just
+/// twice in one of them — while at runtime `DEMO_PANELS.iter().find()` would always return the first match, leaving the
+/// second entry silently unreachable.
 fn find_duplicate_gallery_id(ids: &[String]) -> Option<&str> {
     let mut seen = HashSet::new();
     for id in ids {
