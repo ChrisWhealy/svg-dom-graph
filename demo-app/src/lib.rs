@@ -868,6 +868,12 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
 /// - `u64`, 4 values: both a perfect square and evenly divisible by a power of two (`2`) — the two rules agree, landing
 ///   on the same 2×2 shape either way.
 ///
+/// A fifth, standalone row below those four shows a single `u64` value under [`DataFormat::Binary`] — 64 digits,
+/// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes
+/// a grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
+/// cell-aspect-ratio case. That case motivates
+/// [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns) — see that type's own doc comment.
+///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#data-diagram`.
@@ -956,6 +962,16 @@ fn build_data_demo() -> Result<(), String> {
             ]),
             DataFormat::Hexadecimal,
         ),
+    )?;
+
+    // A single u64 under Binary: 64 digits, nybble-grouped and byte-separated. This cell renders far wider than
+    // it is tall — the extreme cell-aspect-ratio case GridLayout::Automatic's own doc comment describes. It is
+    // also the one GridLayout::MaxColumns exists to let a caller cap. A standalone row of its own, not paired
+    // with a multi-value box, since this single cell is already wide enough to need the room.
+    place(
+        X_SINGLE,
+        590.0,
+        DataNodeContent::new(NodeValues::U64(vec![0x0102030405060708]), DataFormat::Binary),
     )?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see DATA_SCENE's own doc comment.

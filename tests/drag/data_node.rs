@@ -9,7 +9,7 @@ use crate::common::{
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene},
+    scene::{DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene},
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -124,6 +124,84 @@ fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Res
         )?;
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A `u64` under [`DataFormat::Binary`] is the extreme cell-aspect-ratio case: 64 digits, nybble-grouped and
+/// byte-separated, render far wider than the cell is tall. `GridLayout`/`Automatic`'s own doc comment names this
+/// exact case as the reason `GridLayout::MaxColumns` exists.
+#[wasm_bindgen_test]
+fn add_data_node_with_a_u64_binary_value_renders_an_extremely_wide_cell() -> Result<(), String> {
+    let svg = make_svg("data-node-u64-binary", Size::new(1200.0, 260.0), Size::new(1200.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U64(vec![0x0102030405060708]), DataFormat::Binary);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-u64-binary", 0)?;
+    let texts = text_children(&group)?;
+    check(texts.len() == 1, &format!("expected 1 text, found {}", texts.len()))?;
+    check(
+        texts[0].text_content().as_deref()
+            == Some("0000 0001 0000 0010 0000 0011 0000 0100 0000 0101 0000 0110 0000 0111 0000 1000"),
+        &format!("unexpected text: {:?}", texts[0].text_content()),
+    )?;
+
+    let rects = rect_children(&group)?;
+    let width = attr_f64(&rects[0], "width")?;
+    let height = attr_f64(&rects[0], "height")?;
+    check(
+        width > height * 5.0,
+        &format!("expected an extremely wide cell (width={width}, height={height})"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Five values under [`GridLayout::Automatic`] render a `3 x 2` grid (see
+/// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`) with the last row
+/// only half full — a non-complete final row, rather than the exact multiple of columns every other rendering
+/// test here happens to use.
+#[wasm_bindgen_test]
+fn add_data_node_with_five_values_leaves_the_last_row_incomplete() -> Result<(), String> {
+    let svg = make_svg("data-node-five-values", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5]), DataFormat::Decimal);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-five-values", 0)?;
+    let texts = text_children(&group)?;
+    check(texts.len() == 5, &format!("expected 5 texts, found {}", texts.len()))?;
+
+    let rects = rect_children(&group)?;
+    check(
+        rects.len() == 6,
+        &format!("expected 1 outer + 5 inner cell rects, found {}", rects.len()),
+    )?;
+
+    let mut xs: Vec<i64> = rects[1..]
+        .iter()
+        .map(|r| attr_f64(r, "x").map(|x| x.round() as i64))
+        .collect::<Result<_, _>>()?;
+    let mut ys: Vec<i64> = rects[1..]
+        .iter()
+        .map(|r| attr_f64(r, "y").map(|y| y.round() as i64))
+        .collect::<Result<_, _>>()?;
+    xs.sort_unstable();
+    xs.dedup();
+    ys.sort_unstable();
+    ys.dedup();
+
+    check(
+        xs.len() == 2,
+        &format!("expected 2 distinct column positions for a 3x2 grid, found {}", xs.len()),
+    )?;
+    check(
+        ys.len() == 3,
+        &format!("expected 3 distinct row positions for a 3x2 grid, found {}", ys.len()),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -421,4 +499,56 @@ fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String>
             .any(|&(mx, my)| (end_x - mx).abs() < 0.01 && (end_y - my).abs() < 0.01),
         &format!("connector end ({end_x}, {end_y}) is not the midpoint of any side of the data node's rect"),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `EdgeAnchors` configures a data node's own connector fixing points exactly as it would an ordinary node's.
+/// Snapping only ever looks at the node's `Rect`, never its content.
+///
+/// # Expected anchor, worked by hand
+///
+/// `B` (the data node) holds a single value, so its own box is measured after creation, not assumed.
+/// Unconfigured, `edge_anchor` always returns the exact midpoint of whichever side is chosen, regardless of the
+/// other endpoint's exact position — see `a_connector_routes_to_a_data_node_like_any_other_node` above, and
+/// `edge_anchor`'s own doc comment.
+///
+/// `A` is placed far enough above and to the left of `B` that `snapped_anchor` still picks `B`'s west side.
+/// But the unsnapped ray crosses deep inside its topmost quarter. With `EdgeAnchors(3)`, that side is divided
+/// into 4 equal segments. So the connector snaps to the first of the 3 candidates: `B`'s own
+/// `(bx, by + bh / 4)`. A plain, unconfigured node would have used the midpoint `(bx, by + bh / 2)` instead.
+#[wasm_bindgen_test]
+fn a_data_node_with_custom_edge_anchors_snaps_like_any_other_node() -> Result<(), String> {
+    let svg = make_svg("data-node-edge-anchors", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    let content = DataNodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
+    let options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3)));
+    let b = scene
+        .add_data_node_with(Point::new(250.0, 150.0), content, options)
+        .map_err(|e| e.to_string())?;
+
+    let group_b = nth_group("data-node-edge-anchors", 0)?; // B was added first.
+    let rect_b = &rect_children(&group_b)?[0]; // B holds a single value, so it is the only rect.
+    let (bx, by) = group_translate(&group_b)?;
+    let bw = attr_f64(rect_b, "width")?;
+    let bh = attr_f64(rect_b, "height")?;
+    let (half_w, half_h) = (bw / 2.0, bh / 2.0);
+    let b_centre = Point::new(bx + half_w, by + half_h);
+
+    // `snapped_anchor`'s own crossing formula is `centre.y + dy * (half_w / dx.abs())`. Choosing
+    // `dy = -0.9 * (half_h / half_w) * dx.abs()` makes the `dx` term cancel out algebraically. That leaves the
+    // crossing point fixed at `0.9 * half_h` above B's own centre, deep inside the topmost quarter of its west
+    // side. This holds for any `dx` at all, as long as `dx` stays large enough to keep the west side selected.
+    let dx: f64 = -300.0;
+    let dy = -0.9 * (half_h / half_w) * dx.abs();
+    let a_centre = Point::new(b_centre.x + dx, b_centre.y + dy);
+    let a_size = Size::new(60.0, 30.0);
+    let a_origin = Point::new(a_centre.x - a_size.width / 2.0, a_centre.y - a_size.height / 2.0);
+    let a = scene.add_node(a_origin, a_size, "A").map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+
+    let d = crate::common::path_d(&the_connector("data-node-edge-anchors")?)?;
+    let (end_x, end_y) = crate::common::last_point_of_path(&d)?;
+    check_close(end_x, bx)?;
+    check_close(end_y, by + bh * 0.25)
 }

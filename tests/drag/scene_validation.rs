@@ -6,7 +6,10 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
-use svg_dom_graph::{Error, scene::Scene};
+use svg_dom_graph::{
+    Error,
+    scene::{DataFormat, DataNodeContent, NodeValues, Scene},
+};
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -183,5 +186,48 @@ fn add_node_rejects_invalid_geometry_before_touching_the_scene() -> Result<(), S
     check(
         nth_group("add-node-geometry", 1).is_err(),
         "expected exactly one <g> after the rejected calls and one valid add_node call",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `add_data_node` counterpart to the test above. Unlike `add_node`, there is no caller-supplied `size` to
+/// validate — the box is always sized to fit its content — so only `top_left` can be rejected here.
+#[wasm_bindgen_test]
+fn add_data_node_rejects_invalid_geometry_before_touching_the_scene() -> Result<(), String> {
+    let svg = make_svg("add-data-node-geometry", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    let invalid_origins = [
+        Point::new(f64::NAN, 20.0),
+        Point::new(20.0, f64::NAN),
+        Point::new(f64::INFINITY, 20.0),
+        Point::new(20.0, f64::NEG_INFINITY),
+    ];
+    for invalid_origin in invalid_origins {
+        let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+        let result = scene.add_data_node(invalid_origin, content);
+        check(
+            matches!(result, Err(Error::InvalidNodeGeometry(_))),
+            &format!(
+                "origin {invalid_origin:?} should have been rejected as Err(Error::InvalidNodeGeometry(_)), got {result:?}"
+            ),
+        )?;
+    }
+
+    // None of the rejected calls above touched the scene — no <g> has been rendered yet.
+    check(
+        nth_group("add-data-node-geometry", 0).is_err(),
+        "a rejected add_data_node call left a <g> rendered in the scene",
+    )?;
+
+    // A valid call afterwards still lands as the scene's first node.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+    scene
+        .add_data_node(Point::new(20.0, 20.0), content)
+        .map_err(|e| e.to_string())?;
+    nth_group("add-data-node-geometry", 0)?;
+    check(
+        nth_group("add-data-node-geometry", 1).is_err(),
+        "expected exactly one <g> after the rejected calls and one valid add_data_node call",
     )
 }

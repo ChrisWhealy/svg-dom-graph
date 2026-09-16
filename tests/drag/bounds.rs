@@ -2,11 +2,11 @@
 //! `<svg>`'s viewBox). This avoids a usability bug in which a node could be dragged outside its own `<svg>`'s visible
 //! area, then dropped. This clips the node making it unclickable.
 
-use crate::common::{check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group};
+use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DragOptions, Scene},
+    scene::{DataFormat, DataNodeContent, DragOptions, GridLayout, NodeValues, Scene},
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -283,4 +283,53 @@ fn collision_pushback_near_an_edge_stays_within_bounds() -> Result<(), String> {
     let (x, y) = group_translate(&group_a)?;
     check_close(x, 0.0)?;
     check_close(y, 113.1767)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A data node whose own rendered width exceeds `bounds`'s own width pins to `bounds`'s near edge on that axis.
+/// This matches an oversized ordinary node exactly. `clamp_to_bounds` only ever looks at a node's `Rect`, never
+/// at what kind of content produced it.
+///
+/// Four `u64` binary values, forced into 4 columns, render far wider than the deliberately narrow 100-unit
+/// `bounds` used here. Each cell alone (32 space-separated binary digits) is wider than that on any reasonable
+/// font. So this holds regardless of exact glyph metrics.
+#[wasm_bindgen_test]
+fn dragging_a_data_node_wider_than_bounds_pins_to_the_near_edge() -> Result<(), String> {
+    let svg = make_svg("bounds-large-data-node", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(100.0, 260.0),
+    };
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content =
+        DataNodeContent::new(NodeValues::U64(vec![1, 2, 3, 4]), DataFormat::Binary).with_layout(GridLayout::Columns(4));
+    let node = scene
+        .add_data_node(Point::new(50.0, 50.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("bounds-large-data-node", 0)?;
+    let rect = group
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no <rect> in the data node's group")?;
+    check(
+        attr_f64(&rect, "width")? > bounds.size.width,
+        "expected the data node's own rendered width to exceed bounds's own width",
+    )?;
+
+    let options = DragOptions::default().with_bounds(Some(bounds));
+    scene.make_draggable_with(node, options).map_err(|e| e.to_string())?;
+
+    // A modest rightward/downward move — well inside an ordinarily sized node's own clamp range. Y is not
+    // oversized, so it lands wherever an ordinary drag would (50 + 20 = 70). X pins to 0 regardless of this
+    // rightward push. `clamp_to_bounds`'s own clamp range collapses to the single point `bounds.origin.x` once
+    // the node's own width exceeds `bounds`'s width. So no drag direction can move it off that edge.
+    dispatch_pointer_event(&group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group, "pointermove", 130, 120, 1)?;
+    dispatch_pointer_event(&group, "pointerup", 130, 120, 1)?;
+
+    let (x, y) = group_translate(&group)?;
+    check_close(x, 0.0)?;
+    check_close(y, 70.0)
 }

@@ -1,5 +1,9 @@
 use super::edge::EdgeId;
-use crate::model::{graph::Graph, node::NodeContent};
+use crate::model::{
+    content::{DataFormat, DataNodeContent, NodeValues},
+    graph::Graph,
+    node::NodeContent,
+};
 use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -189,4 +193,17 @@ fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
         }),
         Some("node-42"),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The graph model retains a data node's own [`DataNodeContent`] unchanged, not just its rendered SVG. This is
+/// the fix for the review comment that started this: `add_data_node_with` used to store an empty label instead,
+/// discarding the actual values once the SVG was drawn — see [`NodeContent`]'s own doc comment.
+#[test]
+fn add_node_retains_the_original_data_node_content() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let content = DataNodeContent::new(NodeValues::U16(vec![1, 2, 3]), DataFormat::Hexadecimal);
+    let id = graph.add_node(test_rect(0.0, 0.0), content.clone());
+
+    check_eq(graph.node(id).map(|n| &n.content), Some(&NodeContent::Data(content)))
 }

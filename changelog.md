@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add `GridLayout::Automatic` to allow nodes of arbitrary size to be placed in a view box (`b0f2adf`)
 - Allow for future `DataFormat` types (`6acc35f`)
 - Use `<title>` and ARIA label text to describe data type colours (`5579bf3`)
-- Ensure that DOM construction is transactional (``)
+- Ensure that DOM construction is transactional (`0111739`)
+- Improve test coverage for all layout and data types (``)
 
 ## Changed
 
