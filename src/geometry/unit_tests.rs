@@ -449,7 +449,7 @@ fn binary_operator_anchor_on_different_sides_each_keep_edge_anchors_own_midpoint
     };
     let south = Point::new(20.0, 1000.0);
     let east = Point::new(1000.0, 10.0);
-    check_eq(binary_operator_anchor(rect, south, east, true), edge_anchor(rect, south))
+    check_eq(binary_operator_anchor(rect, south, east, true, None), edge_anchor(rect, south))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -466,16 +466,57 @@ fn binary_operator_anchor_on_the_same_side_splits_to_the_outer_two_of_three_cand
     let left = Point::new(10.0, 1000.0);
     let right = Point::new(30.0, 1000.0);
 
-    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true);
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true, None);
     check_eq(left_point, Point::new(10.0, 20.0))?;
     check_eq(left_side, Side::South)?;
 
     // Calling it the other way around — `right` as `mine`, `left` as `sibling` — still agrees on who takes which
     // outer candidate. Neither call knows about the other; each recomputes both crossings independently. Their
     // crossings differ here, so `mine_is_first` plays no part in the outcome — passed as `false` regardless.
-    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false);
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false, None);
     check_eq(right_point, Point::new(30.0, 20.0))?;
     check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_on_the_same_side_honours_a_configured_fixing_point_count() -> Result<(), String> {
+    // Same shape as the unconfigured 3-candidate test above, but the operator node has `EdgeAnchors(5)`: south side
+    // (width 40) divided into six equal segments by five candidates, at x = 6.667, 13.333, 20 (midpoint), 26.667,
+    // 33.333. The outer two of *five* are the first and last, not the outer two of three — so this must not land on
+    // x = 10/30, which is what the default 3-way split would give.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(60.0, 20.0),
+    };
+    let left = Point::new(20.0, 1000.0);
+    let right = Point::new(40.0, 1000.0);
+
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true, Some(5));
+    check_eq(left_point, Point::new(10.0, 20.0))?;
+    check_eq(left_side, Side::South)?;
+
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false, Some(5));
+    check_eq(right_point, Point::new(50.0, 20.0))?;
+    check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_on_different_sides_snaps_to_a_configured_fixing_point() -> Result<(), String> {
+    // Same due-south/due-east shape as the unconfigured test above, but with `EdgeAnchors(3)` configured: each
+    // operand now snaps to the nearest of 3 candidates on its own side instead of that side's plain midpoint —
+    // exactly what `snapped_anchor` itself would return for an ordinary edge into this node.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let south = Point::new(25.0, 1000.0);
+    let east = Point::new(1000.0, 4.0);
+    check_eq(
+        binary_operator_anchor(rect, south, east, true, Some(3)),
+        snapped_anchor(rect, south, 3),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -491,17 +532,17 @@ fn binary_operator_anchor_breaks_an_exact_crossing_tie_using_mine_is_first() -> 
     let near = Point::new(25.0, 510.0); // t = 5 along the ray
     let far = Point::new(30.0, 1010.0); // t = 10 along the same ray
 
-    let (first_point, first_side) = binary_operator_anchor(rect, near, far, true);
+    let (first_point, first_side) = binary_operator_anchor(rect, near, far, true, None);
     check_eq(first_point, Point::new(10.0, 20.0))?;
     check_eq(first_side, Side::South)?;
 
-    let (second_point, second_side) = binary_operator_anchor(rect, far, near, false);
+    let (second_point, second_side) = binary_operator_anchor(rect, far, near, false, None);
     check_eq(second_point, Point::new(30.0, 20.0))?;
     check_eq(second_side, Side::South)?;
 
     // Only `mine_is_first` decides the outcome here — not which point is passed as `mine`, and not which is
     // geometrically nearer or farther, since the two crossings are exactly equal.
-    let (first_point_again, _) = binary_operator_anchor(rect, far, near, true);
+    let (first_point_again, _) = binary_operator_anchor(rect, far, near, true, None);
     check_eq(first_point_again, Point::new(10.0, 20.0))
 }
 

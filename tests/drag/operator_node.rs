@@ -8,7 +8,7 @@ use crate::common::{
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{BinaryOperator, DataFormat, DataNodeContent, NodeValues, Scene, UnaryOperator},
+    scene::{BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, NodeOptions, NodeValues, Scene, UnaryOperator},
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -583,4 +583,66 @@ fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(
             "expected two distinct anchor y positions despite identical crossings, got {end_near:?} and {end_far:?}"
         ),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Same shape as `two_operands_above_a_binary_operator_node_split_to_distinct_points`, but the operator node has
+/// `EdgeAnchors(5)` configured. The split must land on the outer two of the node's own *five* configured
+/// candidates, not the unconfigured default's fixed outer-two-of-three — otherwise `EdgeAnchors` would be silently
+/// ignored for a binary operator's own two automatically-wired operand edges, even though it is honoured for every
+/// other edge into the same node.
+#[wasm_bindgen_test]
+fn two_operands_above_a_binary_operator_node_split_to_its_configured_fixing_points() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-anchor-split-configured",
+        Size::new(500.0, 400.0),
+        Size::new(500.0, 400.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_binary_operator_node_with(
+            Point::new(220.0, 300.0),
+            BinaryOperator::Or,
+            (a, b),
+            result,
+            NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(5))),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let op_group = nth_group("operator-anchor-split-configured", 2)?;
+    let (op_x, op_y) = group_translate(&op_group)?;
+    let outer_rect = rect_children(&op_group)?
+        .into_iter()
+        .next()
+        .ok_or("operator node has no outer rect")?;
+    let op_width = attr_f64(&outer_rect, "width")?;
+
+    let end_a = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-configured",
+        0,
+    )?)?)?;
+    let end_b = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-configured",
+        1,
+    )?)?)?;
+
+    check_close(end_a.1, op_y)?;
+    check_close(end_b.1, op_y)?;
+    // Outer two of five candidates on a side divided into six equal segments: 1/6 and 5/6 of the side's width —
+    // not 1/4 and 3/4, which is what the unconfigured default's outer-two-of-three split would give.
+    check_close(end_a.0, op_x + op_width / 6.0)?;
+    check_close(end_b.0, op_x + op_width * 5.0 / 6.0)
 }

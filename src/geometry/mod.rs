@@ -287,14 +287,23 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// One of a binary operator node's own two input anchors on `rect` — the operator node's own rectangle. `mine` and
 /// `sibling` are the two operands' own centres; this returns where the edge from `mine` should land.
 ///
-/// Behaves exactly like [`edge_anchor`] — that side's own plain midpoint — whenever `mine` and `sibling` resolve to
-/// different sides of `rect`. Only one connector lands on that side then, so today's single-anchor default already
-/// covers it.
+/// `fixing_points` is `rect`'s own node's [`crate::scene::EdgeAnchors`] configuration, already unwrapped to a plain
+/// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`. Both calls a binary operator's
+/// pair of operands make must pass the same value, since they describe the same node.
 ///
-/// When both resolve to the *same* side, neither uses that side's midpoint. They split instead to the outer two of
-/// three evenly spaced candidates — the same division [`snapped_anchor`] uses for `fixing_points == 3` — so the two
-/// connectors no longer overlap. Ordered so they never cross either: whichever operand's own crossing position sits
-/// first along the side gets the first outer candidate, regardless of which one is `mine` in a given call.
+/// Whenever `mine` and `sibling` resolve to *different* sides of `rect`, only one connector lands on that side, so
+/// this behaves exactly like an ordinary edge into `rect` would: [`snapped_anchor`] when `fixing_points` is
+/// configured, [`edge_anchor`] — that side's own plain midpoint — otherwise.
+///
+/// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly spaced
+/// candidates — the same division [`snapped_anchor`] would use for that count — so the two connectors no longer
+/// overlap. `None` (no `EdgeAnchors` configured) falls back to a fixed 3-way split; there is no configured anchor
+/// set to draw two distinct positions from otherwise, and this keeps every unconfigured node's rendering unchanged
+/// from before this parameter existed. `Some(1)` collapses both operands onto that single candidate — no second
+/// position exists to split to, so the two connectors overlap the same way any two ordinary edges would on a
+/// single-candidate node; see [`crate::scene::EdgeAnchors`]'s own "not reserved" contract. Ordered so the two never
+/// cross either: whichever operand's own crossing position sits first along the side gets the first outer
+/// candidate, regardless of which one is `mine` in a given call.
 ///
 /// `mine_is_first` breaks the tie when the two crossings are *exactly* equal — not just the same `Point` passed
 /// twice, but two distinct operands that happen to sit on the same ray from `rect`'s own centre. Comparing the
@@ -310,34 +319,42 @@ pub(crate) fn binary_operator_anchor(
     mine: Point,
     sibling: Point,
     mine_is_first: bool,
+    fixing_points: Option<u8>,
 ) -> (Point, side::Side) {
     let (my_side, my_crossing) = side_and_crossing(rect, mine);
     let (sibling_side, sibling_crossing) = side_and_crossing(rect, sibling);
 
     if my_side != sibling_side {
-        return edge_anchor(rect, mine);
+        return match fixing_points {
+            Some(n) => snapped_anchor(rect, mine, n),
+            None => edge_anchor(rect, mine),
+        };
     }
+
+    // At least 1, so `divisions` below is always `>= 2`, mirroring `snapped_anchor`'s own defensive minimum.
+    let candidates = f64::from(fixing_points.unwrap_or(3).max(1));
+    let divisions = candidates + 1.0;
 
     let index = if my_crossing < sibling_crossing {
         1.0
     } else if my_crossing > sibling_crossing {
-        3.0
+        candidates
     } else if mine_is_first {
         1.0
     } else {
-        3.0
+        candidates
     };
     let centre = centre(rect);
     let point = if is_horizontal(my_side) {
         let sign = if my_side == side::Side::East { 1.0 } else { -1.0 };
         Point::new(
             centre.x + rect.size.width / 2.0 * sign,
-            rect.origin.y + rect.size.height * index / 4.0,
+            rect.origin.y + rect.size.height * index / divisions,
         )
     } else {
         let sign = if my_side == side::Side::South { 1.0 } else { -1.0 };
         Point::new(
-            rect.origin.x + rect.size.width * index / 4.0,
+            rect.origin.x + rect.size.width * index / divisions,
             centre.y + rect.size.height / 2.0 * sign,
         )
     };

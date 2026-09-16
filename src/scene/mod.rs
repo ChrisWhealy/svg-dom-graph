@@ -155,11 +155,14 @@ impl SceneInner {
         };
 
         let to_rect = self.node_rect(to).ok()?;
+        let to_fixing_points = self.node_edge_anchors(to).ok()?.map(|EdgeAnchors(n)| n);
         let mine_centre = box_centre(self.node_rect(from).ok()?);
         let sibling_centre = box_centre(self.node_rect(sibling).ok()?);
 
-        let (anchor, side) = binary_operator_anchor(to_rect, mine_centre, sibling_centre, mine_is_first);
-        let (sibling_end, _) = binary_operator_anchor(to_rect, sibling_centre, mine_centre, !mine_is_first);
+        let (anchor, side) =
+            binary_operator_anchor(to_rect, mine_centre, sibling_centre, mine_is_first, to_fixing_points);
+        let (sibling_end, _) =
+            binary_operator_anchor(to_rect, sibling_centre, mine_centre, !mine_is_first, to_fixing_points);
 
         Some(connector::BinaryOperatorRoute { anchor, side, sibling_end })
     }
