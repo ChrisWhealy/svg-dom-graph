@@ -12,13 +12,13 @@ pub enum UnaryOperator {
     /// Bitwise complement: every bit flips.
     Not,
     /// Logical shift left by the wrapped bit count. Bits shifted past the type's own width are discarded.
-    ShiftLeft(u32),
+    ShiftLeft(u8),
     /// Logical shift right by the wrapped bit count. Bits shifted past the type's own width are discarded.
-    ShiftRight(u32),
+    ShiftRight(u8),
     /// Rotate left by the wrapped bit count. Bits shifted out one end reappear at the other.
-    RotateLeft(u32),
+    RotateLeft(u8),
     /// Rotate right by the wrapped bit count. Bits shifted out one end reappear at the other.
-    RotateRight(u32),
+    RotateRight(u8),
 }
 
 impl UnaryOperator {

@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Refactored structs in `model/content/mod.rs` into their own modules (`eedce81`)
-- Make operator creation fully transactional (``)
+- Make operator creation fully transactional (`fa82e88`)
+- Tighten rotate and shift `UnaryOperator` enum variants to `u8` bit counts (``)
 
 ## Fixed
 
