@@ -143,10 +143,13 @@ impl SceneInner {
     /// as before this existed.
     fn binary_operator_to_override(&self, from: NodeId, to: NodeId) -> Option<connector::BinaryOperatorRoute> {
         let (input_a, input_b) = self.node_handles.get(&to)?.binary_operator_inputs?;
-        let sibling = if from == input_a {
-            input_b
+        // `add_binary_operator_node_with` rejects `input_a == input_b`, so this is an unambiguous, stable identity
+        // — not just "which `NodeId`", but "which of the two operand *slots* this edge is" — see
+        // `binary_operator_anchor`'s own doc comment for why that stability matters.
+        let (sibling, mine_is_first) = if from == input_a {
+            (input_b, true)
         } else if from == input_b {
-            input_a
+            (input_a, false)
         } else {
             return None;
         };
@@ -155,8 +158,8 @@ impl SceneInner {
         let mine_centre = box_centre(self.node_rect(from).ok()?);
         let sibling_centre = box_centre(self.node_rect(sibling).ok()?);
 
-        let (anchor, side) = binary_operator_anchor(to_rect, mine_centre, sibling_centre);
-        let (sibling_end, _) = binary_operator_anchor(to_rect, sibling_centre, mine_centre);
+        let (anchor, side) = binary_operator_anchor(to_rect, mine_centre, sibling_centre, mine_is_first);
+        let (sibling_end, _) = binary_operator_anchor(to_rect, sibling_centre, mine_centre, !mine_is_first);
 
         Some(connector::BinaryOperatorRoute { anchor, side, sibling_end })
     }

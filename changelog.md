@@ -14,7 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactored structs in `model/content/mod.rs` into their own modules (``)
+- Refactored structs in `model/content/mod.rs` into their own modules (`eedce81`)
+
+## Fixed
+
+- Prevent equal-crossing binary operands from producing overlapping connectors (``)
 
 # [Released]
 

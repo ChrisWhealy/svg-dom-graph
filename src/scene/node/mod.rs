@@ -712,6 +712,9 @@ impl Scene {
     /// [`GridLayout`](crate::scene::GridLayout) wraps `0`. Returns [`Error::OperatorResultNotSingleValue`] if
     /// `result` holds more than one value — an operator always produces one value, never a grid.
     ///
+    /// Returns [`Error::DuplicateOperands`] if `inputs.0` and `inputs.1` name the same node — a binary operator's
+    /// two operands must be distinct.
+    ///
     /// Returns [`Error::UnknownNode`] if either of `inputs` does not name a node in this scene, or
     /// [`Error::OperandNotData`] if it names a plain label node rather than a [`DataNodeContent`] one. `inputs.0` is
     /// checked first.
@@ -734,6 +737,9 @@ impl Scene {
     ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
         validate_operator_result(&result)?;
+        if inputs.0 == inputs.1 {
+            return Err(Error::DuplicateOperands(inputs.0));
+        }
         if !top_left.x.is_finite() || !top_left.y.is_finite() {
             return Err(Error::InvalidNodeGeometry(Rect {
                 origin: top_left,

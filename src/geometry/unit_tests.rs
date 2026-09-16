@@ -449,7 +449,7 @@ fn binary_operator_anchor_on_different_sides_each_keep_edge_anchors_own_midpoint
     };
     let south = Point::new(20.0, 1000.0);
     let east = Point::new(1000.0, 10.0);
-    check_eq(binary_operator_anchor(rect, south, east), edge_anchor(rect, south))
+    check_eq(binary_operator_anchor(rect, south, east, true), edge_anchor(rect, south))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -466,15 +466,43 @@ fn binary_operator_anchor_on_the_same_side_splits_to_the_outer_two_of_three_cand
     let left = Point::new(10.0, 1000.0);
     let right = Point::new(30.0, 1000.0);
 
-    let (left_point, left_side) = binary_operator_anchor(rect, left, right);
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true);
     check_eq(left_point, Point::new(10.0, 20.0))?;
     check_eq(left_side, Side::South)?;
 
     // Calling it the other way around — `right` as `mine`, `left` as `sibling` — still agrees on who takes which
-    // outer candidate. Neither call knows about the other; each recomputes both crossings independently.
-    let (right_point, right_side) = binary_operator_anchor(rect, right, left);
+    // outer candidate. Neither call knows about the other; each recomputes both crossings independently. Their
+    // crossings differ here, so `mine_is_first` plays no part in the outcome — passed as `false` regardless.
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false);
     check_eq(right_point, Point::new(30.0, 20.0))?;
     check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_breaks_an_exact_crossing_tie_using_mine_is_first() -> Result<(), String> {
+    // Two distinct operands on the exact same ray from the rect's own centre (direction (1, 100), at different
+    // distances) resolve to the same side with an *identical* crossing position — comparing the crossings alone
+    // cannot order them, so `mine_is_first` is the only thing that can.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let near = Point::new(25.0, 510.0); // t = 5 along the ray
+    let far = Point::new(30.0, 1010.0); // t = 10 along the same ray
+
+    let (first_point, first_side) = binary_operator_anchor(rect, near, far, true);
+    check_eq(first_point, Point::new(10.0, 20.0))?;
+    check_eq(first_side, Side::South)?;
+
+    let (second_point, second_side) = binary_operator_anchor(rect, far, near, false);
+    check_eq(second_point, Point::new(30.0, 20.0))?;
+    check_eq(second_side, Side::South)?;
+
+    // Only `mine_is_first` decides the outcome here — not which point is passed as `mine`, and not which is
+    // geometrically nearer or farther, since the two crossings are exactly equal.
+    let (first_point_again, _) = binary_operator_anchor(rect, far, near, true);
+    check_eq(first_point_again, Point::new(10.0, 20.0))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -140,6 +140,28 @@ fn add_binary_operator_node_rejects_mismatched_operand_widths() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second
+/// "other side" to route a connector to, and the router could never tell its two auto-wired edges apart anyway.
+#[wasm_bindgen_test]
+fn add_binary_operator_node_rejects_duplicate_operands() -> Result<(), String> {
+    let svg = make_svg("operator-duplicate-operands", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+
+    let outcome = scene.add_binary_operator_node(Point::new(220.0, 60.0), BinaryOperator::And, (a, a), result);
+    check(
+        matches!(outcome, Err(Error::DuplicateOperands(id)) if id == a),
+        &format!("expected Err(Error::DuplicateOperands(a)), got {outcome:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operator's operand must itself be a [`DataNodeContent`] node — a plain label node has no value width an
 /// operator could act on.
 #[wasm_bindgen_test]
@@ -479,4 +501,86 @@ fn dragging_the_near_operand_past_the_far_operands_row_does_not_cross_the_connec
         1,
     )?)?)?;
     check_routes_do_not_cross(&near_route, &far_route)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The real, rendered centre of the `index`th `<g>` under `container_id` — `group_translate`'s own origin plus
+/// half of its outer `<rect>`'s own measured size.
+fn group_centre(container_id: &str, index: u32) -> Result<(f64, f64), String> {
+    let group = nth_group(container_id, index)?;
+    let (x, y) = group_translate(&group)?;
+    let outer_rect = rect_children(&group)?
+        .into_iter()
+        .next()
+        .ok_or_else(|| format!("group {index} under #{container_id} has no outer rect"))?;
+    Ok((
+        x + attr_f64(&outer_rect, "width")? / 2.0,
+        y + attr_f64(&outer_rect, "height")? / 2.0,
+    ))
+}
+
+/// Drags the `index`th `<g>` under `container_id` so its own centre ends up at `target`.
+fn drag_group_centre_to(container_id: &str, index: u32, target: (f64, f64)) -> Result<(), String> {
+    let group = nth_group(container_id, index)?;
+    let (from_x, from_y) = group_centre(container_id, index)?;
+    let (dx, dy) = (target.0 - from_x, target.1 - from_y);
+    let end = (100.0 + dx, 100.0 + dy);
+    dispatch_pointer_event(&group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group, "pointermove", end.0 as i32, end.1 as i32, 1)?;
+    dispatch_pointer_event(&group, "pointerup", end.0 as i32, end.1 as i32, 1)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Two distinct operands on the exact same ray from a binary operator's own centre — different nodes, but an
+/// identical crossing position on its shared side — must still land on two distinct anchor points, not one on top
+/// of the other. Comparing the crossings alone cannot tell them apart; the fix is a stable first/second identity.
+#[wasm_bindgen_test]
+fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(), String> {
+    let svg = make_svg("operator-equal-crossing", Size::new(700.0, 500.0), Size::new(700.0, 500.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let near = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let far = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(near).map_err(|e| e.to_string())?;
+    scene.make_draggable(far).map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_binary_operator_node(Point::new(500.0, 260.0), BinaryOperator::Or, (near, far), result)
+        .map_err(|e| e.to_string())?;
+
+    // Drag both operands onto the exact same ray from the operator's own centre — direction (-100, -1), at t = 1
+    // and t = 2 — so their crossing positions on the operator's own west side are identical (the crossing formula
+    // is `centre + dy * half_w / dx`, which depends only on the ray's own direction, not how far along it a point
+    // sits).
+    let (op_cx, op_cy) = group_centre("operator-equal-crossing", 2)?;
+    drag_group_centre_to("operator-equal-crossing", 0, (op_cx - 100.0, op_cy - 1.0))?;
+    drag_group_centre_to("operator-equal-crossing", 1, (op_cx - 200.0, op_cy - 2.0))?;
+
+    let end_near = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-equal-crossing",
+        0,
+    )?)?)?;
+    let end_far = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-equal-crossing",
+        1,
+    )?)?)?;
+
+    // Both land on the operator's own west edge (same x) — but at two distinct y positions, not one on top of
+    // the other.
+    check_close(end_near.0, end_far.0)?;
+    check(
+        (end_near.1 - end_far.1).abs() > 1.0,
+        &format!(
+            "expected two distinct anchor y positions despite identical crossings, got {end_near:?} and {end_far:?}"
+        ),
+    )
 }

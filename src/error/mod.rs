@@ -105,6 +105,13 @@ pub enum Error {
     /// An operator always produces one value, never a grid of them. Rejected before drawing anything or touching the
     /// graph's model, so a rejected call leaves the scene unchanged.
     OperatorResultNotSingleValue(usize),
+    /// `Scene::add_binary_operator_node`/`Scene::add_binary_operator_node_with` was given the same node as both of
+    /// `inputs`.
+    ///
+    /// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second
+    /// "other side" to route a connector to. Rejected before drawing anything or touching the graph's model, so a
+    /// rejected call leaves the scene unchanged.
+    DuplicateOperands(NodeId),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -147,6 +154,9 @@ impl fmt::Display for Error {
             },
             Error::OperatorResultNotSingleValue(len) => {
                 write!(f, "operator result must hold exactly one value, found {len}")
+            },
+            Error::DuplicateOperands(id) => {
+                write!(f, "node {id:?} cannot be used as both operands of a binary operator node")
             },
         }
     }

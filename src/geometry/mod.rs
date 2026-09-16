@@ -296,9 +296,21 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// connectors no longer overlap. Ordered so they never cross either: whichever operand's own crossing position sits
 /// first along the side gets the first outer candidate, regardless of which one is `mine` in a given call.
 ///
+/// `mine_is_first` breaks the tie when the two crossings are *exactly* equal — not just the same `Point` passed
+/// twice, but two distinct operands that happen to sit on the same ray from `rect`'s own centre. Comparing the
+/// crossings alone is ambiguous there: both calls would see their own crossing as "less than or equal to" the
+/// other's, and so both would land on the same candidate. `mine_is_first` is the caller's own stable answer to
+/// "which operand is this" — the crate's own only caller passes `true` for whichever of the two it looked up
+/// first — so the two calls agree on a single, consistent winner regardless of geometry.
+///
 /// Called independently once per edge, recomputing both crossings from scratch each time. So it stays correct with
 /// no shared state between the two calls a binary operator node's own pair of inputs each make.
-pub(crate) fn binary_operator_anchor(rect: Rect, mine: Point, sibling: Point) -> (Point, side::Side) {
+pub(crate) fn binary_operator_anchor(
+    rect: Rect,
+    mine: Point,
+    sibling: Point,
+    mine_is_first: bool,
+) -> (Point, side::Side) {
     let (my_side, my_crossing) = side_and_crossing(rect, mine);
     let (sibling_side, sibling_crossing) = side_and_crossing(rect, sibling);
 
@@ -306,7 +318,15 @@ pub(crate) fn binary_operator_anchor(rect: Rect, mine: Point, sibling: Point) ->
         return edge_anchor(rect, mine);
     }
 
-    let index = if my_crossing <= sibling_crossing { 1.0 } else { 3.0 };
+    let index = if my_crossing < sibling_crossing {
+        1.0
+    } else if my_crossing > sibling_crossing {
+        3.0
+    } else if mine_is_first {
+        1.0
+    } else {
+        3.0
+    };
     let centre = centre(rect);
     let point = if is_horizontal(my_side) {
         let sign = if my_side == side::Side::East { 1.0 } else { -1.0 };
