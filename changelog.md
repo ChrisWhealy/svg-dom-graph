@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Refactor `demo-app` into multiple smaller modules (`1060391`)
 - Demo shows uneven grid for cell selection (`2d999e2`)
-- Update README (``)
+- Update README (`f179330`)
 
 ## Fixed
 
