@@ -86,6 +86,7 @@ mod data_node_content;
 mod grid_layout;
 mod node_values;
 mod operator;
+mod selection;
 
 pub use byte_order::ByteOrder;
 pub use data_format::DataFormat;
@@ -93,6 +94,7 @@ pub use data_node_content::DataNodeContent;
 pub use grid_layout::GridLayout;
 pub use node_values::NodeValues;
 pub use operator::{BinaryOperator, UnaryOperator};
+pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for

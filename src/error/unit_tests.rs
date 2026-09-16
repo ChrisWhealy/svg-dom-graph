@@ -107,6 +107,15 @@ fn invalid_node_geometry_display_names_the_rejected_rect() -> Result<(), String>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_selection_display_names_the_node_and_the_rejected_selection() -> Result<(), String> {
+    let id = a_node_id();
+    let message = Error::InvalidSelection(id, crate::scene::Selection::Cell(9)).to_string();
+    check(message.contains(&format!("{id:?}")), &message)?;
+    check(message.contains("Cell(9)"), &message)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn svg_error_display_passes_through_the_wrapped_message() -> Result<(), String> {
     let svg_err = svg_dom::Error::ElementNotFound("diagram".into());
     let expected = svg_err.to_string();

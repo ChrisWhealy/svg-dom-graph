@@ -39,6 +39,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-edge-anchors", "Fixing points"),
     ("panel-data", "Data node"),
     ("panel-operators", "Boolean operators"),
+    ("panel-selection", "Cell selection"),
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

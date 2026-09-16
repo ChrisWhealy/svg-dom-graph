@@ -13,7 +13,7 @@ pub(crate) mod drag;
 pub(crate) mod node;
 
 pub use crate::model::content::{
-    BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, UnaryOperator,
+    BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection, UnaryOperator,
 };
 pub(crate) use box_handles::BoxHandles;
 pub(crate) use connector::ConnectorHandle;

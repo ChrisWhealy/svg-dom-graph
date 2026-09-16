@@ -295,22 +295,30 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// this behaves exactly like an ordinary edge into `rect` would: [`snapped_anchor`] when `fixing_points` is
 /// configured, [`edge_anchor`] — that side's own plain midpoint — otherwise.
 ///
-/// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly spaced
-/// candidates — the same division [`snapped_anchor`] would use for that count — so the two connectors no longer
-/// overlap. `None` (no `EdgeAnchors` configured) falls back to a fixed 3-way split; there is no configured anchor
-/// set to draw two distinct positions from otherwise, and this keeps every unconfigured node's rendering unchanged
-/// from before this parameter existed. `Some(1)` collapses both operands onto that single candidate — no second
-/// position exists to split to, so the two connectors overlap the same way any two ordinary edges would on a
-/// single-candidate node; see [`crate::scene::EdgeAnchors`]'s own "not reserved" contract. Ordered so the two never
-/// cross either: whichever operand's own crossing position sits first along the side gets the first outer
-/// candidate, regardless of which one is `mine` in a given call.
+/// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly
+/// spaced candidates — the same division [`snapped_anchor`] would use for that count. So the two connectors no
+/// longer overlap.
 ///
-/// `mine_is_first` breaks the tie when the two crossings are *exactly* equal — not just the same `Point` passed
-/// twice, but two distinct operands that happen to sit on the same ray from `rect`'s own centre. Comparing the
-/// crossings alone is ambiguous there: both calls would see their own crossing as "less than or equal to" the
-/// other's, and so both would land on the same candidate. `mine_is_first` is the caller's own stable answer to
-/// "which operand is this" — the crate's own only caller passes `true` for whichever of the two it looked up
-/// first — so the two calls agree on a single, consistent winner regardless of geometry.
+/// `None` (no `EdgeAnchors` configured) falls back to a fixed 3-way split, since there is no configured anchor set
+/// to draw two distinct positions from otherwise. This also keeps every unconfigured node's own rendering
+/// unchanged from before this parameter existed.
+///
+/// `Some(1)` collapses both operands onto that single candidate, since no second position exists to split to. The
+/// two connectors then overlap the same way any two ordinary edges would on a single-candidate node — see
+/// [`crate::scene::EdgeAnchors`]'s own "not reserved" contract.
+///
+/// This is ordered so the two never cross. Whichever operand's own crossing position sits first along the side
+/// gets the first outer candidate, regardless of which one is `mine` in a given call.
+///
+/// `mine_is_first` breaks the tie when the two crossings are *exactly* equal. This is not just the same `Point`
+/// passed twice, but two distinct operands that happen to sit on the same ray from `rect`'s own centre.
+///
+/// Comparing the crossings alone is ambiguous there: both calls would see their own crossing as "less than or
+/// equal to" the other's. Both would then land on the same candidate.
+///
+/// `mine_is_first` is instead the caller's own stable answer to "which operand is this." The crate's own only
+/// caller passes `true` for whichever of the two it looked up first. So the two calls agree on a single,
+/// consistent winner regardless of geometry.
 ///
 /// Called independently once per edge, recomputing both crossings from scratch each time. So it stays correct with
 /// no shared state between the two calls a binary operator node's own pair of inputs each make.

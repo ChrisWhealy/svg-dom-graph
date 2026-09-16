@@ -361,6 +361,98 @@ fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// resolve_selection
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn resolve_selection_of_none_bands_and_focuses_nothing() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    check_eq(content.resolve_selection(Selection::None), Some((Vec::new(), None)))
+}
+
+#[test]
+fn resolve_selection_of_an_in_range_cell_focuses_it_alone() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    check_eq(content.resolve_selection(Selection::Cell(2)), Some((Vec::new(), Some(2))))
+}
+
+#[test]
+fn resolve_selection_of_an_out_of_range_cell_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    check_eq(content.resolve_selection(Selection::Cell(4)), None)
+}
+
+#[test]
+fn resolve_selection_of_a_row_bands_every_cell_in_that_row() -> Result<(), String> {
+    // Forced to exactly 2 rows of 3 columns, so the flat-index math is unambiguous: row 1 is indices 3, 4, 5.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(
+        content.resolve_selection(Selection::Row { row: 1, col: None }),
+        Some((vec![3, 4, 5], None)),
+    )
+}
+
+#[test]
+fn resolve_selection_of_a_row_with_a_cell_also_focuses_that_one_cell() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(
+        content.resolve_selection(Selection::Row { row: 1, col: Some(2) }),
+        Some((vec![3, 4, 5], Some(5))),
+    )
+}
+
+#[test]
+fn resolve_selection_of_an_out_of_range_row_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.resolve_selection(Selection::Row { row: 2, col: None }), None)
+}
+
+#[test]
+fn resolve_selection_of_a_row_with_an_out_of_range_cell_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.resolve_selection(Selection::Row { row: 0, col: Some(3) }), None)
+}
+
+#[test]
+fn resolve_selection_of_a_column_bands_every_cell_in_that_column() -> Result<(), String> {
+    // Same 2×3 shape: column 2 is indices 2, 5.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(
+        content.resolve_selection(Selection::Column { col: 2, row: None }),
+        Some((vec![2, 5], None)),
+    )
+}
+
+#[test]
+fn resolve_selection_of_a_column_with_a_row_also_focuses_that_one_cell() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(
+        content.resolve_selection(Selection::Column { col: 2, row: Some(1) }),
+        Some((vec![2, 5], Some(5))),
+    )
+}
+
+#[test]
+fn resolve_selection_of_an_out_of_range_column_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.resolve_selection(Selection::Column { col: 3, row: None }), None)
+}
+
+#[test]
+fn resolve_selection_of_a_column_with_an_out_of_range_row_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.resolve_selection(Selection::Column { col: 0, row: Some(2) }), None)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // UnaryOperator::label / BinaryOperator::label
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 

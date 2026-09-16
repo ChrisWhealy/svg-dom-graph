@@ -5,7 +5,7 @@ mod edge_anchors;
 mod node_options;
 mod render_guard;
 
-use super::{BinaryOperator, BoxHandles, DataNodeContent, Scene, UnaryOperator, box_centre};
+use super::{BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, UnaryOperator, box_centre};
 use crate::{
     error::Error,
     model::{
@@ -139,6 +139,7 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
         draggable: false,
         edge_anchors,
         binary_operator_inputs: None,
+        cell_rects: Vec::new(),
     })
 }
 
@@ -177,6 +178,17 @@ const CELL_GAP: f64 = 6.0;
 
 /// The gap kept clear, on every side, between a multi-value grid's own cells and the node's outer box edges.
 const OUTER_PADDING: f64 = 10.0;
+
+/// `Scene::set_selection`'s own row/column-level highlight colour — a warm yellow, chosen to read clearly against
+/// every [`NodeValues::type_color`](super::content::NodeValues::type_color) pastel and against the plain `#eef4ff`
+/// outer box alike. Marks "we are now processing this row/column" in a [`Selection::Row`]/[`Selection::Column`]
+/// walk.
+const SELECTION_BAND_COLOR: &str = "#ffe066";
+
+/// `Scene::set_selection`'s own cell-level highlight colour — a stronger orange-red, overriding
+/// [`SELECTION_BAND_COLOR`] for the one cell a [`Selection::Cell`], or a `Row`/`Column`'s own optional cell, names.
+/// Marks "and specifically this element."
+const SELECTION_FOCUS_COLOR: &str = "#ff6b4a";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
@@ -260,7 +272,7 @@ fn draw_content_box(
     group.append(&rect_el)?;
 
     let mut scratch = String::new();
-    if single_value {
+    let cell_rects = if single_value {
         let text = texts
             .into_iter()
             .next()
@@ -268,8 +280,10 @@ fn draw_content_box(
         text.set_attr_display(&mut scratch, "x", cell_size.width / 2.0)?;
         text.set_attr_display(&mut scratch, "y", cell_size.height / 2.0)?;
         group.append(&text)?;
+        vec![rect_el.clone()]
     } else {
         let (_, grid_cols) = content.shape();
+        let mut cell_rects = Vec::with_capacity(texts.len());
         for (i, text) in texts.into_iter().enumerate() {
             #[allow(clippy::cast_precision_loss)]
             let (row, col) = (i / grid_cols, i % grid_cols);
@@ -289,8 +303,11 @@ fn draw_content_box(
             text.set_attr_display(&mut scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
             text.set_attr_display(&mut scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
             group.append(&text)?;
+
+            cell_rects.push(cell_rect);
         }
-    }
+        cell_rects
+    };
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
@@ -331,6 +348,7 @@ fn draw_content_box(
             draggable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            cell_rects,
         },
         rect,
     ))
@@ -435,6 +453,7 @@ fn draw_operator_box(
             draggable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            cell_rects: vec![value_row_el],
         },
         rect,
     ))
@@ -593,6 +612,58 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Highlights node `id`'s own cell(s) per `selection`, and recolours every affected cell immediately.
+    ///
+    /// `id` must be a [`DataNodeContent`] node. It may be drawn via [`add_data_node`](Self::add_data_node)/
+    /// [`add_data_node_with`](Self::add_data_node_with), or be an operator node's own single-value result (see
+    /// [`add_unary_operator_node`](Self::add_unary_operator_node)/
+    /// [`add_binary_operator_node`](Self::add_binary_operator_node)). A plain label node has no cells to highlight.
+    ///
+    /// This is the only way to change a node's own selection after it is first drawn. A live "previous"/"next"
+    /// control stepping through an array as it is processed is one example.
+    ///
+    /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_color`. Every call recolours
+    /// every one of `id`'s own cells from scratch, not just the ones a previous call touched. So there is no need
+    /// to clear before setting a new selection.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    ///
+    /// Returns [`Error::InvalidSelection`] if `id` names a plain label node. Also returns it if `selection` names
+    /// a cell/row/column index out of range for `id`'s own actual value count or grid shape. Checked before
+    /// recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
+    ///
+    /// Also returns a wrapped [`Error::Svg`] if recolouring a cell fails partway through. A failure here can leave
+    /// some cells already recoloured and others not — the same documented property
+    /// [`set_edge_anchors`](Self::set_edge_anchors) already carries for its own incident redraws.
+    pub fn set_selection(&self, id: NodeId, selection: Selection) -> Result<(), Error> {
+        let inner = self.inner.borrow();
+
+        let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
+            NodeContent::Data(content) => content,
+            NodeContent::Label(_) => return Err(Error::InvalidSelection(id, selection)),
+        };
+        let (band, focus) = content
+            .resolve_selection(selection)
+            .ok_or(Error::InvalidSelection(id, selection))?;
+        let base_color = content.type_color();
+
+        let handles = inner.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
+        for (i, cell) in handles.cell_rects.iter().enumerate() {
+            let color = if Some(i) == focus {
+                SELECTION_FOCUS_COLOR
+            } else if band.contains(&i) {
+                SELECTION_BAND_COLOR
+            } else {
+                base_color
+            };
+            cell.set_fill(color)?;
+        }
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a unary operator node to the graph — labelled with `operator`, showing `result`'s own single value, and
     /// wired with an incoming edge from `input` — and returns its id.
     ///
@@ -636,9 +707,10 @@ impl Scene {
     /// Returns [`Error::OperatorTypeMismatch`] if `result`'s own value width does not match `input`'s.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
-    /// scene exactly as it was. A failure drawing the auto-wired input edge, after the node itself was already
-    /// created, is rolled back too — the node is removed again, so a failed call never leaves a partial operator
-    /// behind.
+    /// scene exactly as it was.
+    ///
+    /// A failure drawing the auto-wired input edge, after the node itself was already created, is rolled back too.
+    /// The node is removed again, so a failed call never leaves a partial operator behind.
     pub fn add_unary_operator_node_with(
         &self,
         top_left: Point,
@@ -728,9 +800,11 @@ impl Scene {
     /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
-    /// scene exactly as it was. A failure drawing either auto-wired input edge, after the node itself was already
-    /// created, is rolled back too — the node, and whichever of its two input edges had already been wired, are
-    /// removed again, so a failed call never leaves a partial operator behind.
+    /// scene exactly as it was.
+    ///
+    /// A failure drawing either auto-wired input edge, after the node itself was already created, is rolled back
+    /// too. The node, and whichever of its two input edges had already been wired, are removed again. So a failed
+    /// call never leaves a partial operator behind.
     pub fn add_binary_operator_node_with(
         &self,
         top_left: Point,

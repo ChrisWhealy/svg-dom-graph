@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.8] - 2026-09-17
+
+## Added
+
+- Add cell selection functionality (``)
+
 # [Released]
 
 ## [0.2.7] - 2026-09-16

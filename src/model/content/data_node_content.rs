@@ -107,4 +107,40 @@ impl DataNodeContent {
     pub(crate) fn type_name(&self) -> &'static str {
         self.values.type_name()
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Resolves `selection` against this content's own actual value count and grid shape into the flat cell
+    /// indices [`Scene::set_selection`](crate::scene::Scene::set_selection) should recolour.
+    ///
+    /// Returns `(band, focus)`. Every index in `band` gets the row/column-level highlight colour.
+    ///
+    /// The further index in `focus`, if any, gets the stronger cell-level colour instead, overriding `band` for
+    /// that one cell.
+    ///
+    /// Returns `None` if `selection` names an index out of range for this content's own value count
+    /// ([`Selection::Cell`]) or grid shape ([`Selection::Row`]/[`Selection::Column`], and their own optional
+    /// `col`/`row`).
+    pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(Vec<usize>, Option<usize>)> {
+        let len = self.len();
+        let (rows, cols) = self.shape();
+
+        match selection {
+            Selection::None => Some((Vec::new(), None)),
+            Selection::Cell(i) => (i < len).then(|| (Vec::new(), Some(i))),
+            Selection::Row { row, col } => {
+                if row >= rows || col.is_some_and(|c| c >= cols) {
+                    return None;
+                }
+                let band = (0..cols).map(|c| row * cols + c).collect();
+                Some((band, col.map(|c| row * cols + c)))
+            },
+            Selection::Column { col, row } => {
+                if col >= cols || row.is_some_and(|r| r >= rows) {
+                    return None;
+                }
+                let band = (0..rows).map(|r| r * cols + col).collect();
+                Some((band, row.map(|r| r * cols + col)))
+            },
+        }
+    }
 }

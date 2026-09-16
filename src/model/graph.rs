@@ -127,7 +127,7 @@ impl Graph {
     /// Does nothing if `id` does not name a node in this graph.
     ///
     /// The same narrow rollback purpose as [`remove_edge`](Self::remove_edge): only safe to call once every edge
-    /// that could reference `id` has already been removed — otherwise those edges would keep pointing at a node
+    /// that could reference `id` has already been removed. Otherwise, those edges would keep pointing at a node
     /// that no longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always
     /// holds for its one caller.
     pub(crate) fn remove_node(&mut self, id: NodeId) {

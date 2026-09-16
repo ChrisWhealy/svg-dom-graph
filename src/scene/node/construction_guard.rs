@@ -5,23 +5,26 @@ use crate::{
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rolls back an operator node's own compound "create the node, then wire its auto-connected input edge(s)"
-/// operation if a later step fails after the node itself was already drawn and registered.
+/// operation. This happens if a later step fails after the node itself was already drawn and registered.
 ///
 /// `draw_operator_box`'s own [`RenderGuard`](super::render_guard::RenderGuard) already makes the node's *own* DOM
 /// construction atomic. But `add_unary_operator_node_with`/`add_binary_operator_node_with` don't stop there — once
 /// the node is registered in the graph and `node_handles`, one or two further `Scene::add_edge` calls wire its
-/// input(s). A failure in any of those would otherwise leave the node — and any edge that did succeed — behind:
-/// exactly the "operator plus one input connection" state this guard exists to prevent.
+/// input(s). A failure in any of those would otherwise leave the node, and any edge that did succeed, behind. That
+/// is exactly the "operator plus one input connection" state this guard exists to prevent.
 ///
-/// Create one right after the node itself is registered, [`track_edge`](Self::track_edge) each `Scene::add_edge`
-/// call's own id as it succeeds, and [`disarm`](Self::disarm) once every edge has been wired. Dropped while still
-/// armed, this removes every tracked edge — its rendered path, its `edge_handles` entry, and its place in the
-/// graph — then the node itself, in that order, so nothing is ever asked to remove a node an edge still points at.
+/// Create one right after the node itself is registered. [`track_edge`](Self::track_edge) each `Scene::add_edge`
+/// call's own id as it succeeds, and [`disarm`](Self::disarm) once every edge has been wired.
 ///
-/// Mirrors [`RenderGuard`](super::render_guard::RenderGuard)'s own rollback pattern, but one level up: `RenderGuard`
-/// only ever undoes DOM construction, since by the time it runs the node isn't registered anywhere yet. By the time
-/// this guard exists, the node already is — so its own rollback also has to unwind the graph model and the
-/// parallel `node_handles`/`edge_handles` bookkeeping `SceneInner` keeps beside it.
+/// Dropped while still armed, this removes every tracked edge first — its rendered path, its `edge_handles` entry,
+/// and its place in the graph. It then removes the node itself, so nothing is ever asked to remove a node an edge
+/// still points at.
+///
+/// Mirrors [`RenderGuard`](super::render_guard::RenderGuard)'s own rollback pattern, but one level up. `RenderGuard`
+/// only ever undoes DOM construction, since the node isn't registered anywhere yet by the time it runs.
+///
+/// By the time this guard exists, the node already is registered. So its own rollback also has to unwind the
+/// graph model and the parallel `node_handles`/`edge_handles` bookkeeping `SceneInner` keeps beside it.
 pub(super) struct OperatorConstructionGuard {
     scene: Scene,
     node_id: NodeId,

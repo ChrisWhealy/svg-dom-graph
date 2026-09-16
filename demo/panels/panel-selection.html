@@ -1,0 +1,29 @@
+<section class="section" id="panel-selection">
+    <h2>Cell selection</h2>
+    <p>A data node can highlight one of its own cells, or — for a two-dimensional grid — a whole row or column plus
+        a further cell within it, via <code>Scene::set_selection</code>. This is how a caller marks "where we
+        currently are" while stepping through an array's values, e.g. one element at a time.
+    </p>
+    <p>For a one-dimensional array, that is simply the currently selected element, in a single highlight colour. For
+        a two-dimensional array, the walk highlights the whole row currently being processed in one colour. It also
+        highlights the specific cell within that row, in a second, stronger colour.
+    </p>
+    <h3>One-dimensional array</h3>
+    <p class="controls">
+        <button id="selection-1d-prev" type="button">Previous</button>
+        <button id="selection-1d-next" type="button">Next</button>
+        <span>Selected index: <output id="selection-1d-index">0</output></span>
+    </p>
+    <div class="canvas">
+        <svg id="selection-1d-diagram" width="400" height="90" viewBox="0 0 400 90" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <h3>Two-dimensional array</h3>
+    <p class="controls">
+        <button id="selection-2d-prev" type="button">Previous</button>
+        <button id="selection-2d-next" type="button">Next</button>
+        <span>Selected: <output id="selection-2d-index">row 0, col 0</output></span>
+    </p>
+    <div class="canvas">
+        <svg id="selection-2d-diagram" width="400" height="180" viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

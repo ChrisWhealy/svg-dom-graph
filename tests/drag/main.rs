@@ -17,8 +17,10 @@
 //!   dragging every row, and ordinary connector routing.
 //! - [`operator_node`] — `Scene::add_unary_operator_node`/`add_binary_operator_node`: label/value rendering,
 //!   auto-wired input edges, operand-type validation, and dragging.
+//! - [`selection`] — `Scene::set_selection`: cell/row/column highlighting, including the two-tier row-plus-cell and
+//!   column-plus-cell case, resetting via `Selection::None`, and validation.
 //!
-//! All eight drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All nine drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -30,5 +32,6 @@ mod drag_basics;
 mod edge_anchors;
 mod operator_node;
 mod scene_validation;
+mod selection;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

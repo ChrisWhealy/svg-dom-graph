@@ -112,6 +112,13 @@ pub enum Error {
     /// "other side" to route a connector to. Rejected before drawing anything or touching the graph's model, so a
     /// rejected call leaves the scene unchanged.
     DuplicateOperands(NodeId),
+    /// `Scene::set_selection` was given a [`crate::scene::Selection`] that cannot be applied to node `id`.
+    ///
+    /// Either `id` names a plain label node, which has no cells to select, or `selection` names a cell/row/column
+    /// index out of range for `id`'s own actual value count or grid shape.
+    ///
+    /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
+    InvalidSelection(NodeId, crate::scene::Selection),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -157,6 +164,9 @@ impl fmt::Display for Error {
             },
             Error::DuplicateOperands(id) => {
                 write!(f, "node {id:?} cannot be used as both operands of a binary operator node")
+            },
+            Error::InvalidSelection(id, selection) => {
+                write!(f, "selection {selection:?} cannot be applied to node {id:?}")
             },
         }
     }
