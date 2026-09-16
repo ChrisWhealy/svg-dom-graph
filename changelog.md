@@ -22,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Retain data node content in `model::node::NodeContent::Data`. Move node by rewriting `<g>` transform instead of child coordinates (`a11d969`)
 - Allow for data format to have configurable byte order (`7c2e423`)
 - Refactor various structs into their own modules (`776dab7`)
-- Tighten up internal module visibility (``)
+- Tighten up internal module visibility (`072d704`)
 
 ## Fixed
 
