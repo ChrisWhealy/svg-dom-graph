@@ -35,8 +35,8 @@ struct SelectionDemo {
     two_d_index: usize,
 }
 
-/// How many columns the two-dimensional demo array uses — 3 rows of 4, so the row-banding is visually obvious
-/// without the grid being large enough to make counting cells tedious.
+/// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_demo`])
+/// deliberately does not divide evenly by this, so the grid's own last row renders short.
 const SELECTION_TWO_D_COLS: usize = 4;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -51,6 +51,9 @@ const SELECTION_TWO_D_COLS: usize = 4;
 ///    row-major order. Each step highlights the whole row currently being processed, in
 ///    [`Selection::Row`]'s own band colour. It also highlights the specific cell currently being processed within
 ///    that row, in the stronger focus colour — the two-tier highlight a data-flow walk over a matrix needs.
+/// 3. Its own value count leaves the last row short by two cells, a deliberately ragged grid. Stepping into that
+///    row bands only its own real cells, demonstrating live what `resolve_selection`'s own incomplete-grid tests
+///    already cover: a nominal row/column position is not always a real one.
 ///
 /// Both wrap: stepping "Next" past the last value returns to the first, and "Previous" from the first goes to the
 /// last — see [`wire_selection_controls`]'s own `step_one_d`/`step_two_d` helpers.
@@ -74,7 +77,10 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
         )
         .map_err(stringify)?;
 
-    let two_d_values: Vec<u8> = (1..=12).collect();
+    // Ten values over four columns: a 3×4 shape with the last row short by two cells.
+    // See this function's own doc comment (point 3) — a deliberately ragged grid, not the coincidentally-exact
+    // fit twelve values would be.
+    let two_d_values: Vec<u8> = (1..=10).collect();
     let two_d_len = two_d_values.len();
     let two_d_svg = svg_dom::SvgRoot::attach("selection-2d-diagram").map_err(stringify)?;
     let two_d_scene = Scene::new(two_d_svg).map_err(stringify)?;

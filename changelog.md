@@ -12,11 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add cell selection functionality (`0769ff6`)
 - Expand selection test coverage for incomplete rows (`fc72be8`)
-- Add accessibility descriptions for cell selection (``)
+- Add accessibility descriptions for cell selection (`2fd72ed`)
 
 ## Changed
 
 - Refactor `demo-app` into multiple smaller modules (`1060391`)
+- Demo shows uneven grid for cell selection (``)
 
 ## Fixed
 
