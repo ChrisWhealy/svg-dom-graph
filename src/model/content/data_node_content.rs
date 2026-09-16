@@ -109,32 +109,32 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Resolves `selection` against this content's own actual value count and grid shape into the flat cell
-    /// indices [`Scene::set_selection`](crate::scene::Scene::set_selection) should recolour.
+    /// Resolves `selection` against this content's own actual value count and grid shape into the `(band, focus)`
+    /// [`Scene::set_selection`](crate::scene::Scene::set_selection) should recolour with.
     ///
-    /// Returns `(band, focus)`. Every index in `band` gets the row/column-level highlight colour.
-    ///
-    /// The further index in `focus`, if any, gets the stronger cell-level colour instead, overriding `band` for
-    /// that one cell.
+    /// Every cell [`ResolvedBand::contains`] gets the row/column-level highlight colour. The further flat index in
+    /// `focus`, if any, gets the stronger cell-level colour instead, overriding `band` for that one cell.
     ///
     /// Returns `None` if `selection` names an index out of range for this content's own value count
     /// ([`Selection::Cell`]) or grid shape ([`Selection::Row`]/[`Selection::Column`], and their own optional
     /// `col`/`row`).
     ///
     /// A row/column index within `rows`/`cols` is not always enough on its own. [`GridLayout::Automatic`] (and an
-    /// over-specified [`GridLayout::Rows`]/[`GridLayout::Columns`]) can legitimately leave the grid's own last row
-    /// or column short, or entirely empty, whenever this content's own value count does not divide evenly.
+    /// over-specified [`GridLayout::Rows`]/[`GridLayout::Columns`]) can legitimately leave the grid's own last row or
+    /// column short, or entirely empty, whenever this content's own value count does not divide evenly.
     ///
     /// Seven values arranged as a 3×3 grid, for example, leaves flat indices `7`/`8` with no real value at all.
-    /// Every flat index this method returns — in `band` or as `focus` — is therefore also checked against this
-    /// content's own actual `len`, not just against the grid's own row/column *shape*.
-    pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(Vec<usize>, Option<usize>)> {
+    /// `focus` is therefore checked against this content's own actual `len`, not just against the grid's own
+    /// row/column *shape* — `band`'s own arithmetic membership test never needs the same check, since
+    /// `Scene::set_selection` only ever queries it with a flat index already known to be real. See [`ResolvedBand`]'s
+    /// own doc comment for why.
+    pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(ResolvedBand, Option<usize>)> {
         let len = self.len();
         let (rows, cols) = self.shape();
 
         match selection {
-            Selection::None => Some((Vec::new(), None)),
-            Selection::Cell(i) => (i < len).then(|| (Vec::new(), Some(i))),
+            Selection::None => Some((ResolvedBand::None, None)),
+            Selection::Cell(i) => (i < len).then_some((ResolvedBand::None, Some(i))),
             Selection::Row { row, col } => {
                 if row >= rows || col.is_some_and(|c| c >= cols) {
                     return None;
@@ -143,8 +143,7 @@ impl DataNodeContent {
                 if focus.is_some_and(|f| f >= len) {
                     return None;
                 }
-                let band = (0..cols).map(|c| row * cols + c).filter(|&i| i < len).collect();
-                Some((band, focus))
+                Some((ResolvedBand::Row { row, cols }, focus))
             },
             Selection::Column { col, row } => {
                 if col >= cols || row.is_some_and(|r| r >= rows) {
@@ -154,8 +153,7 @@ impl DataNodeContent {
                 if focus.is_some_and(|f| f >= len) {
                     return None;
                 }
-                let band = (0..rows).map(|r| r * cols + col).filter(|&i| i < len).collect();
-                Some((band, focus))
+                Some((ResolvedBand::Column { col, cols }, focus))
             },
         }
     }

@@ -30,3 +30,38 @@ pub enum Selection {
     /// a stronger colour, if `row` is `Some`.
     Column { col: usize, row: Option<usize> },
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A [`Selection::Row`]/[`Selection::Column`] already resolved against its own content's actual grid shape, in a form
+/// that [`Scene::set_selection`](crate::scene::Scene::set_selection) can test cheaply, one flat cell at a time.
+///
+/// Deliberately holds no list of member indices. A grid can hold arbitrarily many cells, and a "previous"/"next"
+/// control re-tests every one of them on every step. [`contains`](Self::contains) instead tests membership
+/// arithmetically, in `O(1)` per cell, with no allocation at all — a plain `row`/`col` and the grid's own `cols` are
+/// enough to decide it.
+///
+/// [`contains`](Self::contains) trusts its own caller to only ever query a flat index that names a real cell.
+/// [`super::DataNodeContent::resolve_selection`] is the only place that builds one.
+///
+/// `Scene::set_selection` is the only reader, and it walks exactly `content.len()` real cells, never a nominal
+/// row/column position past them. So this never needs to re-check a query against the content's own value count itself.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(crate) enum ResolvedBand {
+    /// No band: [`contains`](Self::contains) is `false` for every index.
+    None,
+    /// Every flat index `i` with `i / cols == row` belongs to this band.
+    Row { row: usize, cols: usize },
+    /// Every flat index `i` with `i % cols == col` belongs to this band.
+    Column { col: usize, cols: usize },
+}
+
+impl ResolvedBand {
+    /// Whether flat index `i` belongs to this band.
+    pub(crate) fn contains(self, i: usize) -> bool {
+        match self {
+            Self::None => false,
+            Self::Row { row, cols } => i / cols == row,
+            Self::Column { col, cols } => i % cols == col,
+        }
+    }
+}

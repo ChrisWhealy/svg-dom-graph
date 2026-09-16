@@ -11,11 +11,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add cell selection functionality (`0769ff6`)
-- Expand selection test coverage for incomplete rows (``)
+- Expand selection test coverage for incomplete rows (`fc72be8`)
 
 ## Changed
 
 - Refactor `demo-app` into multiple smaller modules (`1060391`)
+
+## Fixed
+
+- Remove unnecessary allocation during cell selection (``)
 
 # [Released]
 

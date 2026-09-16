@@ -367,13 +367,16 @@ fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
 #[test]
 fn resolve_selection_of_none_bands_and_focuses_nothing() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
-    check_eq(content.resolve_selection(Selection::None), Some((Vec::new(), None)))
+    check_eq(content.resolve_selection(Selection::None), Some((ResolvedBand::None, None)))
 }
 
 #[test]
 fn resolve_selection_of_an_in_range_cell_focuses_it_alone() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
-    check_eq(content.resolve_selection(Selection::Cell(2)), Some((Vec::new(), Some(2))))
+    check_eq(
+        content.resolve_selection(Selection::Cell(2)),
+        Some((ResolvedBand::None, Some(2))),
+    )
 }
 
 #[test]
@@ -389,7 +392,7 @@ fn resolve_selection_of_a_row_bands_every_cell_in_that_row() -> Result<(), Strin
         .with_layout(GridLayout::Rows(2));
     check_eq(
         content.resolve_selection(Selection::Row { row: 1, col: None }),
-        Some((vec![3, 4, 5], None)),
+        Some((ResolvedBand::Row { row: 1, cols: 3 }, None)),
     )
 }
 
@@ -399,7 +402,7 @@ fn resolve_selection_of_a_row_with_a_cell_also_focuses_that_one_cell() -> Result
         .with_layout(GridLayout::Rows(2));
     check_eq(
         content.resolve_selection(Selection::Row { row: 1, col: Some(2) }),
-        Some((vec![3, 4, 5], Some(5))),
+        Some((ResolvedBand::Row { row: 1, cols: 3 }, Some(5))),
     )
 }
 
@@ -424,7 +427,7 @@ fn resolve_selection_of_a_column_bands_every_cell_in_that_column() -> Result<(),
         .with_layout(GridLayout::Rows(2));
     check_eq(
         content.resolve_selection(Selection::Column { col: 2, row: None }),
-        Some((vec![2, 5], None)),
+        Some((ResolvedBand::Column { col: 2, cols: 3 }, None)),
     )
 }
 
@@ -434,7 +437,7 @@ fn resolve_selection_of_a_column_with_a_row_also_focuses_that_one_cell() -> Resu
         .with_layout(GridLayout::Rows(2));
     check_eq(
         content.resolve_selection(Selection::Column { col: 2, row: Some(1) }),
-        Some((vec![2, 5], Some(5))),
+        Some((ResolvedBand::Column { col: 2, cols: 3 }, Some(5))),
     )
 }
 
@@ -473,7 +476,7 @@ fn resolve_selection_of_a_row_focusing_a_real_cell_in_an_incomplete_grid_succeed
     // Row 2, column 0 is flat index 6 — the grid's own real last value.
     check_eq(
         content.resolve_selection(Selection::Row { row: 2, col: Some(0) }),
-        Some((vec![6], Some(6))),
+        Some((ResolvedBand::Row { row: 2, cols: 3 }, Some(6))),
     )
 }
 
@@ -490,7 +493,7 @@ fn resolve_selection_of_a_column_focusing_a_real_cell_in_an_incomplete_grid_succ
     // Column 2, row 1 is flat index 5 — a real value.
     check_eq(
         content.resolve_selection(Selection::Column { col: 2, row: Some(1) }),
-        Some((vec![2, 5], Some(5))),
+        Some((ResolvedBand::Column { col: 2, cols: 3 }, Some(5))),
     )
 }
 
@@ -502,25 +505,64 @@ fn resolve_selection_of_a_column_focusing_a_blank_cell_in_an_incomplete_grid_is_
 }
 
 #[test]
-fn resolve_selection_of_a_row_with_no_focus_bands_only_its_real_cells() -> Result<(), String> {
+fn resolve_selection_of_a_row_with_no_focus_still_succeeds_on_an_incomplete_grid() -> Result<(), String> {
     let content = seven_values_as_a_three_by_three_grid();
-    // Row 2 is nominally indices 6, 7, 8 — only 6 is real, so the band excludes the other two.
+    // Row 2 is nominally indices 6, 7, 8, of which only 6 is real — `resolve_selection` itself still succeeds;
+    // see the `ResolvedBand::contains` tests below for how the blank indices are kept out of the recoloured set.
     check_eq(
         content.resolve_selection(Selection::Row { row: 2, col: None }),
-        Some((vec![6], None)),
+        Some((ResolvedBand::Row { row: 2, cols: 3 }, None)),
     )
 }
 
 #[test]
-fn resolve_selection_of_an_entirely_blank_row_under_an_over_specified_layout_bands_nothing() -> Result<(), String> {
+fn resolve_selection_of_an_entirely_blank_row_under_an_over_specified_layout_still_resolves() -> Result<(), String> {
     // `GridLayout::Rows(10)` with only 3 values legitimately creates a (10, 1) shape — rows 3 through 9 have no
     // cell in them at all, not merely a short last row.
     let content =
         DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(10));
     check_eq(
         content.resolve_selection(Selection::Row { row: 5, col: None }),
-        Some((Vec::new(), None)),
+        Some((ResolvedBand::Row { row: 5, cols: 1 }, None)),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// ResolvedBand::contains
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn resolved_band_none_contains_nothing() -> Result<(), String> {
+    check_eq(ResolvedBand::None.contains(0), false)?;
+    check_eq(ResolvedBand::None.contains(41), false)
+}
+
+#[test]
+fn resolved_band_row_contains_exactly_that_rows_own_flat_indices() -> Result<(), String> {
+    // A 2×3 grid's own row 1 is flat indices 3, 4, 5.
+    let band = ResolvedBand::Row { row: 1, cols: 3 };
+    check_eq(band.contains(3), true)?;
+    check_eq(band.contains(4), true)?;
+    check_eq(band.contains(5), true)?;
+    check_eq(band.contains(2), false)?;
+    check_eq(band.contains(6), false)
+}
+
+#[test]
+fn resolved_band_column_contains_exactly_that_columns_own_flat_indices() -> Result<(), String> {
+    // A 3-column grid's own column 2 is flat indices 2, 5, 8, ...
+    let band = ResolvedBand::Column { col: 2, cols: 3 };
+    check_eq(band.contains(2), true)?;
+    check_eq(band.contains(5), true)?;
+    check_eq(band.contains(0), false)?;
+    check_eq(band.contains(4), false)
+}
+
+#[test]
+fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_cell() -> Result<(), String> {
+    // `contains` alone cannot tell a nominal row/column position from a real one — `Scene::set_selection` never
+    // queries it with anything but a real flat index, so it never needs to.
+    check_eq(ResolvedBand::Row { row: 2, cols: 3 }.contains(8), true)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -653,7 +653,7 @@ impl Scene {
         for (i, cell) in handles.cell_rects.iter().enumerate() {
             let color = if Some(i) == focus {
                 SELECTION_FOCUS_COLOR
-            } else if band.contains(&i) {
+            } else if band.contains(i) {
                 SELECTION_BAND_COLOR
             } else {
                 base_color
@@ -775,8 +775,8 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a binary operator node, as [`add_binary_operator_node`](Self::add_binary_operator_node), but with
-    /// `options` controlling how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
+    /// Adds a binary operator node, as [`add_binary_operator_node`](Self::add_binary_operator_node), but with `options`
+    /// controlling how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
     ///
     /// # Errors
     ///
@@ -785,11 +785,11 @@ impl Scene {
     /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite.
     ///
     /// Returns [`Error::EmptyNodeContent`] if `result` holds no values, or [`Error::InvalidGridLayout`] if its own
-    /// [`GridLayout`](crate::scene::GridLayout) wraps `0`. Returns [`Error::OperatorResultNotSingleValue`] if
-    /// `result` holds more than one value — an operator always produces one value, never a grid.
+    /// [`GridLayout`](crate::scene::GridLayout) wraps `0`. Returns [`Error::OperatorResultNotSingleValue`] if `result`
+    /// holds more than one value — an operator always produces one value, never a grid.
     ///
-    /// Returns [`Error::DuplicateOperands`] if `inputs.0` and `inputs.1` name the same node — a binary operator's
-    /// two operands must be distinct.
+    /// Returns [`Error::DuplicateOperands`] if `inputs.0` and `inputs.1` name the same node — a binary operator's two
+    /// operands must be distinct.
     ///
     /// Returns [`Error::UnknownNode`] if either of `inputs` does not name a node in this scene, or
     /// [`Error::OperandNotData`] if it names a plain label node rather than a [`DataNodeContent`] one. `inputs.0` is
@@ -802,9 +802,9 @@ impl Scene {
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
     ///
-    /// A failure drawing either auto-wired input edge, after the node itself was already created, is rolled back
-    /// too. The node, and whichever of its two input edges had already been wired, are removed again. So a failed
-    /// call never leaves a partial operator behind.
+    /// A failure drawing either auto-wired input edge, after the node itself was already created, is rolled back too.
+    /// The node, and whichever of its two input edges had already been wired, are removed again. So a failed call never
+    /// leaves a partial operator behind.
     pub fn add_binary_operator_node_with(
         &self,
         top_left: Point,

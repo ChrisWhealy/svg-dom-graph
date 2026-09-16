@@ -94,6 +94,7 @@ pub use data_node_content::DataNodeContent;
 pub use grid_layout::GridLayout;
 pub use node_values::NodeValues;
 pub use operator::{BinaryOperator, UnaryOperator};
+pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
