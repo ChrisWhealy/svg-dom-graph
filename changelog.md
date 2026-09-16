@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Added operator nodes to represent binary and bit operations (`7da5a3d`)
-- Widen test coverage (``)
+- Widen test coverage (`5573756`)
 
 ## Changed
 
