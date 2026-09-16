@@ -110,6 +110,29 @@ Both operands must share one `NodeValues` width, and must be two distinct nodes;
 An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
 The demo panel's own last row chains two operators together this way: `B` rotated right by one bit, then `XOR`'ed with `A` — the rotate node's result feeds the `XOR` node as its second operand.
 
+"Cell selection" demonstrates `Selection` and `Scene::set_selection`, which highlight a specific cell, or a whole row/column, of a `DataNodeContent` grid.
+This is the mechanism behind stepping through an array's values, e.g. via "previous"/"next" controls.
+
+For a one-dimensional array (a single row or column), `Selection::Cell(i)` is enough.
+There is no separate "row" to highlight distinctly from the one element within it.
+
+For a two-dimensional array, `Selection::Row`/`Selection::Column` highlight a whole row or column in one colour.
+They can also highlight a specific cell within it, in a second, stronger colour.
+This two-tier highlight marks "we are now processing this row" and "and specifically this element" as two distinct steps of a data-flow walk.
+
+Selection state is never conveyed by colour alone.
+The focused cell also gets a thicker stroke than a banded cell, which in turn is thicker than an unselected one.
+The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 6 values, row 1 selected, column 2 focused"`.
+
+A grid can be incomplete: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows`/`GridLayout::Columns`, can leave a row or column short of real cells.
+`set_selection` rejects a `Selection` naming a cell that does not exist, before recolouring anything.
+
+```rust
+scene.set_selection(node, Selection::Cell(2))?;
+scene.set_selection(node, Selection::Row { row: 1, col: Some(2) })?;
+scene.set_selection(node, Selection::None)?; // clears back to the default colour
+```
+
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
 | Module | Description |
@@ -117,15 +140,21 @@ The demo panel's own last row chains two operators together this way: `B` rotate
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, `clamp_to_bounds`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit — see `DataNodeContent`/`NodeValues`/`DataFormat`/`GridLayout`/`ByteOrder`), `add_unary_operator_node`, `add_unary_operator_node_with`, `add_binary_operator_node`, and `add_binary_operator_node_with` (a node naming the bitwise operation that produced its own already-computed single value, auto-wiring its incoming operand edge(s) — see `UnaryOperator`/`BinaryOperator`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit — see `DataNodeContent`/`NodeValues`/`DataFormat`/`GridLayout`/`ByteOrder`), `add_unary_operator_node`, `add_unary_operator_node_with`, `add_binary_operator_node`, and `add_binary_operator_node_with` (a node naming the bitwise operation that produced its own already-computed single value, auto-wiring its incoming operand edge(s) — see `UnaryOperator`/`BinaryOperator`), `set_selection` (highlights a cell, row, or column of a `DataNodeContent` grid, exposing the current selection through colour, stroke width, and its own `aria-label` — see `Selection`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
 
 `demo/` holds the demo's own HTML, assembled at stage time rather than hand-maintained as one file: `index.template.html` (the page shell, with a `{{MENU}}` and a `{{PANELS}}` placeholder), `panels/*.html` (one fragment per demo panel), and `style.css` — the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share one visual style.
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
 - `demo-app/src/lib.rs` — exports `init_panel`, called from `demo/index.template.html`'s own script each time a menu click or a deep link selects a panel.
-  Builds that one panel's small demo scene — the directed tree, the connector-routing demo, the fixing-points demo, the data-node demo, or the operator demo — the first time it is selected, not eagerly at page load; a later reselection is a no-op.
-  It also embeds its own source at compile time and, once a panel is built, appends a `<details>` block showing the exact Rust function that built it — see the `highlight` module and `demo_gallery!` macro in that file for how.
+  It looks up the requested panel in `DemoPanel`'s own registry, then calls that panel's own build function the first time it is selected, not eagerly at page load.
+  A later reselection is a no-op.
+  Also owns the `demo_gallery!` macro that builds the registry.
+  It also owns the panel-lifecycle bookkeeping (`run_panel`, `report_panel_error`) that reports a build failure directly in the gallery instead of panicking.
+- `demo-app/src/util.rs` — small DOM/error helpers shared by more than one demo module.
+- `demo-app/src/source_frame.rs` — builds each panel's own collapsible `<details>` block, showing the exact Rust source of the function that built it — sliced from that demo's own module source, embedded at compile time.
+- `demo-app/src/tree.rs`, `elbow.rs`, `edge_anchors.rs`, `data.rs`, `operators.rs`, and `selection.rs` — one module per demo panel, each owning its own `build_*` function and any struct/helper only it needs.
+- `demo-app/src/highlight/` — the syntax highlighter `source_frame.rs` uses to colour each source frame's own displayed code.
 
 `demo-server/` is a further on-demand workspace member, used only by `cargo demo` (see [Running the demo](#running-the-demo) below) — a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`, validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package, and serves the result, with no dependency on external HTTP-server tooling; `wasm-pack` remains required to build the demo.
 
@@ -141,7 +170,7 @@ Validates the panel catalogue, assembles `index.html` from `demo/index.template.
 
 Open <http://127.0.0.1:8000/> in a browser.
 
-Pick a demo from the menu on the left — "Directed tree", "Connector routing", "Fixing points", "Data node", or "Boolean operators" — each one builds the first time it is selected.
+Pick a demo from the menu on the left — "Directed tree", "Connector routing", "Fixing points", "Data node", "Boolean operators", or "Cell selection" — each one builds the first time it is selected.
 The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
 Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is picked up on the next browser refresh; editing any Rust source needs a `cargo demo` restart, the same as any other wasm rebuild.
 
@@ -186,6 +215,7 @@ Then runs the browser integration tests in `tests/drag/`, split by category:
 * `bounds.rs`
 * `data_node.rs`
 * `operator_node.rs`
+* `selection.rs`
 
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
 They make assertions about attributes of the resulting `<rect>`, `<text>`, `<path>` and `<marker>` elements, not on the internal Rust state that produced them.
@@ -219,6 +249,12 @@ The test suite covers:
   - dragging an operator node reroutes its input connector; dragging either operand of a same-side pair re-splits both connectors live, without either ever crossing back through its own dragged source box
   - same-side operand collision handling: splitting to distinct anchor points, including an exact-crossing tie between two distinct operands, and honouring a configured `EdgeAnchors` count instead of the unconfigured default's fixed three-way split
   - operands on different sides of the operator keep the plain single-anchor midpoint, unaffected by the same-side split logic
+- cell selection (`Selection`, `Scene::set_selection`):
+  - `Selection::Cell`/`Row`/`Column` recolouring a single-value node, a one-dimensional grid, and a two-dimensional grid's row/column band plus its own optional focused cell
+  - `Selection::None` fully resetting a previously selected node, not just the cells a prior call touched
+  - the focused cell's own thicker stroke width, distinguishing it from a banded cell and from an unselected one by more than colour alone
+  - the node's own `aria-label` describing the current selection as text, exposing it to assistive technology as well as through colour and stroke
+  - rejecting a `Selection` naming a plain label node, a foreign-scene id, or a cell/row/column index out of range for the node's own actual value count or grid shape, all before recolouring anything
 
 ```sh
 cargo test -p cdp-integration-test
