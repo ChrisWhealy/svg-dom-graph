@@ -80,134 +80,19 @@
 //! `<title>` on a value's own rect would not produce a tooltip over that same value's own text — a sibling element, not
 //! a descendant. And a `<title>` as a child of the `<text>` element itself would leak its own text into
 //! `text.textContent`, corrupting the rendered digits read back from the DOM.
+mod byte_order;
+mod data_format;
+mod data_node_content;
+mod grid_layout;
+mod node_values;
 mod operator;
+
+pub use byte_order::ByteOrder;
+pub use data_format::DataFormat;
+pub use data_node_content::DataNodeContent;
+pub use grid_layout::GridLayout;
+pub use node_values::NodeValues;
 pub use operator::{BinaryOperator, UnaryOperator};
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The values a [`DataNodeContent`] displays. Each variant names the Rust integer type the values were captured as.
-/// This determines how many bytes [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`] split each value into. It also
-/// determines which colour is assigned (`NodeValues::type_color`, crate-private).
-///
-/// Only the widths a caller is actually likely to inspect byte-by-byte are supported. A wider type — for example `u128`
-/// — can be added the same way later, additively, if it turns out to be needed.
-///
-/// # Deliberately one width per node
-///
-/// A `NodeValues` holds exactly one variant. So every value in a given [`DataNodeContent`] shares the same integer
-/// width. A node can display `[u32, u32, u32, u32]`, never `[u8, u16, u32, u64]`. This is a deliberate scope decision,
-/// not a limitation to lift later. The intended abstraction here is "display an array/vector of homogeneous numeric
-/// values" — a memory dump, a register bank, a typed buffer — not a general, per-cell-typed data inspector. Every value
-/// in one node sharing the same `type_color` follows directly from that: colour identifies the node's own type, not
-/// each individual cell's.
-///
-/// A heterogeneous node — `Vec<NodeValue>` with one width per value, à la a tagged-union cell type — is a legitimate,
-/// larger feature in its own right. It is not an incremental change to this one. Building it later, should a real
-/// caller need it, is expected to sit alongside this type rather than replace it.
-#[derive(Debug, Clone, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum NodeValues {
-    U8(Vec<u8>),
-    U16(Vec<u16>),
-    U32(Vec<u32>),
-    U64(Vec<u64>),
-}
-
-impl NodeValues {
-    /// How many values this holds, regardless of width — what [`grid_shape`] arranges into a grid.
-    fn len(&self) -> usize {
-        match self {
-            Self::U8(v) => v.len(),
-            Self::U16(v) => v.len(),
-            Self::U32(v) => v.len(),
-            Self::U64(v) => v.len(),
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Every value, formatted per `format` and `byte_order`, in the same order they were supplied — one cell per value,
-    /// not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
-    fn cell_strings(&self, format: DataFormat, byte_order: ByteOrder) -> Vec<String> {
-        match self {
-            Self::U8(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U16(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U32(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U64(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A gentle pastel background colour identifies this content's own Rust type. It is deliberately soft, not a harsh
-    /// primary. So a data node's colouring reads as a quiet label, not an alarm.
-    ///
-    /// Each width gets a distinct hue, chosen to stay visually distinct from `#eef4ff`. `#eef4ff` is the pale blue
-    /// every ordinary node — and a multi-value data node's own outer box — already uses.
-    pub(crate) fn type_color(&self) -> &'static str {
-        match self {
-            Self::U8(_) => "#fdebd3",  // pastel apricot
-            Self::U16(_) => "#dcefdc", // pastel mint
-            Self::U32(_) => "#e6dcf5", // pastel lavender
-            Self::U64(_) => "#f5dce4", // pastel rose
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64").
-    ///
-    /// [`type_color`](Self::type_color) is the only visual cue distinguishing one width from another. A caller who
-    /// cannot distinguish colours has no other way to recover the type. Assistive technology does not perceive fill
-    /// colour at all either. `scene::node` attaches this as the node's own `<g>`'s `<title>`, and as its `aria-label`.
-    /// That way the type exists as text somewhere, not only as colour.
-    pub(crate) fn type_name(&self) -> &'static str {
-        match self {
-            Self::U8(_) => "u8",
-            Self::U16(_) => "u16",
-            Self::U32(_) => "u32",
-            Self::U64(_) => "u64",
-        }
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The byte order `DataNodeContent::cells` splits each value into, for [`DataFormat::Hexadecimal`]/
-/// [`DataFormat::Binary`]. See this module's own doc comment ("Formatting") for why `BigEndian` is the default, and
-/// when a caller wants `LittleEndian` instead.
-///
-/// Has no visible effect under [`DataFormat::Decimal`]. A plain decimal number reads the same regardless of which byte
-/// order produced it.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[non_exhaustive]
-pub enum ByteOrder {
-    /// Most significant byte first, independent of host endianness. So the displayed digits always read the same way a
-    /// human would write the number, on every host. The right choice for register/value display.
-    #[default]
-    BigEndian,
-    /// Least significant byte first. The right choice when a value's own byte order is a property of the data being
-    /// inspected — an actual in-memory layout — rather than a display preference.
-    LittleEndian,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
-/// `LittleEndian`. A single-byte array (`N = 1`, i.e. `u8`) is unaffected either way: byte order is meaningless for
-/// one byte.
-fn order_bytes<const N: usize>(mut bytes: [u8; N], order: ByteOrder) -> [u8; N] {
-    if order == ByteOrder::LittleEndian {
-        bytes.reverse();
-    }
-    bytes
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for
@@ -222,63 +107,6 @@ fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataForma
             .map(|b| format!("{:04b} {:04b}", b >> 4, b & 0x0F))
             .collect::<Vec<_>>()
             .join(" "),
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How [`DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
-/// variant produces.
-///
-/// `#[non_exhaustive]`, for the same reason as [`NodeValues`]. A plausible future addition — `Octal`, `Ascii`, ... —
-/// should stay additive. It should not break a caller who exhaustively matched this already.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-#[non_exhaustive]
-pub enum DataFormat {
-    Decimal,
-    Hexadecimal,
-    Binary,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How a [`DataNodeContent`]'s values are arranged into a grid. See this module's own doc comment ("Grid shape") for
-/// [`Automatic`](Self::Automatic)'s exact rule. That section also explains why `Automatic` can still render far from
-/// physically square.
-///
-/// Build one directly — every variant's own field is mandatory. So there is no sensible all-default state besides
-/// [`Automatic`](Self::Automatic) itself, which [`Default`] already provides.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
-#[non_exhaustive]
-pub enum GridLayout {
-    /// The default: [`DataNodeContent::new`]'s own choice when [`DataNodeContent::with_layout`] is never called. Picks
-    /// a row count purely from the value *count* — see this module's own doc comment for the exact rule.
-    #[default]
-    Automatic,
-    /// Exactly `n` columns; the row count is however many rows of `n` it takes to fit every
-    /// value (`values.len().div_ceil(n)`).
-    ///
-    /// `n` must be `>= 1`. [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with) rejects `Columns(0)`
-    /// with [`Error::InvalidGridLayout`](crate::error::Error::InvalidGridLayout). A grid with no columns has nowhere to
-    /// place any value.
-    Columns(usize),
-    /// Exactly `n` rows; the column count is however many columns of `n` it takes to fit every
-    /// value (`values.len().div_ceil(n)`).
-    ///
-    /// `n` must be `>= 1` — rejected the same way as `Columns(0)`, for the same reason.
-    Rows(usize),
-    /// At most `n` columns. Like [`Automatic`](Self::Automatic), a caller need not work out the row count by hand. But
-    /// it never exceeds `n` columns, regardless of value count. This directly fixes a wide-celled grid — for example,
-    /// [`DataFormat::Binary`] `u64` values — that would otherwise render far wider than tall under `Automatic`'s
-    /// cell-count-only rule.
-    ///
-    /// `n` must be `>= 1` — rejected the same way as `Columns(0)`, for the same reason.
-    MaxColumns(usize),
-}
-
-impl GridLayout {
-    /// `false` for a `Columns`/`Rows`/`MaxColumns` wrapping `0` — such a grid has no columns (or rows) to place any
-    /// value in. `Automatic` is always valid.
-    pub(crate) fn is_valid(self) -> bool {
-        !matches!(self, Self::Columns(0) | Self::Rows(0) | Self::MaxColumns(0))
     }
 }
 
@@ -353,115 +181,6 @@ fn best_power_of_two_rows(n: usize) -> Option<usize> {
         };
     }
     best.map(|(rows, _)| rows)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A node's content: a set of typed numeric values, displayed as a grid as close to square as the value count allows —
-/// see this module's own doc comment for the exact layout, formatting, and colouring rules.
-///
-/// Build one with [`DataNodeContent::new`]. Unlike [`NodeOptions`](crate::scene::NodeOptions)/
-/// [`DragOptions`](crate::scene::DragOptions), there is no sensible all-default state to build one on top of — the
-/// values are mandatory — so this is a plain constructor rather than a `default()` plus `with_*` builder.
-#[derive(Debug, Clone, PartialEq, Eq)]
-pub struct DataNodeContent {
-    values: NodeValues,
-    format: DataFormat,
-    layout: GridLayout,
-    byte_order: ByteOrder,
-}
-
-impl DataNodeContent {
-    /// Builds a [`DataNodeContent`] displaying `values`, formatted as `format`. This arranges the grid per
-    /// [`GridLayout::Automatic`] — see [`with_layout`](Self::with_layout) to override that. It orders bytes per
-    /// [`ByteOrder::BigEndian`] — see [`with_byte_order`](Self::with_byte_order) to override that.
-    ///
-    /// An empty `values` is accepted here. This is the same deferred-validation convention
-    /// [`DragOptions::with_bounds`](crate::scene::DragOptions::with_bounds)/
-    /// [`NodeOptions::with_edge_anchors`](crate::scene::NodeOptions::with_edge_anchors) already follow. It is rejected
-    /// instead by [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with), with
-    /// [`Error::EmptyNodeContent`](crate::error::Error::EmptyNodeContent) — the only place that actually needs a grid
-    /// to draw.
-    #[must_use]
-    pub fn new(values: NodeValues, format: DataFormat) -> Self {
-        Self {
-            values,
-            format,
-            layout: GridLayout::default(),
-            byte_order: ByteOrder::default(),
-        }
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Returns `self` with `layout` overriding [`GridLayout::Automatic`]'s own cell-count-only rule. See
-    /// [`GridLayout`]'s own doc comment for what each variant does. See this module's own doc comment ("Grid shape")
-    /// for why `Automatic` alone is not always enough.
-    ///
-    /// `layout`'s own `Columns`/`Rows`/`MaxColumns` value is accepted here even if `0`. This is the same
-    /// deferred-validation convention `new`'s own doc comment describes. It is rejected instead by
-    /// [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with),
-    /// with [`Error::InvalidGridLayout`](crate::error::Error::InvalidGridLayout).
-    #[must_use]
-    pub fn with_layout(mut self, layout: GridLayout) -> Self {
-        self.layout = layout;
-        self
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Returns `self` with `byte_order` overriding [`ByteOrder::BigEndian`]'s own default. See [`ByteOrder`]'s own doc
-    /// comment for what each variant does. See this module's own doc comment ("Formatting") for when `LittleEndian` is
-    /// the right choice.
-    #[must_use]
-    pub fn with_byte_order(mut self, byte_order: ByteOrder) -> Self {
-        self.byte_order = byte_order;
-        self
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// How many values this holds.
-    pub(crate) fn len(&self) -> usize {
-        self.values.len()
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// `true` for exactly one value.
-    ///
-    /// A single value has no sibling to be told apart from. So `draw_content_box` skips the per-value inner box
-    /// [`NodeValues::type_color`] would otherwise use. It applies that colour straight to the node's own single box
-    /// instead. That gives one box, one colour, and no redundant box-within-a-box.
-    pub(crate) fn is_single_value(&self) -> bool {
-        self.values.len() == 1
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// This content's own [`GridLayout`] — `Automatic` unless [`with_layout`](Self::with_layout) overrode it.
-    pub(crate) fn layout(&self) -> GridLayout {
-        self.layout
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The `(rows, cols)` grid this content renders as — see [`grid_shape`].
-    pub(crate) fn shape(&self) -> (usize, usize) {
-        grid_shape(self.values.len(), self.layout)
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Every value's own formatted cell text, in the same order they were supplied. One string per value, ready for
-    /// `draw_content_box` to place one at a time into the grid [`DataNodeContent::shape`] describes.
-    pub(crate) fn cells(&self) -> Vec<String> {
-        self.values.cell_strings(self.format, self.byte_order)
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
-    pub(crate) fn type_color(&self) -> &'static str {
-        self.values.type_color()
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// This content's own type name ("u8"/"u16"/"u32"/"u64") — see [`NodeValues::type_name`].
-    pub(crate) fn type_name(&self) -> &'static str {
-        self.values.type_name()
-    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
