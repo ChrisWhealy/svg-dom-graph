@@ -405,11 +405,17 @@ fn draw_content_box(
 
     // This names the whole node for assistive technology. Assistive technology usually announces a group before
     // its children. So a reader need not visit every individual cell to learn the node's type.
+    //
+    // `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
+    // `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over
+    // `img` deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values
+    // an assistive technology user could otherwise still reach.
     let node_label = if single_value {
         format!("{type_name} value")
     } else {
         format!("{type_name} data grid, {} values", content.len())
     };
+    group.set_attr("role", "group")?;
     group.set_attr("aria-label", &node_label)?;
 
     guard.disarm();

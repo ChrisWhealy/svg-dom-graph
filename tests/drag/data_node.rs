@@ -217,8 +217,9 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 /// A data node's type colour is not the only place its type is recorded. The node's own `<g>` carries a
 /// `<title>`: a native browser tooltip when the mouse pointer hovers over any child — the rect or the digits,
 /// not just one of them.
-/// It also carries an `aria-label` summarising it. So a caller who cannot distinguish colours can still recover
-/// the type. Assistive technology cannot perceive fill colour at all either.
+/// It also carries `role="group"` and an `aria-label` summarising it. The explicit role matters: a bare `<g>`
+/// has no implicit role, so `aria-label` alone may go unexposed. A caller who cannot distinguish colours can
+/// still recover the type this way. Assistive technology cannot perceive fill colour at all either.
 ///
 /// Neither is visible in the rendered digits themselves. Just as importantly, neither corrupts them. `<title>`
 /// sits on the group, not as a child of the `<text>` element. So `text_content()` on the digits stays exactly the
@@ -233,6 +234,10 @@ fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(
         .map_err(|e| e.to_string())?;
 
     let group = nth_group("data-node-a11y-single", 0)?;
+    check(
+        group.get_attribute("role").as_deref() == Some("group"),
+        &format!("unexpected role: {:?}", group.get_attribute("role")),
+    )?;
     check(
         group.get_attribute("aria-label").as_deref() == Some("u64 value"),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
@@ -264,6 +269,10 @@ fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
 
     let group = nth_group("data-node-a11y-multi", 0)?;
+    check(
+        group.get_attribute("role").as_deref() == Some("group"),
+        &format!("unexpected role: {:?}", group.get_attribute("role")),
+    )?;
     check(
         group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 values"),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
