@@ -13,8 +13,9 @@
 //! happen to coincide.
 //!
 //! This crate has no opinion about which HTML page hosts it, what graph a caller builds, or when. The sibling
-//! `demo-app` crate supplies a small worked example: the `wasm_bindgen(start)` entry point, a specific `<svg>` element
-//! id to attach to, and a specific demo graph.
+//! `demo-app` crate supplies a small worked example: `init_panel(panel_id)`, called from JavaScript, lazily builds
+//! whichever of several independent demo panels the caller selects. Each panel attaches to its own `<svg>` element and
+//! builds its own demo graph.
 //!
 //! See [`geometry::boundary_point`] for the routing math and [`scene::Scene`] for the public rendering API.
 

@@ -159,8 +159,8 @@ fn run_panel(panel: &DemoPanel) -> bool {
 /// verification tool; a silently empty panel is exactly the outcome worth avoiding here.
 ///
 /// Silently does nothing if the panel section itself cannot be found. By construction (see [`run_panel`]'s doc comment)
-/// that cannot happen through the normal `cargo demo` pipeline, so this mirrors [`source_frame::append_demo_source`]'s
-/// own defensive fallback rather than treating an already-impossible case as fatal.
+/// that cannot happen through the normal `cargo demo` pipeline. This function is itself only a best-effort report of
+/// some other failure. It stays silent here rather than raising a second failure of its own.
 fn report_panel_error(panel_id: &str, message: &str) {
     let Ok(document) = util::document() else { return };
     let Some(section) = document.get_element_by_id(panel_id) else { return };

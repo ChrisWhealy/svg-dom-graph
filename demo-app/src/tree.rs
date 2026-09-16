@@ -14,11 +14,12 @@ pub(crate) const SOURCE: &str = include_str!("tree.rs");
 
 thread_local! {
     // `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only
-    // `Weak` references back to it. A strong self-reference there would leak the whole scene forever. That means
-    // nothing keeps a `Scene` alive once the function that built it returns: a `Scene` created, used, and simply let go
-    // out of scope (the natural shape of a `#[wasm_bindgen(start)]` function), drops there and then — long before the
-    // user ever gets a chance to click anything.  Thus it silently kills every listener with no panic and no console
-    // output.
+    // `Weak` references back to it, whereas a strong self-reference would leak the whole scene forever.
+    //
+    // That means nothing keeps a `Scene` alive once the function that built it returns. A `Scene` created, used, and
+    // simply let go out of scope — exactly what happens once `build_demo_tree` itself returns — drops there and then.
+    // That happens long before the user ever gets a chance to click anything, silently killing every listener with no
+    // panic and no console output.
     //
     // `SCENE` keeps `build_demo_tree`'s only `Scene` handle alive for the page's whole lifetime.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
