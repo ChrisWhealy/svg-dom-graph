@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add cell selection functionality (``)
+- Add cell selection functionality (`0769ff6`)
+
+## Changed
+
+- Refactor `demo-app` into multiple smaller modules (``)
 
 # [Released]
 
