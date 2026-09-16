@@ -2,6 +2,11 @@
 //! [`Scene::add_data_node`](crate::scene::Scene::add_data_node)
 //! and [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with).
 //!
+//! [`UnaryOperator`]/[`BinaryOperator`] name a bitwise operation an operator node's own label describes. This crate
+//! never evaluates one: a caller supplies the already-computed result, the same way it supplies every other data
+//! node's own values. See [`Scene::add_unary_operator_node`](crate::scene::Scene::add_unary_operator_node) and
+//! [`Scene::add_binary_operator_node`](crate::scene::Scene::add_binary_operator_node).
+//!
 //! This module contains pure data and formatting logic, with no DOM of its own. It is unit-tested with a plain `cargo
 //! test`. This follows the same convention [`crate::geometry`] uses for its own DOM-free routing mathematics.
 //! `scene::node` turns a [`DataNodeContent`] into actual `<rect>`/`<text>` elements. It also sizes the node's box to
@@ -75,6 +80,8 @@
 //! `<title>` on a value's own rect would not produce a tooltip over that same value's own text — a sibling element, not
 //! a descendant. And a `<title>` as a child of the `<text>` element itself would leak its own text into
 //! `text.textContent`, corrupting the rendered digits read back from the DOM.
+mod operator;
+pub use operator::{BinaryOperator, UnaryOperator};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The values a [`DataNodeContent`] displays. Each variant names the Rust integer type the values were captured as.
@@ -116,6 +123,7 @@ impl NodeValues {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Every value, formatted per `format` and `byte_order`, in the same order they were supplied — one cell per value,
     /// not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
     fn cell_strings(&self, format: DataFormat, byte_order: ByteOrder) -> Vec<String> {
@@ -139,6 +147,7 @@ impl NodeValues {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A gentle pastel background colour identifies this content's own Rust type. It is deliberately soft, not a harsh
     /// primary. So a data node's colouring reads as a quiet label, not an alarm.
     ///
@@ -153,6 +162,7 @@ impl NodeValues {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64").
     ///
     /// [`type_color`](Self::type_color) is the only visual cue distinguishing one width from another. A caller who
@@ -298,6 +308,7 @@ fn grid_shape(n: usize, layout: GridLayout) -> (usize, usize) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// [`GridLayout::Automatic`]'s own shape rule — see this module's own doc comment for the reasoning behind both.
 fn automatic_grid_shape(n: usize) -> (usize, usize) {
     if let Some(rows) = best_power_of_two_rows(n) {
@@ -380,6 +391,7 @@ impl DataNodeContent {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with `layout` overriding [`GridLayout::Automatic`]'s own cell-count-only rule. See
     /// [`GridLayout`]'s own doc comment for what each variant does. See this module's own doc comment ("Grid shape")
     /// for why `Automatic` alone is not always enough.
@@ -394,6 +406,7 @@ impl DataNodeContent {
         self
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with `byte_order` overriding [`ByteOrder::BigEndian`]'s own default. See [`ByteOrder`]'s own doc
     /// comment for what each variant does. See this module's own doc comment ("Formatting") for when `LittleEndian` is
     /// the right choice.
@@ -403,11 +416,13 @@ impl DataNodeContent {
         self
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many values this holds.
     pub(crate) fn len(&self) -> usize {
         self.values.len()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for exactly one value.
     ///
     /// A single value has no sibling to be told apart from. So `draw_content_box` skips the per-value inner box
@@ -417,27 +432,32 @@ impl DataNodeContent {
         self.values.len() == 1
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This content's own [`GridLayout`] — `Automatic` unless [`with_layout`](Self::with_layout) overrode it.
     pub(crate) fn layout(&self) -> GridLayout {
         self.layout
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `(rows, cols)` grid this content renders as — see [`grid_shape`].
     pub(crate) fn shape(&self) -> (usize, usize) {
         grid_shape(self.values.len(), self.layout)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Every value's own formatted cell text, in the same order they were supplied. One string per value, ready for
     /// `draw_content_box` to place one at a time into the grid [`DataNodeContent::shape`] describes.
     pub(crate) fn cells(&self) -> Vec<String> {
         self.values.cell_strings(self.format, self.byte_order)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
     pub(crate) fn type_color(&self) -> &'static str {
         self.values.type_color()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This content's own type name ("u8"/"u16"/"u32"/"u64") — see [`NodeValues::type_name`].
     pub(crate) fn type_name(&self) -> &'static str {
         self.values.type_name()

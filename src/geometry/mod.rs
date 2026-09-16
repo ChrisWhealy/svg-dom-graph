@@ -250,6 +250,133 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The side of `rect` a ray from its centre toward `towards` first crosses, and the raw coordinate along that side
+/// (an x for a north/south side, a y for an east/west one) the ray actually crosses at.
+///
+/// Picks the side the same way [`edge_anchor`] does. Returns the crossing coordinate itself, not a point snapped to
+/// any candidate — [`binary_operator_anchor`] needs to compare two crossings before deciding where either one
+/// finally lands.
+///
+/// Returns `rect`'s own centre y and `Side::East` when `towards` is exactly the centre, the same degenerate case
+/// [`edge_anchor`] returns its own centre for.
+fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
+    let centre = centre(rect);
+    let dx = towards.x - centre.x;
+    let dy = towards.y - centre.y;
+
+    if dx == 0.0 && dy == 0.0 {
+        return (side::Side::East, centre.y);
+    }
+
+    let half_w = rect.size.width / 2.0;
+    let half_h = rect.size.height / 2.0;
+
+    let scale_x = if dx == 0.0 { f64::INFINITY } else { half_w / dx.abs() };
+    let scale_y = if dy == 0.0 { f64::INFINITY } else { half_h / dy.abs() };
+
+    if scale_x <= scale_y {
+        let side = if dx >= 0.0 { side::Side::East } else { side::Side::West };
+        (side, centre.y + dy * scale_x)
+    } else {
+        let side = if dy >= 0.0 { side::Side::South } else { side::Side::North };
+        (side, centre.x + dx * scale_y)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One of a binary operator node's own two input anchors on `rect` — the operator node's own rectangle. `mine` and
+/// `sibling` are the two operands' own centres; this returns where the edge from `mine` should land.
+///
+/// Behaves exactly like [`edge_anchor`] — that side's own plain midpoint — whenever `mine` and `sibling` resolve to
+/// different sides of `rect`. Only one connector lands on that side then, so today's single-anchor default already
+/// covers it.
+///
+/// When both resolve to the *same* side, neither uses that side's midpoint. They split instead to the outer two of
+/// three evenly spaced candidates — the same division [`snapped_anchor`] uses for `fixing_points == 3` — so the two
+/// connectors no longer overlap. Ordered so they never cross either: whichever operand's own crossing position sits
+/// first along the side gets the first outer candidate, regardless of which one is `mine` in a given call.
+///
+/// Called independently once per edge, recomputing both crossings from scratch each time. So it stays correct with
+/// no shared state between the two calls a binary operator node's own pair of inputs each make.
+pub(crate) fn binary_operator_anchor(rect: Rect, mine: Point, sibling: Point) -> (Point, side::Side) {
+    let (my_side, my_crossing) = side_and_crossing(rect, mine);
+    let (sibling_side, sibling_crossing) = side_and_crossing(rect, sibling);
+
+    if my_side != sibling_side {
+        return edge_anchor(rect, mine);
+    }
+
+    let index = if my_crossing <= sibling_crossing { 1.0 } else { 3.0 };
+    let centre = centre(rect);
+    let point = if is_horizontal(my_side) {
+        let sign = if my_side == side::Side::East { 1.0 } else { -1.0 };
+        Point::new(
+            centre.x + rect.size.width / 2.0 * sign,
+            rect.origin.y + rect.size.height * index / 4.0,
+        )
+    } else {
+        let sign = if my_side == side::Side::South { 1.0 } else { -1.0 };
+        Point::new(
+            rect.origin.x + rect.size.width * index / 4.0,
+            centre.y + rect.size.height / 2.0 * sign,
+        )
+    };
+    (point, my_side)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The elbow route for one of a binary operator node's own two same-side inputs — `mine`'s own edge, from `start`
+/// to `end`, given `sibling_end` too, so the two routes cannot cross for the case that matters most: dragging one
+/// operand to a position where its own route would otherwise sweep across the other's.
+///
+/// Only ever changes anything for whichever connector is anchored *nearer* along the shared side, and only when
+/// its own operand has been dragged past the *farther* connector's own target — the specific "one input moved too
+/// far" case this exists to correct. Every other call — the farther connector's own edge, always, and the nearer
+/// one whenever its operand has not drifted — returns exactly what plain [`elbow_route`] would, unchanged. That
+/// matches the shape already confirmed correct once the two candidates are simply split apart (see
+/// [`binary_operator_anchor`]); nothing further is needed there.
+///
+/// The drifted connector reroutes to a single-bend, vertical-first path instead of [`elbow_route`]'s own
+/// horizontal-first one: from `start`, straight to its own target row — at `start`'s own coordinate, which already
+/// sits exactly on its own operand's box edge, never inside it — then straight into the operator. No segment ever
+/// moves backward across the box's own exit height, so there is nothing left to visually cross back through,
+/// regardless of how far the operand has drifted. An earlier version of this function instead pushed a *shared*
+/// jog coordinate past both operands' own positions; that jog sat at the exact height the source box itself
+/// occupies across its own full width, so the connector visibly cut back through its own box no matter how far the
+/// jog was pushed out — going further never helps once the jog is already at the box's own exit height.
+///
+/// Falls back to plain [`elbow_route`] whenever `start_side` and `end_side` are not both horizontal or both
+/// vertical — the same shape [`elbow_route`] itself requires for its own two-bend jog.
+pub(crate) fn binary_operator_elbow_route(
+    start: Point,
+    start_side: side::Side,
+    end: Point,
+    end_side: side::Side,
+    sibling_end: Point,
+) -> route::Route {
+    if is_horizontal(start_side) != is_horizontal(end_side) {
+        return elbow_route(start, start_side, end, end_side);
+    }
+
+    let horizontal = is_horizontal(end_side);
+    // `along` names position along the shared side — y for a west/east operator side, x for a north/south one.
+    let (start_along, end_along) = if horizontal { (start.y, end.y) } else { (start.x, end.x) };
+    let sibling_end_along = if horizontal { sibling_end.y } else { sibling_end.x };
+
+    let is_near = end_along < sibling_end_along;
+    let drifted_past_the_far_target = is_near && start_along > sibling_end_along;
+    if !drifted_past_the_far_target {
+        return elbow_route(start, start_side, end, end_side);
+    }
+
+    let mut route = route::Route::new();
+    route.push(start);
+    route.push(if horizontal { Point::new(start.x, end.y) } else { Point::new(end.x, start.y) });
+    route.push(end);
+    route
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The corner points of an elbowed connector between two already-anchored endpoints, before any corner rounding.
 ///
 /// Joins `start` and `end` with horizontal and vertical segments only:

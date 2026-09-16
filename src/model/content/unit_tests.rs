@@ -359,3 +359,27 @@ fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
         "u64",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// UnaryOperator::label / BinaryOperator::label
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn unary_operator_label_names_not_with_no_operand() -> Result<(), String> {
+    check_eq(UnaryOperator::Not.label(), "NOT".to_owned())
+}
+
+#[test]
+fn unary_operator_label_includes_the_shift_or_rotate_amount() -> Result<(), String> {
+    check_eq(UnaryOperator::ShiftLeft(3).label(), "SHL 3".to_owned())?;
+    check_eq(UnaryOperator::ShiftRight(5).label(), "SHR 5".to_owned())?;
+    check_eq(UnaryOperator::RotateLeft(1).label(), "ROTL 1".to_owned())?;
+    check_eq(UnaryOperator::RotateRight(1).label(), "ROTR 1".to_owned())
+}
+
+#[test]
+fn binary_operator_label_names_each_variant() -> Result<(), String> {
+    check_eq(BinaryOperator::And.label(), "AND")?;
+    check_eq(BinaryOperator::Or.label(), "OR")?;
+    check_eq(BinaryOperator::Xor.label(), "XOR")
+}

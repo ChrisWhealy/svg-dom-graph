@@ -7,8 +7,8 @@ use super::{Scene, node::EdgeAnchors};
 use crate::{
     error::Error,
     geometry::{
-        boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, route::Route, route::straight_route,
-        side::Side, snapped_anchor,
+        binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, route::Route,
+        route::straight_route, side::Side, snapped_anchor,
     },
     model::{edge::EdgeId, node::NodeId},
 };
@@ -54,6 +54,22 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Po
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Everything [`route`] needs to give a binary operator node's own same-side input its non-crossing route — see
+/// [`crate::geometry::binary_operator_elbow_route`]'s own doc comment for the scheme this exists to feed.
+///
+/// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) is the only place
+/// that builds one.
+pub(crate) struct BinaryOperatorRoute {
+    /// This edge's own already-split anchor point on the operator — see
+    /// [`crate::geometry::binary_operator_anchor`].
+    pub(crate) anchor: Point,
+    /// The side of the operator `anchor` sits on.
+    pub(crate) side: Side,
+    /// The sibling edge's own already-split anchor point on the operator.
+    pub(crate) sibling_end: Point,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A connector's own corner points and the corner radius by which it might be rounded. Exists for a `connector_type`
 /// between `from` and `to`, each of which have their respective `from_anchors` and `to_anchors`.
 ///
@@ -61,12 +77,18 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Po
 ///
 /// `from_anchors` / `to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
 /// endpoint's — one endpoint can use `None` while the other uses `Some`.
+///
+/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors` — see
+/// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for the one case
+/// that supplies it: a binary operator node's own two inputs, split apart and routed clear of each other when they
+/// land on the same side.
 pub(crate) fn route(
     connector_type: ConnectorType,
     from: Rect,
     from_anchors: Option<EdgeAnchors>,
     to: Rect,
     to_anchors: Option<EdgeAnchors>,
+    to_override: Option<BinaryOperatorRoute>,
 ) -> (Route, f64) {
     let from_centre = centre(from);
     let to_centre = centre(to);
@@ -74,13 +96,19 @@ pub(crate) fn route(
     match connector_type {
         ConnectorType::Straight => {
             let start = straight_anchor(from, to_centre, from_anchors);
-            let end = straight_anchor(to, from_centre, to_anchors);
+            let end = to_override.map_or_else(|| straight_anchor(to, from_centre, to_anchors), |o| o.anchor);
             (straight_route(start, end), 0.0)
         },
         ConnectorType::Elbow { corner_radius } => {
             let (start, start_side) = elbow_anchor(from, to_centre, from_anchors);
-            let (end, end_side) = elbow_anchor(to, from_centre, to_anchors);
-            (elbow_route(start, start_side, end, end_side), corner_radius)
+            let route = match to_override {
+                Some(o) => binary_operator_elbow_route(start, start_side, o.anchor, o.side, o.sibling_end),
+                None => {
+                    let (end, end_side) = elbow_anchor(to, from_centre, to_anchors);
+                    elbow_route(start, start_side, end, end_side)
+                },
+            };
+            (route, corner_radius)
         },
     }
 }
@@ -101,6 +129,7 @@ impl Scene {
         self.add_edge_with(from, to, ConnectorOptions::default())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge to the graph, draws its arrow-tipped connector with `options` controlling how it routes,
     /// and returns its id.
     ///
@@ -129,7 +158,15 @@ impl Scene {
             return Err(Error::SelfLoopUnsupported(from));
         }
 
-        let (vertices, radius) = route(options.connector_type, from_rect, from_anchors, to_rect, to_anchors);
+        let to_override = inner.binary_operator_to_override(from, to);
+        let (vertices, radius) = route(
+            options.connector_type,
+            from_rect,
+            from_anchors,
+            to_rect,
+            to_anchors,
+            to_override,
+        );
         let mut d = String::new();
         elbow_path_into(&vertices, radius, &mut d);
 
@@ -150,6 +187,7 @@ impl Scene {
         Ok(id)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Updates edge `id`'s connector type, and redraws it immediately with the new value.
     ///
     /// Every later reroute, as either endpoint moves, keeps using this new type. This is the only way to change an

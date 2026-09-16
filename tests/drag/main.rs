@@ -15,8 +15,10 @@
 //!   clamped to its edge.
 //! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
 //!   dragging every row, and ordinary connector routing.
+//! - [`operator_node`] — `Scene::add_unary_operator_node`/`add_binary_operator_node`: label/value rendering,
+//!   auto-wired input edges, operand-type validation, and dragging.
 //!
-//! All seven drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All eight drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -26,6 +28,7 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod operator_node;
 mod scene_validation;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

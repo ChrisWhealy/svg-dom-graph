@@ -88,6 +88,23 @@ pub enum Error {
     /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing anything or
     /// touching the graph's model, so a rejected call leaves the scene unchanged.
     InvalidGridLayout(crate::scene::GridLayout),
+    /// An operator node's operand names a node whose content is a plain label, not a
+    /// [`crate::scene::DataNodeContent`].
+    ///
+    /// Only typed data has a width an operator could plausibly act on. Rejected before drawing anything or touching
+    /// the graph's model, so a rejected call leaves the scene unchanged.
+    OperandNotData(NodeId),
+    /// An operator node's own operand(s) and result did not all share one [`crate::scene::NodeValues`] width.
+    ///
+    /// A binary operator's two operands must share a width, and the supplied result must share that same width —
+    /// see `Scene::add_binary_operator_node_with`'s own doc comment. Rejected before drawing anything or touching the
+    /// graph's model, so a rejected call leaves the scene unchanged.
+    OperatorTypeMismatch { expected: &'static str, found: &'static str },
+    /// An operator node's own `result` held other than exactly one value.
+    ///
+    /// An operator always produces one value, never a grid of them. Rejected before drawing anything or touching the
+    /// graph's model, so a rejected call leaves the scene unchanged.
+    OperatorResultNotSingleValue(usize),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -123,6 +140,13 @@ impl fmt::Display for Error {
             Error::EmptyNodeContent => write!(f, "DataNodeContent must have at least one value to display"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
+            },
+            Error::OperandNotData(id) => write!(f, "node {id:?} is a plain label, not a DataNodeContent"),
+            Error::OperatorTypeMismatch { expected, found } => {
+                write!(f, "operator type mismatch: expected {expected}, found {found}")
+            },
+            Error::OperatorResultNotSingleValue(len) => {
+                write!(f, "operator result must hold exactly one value, found {len}")
             },
         }
     }

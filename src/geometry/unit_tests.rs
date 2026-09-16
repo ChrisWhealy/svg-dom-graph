@@ -1,7 +1,10 @@
 use super::*;
-use crate::geometry::{
-    route::{Route, straight_route},
-    side::Side,
+use crate::{
+    geometry::{
+        route::{Route, straight_route},
+        side::Side,
+    },
+    test_support::check,
 };
 use svg_dom::root::utils::Size;
 
@@ -432,6 +435,165 @@ fn snapped_anchor_clamps_to_the_nearest_candidate_instead_of_the_corner() -> Res
     let (point, side) = snapped_anchor(rect, Point::new(60.0, -15.0), 2);
     check_eq(point, Point::new(40.0, 10.0))?;
     check_eq(side, Side::East)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_on_different_sides_each_keep_edge_anchors_own_midpoint() -> Result<(), String> {
+    // Same rect and directions as `edge_anchor_straight_down_picks_the_south_side` and
+    // `edge_anchor_straight_right_picks_the_east_side`: one operand due south, the other due east. Only one
+    // connector ever lands on either side, so today's plain midpoint still applies to both.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let south = Point::new(20.0, 1000.0);
+    let east = Point::new(1000.0, 10.0);
+    check_eq(binary_operator_anchor(rect, south, east), edge_anchor(rect, south))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_on_the_same_side_splits_to_the_outer_two_of_three_candidates() -> Result<(), String> {
+    // Both operands approach from due south, one left of centre and one right. South side (width 40) divided into
+    // four equal segments by three candidates: x = 10, 20 (the plain midpoint), 30. Both operands share a side, so
+    // neither lands on the shared midpoint — the left operand takes the left outer candidate, the right operand
+    // takes the right one.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let left = Point::new(10.0, 1000.0);
+    let right = Point::new(30.0, 1000.0);
+
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right);
+    check_eq(left_point, Point::new(10.0, 20.0))?;
+    check_eq(left_side, Side::South)?;
+
+    // Calling it the other way around — `right` as `mine`, `left` as `sibling` — still agrees on who takes which
+    // outer candidate. Neither call knows about the other; each recomputes both crossings independently.
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left);
+    check_eq(right_point, Point::new(30.0, 20.0))?;
+    check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `true` if axis-aligned segments `a1`-`a2` and `b1`-`b2` touch anywhere, including a shared endpoint or an
+/// overlapping run, not just a proper crossing point.
+///
+/// Every route this crate ever produces is Manhattan (each segment purely horizontal or purely vertical), so a
+/// segment's own bounding box is itself — plain bounding-box overlap is a complete, exact intersection test here,
+/// not an approximation the way it would be for arbitrary line segments.
+fn segments_touch(a1: Point, a2: Point, b1: Point, b2: Point) -> bool {
+    let (a_min_x, a_max_x) = (a1.x.min(a2.x), a1.x.max(a2.x));
+    let (a_min_y, a_max_y) = (a1.y.min(a2.y), a1.y.max(a2.y));
+    let (b_min_x, b_max_x) = (b1.x.min(b2.x), b1.x.max(b2.x));
+    let (b_min_y, b_max_y) = (b1.y.min(b2.y), b1.y.max(b2.y));
+    a_min_x <= b_max_x && b_min_x <= a_max_x && a_min_y <= b_max_y && b_min_y <= a_max_y
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Err` if any segment of `a` touches any segment of `b`.
+fn check_routes_do_not_cross(a: &[Point], b: &[Point]) -> Result<(), String> {
+    for pair_a in a.windows(2) {
+        for pair_b in b.windows(2) {
+            if segments_touch(pair_a[0], pair_a[1], pair_b[0], pair_b[1]) {
+                return Err(format!(
+                    "routes cross: {a:?}'s segment {pair_a:?} touches {b:?}'s segment {pair_b:?}"
+                ));
+            }
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_elbow_route_with_neither_operand_drifted_matches_plain_elbow_route() -> Result<(), String> {
+    // Operator west side, height 200: near candidate (0, 50), far candidate (0, 150) — the same shape the AND/OR
+    // demo rows already use. Neither operand has drifted past the other's own target, so both connectors are
+    // exactly what plain `elbow_route` would already draw for any other pair of nodes — nothing about this scheme
+    // changes anything here.
+    let near_start = Point::new(-40.0, 60.0);
+    let near_end = Point::new(0.0, 50.0);
+    let far_start = Point::new(-60.0, 180.0);
+    let far_end = Point::new(0.0, 150.0);
+
+    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end);
+    check_eq(near_route, elbow_route(near_start, Side::East, near_end, Side::West))?;
+
+    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end);
+    check_eq(far_route, elbow_route(far_start, Side::East, far_end, Side::West))?;
+
+    check_routes_do_not_cross(&near_route, &far_route)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_elbow_route_with_the_near_operand_dragged_past_the_far_target_does_not_cross() -> Result<(), String>
+{
+    // Same operator side and candidates as the test above. This time the *near* candidate's own operand has been
+    // dragged to y = 205 — past the far candidate's own target (y = 150), the exact "one input moved too far"
+    // scenario reported. The near connector reroutes to a single, vertical-first bend at its own start x, clearing
+    // the far connector's own approach without ever moving backward. The far connector is untouched.
+    let near_start = Point::new(-160.0, 205.0);
+    let near_end = Point::new(0.0, 50.0);
+    let far_start = Point::new(-300.0, 280.0);
+    let far_end = Point::new(0.0, 150.0);
+
+    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end);
+    check_eq(near_route[..].to_vec(), vec![near_start, Point::new(-160.0, 50.0), near_end])?;
+
+    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end);
+    check_eq(far_route, elbow_route(far_start, Side::East, far_end, Side::West))?;
+
+    check_routes_do_not_cross(&near_route, &far_route)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_elbow_route_never_revisits_its_own_source_box() -> Result<(), String> {
+    // Exact geometry read back from the real "Boolean operators" demo's `XOR` row (`cargo demo`, then each source
+    // node's own rendered `<g>` transform/`<rect>`, and the resulting `<path>` `d` attributes) — the regression
+    // repro for this report. `ror` feeds `XOR`'s own near candidate; `a` feeds the far one. Neither operand has
+    // been dragged anywhere unusual — this is their ordinary, freshly built position.
+    let ror_start = Point::new(452.015_625, 940.9);
+    let ror_end = Point::new(500.0, 985.45); // XOR's own near candidate.
+    let a_start = Point::new(212.015_625, 1045.1);
+    let a_end = Point::new(500.0, 1016.35); // XOR's own far candidate.
+
+    let ror_route = binary_operator_elbow_route(ror_start, Side::East, ror_end, Side::West, a_end);
+    check_eq(
+        ror_route[..].to_vec(),
+        vec![
+            ror_start,
+            Point::new(476.007_812_5, 940.9),
+            Point::new(476.007_812_5, 985.45),
+            ror_end,
+        ],
+    )?;
+
+    let a_route = binary_operator_elbow_route(a_start, Side::East, a_end, Side::West, ror_end);
+    check_eq(
+        a_route[..].to_vec(),
+        vec![
+            a_start,
+            Point::new(356.007_812_5, 1045.1),
+            Point::new(356.007_812_5, 1016.35),
+            a_end,
+        ],
+    )?;
+
+    // Every point of each route sits at or past its own box's own east edge (`start.x`) — never behind it, where
+    // the box itself is rendered.
+    check(
+        ror_route.iter().all(|p| p.x >= ror_start.x),
+        &format!("expected every point of ror's own route to stay clear of its own box, got {ror_route:?}"),
+    )?;
+    check(
+        a_route.iter().all(|p| p.x >= a_start.x),
+        &format!("expected every point of a's own route to stay clear of its own box, got {a_route:?}"),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

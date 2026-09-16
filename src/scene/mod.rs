@@ -12,7 +12,9 @@ mod connector;
 pub(crate) mod drag;
 pub(crate) mod node;
 
-pub use crate::model::content::{ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues};
+pub use crate::model::content::{
+    BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, UnaryOperator,
+};
 pub(crate) use box_handles::BoxHandles;
 pub(crate) use connector::ConnectorHandle;
 pub use connector::{ConnectorOptions, ConnectorType};
@@ -21,7 +23,7 @@ pub use node::{EdgeAnchors, NodeOptions};
 
 use crate::{
     error::Error,
-    geometry::{apply_matrix, elbow_path_into, nearest_clear_centre, rects_overlap},
+    geometry::{apply_matrix, binary_operator_anchor, elbow_path_into, nearest_clear_centre, rects_overlap},
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
@@ -132,6 +134,65 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The `to`-side routing override for the edge from `from` to `to`, if `to` is a binary operator node and
+    /// `from` is one of its own two known inputs — see [`connector::route`]'s own `to_override` parameter.
+    ///
+    /// `None` for every other edge: an unknown `from`/`to`, a `to` that is not a binary operator node, or a `from`
+    /// that is not one of its two inputs (an edge a caller wired up by hand, bypassing
+    /// [`Scene::add_binary_operator_node_with`]). Each of those falls back to `route`'s own existing default, exactly
+    /// as before this existed.
+    fn binary_operator_to_override(&self, from: NodeId, to: NodeId) -> Option<connector::BinaryOperatorRoute> {
+        let (input_a, input_b) = self.node_handles.get(&to)?.binary_operator_inputs?;
+        let sibling = if from == input_a {
+            input_b
+        } else if from == input_b {
+            input_a
+        } else {
+            return None;
+        };
+
+        let to_rect = self.node_rect(to).ok()?;
+        let mine_centre = box_centre(self.node_rect(from).ok()?);
+        let sibling_centre = box_centre(self.node_rect(sibling).ok()?);
+
+        let (anchor, side) = binary_operator_anchor(to_rect, mine_centre, sibling_centre);
+        let (sibling_end, _) = binary_operator_anchor(to_rect, sibling_centre, mine_centre);
+
+        Some(connector::BinaryOperatorRoute { anchor, side, sibling_end })
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// If `edge_id` runs from `mover` into a binary operator node, the id of that operator's *other* input edge —
+    /// the sibling operand's own edge into the same node. `None` otherwise.
+    ///
+    /// `move_node` redraws every edge already incident to the node that moved — that alone redraws `mover`'s own
+    /// edge correctly, since [`redraw_edge`](Self::redraw_edge) always recomputes
+    /// [`binary_operator_to_override`](Self::binary_operator_to_override) live from both operands' current
+    /// positions. But the sibling's own edge is not incident to `mover`, so nothing else would ever redraw it — it
+    /// would keep showing wherever it last computed its own anchor, stale, until something else happened to move
+    /// it too. `move_node` calls this for each of `mover`'s own edges, so that sibling edge gets redrawn in the
+    /// same pass instead.
+    fn binary_operator_sibling_edge(&self, mover: NodeId, edge_id: EdgeId) -> Option<EdgeId> {
+        let edge = self.graph.edge(edge_id)?;
+        if edge.from != mover {
+            return None;
+        }
+        let (input_a, input_b) = self.node_handles.get(&edge.to)?.binary_operator_inputs?;
+        let sibling = if mover == input_a {
+            input_b
+        } else if mover == input_b {
+            input_a
+        } else {
+            return None;
+        };
+        self.graph
+            .incident_edges(sibling)
+            .iter()
+            .find(|&&sibling_edge_id| self.graph.edge(sibling_edge_id).is_some_and(|e| e.to == edge.to))
+            .copied()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
     /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at creation,
@@ -157,6 +218,9 @@ impl SceneInner {
 
         for edge_id in self.graph.incident_edges(id) {
             self.redraw_edge(*edge_id, scratch)?;
+            if let Some(sibling_edge_id) = self.binary_operator_sibling_edge(id, *edge_id) {
+                self.redraw_edge(sibling_edge_id, scratch)?;
+            }
         }
 
         Ok(())
@@ -178,8 +242,10 @@ impl SceneInner {
         let from_anchors = self.node_edge_anchors(edge.from)?;
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
+        let to_override = self.binary_operator_to_override(edge.from, edge.to);
         let handle = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
-        let (vertices, radius) = connector::route(handle.connector_type, from_rect, from_anchors, to_rect, to_anchors);
+        let (vertices, radius) =
+            connector::route(handle.connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
         elbow_path_into(&vertices, radius, scratch);
         handle.path.set_attr("d", scratch)?;
 
@@ -211,7 +277,9 @@ impl SceneInner {
         let from_anchors = self.node_edge_anchors(edge.from)?;
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
-        let (vertices, radius) = connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors);
+        let to_override = self.binary_operator_to_override(edge.from, edge.to);
+        let (vertices, radius) =
+            connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
         elbow_path_into(&vertices, radius, scratch);
 
         let handle = self.edge_handles.get_mut(&id).ok_or(Error::UnknownEdge(id))?;
