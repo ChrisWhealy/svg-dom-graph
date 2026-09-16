@@ -84,3 +84,95 @@ fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Re
         "group was still attached after an armed, otherwise-empty RenderGuard dropped",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge` — its rendered path,
+/// its `edge_handles` entry, and its place in the graph — then the node itself, the same partial state a failure
+/// drawing an operator's own auto-wired input edge would otherwise leave behind.
+#[wasm_bindgen_test]
+fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge() -> Result<(), String> {
+    let svg = make_svg("construction-guard-rollback");
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let input = scene
+        .add_node(Point::origin(), Size::new(40.0, 20.0), "input")
+        .map_err(|e| e.to_string())?;
+    let operator = scene
+        .add_node(Point::new(100.0, 0.0), Size::new(40.0, 20.0), "operator")
+        .map_err(|e| e.to_string())?;
+    let edge = scene.add_edge(input, operator).map_err(|e| e.to_string())?;
+
+    let (node_group, edge_path) = {
+        let inner = scene.inner.borrow();
+        (
+            inner.node_handles.get(&operator).unwrap().group.clone(),
+            inner.edge_handles.get(&edge).unwrap().path.clone(),
+        )
+    };
+
+    let mut guard = OperatorConstructionGuard::new(scene.clone(), operator);
+    guard.track_edge(edge);
+    drop(guard);
+
+    check(
+        node_group.as_element().parent_node().is_none(),
+        "the operator node's own group was still attached after an armed OperatorConstructionGuard dropped",
+    )?;
+    check(
+        edge_path.as_element().parent_node().is_none(),
+        "the tracked edge's own path was still attached after an armed OperatorConstructionGuard dropped",
+    )?;
+
+    let inner = scene.inner.borrow();
+    check(
+        !inner.node_handles.contains_key(&operator),
+        "node_handles still held the removed operator node",
+    )?;
+    check(
+        !inner.edge_handles.contains_key(&edge),
+        "edge_handles still held the removed edge",
+    )?;
+    check(
+        inner.graph.node(operator).is_none(),
+        "the graph still held the removed operator node",
+    )?;
+    check(inner.graph.edge(edge).is_none(), "the graph still held the removed edge")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The counterpart to the test above: a disarmed `OperatorConstructionGuard` leaves the node and every tracked
+/// edge exactly as they were. So a fully successful operator creation is not accidentally rolled back by its own
+/// cleanup on the way out.
+#[wasm_bindgen_test]
+fn disarming_a_construction_guard_leaves_the_node_and_every_tracked_edge_in_place() -> Result<(), String> {
+    let svg = make_svg("construction-guard-disarm");
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let input = scene
+        .add_node(Point::origin(), Size::new(40.0, 20.0), "input")
+        .map_err(|e| e.to_string())?;
+    let operator = scene
+        .add_node(Point::new(100.0, 0.0), Size::new(40.0, 20.0), "operator")
+        .map_err(|e| e.to_string())?;
+    let edge = scene.add_edge(input, operator).map_err(|e| e.to_string())?;
+
+    let mut guard = OperatorConstructionGuard::new(scene.clone(), operator);
+    guard.track_edge(edge);
+    guard.disarm();
+
+    let inner = scene.inner.borrow();
+    check(
+        inner.node_handles.contains_key(&operator),
+        "node_handles lost the operator node despite a disarmed guard",
+    )?;
+    check(
+        inner.edge_handles.contains_key(&edge),
+        "edge_handles lost the edge despite a disarmed guard",
+    )?;
+    check(
+        inner.graph.node(operator).is_some(),
+        "the graph lost the operator node despite a disarmed guard",
+    )?;
+    check(
+        inner.graph.edge(edge).is_some(),
+        "the graph lost the edge despite a disarmed guard",
+    )
+}

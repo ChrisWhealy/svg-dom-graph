@@ -100,4 +100,38 @@ impl Graph {
     pub(crate) fn incident_edges(&self, id: NodeId) -> &[EdgeId] {
         self.incident.get(&id).map(Vec::as_slice).unwrap_or(&[])
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Removes edge `id`, and drops it from both of its own endpoints' incident lists.
+    ///
+    /// Does nothing if `id` does not name an edge in this graph.
+    ///
+    /// A narrow rollback primitive, not a general deletion API: this crate's only caller is
+    /// `scene::node::OperatorConstructionGuard`, unwinding an edge it wired earlier in the same still-failing
+    /// operator-creation call. There is no public `Scene::remove_edge` — this graph never otherwise loses an edge
+    /// once added.
+    pub(crate) fn remove_edge(&mut self, id: EdgeId) {
+        if let Some(edge) = self.edges.remove(&id) {
+            if let Some(incident) = self.incident.get_mut(&edge.from) {
+                incident.retain(|&e| e != id);
+            }
+            if let Some(incident) = self.incident.get_mut(&edge.to) {
+                incident.retain(|&e| e != id);
+            }
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Removes node `id` and its own incident-edge bookkeeping.
+    ///
+    /// Does nothing if `id` does not name a node in this graph.
+    ///
+    /// The same narrow rollback purpose as [`remove_edge`](Self::remove_edge): only safe to call once every edge
+    /// that could reference `id` has already been removed — otherwise those edges would keep pointing at a node
+    /// that no longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always
+    /// holds for its one caller.
+    pub(crate) fn remove_node(&mut self, id: NodeId) {
+        self.nodes.remove(&id);
+        self.incident.remove(&id);
+    }
 }

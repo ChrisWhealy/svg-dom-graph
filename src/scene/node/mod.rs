@@ -1,5 +1,6 @@
 //! Node configuration and the `Scene` methods that add or reconfigure a node.
 
+mod construction_guard;
 mod edge_anchors;
 mod node_options;
 mod render_guard;
@@ -12,6 +13,7 @@ use crate::{
         node::{NodeContent, NodeId},
     },
 };
+use construction_guard::OperatorConstructionGuard;
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
 use render_guard::RenderGuard;
@@ -635,8 +637,8 @@ impl Scene {
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was. A failure drawing the auto-wired input edge, after the node itself was already
-    /// created, is not rolled back — the same documented limitation
-    /// [`set_edge_anchors`](Self::set_edge_anchors) already carries for its own incident redraws.
+    /// created, is rolled back too — the node is removed again, so a failed call never leaves a partial operator
+    /// behind.
     pub fn add_unary_operator_node_with(
         &self,
         top_left: Point,
@@ -671,7 +673,9 @@ impl Scene {
             id
         };
 
-        self.add_edge(input, id)?;
+        let mut guard = OperatorConstructionGuard::new(self.clone(), id);
+        guard.track_edge(self.add_edge(input, id)?);
+        guard.disarm();
         Ok(id)
     }
 
@@ -725,8 +729,8 @@ impl Scene {
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was. A failure drawing either auto-wired input edge, after the node itself was already
-    /// created, is not rolled back — the same documented limitation
-    /// [`set_edge_anchors`](Self::set_edge_anchors) already carries for its own incident redraws.
+    /// created, is rolled back too — the node, and whichever of its two input edges had already been wired, are
+    /// removed again, so a failed call never leaves a partial operator behind.
     pub fn add_binary_operator_node_with(
         &self,
         top_left: Point,
@@ -772,8 +776,10 @@ impl Scene {
             id
         };
 
-        self.add_edge(inputs.0, id)?;
-        self.add_edge(inputs.1, id)?;
+        let mut guard = OperatorConstructionGuard::new(self.clone(), id);
+        guard.track_edge(self.add_edge(inputs.0, id)?);
+        guard.track_edge(self.add_edge(inputs.1, id)?);
+        guard.disarm();
         Ok(id)
     }
 }

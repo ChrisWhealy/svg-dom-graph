@@ -15,11 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Refactored structs in `model/content/mod.rs` into their own modules (`eedce81`)
+- Make operator creation fully transactional (``)
 
 ## Fixed
 
 - Prevent equal-crossing binary operands from producing overlapping connectors (`5507e7c`)
-- Remove conflict between `EdgeAnchors` and binary operator input routing (``)
+- Remove conflict between `EdgeAnchors` and binary operator input routing (`9830add`)
 
 # [Released]
 

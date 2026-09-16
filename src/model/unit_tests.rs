@@ -98,6 +98,84 @@ fn incident_edges_collects_every_edge_touching_a_shared_node() -> Result<(), Str
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn remove_edge_forgets_it_and_drops_it_from_both_endpoints_own_incidence() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(test_rect(0.0, 0.0), "A");
+    let b = graph.add_node(test_rect(10.0, 10.0), "B");
+    let edge = graph.add_edge(a, b);
+
+    graph.remove_edge(edge);
+
+    if graph.edge(edge).is_some() {
+        return Err("edge() still found data for an id remove_edge already removed".into());
+    }
+    check_eq(graph.incident_edges(a), &[] as &[EdgeId])?;
+    check_eq(graph.incident_edges(b), &[] as &[EdgeId])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn remove_edge_leaves_a_shared_nodes_other_edges_untouched() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let root = graph.add_node(test_rect(0.0, 0.0), "root");
+    let left = graph.add_node(test_rect(10.0, 10.0), "left");
+    let right = graph.add_node(test_rect(20.0, 20.0), "right");
+    let left_edge = graph.add_edge(root, left);
+    let right_edge = graph.add_edge(root, right);
+
+    graph.remove_edge(left_edge);
+
+    check_eq(graph.incident_edges(root), &[right_edge] as &[EdgeId])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn remove_edge_does_nothing_for_an_unknown_id() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(test_rect(0.0, 0.0), "A");
+    let b = graph.add_node(test_rect(10.0, 10.0), "B");
+    let edge = graph.add_edge(a, b);
+    graph.remove_edge(edge);
+
+    // Removing it again — now genuinely unknown — must not panic or disturb anything already empty.
+    graph.remove_edge(edge);
+    check_eq(graph.incident_edges(a), &[] as &[EdgeId])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn remove_node_forgets_it_and_its_own_incidence() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(test_rect(0.0, 0.0), "A");
+    let b = graph.add_node(test_rect(10.0, 10.0), "B");
+    let edge = graph.add_edge(a, b);
+    graph.remove_edge(edge);
+
+    graph.remove_node(a);
+
+    if graph.node(a).is_some() {
+        return Err("node() still found data for an id remove_node already removed".into());
+    }
+    check_eq(graph.incident_edges(a), &[] as &[EdgeId])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn remove_node_does_nothing_for_an_unknown_id() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(test_rect(0.0, 0.0), "A");
+    graph.remove_node(a);
+
+    // Removing it again — now genuinely unknown — must not panic.
+    graph.remove_node(a);
+    if graph.node(a).is_some() {
+        return Err("node() still found data for an id remove_node already removed".into());
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn set_node_rect_updates_the_stored_rect() -> Result<(), String> {
     let mut graph = Graph::new();
     let a = graph.add_node(test_rect(0.0, 0.0), "A");
