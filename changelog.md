@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct wasm-pack tests after switching from `SvgNode::set_attr_display` to `SvgNode::set_translate` (`4b04d8e`)
 - Correctly apply `<title>` to data nodes (`14cda9f`)
+- Improve README accuracy (``)
 
 # [Released]
 

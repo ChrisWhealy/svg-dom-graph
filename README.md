@@ -45,19 +45,39 @@ Lowering it hides them again.
 
 This panel has its own straight/elbow toggle too, independent of the "Connector routing" one.
 
-"Data node" demonstrates `NodeContent`: a node whose visible content is a grid of typed numeric values (`u8`/`u16`/`u32`/`u64`, shown as decimal, hexadecimal, or binary) rather than a plain text label.
+"Data node" demonstrates `DataNodeContent`, a node type showing a grid of typed values instead of a text label.
+Each value is a `u8`/`u16`/`u32`/`u64`, shown as decimal, hexadecimal, or binary.
 
-Values are arranged into a grid that prefers a power-of-two row count over a plain "as square as possible" one, since that better matches the row/column groupings most commonly seen in memory dumps and register views: eight values become two rows of four rather than a 3×3 square with one slot left blank, and twenty values become four rows of five.
+By default (`GridLayout::Automatic`), the grid prefers a power-of-two row count over a plain square shape.
+This layout matches the row/column groupings common in memory dumps and register views.
+Eight values become two rows of four, not a 3×3 square with an empty slot. Twenty values become four rows of five.
 
-When a power-of-two row count cannot evenly divide the value count, the grid falls back to the plain closest-to-square shape — a single value is one row, two values stack into two rows of one column, and twenty-five values form a 5×5 square.
+When no power-of-two row count divides the value count evenly, the grid falls back to the closest-to-square shape.
+A single value forms one row. Two values stack into two rows of one column. Twenty-five values form a 5×5 square.
 
-A byte-group string alone cannot say where one value ends and the next begins, so each value gets its own small box, coloured by its own type — a gentle pastel shade per `u8`/`u16`/`u32`/`u64`. A single value has no sibling to be told apart from, so that colour is applied straight to the node's own box instead of a redundant inner one.
+`Automatic` sizes a grid by cell *count*, not physical width. A handful of very long values, such as a `u64` under `DataFormat::Binary`, can still render far wider than tall.
+`GridLayout::Columns`, `Rows`, and `MaxColumns` let a caller override the shape directly. `MaxColumns` caps how wide such a grid can get, regardless of value count.
 
-Each value's bytes are shown most-significant-byte first, space-separated, with no `0x` prefix (`"F0 E1 D2 C3 B4 A5 96 87"` for a `u64` in hexadecimal); binary further splits each byte into its own upper and lower nybble (`"1111 0000"` for one byte).
+A byte-group string alone cannot mark where one value ends and the next begins.
+Each value therefore gets its own small box.
+Each box is coloured by its own type: a pastel shade per `u8`/`u16`/`u32`/`u64`.
+A single value has no sibling to distinguish it from.
+Its colour is therefore applied straight to the node's own box, not a redundant inner one.
+Colour alone conveys nothing to assistive technology or a colour-blind reader.
+The node's own type name is therefore also attached as an SVG `<title>`, shown as a tooltip when the mouse pointer hovers over the node.
+The type name is also attached as an `aria-label`.
+
+By default (`ByteOrder::BigEndian`), each value's bytes are shown most-significant-byte first.
+Bytes are space-separated, with no `0x` prefix — for example, `"F0 E1 D2 C3 B4 A5 96 87"` for a `u64` in hexadecimal.
+Binary format further splits each byte into its own upper and lower nybble, such as `"1111 0000"` for one byte.
+`DataNodeContent::with_byte_order(ByteOrder::LittleEndian)` reverses that ordering.
+Little-endian ordering visualises an actual in-memory byte layout, rather than a register or value display.
 
 The box itself needs no caller-supplied size: it is always sized to fit its own content automatically, computed from the grid's real rendered width and row count.
 
-Both nodes in this panel are draggable, exactly like any other node — connector routing and drag-collision handling apply to a data node exactly as they would to a plain label node, since both only ever look at a node's `Rect`, never its content.
+Both nodes in this panel are draggable, exactly like any other node.
+Connector routing and drag-collision handling apply to a data node exactly as they would to a plain label node.
+Both node types expose only a `Rect`; routing and collision logic never see a node's content.
 
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
@@ -66,7 +86,7 @@ Both nodes in this panel are draggable, exactly like any other node — connecto
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, `clamp_to_bounds`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `NodeContent` grid of values rather than a plain label, self-sizing to fit — see `NodeContent`/`NodeValues`/`DataFormat`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit — see `DataNodeContent`/`NodeValues`/`DataFormat`/`GridLayout`/`ByteOrder`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
 
 `demo/` holds the demo's own HTML, assembled at stage time rather than hand-maintained as one file: `index.template.html` (the page shell, with a `{{MENU}}` and a `{{PANELS}}` placeholder), `panels/*.html` (one fragment per demo panel), and `style.css` — the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share one visual style.
 
@@ -112,7 +132,15 @@ The second runs `demo-server`'s own `panels`/`validate`/`build` unit tests, incl
 wasm-pack test --headless --firefox
 ```
 
-Runs the browser integration tests in `tests/drag/`, split by category:
+Also runs this crate's own `#[cfg(test)]` browser unit tests, compiled straight into the library.
+These are reported separately, as "unittests src/lib.rs".
+
+`scene::drag::unit_tests` covers `InstallGuard`, which rolls back a partway-installed drag listener set on failure.
+
+`scene::node::unit_tests` covers `RenderGuard`, which rolls back a partway-built node's own DOM on failure.
+A `?` failing mid-render (for example, while measuring a data node's own grid of cells) therefore never leaves stray elements behind.
+
+Then runs the browser integration tests in `tests/drag/`, split by category:
 
 * `drag_basics.rs`
 * `collision_resolution.rs`
@@ -137,7 +165,17 @@ The test suite covers:
 - `DragOptions::bounds`: clamping a drag to a rectangle at both edges, leaving an unbounded drag unconstrained, a node clamped to the edge remaining draggable afterward — the exact bug this feature fixes — rejecting a non-finite origin or a negative width/height, accepting a zero-width/height rectangle, a rejected `bounds` leaving the node not draggable at all, and `CollisionPolicy::PushClear`'s own corrective push staying within `bounds` too, not just the pointermove that preceded it
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
 - per-node connector fixing points (`EdgeAnchors`), including zero-value rejection, matching the elbow connector's default midpoint anchor at one fixing point (this does not hold for a straight connector, whose unsnapped default is the continuous ray/boundary crossing), a straight connector's own snap onto a fixing point and its exact round trip back to `None`'s boundary crossing, and live reconfiguration via `set_edge_anchors` reaching every incident edge
-- data nodes (`NodeContent`/`Scene::add_data_node`): correct colour-coded cell rendering and auto-sizing for one and two values, empty-content rejection before touching the scene, dragging a data node moving every cell (not just the first), and ordinary connector routing to/from one
+- data nodes (`DataNodeContent`/`Scene::add_data_node`):
+  - correct colour-coded cell rendering and auto-sizing for one, two, and five values, proving a non-complete final row renders correctly
+  - an extreme-aspect-ratio `u64` binary cell
+  - `GridLayout::MaxColumns` overriding the default shape
+  - rejecting a `GridLayout`/`DataNodeContent` combination whose column or row count is zero
+  - empty-content and non-finite-coordinate rejection before touching the scene
+  - a `<title>`/`aria-label` naming a data node's own type as text, not only as colour, without corrupting the rendered digits' own text content
+  - dragging a data node moves its own `<g>` transform; every cell's local coordinates stay unchanged, unlike an earlier implementation
+  - a data node combined with custom `EdgeAnchors`
+  - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
+  - ordinary connector routing to and from a data node
 
 ```sh
 cargo test -p cdp-integration-test
