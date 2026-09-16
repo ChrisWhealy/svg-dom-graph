@@ -646,3 +646,121 @@ fn two_operands_above_a_binary_operator_node_split_to_its_configured_fixing_poin
     check_close(end_a.0, op_x + op_width / 6.0)?;
     check_close(end_b.0, op_x + op_width * 5.0 / 6.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Same shape again, but with `EdgeAnchors(1)` configured. A single candidate has no second position to split to,
+/// so both operands land on the same point — the side's own plain midpoint, exactly like `EdgeAnchors(1)` on any
+/// other node. This is `EdgeAnchors`' own documented "not reserved, nothing stops two connectors sharing a point"
+/// contract playing out for a binary operator's own two operands, not a bug: see `binary_operator_anchor`'s own
+/// doc comment for why `None` (not `Some(1)`) is what still gets the outer-two-of-three split.
+#[wasm_bindgen_test]
+fn two_operands_above_a_binary_operator_node_with_one_configured_fixing_point_share_it() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-anchor-split-one-anchor",
+        Size::new(500.0, 400.0),
+        Size::new(500.0, 400.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_binary_operator_node_with(
+            Point::new(220.0, 300.0),
+            BinaryOperator::Or,
+            (a, b),
+            result,
+            NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(1))),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let op_group = nth_group("operator-anchor-split-one-anchor", 2)?;
+    let (op_x, op_y) = group_translate(&op_group)?;
+    let outer_rect = rect_children(&op_group)?
+        .into_iter()
+        .next()
+        .ok_or("operator node has no outer rect")?;
+    let op_width = attr_f64(&outer_rect, "width")?;
+
+    let end_a = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-one-anchor",
+        0,
+    )?)?)?;
+    let end_b = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-one-anchor",
+        1,
+    )?)?)?;
+
+    check_close(end_a.1, op_y)?;
+    check_close(end_b.1, op_y)?;
+    check_close(end_a.0, op_x + op_width / 2.0)?;
+    check_close(end_b.0, op_x + op_width / 2.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Same shape again, but with `EdgeAnchors(2)` configured — the minimal case where the two operands actually do
+/// split apart: both of the node's own two candidates are used, with no middle one to skip.
+#[wasm_bindgen_test]
+fn two_operands_above_a_binary_operator_node_with_two_configured_fixing_points_use_both() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-anchor-split-two-anchors",
+        Size::new(500.0, 400.0),
+        Size::new(500.0, 400.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_binary_operator_node_with(
+            Point::new(220.0, 300.0),
+            BinaryOperator::Or,
+            (a, b),
+            result,
+            NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(2))),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let op_group = nth_group("operator-anchor-split-two-anchors", 2)?;
+    let (op_x, op_y) = group_translate(&op_group)?;
+    let outer_rect = rect_children(&op_group)?
+        .into_iter()
+        .next()
+        .ok_or("operator node has no outer rect")?;
+    let op_width = attr_f64(&outer_rect, "width")?;
+
+    let end_a = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-two-anchors",
+        0,
+    )?)?)?;
+    let end_b = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+        "operator-anchor-split-two-anchors",
+        1,
+    )?)?)?;
+
+    check_close(end_a.1, op_y)?;
+    check_close(end_b.1, op_y)?;
+    // Two candidates on a side divided into three equal segments: 1/3 and 2/3 of the side's width.
+    check_close(end_a.0, op_x + op_width / 3.0)?;
+    check_close(end_b.0, op_x + op_width * 2.0 / 3.0)
+}

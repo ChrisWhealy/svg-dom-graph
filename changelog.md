@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Added operator nodes to represent binary and bit operations (`7da5a3d`)
+- Widen test coverage (``)
 
 ## Changed
 
@@ -22,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Prevent equal-crossing binary operands from producing overlapping connectors (`5507e7c`)
 - Remove conflict between `EdgeAnchors` and binary operator input routing (`9830add`)
-- Update README (``)
+- Update README (`119833c`)
 
 # [Released]
 

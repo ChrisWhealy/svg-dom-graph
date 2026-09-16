@@ -503,6 +503,51 @@ fn binary_operator_anchor_on_the_same_side_honours_a_configured_fixing_point_cou
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn binary_operator_anchor_on_the_same_side_with_one_configured_fixing_point_collapses_both_operands_onto_it()
+-> Result<(), String> {
+    // `EdgeAnchors(1)` has only one candidate — the side's own plain midpoint, per `EdgeAnchors`' own documented
+    // equivalence at `n == 1`. There is no second position to split to, so both operands land on it: the same
+    // outcome any other pair of connectors sharing a one-candidate node would get, per `EdgeAnchors`' own "not
+    // reserved" contract — not a special case this function invents for binary operators.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(60.0, 20.0),
+    };
+    let left = Point::new(20.0, 1000.0);
+    let right = Point::new(40.0, 1000.0);
+
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true, Some(1));
+    check_eq(left_point, Point::new(30.0, 20.0))?;
+    check_eq(left_side, Side::South)?;
+
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false, Some(1));
+    check_eq(right_point, Point::new(30.0, 20.0))?;
+    check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn binary_operator_anchor_on_the_same_side_with_two_configured_fixing_points_uses_both() -> Result<(), String> {
+    // `EdgeAnchors(2)` has exactly two candidates — both of them are "the outer two", with no middle one to skip.
+    // South side (width 60) divided into three equal segments by two candidates, at x = 20, 40.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(60.0, 20.0),
+    };
+    let left = Point::new(20.0, 1000.0);
+    let right = Point::new(40.0, 1000.0);
+
+    let (left_point, left_side) = binary_operator_anchor(rect, left, right, true, Some(2));
+    check_eq(left_point, Point::new(20.0, 20.0))?;
+    check_eq(left_side, Side::South)?;
+
+    let (right_point, right_side) = binary_operator_anchor(rect, right, left, false, Some(2));
+    check_eq(right_point, Point::new(40.0, 20.0))?;
+    check_eq(right_side, Side::South)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn binary_operator_anchor_on_different_sides_snaps_to_a_configured_fixing_point() -> Result<(), String> {
     // Same due-south/due-east shape as the unconfigured test above, but with `EdgeAnchors(3)` configured: each
     // operand now snaps to the nearest of 3 candidates on its own side instead of that side's plain midpoint —
