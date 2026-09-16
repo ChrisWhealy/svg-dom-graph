@@ -18,8 +18,9 @@ pub(crate) fn stringify<E: std::fmt::Display>(err: E) -> String {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The current page's `Document`, or `Err` if there is no global `window` or no `document` on it.
 ///
-/// Neither should be possible in a real browser. Returned as a graceful `Err` anyway, not a panic, since `run` already
-/// has a clean way to report a startup failure to the browser console.
+/// Neither should be possible in a real browser. Returned as a graceful `Err` anyway, not a panic. This crate already
+/// has clean ways to report a failure — `init_panel`'s own returned `Result`, or `report_panel_error`'s visible banner
+/// for one inside a demo's own build function.
 pub(crate) fn document() -> Result<web_sys::Document, String> {
     web_sys::window()
         .ok_or_else(|| "no global window".to_owned())?

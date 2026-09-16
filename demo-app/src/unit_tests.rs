@@ -13,9 +13,9 @@ use crate::source_frame::demo_fn_source;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn every_registered_demo_has_extractable_source() -> Result<(), String> {
-    for &(panel_id, _, fn_name, source) in DEMO_PANELS {
-        if demo_fn_source(source, fn_name).is_none() {
-            return Err(format!("source not found for panel {panel_id} (fn {fn_name})"));
+    for panel in DEMO_PANELS {
+        if demo_fn_source(panel.source, panel.fn_name).is_none() {
+            return Err(format!("source not found for panel {} (fn {})", panel.id, panel.fn_name));
         }
     }
     Ok(())

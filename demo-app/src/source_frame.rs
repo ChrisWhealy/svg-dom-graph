@@ -1,5 +1,8 @@
 //! Each demo panel gets a collapsible frame below it showing the formatted Rust source of the function that built
-//! it, appended by [`crate::run_panel`] right after that function returns successfully.
+//! it.
+//!
+//! [`crate::init_panel`] appends this itself, deliberately even when that function reported failure — the source
+//! is still worth seeing when the demo itself broke.
 //!
 //! Every demo module embeds its own file's full source at compile time (`include_str!`, as a `pub(crate) const
 //! SOURCE`), so the text shown here never drifts from what is actually running — there is no separate copy kept in
@@ -48,11 +51,13 @@ pub(crate) fn demo_fn_source(source: &'static str, name: &str) -> Option<&'stati
 /// or if building any of the DOM nodes below fails.
 pub(crate) fn append_demo_source(document: &web_sys::Document, panel_id: &str) -> Result<(), String> {
     let section = crate::util::required_element(document, panel_id)?;
-    let &(_, _, fn_name, source) = DEMO_PANELS
+    let panel = DEMO_PANELS
         .iter()
-        .find(|(id, ..)| *id == panel_id)
+        .find(|panel| panel.id == panel_id)
         .ok_or_else(|| format!("{panel_id} is not registered in DEMO_PANELS"))?;
-    let source_text = demo_fn_source(source, fn_name).ok_or_else(|| format!("source not found for fn {fn_name}"))?;
+    let fn_name = panel.fn_name;
+    let source_text =
+        demo_fn_source(panel.source, fn_name).ok_or_else(|| format!("source not found for fn {fn_name}"))?;
 
     let create = |tag: &str| {
         document
