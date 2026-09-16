@@ -16,12 +16,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Refactored structs in `model/content/mod.rs` into their own modules (`eedce81`)
 - Make operator creation fully transactional (`fa82e88`)
-- Tighten rotate and shift `UnaryOperator` enum variants to `u8` bit counts (``)
+- Tighten rotate and shift `UnaryOperator` enum variants to `u8` bit counts (`9c5d972`)
 
 ## Fixed
 
 - Prevent equal-crossing binary operands from producing overlapping connectors (`5507e7c`)
 - Remove conflict between `EdgeAnchors` and binary operator input routing (`9830add`)
+- Update README (``)
 
 # [Released]
 

@@ -50,13 +50,18 @@ Each value is a `u8`/`u16`/`u32`/`u64`, shown as decimal, hexadecimal, or binary
 
 By default (`GridLayout::Automatic`), the grid prefers a power-of-two row count over a plain square shape.
 This layout matches the row/column groupings common in memory dumps and register views.
-Eight values become two rows of four, not a 3×3 square with an empty slot. Twenty values become four rows of five.
+Eight values become two rows of four, not a 3×3 square with an empty slot.
+Twenty values become four rows of five.
 
 When no power-of-two row count divides the value count evenly, the grid falls back to the closest-to-square shape.
-A single value forms one row. Two values stack into two rows of one column. Twenty-five values form a 5×5 square.
+A single value forms one row.
+Two values stack into two rows of one column.
+Twenty-five values form a 5×5 square.
 
-`Automatic` sizes a grid by cell *count*, not physical width. A handful of very long values, such as a `u64` under `DataFormat::Binary`, can still render far wider than tall.
-`GridLayout::Columns`, `Rows`, and `MaxColumns` let a caller override the shape directly. `MaxColumns` caps how wide such a grid can get, regardless of value count.
+`Automatic` sizes a grid by cell *count*, not physical width.
+A handful of very long values, such as a `u64` under `DataFormat::Binary`, can still render far wider than tall.
+`GridLayout::Columns`, `Rows`, and `MaxColumns` let a caller override the shape directly.
+`MaxColumns` caps how wide such a grid can get, regardless of value count.
 
 A byte-group string alone cannot mark where one value ends and the next begins.
 Each value therefore gets its own small box.
@@ -79,6 +84,32 @@ Both nodes in this panel are draggable, exactly like any other node.
 Connector routing and drag-collision handling apply to a data node exactly as they would to a plain label node.
 Both node types expose only a `Rect`; routing and collision logic never see a node's content.
 
+"Boolean operators" demonstrates `UnaryOperator`/`BinaryOperator`, a node type that names the operation which produced its own single value — `NOT`, a shift or rotate, or `AND`/`OR`/`XOR` — without this crate ever computing that value itself.
+
+This is the same architectural split `DataNodeContent` already follows, made explicit for operators too: **the caller performs the calculation and supplies the already-computed result**, exactly as it supplies every other data node's own values.
+`Scene::add_unary_operator_node`/`add_binary_operator_node` never touch the operand's actual bits — they only draw a labelled node and auto-wire it to its operand(s), so the rendered graph can never drift from the relationship it claims to represent.
+
+A unary operator node takes one operand and draws one incoming edge, created automatically:
+
+```rust
+let operand = scene.add_data_node(
+    Point::new(10.0, 10.0),
+    DataNodeContent::new(NodeValues::U8(vec![0b1010_1010]), DataFormat::Binary),
+)?;
+scene.add_unary_operator_node(
+    Point::new(200.0, 10.0),
+    UnaryOperator::Not,
+    operand,
+    DataNodeContent::new(NodeValues::U8(vec![!0b1010_1010u8]), DataFormat::Binary),
+)?;
+```
+
+A binary operator node (`AND`, `OR`, `XOR`) takes two operands and draws two incoming edges the same way, via `Scene::add_binary_operator_node`.
+Both operands must share one `NodeValues` width, and must be two distinct nodes; either is rejected before anything is drawn.
+
+An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
+The demo panel's own last row chains two operators together this way: `B` rotated right by one bit, then `XOR`'ed with `A` — the rotate node's result feeds the `XOR` node as its second operand.
+
 `svg-dom-graph` itself is a library, with no opinion about which HTML page hosts it or what graph a caller builds:
 
 | Module | Description |
@@ -86,13 +117,15 @@ Both node types expose only a `Rect`; routing and collision logic never see a no
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, `clamp_to_bounds`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit — see `DataNodeContent`/`NodeValues`/`DataFormat`/`GridLayout`/`ByteOrder`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle with `add_node`, `add_node_with` (configurable per-node connector fixing points — see `NodeOptions`/`EdgeAnchors`), `add_data_node`, `add_data_node_with` (a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit — see `DataNodeContent`/`NodeValues`/`DataFormat`/`GridLayout`/`ByteOrder`), `add_unary_operator_node`, `add_unary_operator_node_with`, `add_binary_operator_node`, and `add_binary_operator_node_with` (a node naming the bitwise operation that produced its own already-computed single value, auto-wiring its incoming operand edge(s) — see `UnaryOperator`/`BinaryOperator`), `set_edge_anchors`, `add_edge`, `add_edge_with` and `set_connector_type` (straight or elbowed routing, with configurable corner rounding — see `ConnectorOptions`/`ConnectorType`), `make_draggable`, and `make_draggable_with` (configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`/`CollisionPolicy`/`DragOptions::bounds`)
 
 `demo/` holds the demo's own HTML, assembled at stage time rather than hand-maintained as one file: `index.template.html` (the page shell, with a `{{MENU}}` and a `{{PANELS}}` placeholder), `panels/*.html` (one fragment per demo panel), and `style.css` — the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share one visual style.
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 
-- `demo-app/src/lib.rs` — exports `init_panel`, called from `demo/index.template.html`'s own script each time a menu click or a deep link selects a panel. Builds that one panel's small demo scene — the directed tree, the connector-routing demo, the fixing-points demo, or the data-node demo — the first time it is selected, not eagerly at page load; a later reselection is a no-op. It also embeds its own source at compile time and, once a panel is built, appends a `<details>` block showing the exact Rust function that built it — see the `highlight` module and `demo_gallery!` macro in that file for how.
+- `demo-app/src/lib.rs` — exports `init_panel`, called from `demo/index.template.html`'s own script each time a menu click or a deep link selects a panel.
+  Builds that one panel's small demo scene — the directed tree, the connector-routing demo, the fixing-points demo, the data-node demo, or the operator demo — the first time it is selected, not eagerly at page load; a later reselection is a no-op.
+  It also embeds its own source at compile time and, once a panel is built, appends a `<details>` block showing the exact Rust function that built it — see the `highlight` module and `demo_gallery!` macro in that file for how.
 
 `demo-server/` is a further on-demand workspace member, used only by `cargo demo` (see [Running the demo](#running-the-demo) below) — a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`, validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package, and serves the result, with no dependency on external HTTP-server tooling; `wasm-pack` remains required to build the demo.
 
@@ -108,7 +141,8 @@ Validates the panel catalogue, assembles `index.html` from `demo/index.template.
 
 Open <http://127.0.0.1:8000/> in a browser.
 
-Pick a demo from the menu on the left — "Directed tree", "Connector routing", "Fixing points", or "Data node" — each one builds the first time it is selected. The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
+Pick a demo from the menu on the left — "Directed tree", "Connector routing", "Fixing points", "Data node", or "Boolean operators" — each one builds the first time it is selected.
+The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
 Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is picked up on the next browser refresh; editing any Rust source needs a `cargo demo` restart, the same as any other wasm rebuild.
 
 ## Testing
@@ -140,6 +174,8 @@ These are reported separately, as "unittests src/lib.rs".
 `scene::node::unit_tests` covers `RenderGuard`, which rolls back a partway-built node's own DOM on failure.
 A `?` failing mid-render (for example, while measuring a data node's own grid of cells) therefore never leaves stray elements behind.
 
+The same module also covers `OperatorConstructionGuard`, which rolls back an operator node's own compound "create the node, then wire its auto-connected input edge(s)" operation on failure — removing the node, and any edge already wired, from both the DOM and the graph model, so a failed `add_unary_operator_node_with`/`add_binary_operator_node_with` call never leaves a partially wired operator behind.
+
 Then runs the browser integration tests in `tests/drag/`, split by category:
 
 * `drag_basics.rs`
@@ -149,6 +185,7 @@ Then runs the browser integration tests in `tests/drag/`, split by category:
 * `edge_anchors.rs`
 * `bounds.rs`
 * `data_node.rs`
+* `operator_node.rs`
 
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
 They make assertions about attributes of the resulting `<rect>`, `<text>`, `<path>` and `<marker>` elements, not on the internal Rust state that produced them.
@@ -176,6 +213,12 @@ The test suite covers:
   - a data node combined with custom `EdgeAnchors`
   - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
   - ordinary connector routing to and from a data node
+- operator nodes (`UnaryOperator`/`BinaryOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`):
+  - a unary node's two-row label/value rendering, and a binary node's own two auto-wired input edges
+  - rejecting mismatched operand widths, duplicate operands, a non-data operand, and a multi-value result, all before drawing anything
+  - dragging an operator node reroutes its input connector; dragging either operand of a same-side pair re-splits both connectors live, without either ever crossing back through its own dragged source box
+  - same-side operand collision handling: splitting to distinct anchor points, including an exact-crossing tie between two distinct operands, and honouring a configured `EdgeAnchors` count instead of the unconfigured default's fixed three-way split
+  - operands on different sides of the operator keep the plain single-anchor midpoint, unaffected by the same-side split logic
 
 ```sh
 cargo test -p cdp-integration-test
