@@ -7,15 +7,16 @@
 
 Draws graphs with dynamically re-routable connectors between SVG boxes.
 Each connector routes as a straight line or an elbow, with a configurable corner radius.
+
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
+
+`svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what the graph a caller builds.
+See [`library.md`](docs/library.md) for more details.
 
 ***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
 
 The goal is to draw a set of labelled boxes arranged in a graph that may be cyclic or acyclic, directed or undirected.
-As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically.
-
-`svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what the graph a caller builds.
-See [`library.md`](docs/library.md) for more details.
+As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically with automatic collision handling.
 
 ## Running the demo
 
@@ -125,8 +126,10 @@ scene.add_unary_operator_node(
     Point::new(200.0, 10.0),
     UnaryOperator::Not,
     operand,
-    // You must supply the appropriate value here!
-    DataNodeContent::new(NodeValues::U8(vec![!demo_value]), DataFormat::Binary),
+    DataNodeContent::new(
+        NodeValues::U8(vec![!demo_value]), // You must calculate the correct value here!
+        DataFormat::Binary,
+    ),
 )?;
 ```
 
@@ -150,15 +153,20 @@ scene.add_binary_operator_node(
     Point::new(200.0, 55.0),
     BinaryOperator::And,
     (operand_a, operand_b),
-    // You must correctly calculate this value yourself — svg-dom-graph never evaluates the operator!
-    DataNodeContent::new(NodeValues::U32(vec![value_a & value_b]), DataFormat::Hexadecimal),
+    DataNodeContent::new(
+        NodeValues::U32(vec![value_a & value_b]), // You must calculate the correct value here!
+        DataFormat::Hexadecimal
+    ),
 )?;
 ```
 
-`operand_a` and `operand_b` must each hold the value they are declared to hold.
+`operand_a` and `operand_b` must each hold the value they are actually declared to hold.
 The result passed to `add_binary_operator_node` must be that same operator correctly applied to both of them.
-`svg-dom-graph` cannot check this: it only checks that `operand_a`, `operand_b`, and the result share one `NodeValues` width, not that the result is arithmetically correct.
-Supplying a `value_a & value_b` that does not match the operands actually wired in draws a node whose displayed relationship is silently wrong.
+
+`svg-dom-graph` makes no attempt to check this: it only checks that `operand_a`, `operand_b`, and the result share one `NodeValues` width, not that the result is arithmetically correct.
+
+***IMPORTANT***<br>
+Supplying a `value_a & value_b` that does not match the actual operands will draw a node whose displayed value is silently wrong!
 
 An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
 
@@ -177,8 +185,8 @@ However, for a two-dimensional array, `Selection::Row` or `Selection::Column` ar
 Then within this, a specific cell can be highlighted, in a second, stronger colour.
 This two-tier highlight marks "we are now processing this row" and "specifically this element" as two distinct steps of a data-flow walk.
 
-For assistive technologies, the selection state is never conveyed by colour alone.
-The focused row is outlined using a slightly thicker stroke, within which, the highlighted cell again has slightly thicker outline.
+For assistive technologies, the selection state cannot be conveyed by colour alone.
+The focused row is outlined using a slightly thicker stroke, within which, the highlighted cell again has a slightly thicker stroke.
 The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 6 values, row 1 selected, column 2 focused"`.
 
 A grid can contain an incomplete last row or column: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns` can leave a row or column short of real cells.

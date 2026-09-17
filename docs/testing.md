@@ -89,6 +89,10 @@ The test suite covers:
   - the node's own `aria-label` describing the current selection as text, exposing it to assistive technology as well as through colour and stroke
   - rejecting a `Selection` naming a plain label node, a foreign-scene id, or a cell/row/column index out of range for the node's own actual value count or grid shape, all before recolouring anything
 
+## Tests Using Chrome DevTools Protocol (CDP)
+
+`cdp-test-fixture/` and `cdp-integration-test/` are a further pair of on-demand workspace members, neither of which is built by a plain `cargo build` or `cargo test`.
+
 ```sh
 cargo test -p cdp-integration-test
 ```
