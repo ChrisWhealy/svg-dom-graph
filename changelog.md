@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.9] - 2026-09-17
 
 ## Changed
@@ -13,9 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Refactored README (`6a92b8c`)
 - Added `demo.md` for demo server details (`ceb665e`)
 - Added `demo.md` for demo server details (`9a1f538`)
-- Update docs (``)
-
-# [Released]
+- Update docs (`2681e63`)
 
 ## [0.2.8] - 2026-09-17
 
