@@ -206,7 +206,7 @@ Testing is divided in two parts:
 - Native unit tests
 - Integration tests in `tests/drag/` run through `wasm-pack test --headless --<browser_name>`
 
-See [docs/testing.md](docs/testing.md) for more details.
+See [testing.md](docs/testing.md) for more details.
 
 ## Error Handling During Testing
 

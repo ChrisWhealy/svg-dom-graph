@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Refactored README (`6a92b8c`)
 - Added `demo.md` for demo server details (`ceb665e`)
-- Added `demo.md` for demo server details (``)
+- Added `demo.md` for demo server details (`9a1f538`)
+- Update docs (``)
 
 # [Released]
 
