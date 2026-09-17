@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactored README (``)
+- Refactored README (`6a92b8c`)
+- Added `demo.md` for demo server details (``)
 
 # [Released]
 

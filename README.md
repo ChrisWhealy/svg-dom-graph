@@ -25,19 +25,7 @@ The demo is a non-published workspace crate that serves as a standalone demo app
 cargo demo
 ```
 
-Running this command starts `demo-server` that in turn, serves `demo-app` — a set of panels, each of which is a standalone HTML file under `demo/panels/`.
-
-Starting the demo performs the following steps:
-- Validates the panel catalogue
-- Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and `demo/panels/*.html`
-- Rebuilds the wasm package
-- Stages everything under `target/demo-stage/` (see `demo-server/src/main.rs`'s own doc comment for exactly why it stages outside the source tree)
-- Serves it at <http://127.0.0.1:8000/> — override the port with `PORT=9000 cargo demo`
-
-The first time you choose a demo from the menu on the left, it is built on demand.
-The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
-
-Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is picked up on the next browser refresh; editing any Rust source needs a `cargo demo` restart, the same as any other wasm rebuild.
+See [`demo.md`](docs/demo.md) for more details.
 
 ## Demo Scope
 
