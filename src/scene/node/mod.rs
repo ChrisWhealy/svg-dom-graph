@@ -845,9 +845,10 @@ impl Scene {
         let len = cell_rects.len();
 
         // Every index whose own category (focused, banded, or default) could possibly differ between the old
-        // selection and the new one — never the whole grid. A cell outside this set is provably unchanged: it is
-        // neither an old/new focus, nor in the symmetric difference of the two bands, so `cell_style` resolves it
-        // to the same category either way. See `ResolvedBand::for_each_index`'s own doc comment.
+        // selection and the new one — never the whole grid, and each visited at most once. A cell outside this set
+        // is provably unchanged: it is neither an old/new focus, nor in the symmetric difference of the two bands,
+        // so `cell_style` resolves it to the same category either way. See `ResolvedBand::for_each_index`'s own
+        // doc comment.
         let mut result = Ok(());
         let mut restyle = |i: usize| {
             if result.is_err() {
@@ -866,12 +867,29 @@ impl Scene {
         if let Some(i) = old_focus {
             restyle(i);
         }
-        if let Some(i) = new_focus {
-            restyle(i);
+        // Only if it differs from `old_focus` — otherwise this index was already visited above, and a second visit
+        // here would just repeat the same comparison.
+        if new_focus != old_focus {
+            if let Some(i) = new_focus {
+                restyle(i);
+            }
         }
         if old_band != new_band {
-            old_band.for_each_index(len, &mut restyle);
-            new_band.for_each_index(len, &mut restyle);
+            // True symmetric difference, not each band walked in full: a member of both bands (their intersection)
+            // is skipped in both traversals below, since its own category cannot have changed between them either
+            // — and a focus index is skipped here too, since it was already visited, explicitly, above.
+            let already_visited = |i: usize| new_band.contains(i) || Some(i) == old_focus || Some(i) == new_focus;
+            old_band.for_each_index(len, |i| {
+                if !already_visited(i) {
+                    restyle(i);
+                }
+            });
+            let already_visited = |i: usize| old_band.contains(i) || Some(i) == old_focus || Some(i) == new_focus;
+            new_band.for_each_index(len, |i| {
+                if !already_visited(i) {
+                    restyle(i);
+                }
+            });
         }
         result?;
 
