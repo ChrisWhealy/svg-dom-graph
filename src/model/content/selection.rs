@@ -32,23 +32,28 @@ pub enum Selection {
 }
 
 impl Selection {
-    /// A short, human-readable description of this selection, suitable for appending to a node's own
+    /// Appends a short, human-readable description of this selection to `out`, suitable for a node's own
     /// `aria-label`.
     ///
-    /// Empty for [`Selection::None`], so the label reads exactly as it did before any selection was made.
-    /// `Scene::set_selection` uses this so the current selection is exposed as text, not only as colour.
+    /// Writes nothing for [`Selection::None`], so the label reads exactly as it did before any selection was made.
+    /// `Scene::set_selection` calls this into its own reused label buffer, first truncated back to the node's base
+    /// description, then appends the current selection not only as a colour, but also as text, without allocating a
+    /// fresh `String` on every call.
     ///
     /// Colour alone conveys nothing to assistive technology or a colour-blind reader — the same reasoning
     /// [`super::NodeValues::type_color`]'s own `<title>`/`aria-label` pairing already follows.
-    pub(crate) fn describe(self) -> String {
-        match self {
-            Self::None => String::new(),
-            Self::Cell(i) => format!(", cell {i} selected"),
-            Self::Row { row, col: None } => format!(", row {row} selected"),
-            Self::Row { row, col: Some(col) } => format!(", row {row} selected, column {col} focused"),
-            Self::Column { col, row: None } => format!(", column {col} selected"),
-            Self::Column { col, row: Some(row) } => format!(", column {col} selected, row {row} focused"),
-        }
+    pub(crate) fn describe_into(self, out: &mut String) {
+        use std::fmt::Write as _;
+        // `String`'s own `Write` impl only ever fails on allocation, which panics rather than returning `Err` —
+        // the same reasoning `crate::geometry::elbow_path_into`'s own `write!` calls rely on.
+        let _ = match self {
+            Self::None => return,
+            Self::Cell(i) => write!(out, ", cell {i} selected"),
+            Self::Row { row, col: None } => write!(out, ", row {row} selected"),
+            Self::Row { row, col: Some(col) } => write!(out, ", row {row} selected, column {col} focused"),
+            Self::Column { col, row: None } => write!(out, ", column {col} selected"),
+            Self::Column { col, row: Some(row) } => write!(out, ", column {col} selected, row {row} focused"),
+        };
     }
 }
 

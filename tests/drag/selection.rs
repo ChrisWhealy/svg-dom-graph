@@ -339,3 +339,91 @@ fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
         &format!("expected the original aria-label {base_label:?} restored, got {cleared_label:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_selection`'s own no-op fast path: an identical selection must touch no cell at all, not merely leave every
+/// cell's own rendered value unchanged.
+///
+/// Proved here by planting a sentinel `fill` directly on a cell via the raw DOM, bypassing `Scene` entirely, right
+/// after selecting it once. A call that actually rewrote the cell would overwrite the sentinel back to the focus
+/// colour — its surviving an identical second call is the only way to observe, from here, that the call did
+/// nothing at all.
+#[wasm_bindgen_test]
+fn set_selection_with_an_identical_selection_touches_no_cell() -> Result<(), String> {
+    let svg = make_svg("selection-no-op", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-no-op", 0)?;
+    let rects = rect_children(&group)?;
+    let cells = &rects[1..];
+
+    scene.set_selection(node, Selection::Cell(1)).map_err(|e| e.to_string())?;
+
+    const SENTINEL: &str = "sentinel-fill";
+    cells[1].set_attribute("fill", SENTINEL).map_err(|e| format!("{e:?}"))?;
+
+    // Same selection again: a true no-op must leave the sentinel in place.
+    scene.set_selection(node, Selection::Cell(1)).map_err(|e| e.to_string())?;
+
+    check(
+        fill_of(&cells[1]).as_deref() == Some(SENTINEL),
+        "an identical selection rewrote a cell it should have left untouched",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_selection` only rewrites the cells whose own colour/stroke category (focused, banded, default) actually
+/// changes between the old selection and the new one — not every cell, even for a genuinely different selection.
+///
+/// Proved the same way as the no-op case above: a sentinel `fill`, planted directly via the raw DOM, survives a
+/// selection change that moves the focus elsewhere but leaves this cell's own category at "default" throughout,
+/// then is gone once a further change actually does bring this cell into the band — confirming the sentinel
+/// technique itself is sensitive enough to catch a real rewrite, not just an accident of timing.
+#[wasm_bindgen_test]
+fn set_selection_only_rewrites_cells_whose_own_category_changed() -> Result<(), String> {
+    let svg = make_svg("selection-partial-rewrite", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+                .with_layout(GridLayout::Rows(2)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-partial-rewrite", 0)?;
+    let rects = rect_children(&group)?;
+    let cells = &rects[1..]; // flat, row-major: [row0: 0,1,2][row1: 3,4,5]
+
+    // Cell 0 sits in row 0; neither selection below ever bands or focuses it.
+    scene
+        .set_selection(node, Selection::Row { row: 1, col: None })
+        .map_err(|e| e.to_string())?;
+
+    const SENTINEL: &str = "sentinel-fill";
+    cells[0].set_attribute("fill", SENTINEL).map_err(|e| format!("{e:?}"))?;
+
+    // Moves the focused cell within the same banded row; cell 0's own category — plain default — never changes.
+    scene
+        .set_selection(node, Selection::Row { row: 1, col: Some(2) })
+        .map_err(|e| e.to_string())?;
+    check(
+        fill_of(&cells[0]).as_deref() == Some(SENTINEL),
+        "a selection change that never touched cell 0's own category rewrote it anyway",
+    )?;
+
+    // Now genuinely bands cell 0: its category does change, so this call must overwrite the sentinel.
+    scene
+        .set_selection(node, Selection::Row { row: 0, col: None })
+        .map_err(|e| e.to_string())?;
+    check(
+        fill_of(&cells[0]).as_deref() != Some(SENTINEL),
+        "cell 0 was newly banded but its sentinel fill was left in place",
+    )
+}

@@ -9,6 +9,7 @@ use super::{BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, Unary
 use crate::{
     error::Error,
     model::{
+        content::ResolvedBand,
         graph::Graph,
         node::{NodeContent, NodeId},
     },
@@ -141,8 +142,10 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
         binary_operator_inputs: None,
         binary_operator_input_edges: None,
         cell_rects: Vec::new(),
-        cell_stroke_width: 0.0,
-        base_aria_label: String::new(),
+        cell_stroke_width: "",
+        selection: Selection::None,
+        aria_label: String::new(),
+        base_label_len: 0,
     })
 }
 
@@ -200,11 +203,38 @@ const SELECTION_FOCUS_COLOR: &str = "#ff6b4a";
 /// apart for a colour-blind reader. A band is therefore also distinguishable by its own thicker border, the same
 /// "not colour alone" reasoning [`NodeValues::type_color`](super::content::NodeValues::type_color)'s own
 /// `<title>`/`aria-label` pairing already follows.
-const SELECTION_BAND_STROKE_WIDTH: f64 = 2.0;
+///
+/// Already formatted — see [`BoxHandles::cell_stroke_width`](super::BoxHandles::cell_stroke_width)'s own doc
+/// comment for why.
+const SELECTION_BAND_STROKE_WIDTH: &str = "2";
 
 /// `Scene::set_selection`'s own cell-level stroke width, thicker again than [`SELECTION_BAND_STROKE_WIDTH`], so the
 /// focused cell stays visually distinct from a plain band even with colour perception set aside entirely.
-const SELECTION_FOCUS_STROKE_WIDTH: f64 = 3.5;
+///
+/// Already formatted, for the same reason [`SELECTION_BAND_STROKE_WIDTH`] is.
+const SELECTION_FOCUS_STROKE_WIDTH: &str = "3.5";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Cell `i`'s own fill colour and stroke width under a resolved `focus`/`band`, against `base_color`/
+/// `base_stroke_width` for a cell neither names.
+///
+/// `Scene::set_selection` calls this twice per cell — once for the old selection, once for the new one — and only
+/// writes to the DOM when the two results differ, rather than unconditionally rewriting every cell on every call.
+fn cell_style(
+    i: usize,
+    focus: Option<usize>,
+    band: ResolvedBand,
+    base_color: &'static str,
+    base_stroke_width: &'static str,
+) -> (&'static str, &'static str) {
+    if Some(i) == focus {
+        (SELECTION_FOCUS_COLOR, SELECTION_FOCUS_STROKE_WIDTH)
+    } else if band.contains(i) {
+        (SELECTION_BAND_COLOR, SELECTION_BAND_STROKE_WIDTH)
+    } else {
+        (base_color, base_stroke_width)
+    }
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
@@ -358,6 +388,7 @@ fn draw_content_box(
     group.set_attr("aria-label", &node_label)?;
 
     guard.disarm();
+    let base_label_len = node_label.len();
     Ok((
         BoxHandles {
             group,
@@ -366,8 +397,10 @@ fn draw_content_box(
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
             cell_rects,
-            cell_stroke_width: if single_value { 1.5 } else { 1.0 },
-            base_aria_label: node_label,
+            cell_stroke_width: if single_value { "1.5" } else { "1" },
+            selection: Selection::None,
+            aria_label: node_label,
+            base_label_len,
         },
         rect,
     ))
@@ -467,6 +500,7 @@ fn draw_operator_box(
     group.set_attr("aria-label", &node_label)?;
 
     guard.disarm();
+    let base_label_len = node_label.len();
     Ok((
         BoxHandles {
             group,
@@ -475,8 +509,10 @@ fn draw_operator_box(
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
             cell_rects: vec![value_row_el],
-            cell_stroke_width: 1.0,
-            base_aria_label: node_label,
+            cell_stroke_width: "1",
+            selection: Selection::None,
+            aria_label: node_label,
+            base_label_len,
         },
         rect,
     ))
@@ -645,9 +681,15 @@ impl Scene {
     /// This is the only way to change a node's own selection after it is first drawn. A live "previous"/"next"
     /// control stepping through an array as it is processed is one example.
     ///
-    /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_color`. Every call recolours
-    /// every one of `id`'s own cells from scratch, not just the ones a previous call touched. So there is no need
-    /// to clear before setting a new selection.
+    /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_color`. So there is no need to
+    /// clear before setting a new selection.
+    ///
+    /// An identical `selection` to `id`'s own current one is an immediate no-op — no cell is touched, and no
+    /// `aria-label` write happens. Otherwise, only the cells whose own colour/stroke category (focused, banded, or
+    /// default) actually changes between the old selection and the new one are ever written to; a cell that stays
+    /// in the same category is left untouched. A live "previous"/"next" control stepping through an array as it is
+    /// processed only ever changes a handful of cells per step, however large the array — this is the hot path
+    /// that shape is optimised for.
     ///
     /// Also gives the focused cell, and, less strongly, a banded row/column, a thicker stroke than its own default
     /// border. It also rebuilds the node's own `aria-label` to describe the current selection as text. Neither
@@ -666,32 +708,40 @@ impl Scene {
     /// some cells already recoloured and others not — the same documented property
     /// [`set_edge_anchors`](Self::set_edge_anchors) already carries for its own incident redraws.
     pub fn set_selection(&self, id: NodeId, selection: Selection) -> Result<(), Error> {
-        let inner = self.inner.borrow();
+        let mut inner = self.inner.borrow_mut();
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
             NodeContent::Label(_) => return Err(Error::InvalidSelection(id, selection)),
         };
-        let (band, focus) = content
+        let (new_band, new_focus) = content
             .resolve_selection(selection)
             .ok_or(Error::InvalidSelection(id, selection))?;
         let base_color = content.type_color();
 
-        let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
+        let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
+        if old_selection == selection {
+            return Ok(());
+        }
+        // `old_selection` was itself accepted by an earlier, successful `set_selection` call against this same,
+        // unchanged content (or is the default `Selection::None`, always valid), so it always resolves here too.
+        let (old_band, old_focus) = content.resolve_selection(old_selection).unwrap_or((ResolvedBand::None, None));
+
+        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         for (i, cell) in handles.cell_rects.iter().enumerate() {
-            let (color, stroke_width) = if Some(i) == focus {
-                (SELECTION_FOCUS_COLOR, SELECTION_FOCUS_STROKE_WIDTH)
-            } else if band.contains(i) {
-                (SELECTION_BAND_COLOR, SELECTION_BAND_STROKE_WIDTH)
-            } else {
-                (base_color, handles.cell_stroke_width)
-            };
-            cell.set_fill(color)?;
-            cell.set_stroke_width(stroke_width)?;
+            let old_style = cell_style(i, old_focus, old_band, base_color, handles.cell_stroke_width);
+            let new_style = cell_style(i, new_focus, new_band, base_color, handles.cell_stroke_width);
+            if new_style == old_style {
+                continue;
+            }
+            cell.set_fill(new_style.0)?;
+            cell.set_attr("stroke-width", new_style.1)?;
         }
 
-        let label = format!("{}{}", handles.base_aria_label, selection.describe());
-        handles.group.set_attr("aria-label", &label)?;
+        handles.selection = selection;
+        handles.aria_label.truncate(handles.base_label_len);
+        selection.describe_into(&mut handles.aria_label);
+        handles.group.set_attr("aria-label", &handles.aria_label)?;
 
         Ok(())
     }

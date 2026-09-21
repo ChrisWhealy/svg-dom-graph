@@ -566,28 +566,36 @@ fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_c
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Selection::describe
+// Selection::describe_into
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// `Selection::describe_into`'s own output, as an owned `String` — this file's own tests only ever check the
+/// finished text, never the buffer-reuse behaviour `describe_into` exists for.
+fn describe(selection: Selection) -> String {
+    let mut out = String::new();
+    selection.describe_into(&mut out);
+    out
+}
 
 #[test]
 fn describe_of_none_is_empty() -> Result<(), String> {
-    check_eq(Selection::None.describe(), String::new())
+    check_eq(describe(Selection::None), String::new())
 }
 
 #[test]
 fn describe_of_a_cell_names_its_own_index() -> Result<(), String> {
-    check_eq(Selection::Cell(3).describe(), ", cell 3 selected".to_owned())
+    check_eq(describe(Selection::Cell(3)), ", cell 3 selected".to_owned())
 }
 
 #[test]
 fn describe_of_a_row_with_no_cell_names_only_the_row() -> Result<(), String> {
-    check_eq(Selection::Row { row: 2, col: None }.describe(), ", row 2 selected".to_owned())
+    check_eq(describe(Selection::Row { row: 2, col: None }), ", row 2 selected".to_owned())
 }
 
 #[test]
 fn describe_of_a_row_with_a_cell_names_both() -> Result<(), String> {
     check_eq(
-        Selection::Row { row: 2, col: Some(1) }.describe(),
+        describe(Selection::Row { row: 2, col: Some(1) }),
         ", row 2 selected, column 1 focused".to_owned(),
     )
 }
@@ -595,7 +603,7 @@ fn describe_of_a_row_with_a_cell_names_both() -> Result<(), String> {
 #[test]
 fn describe_of_a_column_with_no_cell_names_only_the_column() -> Result<(), String> {
     check_eq(
-        Selection::Column { col: 2, row: None }.describe(),
+        describe(Selection::Column { col: 2, row: None }),
         ", column 2 selected".to_owned(),
     )
 }
@@ -603,9 +611,18 @@ fn describe_of_a_column_with_no_cell_names_only_the_column() -> Result<(), Strin
 #[test]
 fn describe_of_a_column_with_a_cell_names_both() -> Result<(), String> {
     check_eq(
-        Selection::Column { col: 2, row: Some(1) }.describe(),
+        describe(Selection::Column { col: 2, row: Some(1) }),
         ", column 2 selected, row 1 focused".to_owned(),
     )
+}
+
+#[test]
+fn describe_into_appends_rather_than_replacing_existing_content() -> Result<(), String> {
+    // `Scene::set_selection` relies on this: it truncates its reused buffer back to the node's own base label,
+    // then calls `describe_into` to append onto whatever remains — never to replace the whole buffer.
+    let mut out = String::from("base label");
+    Selection::Cell(3).describe_into(&mut out);
+    check_eq(out, "base label, cell 3 selected".to_owned())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

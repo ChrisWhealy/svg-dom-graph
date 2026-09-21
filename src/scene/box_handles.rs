@@ -1,5 +1,5 @@
 use crate::{
-    model::{edge::EdgeId, node::NodeId},
+    model::{content::Selection, edge::EdgeId, node::NodeId},
     scene::node::EdgeAnchors,
 };
 use svg_dom::SvgNode;
@@ -50,20 +50,37 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_selection` is the only reader — nothing else needs to reach an individual cell again once it is
     /// drawn.
     pub(crate) cell_rects: Vec<SvgNode>,
-    /// Every entry in `cell_rects`' own stroke width, as drawn — `1.5` for a single-value node's own outer box,
-    /// `1.0` for a multi-value grid's inner cells or an operator's own result row. Unused (`0.0`) for a plain
+    /// Every entry in `cell_rects`' own stroke width, as drawn — `"1.5"` for a single-value node's own outer box,
+    /// `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain
     /// label node, which has no `cell_rects` to begin with.
+    ///
+    /// Already formatted, rather than a plain `f64`: every stroke width this crate ever draws is one of a small
+    /// fixed set (this default, or [`Scene::set_selection`](crate::scene::Scene::set_selection)'s own band/focus
+    /// widths), so there is no reason to format one from scratch on a hot path — see `svg-dom`'s own
+    /// `SvgNode::set_stroke_width` doc comment for why that convenience setter allocates a `String` on every call.
     ///
     /// `Scene::set_selection` restores this on every cell it does not band or focus. That way a selection's own
     /// thicker stroke never lingers once a cell is deselected — see that method's own doc comment for why it uses
     /// one.
-    pub(crate) cell_stroke_width: f64,
-    /// The `aria-label` `draw_content_box`/`draw_operator_box` gave this node at creation, before any selection —
-    /// e.g. `"u8 data grid, 7 values"`. Unused (empty) for a plain label node, whose own visible text already
-    /// serves as its accessible name.
+    pub(crate) cell_stroke_width: &'static str,
+    /// The current [`Selection`] `Scene::set_selection` last recoloured this node's own cells to, defaulting to
+    /// [`Selection::None`] at creation.
     ///
-    /// `Scene::set_selection` rebuilds the node's own live `aria-label` from this plus
-    /// [`Selection::describe`](crate::scene::Selection::describe) on every call, so the current selection is
-    /// exposed as text alongside its own colour, not only through it.
-    pub(crate) base_aria_label: String,
+    /// `Scene::set_selection` compares its own new `Selection` against this before touching anything: an identical
+    /// selection is an immediate no-op, and even a genuinely different one only rewrites whichever cells actually
+    /// changed category (focused/banded/default), not all `N` of them unconditionally.
+    pub(crate) selection: Selection,
+    /// This node's own live `aria-label` text, reused in place rather than rebuilt from scratch on every
+    /// [`Scene::set_selection`](crate::scene::Scene::set_selection) call.
+    ///
+    /// Starts off as the node's base description alone; for instance `"u8 data grid, 7 values"`, with no selection
+    /// appended. Empty for a plain label node, whose own visible text already serves as its accessible name.
+    ///
+    /// `Scene::set_selection` truncates this back to [`base_label_len`](Self::base_label_len), then appends the new
+    /// selection's own [`Selection::describe_into`](crate::scene::Selection::describe_into) onto what remains —
+    /// after the first call grows its capacity, a later selection change needs no further allocation.
+    pub(crate) aria_label: String,
+    /// `aria_label`'s own length at creation, before any selection was ever appended — the point
+    /// `Scene::set_selection` truncates back to before appending a new selection's own description.
+    pub(crate) base_label_len: usize,
 }
