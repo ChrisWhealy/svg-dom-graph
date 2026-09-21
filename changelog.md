@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - `move_node` bails out early if `new_origin == old_origin` (`d84ff7e`)
 - Coalesce pointer mover events down to `requestAnimationFrame` frame rate (`4b22bc3`)
+- Move Demo Scope documentation to its own `.md` file (``)
 
 ## Fixed
 
@@ -23,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove the redundant per-drag-event node-size lookup (`c5d074c`)
 - Remove unnecessary floating-point calculations from `elbow_path_into` (`e900283`)
 - Remove unnecessary heap allocations during hex/binary value formatting in `model::content::format_value()` (`f1a1de5`)
-- Remove synchronous text measurement per data node cell construction (``)
+- Remove synchronous text measurement per data node cell construction (`990f34e`)
 
 # [Released]
 
