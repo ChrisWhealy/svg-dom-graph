@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove `Vec<String>`/`Vec<SvgNode>` from streaming data-node construction (`878da38`)
 - Ensure `set_selection` visits each affected index exactly once (`e6f8cab`)
 - Compute anchor point from a `Node`'s already known side and crossing coordinate (`27ca2ed`)
-- `RenderGuard` uses inline fixed-size storage, not heap allocation (``)
+- `RenderGuard` uses inline fixed-size storage, not heap allocation (`ea301b7`)
 
 ## Fixed
 
@@ -39,7 +39,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Fix stale doc comment in `Model::node::Node` (`6ebbedc`)
 - Ensure data node formatting completes in a single pass (`e22532d`)
 - Avoid unnecessary byte-order processing in `format_value`/`format_value_into` (`bed3522`)
-- Remove small heap-allocated `Vec` in `RenderGuard` (``)
+- Avoid standalone `String` allocation for operator result text (``)
 
 # [Released]
 

@@ -103,13 +103,15 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// This content's own single value, formatted — `None` if it holds no values at all.
+    /// Formats this content's own single value into caller-owned `out` — `false`, leaving `out` untouched, if it
+    /// holds no values at all.
     ///
     /// For `draw_operator_box`'s own already-validated single-value result — an operator always produces exactly
     /// one value, never a grid, so this never needs [`for_each_cell_string`](Self::for_each_cell_string)'s
-    /// per-value iteration just to reach the one string it would ever visit.
-    pub(crate) fn single_cell_string(&self) -> Option<String> {
-        self.values.single_cell_string(self.format, self.byte_order)
+    /// per-value iteration just to reach the one string it would ever visit, nor allocate a fresh `String`:
+    /// `draw_operator_box` passes its own construction-scratch buffer as `out`.
+    pub(crate) fn single_cell_string_into(&self, out: &mut String) -> bool {
+        self.values.single_cell_string_into(self.format, self.byte_order, out)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

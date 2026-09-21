@@ -494,7 +494,10 @@ const OPERATOR_LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDIN
 /// A [`RenderGuard`] covers this function's own DOM construction, for the same reason as [`draw_content_box`].
 ///
 /// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
-/// `x`/`y`/`transform` formatting, the same reasoning [`draw_box`]'s own `scratch` parameter follows.
+/// `x`/`y`/`transform` formatting, the same reasoning [`draw_box`]'s own `scratch` parameter follows. It also
+/// holds `result`'s own formatted value text for the brief window between [`DataNodeContent::single_cell_string_into`]
+/// writing it and [`SvgRoot::text`] copying it into a new `<text>` element — never a separate, one-off `String`
+/// allocated just for that.
 fn draw_operator_box(
     svg: &SvgRoot,
     scratch: &mut String,
@@ -518,10 +521,12 @@ fn draw_operator_box(
     label_el.set_fill("#1b1b1b")?;
     let label_width = label_el.bounding_box()?.size.width;
 
-    let value_text = result
-        .single_cell_string()
-        .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_operator_box: expected exactly one value".into())))?;
-    let value_el = svg.text(origin, &value_text)?;
+    if !result.single_cell_string_into(scratch) {
+        return Err(Error::Svg(svg_dom::Error::Dom(
+            "draw_operator_box: expected exactly one value".into(),
+        )));
+    }
+    let value_el = svg.text(origin, scratch.as_str())?;
     guard.track(value_el.clone());
     value_el.set_text_anchor(TextAnchor::Middle)?;
     value_el.set_dominant_baseline(DominantBaseline::Middle)?;

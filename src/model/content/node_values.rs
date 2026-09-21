@@ -223,49 +223,47 @@ impl NodeValues {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The first value, formatted per `format` and `byte_order` — `None` if this holds no values at all.
+    /// Formats the first value, per `format` and `byte_order`, into caller-owned `out` — `false`, leaving `out`
+    /// untouched, if this holds no values at all.
     ///
     /// For a caller that already knows it holds exactly one value — an operator's own already-validated result,
-    /// [`super::DataNodeContent::single_cell_string`]'s one caller — so it never needs
+    /// [`super::DataNodeContent::single_cell_string_into`]'s one caller — so it never needs
     /// [`for_each_cell_string`](Self::for_each_cell_string)'s per-value iteration just to reach the one string it
-    /// would ever visit.
-    pub(super) fn single_cell_string(&self, format: DataFormat, byte_order: ByteOrder) -> Option<String> {
+    /// would ever visit, nor allocate a fresh `String` to hold it: `draw_operator_box` already has its own
+    /// construction-scratch buffer in hand, and reuses it for this too.
+    pub(super) fn single_cell_string_into(&self, format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
         match self {
-            Self::U8(v) => v.first().map(|&x| {
-                let mut out = String::new();
+            Self::U8(v) => v.first().is_some_and(|&x| {
                 match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
                 }
-                out
+                true
             }),
-            Self::U16(v) => v.first().map(|&x| {
-                let mut out = String::new();
+            Self::U16(v) => v.first().is_some_and(|&x| {
                 match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
                 }
-                out
+                true
             }),
-            Self::U32(v) => v.first().map(|&x| {
-                let mut out = String::new();
+            Self::U32(v) => v.first().is_some_and(|&x| {
                 match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
                 }
-                out
+                true
             }),
-            Self::U64(v) => v.first().map(|&x| {
-                let mut out = String::new();
+            Self::U64(v) => v.first().is_some_and(|&x| {
                 match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
                 }
-                out
+                true
             }),
         }
     }
