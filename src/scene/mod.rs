@@ -210,12 +210,27 @@ impl SceneInner {
     /// [`SvgNode::set_transform_fmt`] — not [`SvgNode::set_translate`], whose fixed one-decimal-place precision would
     /// quantise the rendered position away from `new_origin`, by up to 0.05 user-space units.
     ///
+    /// If `new_origin` exactly matches `id`'s current origin, then we can bail out early and ourselves from redrawing
+    /// an unchanged incident-edge.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     fn move_node(&mut self, id: NodeId, new_origin: Point, scratch: &mut String) -> Result<(), Error> {
-        let size = self.node_rect(id)?.size;
-        self.graph.set_node_rect(id, Rect { origin: new_origin, size });
+        let rect = self.node_rect(id)?;
+
+        // Can we bail-out early?
+        if rect.origin == new_origin {
+            return Ok(());
+        }
+
+        self.graph.set_node_rect(
+            id,
+            Rect {
+                origin: new_origin,
+                size: rect.size,
+            },
+        );
 
         let handles = self.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
         handles
@@ -414,3 +429,7 @@ impl Scene {
         })
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;
