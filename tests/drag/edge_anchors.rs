@@ -291,3 +291,36 @@ fn set_edge_anchors_round_trips_a_straight_connector_through_none_and_back() -> 
     check_close(restored_end_x, 74.0)?;
     check_close(restored_end_y, 100.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_edge_anchors`'s own no-op fast path: a configuration identical to the node's current one must redraw no
+/// incident connector at all, not merely leave its rendered path unchanged.
+///
+/// Proved here by planting a sentinel `d` directly on the connector's `<path>` via the raw DOM, bypassing `Scene`
+/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path — its surviving an
+/// unchanged `set_edge_anchors` call is the only way to observe, from here, that no redraw happened.
+#[wasm_bindgen_test]
+fn set_edge_anchors_with_an_unchanged_configuration_redraws_nothing() -> Result<(), String> {
+    let svg = make_svg("edge-anchors-no-op", Size::new(300.0, 300.0), Size::new(300.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3)));
+    let a = scene
+        .add_node_with(Point::new(0.0, 0.0), Size::new(40.0, 20.0), "A", options)
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(40.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+
+    let connector = the_connector("edge-anchors-no-op")?;
+    const SENTINEL: &str = "M 0 0 L 0 0";
+    connector.set_attribute("d", SENTINEL).map_err(|e| format!("{e:?}"))?;
+
+    // Same configuration `a` was already drawn with: a true no-op must leave the sentinel in place.
+    scene.set_edge_anchors(a, Some(EdgeAnchors(3))).map_err(|e| e.to_string())?;
+
+    check(
+        path_d(&connector)?.as_str() == SENTINEL,
+        "an unchanged EdgeAnchors configuration redrew the connector anyway",
+    )
+}

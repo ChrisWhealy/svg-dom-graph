@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Replace `NodeId` internal `HashMap`s with indexed storage (`ca12780`)
 - Optimize binary operator connector crossing calculation (`c51c8d7`)
-- Remove avoidable `String` allocation in `set_selection` (``)
+- Remove avoidable `String` allocation in `set_selection` (`4a389ae`)
+- Remove avoidable `Vec` allocation in `set_edge_anchors` (``)
 
 # [Released]
 

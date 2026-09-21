@@ -645,6 +645,9 @@ impl Scene {
     /// This is the only way to change a node's anchor configuration after [`Scene::add_node`] or
     /// [`Scene::add_node_with`] first draws it — for example, from a live slider control.
     ///
+    /// An `edge_anchors` identical to `id`'s own current configuration is an immediate no-op: no incident edge is
+    /// redrawn. [`EdgeAnchors`] is `Copy` and `Eq`, so this comparison is free next to the DOM writes it can skip.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. Checked before touching the
@@ -660,12 +663,15 @@ impl Scene {
         validate_edge_anchors(edge_anchors)?;
 
         let mut inner = self.inner.borrow_mut();
-        inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?.edge_anchors = edge_anchors;
+        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        if handles.edge_anchors == edge_anchors {
+            return Ok(());
+        }
+        handles.edge_anchors = edge_anchors;
 
         let mut scratch = String::new();
-        let incident: Vec<_> = inner.graph.incident_edges(id).to_vec();
-        for edge_id in incident {
-            inner.redraw_edge(edge_id, &mut scratch)?;
+        for edge_id in inner.graph.incident_edges(id) {
+            inner.redraw_edge(*edge_id, &mut scratch)?;
         }
         Ok(())
     }
