@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - `move_node` bails out early if `new_origin == old_origin` (`d84ff7e`)
-- Coalesce pointer mover events down to `requestAnimationFrame` frame rate (``)
+- Coalesce pointer mover events down to `requestAnimationFrame` frame rate (`4b22bc3`)
 
 ## Fixed
 
@@ -21,6 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove avoidable `Vec` allocation in `set_edge_anchors` (`751d930`)
 - Remove buffer allocation on each call to `set_edge_anchors` and `set_connector_type` (`1896fb7`)
 - Remove the redundant per-drag-event node-size lookup (`c5d074c`)
+- Remove unnecessary floating-point calculations from `elbow_path_into` (``)
 
 # [Released]
 

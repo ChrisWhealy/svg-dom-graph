@@ -849,3 +849,17 @@ fn elbow_path_into_shrinks_a_radius_that_would_overshoot_a_short_segment() -> Re
     elbow_path_into(&vertices, 10.0, &mut d);
     check_eq(d, "M 0 0 L 2 0 A 2 2 0 0 1 4 2 L 4 4".to_owned())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `elbow_path_into` no longer computes a real `hypot`/normalised direction at a rounded corner — it trusts every
+/// segment to already be purely horizontal or purely vertical, per its own doc comment, and only asserts that in
+/// debug builds. This proves the assertion actually guards the assumption, rather than merely documenting it: a
+/// diagonal segment (neither `dx` nor `dy` zero) between two of the three vertices here must panic, not silently
+/// compute a wrong corner.
+#[test]
+#[should_panic(expected = "not axis-aligned")]
+fn elbow_path_into_panics_in_debug_on_a_non_axis_aligned_segment() {
+    let vertices = [Point::new(0.0, 0.0), Point::new(10.0, 10.0), Point::new(20.0, 0.0)];
+    let mut d = String::new();
+    elbow_path_into(&vertices, 2.0, &mut d);
+}

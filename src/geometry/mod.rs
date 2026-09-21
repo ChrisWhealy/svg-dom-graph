@@ -486,14 +486,36 @@ pub(crate) fn elbow_path_into(vertices: &[Point], radius: f64, out: &mut String)
         let corner = vertices[i];
         let next = vertices[i + 1];
 
-        let len_in = (corner.x - prev.x).hypot(corner.y - prev.y);
-        let len_out = (next.x - corner.x).hypot(next.y - corner.y);
-        let r = radius.min(len_in / 2.0).min(len_out / 2.0);
+        let dx_in = corner.x - prev.x;
+        let dy_in = corner.y - prev.y;
+        let dx_out = next.x - corner.x;
+        let dy_out = next.y - corner.y;
+        // Every segment `elbow_route`/`binary_operator_elbow_route` ever produces is purely horizontal or purely
+        // vertical — see this function's own doc comment. A future route builder that violated that would silently
+        // corrupt the direction/length math below, which no longer computes a real `hypot` at all — so this stays
+        // asserted, not merely assumed.
+        debug_assert!(
+            dx_in == 0.0 || dy_in == 0.0,
+            "elbow_path_into: incoming segment at vertex {i} is not axis-aligned: ({dx_in}, {dy_in})"
+        );
+        debug_assert!(
+            dx_out == 0.0 || dy_out == 0.0,
+            "elbow_path_into: outgoing segment at vertex {i} is not axis-aligned: ({dx_out}, {dy_out})"
+        );
 
-        let in_x = (corner.x - prev.x) / len_in;
-        let in_y = (corner.y - prev.y) / len_in;
-        let out_x = (next.x - corner.x) / len_out;
-        let out_y = (next.y - corner.y) / len_out;
+        // Each length is just the one non-zero delta's own magnitude, and each direction is one of (±1, 0)/(0, ±1)
+        // — no `hypot` call or vector normalisation needed for an axis-aligned segment.
+        let (in_x, in_y, len_in) = if dx_in == 0.0 {
+            (0.0, dy_in.signum(), dy_in.abs())
+        } else {
+            (dx_in.signum(), 0.0, dx_in.abs())
+        };
+        let (out_x, out_y, len_out) = if dx_out == 0.0 {
+            (0.0, dy_out.signum(), dy_out.abs())
+        } else {
+            (dx_out.signum(), 0.0, dx_out.abs())
+        };
+        let r = radius.min(len_in / 2.0).min(len_out / 2.0);
 
         let before = Point::new(corner.x - in_x * r, corner.y - in_y * r);
         let after = Point::new(corner.x + out_x * r, corner.y + out_y * r);
