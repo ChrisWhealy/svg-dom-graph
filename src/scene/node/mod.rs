@@ -240,11 +240,13 @@ fn cell_style(
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
 /// alongside the box's own final `Rect` — computed here, not supplied by the caller.
 ///
-/// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]); its real, rendered width is read
+/// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]). Under a monospace font,
+/// character count alone determines a cell's own rendered width. Every string [`DataNodeContent::cells`] produces
+/// is ASCII, so byte length already is character count. So only the cell with the most characters is ever read
 /// back via [`SvgNode::bounding_box`] — the same "measure, don't estimate" approach [`shrink_label_to_fit`] already
-/// uses for plain labels, and for the same reason: it stays correct for whatever font the browser actually substitutes.
-/// Every cell shares one uniform size, the widest value's own measured width plus [`CELL_PADDING`], so the grid's rows
-/// and columns actually line up even when [`DataFormat::Decimal`] values differ in digit count.
+/// uses for plain labels. That keeps it correct for whatever font the browser actually substitutes. It is now
+/// applied once per node, not once per cell. Every cell then shares that one measured width plus [`CELL_PADDING`],
+/// so the grid's rows and columns still line up even when [`DataFormat::Decimal`] values differ in digit count.
 ///
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
@@ -264,7 +266,7 @@ fn cell_style(
 /// cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction. This matters more here than in [`draw_box`]. A grid
-/// can measure many cells before any of them is appended into `group`. That widens the window in which a `?` failing
+/// can create many cells before any of them is appended into `group`. That widens the window in which a `?` failing
 /// partway through would otherwise leave stray elements behind.
 fn draw_content_box(
     svg: &SvgRoot,
@@ -278,12 +280,23 @@ fn draw_content_box(
     let type_name = content.type_name();
     let origin = Point::origin();
 
+    let cell_texts = content.cells();
+    let (grid_rows, grid_cols) = content.shape();
+
+    // Every cell shares one monospace font (see `GRID_FONT_FAMILY`'s own doc comment), so the cell with the most
+    // characters is always the one that renders the widest. Every string `cells()` produces ASCII characters, so byte
+    // length is same as the character count. So only the longest cell's own text ever needs a real `bounding_box()`
+    // readback; every other cell can be created and styled without needing to measure its length individually.
+    let widest_index = (0..cell_texts.len())
+        .max_by_key(|&i| cell_texts[i].len())
+        .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_content_box: content has no values".into())))?;
+
     // Render every value's text first, at a placeholder position — bounding_box() reports each element's own
     // local geometry (font, content, styling), unaffected by where it currently sits, so the true final position
     // is not needed yet.
-    let mut texts = Vec::new();
+    let mut texts = Vec::with_capacity(cell_texts.len());
     let mut max_width: f64 = 0.0;
-    for cell_text in &content.cells() {
+    for (i, cell_text) in cell_texts.iter().enumerate() {
         let text = svg.text(origin, cell_text)?;
         guard.track(text.clone());
         text.set_text_anchor(TextAnchor::Middle)?;
@@ -291,7 +304,9 @@ fn draw_content_box(
         text.set_font_family(GRID_FONT_FAMILY)?;
         text.set_font_size(GRID_FONT_SIZE)?;
         text.set_fill("#1b1b1b")?;
-        max_width = max_width.max(text.bounding_box()?.size.width);
+        if i == widest_index {
+            max_width = text.bounding_box()?.size.width;
+        }
         texts.push(text);
     }
 
@@ -301,7 +316,6 @@ fn draw_content_box(
     let size = if single_value {
         cell_size
     } else {
-        let (grid_rows, grid_cols) = content.shape();
         #[allow(clippy::cast_precision_loss)]
         Size::new(
             grid_cols as f64 * cell_size.width + (grid_cols as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
@@ -328,7 +342,6 @@ fn draw_content_box(
         group.append(&text)?;
         vec![rect_el.clone()]
     } else {
-        let (_, grid_cols) = content.shape();
         let mut cell_rects = Vec::with_capacity(texts.len());
         for (i, text) in texts.into_iter().enumerate() {
             #[allow(clippy::cast_precision_loss)]

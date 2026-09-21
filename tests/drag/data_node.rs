@@ -158,6 +158,49 @@ fn add_data_node_with_a_u64_binary_value_renders_an_extremely_wide_cell() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `draw_content_box` measures only the widest cell's own rendered text, by character count, to size every cell
+/// alike — see that function's own doc comment. Every `Hexadecimal`/`Binary` value of one integer type already
+/// renders the same character count regardless of magnitude, so `Decimal` values of genuinely different digit
+/// counts are the one scenario that actually exercises "pick the *right* cell to measure," not merely "measuring
+/// is skipped for the rest."
+#[wasm_bindgen_test]
+fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_uniform_cell_width() -> Result<(), String> {
+    let svg = make_svg("data-node-decimal-widths", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U32(vec![1, 4_294_967_295]), DataFormat::Decimal);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-decimal-widths", 0)?;
+    let texts = text_children(&group)?;
+    check(texts.len() == 2, &format!("expected 2 texts, found {}", texts.len()))?;
+    check(
+        texts[0].text_content().as_deref() == Some("1"),
+        &format!("unexpected first value text: {:?}", texts[0].text_content()),
+    )?;
+    check(
+        texts[1].text_content().as_deref() == Some("4294967295"),
+        &format!("unexpected second value text: {:?}", texts[1].text_content()),
+    )?;
+
+    // Both cells share one uniform width — the one-digit value's own cell is not narrower than the ten-digit
+    // value's.
+    let rects = rect_children(&group)?;
+    let narrow_width = attr_f64(&rects[1], "width")?;
+    let wide_width = attr_f64(&rects[2], "width")?;
+    check_close(narrow_width, wide_width)?;
+
+    // That shared width is wide enough for the ten-digit value, not just the one-digit value — proving the
+    // longer string, not the shorter one, was the one actually measured.
+    let height = attr_f64(&rects[1], "height")?;
+    check(
+        wide_width > height * 2.0,
+        &format!("expected a cell wide enough for a 10-digit value (width={wide_width}, height={height})"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Five values under [`GridLayout::Automatic`] render a `3 x 2` grid (see
 /// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`) with the last row
 /// only half full — a non-complete final row, rather than the exact multiple of columns every other rendering
