@@ -106,10 +106,18 @@ impl DataNodeContent {
     /// This content's own single value, formatted — `None` if it holds no values at all.
     ///
     /// For `draw_operator_box`'s own already-validated single-value result — an operator always produces exactly
-    /// one value, never a grid, so this never needs [`cells`](Self::cells)'s own `Vec<String>` just to reach the
-    /// one string it would ever hold.
+    /// one value, never a grid, so this never needs [`for_each_cell_string`](Self::for_each_cell_string)'s
+    /// per-value iteration just to reach the one string it would ever visit.
     pub(crate) fn single_cell_string(&self) -> Option<String> {
         self.values.single_cell_string(self.format, self.byte_order)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Formats into `out` whichever one value is guaranteed to render this content's own widest cell, under one
+    /// monospace font, without formatting every value first — see [`NodeValues::widest_cell_string`]'s own doc
+    /// comment for how that value is chosen. Leaves `out` empty if this content holds no values at all.
+    pub(crate) fn widest_cell_string(&self, out: &mut String) {
+        self.values.widest_cell_string(self.format, self.byte_order, out);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

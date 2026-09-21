@@ -258,18 +258,20 @@ fn cell_style(
 /// cell then shares that one measured width plus [`CELL_PADDING`], so the grid's rows and columns still line up
 /// even when [`DataFormat::Decimal`] values differ in digit count.
 ///
-/// Formats and places each cell in two passes over [`DataNodeContent::for_each_cell_string`], streaming — never
-/// collecting a `Vec<String>` of every cell's own text, or a `Vec<SvgNode>` of every `<text>` element, regardless
-/// of how many values `content` holds:
+/// Formats and places each cell streaming — never collecting a `Vec<String>` of every cell's own text, or a
+/// `Vec<SvgNode>` of every `<text>` element, regardless of how many values `content` holds, and never formatting
+/// any value twice:
 ///
-/// 1. Format every value in turn, reusing one buffer, keeping only the widest formatted string seen so far (itself
-///    overwritten in place, not reallocated, whenever a new max is found). Which specific value happens to be
-///    widest is otherwise irrelevant, since any string of that same length would measure identically under a
-///    monospace font — so a throwaway element built from it, once `cell_size` is known, is all `bounding_box()`
-///    ever needs.
-/// 2. Format every value again — the same reused buffer, now cleared and rewritten per cell — and this time create
-///    each cell's own `<text>` (and, for a multi-value grid, its own `<rect>`) directly at its final position,
-///    appending each immediately rather than deferring every cell's own placement to a later pass.
+/// 1. [`DataNodeContent::widest_cell_string`] identifies and formats the one value guaranteed to need the widest
+///    cell, without formatting every value first — see that method's own doc comment for how. A throwaway element
+///    built from it, once `cell_size` is known, is all `bounding_box()` ever needs; which specific value that was
+///    is otherwise irrelevant, since any string of the same length would measure identically under a monospace
+///    font.
+/// 2. [`DataNodeContent::for_each_cell_string`] then formats every value once, reusing one buffer, and this time
+///    creates each cell's own `<text>` (and, for a multi-value grid, its own `<rect>`) directly at its final
+///    position, appending each immediately rather than deferring every cell's own placement to a later pass. The
+///    one value pass 1 already formatted is formatted again here, along with every other — a single value's worth
+///    of repeated work, not repeated for the whole node.
 ///
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
@@ -321,16 +323,11 @@ fn draw_content_box(
     let (grid_rows, grid_cols) = content.shape();
     let single_value = content.is_single_value();
 
-    // Pass 1 — see this function's own doc comment. `text_scratch` is reused for every value's own formatted text;
-    // `widest` is overwritten in place whenever a new max is found, not reallocated per cell.
-    let mut text_scratch = String::new();
+    // Finds and formats the one value guaranteed to need the widest rendered cell — see
+    // `DataNodeContent::widest_cell_string`'s own doc comment for how, without formatting every value just to
+    // compare the resulting text lengths.
     let mut widest = String::new();
-    content.for_each_cell_string(&mut text_scratch, |_, cell_text| {
-        if cell_text.len() > widest.len() {
-            widest.clear();
-            widest.push_str(cell_text);
-        }
-    });
+    content.widest_cell_string(&mut widest);
 
     // `widest`'s own real content is measured once, via a throwaway element that never becomes one of `group`'s
     // own children: tracked for rollback like any other fallible-construction element, then removed the moment it
@@ -364,7 +361,9 @@ fn draw_content_box(
     group.append(&rect_el)?;
     guard.release();
 
-    // Pass 2 — see this function's own doc comment.
+    // Streamed rendering pass — see this function's own doc comment. `text_scratch` is reused for every cell's own
+    // formatted text.
+    let mut text_scratch = String::new();
     let mut cell_rects = Vec::with_capacity(if single_value { 1 } else { len });
     if single_value {
         cell_rects.push(rect_el.clone());

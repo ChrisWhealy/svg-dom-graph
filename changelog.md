@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Use proportional computation in `set_selection` not just proportional DOM writes (`d6a8dc0`)
 - Remove `Vec<String>`/`Vec<SvgNode>` from streaming data-node construction (`878da38`)
 - Ensure `set_selection` visits each affected index exactly once (`e6f8cab`)
-- Compute anchor point from a `Node`'s already known side and crossing coordinate (``)
+- Compute anchor point from a `Node`'s already known side and crossing coordinate (`27ca2ed`)
 
 ## Fixed
 
@@ -36,6 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix binary operator pair-redraw routing (`9bd8135`)
 - Optimize remaining construction-path allocations (`019ef86`)
 - Doc only: Fix stale doc comment in `Model::node::Node` (`6ebbedc`)
+- Ensure data node formatting completes in a single pass (``)
 
 # [Released]
 

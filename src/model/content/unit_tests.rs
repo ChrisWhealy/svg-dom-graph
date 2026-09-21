@@ -299,6 +299,47 @@ fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> 
     check_eq(content.shape(), (3, 3))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// DataNodeContent::widest_cell_string — the one value guaranteed to render the widest cell, found and formatted
+// without formatting every value first
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn widest_cell_string_picks_the_largest_value_under_decimal() -> Result<(), String> {
+    // Digit count grows with magnitude for an unsigned decimal value, so the numerically largest value — not
+    // whichever happens to come first — is always the one with the most digits to render.
+    let content = DataNodeContent::new(NodeValues::U32(vec![1, 4_294_967_295, 42]), DataFormat::Decimal);
+    let mut out = String::new();
+    content.widest_cell_string(&mut out);
+    check_eq(out, "4294967295".to_owned())
+}
+
+#[test]
+fn widest_cell_string_uses_any_value_under_hexadecimal_since_every_cell_shares_one_width() -> Result<(), String> {
+    // Every value under one integer width renders the same number of hexadecimal characters regardless of its own
+    // magnitude, so there is no widest value to search for — the first is exactly as representative as any other.
+    let content = DataNodeContent::new(NodeValues::U16(vec![0x0001, 0xFFFF]), DataFormat::Hexadecimal);
+    let mut out = String::new();
+    content.widest_cell_string(&mut out);
+    check_eq(out, "00 01".to_owned())
+}
+
+#[test]
+fn widest_cell_string_uses_any_value_under_binary_since_every_cell_shares_one_width() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![0x00, 0xFF]), DataFormat::Binary);
+    let mut out = String::new();
+    content.widest_cell_string(&mut out);
+    check_eq(out, "0000 0000".to_owned())
+}
+
+#[test]
+fn widest_cell_string_leaves_out_empty_for_content_with_no_values() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(Vec::new()), DataFormat::Decimal);
+    let mut out = String::from("stale");
+    content.widest_cell_string(&mut out);
+    check_eq(out, String::new())
+}
+
 #[test]
 fn new_defaults_to_automatic_layout() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6, 7, 8]), DataFormat::Decimal);
