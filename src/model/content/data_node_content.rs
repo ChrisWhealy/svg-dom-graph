@@ -97,6 +97,16 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// This content's own single value, formatted — `None` if it holds no values at all.
+    ///
+    /// For `draw_operator_box`'s own already-validated single-value result — an operator always produces exactly
+    /// one value, never a grid, so this never needs [`cells`](Self::cells)'s own `Vec<String>` just to reach the
+    /// one string it would ever hold.
+    pub(crate) fn single_cell_string(&self) -> Option<String> {
+        self.values.single_cell_string(self.format, self.byte_order)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
     pub(crate) fn type_color(&self) -> &'static str {
         self.values.type_color()

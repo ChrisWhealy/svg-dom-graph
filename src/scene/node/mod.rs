@@ -460,9 +460,7 @@ fn draw_operator_box(
     let label_width = label_el.bounding_box()?.size.width;
 
     let value_text = result
-        .cells()
-        .into_iter()
-        .next()
+        .single_cell_string()
         .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_operator_box: expected exactly one value".into())))?;
     let value_el = svg.text(origin, &value_text)?;
     guard.track(value_el.clone());

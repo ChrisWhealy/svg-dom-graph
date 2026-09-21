@@ -76,6 +76,29 @@ impl NodeValues {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The first value, formatted per `format` and `byte_order` — `None` if this holds no values at all.
+    ///
+    /// For a caller that already knows it holds exactly one value — an operator's own already-validated result,
+    /// [`super::DataNodeContent::single_cell_string`]'s one caller — so it never needs the `Vec<String>`
+    /// [`cell_strings`](Self::cell_strings) builds to arrange many values into a grid, just the one string.
+    pub(super) fn single_cell_string(&self, format: DataFormat, byte_order: ByteOrder) -> Option<String> {
+        match self {
+            Self::U8(v) => v
+                .first()
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
+            Self::U16(v) => v
+                .first()
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
+            Self::U32(v) => v
+                .first()
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
+            Self::U64(v) => v
+                .first()
+                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A gentle pastel background colour identifies this content's own Rust type. It is deliberately soft, not a harsh
     /// primary. So a data node's colouring reads as a quiet label, not an alarm.
     ///
