@@ -23,7 +23,7 @@ pub use node::{EdgeAnchors, NodeOptions};
 
 use crate::{
     error::Error,
-    geometry::{apply_matrix, binary_operator_anchor, elbow_path_into, nearest_clear_centre, rects_overlap},
+    geometry::{apply_matrix, binary_operator_anchors, elbow_path_into, nearest_clear_centre, rects_overlap},
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
@@ -227,24 +227,27 @@ impl SceneInner {
         let (input_a, input_b) = self.node_handle(to)?.binary_operator_inputs?;
         // `add_binary_operator_node_with` rejects `input_a == input_b`, so this is an unambiguous, stable identity
         // — not just "which `NodeId`", but "which of the two operand *slots* this edge is" — see
-        // `binary_operator_anchor`'s own doc comment for why that stability matters.
-        let (sibling, mine_is_first) = if from == input_a {
-            (input_b, true)
+        // `binary_operator_anchors`'s own doc comment for why that stability matters.
+        let from_is_a = if from == input_a {
+            true
         } else if from == input_b {
-            (input_a, false)
+            false
         } else {
             return None;
         };
 
         let to_rect = self.node_rect(to).ok()?;
         let to_fixing_points = self.node_edge_anchors(to).ok()?.map(|EdgeAnchors(n)| n);
-        let mine_centre = box_centre(self.node_rect(from).ok()?);
-        let sibling_centre = box_centre(self.node_rect(sibling).ok()?);
+        let a_centre = box_centre(self.node_rect(input_a).ok()?);
+        let b_centre = box_centre(self.node_rect(input_b).ok()?);
 
-        let (anchor, side) =
-            binary_operator_anchor(to_rect, mine_centre, sibling_centre, mine_is_first, to_fixing_points);
-        let (sibling_end, _) =
-            binary_operator_anchor(to_rect, sibling_centre, mine_centre, !mine_is_first, to_fixing_points);
+        let [(anchor_a, side_a), (anchor_b, side_b)] =
+            binary_operator_anchors(to_rect, a_centre, b_centre, to_fixing_points);
+        let (anchor, side, sibling_end) = if from_is_a {
+            (anchor_a, side_a, anchor_b)
+        } else {
+            (anchor_b, side_b, anchor_a)
+        };
 
         Some(connector::BinaryOperatorRoute { anchor, side, sibling_end })
     }
@@ -260,24 +263,25 @@ impl SceneInner {
     /// would keep showing wherever it last computed its own anchor, stale, until something else happened to move
     /// it too. `move_node` calls this for each of `mover`'s own edges, so that sibling edge gets redrawn in the
     /// same pass instead.
+    ///
+    /// Reads `binary_operator_input_edges` — the pair `Scene::add_binary_operator_node_with` cached once, when both
+    /// edges were first wired — rather than searching `sibling`'s own incident edges for the one that also points
+    /// at `edge.to`.
     fn binary_operator_sibling_edge(&self, mover: NodeId, edge_id: EdgeId) -> Option<EdgeId> {
         let edge = self.graph.edge(edge_id)?;
         if edge.from != mover {
             return None;
         }
-        let (input_a, input_b) = self.node_handle(edge.to)?.binary_operator_inputs?;
-        let sibling = if mover == input_a {
-            input_b
+        let handles = self.node_handle(edge.to)?;
+        let (input_a, input_b) = handles.binary_operator_inputs?;
+        let (edge_a, edge_b) = handles.binary_operator_input_edges?;
+        if mover == input_a {
+            Some(edge_b)
         } else if mover == input_b {
-            input_a
+            Some(edge_a)
         } else {
-            return None;
-        };
-        self.graph
-            .incident_edges(sibling)
-            .iter()
-            .find(|&&sibling_edge_id| self.graph.edge(sibling_edge_id).is_some_and(|e| e.to == edge.to))
-            .copied()
+            None
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

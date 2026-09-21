@@ -139,6 +139,7 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
         draggable: false,
         edge_anchors,
         binary_operator_inputs: None,
+        binary_operator_input_edges: None,
         cell_rects: Vec::new(),
         cell_stroke_width: 0.0,
         base_aria_label: String::new(),
@@ -363,6 +364,7 @@ fn draw_content_box(
             draggable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            binary_operator_input_edges: None,
             cell_rects,
             cell_stroke_width: if single_value { 1.5 } else { 1.0 },
             base_aria_label: node_label,
@@ -471,6 +473,7 @@ fn draw_operator_box(
             draggable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            binary_operator_input_edges: None,
             cell_rects: vec![value_row_el],
             cell_stroke_width: 1.0,
             base_aria_label: node_label,
@@ -881,8 +884,20 @@ impl Scene {
         };
 
         let mut guard = OperatorConstructionGuard::new(self.clone(), id);
-        guard.track_edge(self.add_edge(inputs.0, id)?);
-        guard.track_edge(self.add_edge(inputs.1, id)?);
+        let edge_a = self.add_edge(inputs.0, id)?;
+        guard.track_edge(edge_a);
+        let edge_b = self.add_edge(inputs.1, id)?;
+        guard.track_edge(edge_b);
+
+        // Both auto-wired edges exist now, so this operator's sibling-edge identity — otherwise unknowable until
+        // this point — can be cached once here. `SceneInner::binary_operator_sibling_edge` reads it on every later
+        // drag, instead of searching either operand's own incident edges for it.
+        self.inner
+            .borrow_mut()
+            .node_handle_mut(id)
+            .ok_or(Error::UnknownNode(id))?
+            .binary_operator_input_edges = Some((edge_a, edge_b));
+
         guard.disarm();
         Ok(id)
     }

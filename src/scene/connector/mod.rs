@@ -60,8 +60,7 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Po
 /// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) is the only place
 /// that builds one.
 pub(crate) struct BinaryOperatorRoute {
-    /// This edge's own already-split anchor point on the operator — see
-    /// [`crate::geometry::binary_operator_anchor`].
+    /// This edge's own already-split anchor point on the operator — see [`crate::geometry::binary_operator_anchors`]
     pub(crate) anchor: Point,
     /// The side of the operator `anchor` sits on.
     pub(crate) side: Side,

@@ -254,7 +254,7 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 /// (an x for a north/south side, a y for an east/west one) the ray actually crosses at.
 ///
 /// Picks the side the same way [`edge_anchor`] does. Returns the crossing coordinate itself, not a point snapped to
-/// any candidate — [`binary_operator_anchor`] needs to compare two crossings before deciding where either one
+/// any candidate — [`binary_operator_anchors`] needs to compare two crossings before deciding where either one
 /// finally lands.
 ///
 /// Returns `rect`'s own centre y and `Side::East` when `towards` is exactly the centre, the same degenerate case
@@ -284,15 +284,16 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One of a binary operator node's own two input anchors on `rect` — the operator node's own rectangle. `mine` and
-/// `sibling` are the two operands' own centres; this returns where the edge from `mine` should land.
+/// Both of a binary operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
+/// together in one call. `first` and `second` are the two operands' own centres, in
+/// [`Scene::add_binary_operator_node_with`](crate::scene::Scene::add_binary_operator_node_with)'s own `inputs` order.
+/// Returns `first`'s own anchor, then `second`'s own anchor, each paired with the side of `rect` it lands on.
 ///
 /// `fixing_points` is `rect`'s own node's [`crate::scene::EdgeAnchors`] configuration, already unwrapped to a plain
-/// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`. Both calls a binary operator's
-/// pair of operands make must pass the same value, since they describe the same node.
+/// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`.
 ///
-/// Whenever `mine` and `sibling` resolve to *different* sides of `rect`, only one connector lands on that side, so
-/// this behaves exactly like an ordinary edge into `rect` would: [`snapped_anchor`] when `fixing_points` is
+/// Whenever `first` and `second` resolve to *different* sides of `rect`, only one connector lands on either side,
+/// so each behaves exactly like an ordinary edge into `rect` would: [`snapped_anchor`] when `fixing_points` is
 /// configured, [`edge_anchor`] — that side's own plain midpoint — otherwise.
 ///
 /// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly
@@ -308,65 +309,61 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// [`crate::scene::EdgeAnchors`]'s own "not reserved" contract.
 ///
 /// This is ordered so the two never cross. Whichever operand's own crossing position sits first along the side
-/// gets the first outer candidate, regardless of which one is `mine` in a given call.
+/// gets the first outer candidate. `first` breaks the tie when the two crossings are *exactly* equal — not just
+/// the same `Point` passed twice, but two distinct operands sitting on the same ray from `rect`'s own centre, where
+/// comparing the crossings alone cannot order them.
 ///
-/// `mine_is_first` breaks the tie when the two crossings are *exactly* equal. This is not just the same `Point`
-/// passed twice, but two distinct operands that happen to sit on the same ray from `rect`'s own centre.
-///
-/// Comparing the crossings alone is ambiguous there: both calls would see their own crossing as "less than or
-/// equal to" the other's. Both would then land on the same candidate.
-///
-/// `mine_is_first` is instead the caller's own stable answer to "which operand is this." The crate's own only
-/// caller passes `true` for whichever of the two it looked up first. So the two calls agree on a single,
-/// consistent winner regardless of geometry.
-///
-/// Called independently once per edge, recomputing both crossings from scratch each time. So it stays correct with
-/// no shared state between the two calls a binary operator node's own pair of inputs each make.
-pub(crate) fn binary_operator_anchor(
+/// Each of `first`/`second`'s own crossing is computed exactly once, here, and reused for both returned anchors —
+/// unlike two independent calls each recomputing both crossings from scratch. See
+/// [`SceneInner::binary_operator_to_override`](crate::scene::SceneInner::binary_operator_to_override), the one
+/// caller that needs both of a pair's own anchors together.
+pub(crate) fn binary_operator_anchors(
     rect: Rect,
-    mine: Point,
-    sibling: Point,
-    mine_is_first: bool,
+    first: Point,
+    second: Point,
     fixing_points: Option<u8>,
-) -> (Point, side::Side) {
-    let (my_side, my_crossing) = side_and_crossing(rect, mine);
-    let (sibling_side, sibling_crossing) = side_and_crossing(rect, sibling);
+) -> [(Point, side::Side); 2] {
+    let (first_side, first_crossing) = side_and_crossing(rect, first);
+    let (second_side, second_crossing) = side_and_crossing(rect, second);
 
-    if my_side != sibling_side {
-        return match fixing_points {
-            Some(n) => snapped_anchor(rect, mine, n),
-            None => edge_anchor(rect, mine),
+    if first_side != second_side {
+        let anchor_for = |towards: Point| match fixing_points {
+            Some(n) => snapped_anchor(rect, towards, n),
+            None => edge_anchor(rect, towards),
         };
+        return [anchor_for(first), anchor_for(second)];
     }
 
     // At least 1, so `divisions` below is always `>= 2`, mirroring `snapped_anchor`'s own defensive minimum.
     let candidates = f64::from(fixing_points.unwrap_or(3).max(1));
     let divisions = candidates + 1.0;
 
-    let index = if my_crossing < sibling_crossing {
-        1.0
-    } else if my_crossing > sibling_crossing {
-        candidates
-    } else if mine_is_first {
-        1.0
+    // A tie (equal crossings) always gives `first` the near slot — the stable tie-break this function's own doc
+    // comment promises.
+    let (first_index, second_index) = if first_crossing <= second_crossing {
+        (1.0, candidates)
     } else {
-        candidates
+        (candidates, 1.0)
     };
+
     let centre = centre(rect);
-    let point = if is_horizontal(my_side) {
-        let sign = if my_side == side::Side::East { 1.0 } else { -1.0 };
-        Point::new(
-            centre.x + rect.size.width / 2.0 * sign,
-            rect.origin.y + rect.size.height * index / divisions,
-        )
-    } else {
-        let sign = if my_side == side::Side::South { 1.0 } else { -1.0 };
-        Point::new(
-            rect.origin.x + rect.size.width * index / divisions,
-            centre.y + rect.size.height / 2.0 * sign,
-        )
+    let point_for = |index: f64| {
+        if is_horizontal(first_side) {
+            let sign = if first_side == side::Side::East { 1.0 } else { -1.0 };
+            Point::new(
+                centre.x + rect.size.width / 2.0 * sign,
+                rect.origin.y + rect.size.height * index / divisions,
+            )
+        } else {
+            let sign = if first_side == side::Side::South { 1.0 } else { -1.0 };
+            Point::new(
+                rect.origin.x + rect.size.width * index / divisions,
+                centre.y + rect.size.height / 2.0 * sign,
+            )
+        }
     };
-    (point, my_side)
+
+    [(point_for(first_index), first_side), (point_for(second_index), first_side)]
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -379,7 +376,7 @@ pub(crate) fn binary_operator_anchor(
 /// far" case this exists to correct. Every other call — the farther connector's own edge, always, and the nearer
 /// one whenever its operand has not drifted — returns exactly what plain [`elbow_route`] would, unchanged. That
 /// matches the shape already confirmed correct once the two candidates are simply split apart (see
-/// [`binary_operator_anchor`]); nothing further is needed there.
+/// [`binary_operator_anchors`]); nothing further is needed there.
 ///
 /// The drifted connector reroutes to a single-bend, vertical-first path instead of [`elbow_route`]'s own
 /// horizontal-first one: from `start`, straight to its own target row — at `start`'s own coordinate, which already

@@ -1,4 +1,7 @@
-use crate::{model::node::NodeId, scene::node::EdgeAnchors};
+use crate::{
+    model::{edge::EdgeId, node::NodeId},
+    scene::node::EdgeAnchors,
+};
 use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -30,6 +33,13 @@ pub(crate) struct BoxHandles {
     /// `SceneInner::binary_operator_to_override` reads this on every redraw, so the two connectors split apart whenever
     /// they land on the same side, live — not just once, at creation.
     pub(crate) binary_operator_inputs: Option<(NodeId, NodeId)>,
+    /// `Some((left, right))` for a binary operator node — the ids of the two edges
+    /// `Scene::add_binary_operator_node_with` auto-wired from `binary_operator_inputs.0`/`.1`, in the same order.
+    /// `None` for every other node, exactly matching `binary_operator_inputs`.
+    ///
+    /// `SceneInner::binary_operator_sibling_edge` reads this to find a moved operand's sibling edge in `O(1)`,
+    /// rather than searching the sibling node's own incident edges for the one that also points at this operator.
+    pub(crate) binary_operator_input_edges: Option<(EdgeId, EdgeId)>,
     /// Every [`crate::scene::DataNodeContent`] cell's own `<rect>`, flat, in the same order
     /// [`crate::scene::DataNodeContent::cells`]/`shape` already use.
     ///

@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Replace `NodeId` internal `HashMap`s with indexed storage (``)
+- Replace `NodeId` internal `HashMap`s with indexed storage (`ca12780`)
+- Optimize binary operator connector crossing calculation (``)
 
 # [Released]
 
