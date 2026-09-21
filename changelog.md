@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Coalesce pointer mover events down to `requestAnimationFrame` frame rate (`4b22bc3`)
 - Move Demo Scope documentation to its own `.md` file (`87845b0`)
 - Make RAF callback persistent in `PointerCoalescer` (`9dd7fd6`)
-- Drop use of `Option` in `Graph`/`SceneInner` dense storage (``)
+- Drop use of `Option` in `Graph`/`SceneInner` dense storage (`bc89252`)
+- Use proportional computation in `set_selection` not just proportional DOM writes (``)
 
 ## Fixed
 

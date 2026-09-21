@@ -218,8 +218,9 @@ const SELECTION_FOCUS_STROKE_WIDTH: &str = "3.5";
 /// Cell `i`'s own fill colour and stroke width under a resolved `focus`/`band`, against `base_color`/
 /// `base_stroke_width` for a cell neither names.
 ///
-/// `Scene::set_selection` calls this twice per cell — once for the old selection, once for the new one — and only
-/// writes to the DOM when the two results differ, rather than unconditionally rewriting every cell on every call.
+/// `Scene::set_selection` calls this twice — once for the old selection, once for the new one — for each cell it
+/// visits, and only writes to the DOM when the two results differ. It visits only the cells a changed old/new focus
+/// or band could plausibly affect, not every cell in the grid — see its own doc comment.
 fn cell_style(
     i: usize,
     focus: Option<usize>,
@@ -714,10 +715,12 @@ impl Scene {
     ///
     /// An identical `selection` to `id`'s own current one is an immediate no-op — no cell is touched, and no
     /// `aria-label` write happens. Otherwise, only the cells whose own colour/stroke category (focused, banded, or
-    /// default) actually changes between the old selection and the new one are ever written to; a cell that stays
-    /// in the same category is left untouched. A live "previous"/"next" control stepping through an array as it is
-    /// processed only ever changes a handful of cells per step, however large the array — this is the hot path
-    /// that shape is optimised for.
+    /// default) actually changes between the old selection and the new one are even examined, let alone written to
+    /// — the old/new focus cells, plus each band's own members, via [`ResolvedBand::for_each_index`]. A cell in
+    /// neither band, and not a focus either way, is never visited: its category cannot have changed. A live
+    /// "previous"/"next" control stepping through an array as it is processed only ever touches a handful of cells
+    /// per step, however large the array — this is the hot path that shape is optimised for, in both the DOM writes
+    /// it performs and the Rust computation that decides them.
     ///
     /// Also gives the focused cell, and, less strongly, a banded row/column, a thicker stroke than its own default
     /// border. It also rebuilds the node's own `aria-label` to describe the current selection as text. Neither
@@ -756,15 +759,40 @@ impl Scene {
         let (old_band, old_focus) = content.resolve_selection(old_selection).unwrap_or((ResolvedBand::None, None));
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
-        for (i, cell) in handles.cell_rects.iter().enumerate() {
-            let old_style = cell_style(i, old_focus, old_band, base_color, handles.cell_stroke_width);
-            let new_style = cell_style(i, new_focus, new_band, base_color, handles.cell_stroke_width);
-            if new_style == old_style {
-                continue;
+        let cell_stroke_width = handles.cell_stroke_width;
+        let cell_rects = &handles.cell_rects;
+        let len = cell_rects.len();
+
+        // Every index whose own category (focused, banded, or default) could possibly differ between the old
+        // selection and the new one — never the whole grid. A cell outside this set is provably unchanged: it is
+        // neither an old/new focus, nor in the symmetric difference of the two bands, so `cell_style` resolves it
+        // to the same category either way. See `ResolvedBand::for_each_index`'s own doc comment.
+        let mut result = Ok(());
+        let mut restyle = |i: usize| {
+            if result.is_err() {
+                return;
             }
-            cell.set_fill(new_style.0)?;
-            cell.set_attr("stroke-width", new_style.1)?;
+            let Some(cell) = cell_rects.get(i) else { return };
+            let old_style = cell_style(i, old_focus, old_band, base_color, cell_stroke_width);
+            let new_style = cell_style(i, new_focus, new_band, base_color, cell_stroke_width);
+            if new_style == old_style {
+                return;
+            }
+            result = cell
+                .set_fill(new_style.0)
+                .and_then(|()| cell.set_attr("stroke-width", new_style.1));
+        };
+        if let Some(i) = old_focus {
+            restyle(i);
         }
+        if let Some(i) = new_focus {
+            restyle(i);
+        }
+        if old_band != new_band {
+            old_band.for_each_index(len, &mut restyle);
+            new_band.for_each_index(len, &mut restyle);
+        }
+        result?;
 
         handles.selection = selection;
         handles.aria_label.truncate(handles.base_label_len);

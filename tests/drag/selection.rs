@@ -427,3 +427,58 @@ fn set_selection_only_rewrites_cells_whose_own_category_changed() -> Result<(), 
         "cell 0 was newly banded but its sentinel fill was left in place",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Moving a `Selection::Column` band to a disjoint column both un-bands every cell the old column touched and bands
+/// every cell the new one does — `Scene::set_selection` visits a column's own members via `step_by`, not a `0..len`
+/// scan, so this exercises that stride directly rather than the contiguous-range walk a `Row` uses.
+///
+/// Proved the same sentinel way as the row case above: the untouched middle column must survive both calls
+/// unwritten, while the old and new columns must each end up in their correct final colour, not merely "some colour
+/// different from the sentinel."
+#[wasm_bindgen_test]
+fn set_selection_moving_the_band_to_a_different_column_only_touches_the_two_columns() -> Result<(), String> {
+    let svg = make_svg("selection-column-to-column", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+                .with_layout(GridLayout::Rows(2)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-column-to-column", 0)?;
+    let rects = rect_children(&group)?;
+    let cells = &rects[1..]; // flat, row-major: [row0: 0,1,2][row1: 3,4,5]
+
+    scene
+        .set_selection(node, Selection::Column { col: 2, row: None })
+        .map_err(|e| e.to_string())?;
+
+    // Column 1 (flat indices 1, 4) sits between columns 0 and 2 and is never banded by either selection below.
+    const SENTINEL: &str = "sentinel-fill";
+    cells[1].set_attribute("fill", SENTINEL).map_err(|e| format!("{e:?}"))?;
+    cells[4].set_attribute("fill", SENTINEL).map_err(|e| format!("{e:?}"))?;
+
+    scene
+        .set_selection(node, Selection::Column { col: 0, row: None })
+        .map_err(|e| e.to_string())?;
+
+    check(
+        fill_of(&cells[1]).as_deref() == Some(SENTINEL) && fill_of(&cells[4]).as_deref() == Some(SENTINEL),
+        "column 1 was never banded by either selection but was rewritten anyway",
+    )?;
+
+    // The old column (flat indices 2, 5) must be un-banded, not left stuck at the band colour.
+    check(
+        fill_of(&cells[2]).as_deref() == Some("#fdebd3") && fill_of(&cells[5]).as_deref() == Some("#fdebd3"),
+        "the old column should have been un-banded back to the default colour",
+    )?;
+
+    // The new column (flat indices 0, 3) must actually be banded.
+    check(
+        fill_of(&cells[0]).as_deref() == Some("#ffe066") && fill_of(&cells[3]).as_deref() == Some("#ffe066"),
+        "the new column should have been banded",
+    )
+}

@@ -90,4 +90,29 @@ impl ResolvedBand {
             Self::Column { col, cols } => i % cols == col,
         }
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Calls `f(i)` once for every flat index `i < len` this band contains, in ascending order — this band's own
+    /// members, not a `0..len` scan tested one at a time via [`contains`](Self::contains).
+    ///
+    /// `len` clamps to the content's own actual value count, for the same reason [`contains`](Self::contains)'s own
+    /// doc comment gives: a short last row/column can leave a nominal member past the real data.
+    ///
+    /// `Scene::set_selection` uses this to touch only the cells a changed band could plausibly have changed the
+    /// category of — `O(row width)`/`O(column height)`, not `O(len)` — rather than testing every cell in the grid.
+    pub(crate) fn for_each_index(self, len: usize, mut f: impl FnMut(usize)) {
+        match self {
+            Self::None => {},
+            Self::Row { row, cols } => {
+                for i in (row * cols)..((row + 1) * cols).min(len) {
+                    f(i);
+                }
+            },
+            Self::Column { col, cols } => {
+                for i in (col..len).step_by(cols) {
+                    f(i);
+                }
+            },
+        }
+    }
 }
