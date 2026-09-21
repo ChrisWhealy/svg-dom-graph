@@ -113,7 +113,7 @@ fn draw_box(
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
-    let mut guard = RenderGuard::with_capacity(group.clone(), 2);
+    let mut guard = RenderGuard::new(group.clone());
     let local_rect = Rect {
         origin: Point::origin(),
         size: rect.size,
@@ -315,7 +315,7 @@ fn draw_content_box(
     let group = svg.group()?;
     // At most two nodes are ever loose (created but not yet appended) at once here — see `RenderGuard::release`'s
     // own doc comment — regardless of how many values `content` holds.
-    let mut guard = RenderGuard::with_capacity(group.clone(), 2);
+    let mut guard = RenderGuard::new(group.clone());
     let type_color = content.type_color();
     let type_name = content.type_name();
     let origin = Point::origin();
@@ -505,7 +505,7 @@ fn draw_operator_box(
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
     // Always exactly 4: the label, the value text, and the outer/value-row rects.
-    let mut guard = RenderGuard::with_capacity(group.clone(), 4);
+    let mut guard = RenderGuard::new(group.clone());
     let type_color = result.type_color();
     let type_name = result.type_name();
     let origin = Point::origin();

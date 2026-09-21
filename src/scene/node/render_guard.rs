@@ -1,6 +1,16 @@
 use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The most simultaneous loose nodes any real caller in this crate can ever have (where "loose" means tracked but not
+/// yet resolved — see [`RenderGuard::track`]/[`RenderGuard::release`]).
+///
+/// [`draw_operator_box`](super::draw_operator_box) is the largest: its own label, value, outer, and value-row elements
+/// are all tracked before any of them is released.
+///
+/// Every other caller in this module tracks at most two at once.
+const MAX_LOOSE: usize = 4;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Unless [`disarm`](Self::disarm) is called first, this removes `group` and every element tracked via
 /// [`track`](Self::track) from the DOM.
 ///
@@ -15,30 +25,43 @@ use svg_dom::SvgNode;
 /// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s own
 /// (also being removed) subtree is harmless.
 ///
+/// `loose` is fixed-size, not a `Vec`: every real caller tracks at most [`MAX_LOOSE`] nodes at once (see that
+/// constant's own doc comment), so a heap-allocated, growable buffer would only ever hold a handful of elements at
+/// most, for the cost of one allocation per node this crate ever constructs — successful or rolled back alike.
+///
 /// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener installation.
 pub(super) struct RenderGuard {
     group: SvgNode,
-    loose: Vec<SvgNode>,
+    loose: [Option<SvgNode>; MAX_LOOSE],
+    len: usize,
     armed: bool,
 }
 
 impl RenderGuard {
-    /// Pre-sizes `loose` for `capacity` [`track`](Self::track) calls. Pass `0` when the caller has no useful bound
-    /// to give; pass a real count whenever the caller already knows, or can cheaply upper-bound, how many elements
-    /// it is about to construct — [`draw_content_box`](super::draw_content_box)'s per-cell loop is the motivating
-    /// case, where growing `loose` one push at a time would otherwise reallocate repeatedly for a large data node.
-    pub(super) fn with_capacity(group: SvgNode, capacity: usize) -> Self {
+    pub(super) fn new(group: SvgNode) -> Self {
         Self {
             group,
-            loose: Vec::with_capacity(capacity),
+            loose: [None, None, None, None],
+            len: 0,
             armed: true,
         }
     }
 
     /// Tracks `node` for rollback. Call this right after creating `node`, before any other fallible step — in
     /// particular, before `group.append(&node)`, which is exactly the gap this guard exists to cover.
+    ///
+    /// # Panics
+    ///
+    /// Panics if more than [`MAX_LOOSE`] nodes are tracked at once, without an intervening [`release`](Self::release)
+    /// — every real caller in this crate stays within that bound (see its own doc comment), so this can only fire from
+    /// a bug in this module itself, not from anything external.
     pub(super) fn track(&mut self, node: SvgNode) {
-        self.loose.push(node);
+        let slot = self
+            .loose
+            .get_mut(self.len)
+            .unwrap_or_else(|| panic!("RenderGuard::track: cannot track more than {MAX_LOOSE} nodes at once"));
+        *slot = Some(node);
+        self.len += 1;
     }
 
     /// Stops tracking the most recently [`track`](Self::track)ed node because it is now safely appended into `group`,
@@ -52,7 +75,10 @@ impl RenderGuard {
     /// always drops whichever node [`track`](Self::track) most recently added, not a specific one named by the caller,
     /// so tracking a second node before resolving the first would silently stop tracking the wrong one.
     pub(super) fn release(&mut self) {
-        self.loose.pop();
+        if let Some(i) = self.len.checked_sub(1) {
+            self.loose[i] = None;
+            self.len = i;
+        }
     }
 
     /// Rendering finished successfully — do not roll it back on drop.
@@ -66,7 +92,7 @@ impl Drop for RenderGuard {
     fn drop(&mut self) {
         if self.armed {
             self.group.remove();
-            for node in &self.loose {
+            for node in self.loose[..self.len].iter().flatten() {
                 node.remove();
             }
         }
