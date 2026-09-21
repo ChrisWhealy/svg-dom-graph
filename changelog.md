@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.10] - 2026-09-21
 
 ## Changed
@@ -41,8 +43,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid unnecessary byte-order processing in `format_value`/`format_value_into` (`bed3522`)
 - Avoid standalone `String` allocation for operator result text (`fed91c7`)
 - Doc only: Correct stale doc comments in `ResolveBand` and `binary_operator_anchor` (`f4c4ce8`)
-
-# [Released]
 
 ## [0.2.9] - 2026-09-17
 
