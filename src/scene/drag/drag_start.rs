@@ -1,4 +1,4 @@
-use svg_dom::root::utils::{Matrix2D, Point};
+use svg_dom::root::utils::{Matrix2D, Point, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
@@ -18,6 +18,12 @@ pub(super) struct DragStart {
     pub(super) pointer_id: i32,
     pub(super) pointer: Point,
     pub(super) box_origin: Point,
+    /// The dragged box's own size, read from the same `Rect` `box_origin` came from, at drag start.
+    ///
+    /// A node's size never changes while it is being dragged, so this is read once here rather than re-fetched as this
+    /// would incur another graph lookup and `RefCell` borrow on every bounded `pointermove` / collision-correcting
+    /// `pointerup` event.
+    pub(super) box_size: Size,
     /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag event.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every

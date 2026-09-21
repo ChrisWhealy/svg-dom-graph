@@ -160,13 +160,14 @@ impl Scene {
 
                 let _ = group.as_element().set_pointer_capture(evt.pointer_id());
                 let _ = group.set_attr("style", GRABBING_STYLE);
-                let Some(box_origin) = inner.borrow().node_rect(id).ok().map(|rect| rect.origin) else {
+                let Ok(rect) = inner.borrow().node_rect(id) else {
                     return;
                 };
                 drag_start.set(Some(DragStart {
                     pointer_id: evt.pointer_id(),
                     pointer,
-                    box_origin,
+                    box_origin: rect.origin,
+                    box_size: rect.size,
                     inverse_ctm,
                 }));
             })?;
@@ -206,12 +207,7 @@ impl Scene {
                 // a node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked
                 // to pick up again.
                 let new_origin = match bounds {
-                    Some(bounds) => {
-                        let Ok(size) = inner.borrow().node_rect(id).map(|rect| rect.size) else {
-                            return;
-                        };
-                        clamp_to_bounds(new_origin, size, bounds)
-                    },
+                    Some(bounds) => clamp_to_bounds(new_origin, start.box_size, bounds),
                     None => new_origin,
                 };
 
@@ -254,12 +250,7 @@ impl Scene {
                 // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not
                 // just pointermove's, so this correction can never undo pointermove's own clamping.
                 let corrected_origin = match bounds {
-                    Some(bounds) => {
-                        let Ok(size) = inner.borrow().node_rect(id).map(|rect| rect.size) else {
-                            return;
-                        };
-                        clamp_to_bounds(corrected_origin, size, bounds)
-                    },
+                    Some(bounds) => clamp_to_bounds(corrected_origin, start.box_size, bounds),
                     None => corrected_origin,
                 };
                 let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
