@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- `move_node` bails out early if `new_origin == old_origin` (``)
+- `move_node` bails out early if `new_origin == old_origin` (`d84ff7e`)
+
+## Fixed
+
+- Replace `NodeId` internal `HashMap`s with indexed storage (``)
 
 # [Released]
 

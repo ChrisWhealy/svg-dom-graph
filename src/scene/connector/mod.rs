@@ -177,7 +177,7 @@ impl Scene {
         path.set_marker_end_ref(&inner.arrow)?;
 
         let id = inner.graph.add_edge(from, to);
-        inner.edge_handles.insert(
+        inner.insert_edge_handle(
             id,
             ConnectorHandle {
                 path,

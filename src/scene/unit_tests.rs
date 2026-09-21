@@ -44,7 +44,7 @@ fn move_node_to_the_same_origin_skips_the_edge_redraw_loop_entirely() -> Result<
     // Removing the edge's own handle, while leaving it incident on `a` in the graph, reproduces exactly the
     // inconsistency `redraw_edge` reports as `Error::UnknownEdge` — the one and only way to observe from here
     // whether `move_node`'s edge-redraw loop actually ran.
-    scene.inner.borrow_mut().edge_handles.remove(&edge);
+    scene.inner.borrow_mut().remove_edge_handle(edge);
 
     let mut scratch = String::new();
     let same_origin_result = scene.inner.borrow_mut().move_node(a, origin, &mut scratch);

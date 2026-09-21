@@ -104,8 +104,8 @@ fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge(
     let (node_group, edge_path) = {
         let inner = scene.inner.borrow();
         (
-            inner.node_handles.get(&operator).unwrap().group.clone(),
-            inner.edge_handles.get(&edge).unwrap().path.clone(),
+            inner.node_handle(operator).unwrap().group.clone(),
+            inner.edge_handle(edge).unwrap().path.clone(),
         )
     };
 
@@ -124,13 +124,10 @@ fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge(
 
     let inner = scene.inner.borrow();
     check(
-        !inner.node_handles.contains_key(&operator),
+        inner.node_handle(operator).is_none(),
         "node_handles still held the removed operator node",
     )?;
-    check(
-        !inner.edge_handles.contains_key(&edge),
-        "edge_handles still held the removed edge",
-    )?;
+    check(inner.edge_handle(edge).is_none(), "edge_handles still held the removed edge")?;
     check(
         inner.graph.node(operator).is_none(),
         "the graph still held the removed operator node",
@@ -160,11 +157,11 @@ fn disarming_a_construction_guard_leaves_the_node_and_every_tracked_edge_in_plac
 
     let inner = scene.inner.borrow();
     check(
-        inner.node_handles.contains_key(&operator),
+        inner.node_handle(operator).is_some(),
         "node_handles lost the operator node despite a disarmed guard",
     )?;
     check(
-        inner.edge_handles.contains_key(&edge),
+        inner.edge_handle(edge).is_some(),
         "edge_handles lost the edge despite a disarmed guard",
     )?;
     check(

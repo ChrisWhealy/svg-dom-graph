@@ -28,7 +28,6 @@ use crate::{
 };
 use std::{
     cell::RefCell,
-    collections::HashMap,
     rc::Rc,
     sync::atomic::{AtomicUsize, Ordering},
 };
@@ -100,11 +99,14 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 /// Owns the `SvgRoot` it renders into. `Scene::new(svg)` binds them for the `SceneInner`'s whole lifetime, so every
 /// node and edge in one `Scene` is guaranteed to live in the same `<svg>` document — there is no `svg` parameter on
 /// [`Scene::add_node`] or [`Scene::add_edge`] through which a caller could pass a different root by mistake.
+///
+/// `node_handles`/`edge_handles` are stored the same way [`Graph`] stores its own nodes/edges — densely, by
+/// `id.index`, with `id.graph` checked first — rather than in a `HashMap`. See [`Graph`]'s own doc comment for why.
 struct SceneInner {
     svg: SvgRoot,
     graph: Graph,
-    node_handles: HashMap<NodeId, BoxHandles>,
-    edge_handles: HashMap<EdgeId, ConnectorHandle>,
+    node_handles: Vec<Option<BoxHandles>>,
+    edge_handles: Vec<Option<ConnectorHandle>>,
     arrow: SvgMarker,
 }
 
@@ -121,14 +123,94 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Node `id`'s own rendered box handles, or `None` if `id` does not name a node in this scene.
+    fn node_handle(&self, id: NodeId) -> Option<&BoxHandles> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.node_handles.get(id.index)?.as_ref()
+    }
+
+    /// The mutable counterpart to [`node_handle`](Self::node_handle).
+    fn node_handle_mut(&mut self, id: NodeId) -> Option<&mut BoxHandles> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.node_handles.get_mut(id.index)?.as_mut()
+    }
+
+    /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph` —
+    /// always in lockstep with it, so `id.index` is always exactly `self.node_handles.len()` here, the same
+    /// always-an-append reasoning [`Graph::add_node`](crate::model::graph::Graph::add_node)'s own comment gives.
+    fn insert_node_handle(&mut self, id: NodeId, handles: BoxHandles) {
+        debug_assert_eq!(
+            id.graph, self.graph.id,
+            "inserted a node handle for an id from a different scene"
+        );
+        debug_assert_eq!(
+            id.index,
+            self.node_handles.len(),
+            "node_handles and graph.nodes fell out of step"
+        );
+        self.node_handles.push(Some(handles));
+    }
+
+    /// Removes and returns node `id`'s own box handles, or `None` if `id` does not name a node in this scene.
+    fn remove_node_handle(&mut self, id: NodeId) -> Option<BoxHandles> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.node_handles.get_mut(id.index)?.take()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Edge `id`'s own rendered connector handle, or `None` if `id` does not name an edge in this scene.
+    fn edge_handle(&self, id: EdgeId) -> Option<&ConnectorHandle> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.edge_handles.get(id.index)?.as_ref()
+    }
+
+    /// The mutable counterpart to [`edge_handle`](Self::edge_handle).
+    fn edge_handle_mut(&mut self, id: EdgeId) -> Option<&mut ConnectorHandle> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.edge_handles.get_mut(id.index)?.as_mut()
+    }
+
+    /// Stores `handle` as edge `id`'s own connector handle. The same always-an-append call pattern as
+    /// [`insert_node_handle`](Self::insert_node_handle), one call right after `id` is first added to `graph`.
+    fn insert_edge_handle(&mut self, id: EdgeId, handle: ConnectorHandle) {
+        debug_assert_eq!(
+            id.graph, self.graph.id,
+            "inserted an edge handle for an id from a different scene"
+        );
+        debug_assert_eq!(
+            id.index,
+            self.edge_handles.len(),
+            "edge_handles and graph.edges fell out of step"
+        );
+        self.edge_handles.push(Some(handle));
+    }
+
+    /// Removes and returns edge `id`'s own connector handle, or `None` if `id` does not name an edge in this scene.
+    fn remove_edge_handle(&mut self, id: EdgeId) -> Option<ConnectorHandle> {
+        if id.graph != self.graph.id {
+            return None;
+        }
+        self.edge_handles.get_mut(id.index)?.take()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current [`EdgeAnchors`] configuration of node `id`.
     ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     fn node_edge_anchors(&self, id: NodeId) -> Result<Option<EdgeAnchors>, Error> {
-        self.node_handles
-            .get(&id)
+        self.node_handle(id)
             .map(|handles| handles.edge_anchors)
             .ok_or(Error::UnknownNode(id))
     }
@@ -142,7 +224,7 @@ impl SceneInner {
     /// [`Scene::add_binary_operator_node_with`]). Each of those falls back to `route`'s own existing default, exactly
     /// as before this existed.
     fn binary_operator_to_override(&self, from: NodeId, to: NodeId) -> Option<connector::BinaryOperatorRoute> {
-        let (input_a, input_b) = self.node_handles.get(&to)?.binary_operator_inputs?;
+        let (input_a, input_b) = self.node_handle(to)?.binary_operator_inputs?;
         // `add_binary_operator_node_with` rejects `input_a == input_b`, so this is an unambiguous, stable identity
         // — not just "which `NodeId`", but "which of the two operand *slots* this edge is" — see
         // `binary_operator_anchor`'s own doc comment for why that stability matters.
@@ -183,7 +265,7 @@ impl SceneInner {
         if edge.from != mover {
             return None;
         }
-        let (input_a, input_b) = self.node_handles.get(&edge.to)?.binary_operator_inputs?;
+        let (input_a, input_b) = self.node_handle(edge.to)?.binary_operator_inputs?;
         let sibling = if mover == input_a {
             input_b
         } else if mover == input_b {
@@ -232,7 +314,7 @@ impl SceneInner {
             },
         );
 
-        let handles = self.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
+        let handles = self.node_handle(id).ok_or(Error::UnknownNode(id))?;
         handles
             .group
             .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
@@ -264,7 +346,7 @@ impl SceneInner {
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
-        let handle = self.edge_handles.get(&id).ok_or(Error::UnknownEdge(id))?;
+        let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
         let (vertices, radius) =
             connector::route(handle.connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
         elbow_path_into(&vertices, radius, scratch);
@@ -303,7 +385,7 @@ impl SceneInner {
             connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
         elbow_path_into(&vertices, radius, scratch);
 
-        let handle = self.edge_handles.get_mut(&id).ok_or(Error::UnknownEdge(id))?;
+        let handle = self.edge_handle_mut(id).ok_or(Error::UnknownEdge(id))?;
         handle.path.set_attr("d", scratch)?;
         handle.connector_type = connector_type;
 
@@ -344,10 +426,12 @@ impl SceneInner {
             .graph
             .nodes
             .iter()
-            .filter(|&(&other_id, other)| other_id != id && rects_overlap(dragged, other.rect))
-            .min_by(|&(&id_a, a), &(&id_b, b)| {
+            .enumerate()
+            .filter_map(|(index, slot)| slot.as_ref().map(|node| (NodeId { graph: self.graph.id, index }, node)))
+            .filter(|&(other_id, other)| other_id != id && rects_overlap(dragged, other.rect))
+            .min_by(|&(id_a, a), &(id_b, b)| {
                 // Ties (two blockers exactly equidistant from `dragged_centre`) break on `index`, so the choice is
-                // deterministic — otherwise it would depend on `HashMap`'s unspecified iteration order.
+                // deterministic — otherwise it would depend on iteration order over removal-tombstoned slots.
                 distance_sq(dragged_centre, box_centre(a.rect))
                     .total_cmp(&distance_sq(dragged_centre, box_centre(b.rect)))
                     .then_with(|| id_a.index.cmp(&id_b.index))
@@ -422,8 +506,8 @@ impl Scene {
             inner: Rc::new(RefCell::new(SceneInner {
                 svg,
                 graph: Graph::new(),
-                node_handles: HashMap::new(),
-                edge_handles: HashMap::new(),
+                node_handles: Vec::new(),
+                edge_handles: Vec::new(),
                 arrow,
             })),
         })

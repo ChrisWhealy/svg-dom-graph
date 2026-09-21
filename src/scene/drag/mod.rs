@@ -111,7 +111,7 @@ impl Scene {
 
         let group = {
             let inner = self.inner.borrow();
-            let handles = inner.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
+            let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
             if handles.draggable {
                 return Err(Error::AlreadyDraggable(id));
             }
@@ -297,8 +297,7 @@ impl Scene {
         guard.disarm();
         self.inner
             .borrow_mut()
-            .node_handles
-            .get_mut(&id)
+            .node_handle_mut(id)
             .ok_or(Error::UnknownNode(id))?
             .draggable = true;
 

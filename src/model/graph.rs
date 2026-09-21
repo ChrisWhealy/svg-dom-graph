@@ -5,22 +5,34 @@
 //! same [`NodeId`]/[`EdgeId`]s this module hands out.
 
 use super::{NEXT_GRAPH_ID, edge::*, node::*};
-use std::{collections::HashMap, sync::atomic::Ordering};
+use std::sync::atomic::Ordering;
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The graph's topology.
 ///
-/// Holds every node and edge, plus each node's incident edges. A caller can then find what connects to a node without
-/// scanning every edge in the graph.
+/// Holds every node and edge; each [`Node`] carries its own incident edges alongside it — see that type's own doc
+/// comment.
+///
+/// `nodes`/`edges` are stored densely rather than in a `HashMap`: `NodeId`/`EdgeId` already carry a monotonic index
+/// within this graph, so `id.index` addresses a `Vec` slot directly, with no need to compute a hash.
+///
+/// `id.graph` is first checked everywhere, so an id belonging to a different `Graph` is rejected even when its own
+/// index happens to coincide with a real slot here.
+///
+/// A removed node/edge reverts the slot to `None` rather than attempting to shift indices. Indicies are never reused,
+/// meaning that existing ids always remain valid even after a removal. This is at the cost of a `Vec` that cannot
+/// shrink, but this is considered acceptable given the expected usage pattern.
+///
+/// Removal is rare (a narrow rollback primitive — see [`remove_node`](Self::remove_node) and
+/// [`remove_edge`](Self::remove_edge)'s own doc comments).
 ///
 /// Carries no rendering state of its own. `crate::scene::Scene` pairs each id this graph hands out with its rendered
 /// SVG handles.
 pub(crate) struct Graph {
     pub id: usize,
-    pub nodes: HashMap<NodeId, Node>,
-    pub edges: HashMap<EdgeId, Edge>,
-    pub incident: HashMap<NodeId, Vec<EdgeId>>,
+    pub nodes: Vec<Option<Node>>,
+    pub edges: Vec<Option<Edge>>,
     pub next_node_id: usize,
     pub next_edge_id: usize,
 }
@@ -29,9 +41,8 @@ impl Graph {
     pub(crate) fn new() -> Self {
         Self {
             id: NEXT_GRAPH_ID.fetch_add(1, Ordering::Relaxed),
-            nodes: HashMap::new(),
-            edges: HashMap::new(),
-            incident: HashMap::new(),
+            nodes: Vec::new(),
+            edges: Vec::new(),
             next_node_id: 0,
             next_edge_id: 0,
         }
@@ -45,8 +56,13 @@ impl Graph {
             index: self.next_node_id,
         };
         self.next_node_id += 1;
-        self.nodes.insert(id, Node { rect, content: content.into() });
-        self.incident.insert(id, Vec::new());
+        // `next_node_id` only ever grows, so `id.index` is always exactly `self.nodes.len()` here.
+        // This is always an append and never leaves gap.
+        self.nodes.push(Some(Node {
+            rect,
+            content: content.into(),
+            incident: Vec::new(),
+        }));
         id
     }
 
@@ -61,9 +77,14 @@ impl Graph {
             index: self.next_edge_id,
         };
         self.next_edge_id += 1;
-        self.edges.insert(id, Edge { from, to });
-        self.incident.entry(from).or_default().push(id);
-        self.incident.entry(to).or_default().push(id);
+        // Same reasoning as `add_node`'s own comment: always an append.
+        self.edges.push(Some(Edge { from, to }));
+        if let Some(node) = self.node_mut(from) {
+            node.incident.push(id);
+        }
+        if let Some(node) = self.node_mut(to) {
+            node.incident.push(id);
+        }
         id
     }
 
@@ -72,7 +93,20 @@ impl Graph {
     ///
     /// Returns `None` if `id` does not name a node in this graph.
     pub(crate) fn node(&self, id: NodeId) -> Option<&Node> {
-        self.nodes.get(&id)
+        if id.graph != self.id {
+            return None;
+        }
+        self.nodes.get(id.index)?.as_ref()
+    }
+
+    /// The mutable counterpart to [`node`](Self::node). Private: every external caller goes through a narrower,
+    /// purpose-specific method instead — [`set_node_rect`](Self::set_node_rect), or `add_edge`'s own incidence
+    /// bookkeeping above.
+    fn node_mut(&mut self, id: NodeId) -> Option<&mut Node> {
+        if id.graph != self.id {
+            return None;
+        }
+        self.nodes.get_mut(id.index)?.as_mut()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -80,7 +114,7 @@ impl Graph {
     ///
     /// Does nothing if `id` does not name a node in this graph.
     pub(crate) fn set_node_rect(&mut self, id: NodeId, rect: Rect) {
-        if let Some(node) = self.nodes.get_mut(&id) {
+        if let Some(node) = self.node_mut(id) {
             node.rect = rect;
         }
     }
@@ -90,7 +124,10 @@ impl Graph {
     ///
     /// Returns `None` if `id` does not name an edge in this graph.
     pub(crate) fn edge(&self, id: EdgeId) -> Option<&Edge> {
-        self.edges.get(&id)
+        if id.graph != self.id {
+            return None;
+        }
+        self.edges.get(id.index)?.as_ref()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -98,7 +135,7 @@ impl Graph {
     ///
     /// Returns an empty slice for a node with no edges, or for an unknown `id`.
     pub(crate) fn incident_edges(&self, id: NodeId) -> &[EdgeId] {
-        self.incident.get(&id).map(Vec::as_slice).unwrap_or(&[])
+        self.node(id).map(|node| node.incident.as_slice()).unwrap_or(&[])
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -111,13 +148,17 @@ impl Graph {
     /// operator-creation call. There is no public `Scene::remove_edge` — this graph never otherwise loses an edge
     /// once added.
     pub(crate) fn remove_edge(&mut self, id: EdgeId) {
-        if let Some(edge) = self.edges.remove(&id) {
-            if let Some(incident) = self.incident.get_mut(&edge.from) {
-                incident.retain(|&e| e != id);
-            }
-            if let Some(incident) = self.incident.get_mut(&edge.to) {
-                incident.retain(|&e| e != id);
-            }
+        if id.graph != self.id {
+            return;
+        }
+        let Some(edge) = self.edges.get_mut(id.index).and_then(Option::take) else {
+            return;
+        };
+        if let Some(node) = self.node_mut(edge.from) {
+            node.incident.retain(|&e| e != id);
+        }
+        if let Some(node) = self.node_mut(edge.to) {
+            node.incident.retain(|&e| e != id);
         }
     }
 
@@ -131,7 +172,11 @@ impl Graph {
     /// that no longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always
     /// holds for its one caller.
     pub(crate) fn remove_node(&mut self, id: NodeId) {
-        self.nodes.remove(&id);
-        self.incident.remove(&id);
+        if id.graph != self.id {
+            return;
+        }
+        if let Some(slot) = self.nodes.get_mut(id.index) {
+            *slot = None;
+        }
     }
 }

@@ -62,12 +62,12 @@ impl Drop for OperatorConstructionGuard {
 
         let mut inner = self.scene.inner.borrow_mut();
         for edge_id in &self.edge_ids {
-            if let Some(handle) = inner.edge_handles.remove(edge_id) {
+            if let Some(handle) = inner.remove_edge_handle(*edge_id) {
                 handle.path.remove();
             }
             inner.graph.remove_edge(*edge_id);
         }
-        if let Some(handles) = inner.node_handles.remove(&self.node_id) {
+        if let Some(handles) = inner.remove_node_handle(self.node_id) {
             handles.group.remove();
         }
         inner.graph.remove_node(self.node_id);

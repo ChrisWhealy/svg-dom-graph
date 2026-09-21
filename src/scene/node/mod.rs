@@ -529,7 +529,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         let handles = draw_box(&inner.svg, rect, &label, options.edge_anchors)?;
         let id = inner.graph.add_node(rect, label);
-        inner.node_handles.insert(id, handles);
+        inner.insert_node_handle(id, handles);
         Ok(id)
     }
 
@@ -595,7 +595,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         let (handles, rect) = draw_content_box(&inner.svg, top_left, &content, options.edge_anchors)?;
         let id = inner.graph.add_node(rect, content);
-        inner.node_handles.insert(id, handles);
+        inner.insert_node_handle(id, handles);
         Ok(id)
     }
 
@@ -621,7 +621,7 @@ impl Scene {
         validate_edge_anchors(edge_anchors)?;
 
         let mut inner = self.inner.borrow_mut();
-        inner.node_handles.get_mut(&id).ok_or(Error::UnknownNode(id))?.edge_anchors = edge_anchors;
+        inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?.edge_anchors = edge_anchors;
 
         let mut scratch = String::new();
         let incident: Vec<_> = inner.graph.incident_edges(id).to_vec();
@@ -674,7 +674,7 @@ impl Scene {
             .ok_or(Error::InvalidSelection(id, selection))?;
         let base_color = content.type_color();
 
-        let handles = inner.node_handles.get(&id).ok_or(Error::UnknownNode(id))?;
+        let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
         for (i, cell) in handles.cell_rects.iter().enumerate() {
             let (color, stroke_width) = if Some(i) == focus {
                 (SELECTION_FOCUS_COLOR, SELECTION_FOCUS_STROKE_WIDTH)
@@ -771,7 +771,7 @@ impl Scene {
             let label = operator.label();
             let (handles, rect) = draw_operator_box(&inner.svg, top_left, &label, &result, options.edge_anchors)?;
             let id = inner.graph.add_node(rect, result);
-            inner.node_handles.insert(id, handles);
+            inner.insert_node_handle(id, handles);
             id
         };
 
@@ -876,7 +876,7 @@ impl Scene {
             let (mut handles, rect) = draw_operator_box(&inner.svg, top_left, label, &result, options.edge_anchors)?;
             handles.binary_operator_inputs = Some(inputs);
             let id = inner.graph.add_node(rect, result);
-            inner.node_handles.insert(id, handles);
+            inner.insert_node_handle(id, handles);
             id
         };
 
