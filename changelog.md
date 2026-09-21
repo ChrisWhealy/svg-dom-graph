@@ -40,7 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure data node formatting completes in a single pass (`e22532d`)
 - Avoid unnecessary byte-order processing in `format_value`/`format_value_into` (`bed3522`)
 - Avoid standalone `String` allocation for operator result text (`fed91c7`)
-- Doc only: Correct stale doc comments in `ResolveBand` and `binary_operator_anchor` (``)
+- Doc only: Correct stale doc comments in `ResolveBand` and `binary_operator_anchor` (`f4c4ce8`)
 
 # [Released]
 
