@@ -101,15 +101,35 @@ pub use selection::Selection;
 /// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for
 /// [`DataFormat::Decimal`] — generic over the byte width so [`NodeValues::cell_strings`] needs one call site per
 /// variant, not one formatting implementation per width.
+///
+/// `Hexadecimal`/`Binary` values can be written straight into a `String`, pre-sized to exact final length.
 fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat) -> String {
+    use std::fmt::Write as _;
+
     match format {
         DataFormat::Decimal => decimal.to_string(),
-        DataFormat::Hexadecimal => bytes.iter().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(" "),
-        DataFormat::Binary => bytes
-            .iter()
-            .map(|b| format!("{:04b} {:04b}", b >> 4, b & 0x0F))
-            .collect::<Vec<_>>()
-            .join(" "),
+        DataFormat::Hexadecimal => {
+            // "XX" per byte, plus one separating space between each pair of bytes.
+            let mut out = String::with_capacity(3 * N - 1);
+            for (i, b) in bytes.iter().enumerate() {
+                if i > 0 {
+                    out.push(' ');
+                }
+                let _ = write!(out, "{b:02X}");
+            }
+            out
+        },
+        DataFormat::Binary => {
+            // "hhhh llll" per byte (nybble, space, nybble), plus one separating space between each pair of bytes.
+            let mut out = String::with_capacity(10 * N - 1);
+            for (i, b) in bytes.iter().enumerate() {
+                if i > 0 {
+                    out.push(' ');
+                }
+                let _ = write!(out, "{:04b} {:04b}", b >> 4, b & 0x0F);
+            }
+            out
+        },
     }
 }
 
