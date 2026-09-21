@@ -245,3 +245,38 @@ fn set_connector_type_toggles_a_connector_between_straight_and_elbow() -> Result
         &format!("expected toggling back to Elbow to restore {expected_elbow:?}, got {elbow_again:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_connector_type`'s own no-op fast path: a `ConnectorType` identical to the edge's own current one must
+/// redraw nothing at all, not merely leave the rendered path unchanged.
+///
+/// Proved here by planting a sentinel `d` directly on the connector's `<path>` via the raw DOM, bypassing `Scene`
+/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path — its surviving an
+/// unchanged `set_connector_type` call is the only way to observe, from here, that no redraw happened. This is the
+/// exact scenario a live corner-radius slider hits on every input event whose value has not actually moved.
+#[wasm_bindgen_test]
+fn set_connector_type_with_an_unchanged_type_redraws_nothing() -> Result<(), String> {
+    let svg = make_svg("connector-type-no-op", Size::new(300.0, 300.0), Size::new(300.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(40.0, 20.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(40.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    let edge = scene.add_edge(a, b).map_err(|e| e.to_string())?; // default: Elbow { corner_radius: 0.0 }
+
+    let connector = the_connector("connector-type-no-op")?;
+    const SENTINEL: &str = "M 0 0 L 0 0";
+    connector.set_attribute("d", SENTINEL).map_err(|e| format!("{e:?}"))?;
+
+    // Same type `edge` was already drawn with: a true no-op must leave the sentinel in place.
+    scene
+        .set_connector_type(edge, ConnectorType::Elbow { corner_radius: 0.0 })
+        .map_err(|e| e.to_string())?;
+
+    check(
+        path_d(&connector)?.as_str() == SENTINEL,
+        "an unchanged ConnectorType redrew the connector anyway",
+    )
+}

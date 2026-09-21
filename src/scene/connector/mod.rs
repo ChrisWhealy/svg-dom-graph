@@ -205,11 +205,25 @@ impl Scene {
     /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails once
     /// underway. The stored connector type is only updated once the new path has actually been written. A failure here
     /// leaves `id` rendered and recorded exactly as it was before the call.
+    ///
+    /// A `connector_type` is received that is identical to `id`'s own current one, then this is an immediate no-op and
+    /// we bail out early. [`ConnectorType`] derives `PartialEq`, so this comparison is free next. This is the check
+    /// that matters most for a live corner-radius slider, which which otherwise fire this call once per input event
+    /// with a value that has not actually changed.
     pub fn set_connector_type(&self, id: EdgeId, connector_type: ConnectorType) -> Result<(), Error> {
         validate_connector_type(connector_type)?;
 
         let mut inner = self.inner.borrow_mut();
-        let mut scratch = String::new();
-        inner.redraw_edge_with_type(id, connector_type, &mut scratch)
+        let handle = inner.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
+        if handle.connector_type == connector_type {
+            return Ok(());
+        }
+
+        // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back —
+        // see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let result = inner.redraw_edge_with_type(id, connector_type, &mut scratch);
+        inner.scratch = scratch;
+        result
     }
 }

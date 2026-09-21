@@ -108,6 +108,19 @@ struct SceneInner {
     node_handles: Vec<Option<BoxHandles>>,
     edge_handles: Vec<Option<ConnectorHandle>>,
     arrow: SvgMarker,
+    /// A single reused `d`-attribute buffer, shared by every one-shot public mutator that redraws a path —
+    /// [`Scene::set_connector_type`] and [`Scene::set_edge_anchors`] — rather than each allocating its own fresh
+    /// `String` on every call.
+    ///
+    /// A caller driving either through a live slider fires one call per input event, so a fresh allocation per call
+    /// would mean one per event. Taken out via [`std::mem::take`] for the duration of a call (its callers can then
+    /// freely borrow the rest of `SceneInner` without conflicting with it) and put back once the redraw is done, so
+    /// its capacity — not its content — is what persists between calls.
+    ///
+    /// The pointer-move/pointer-up drag handlers in [`drag`](super::drag) keep their own separate, closure-captured
+    /// buffer instead, reused for the lifetime of one drag rather than the whole scene — already the right shape
+    /// for a handler that fires far more often, for as long as a single gesture lasts.
+    scratch: String,
 }
 
 impl SceneInner {
@@ -513,6 +526,7 @@ impl Scene {
                 node_handles: Vec::new(),
                 edge_handles: Vec::new(),
                 arrow,
+                scratch: String::new(),
             })),
         })
     }

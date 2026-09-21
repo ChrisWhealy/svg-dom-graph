@@ -669,10 +669,17 @@ impl Scene {
         }
         handles.edge_anchors = edge_anchors;
 
-        let mut scratch = String::new();
+        // Taken out for the call so `redraw_edge` can freely borrow the rest of `inner` on every iteration, then
+        // put back — see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per
+        // call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
         for edge_id in inner.graph.incident_edges(id) {
-            inner.redraw_edge(*edge_id, &mut scratch)?;
+            if let Err(e) = inner.redraw_edge(*edge_id, &mut scratch) {
+                inner.scratch = scratch;
+                return Err(e);
+            }
         }
+        inner.scratch = scratch;
         Ok(())
     }
 
