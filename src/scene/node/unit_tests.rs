@@ -32,7 +32,7 @@ fn dropping_an_armed_guard_removes_the_group_and_every_loose_element() -> Result
     let group = svg.group().unwrap();
     let loose = svg.rect(Point::origin(), Size::new(10.0, 10.0)).unwrap();
 
-    let mut guard = RenderGuard::new(group.clone());
+    let mut guard = RenderGuard::with_capacity(group.clone(), 0);
     guard.track(loose.clone());
     drop(guard);
 
@@ -55,7 +55,7 @@ fn disarming_a_guard_leaves_the_group_and_every_loose_element_attached() -> Resu
     let group = svg.group().unwrap();
     let loose = svg.rect(Point::origin(), Size::new(10.0, 10.0)).unwrap();
 
-    let mut guard = RenderGuard::new(group.clone());
+    let mut guard = RenderGuard::with_capacity(group.clone(), 0);
     guard.track(loose.clone());
     guard.disarm();
 
@@ -77,7 +77,7 @@ fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Re
     let svg = make_svg("render-guard-empty");
     let group = svg.group().unwrap();
 
-    drop(RenderGuard::new(group.clone()));
+    drop(RenderGuard::with_capacity(group.clone(), 0));
 
     check(
         group.as_element().parent_node().is_none(),

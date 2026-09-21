@@ -103,7 +103,7 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 /// already created, rather than leaving stray elements behind.
 fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
-    let mut guard = RenderGuard::new(group.clone());
+    let mut guard = RenderGuard::with_capacity(group.clone(), 2);
     let local_rect = Rect {
         origin: Point::origin(),
         size: rect.size,
@@ -275,7 +275,10 @@ fn draw_content_box(
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
-    let mut guard = RenderGuard::new(group.clone());
+    // One text per cell, plus the outer rect, plus (for a multi-value grid) one more rect per cell — see the loops
+    // below. Single-value content never reaches the second `+ content.len()`, so this slightly over-allocates for
+    // that case; a `RenderGuard` capacity only needs to be a cheap upper bound, not exact.
+    let mut guard = RenderGuard::with_capacity(group.clone(), 2 * content.len() + 1);
     let type_color = content.type_color();
     let type_name = content.type_name();
     let origin = Point::origin();
@@ -446,7 +449,8 @@ fn draw_operator_box(
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
-    let mut guard = RenderGuard::new(group.clone());
+    // Always exactly 4: the label, the value text, and the outer/value-row rects.
+    let mut guard = RenderGuard::with_capacity(group.clone(), 4);
     let type_color = result.type_color();
     let type_name = result.type_name();
     let origin = Point::origin();

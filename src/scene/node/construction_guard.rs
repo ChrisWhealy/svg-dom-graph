@@ -28,7 +28,7 @@ use crate::{
 pub(super) struct OperatorConstructionGuard {
     scene: Scene,
     node_id: NodeId,
-    edge_ids: Vec<EdgeId>,
+    edge_ids: [Option<EdgeId>; 2],
     armed: bool,
 }
 
@@ -37,14 +37,22 @@ impl OperatorConstructionGuard {
         Self {
             scene,
             node_id,
-            edge_ids: Vec::new(),
+            edge_ids: [None, None],
             armed: true,
         }
     }
 
     /// Tracks edge `id` for rollback. Call this right after each `Scene::add_edge`/`add_edge_with` call succeeds.
+    ///
+    /// A unary operator tracks one edge, a binary operator two — never more. `edge_ids` is fixed-size for exactly
+    /// that reason, so a third call is a caller bug rather than something to accommodate.
     pub(super) fn track_edge(&mut self, id: EdgeId) {
-        self.edge_ids.push(id);
+        let slot = self
+            .edge_ids
+            .iter_mut()
+            .find(|slot| slot.is_none())
+            .expect("OperatorConstructionGuard::track_edge: no more than two edges are ever tracked");
+        *slot = Some(id);
     }
 
     /// Every edge wired successfully — do not roll anything back on drop.
@@ -61,11 +69,11 @@ impl Drop for OperatorConstructionGuard {
         }
 
         let mut inner = self.scene.inner.borrow_mut();
-        for edge_id in &self.edge_ids {
-            if let Some(handle) = inner.remove_edge_handle(*edge_id) {
+        for edge_id in self.edge_ids.into_iter().flatten() {
+            if let Some(handle) = inner.remove_edge_handle(edge_id) {
                 handle.path.remove();
             }
-            inner.graph.remove_edge(*edge_id);
+            inner.graph.remove_edge(edge_id);
         }
         if let Some(handles) = inner.remove_node_handle(self.node_id) {
             handles.group.remove();

@@ -23,10 +23,14 @@ pub(super) struct RenderGuard {
 }
 
 impl RenderGuard {
-    pub(super) fn new(group: SvgNode) -> Self {
+    /// Pre-sizes `loose` for `capacity` [`track`](Self::track) calls. Pass `0` when the caller has no useful bound
+    /// to give; pass a real count whenever the caller already knows, or can cheaply upper-bound, how many elements
+    /// it is about to construct — [`draw_content_box`](super::draw_content_box)'s per-cell loop is the motivating
+    /// case, where growing `loose` one push at a time would otherwise reallocate repeatedly for a large data node.
+    pub(super) fn with_capacity(group: SvgNode, capacity: usize) -> Self {
         Self {
             group,
-            loose: Vec::new(),
+            loose: Vec::with_capacity(capacity),
             armed: true,
         }
     }

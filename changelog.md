@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove unnecessary heap allocations during hex/binary value formatting in `model::content::format_value()` (`f1a1de5`)
 - Remove synchronous text measurement per data node cell construction (`990f34e`)
 - Remove `Vec<String>` allocation from `draw_operator_box` (``)
+- Optimize small constructor-time allocations (``)
 
 # [Released]
 
