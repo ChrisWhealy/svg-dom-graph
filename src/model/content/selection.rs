@@ -59,18 +59,23 @@ impl Selection {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A [`Selection::Row`]/[`Selection::Column`] already resolved against its own content's actual grid shape, in a form
-/// that [`Scene::set_selection`](crate::scene::Scene::set_selection) can test cheaply, one flat cell at a time.
+/// [`Scene::set_selection`](crate::scene::Scene::set_selection) can walk and test cheaply.
 ///
-/// Deliberately holds no list of member indices. A grid can hold arbitrarily many cells, and a "previous"/"next"
-/// control re-tests every one of them on every step. [`contains`](Self::contains) instead tests membership
-/// arithmetically, in `O(1)` per cell, with no allocation at all — a plain `row`/`col` and the grid's own `cols` are
-/// enough to decide it.
+/// Deliberately holds no list of member indices. A grid can hold arbitrarily many cells, so
+/// [`for_each_index`](Self::for_each_index) walks a band's own members directly — a contiguous range for `Row`, a
+/// `step_by(cols)` stride for `Column` — rather than scanning every cell in the grid and testing each one against
+/// membership. [`contains`](Self::contains) is the `O(1)`-per-cell, allocation-free membership test
+/// `Scene::set_selection` uses alongside that walk: to check whether an index it reaches while walking one band is
+/// already covered by the other, so it is not visited twice — not, itself, how a band's own members are found.
 ///
-/// [`contains`](Self::contains) trusts its own caller to only ever query a flat index that names a real cell.
-/// [`super::DataNodeContent::resolve_selection`] is the only place that builds one.
+/// [`contains`](Self::contains)/[`for_each_index`](Self::for_each_index) both trust their own caller to only ever
+/// query a flat index — or, for `for_each_index`, a `len` bound — that names a real cell.
+/// [`super::DataNodeContent::resolve_selection`] is the only place that builds a `ResolvedBand`.
 ///
-/// `Scene::set_selection` is the only reader, and it walks exactly `content.len()` real cells, never a nominal
-/// row/column position past them. So this never needs to re-check a query against the content's own value count itself.
+/// `Scene::set_selection` is the only reader, and every index it ever queries either comes from
+/// [`for_each_index`](Self::for_each_index) itself (already `< len`) or from a focus index
+/// [`super::DataNodeContent::resolve_selection`] already validated. So neither method here ever needs to re-check
+/// a query against the content's own value count itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ResolvedBand {
     /// No band: [`contains`](Self::contains) is `false` for every index.
