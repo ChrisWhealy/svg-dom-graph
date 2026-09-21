@@ -101,7 +101,17 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction: any `?` failing partway through removes whatever was
 /// already created, rather than leaving stray elements behind.
-fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnchors>) -> Result<BoxHandles, Error> {
+///
+/// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
+/// `transform` formatting rather than allocating a fresh `String` for it, the same reasoning every other one-shot
+/// path/attribute buffer in this crate already follows.
+fn draw_box(
+    svg: &SvgRoot,
+    scratch: &mut String,
+    rect: Rect,
+    label: &str,
+    edge_anchors: Option<EdgeAnchors>,
+) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
     let mut guard = RenderGuard::with_capacity(group.clone(), 2);
     let local_rect = Rect {
@@ -126,13 +136,12 @@ fn draw_box(svg: &SvgRoot, rect: Rect, label: &str, edge_anchors: Option<EdgeAnc
     group.append(&rect_el)?;
     group.append(&label_el)?;
 
-    let mut scratch = String::new();
     // Not `set_translate`. Its fixed one-decimal-place precision would quantise the rendered position away from
     // the model's own `rect.origin`, by up to 0.05 user-space units. That is harmless to the eye. But it is a
     // real mismatch for code that re-derives a position from the rendered DOM, rather than from the model.
     // Several of this crate's own browser tests do exactly that. `set_transform_fmt` writes `Display`'s full
     // precision instead, at the cost of a (typically) longer attribute string.
-    group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
+    group.set_transform_fmt(scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
     guard.disarm();
     Ok(BoxHandles {
@@ -283,8 +292,14 @@ fn cell_style(
 /// style, append, immediately — keeps the window this matters for down to one cell (two nodes, briefly, for a
 /// multi-value grid's own rect-then-text pair) at a time, via [`RenderGuard::release`], rather than every cell
 /// created so far staying tracked until the whole node finishes.
+///
+/// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
+/// per-cell `x`/`y`/`transform` formatting, the same reasoning [`draw_box`]'s own `scratch` parameter follows. This
+/// is a distinct concern from pass 1/2's own per-value formatting buffer above, which holds cell *content*, not
+/// attribute values, and stays a plain local: nothing outside a single `draw_content_box` call ever needs it.
 fn draw_content_box(
     svg: &SvgRoot,
+    scratch: &mut String,
     top_left: Point,
     content: &DataNodeContent,
     edge_anchors: Option<EdgeAnchors>,
@@ -350,7 +365,6 @@ fn draw_content_box(
     guard.release();
 
     // Pass 2 — see this function's own doc comment.
-    let mut pos_scratch = String::new();
     let mut cell_rects = Vec::with_capacity(if single_value { 1 } else { len });
     if single_value {
         cell_rects.push(rect_el.clone());
@@ -371,8 +385,8 @@ fn draw_content_box(
             text.set_fill("#1b1b1b")?;
 
             if single_value {
-                text.set_attr_display(&mut pos_scratch, "x", cell_size.width / 2.0)?;
-                text.set_attr_display(&mut pos_scratch, "y", cell_size.height / 2.0)?;
+                text.set_attr_display(scratch, "x", cell_size.width / 2.0)?;
+                text.set_attr_display(scratch, "y", cell_size.height / 2.0)?;
                 group.append(&text)?;
                 guard.release();
             } else {
@@ -392,8 +406,8 @@ fn draw_content_box(
                 group.append(&cell_rect)?;
                 guard.release();
 
-                text.set_attr_display(&mut pos_scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
-                text.set_attr_display(&mut pos_scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
+                text.set_attr_display(scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
+                text.set_attr_display(scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
                 group.append(&text)?;
                 guard.release();
 
@@ -410,7 +424,7 @@ fn draw_content_box(
     }
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
-    group.set_transform_fmt(&mut pos_scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
+    group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling.
     // So it belongs on `group`, the one element every rect and every text drawn above actually shares as a
@@ -479,8 +493,12 @@ const OPERATOR_LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDIN
 /// text, measured the same "read the real rendered width back" way every cell in this file already is.
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction, for the same reason as [`draw_content_box`].
+///
+/// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
+/// `x`/`y`/`transform` formatting, the same reasoning [`draw_box`]'s own `scratch` parameter follows.
 fn draw_operator_box(
     svg: &SvgRoot,
+    scratch: &mut String,
     top_left: Point,
     label: &str,
     result: &DataNodeContent,
@@ -533,17 +551,16 @@ fn draw_operator_box(
     value_row_el.set_stroke_width(1.0)?;
     group.append(&value_row_el)?;
 
-    let mut scratch = String::new();
-    label_el.set_attr_display(&mut scratch, "x", box_width / 2.0)?;
-    label_el.set_attr_display(&mut scratch, "y", OPERATOR_LABEL_ROW_HEIGHT / 2.0)?;
+    label_el.set_attr_display(scratch, "x", box_width / 2.0)?;
+    label_el.set_attr_display(scratch, "y", OPERATOR_LABEL_ROW_HEIGHT / 2.0)?;
     group.append(&label_el)?;
 
-    value_el.set_attr_display(&mut scratch, "x", box_width / 2.0)?;
-    value_el.set_attr_display(&mut scratch, "y", OPERATOR_LABEL_ROW_HEIGHT + value_row_height / 2.0)?;
+    value_el.set_attr_display(scratch, "x", box_width / 2.0)?;
+    value_el.set_attr_display(scratch, "y", OPERATOR_LABEL_ROW_HEIGHT + value_row_height / 2.0)?;
     group.append(&value_el)?;
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
-    group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
+    group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // Same reasoning as `draw_content_box`'s own `<title>`/`aria-label` pair: colour alone conveys the result's own
     // type to neither assistive technology nor a colour-blind reader.
@@ -619,7 +636,13 @@ impl Scene {
 
         let label = label.into();
         let mut inner = self.inner.borrow_mut();
-        let handles = draw_box(&inner.svg, rect, &label, options.edge_anchors)?;
+        // Taken out for the call so `draw_box` can format into it without also needing `&inner.svg` to borrow
+        // `inner` in two conflicting ways at once — see `SceneInner::scratch`'s own doc comment for why this,
+        // rather than a fresh `String` per call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors);
+        inner.scratch = scratch;
+        let handles = result?;
         let id = inner.graph.add_node(rect, label);
         inner.insert_node_handle(id, handles);
         Ok(id)
@@ -685,7 +708,11 @@ impl Scene {
         }
 
         let mut inner = self.inner.borrow_mut();
-        let (handles, rect) = draw_content_box(&inner.svg, top_left, &content, options.edge_anchors)?;
+        // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let result = draw_content_box(&inner.svg, &mut scratch, top_left, &content, options.edge_anchors);
+        inner.scratch = scratch;
+        let (handles, rect) = result?;
         let id = inner.graph.add_node(rect, content);
         inner.insert_node_handle(id, handles);
         Ok(id)
@@ -932,7 +959,12 @@ impl Scene {
             }
 
             let label = operator.label();
-            let (handles, rect) = draw_operator_box(&inner.svg, top_left, &label, &result, options.edge_anchors)?;
+            // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
+            let mut scratch = std::mem::take(&mut inner.scratch);
+            let draw_result =
+                draw_operator_box(&inner.svg, &mut scratch, top_left, &label, &result, options.edge_anchors);
+            inner.scratch = scratch;
+            let (handles, rect) = draw_result?;
             let id = inner.graph.add_node(rect, result);
             inner.insert_node_handle(id, handles);
             id
@@ -1036,7 +1068,12 @@ impl Scene {
             }
 
             let label = operator.label();
-            let (mut handles, rect) = draw_operator_box(&inner.svg, top_left, label, &result, options.edge_anchors)?;
+            // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
+            let mut scratch = std::mem::take(&mut inner.scratch);
+            let draw_result =
+                draw_operator_box(&inner.svg, &mut scratch, top_left, label, &result, options.edge_anchors);
+            inner.scratch = scratch;
+            let (mut handles, rect) = draw_result?;
             handles.binary_operator_inputs = Some(inputs);
             let id = inner.graph.add_node(rect, result);
             inner.insert_node_handle(id, handles);
@@ -1049,8 +1086,8 @@ impl Scene {
         let edge_b = self.add_edge(inputs.1, id)?;
         guard.track_edge(edge_b);
 
-        // Both auto-wired edges exist now, so this operator's sibling-edge identity — otherwise unknowable until
-        // this point — can be cached once here. `SceneInner::binary_operator_sibling_edge` reads it on every later
+        // Both auto-wired edges exist now, so this operator's own input-edge pair — otherwise unknowable until this
+        // point — can be cached once here. `SceneInner::redraw_binary_operator_inputs` reads it on every later
         // drag, instead of searching either operand's own incident edges for it.
         self.inner
             .borrow_mut()

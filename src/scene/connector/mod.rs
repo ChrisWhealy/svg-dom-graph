@@ -184,10 +184,13 @@ impl Scene {
             to_anchors,
             to_override,
         );
-        let mut d = String::new();
+        // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability —
+        // see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per new edge.
+        let mut d = std::mem::take(&mut inner.scratch);
         elbow_path_into(&vertices, radius, &mut d);
-
-        let path = inner.svg.path(&d)?;
+        let path_result = inner.svg.path(&d);
+        inner.scratch = d;
+        let path = path_result?;
         path.set_fill("none")?;
         path.set_stroke("#555")?;
         path.set_stroke_width(1.5)?;

@@ -109,14 +109,17 @@ struct SceneInner {
     node_handles: Vec<BoxHandles>,
     edge_handles: Vec<ConnectorHandle>,
     arrow: SvgMarker,
-    /// A single reused `d`-attribute buffer, shared by every one-shot public mutator that redraws a path —
-    /// [`Scene::set_connector_type`] and [`Scene::set_edge_anchors`] — rather than each allocating its own fresh
-    /// `String` on every call.
+    /// A single reused buffer, shared by every one-shot construction/redraw call that needs to format a path `d` or
+    /// element attribute — [`Scene::add_edge_with`], [`Scene::set_connector_type`], [`Scene::set_edge_anchors`],
+    /// and node construction (`draw_box`/`draw_content_box`/`draw_operator_box`, called from
+    /// [`Scene::add_node_with`], [`Scene::add_data_node_with`], and the operator constructors) — rather than each
+    /// allocating its own fresh `String`.
     ///
-    /// A caller driving either through a live slider fires one call per input event, so a fresh allocation per call
-    /// would mean one per event. Taken out via [`std::mem::take`] for the duration of a call (its callers can then
-    /// freely borrow the rest of `SceneInner` without conflicting with it) and put back once the redraw is done, so
-    /// its capacity — not its content — is what persists between calls.
+    /// A caller driving a redraw through a live slider fires one call per input event, so a fresh allocation per
+    /// call would mean one per event; a caller building many nodes in a loop would likewise mean one per node.
+    /// Taken out via [`std::mem::take`] for the duration of a call (its callers can then freely borrow the rest of
+    /// `SceneInner` without conflicting with it) and put back once the call is done, so its capacity — not its
+    /// content — is what persists between calls.
     ///
     /// The pointer-move/pointer-up drag handlers in [`drag`](super::drag) keep their own separate, closure-captured
     /// buffer instead, reused for the lifetime of one drag rather than the whole scene — already the right shape
