@@ -2,6 +2,7 @@ pub(crate) mod collision_policy;
 mod drag_options;
 mod drag_start;
 mod install_guard;
+mod pointer_coalescer;
 
 use super::{Scene, client_to_user_space};
 use crate::{
@@ -13,6 +14,7 @@ use collision_policy::CollisionPolicy;
 pub use drag_options::DragOptions;
 use drag_start::DragStart;
 use install_guard::InstallGuard;
+use pointer_coalescer::PointerCoalescer;
 use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect};
 
@@ -120,6 +122,10 @@ impl Scene {
         let guard = InstallGuard::new(group.clone());
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
+        // Coalesces this node's own pointermove positions to at most one applied `move_node` per animation frame
+        // — see `PointerCoalescer`'s own doc comment. Created once here, alongside `drag_start`, and reused across
+        // every drag this node goes through for as long as it stays draggable, not just the next one.
+        let coalescer = PointerCoalescer::new(Rc::downgrade(&self.inner), id)?;
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         // Both `group` and `inner` must be captured as weak clones to avoid creating an ownership cycle.
@@ -174,18 +180,12 @@ impl Scene {
         }
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        // Weak clone used for the same reason as the pointerdown handler above.
         {
-            let inner_weak = Rc::downgrade(&self.inner);
             let drag_start = drag_start.clone();
             let bounds = options.bounds;
-            // Reused across every pointermove call in this drag — and across drags, since the closure's
-            // environment persists between invocations — rather than allocating a fresh String each time. See
-            // `SvgNode::set_attr_display`'s own doc comment for why this pattern exists.
-            let mut scratch = String::new();
+            let coalescer = coalescer.clone();
 
             group.on_pointermove(move |evt| {
-                let Some(inner) = inner_weak.upgrade() else { return };
                 let Some(start) = drag_start.get() else { return };
                 // Ignores a different pointer's move — for example a second finger touching this element mid-drag
                 // — rather than letting it drive the drag this pointer's own pointerdown started.
@@ -211,7 +211,9 @@ impl Scene {
                     None => new_origin,
                 };
 
-                let _ = inner.borrow_mut().move_node(id, new_origin, &mut scratch);
+                // Coalesced, not applied immediately: a pointer can deliver moves far faster than the browser
+                // paints — see `PointerCoalescer`'s own doc comment.
+                coalescer.push(new_origin);
             })?;
         }
 
@@ -223,9 +225,7 @@ impl Scene {
             let drag_start = drag_start.clone();
             let collision = options.collision;
             let bounds = options.bounds;
-            // Reused for the corrective `move_node` call this handler makes when a drop overlaps another node —
-            // same reasoning as the pointermove handler's own `scratch` above.
-            let mut scratch = String::new();
+            let coalescer = coalescer.clone();
 
             group.on_pointerup(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
@@ -238,6 +238,11 @@ impl Scene {
                 let _ = group.as_element().release_pointer_capture(evt.pointer_id());
                 let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
+
+                // Applies any position a still-pending coalesced frame has not applied yet, so neither the node's
+                // own final rendered position nor the collision-resolution rect read below is ever one frame
+                // stale.
+                coalescer.flush();
 
                 // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to
                 // do. `PushClear` pushes this node back to a clear position, along the line to where it started
@@ -253,7 +258,7 @@ impl Scene {
                     Some(bounds) => clamp_to_bounds(corrected_origin, start.box_size, bounds),
                     None => corrected_origin,
                 };
-                let _ = inner.borrow_mut().move_node(id, corrected_origin, &mut scratch);
+                coalescer.apply_now(corrected_origin);
             })?;
         }
 
@@ -264,6 +269,7 @@ impl Scene {
         {
             let group_weak = group.downgrade();
             let drag_start = drag_start.clone();
+            let coalescer = coalescer.clone();
 
             group.on_pointercancel(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
@@ -274,6 +280,9 @@ impl Scene {
                 let _ = group.as_element().release_pointer_capture(evt.pointer_id());
                 let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
+                // Discards any position pushed since the last applied frame, rather than applying it — the drag
+                // was interrupted, not completed. See `PointerCoalescer::cancel`'s own doc comment.
+                coalescer.cancel();
             })?;
         }
 

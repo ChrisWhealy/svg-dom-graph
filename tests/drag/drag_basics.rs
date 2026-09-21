@@ -315,8 +315,16 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A `pointercancel` belonging to the drag's own active pointer ends that drag: a further move from the same
+/// A `pointercancel` belonging to the drag's own active pointer ends that drag: any position that pointer's own
+/// `pointermove` had queued but not yet applied is discarded rather than applied, a further move from the same
 /// pointer no longer moves the node, and starting an entirely new drag afterwards still works normally.
+///
+/// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture, so
+/// — unlike `pointerup`, which flushes a still-pending coalesced position — the position at cancel time is not one
+/// this crate treats as the user's intended drop point. This test's own `pointermove` and `pointercancel` are
+/// dispatched back to back, with no animation frame in between, specifically so nothing has applied that
+/// `pointermove`'s own position yet when `pointercancel` arrives — see `PointerCoalescer::cancel`'s own doc
+/// comment.
 ///
 /// The complement to `an_unrelated_pointers_pointercancel_does_not_end_the_active_drag`, which only checks that an
 /// unrelated pointer's `pointercancel` is ignored — this checks the positive path `pointercancel` exists for:
@@ -338,33 +346,30 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
 
     let group_b = nth_group("pointer-cancel-active", 0)?; // B was added first.
 
-    // Start a drag with pointer 1, move it, then cancel that same pointer.
+    // Start a drag with pointer 1, move it, then cancel that same pointer — before any animation frame has had a
+    // chance to apply the pending move. The node stays exactly where it started.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointercancel", 150, 130, 1)?;
 
-    let b_rect_cancelled = Rect {
-        origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
-        size: b_rect_before.size,
-    };
     let (group_x, group_y) = group_translate(&group_b)?;
-    check_close(group_x, b_rect_cancelled.origin.x)?;
-    check_close(group_y, b_rect_cancelled.origin.y)?;
+    check_close(group_x, b_rect_before.origin.x)?;
+    check_close(group_y, b_rect_before.origin.y)?;
 
-    // Further movement from the same, now-cancelled pointer must not move the node any further.
+    // Further movement from the same, now-cancelled pointer must not move the node either.
     dispatch_pointer_event(&group_b, "pointermove", 200, 200, 1)?;
     let (group_x, group_y) = group_translate(&group_b)?;
-    check_close(group_x, b_rect_cancelled.origin.x)?;
-    check_close(group_y, b_rect_cancelled.origin.y)?;
+    check_close(group_x, b_rect_before.origin.x)?;
+    check_close(group_y, b_rect_before.origin.y)?;
 
     // A brand new drag afterwards — even reusing the same pointer_id, since pointercancel released it — still
-    // works normally.
+    // works normally, and completes via pointerup, so this one's own move is applied.
     dispatch_pointer_event(&group_b, "pointerdown", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointermove", 200, 160, 1)?;
     dispatch_pointer_event(&group_b, "pointerup", 200, 160, 1)?;
 
     let b_rect_after = Rect {
-        origin: Point::new(b_rect_cancelled.origin.x + 50.0, b_rect_cancelled.origin.y + 30.0),
+        origin: Point::new(b_rect_before.origin.x + 50.0, b_rect_before.origin.y + 30.0),
         size: b_rect_before.size,
     };
     let (group_x, group_y) = group_translate(&group_b)?;
