@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Drop use of `Option` in `Graph`/`SceneInner` dense storage (`bc89252`)
 - Use proportional computation in `set_selection` not just proportional DOM writes (`d6a8dc0`)
 - Remove `Vec<String>`/`Vec<SvgNode>` from streaming data-node construction (`878da38`)
-- Ensure `set_selection` visits each affected index exactly once (``)
+- Ensure `set_selection` visits each affected index exactly once (`e6f8cab`)
+- Compute anchor point from a `Node`'s already known side and crossing coordinate (``)
 
 ## Fixed
 

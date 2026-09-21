@@ -250,17 +250,20 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The side of `rect` a ray from its centre toward `towards` first crosses, and the raw coordinate along that side
-/// (an x for a north/south side, a y for an east/west one) the ray actually crosses at.
+/// The side of `rect` a ray from its own already-known `centre` toward `towards` first crosses, and the raw
+/// coordinate along that side (an x for a north/south side, a y for an east/west one) the ray actually crosses at.
 ///
 /// Picks the side the same way [`edge_anchor`] does. Returns the crossing coordinate itself, not a point snapped to
 /// any candidate — [`binary_operator_anchors`] needs to compare two crossings before deciding where either one
-/// finally lands.
+/// finally lands, and, once decided, passes the winning crossing straight to
+/// [`anchor_from_crossing`] rather than recomputing it there.
+///
+/// Takes `centre` rather than `rect` alone since [`binary_operator_anchors`] calls this twice, against the same
+/// rect, and computes `centre` itself only once for both calls.
 ///
 /// Returns `rect`'s own centre y and `Side::East` when `towards` is exactly the centre, the same degenerate case
 /// [`edge_anchor`] returns its own centre for.
-fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
-    let centre = centre(rect);
+fn side_and_crossing(rect: Rect, centre: Point, towards: Point) -> (side::Side, f64) {
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 
@@ -284,6 +287,59 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The anchor point on `rect`'s own `side`, given the ray's own already-known `crossing` coordinate along it — see
+/// [`side_and_crossing`]'s own doc comment for what `crossing` means for a given `side`.
+///
+/// [`binary_operator_anchors`]'s own different-side branch is the only caller: it already has `side`/`crossing` in
+/// hand for both operands, from its own initial [`side_and_crossing`] calls, so it reaches here instead of calling
+/// [`edge_anchor`]/[`snapped_anchor`] — either of which would redo the same ray/rectangle intersection just to
+/// re-derive the side and crossing this already has.
+///
+/// `fixing_points: None` returns `side`'s own plain midpoint, ignoring `crossing` entirely — the same point
+/// [`edge_anchor`] itself would return. `Some(n)` quantises `crossing` to the nearest of `n` evenly spaced
+/// candidates on `side` instead — the same division [`snapped_anchor`] itself would use.
+fn anchor_from_crossing(
+    rect: Rect,
+    centre: Point,
+    side: side::Side,
+    crossing: f64,
+    fixing_points: Option<u8>,
+) -> Point {
+    let Some(fixing_points) = fixing_points else {
+        return match side {
+            side::Side::East => Point::new(rect.origin.x + rect.size.width, centre.y),
+            side::Side::West => Point::new(rect.origin.x, centre.y),
+            side::Side::South => Point::new(centre.x, rect.origin.y + rect.size.height),
+            side::Side::North => Point::new(centre.x, rect.origin.y),
+        };
+    };
+
+    // At least 1, so `divisions` below is always `>= 2`, mirroring `snapped_anchor`'s own defensive minimum.
+    let candidates = f64::from(fixing_points.max(1));
+    let divisions = candidates + 1.0;
+
+    if is_horizontal(side) {
+        let x = if side == side::Side::East {
+            rect.origin.x + rect.size.width
+        } else {
+            rect.origin.x
+        };
+        let top = rect.origin.y;
+        let index = ((crossing - top) / rect.size.height * divisions).round().clamp(1.0, candidates);
+        Point::new(x, top + rect.size.height * index / divisions)
+    } else {
+        let y = if side == side::Side::South {
+            rect.origin.y + rect.size.height
+        } else {
+            rect.origin.y
+        };
+        let left = rect.origin.x;
+        let index = ((crossing - left) / rect.size.width * divisions).round().clamp(1.0, candidates);
+        Point::new(left + rect.size.width * index / divisions, y)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Both of a binary operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
 /// together in one call. `first` and `second` are the two operands' own centres, in
 /// [`Scene::add_binary_operator_node_with`](crate::scene::Scene::add_binary_operator_node_with)'s own `inputs` order.
@@ -293,8 +349,10 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`.
 ///
 /// Whenever `first` and `second` resolve to *different* sides of `rect`, only one connector lands on either side,
-/// so each behaves exactly like an ordinary edge into `rect` would: [`snapped_anchor`] when `fixing_points` is
-/// configured, [`edge_anchor`] — that side's own plain midpoint — otherwise.
+/// so each lands exactly where an ordinary edge into `rect` would: the side's own plain midpoint, or, with
+/// `fixing_points` configured, the nearest evenly spaced candidate — the same two rules [`edge_anchor`]/
+/// [`snapped_anchor`] apply, but via [`anchor_from_crossing`] against the side/crossing already in hand, not a
+/// second, independent ray/rectangle intersection against `first`/`second` themselves.
 ///
 /// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly
 /// spaced candidates — the same division [`snapped_anchor`] would use for that count. So the two connectors no
@@ -313,8 +371,9 @@ fn side_and_crossing(rect: Rect, towards: Point) -> (side::Side, f64) {
 /// the same `Point` passed twice, but two distinct operands sitting on the same ray from `rect`'s own centre, where
 /// comparing the crossings alone cannot order them.
 ///
-/// Each of `first`/`second`'s own crossing is computed exactly once, here, and reused for both returned anchors —
-/// unlike two independent calls each recomputing both crossings from scratch. See
+/// `rect`'s own centre, and each of `first`/`second`'s own side/crossing, is computed exactly once, here, and
+/// reused for both returned anchors — on the same-side branch directly, and on the different-side branch via
+/// [`anchor_from_crossing`] — unlike two independent calls each recomputing all of it from scratch. See
 /// [`SceneInner::binary_operator_to_override`](crate::scene::SceneInner::binary_operator_to_override), the one
 /// caller that needs both of a pair's own anchors together.
 pub(crate) fn binary_operator_anchors(
@@ -323,15 +382,21 @@ pub(crate) fn binary_operator_anchors(
     second: Point,
     fixing_points: Option<u8>,
 ) -> [(Point, side::Side); 2] {
-    let (first_side, first_crossing) = side_and_crossing(rect, first);
-    let (second_side, second_crossing) = side_and_crossing(rect, second);
+    let centre = centre(rect);
+    let (first_side, first_crossing) = side_and_crossing(rect, centre, first);
+    let (second_side, second_crossing) = side_and_crossing(rect, centre, second);
 
     if first_side != second_side {
-        let anchor_for = |towards: Point| match fixing_points {
-            Some(n) => snapped_anchor(rect, towards, n),
-            None => edge_anchor(rect, towards),
-        };
-        return [anchor_for(first), anchor_for(second)];
+        return [
+            (
+                anchor_from_crossing(rect, centre, first_side, first_crossing, fixing_points),
+                first_side,
+            ),
+            (
+                anchor_from_crossing(rect, centre, second_side, second_crossing, fixing_points),
+                second_side,
+            ),
+        ];
     }
 
     // At least 1, so `divisions` below is always `>= 2`, mirroring `snapped_anchor`'s own defensive minimum.
@@ -346,7 +411,6 @@ pub(crate) fn binary_operator_anchors(
         (candidates, 1.0)
     };
 
-    let centre = centre(rect);
     let point_for = |index: f64| {
         if is_horizontal(first_side) {
             let sign = if first_side == side::Side::East { 1.0 } else { -1.0 };
