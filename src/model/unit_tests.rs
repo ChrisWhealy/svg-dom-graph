@@ -123,9 +123,11 @@ fn remove_edge_leaves_a_shared_nodes_other_edges_untouched() -> Result<(), Strin
     let left_edge = graph.add_edge(root, left);
     let right_edge = graph.add_edge(root, right);
 
-    graph.remove_edge(left_edge);
+    // `remove_edge` only ever unwinds the most recently added edge — see its own doc comment — so remove
+    // `right_edge`, not `left_edge`, and confirm `left_edge` survives untouched on their shared node.
+    graph.remove_edge(right_edge);
 
-    check_eq(graph.incident_edges(root), &[right_edge] as &[EdgeId])
+    check_eq(graph.incident_edges(root), &[left_edge] as &[EdgeId])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -143,6 +145,34 @@ fn remove_edge_does_nothing_for_an_unknown_id() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `remove_edge` is a narrow rollback primitive: only the most recently added edge is ever a valid target — see its
+/// own doc comment. A debug build panics rather than silently corrupting `incident` on the wrong node.
+#[test]
+#[should_panic(expected = "is not the most recently added edge")]
+fn remove_edge_panics_in_debug_when_not_given_the_most_recently_added_edge() {
+    let mut graph = Graph::new();
+    let root = graph.add_node(test_rect(0.0, 0.0), "root");
+    let left = graph.add_node(test_rect(10.0, 10.0), "left");
+    let right = graph.add_node(test_rect(20.0, 20.0), "right");
+    let left_edge = graph.add_edge(root, left);
+    let _right_edge = graph.add_edge(root, right);
+
+    graph.remove_edge(left_edge);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same invariant as above, for `remove_node`.
+#[test]
+#[should_panic(expected = "is not the most recently added node")]
+fn remove_node_panics_in_debug_when_not_given_the_most_recently_added_node() {
+    let mut graph = Graph::new();
+    let a = graph.add_node(test_rect(0.0, 0.0), "A");
+    let _b = graph.add_node(test_rect(10.0, 10.0), "B");
+
+    graph.remove_node(a);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn remove_node_forgets_it_and_its_own_incidence() -> Result<(), String> {
     let mut graph = Graph::new();
@@ -151,12 +181,14 @@ fn remove_node_forgets_it_and_its_own_incidence() -> Result<(), String> {
     let edge = graph.add_edge(a, b);
     graph.remove_edge(edge);
 
-    graph.remove_node(a);
+    // `remove_node` only ever unwinds the most recently added node — see its own doc comment — so remove `b`, the
+    // later of the two, not `a`.
+    graph.remove_node(b);
 
-    if graph.node(a).is_some() {
+    if graph.node(b).is_some() {
         return Err("node() still found data for an id remove_node already removed".into());
     }
-    check_eq(graph.incident_edges(a), &[] as &[EdgeId])
+    check_eq(graph.incident_edges(b), &[] as &[EdgeId])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

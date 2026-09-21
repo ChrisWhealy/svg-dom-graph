@@ -20,21 +20,17 @@ use svg_dom::root::utils::Rect;
 /// `id.graph` is first checked everywhere, so an id belonging to a different `Graph` is rejected even when its own
 /// index happens to coincide with a real slot here.
 ///
-/// A removed node/edge reverts the slot to `None` rather than attempting to shift indices. Indicies are never reused,
-/// meaning that existing ids always remain valid even after a removal. This is at the cost of a `Vec` that cannot
-/// shrink, but this is considered acceptable given the expected usage pattern.
+/// # Append-only, with one narrow exception
 ///
-/// Removal is rare (a narrow rollback primitive — see [`remove_node`](Self::remove_node) and
-/// [`remove_edge`](Self::remove_edge)'s own doc comments).
-///
-/// Carries no rendering state of its own. `crate::scene::Scene` pairs each id this graph hands out with its rendered
-/// SVG handles.
+/// `add_node`/`add_edge` only ever append: a new id's own `index` is always exactly `nodes.len()`/`edges.len()`
+/// before the push. [`remove_node`](Self::remove_node)/[`remove_edge`](Self::remove_edge) are the one exception,
+/// and only ever unwind the single item just appended — see their own doc comments. So `nodes`/`edges` need no
+/// `Option` tombstone layer: every live index is a live element, and a rolled-back index is simply reused by
+/// whichever node/edge gets added next.
 pub(crate) struct Graph {
     pub id: usize,
-    pub nodes: Vec<Option<Node>>,
-    pub edges: Vec<Option<Edge>>,
-    pub next_node_id: usize,
-    pub next_edge_id: usize,
+    pub nodes: Vec<Node>,
+    pub edges: Vec<Edge>,
 }
 
 impl Graph {
@@ -43,8 +39,6 @@ impl Graph {
             id: NEXT_GRAPH_ID.fetch_add(1, Ordering::Relaxed),
             nodes: Vec::new(),
             edges: Vec::new(),
-            next_node_id: 0,
-            next_edge_id: 0,
         }
     }
 
@@ -53,16 +47,13 @@ impl Graph {
     pub(crate) fn add_node(&mut self, rect: Rect, content: impl Into<NodeContent>) -> NodeId {
         let id = NodeId {
             graph: self.id,
-            index: self.next_node_id,
+            index: self.nodes.len(),
         };
-        self.next_node_id += 1;
-        // `next_node_id` only ever grows, so `id.index` is always exactly `self.nodes.len()` here.
-        // This is always an append and never leaves gap.
-        self.nodes.push(Some(Node {
+        self.nodes.push(Node {
             rect,
             content: content.into(),
             incident: Vec::new(),
-        }));
+        });
         id
     }
 
@@ -74,11 +65,9 @@ impl Graph {
     pub(crate) fn add_edge(&mut self, from: NodeId, to: NodeId) -> EdgeId {
         let id = EdgeId {
             graph: self.id,
-            index: self.next_edge_id,
+            index: self.edges.len(),
         };
-        self.next_edge_id += 1;
-        // Same reasoning as `add_node`'s own comment: always an append.
-        self.edges.push(Some(Edge { from, to }));
+        self.edges.push(Edge { from, to });
         if let Some(node) = self.node_mut(from) {
             node.incident.push(id);
         }
@@ -96,7 +85,7 @@ impl Graph {
         if id.graph != self.id {
             return None;
         }
-        self.nodes.get(id.index)?.as_ref()
+        self.nodes.get(id.index)
     }
 
     /// The mutable counterpart to [`node`](Self::node). Private: every external caller goes through a narrower,
@@ -106,7 +95,7 @@ impl Graph {
         if id.graph != self.id {
             return None;
         }
-        self.nodes.get_mut(id.index)?.as_mut()
+        self.nodes.get_mut(id.index)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -127,7 +116,7 @@ impl Graph {
         if id.graph != self.id {
             return None;
         }
-        self.edges.get(id.index)?.as_ref()
+        self.edges.get(id.index)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -141,23 +130,44 @@ impl Graph {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes edge `id`, and drops it from both of its own endpoints' incident lists.
     ///
-    /// Does nothing if `id` does not name an edge in this graph.
+    /// Does nothing if `id` does not name an edge in this graph, or if `edges` is empty.
     ///
     /// A narrow rollback primitive, not a general deletion API: this crate's only caller is
     /// `scene::node::OperatorConstructionGuard`, unwinding an edge it wired earlier in the same still-failing
-    /// operator-creation call. There is no public `Scene::remove_edge` — this graph never otherwise loses an edge
-    /// once added.
+    /// operator-creation call, always in reverse creation order. There is no public `Scene::remove_edge` — this
+    /// graph never otherwise loses an edge once added.
+    ///
+    /// `id` is expected to always name the most recently added edge — the only one `pop()` can remove without
+    /// shifting every other edge's own index. A debug build panics if it does not; a release build silently does
+    /// nothing, the same as an unknown `id`, rather than removing the wrong edge or corrupting later indices.
     pub(crate) fn remove_edge(&mut self, id: EdgeId) {
         if id.graph != self.id {
             return;
         }
-        let Some(edge) = self.edges.get_mut(id.index).and_then(Option::take) else {
+        let Some(last_index) = self.edges.len().checked_sub(1) else {
             return;
         };
-        if let Some(node) = self.node_mut(edge.from) {
-            node.incident.retain(|&e| e != id);
+        if id.index != last_index {
+            debug_assert!(
+                false,
+                "Graph::remove_edge: {id:?} is not the most recently added edge (last is index {last_index})"
+            );
+            return;
         }
-        if let Some(node) = self.node_mut(edge.to) {
+        let edge = self.edges.pop().expect("checked above: edges is non-empty");
+        Self::pop_incidence(self.node_mut(edge.from), id);
+        Self::pop_incidence(self.node_mut(edge.to), id);
+    }
+
+    /// Drops `id` from `node`'s own incident list. `id` is expected to be that list's own last entry — the same
+    /// invariant, and for the same reason, as [`remove_edge`](Self::remove_edge)'s own doc comment: `add_edge`
+    /// appended it there last, and no edge has touched this node since.
+    fn pop_incidence(node: Option<&mut Node>, id: EdgeId) {
+        let Some(node) = node else { return };
+        if node.incident.last() == Some(&id) {
+            node.incident.pop();
+        } else {
+            debug_assert!(false, "Graph::remove_edge: {id:?} is not the last edge incident to this node");
             node.incident.retain(|&e| e != id);
         }
     }
@@ -165,18 +175,30 @@ impl Graph {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes node `id` and its own incident-edge bookkeeping.
     ///
-    /// Does nothing if `id` does not name a node in this graph.
+    /// Does nothing if `id` does not name a node in this graph, or if `nodes` is empty.
     ///
     /// The same narrow rollback purpose as [`remove_edge`](Self::remove_edge): only safe to call once every edge
     /// that could reference `id` has already been removed. Otherwise, those edges would keep pointing at a node
     /// that no longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always
     /// holds for its one caller.
+    ///
+    /// `id` is expected to always name the most recently added node, for the same `pop()`-only reason
+    /// [`remove_edge`](Self::remove_edge) documents. A debug build panics if it does not; a release build silently
+    /// does nothing.
     pub(crate) fn remove_node(&mut self, id: NodeId) {
         if id.graph != self.id {
             return;
         }
-        if let Some(slot) = self.nodes.get_mut(id.index) {
-            *slot = None;
+        let Some(last_index) = self.nodes.len().checked_sub(1) else {
+            return;
+        };
+        if id.index != last_index {
+            debug_assert!(
+                false,
+                "Graph::remove_node: {id:?} is not the most recently added node (last is index {last_index})"
+            );
+            return;
         }
+        self.nodes.pop();
     }
 }

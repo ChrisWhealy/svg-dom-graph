@@ -69,7 +69,9 @@ impl Drop for OperatorConstructionGuard {
         }
 
         let mut inner = self.scene.inner.borrow_mut();
-        for edge_id in self.edge_ids.into_iter().flatten() {
+        // Reverse creation order: `Graph::remove_edge`/`SceneInner::remove_edge_handle` only ever remove the most
+        // recently added edge (see their own doc comments), so the second-tracked edge, if any, must go first.
+        for edge_id in self.edge_ids.into_iter().rev().flatten() {
             if let Some(handle) = inner.remove_edge_handle(edge_id) {
                 handle.path.remove();
             }

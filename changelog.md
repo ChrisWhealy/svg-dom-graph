@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `move_node` bails out early if `new_origin == old_origin` (`d84ff7e`)
 - Coalesce pointer mover events down to `requestAnimationFrame` frame rate (`4b22bc3`)
 - Move Demo Scope documentation to its own `.md` file (`87845b0`)
-- Make RAF callback persistent in `PointerCoalescer` (``)
+- Make RAF callback persistent in `PointerCoalescer` (`9dd7fd6`)
+- Drop use of `Option` in `Graph`/`SceneInner` dense storage (``)
 
 ## Fixed
 
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove unnecessary floating-point calculations from `elbow_path_into` (`e900283`)
 - Remove unnecessary heap allocations during hex/binary value formatting in `model::content::format_value()` (`f1a1de5`)
 - Remove synchronous text measurement per data node cell construction (`990f34e`)
-- Remove `Vec<String>` allocation from `draw_operator_box` (``)
+- Remove `Vec<String>` allocation from `draw_operator_box` (`49a6bf9`)
 - Optimize small constructor-time allocations (`d8ff7e3`)
 
 # [Released]

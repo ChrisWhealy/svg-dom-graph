@@ -101,12 +101,13 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 /// [`Scene::add_node`] or [`Scene::add_edge`] through which a caller could pass a different root by mistake.
 ///
 /// `node_handles`/`edge_handles` are stored the same way [`Graph`] stores its own nodes/edges — densely, by
-/// `id.index`, with `id.graph` checked first — rather than in a `HashMap`. See [`Graph`]'s own doc comment for why.
+/// `id.index`, append-only, with `id.graph` checked first — rather than in a `HashMap`. See [`Graph`]'s own doc
+/// comment for why, and its `remove_node`/`remove_edge` for what "append-only" allows removal to still do.
 struct SceneInner {
     svg: SvgRoot,
     graph: Graph,
-    node_handles: Vec<Option<BoxHandles>>,
-    edge_handles: Vec<Option<ConnectorHandle>>,
+    node_handles: Vec<BoxHandles>,
+    edge_handles: Vec<ConnectorHandle>,
     arrow: SvgMarker,
     /// A single reused `d`-attribute buffer, shared by every one-shot public mutator that redraws a path —
     /// [`Scene::set_connector_type`] and [`Scene::set_edge_anchors`] — rather than each allocating its own fresh
@@ -141,7 +142,7 @@ impl SceneInner {
         if id.graph != self.graph.id {
             return None;
         }
-        self.node_handles.get(id.index)?.as_ref()
+        self.node_handles.get(id.index)
     }
 
     /// The mutable counterpart to [`node_handle`](Self::node_handle).
@@ -149,7 +150,7 @@ impl SceneInner {
         if id.graph != self.graph.id {
             return None;
         }
-        self.node_handles.get_mut(id.index)?.as_mut()
+        self.node_handles.get_mut(id.index)
     }
 
     /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph` —
@@ -165,15 +166,26 @@ impl SceneInner {
             self.node_handles.len(),
             "node_handles and graph.nodes fell out of step"
         );
-        self.node_handles.push(Some(handles));
+        self.node_handles.push(handles);
     }
 
-    /// Removes and returns node `id`'s own box handles, or `None` if `id` does not name a node in this scene.
+    /// Removes and returns node `id`'s own box handles, or `None` if `id` does not name a node in this scene, or if
+    /// `id` does not name the most recently added one — see [`Graph::remove_node`](crate::model::graph::Graph::
+    /// remove_node)'s own doc comment for why only the last is ever a valid target.
     fn remove_node_handle(&mut self, id: NodeId) -> Option<BoxHandles> {
         if id.graph != self.graph.id {
             return None;
         }
-        self.node_handles.get_mut(id.index)?.take()
+        let last_index = self.node_handles.len().checked_sub(1)?;
+        if id.index != last_index {
+            debug_assert!(
+                false,
+                "SceneInner::remove_node_handle: {id:?} is not the most recently added node handle (last is index \
+                 {last_index})"
+            );
+            return None;
+        }
+        self.node_handles.pop()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -182,7 +194,7 @@ impl SceneInner {
         if id.graph != self.graph.id {
             return None;
         }
-        self.edge_handles.get(id.index)?.as_ref()
+        self.edge_handles.get(id.index)
     }
 
     /// The mutable counterpart to [`edge_handle`](Self::edge_handle).
@@ -190,7 +202,7 @@ impl SceneInner {
         if id.graph != self.graph.id {
             return None;
         }
-        self.edge_handles.get_mut(id.index)?.as_mut()
+        self.edge_handles.get_mut(id.index)
     }
 
     /// Stores `handle` as edge `id`'s own connector handle. The same always-an-append call pattern as
@@ -205,15 +217,26 @@ impl SceneInner {
             self.edge_handles.len(),
             "edge_handles and graph.edges fell out of step"
         );
-        self.edge_handles.push(Some(handle));
+        self.edge_handles.push(handle);
     }
 
-    /// Removes and returns edge `id`'s own connector handle, or `None` if `id` does not name an edge in this scene.
+    /// Removes and returns edge `id`'s own connector handle, or `None` if `id` does not name an edge in this scene,
+    /// or if `id` does not name the most recently added one — see [`Graph::remove_edge`](crate::model::graph::
+    /// Graph::remove_edge)'s own doc comment for why only the last is ever a valid target.
     fn remove_edge_handle(&mut self, id: EdgeId) -> Option<ConnectorHandle> {
         if id.graph != self.graph.id {
             return None;
         }
-        self.edge_handles.get_mut(id.index)?.take()
+        let last_index = self.edge_handles.len().checked_sub(1)?;
+        if id.index != last_index {
+            debug_assert!(
+                false,
+                "SceneInner::remove_edge_handle: {id:?} is not the most recently added edge handle (last is index \
+                 {last_index})"
+            );
+            return None;
+        }
+        self.edge_handles.pop()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -444,11 +467,11 @@ impl SceneInner {
             .nodes
             .iter()
             .enumerate()
-            .filter_map(|(index, slot)| slot.as_ref().map(|node| (NodeId { graph: self.graph.id, index }, node)))
+            .map(|(index, node)| (NodeId { graph: self.graph.id, index }, node))
             .filter(|&(other_id, other)| other_id != id && rects_overlap(dragged, other.rect))
             .min_by(|&(id_a, a), &(id_b, b)| {
-                // Ties (two blockers exactly equidistant from `dragged_centre`) break on `index`, so the choice is
-                // deterministic — otherwise it would depend on iteration order over removal-tombstoned slots.
+                // Ties (two blockers exactly equidistant from `dragged_centre`) break on `index`, so the choice
+                // stays deterministic rather than depending on iteration order.
                 distance_sq(dragged_centre, box_centre(a.rect))
                     .total_cmp(&distance_sq(dragged_centre, box_centre(b.rect)))
                     .then_with(|| id_a.index.cmp(&id_b.index))
