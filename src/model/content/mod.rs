@@ -98,54 +98,53 @@ pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for
-/// [`DataFormat::Decimal`] — generic over the byte width so [`NodeValues::single_cell_string`] needs one call site per
-/// variant, not one formatting implementation per width.
+/// Formats `decimal` as a plain base-10 number into `out` — the [`DataFormat::Decimal`] case, which needs a
+/// value's own numeric magnitude directly, never a byte representation. Clears `out` first, then writes into it —
+/// the same reused-buffer shape [`crate::geometry::elbow_path_into`] already uses for a per-frame `d` attribute.
 ///
-/// A thin, single-value wrapper around [`format_value_into`] — see that function's own doc comment for a caller
-/// formatting more than one value, which should reuse one buffer across all of them instead of allocating a fresh
-/// `String` per call the way this one always does.
-fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat) -> String {
-    let mut out = String::new();
-    format_value_into(bytes, decimal, format, &mut out);
-    out
+/// A separate function from [`format_hex_into`]/[`format_binary_into`], rather than one function matching on
+/// [`DataFormat`] internally, so a caller already holding a [`DataFormat`] can dispatch once — outside its own
+/// per-value loop, if it has one — instead of every call redoing that match only to find two of its three arms
+/// always ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is
+/// the caller this matters most for: reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell
+/// only to have this discard them unused would be wasted work on every single one.
+fn format_decimal_into(decimal: u128, out: &mut String) {
+    use std::fmt::Write as _;
+    out.clear();
+    let _ = write!(out, "{decimal}");
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Same as [`format_value`], but formats into caller-owned `out` instead of returning a fresh `String`.
-///
-/// Clears `out` first, then writes into it — the same reused-buffer shape [`crate::geometry::elbow_path_into`] already
-/// uses for a per-frame `d` attribute. [`NodeValues::for_each_cell_string`] reuses one `out` across every value in a
-/// [`super::DataNodeContent`], so formatting `n` values costs at most one buffer growth, amortised across the whole
-/// node, rather than `n` separate heap allocations the way collecting into a `Vec<String>` would.
-fn format_value_into<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat, out: &mut String) {
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Hexadecimal` digit groups
+/// into `out` — generic over the byte width so [`NodeValues`] needs one call site per variant, not one formatting
+/// implementation per width. See [`format_decimal_into`]'s own doc comment for why this is a separate function
+/// rather than one shared, internally-dispatching implementation.
+fn format_hex_into<const N: usize>(bytes: [u8; N], out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
+    // "XX" per byte, plus one separating space between each pair of bytes.
+    out.reserve(3 * N - 1);
+    for (i, b) in bytes.iter().enumerate() {
+        if i > 0 {
+            out.push(' ');
+        }
+        let _ = write!(out, "{b:02X}");
+    }
+}
 
-    match format {
-        DataFormat::Decimal => {
-            let _ = write!(out, "{decimal}");
-        },
-        DataFormat::Hexadecimal => {
-            // "XX" per byte, plus one separating space between each pair of bytes.
-            out.reserve(3 * N - 1);
-            for (i, b) in bytes.iter().enumerate() {
-                if i > 0 {
-                    out.push(' ');
-                }
-                let _ = write!(out, "{b:02X}");
-            }
-        },
-        DataFormat::Binary => {
-            // "hhhh llll" per byte (nybble, space, nybble), plus one separating space between each pair of bytes.
-            out.reserve(10 * N - 1);
-            for (i, b) in bytes.iter().enumerate() {
-                if i > 0 {
-                    out.push(' ');
-                }
-                let _ = write!(out, "{:04b} {:04b}", b >> 4, b & 0x0F);
-            }
-        },
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Binary` digit groups into
+/// `out` — the [`format_hex_into`] counterpart for `DataFormat::Binary`.
+fn format_binary_into<const N: usize>(bytes: [u8; N], out: &mut String) {
+    use std::fmt::Write as _;
+    out.clear();
+    // "hhhh llll" per byte (nybble, space, nybble), plus one separating space between each pair of bytes.
+    out.reserve(10 * N - 1);
+    for (i, b) in bytes.iter().enumerate() {
+        if i > 0 {
+            out.push(' ');
+        }
+        let _ = write!(out, "{:04b} {:04b}", b >> 4, b & 0x0F);
     }
 }
 

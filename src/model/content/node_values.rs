@@ -1,4 +1,4 @@
-use super::{ByteOrder, DataFormat, format_value, format_value_into};
+use super::{ByteOrder, DataFormat, format_binary_into, format_decimal_into, format_hex_into};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
@@ -72,9 +72,15 @@ impl NodeValues {
     /// Calls `f(index, formatted)` once for every value, in order, formatted per `format` and `byte_order` — one
     /// cell per value, not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
     ///
-    /// `scratch` is cleared and reformatted into on every value, via [`format_value_into`], rather than allocating a
-    /// fresh `String` per value the way collecting into a `Vec<String>` does. `f` borrows `scratch`'s own contents
-    /// for the duration of one call only — the string is not valid, and must not be kept, past that call returning.
+    /// `scratch` is cleared and reformatted into on every value, via [`format_decimal_into`]/[`format_hex_into`]/
+    /// [`format_binary_into`], rather than allocating a fresh `String` per value the way collecting into a
+    /// `Vec<String>` does. `f` borrows `scratch`'s own contents for the duration of one call only — the string is
+    /// not valid, and must not be kept, past that call returning.
+    ///
+    /// Dispatches on `format` once, before the loop, not once per value: [`DataFormat::Decimal`] never computes
+    /// `x.to_be_bytes()`/[`order_bytes`] at all, since [`format_decimal_into`] only ever needs the value's own
+    /// numeric magnitude. Computing and byte-order-reordering a value's own bytes only to have `Decimal` discard
+    /// them unused, on every value, is exactly the wasted work this avoids.
     pub(super) fn for_each_cell_string(
         &self,
         format: DataFormat,
@@ -83,29 +89,85 @@ impl NodeValues {
         mut f: impl FnMut(usize, &str),
     ) {
         match self {
-            Self::U8(v) => {
-                for (i, &x) in v.iter().enumerate() {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
-                    f(i, scratch);
-                }
+            Self::U8(v) => match format {
+                DataFormat::Decimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_decimal_into(u128::from(x), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Hexadecimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Binary => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
             },
-            Self::U16(v) => {
-                for (i, &x) in v.iter().enumerate() {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
-                    f(i, scratch);
-                }
+            Self::U16(v) => match format {
+                DataFormat::Decimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_decimal_into(u128::from(x), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Hexadecimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Binary => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
             },
-            Self::U32(v) => {
-                for (i, &x) in v.iter().enumerate() {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
-                    f(i, scratch);
-                }
+            Self::U32(v) => match format {
+                DataFormat::Decimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_decimal_into(u128::from(x), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Hexadecimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Binary => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
             },
-            Self::U64(v) => {
-                for (i, &x) in v.iter().enumerate() {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
-                    f(i, scratch);
-                }
+            Self::U64(v) => match format {
+                DataFormat::Decimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_decimal_into(u128::from(x), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Hexadecimal => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
+                DataFormat::Binary => {
+                    for (i, &x) in v.iter().enumerate() {
+                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
+                        f(i, scratch);
+                    }
+                },
             },
         }
     }
@@ -123,22 +185,38 @@ impl NodeValues {
         match self {
             Self::U8(v) => {
                 if let Some(x) = pick_widest(v, format) {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, out);
+                    match format {
+                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    }
                 }
             },
             Self::U16(v) => {
                 if let Some(x) = pick_widest(v, format) {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, out);
+                    match format {
+                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    }
                 }
             },
             Self::U32(v) => {
                 if let Some(x) = pick_widest(v, format) {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, out);
+                    match format {
+                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    }
                 }
             },
             Self::U64(v) => {
                 if let Some(x) = pick_widest(v, format) {
-                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, out);
+                    match format {
+                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
+                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    }
                 }
             },
         }
@@ -153,18 +231,42 @@ impl NodeValues {
     /// would ever visit.
     pub(super) fn single_cell_string(&self, format: DataFormat, byte_order: ByteOrder) -> Option<String> {
         match self {
-            Self::U8(v) => v
-                .first()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
-            Self::U16(v) => v
-                .first()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
-            Self::U32(v) => v
-                .first()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
-            Self::U64(v) => v
-                .first()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format)),
+            Self::U8(v) => v.first().map(|&x| {
+                let mut out = String::new();
+                match format {
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                }
+                out
+            }),
+            Self::U16(v) => v.first().map(|&x| {
+                let mut out = String::new();
+                match format {
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                }
+                out
+            }),
+            Self::U32(v) => v.first().map(|&x| {
+                let mut out = String::new();
+                match format {
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                }
+                out
+            }),
+            Self::U64(v) => v.first().map(|&x| {
+                let mut out = String::new();
+                match format {
+                    DataFormat::Decimal => format_decimal_into(u128::from(x), &mut out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), &mut out),
+                }
+                out
+            }),
         }
     }
 

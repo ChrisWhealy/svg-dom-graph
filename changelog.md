@@ -36,7 +36,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix binary operator pair-redraw routing (`9bd8135`)
 - Optimize remaining construction-path allocations (`019ef86`)
 - Doc only: Fix stale doc comment in `Model::node::Node` (`6ebbedc`)
-- Ensure data node formatting completes in a single pass (``)
+- Ensure data node formatting completes in a single pass (`e22532d`)
+- Avoid unnecessary byte-order processing in `format_value`/`format_value_into` (``)
 
 # [Released]
 
