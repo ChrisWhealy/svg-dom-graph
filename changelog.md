@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `move_node` bails out early if `new_origin == old_origin` (`d84ff7e`)
 - Coalesce pointer mover events down to `requestAnimationFrame` frame rate (`4b22bc3`)
 - Move Demo Scope documentation to its own `.md` file (`87845b0`)
+- Make RAF callback persistent in `PointerCoalescer` (``)
 
 ## Fixed
 
