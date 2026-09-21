@@ -90,10 +90,16 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Every value's own formatted cell text, in the same order they were supplied. One string per value, ready for
-    /// `draw_content_box` to place one at a time into the grid [`DataNodeContent::shape`] describes.
-    pub(crate) fn cells(&self) -> Vec<String> {
-        self.values.cell_strings(self.format, self.byte_order)
+    /// Calls `f(index, formatted)` once for every value, in order, formatted per this content's own `format`/
+    /// `byte_order` — one cell per value, not yet arranged into a grid (see [`shape`](Self::shape) for that).
+    ///
+    /// `draw_content_box` streams a data node's own cells through this one at a time, however many values it
+    /// holds, rather than collecting every formatted value into a `Vec<String>` — and the `Vec<SvgNode>` `<text>`
+    /// per element it would otherwise take to render them — up front. See
+    /// [`NodeValues::for_each_cell_string`]'s own doc comment for the reused-buffer shape this passes straight
+    /// through.
+    pub(crate) fn for_each_cell_string(&self, scratch: &mut String, f: impl FnMut(usize, &str)) {
+        self.values.for_each_cell_string(self.format, self.byte_order, scratch, f);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

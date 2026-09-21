@@ -41,6 +41,20 @@ impl RenderGuard {
         self.loose.push(node);
     }
 
+    /// Stops tracking the most recently [`track`](Self::track)ed node because it is now safely appended into `group`,
+    /// whose own future removal would already cascade to remove it, or because the caller has already removed it
+    /// itself.
+    ///
+    /// Callers that create-then-immediately-resolve one node at a time ([`draw_content_box`](super::draw_content_box)'s
+    /// per-cell loop is the motivating case) call this right after each node's own fate is settled, so `loose` never
+    /// grows past the small number of nodes momentarily in flight at once, regardless of how many a whole node's own
+    /// construction creates in total. This relies on the caller's own strict create-then-resolve discipline: this
+    /// always drops whichever node [`track`](Self::track) most recently added, not a specific one named by the caller,
+    /// so tracking a second node before resolving the first would silently stop tracking the wrong one.
+    pub(super) fn release(&mut self) {
+        self.loose.pop();
+    }
+
     /// Rendering finished successfully — do not roll it back on drop.
     pub(super) fn disarm(mut self) {
         self.armed = false;

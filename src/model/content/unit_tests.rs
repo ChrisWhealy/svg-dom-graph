@@ -10,6 +10,17 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Collects every one of `content`'s own cells into a `Vec<String>`, via `DataNodeContent::for_each_cell_string` —
+/// production code streams instead of collecting, but a test asserting on formatting correctness reads far more
+/// naturally against a plain `Vec<String>` equality check than against a sequence of callback invocations.
+fn cells(content: &DataNodeContent) -> Vec<String> {
+    let mut out = Vec::new();
+    let mut scratch = String::new();
+    content.for_each_cell_string(&mut scratch, |_, cell_text| out.push(cell_text.to_owned()));
+    out
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // grid_shape
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -169,43 +180,43 @@ fn best_power_of_two_rows_is_none_when_the_only_divisor_is_the_trivial_one() -> 
 #[test]
 fn hexadecimal_u64_matches_the_feature_requests_own_example() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal);
-    check_eq(content.cells(), vec!["F0 E1 D2 C3 B4 A5 96 87".to_owned()])
+    check_eq(cells(&content), vec!["F0 E1 D2 C3 B4 A5 96 87".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u8_is_a_single_byte_group() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal);
-    check_eq(content.cells(), vec!["AB".to_owned()])
+    check_eq(cells(&content), vec!["AB".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u16_is_two_byte_groups_big_endian() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U16(vec![0xABCD]), DataFormat::Hexadecimal);
-    check_eq(content.cells(), vec!["AB CD".to_owned()])
+    check_eq(cells(&content), vec!["AB CD".to_owned()])
 }
 
 #[test]
 fn hexadecimal_u32_is_four_byte_groups_big_endian() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal);
-    check_eq(content.cells(), vec!["AA BB CC DD".to_owned()])
+    check_eq(cells(&content), vec!["AA BB CC DD".to_owned()])
 }
 
 #[test]
 fn binary_u8_splits_into_upper_and_lower_nybbles() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![0xF0]), DataFormat::Binary);
-    check_eq(content.cells(), vec!["1111 0000".to_owned()])
+    check_eq(cells(&content), vec!["1111 0000".to_owned()])
 }
 
 #[test]
 fn binary_u16_splits_every_bytes_own_nybbles_big_endian() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U16(vec![0xF00F]), DataFormat::Binary);
-    check_eq(content.cells(), vec!["1111 0000 0000 1111".to_owned()])
+    check_eq(cells(&content), vec!["1111 0000 0000 1111".to_owned()])
 }
 
 #[test]
 fn decimal_does_not_split_into_bytes() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal);
-    check_eq(content.cells(), vec!["1234567".to_owned()])
+    check_eq(cells(&content), vec!["1234567".to_owned()])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -215,21 +226,21 @@ fn decimal_does_not_split_into_bytes() -> Result<(), String> {
 #[test]
 fn new_defaults_to_big_endian_byte_order() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal);
-    check_eq(content.cells(), vec!["AA BB CC DD".to_owned()])
+    check_eq(cells(&content), vec!["AA BB CC DD".to_owned()])
 }
 
 #[test]
 fn with_byte_order_little_endian_reverses_the_byte_groups() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U32(vec![0xAABBCCDD]), DataFormat::Hexadecimal)
         .with_byte_order(ByteOrder::LittleEndian);
-    check_eq(content.cells(), vec!["DD CC BB AA".to_owned()])
+    check_eq(cells(&content), vec!["DD CC BB AA".to_owned()])
 }
 
 #[test]
 fn little_endian_also_reverses_binary_byte_groups() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U16(vec![0xF00F]), DataFormat::Binary)
         .with_byte_order(ByteOrder::LittleEndian);
-    check_eq(content.cells(), vec!["0000 1111 1111 0000".to_owned()])
+    check_eq(cells(&content), vec!["0000 1111 1111 0000".to_owned()])
 }
 
 #[test]
@@ -237,7 +248,7 @@ fn byte_order_has_no_visible_effect_on_a_single_byte_value() -> Result<(), Strin
     let big_endian = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal);
     let little_endian = DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal)
         .with_byte_order(ByteOrder::LittleEndian);
-    check_eq(big_endian.cells(), little_endian.cells())
+    check_eq(cells(&big_endian), cells(&little_endian))
 }
 
 #[test]
@@ -245,17 +256,17 @@ fn byte_order_has_no_visible_effect_under_decimal_format() -> Result<(), String>
     let big_endian = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal);
     let little_endian = DataNodeContent::new(NodeValues::U32(vec![1_234_567]), DataFormat::Decimal)
         .with_byte_order(ByteOrder::LittleEndian);
-    check_eq(big_endian.cells(), little_endian.cells())
+    check_eq(cells(&big_endian), cells(&little_endian))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// DataNodeContent::cells — one string per value, not yet arranged into rows
+// DataNodeContent::for_each_cell_string — one string per value, not yet arranged into rows
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn a_single_value_produces_one_cell() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U64(vec![0x1122334455667788]), DataFormat::Hexadecimal);
-    check_eq(content.cells().len(), 1)
+    check_eq(cells(&content).len(), 1)
 }
 
 #[test]
@@ -265,7 +276,7 @@ fn two_values_produce_two_cells_in_order() -> Result<(), String> {
         DataFormat::Hexadecimal,
     );
     check_eq(
-        content.cells(),
+        cells(&content),
         vec!["11 11 11 11 11 11 11 11".to_owned(), "22 22 22 22 22 22 22 22".to_owned()],
     )
 }
@@ -274,17 +285,17 @@ fn two_values_produce_two_cells_in_order() -> Result<(), String> {
 fn twenty_five_values_produce_twenty_five_cells_arranged_as_a_five_by_five_grid() -> Result<(), String> {
     let values = (0..25u64).collect();
     let content = DataNodeContent::new(NodeValues::U64(values), DataFormat::Decimal);
-    check_eq(content.cells().len(), 25)?;
+    check_eq(cells(&content).len(), 25)?;
     check_eq(content.shape(), (5, 5))
 }
 
 #[test]
 fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> Result<(), String> {
     // 7 values -> a 3x3 grid (see grid_shape_of_seven_values above), with 2 blank slots in the last row —
-    // cells() itself has no concept of blanks, it is draw_content_box's job to stop after the 7th.
+    // for_each_cell_string itself has no concept of blanks, it is draw_content_box's job to stop after the 7th.
     let values = (0..7u8).collect();
     let content = DataNodeContent::new(NodeValues::U8(values), DataFormat::Decimal);
-    check_eq(content.cells().len(), 7)?;
+    check_eq(cells(&content).len(), 7)?;
     check_eq(content.shape(), (3, 3))
 }
 

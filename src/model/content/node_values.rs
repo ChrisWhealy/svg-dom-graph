@@ -1,4 +1,4 @@
-use super::{ByteOrder, DataFormat, format_value};
+use super::{ByteOrder, DataFormat, format_value, format_value_into};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
@@ -52,26 +52,44 @@ impl NodeValues {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Every value, formatted per `format` and `byte_order`, in the same order they were supplied — one cell per value,
-    /// not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
-    pub(super) fn cell_strings(&self, format: DataFormat, byte_order: ByteOrder) -> Vec<String> {
+    /// Calls `f(index, formatted)` once for every value, in order, formatted per `format` and `byte_order` — one
+    /// cell per value, not yet arranged into a grid (see [`DataNodeContent::shape`] for that).
+    ///
+    /// `scratch` is cleared and reformatted into on every value, via [`format_value_into`], rather than allocating a
+    /// fresh `String` per value the way collecting into a `Vec<String>` does. `f` borrows `scratch`'s own contents
+    /// for the duration of one call only — the string is not valid, and must not be kept, past that call returning.
+    pub(super) fn for_each_cell_string(
+        &self,
+        format: DataFormat,
+        byte_order: ByteOrder,
+        scratch: &mut String,
+        mut f: impl FnMut(usize, &str),
+    ) {
         match self {
-            Self::U8(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U16(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U32(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
-            Self::U64(v) => v
-                .iter()
-                .map(|&x| format_value(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format))
-                .collect(),
+            Self::U8(v) => {
+                for (i, &x) in v.iter().enumerate() {
+                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
+                    f(i, scratch);
+                }
+            },
+            Self::U16(v) => {
+                for (i, &x) in v.iter().enumerate() {
+                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
+                    f(i, scratch);
+                }
+            },
+            Self::U32(v) => {
+                for (i, &x) in v.iter().enumerate() {
+                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
+                    f(i, scratch);
+                }
+            },
+            Self::U64(v) => {
+                for (i, &x) in v.iter().enumerate() {
+                    format_value_into(order_bytes(x.to_be_bytes(), byte_order), u128::from(x), format, scratch);
+                    f(i, scratch);
+                }
+            },
         }
     }
 
@@ -79,8 +97,9 @@ impl NodeValues {
     /// The first value, formatted per `format` and `byte_order` — `None` if this holds no values at all.
     ///
     /// For a caller that already knows it holds exactly one value — an operator's own already-validated result,
-    /// [`super::DataNodeContent::single_cell_string`]'s one caller — so it never needs the `Vec<String>`
-    /// [`cell_strings`](Self::cell_strings) builds to arrange many values into a grid, just the one string.
+    /// [`super::DataNodeContent::single_cell_string`]'s one caller — so it never needs
+    /// [`for_each_cell_string`](Self::for_each_cell_string)'s per-value iteration just to reach the one string it
+    /// would ever visit.
     pub(super) fn single_cell_string(&self, format: DataFormat, byte_order: ByteOrder) -> Option<String> {
         match self {
             Self::U8(v) => v

@@ -86,6 +86,32 @@ fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `release` stops tracking the most recently tracked node, so an armed guard dropping afterward leaves it exactly
+/// where it was — not one of the elements `draw_content_box`'s own per-cell loop has already appended into `group`
+/// (whose own removal would remove it anyway), but proved here directly: even a node never appended anywhere must
+/// survive, once released, purely because tracking it stopped.
+#[wasm_bindgen_test]
+fn release_stops_tracking_the_most_recently_tracked_node() -> Result<(), String> {
+    let svg = make_svg("render-guard-release");
+    let group = svg.group().unwrap();
+    let released = svg.rect(Point::origin(), Size::new(10.0, 10.0)).unwrap();
+
+    let mut guard = RenderGuard::with_capacity(group.clone(), 0);
+    guard.track(released.clone());
+    guard.release();
+    drop(guard);
+
+    check(
+        group.as_element().parent_node().is_none(),
+        "group should still be removed on drop — release only affects the tracked node, not group itself",
+    )?;
+    check(
+        released.as_element().parent_node().is_some(),
+        "release should have stopped tracking the node, but dropping the still-armed guard removed it anyway",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge` — its rendered path,
 /// its `edge_handles` entry, and its place in the graph — then the node itself, the same partial state a failure
 /// drawing an operator's own auto-wired input edge would otherwise leave behind.

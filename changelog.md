@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Make RAF callback persistent in `PointerCoalescer` (`9dd7fd6`)
 - Drop use of `Option` in `Graph`/`SceneInner` dense storage (`bc89252`)
 - Use proportional computation in `set_selection` not just proportional DOM writes (`d6a8dc0`)
+- Remove `Vec<String>`/`Vec<SvgNode>` from streaming data-node construction (``)
 
 ## Fixed
 
@@ -30,7 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove synchronous text measurement per data node cell construction (`990f34e`)
 - Remove `Vec<String>` allocation from `draw_operator_box` (`49a6bf9`)
 - Optimize small constructor-time allocations (`d8ff7e3`)
-- Fix binary operator pair-redraw routing (``)
+- Fix binary operator pair-redraw routing (`9bd8135`)
 
 # [Released]
 

@@ -242,12 +242,25 @@ fn cell_style(
 /// alongside the box's own final `Rect` — computed here, not supplied by the caller.
 ///
 /// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]). Under a monospace font,
-/// character count alone determines a cell's own rendered width. Every string [`DataNodeContent::cells`] produces
-/// is ASCII, so byte length already is character count. So only the cell with the most characters is ever read
-/// back via [`SvgNode::bounding_box`] — the same "measure, don't estimate" approach [`shrink_label_to_fit`] already
-/// uses for plain labels. That keeps it correct for whatever font the browser actually substitutes. It is now
-/// applied once per node, not once per cell. Every cell then shares that one measured width plus [`CELL_PADDING`],
-/// so the grid's rows and columns still line up even when [`DataFormat::Decimal`] values differ in digit count.
+/// character count alone determines a cell's own rendered width. Every string [`DataNodeContent::cells`]/
+/// [`DataNodeContent::for_each_cell_string`] produces is ASCII, so byte length already is character count. So only
+/// the widest cell's own text is ever read back via [`SvgNode::bounding_box`] — the same "measure, don't estimate"
+/// approach [`shrink_label_to_fit`] already uses for plain labels, applied once per node, not once per cell. Every
+/// cell then shares that one measured width plus [`CELL_PADDING`], so the grid's rows and columns still line up
+/// even when [`DataFormat::Decimal`] values differ in digit count.
+///
+/// Formats and places each cell in two passes over [`DataNodeContent::for_each_cell_string`], streaming — never
+/// collecting a `Vec<String>` of every cell's own text, or a `Vec<SvgNode>` of every `<text>` element, regardless
+/// of how many values `content` holds:
+///
+/// 1. Format every value in turn, reusing one buffer, keeping only the widest formatted string seen so far (itself
+///    overwritten in place, not reallocated, whenever a new max is found). Which specific value happens to be
+///    widest is otherwise irrelevant, since any string of that same length would measure identically under a
+///    monospace font — so a throwaway element built from it, once `cell_size` is known, is all `bounding_box()`
+///    ever needs.
+/// 2. Format every value again — the same reused buffer, now cleared and rewritten per cell — and this time create
+///    each cell's own `<text>` (and, for a multi-value grid, its own `<rect>`) directly at its final position,
+///    appending each immediately rather than deferring every cell's own placement to a later pass.
 ///
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
@@ -266,56 +279,56 @@ fn cell_style(
 /// A grid can hold arbitrarily many cells. Without local coordinates, moving the node later would mean rewriting every
 /// cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
 ///
-/// A [`RenderGuard`] covers this function's own DOM construction. This matters more here than in [`draw_box`]. A grid
-/// can create many cells before any of them is appended into `group`. That widens the window in which a `?` failing
-/// partway through would otherwise leave stray elements behind.
+/// A [`RenderGuard`] covers this function's own DOM construction, as in [`draw_box`]. Streaming each cell — create,
+/// style, append, immediately — keeps the window this matters for down to one cell (two nodes, briefly, for a
+/// multi-value grid's own rect-then-text pair) at a time, via [`RenderGuard::release`], rather than every cell
+/// created so far staying tracked until the whole node finishes.
 fn draw_content_box(
     svg: &SvgRoot,
     top_left: Point,
     content: &DataNodeContent,
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
+    if content.len() == 0 {
+        return Err(Error::Svg(svg_dom::Error::Dom(
+            "draw_content_box: content has no values".into(),
+        )));
+    }
+
     let group = svg.group()?;
-    // One text per cell, plus the outer rect, plus (for a multi-value grid) one more rect per cell — see the loops
-    // below. Single-value content never reaches the second `+ content.len()`, so this slightly over-allocates for
-    // that case; a `RenderGuard` capacity only needs to be a cheap upper bound, not exact.
-    let mut guard = RenderGuard::with_capacity(group.clone(), 2 * content.len() + 1);
+    // At most two nodes are ever loose (created but not yet appended) at once here — see `RenderGuard::release`'s
+    // own doc comment — regardless of how many values `content` holds.
+    let mut guard = RenderGuard::with_capacity(group.clone(), 2);
     let type_color = content.type_color();
     let type_name = content.type_name();
     let origin = Point::origin();
-
-    let cell_texts = content.cells();
+    let len = content.len();
     let (grid_rows, grid_cols) = content.shape();
+    let single_value = content.is_single_value();
 
-    // Every cell shares one monospace font (see `GRID_FONT_FAMILY`'s own doc comment), so the cell with the most
-    // characters is always the one that renders the widest. Every string `cells()` produces ASCII characters, so byte
-    // length is same as the character count. So only the longest cell's own text ever needs a real `bounding_box()`
-    // readback; every other cell can be created and styled without needing to measure its length individually.
-    let widest_index = (0..cell_texts.len())
-        .max_by_key(|&i| cell_texts[i].len())
-        .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_content_box: content has no values".into())))?;
-
-    // Render every value's text first, at a placeholder position — bounding_box() reports each element's own
-    // local geometry (font, content, styling), unaffected by where it currently sits, so the true final position
-    // is not needed yet.
-    let mut texts = Vec::with_capacity(cell_texts.len());
-    let mut max_width: f64 = 0.0;
-    for (i, cell_text) in cell_texts.iter().enumerate() {
-        let text = svg.text(origin, cell_text)?;
-        guard.track(text.clone());
-        text.set_text_anchor(TextAnchor::Middle)?;
-        text.set_dominant_baseline(DominantBaseline::Middle)?;
-        text.set_font_family(GRID_FONT_FAMILY)?;
-        text.set_font_size(GRID_FONT_SIZE)?;
-        text.set_fill("#1b1b1b")?;
-        if i == widest_index {
-            max_width = text.bounding_box()?.size.width;
+    // Pass 1 — see this function's own doc comment. `text_scratch` is reused for every value's own formatted text;
+    // `widest` is overwritten in place whenever a new max is found, not reallocated per cell.
+    let mut text_scratch = String::new();
+    let mut widest = String::new();
+    content.for_each_cell_string(&mut text_scratch, |_, cell_text| {
+        if cell_text.len() > widest.len() {
+            widest.clear();
+            widest.push_str(cell_text);
         }
-        texts.push(text);
-    }
+    });
+
+    // `widest`'s own real content is measured once, via a throwaway element that never becomes one of `group`'s
+    // own children: tracked for rollback like any other fallible-construction element, then removed the moment it
+    // has served its purpose, rather than kept around as one of the real cells.
+    let measure_el = svg.text(origin, &widest)?;
+    guard.track(measure_el.clone());
+    measure_el.set_font_family(GRID_FONT_FAMILY)?;
+    measure_el.set_font_size(GRID_FONT_SIZE)?;
+    let max_width = measure_el.bounding_box()?.size.width;
+    measure_el.remove();
+    guard.release();
 
     let cell_size = Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
-    let single_value = content.is_single_value();
 
     let size = if single_value {
         cell_size
@@ -334,46 +347,70 @@ fn draw_content_box(
     rect_el.set_stroke("#2a5db0")?;
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
+    guard.release();
 
-    let mut scratch = String::new();
-    let cell_rects = if single_value {
-        let text = texts
-            .into_iter()
-            .next()
-            .ok_or_else(|| Error::Svg(svg_dom::Error::Dom("draw_content_box: expected exactly one value".into())))?;
-        text.set_attr_display(&mut scratch, "x", cell_size.width / 2.0)?;
-        text.set_attr_display(&mut scratch, "y", cell_size.height / 2.0)?;
-        group.append(&text)?;
-        vec![rect_el.clone()]
-    } else {
-        let mut cell_rects = Vec::with_capacity(texts.len());
-        for (i, text) in texts.into_iter().enumerate() {
-            #[allow(clippy::cast_precision_loss)]
-            let (row, col) = (i / grid_cols, i % grid_cols);
-            #[allow(clippy::cast_precision_loss)]
-            let cell_origin = Point::new(
-                OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
-                OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
-            );
+    // Pass 2 — see this function's own doc comment.
+    let mut pos_scratch = String::new();
+    let mut cell_rects = Vec::with_capacity(if single_value { 1 } else { len });
+    if single_value {
+        cell_rects.push(rect_el.clone());
+    }
 
-            let cell_rect = svg.rect(cell_origin, cell_size)?;
-            guard.track(cell_rect.clone());
-            cell_rect.set_fill(type_color)?;
-            cell_rect.set_stroke("#2a5db0")?;
-            cell_rect.set_stroke_width(1.0)?;
-            group.append(&cell_rect)?;
-
-            text.set_attr_display(&mut scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
-            text.set_attr_display(&mut scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
-            group.append(&text)?;
-
-            cell_rects.push(cell_rect);
+    let mut error: Option<Error> = None;
+    content.for_each_cell_string(&mut text_scratch, |i, cell_text| {
+        if error.is_some() {
+            return;
         }
-        cell_rects
-    };
+        let result = (|| -> Result<(), Error> {
+            let text = svg.text(origin, cell_text)?;
+            guard.track(text.clone());
+            text.set_text_anchor(TextAnchor::Middle)?;
+            text.set_dominant_baseline(DominantBaseline::Middle)?;
+            text.set_font_family(GRID_FONT_FAMILY)?;
+            text.set_font_size(GRID_FONT_SIZE)?;
+            text.set_fill("#1b1b1b")?;
+
+            if single_value {
+                text.set_attr_display(&mut pos_scratch, "x", cell_size.width / 2.0)?;
+                text.set_attr_display(&mut pos_scratch, "y", cell_size.height / 2.0)?;
+                group.append(&text)?;
+                guard.release();
+            } else {
+                #[allow(clippy::cast_precision_loss)]
+                let (row, col) = (i / grid_cols, i % grid_cols);
+                #[allow(clippy::cast_precision_loss)]
+                let cell_origin = Point::new(
+                    OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
+                    OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
+                );
+
+                let cell_rect = svg.rect(cell_origin, cell_size)?;
+                guard.track(cell_rect.clone());
+                cell_rect.set_fill(type_color)?;
+                cell_rect.set_stroke("#2a5db0")?;
+                cell_rect.set_stroke_width(1.0)?;
+                group.append(&cell_rect)?;
+                guard.release();
+
+                text.set_attr_display(&mut pos_scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
+                text.set_attr_display(&mut pos_scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
+                group.append(&text)?;
+                guard.release();
+
+                cell_rects.push(cell_rect);
+            }
+            Ok(())
+        })();
+        if let Err(e) = result {
+            error = Some(e);
+        }
+    });
+    if let Some(e) = error {
+        return Err(e);
+    }
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
-    group.set_transform_fmt(&mut scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
+    group.set_transform_fmt(&mut pos_scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling.
     // So it belongs on `group`, the one element every rect and every text drawn above actually shares as a

@@ -99,36 +99,52 @@ pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats one value's own already-ordered `bytes` (see [`order_bytes`]), or its `decimal` value directly for
-/// [`DataFormat::Decimal`] — generic over the byte width so [`NodeValues::cell_strings`] needs one call site per
+/// [`DataFormat::Decimal`] — generic over the byte width so [`NodeValues::single_cell_string`] needs one call site per
 /// variant, not one formatting implementation per width.
 ///
-/// `Hexadecimal`/`Binary` values can be written straight into a `String`, pre-sized to exact final length.
+/// A thin, single-value wrapper around [`format_value_into`] — see that function's own doc comment for a caller
+/// formatting more than one value, which should reuse one buffer across all of them instead of allocating a fresh
+/// `String` per call the way this one always does.
 fn format_value<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat) -> String {
+    let mut out = String::new();
+    format_value_into(bytes, decimal, format, &mut out);
+    out
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Same as [`format_value`], but formats into caller-owned `out` instead of returning a fresh `String`.
+///
+/// Clears `out` first, then writes into it — the same reused-buffer shape [`crate::geometry::elbow_path_into`] already
+/// uses for a per-frame `d` attribute. [`NodeValues::for_each_cell_string`] reuses one `out` across every value in a
+/// [`super::DataNodeContent`], so formatting `n` values costs at most one buffer growth, amortised across the whole
+/// node, rather than `n` separate heap allocations the way collecting into a `Vec<String>` would.
+fn format_value_into<const N: usize>(bytes: [u8; N], decimal: u128, format: DataFormat, out: &mut String) {
     use std::fmt::Write as _;
+    out.clear();
 
     match format {
-        DataFormat::Decimal => decimal.to_string(),
+        DataFormat::Decimal => {
+            let _ = write!(out, "{decimal}");
+        },
         DataFormat::Hexadecimal => {
             // "XX" per byte, plus one separating space between each pair of bytes.
-            let mut out = String::with_capacity(3 * N - 1);
+            out.reserve(3 * N - 1);
             for (i, b) in bytes.iter().enumerate() {
                 if i > 0 {
                     out.push(' ');
                 }
                 let _ = write!(out, "{b:02X}");
             }
-            out
         },
         DataFormat::Binary => {
             // "hhhh llll" per byte (nybble, space, nybble), plus one separating space between each pair of bytes.
-            let mut out = String::with_capacity(10 * N - 1);
+            out.reserve(10 * N - 1);
             for (i, b) in bytes.iter().enumerate() {
                 if i > 0 {
                     out.push(' ');
                 }
                 let _ = write!(out, "{:04b} {:04b}", b >> 4, b & 0x0F);
             }
-            out
         },
     }
 }
