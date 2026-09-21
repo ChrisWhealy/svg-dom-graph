@@ -64,8 +64,17 @@ pub(crate) struct BinaryOperatorRoute {
     pub(crate) anchor: Point,
     /// The side of the operator `anchor` sits on.
     pub(crate) side: Side,
-    /// The sibling edge's own already-split anchor point on the operator.
-    pub(crate) sibling_end: Point,
+    /// The sibling edge's own already-split anchor point on the operator — `Some` only when the sibling input
+    /// lands on this same `side`, the one case [`binary_operator_elbow_route`]'s own sibling-aware routing applies.
+    ///
+    /// `None` when the two inputs land on different sides of the operator. [`binary_operator_anchors`]'s own doc
+    /// comment already documents that a different-side input behaves exactly like an ordinary edge would — `route`
+    /// honours that here by falling back to plain [`elbow_route`] rather than calling
+    /// [`binary_operator_elbow_route`] with an unrelated sibling coordinate from a genuinely different side, which
+    /// that function's own drift comparison assumes never happens.
+    ///
+    /// [`binary_operator_anchors`]: crate::geometry::binary_operator_anchors
+    pub(crate) sibling_end: Option<Point>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -101,7 +110,16 @@ pub(crate) fn route(
         ConnectorType::Elbow { corner_radius } => {
             let (start, start_side) = elbow_anchor(from, to_centre, from_anchors);
             let route = match to_override {
-                Some(o) => binary_operator_elbow_route(start, start_side, o.anchor, o.side, o.sibling_end),
+                Some(BinaryOperatorRoute {
+                    anchor,
+                    side,
+                    sibling_end: Some(sibling_end),
+                }) => binary_operator_elbow_route(start, start_side, anchor, side, sibling_end),
+                Some(BinaryOperatorRoute {
+                    anchor,
+                    side,
+                    sibling_end: None,
+                }) => elbow_route(start, start_side, anchor, side),
                 None => {
                     let (end, end_side) = elbow_anchor(to, from_centre, to_anchors);
                     elbow_route(start, start_side, end, end_side)
@@ -227,3 +245,7 @@ impl Scene {
         result
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

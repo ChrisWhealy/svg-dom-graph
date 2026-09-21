@@ -293,6 +293,66 @@ fn two_operands_above_a_binary_operator_node_split_to_distinct_points() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dragging a binary operator node itself — not either of its own operands — reroutes both of its own auto-wired
+/// input connectors, and the same-side split the two operands above it share stays intact at the new position.
+///
+/// `SceneInner::move_node` handles this case specially: `id` (the dragged node) is itself the binary operator, so
+/// both its own input edges are redrawn together via `redraw_binary_operator_inputs`, rather than via two separate
+/// `incident_edges` iterations that would each independently recompute the shared pair geometry.
+#[wasm_bindgen_test]
+fn dragging_a_binary_operator_node_reroutes_and_keeps_the_split_on_both_its_input_connectors() -> Result<(), String> {
+    let svg = make_svg("operator-drag-binary", Size::new(500.0, 500.0), Size::new(500.0, 500.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    let op = scene
+        .add_binary_operator_node(Point::new(220.0, 300.0), BinaryOperator::Or, (a, b), result)
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(op).map_err(|e| e.to_string())?;
+
+    let path_a_before = crate::common::path_d(&crate::common::nth_connector("operator-drag-binary", 0)?)?;
+    let path_b_before = crate::common::path_d(&crate::common::nth_connector("operator-drag-binary", 1)?)?;
+
+    let op_group = nth_group("operator-drag-binary", 2)?;
+    dispatch_pointer_event(&op_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&op_group, "pointermove", 150, 250, 1)?;
+    dispatch_pointer_event(&op_group, "pointerup", 150, 250, 1)?;
+
+    let path_a_after = crate::common::path_d(&crate::common::nth_connector("operator-drag-binary", 0)?)?;
+    let path_b_after = crate::common::path_d(&crate::common::nth_connector("operator-drag-binary", 1)?)?;
+    check(
+        path_a_after != path_a_before,
+        "expected a's own connector to reroute after dragging the operator node",
+    )?;
+    check(
+        path_b_after != path_b_before,
+        "expected b's own connector to reroute after dragging the operator node",
+    )?;
+
+    // Both operands are still above the operator's new position — the same-side split
+    // `two_operands_above_a_binary_operator_node_split_to_distinct_points` proves at creation must survive moving
+    // the operator itself, not just moving an operand.
+    let end_a = crate::common::last_point_of_path(&path_a_after)?;
+    let end_b = crate::common::last_point_of_path(&path_b_after)?;
+    check_close(end_a.1, end_b.1)?;
+    check(
+        (end_a.0 - end_b.0).abs() > 1.0,
+        &format!("expected two distinct anchor x positions after dragging the operator, got {end_a:?} and {end_b:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two operands on *different* sides of a binary operator node each still keep today's plain midpoint — this
 /// feature only ever changes anything when both inputs actually collide on the same side.
 #[wasm_bindgen_test]

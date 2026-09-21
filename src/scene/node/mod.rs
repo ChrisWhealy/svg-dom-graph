@@ -684,12 +684,29 @@ impl Scene {
             return Ok(());
         }
         handles.edge_anchors = edge_anchors;
+        let own_input_edges = handles.binary_operator_input_edges;
 
-        // Taken out for the call so `redraw_edge` can freely borrow the rest of `inner` on every iteration, then
-        // put back — see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per
-        // call.
+        // Taken out for the call so `redraw_edge`/`redraw_binary_operator_inputs` can freely borrow the rest of
+        // `inner` on every iteration, then put back — see `SceneInner::scratch`'s own doc comment for why this,
+        // rather than a fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
+
+        // `id` is itself a binary operator node, so `edge_anchors` is *its own* fixing-point configuration: it
+        // feeds `binary_operator_anchors` for both input edges at once, and both are redrawn together, once, here
+        // — the same reasoning `SceneInner::move_node` follows for `redraw_binary_operator_inputs`. Changing an
+        // ordinary node's, or an operand's own, `edge_anchors` never needs this: it only ever affects that one
+        // node's own from-side anchor, never the operator-side split.
+        if own_input_edges.is_some() {
+            if let Err(e) = inner.redraw_binary_operator_inputs(id, &mut scratch) {
+                inner.scratch = scratch;
+                return Err(e);
+            }
+        }
+
         for edge_id in inner.graph.incident_edges(id) {
+            if own_input_edges.is_some_and(|(a, b)| *edge_id == a || *edge_id == b) {
+                continue; // already redrawn together, above
+            }
             if let Err(e) = inner.redraw_edge(*edge_id, &mut scratch) {
                 inner.scratch = scratch;
                 return Err(e);
@@ -716,7 +733,7 @@ impl Scene {
     /// An identical `selection` to `id`'s own current one is an immediate no-op — no cell is touched, and no
     /// `aria-label` write happens. Otherwise, only the cells whose own colour/stroke category (focused, banded, or
     /// default) actually changes between the old selection and the new one are even examined, let alone written to
-    /// — the old/new focus cells, plus each band's own members, via [`ResolvedBand::for_each_index`]. A cell in
+    /// — the old/new focus cells, plus each band's own members, via `ResolvedBand::for_each_index`. A cell in
     /// neither band, and not a focus either way, is never visited: its category cannot have changed. A live
     /// "previous"/"next" control stepping through an array as it is processed only ever touches a handful of cells
     /// per step, however large the array — this is the hot path that shape is optimised for, in both the DOM writes

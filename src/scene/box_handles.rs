@@ -37,8 +37,8 @@ pub(crate) struct BoxHandles {
     /// `Scene::add_binary_operator_node_with` auto-wired from `binary_operator_inputs.0`/`.1`, in the same order.
     /// `None` for every other node, exactly matching `binary_operator_inputs`.
     ///
-    /// `SceneInner::binary_operator_sibling_edge` reads this to find a moved operand's sibling edge in `O(1)`,
-    /// rather than searching the sibling node's own incident edges for the one that also points at this operator.
+    /// `SceneInner::redraw_binary_operator_inputs` reads this to redraw both edges together in one pass, rather
+    /// than searching either operand's own incident edges for the one that also points at this operator.
     pub(crate) binary_operator_input_edges: Option<(EdgeId, EdgeId)>,
     /// Every [`crate::scene::DataNodeContent`] cell's own `<rect>`, flat, in the same order
     /// [`crate::scene::DataNodeContent::cells`]/`shape` already use.

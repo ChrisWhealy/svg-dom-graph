@@ -279,45 +279,39 @@ impl SceneInner {
 
         let [(anchor_a, side_a), (anchor_b, side_b)] =
             binary_operator_anchors(to_rect, a_centre, b_centre, to_fixing_points);
-        let (anchor, side, sibling_end) = if from_is_a {
+        // `Some` only on the same-side branch — see `BinaryOperatorRoute::sibling_end`'s own doc comment for why a
+        // different-side pair must not carry the other operand's own, unrelated-side anchor here.
+        let same_side = side_a == side_b;
+        let (anchor, side, sibling_anchor) = if from_is_a {
             (anchor_a, side_a, anchor_b)
         } else {
             (anchor_b, side_b, anchor_a)
         };
 
-        Some(connector::BinaryOperatorRoute { anchor, side, sibling_end })
+        Some(connector::BinaryOperatorRoute {
+            anchor,
+            side,
+            sibling_end: same_side.then_some(sibling_anchor),
+        })
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// If `edge_id` runs from `mover` into a binary operator node, the id of that operator's *other* input edge —
-    /// the sibling operand's own edge into the same node. `None` otherwise.
+    /// If `edge_id` runs from `mover` into a binary operator node with `mover` registered as one of its own two
+    /// inputs, that operator's own id. `None` otherwise: an ordinary edge, or one a caller wired by hand,
+    /// bypassing [`Scene::add_binary_operator_node_with`].
     ///
-    /// `move_node` redraws every edge already incident to the node that moved — that alone redraws `mover`'s own
-    /// edge correctly, since [`redraw_edge`](Self::redraw_edge) always recomputes
-    /// [`binary_operator_to_override`](Self::binary_operator_to_override) live from both operands' current
-    /// positions. But the sibling's own edge is not incident to `mover`, so nothing else would ever redraw it — it
-    /// would keep showing wherever it last computed its own anchor, stale, until something else happened to move
-    /// it too. `move_node` calls this for each of `mover`'s own edges, so that sibling edge gets redrawn in the
-    /// same pass instead.
-    ///
-    /// Reads `binary_operator_input_edges` — the pair `Scene::add_binary_operator_node_with` cached once, when both
-    /// edges were first wired — rather than searching `sibling`'s own incident edges for the one that also points
-    /// at `edge.to`.
-    fn binary_operator_sibling_edge(&self, mover: NodeId, edge_id: EdgeId) -> Option<EdgeId> {
+    /// `move_node` redraws every edge already incident to the node that moved. For an edge this identifies, it
+    /// calls [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) instead of
+    /// [`redraw_edge`](Self::redraw_edge) — the sibling operand's own edge into the same operator is not incident
+    /// to `mover`, so nothing else would ever redraw it, and it would keep showing wherever it last computed its
+    /// own anchor, stale, until something else happened to move it too.
+    fn binary_operator_input_target(&self, mover: NodeId, edge_id: EdgeId) -> Option<NodeId> {
         let edge = self.graph.edge(edge_id)?;
         if edge.from != mover {
             return None;
         }
-        let handles = self.node_handle(edge.to)?;
-        let (input_a, input_b) = handles.binary_operator_inputs?;
-        let (edge_a, edge_b) = handles.binary_operator_input_edges?;
-        if mover == input_a {
-            Some(edge_b)
-        } else if mover == input_b {
-            Some(edge_a)
-        } else {
-            None
-        }
+        let (input_a, input_b) = self.node_handle(edge.to)?.binary_operator_inputs?;
+        (mover == input_a || mover == input_b).then_some(edge.to)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -334,6 +328,12 @@ impl SceneInner {
     ///
     /// If `new_origin` exactly matches `id`'s current origin, then we can bail out early and ourselves from redrawing
     /// an unchanged incident-edge.
+    ///
+    /// A binary operator input edge — either because `id` itself is a binary operator node, redrawing its own two
+    /// input edges, or because `id` is one of some other operator's own two operands — is routed through
+    /// [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) rather than
+    /// [`redraw_edge`](Self::redraw_edge), so a dragged operand's own shared-side pair is only ever computed once
+    /// per frame, not once per edge. See that method's own doc comment.
     ///
     /// # Errors
     ///
@@ -358,11 +358,22 @@ impl SceneInner {
         handles
             .group
             .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
+        let own_input_edges = handles.binary_operator_input_edges;
+
+        // `id` is itself a binary operator node: its own two input edges are redrawn together, once, below —
+        // rather than via two separate iterations in the loop that would each recompute their shared pair
+        // geometry independently.
+        if own_input_edges.is_some() {
+            self.redraw_binary_operator_inputs(id, scratch)?;
+        }
 
         for edge_id in self.graph.incident_edges(id) {
-            self.redraw_edge(*edge_id, scratch)?;
-            if let Some(sibling_edge_id) = self.binary_operator_sibling_edge(id, *edge_id) {
-                self.redraw_edge(sibling_edge_id, scratch)?;
+            if own_input_edges.is_some_and(|(a, b)| *edge_id == a || *edge_id == b) {
+                continue; // already redrawn together, above
+            }
+            match self.binary_operator_input_target(id, *edge_id) {
+                Some(operator) => self.redraw_binary_operator_inputs(operator, scratch)?,
+                None => self.redraw_edge(*edge_id, scratch)?,
             }
         }
 
@@ -370,7 +381,30 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Writes `vertices` as edge `id`'s own rendered path data, rounded by `radius` — the shared tail of
+    /// [`redraw_edge`](Self::redraw_edge) and [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs),
+    /// once each has its own route ready.
+    ///
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every
+    /// move event.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
+    fn write_edge_path(&self, id: EdgeId, vertices: &[Point], radius: f64, scratch: &mut String) -> Result<(), Error> {
+        elbow_path_into(vertices, radius, scratch);
+        let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
+        handle.path.set_attr("d", scratch)?;
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
+    ///
+    /// The ordinary-edge fallback: correct for a binary operator input edge too (`binary_operator_to_override`
+    /// still recomputes the full pair to answer for this one edge), but [`move_node`](Self::move_node) prefers
+    /// [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) for those, so that pair is computed
+    /// once for both edges rather than once per `redraw_edge` call.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every
     /// move event.
@@ -386,13 +420,81 @@ impl SceneInner {
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
-        let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
+        let connector_type = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?.connector_type;
         let (vertices, radius) =
-            connector::route(handle.connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
-        elbow_path_into(&vertices, radius, scratch);
-        handle.path.set_attr("d", scratch)?;
+            connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
+        self.write_edge_path(id, &vertices, radius, scratch)
+    }
 
-        Ok(())
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Redraws both of binary operator node `operator`'s own two input edges together: computes the shared pair
+    /// geometry — [`binary_operator_anchors`], and which side each input lands on — exactly once, then derives and
+    /// writes each edge's own route from it.
+    ///
+    /// [`move_node`](Self::move_node) calls this instead of two separate [`redraw_edge`](Self::redraw_edge) calls
+    /// whenever an edge it would otherwise redraw is one of a binary operator's own registered inputs. Two
+    /// independent `redraw_edge` calls would each recompute this same pair from scratch, via
+    /// [`binary_operator_to_override`](Self::binary_operator_to_override) — once for dragging either operand, and
+    /// again for moving the operator itself, whose own two incident edges are exactly this pair.
+    ///
+    /// Does nothing if `operator` does not name a binary operator node in this scene with both its own input edges
+    /// still wired — for example, a plain node, or (mid-construction only, never observable afterward) an operator
+    /// whose own rollback is still in progress.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`]/[`Error::UnknownEdge`] if `operator`'s own cached operand/edge ids no longer
+    /// resolve. Not expected in practice — nothing in this crate's own public API can remove a node or edge once
+    /// added.
+    fn redraw_binary_operator_inputs(&self, operator: NodeId, scratch: &mut String) -> Result<(), Error> {
+        let Some(handles) = self.node_handle(operator) else {
+            return Ok(());
+        };
+        let (Some((input_a, input_b)), Some((edge_a, edge_b))) =
+            (handles.binary_operator_inputs, handles.binary_operator_input_edges)
+        else {
+            return Ok(());
+        };
+
+        let to_rect = self.node_rect(operator)?;
+        let to_edge_anchors = self.node_edge_anchors(operator)?;
+        let to_fixing_points = to_edge_anchors.map(|EdgeAnchors(n)| n);
+        let a_rect = self.node_rect(input_a)?;
+        let b_rect = self.node_rect(input_b)?;
+        let [(anchor_a, side_a), (anchor_b, side_b)] =
+            binary_operator_anchors(to_rect, box_centre(a_rect), box_centre(b_rect), to_fixing_points);
+        // `Some` only on the same-side branch — see `BinaryOperatorRoute::sibling_end`'s own doc comment.
+        let same_side = side_a == side_b;
+
+        let connector_type_a = self.edge_handle(edge_a).ok_or(Error::UnknownEdge(edge_a))?.connector_type;
+        let (vertices_a, radius_a) = connector::route(
+            connector_type_a,
+            a_rect,
+            self.node_edge_anchors(input_a)?,
+            to_rect,
+            to_edge_anchors,
+            Some(connector::BinaryOperatorRoute {
+                anchor: anchor_a,
+                side: side_a,
+                sibling_end: same_side.then_some(anchor_b),
+            }),
+        );
+        self.write_edge_path(edge_a, &vertices_a, radius_a, scratch)?;
+
+        let connector_type_b = self.edge_handle(edge_b).ok_or(Error::UnknownEdge(edge_b))?.connector_type;
+        let (vertices_b, radius_b) = connector::route(
+            connector_type_b,
+            b_rect,
+            self.node_edge_anchors(input_b)?,
+            to_rect,
+            to_edge_anchors,
+            Some(connector::BinaryOperatorRoute {
+                anchor: anchor_b,
+                side: side_b,
+                sibling_end: same_side.then_some(anchor_a),
+            }),
+        );
+        self.write_edge_path(edge_b, &vertices_b, radius_b, scratch)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
