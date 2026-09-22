@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.11] - 2026-09-22
 
 ## Added
@@ -24,8 +26,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Fully enclose result within the outer operator node (`ab16d00`)
-
-# [Released]
 
 ## [0.2.10] - 2026-09-21
 
