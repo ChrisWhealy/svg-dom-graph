@@ -22,9 +22,12 @@
 //!   operand node feeding an operator node, for every unary operator this crate names.
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
 //!   operand nodes feeding an operator node, for every binary operator this crate names.
+//! - `panel-operators-arithmetic` / `#operators-arithmetic-diagram` —
+//!   [`operators_arithmetic::build_arithmetic_operator_demo`]: two operand nodes feeding an operator node, for
+//!   every arithmetic operator this crate names.
 //! - `panel-operators-chained` / `#operators-chained-diagram` —
 //!   [`operators_chained::build_chained_operator_demo`]: operator nodes feeding further operator nodes, including
-//!   the operator-chaining example that motivated this whole trio of panels. Every result any of the three
+//!   the operator-chaining example that motivated this whole family of panels. Every result any of the four
 //!   operator panels shows is computed here with plain Rust integer ops, never by the library itself — see each
 //!   function's own doc comment.
 //! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]:
@@ -43,6 +46,7 @@ mod data;
 mod edge_anchors;
 mod elbow;
 mod highlight;
+mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
 mod operators_unary;
@@ -93,6 +97,7 @@ demo_gallery! {
     "panel-data" => data::build_data_demo,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
+    "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
 }

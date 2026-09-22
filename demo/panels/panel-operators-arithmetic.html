@@ -1,0 +1,22 @@
+<section class="section" id="panel-operators-arithmetic">
+    <h2>Arithmetic operators</h2>
+    <p>An operator node names the operation that produced its own single value — one of the five plain arithmetic
+        operators <code>ADD</code>/<code>SUB</code>/<code>MUL</code>/<code>DIV</code>/<code>MOD</code> — without
+        this crate ever computing that value itself. Each result shown here is computed by the demo, in plain Rust,
+        exactly the way a real caller would; see <code>DataNodeContent</code>.
+    </p>
+    <p>A binary operator node has two incoming edges, drawn automatically when the node is created, so the
+        rendered graph can never drift from the operand relationship the node claims to represent. Unlike a
+        Boolean operator, an arithmetic one is not commutative: the first operand feeding the node is always the
+        left-hand side, the second always the right-hand side.
+    </p>
+    <p>Each row uses a different operand width, so between them all four this crate supports —
+        <code>u8</code>/<code>u16</code>/<code>u32</code>/<code>u64</code> — appear at least once.
+    </p>
+    <p>See the <a href="#panel-operators-chained">Chained operators</a> panel for an operator node's own result
+        feeding a further operator node, rather than every row here standing alone.
+    </p>
+    <div class="canvas" style="margin-top: 1.5rem;">
+        <svg id="operators-arithmetic-diagram" width="700" height="880" viewBox="0 0 700 880" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

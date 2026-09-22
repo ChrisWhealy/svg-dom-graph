@@ -75,14 +75,14 @@ Binary format further splits each byte into its own upper and lower nybble, so `
 This can be reversed by setting `DataNodeContent::with_byte_order(ByteOrder::LittleEndian)`.
 This will visualise the actual in-memory byte layout, rather than the network byte order.
 
-## Boolean/Bitwise Operators
+## Operator Nodes
 
 Building on `DataNodeContent`, an operator node displays the operator name in the top row and a user-supplied value in the bottom row.
 
 ***IMPORTANT***<br>
 These nodes are simply display tools: they do not compute any result themselves!
 
-`Scene::add_unary_operator_node` or `add_binary_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to represent.
+`Scene::add_unary_operator_node`, `add_binary_operator_node`, or `add_arithmetic_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to represent.
 
 A unary operator node takes a single operand and draws a connector on its incoming edge:
 
@@ -137,6 +137,12 @@ The result passed to `add_binary_operator_node` must be that same operator corre
 
 ***IMPORTANT***<br>
 Supplying a `value_a & value_b` that does not match the actual operands will draw a node whose displayed value is silently wrong!
+
+The arithmetic operator nodes (`ADD`, `SUB`, `MUL`, `DIV`, `MOD`) take two operands the same way, via `Scene::add_arithmetic_operator_node`.
+Unlike a `BinaryOperator`, an `ArithmeticOperator` does not commute: `inputs.0` is always the left-hand operand, `inputs.1` the right-hand one.
+`Subtract` underflows, and `Divide`/`Modulus` panic on a zero divisor, exactly the way plain Rust arithmetic does; avoiding that is the caller's own responsibility, the same as computing every other operator's result correctly.
+
+The demo's "Arithmetic operators" panel shows all five, one row per operator, cycling through `u8`/`u16`/`u32`/`u64` so every operand width this crate supports appears at least once.
 
 An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
 

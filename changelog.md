@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement complete set of bitwise operators and add chained operator demos (`61f0dc5`)
-- Add arithmetic operators (``)
+- Add arithmetic operators (`e773f50`)
+- Add arithmetic operator demos (``)
 
 ## Fixed
 

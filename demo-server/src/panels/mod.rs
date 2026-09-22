@@ -40,6 +40,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-data", "Data node"),
     ("panel-operators-unary", "Unary operators"),
     ("panel-operators-binary", "Binary operators"),
+    ("panel-operators-arithmetic", "Arithmetic operators"),
     ("panel-operators-chained", "Chained operators"),
     ("panel-selection", "Cell selection"),
 ];
