@@ -585,6 +585,55 @@ fn binary_operator_anchors_break_an_exact_crossing_tie_in_favour_of_first() -> R
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// offset_from_side
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn offset_from_side_moves_away_from_the_box_on_every_side() -> Result<(), String> {
+    let anchor = Point::new(10.0, 20.0);
+    check_eq(offset_from_side(anchor, Side::North, 5.0), Point::new(10.0, 15.0))?;
+    check_eq(offset_from_side(anchor, Side::South, 5.0), Point::new(10.0, 25.0))?;
+    check_eq(offset_from_side(anchor, Side::East, 5.0), Point::new(15.0, 20.0))?;
+    check_eq(offset_from_side(anchor, Side::West, 5.0), Point::new(5.0, 20.0))
+}
+
+#[test]
+fn offset_from_side_of_zero_distance_is_the_anchor_itself() -> Result<(), String> {
+    let anchor = Point::new(3.0, 7.0);
+    check_eq(offset_from_side(anchor, Side::East, 0.0), anchor)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// port_marker_position
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn port_marker_position_on_an_east_or_west_side_moves_up_clear_of_the_horizontal_connector() -> Result<(), String> {
+    let anchor = Point::new(10.0, 20.0);
+    let east = port_marker_position(anchor, Side::East);
+    let west = port_marker_position(anchor, Side::West);
+    // Still offset outward from the box, same as `offset_from_side` alone.
+    check_eq(east.x, anchor.x + PORT_MARKER_OFFSET)?;
+    check_eq(west.x, anchor.x - PORT_MARKER_OFFSET)?;
+    // And now also lifted clear above the connector's own horizontal approach line.
+    check_eq(east.y, anchor.y - PORT_MARKER_CLEARANCE)?;
+    check_eq(west.y, anchor.y - PORT_MARKER_CLEARANCE)
+}
+
+#[test]
+fn port_marker_position_on_a_north_or_south_side_moves_right_clear_of_the_vertical_connector() -> Result<(), String> {
+    let anchor = Point::new(10.0, 20.0);
+    let north = port_marker_position(anchor, Side::North);
+    let south = port_marker_position(anchor, Side::South);
+    // Still offset outward from the box, same as `offset_from_side` alone.
+    check_eq(north.y, anchor.y - PORT_MARKER_OFFSET)?;
+    check_eq(south.y, anchor.y + PORT_MARKER_OFFSET)?;
+    // And now also shifted clear to the right of the connector's own vertical approach line.
+    check_eq(north.x, anchor.x + PORT_MARKER_CLEARANCE)?;
+    check_eq(south.x, anchor.x + PORT_MARKER_CLEARANCE)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `true` if axis-aligned segments `a1`-`a2` and `b1`-`b2` touch anywhere, including a shared endpoint or an
 /// overlapping run, not just a proper crossing point.
 ///

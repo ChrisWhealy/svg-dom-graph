@@ -202,6 +202,7 @@ impl Scene {
             ConnectorHandle {
                 path,
                 connector_type: options.connector_type,
+                port_marker: None,
             },
         );
         Ok(id)

@@ -718,3 +718,26 @@ fn arithmetic_operator_label_names_each_variant() -> Result<(), String> {
     check_eq(ArithmeticOperator::Divide.label(), "DIV")?;
     check_eq(ArithmeticOperator::Modulus.label(), "MOD")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// BinaryOperator::commutes / ArithmeticOperator::commutes
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn every_binary_operator_variant_commutes() -> Result<(), String> {
+    check_eq(BinaryOperator::And.commutes(), true)?;
+    check_eq(BinaryOperator::Or.commutes(), true)?;
+    check_eq(BinaryOperator::Xor.commutes(), true)?;
+    check_eq(BinaryOperator::Nand.commutes(), true)?;
+    check_eq(BinaryOperator::Nor.commutes(), true)?;
+    check_eq(BinaryOperator::Xnor.commutes(), true)
+}
+
+#[test]
+fn only_add_and_multiply_commute_among_arithmetic_operators() -> Result<(), String> {
+    check_eq(ArithmeticOperator::Add.commutes(), true)?;
+    check_eq(ArithmeticOperator::Multiply.commutes(), true)?;
+    check_eq(ArithmeticOperator::Subtract.commutes(), false)?;
+    check_eq(ArithmeticOperator::Divide.commutes(), false)?;
+    check_eq(ArithmeticOperator::Modulus.commutes(), false)
+}

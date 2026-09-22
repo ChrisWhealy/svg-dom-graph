@@ -16,9 +16,9 @@ use crate::{
 /// Create one right after the node itself is registered. [`track_edge`](Self::track_edge) each `Scene::add_edge`
 /// call's own id as it succeeds, and [`disarm`](Self::disarm) once every edge has been wired.
 ///
-/// Dropped while still armed, this removes every tracked edge first — its rendered path, its `edge_handles` entry,
-/// and its place in the graph. It then removes the node itself, so nothing is ever asked to remove a node an edge
-/// still points at.
+/// Dropped while still armed, this removes every tracked edge first — its rendered path, its own "L"/"R" port
+/// marker if one was drawn, its `edge_handles` entry, and its place in the graph. It then removes the node itself,
+/// so nothing is ever asked to remove a node an edge still points at.
 ///
 /// Mirrors [`RenderGuard`](super::render_guard::RenderGuard)'s own rollback pattern, but one level up. `RenderGuard`
 /// only ever undoes DOM construction, since the node isn't registered anywhere yet by the time it runs.
@@ -74,6 +74,9 @@ impl Drop for OperatorConstructionGuard {
         for edge_id in self.edge_ids.into_iter().rev().flatten() {
             if let Some(handle) = inner.remove_edge_handle(edge_id) {
                 handle.path.remove();
+                if let Some(marker) = handle.port_marker {
+                    marker.remove();
+                }
             }
             inner.graph.remove_edge(edge_id);
         }

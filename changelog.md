@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement complete set of bitwise operators and add chained operator demos (`61f0dc5`)
 - Add arithmetic operators (`e773f50`)
 - Add arithmetic operator demos (`6478e6f`)
-- Use ThetaC function to demo array selection and operator chaining (``)
+- Use ThetaC function to demo array selection and operator chaining (`d9b224b`)
+- Provide "L" and "R" markers to distinguish the operands of non-commutative operators (``)
 
 ## Fixed
 

@@ -14,6 +14,7 @@ use super::{
 };
 use crate::{
     error::Error,
+    geometry::{binary_operator_anchors, centre, port_marker_position, side::Side},
     model::{
         graph::Graph,
         node::{NodeContent, NodeId},
@@ -21,7 +22,7 @@ use crate::{
     scene::{ArithmeticOperator, BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, UnaryOperator},
 };
 use svg_dom::{
-    DominantBaseline, SvgRoot, TextAnchor,
+    DominantBaseline, SvgNode, SvgRoot, TextAnchor,
     root::utils::{Point, Rect, Size},
 };
 
@@ -56,6 +57,11 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
 /// The height of an operator node's own label row, in user-space units — the same fixed-multiple-of-font-size
 /// approach [`CELL_HEIGHT`] already uses, at [`LABEL_FONT_SIZE`] rather than [`GRID_FONT_SIZE`].
 const OPERATOR_LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDING;
+
+/// A non-commutative operator's own "L"/"R" port marker font size, in user-space units — smaller than
+/// [`LABEL_FONT_SIZE`], so the marker reads as a secondary annotation rather than competing with the node's own
+/// label, but large enough to stay legible once offset clear of the connector's own arrowhead.
+const PORT_MARKER_FONT_SIZE: f64 = LABEL_FONT_SIZE * 0.9;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator node: a label row naming the operation, with `result`'s own single value in its own inset
@@ -175,6 +181,33 @@ fn draw_operator_box(
         },
         rect,
     ))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws one non-commutative two-input operator's own port marker: a small `glyph` ("L" or "R") placed at
+/// [`port_marker_position`]'s own point for `anchor`/`side`.
+///
+/// A `SUB`/`DIV`/`MOD` node's own anti-crossing routing can freely reassign which operand's connector lands on
+/// which side, to avoid the two connectors crossing — see this module's own parent doc comment. That is harmless
+/// for a commutative operator, but not for one of these, where swapping the operands changes the result. This
+/// marker gives the rendered diagram a stable, operand-identity-tied indicator that survives any such
+/// reassignment, so a reader can always tell `inputs.0` from `inputs.1` from the diagram alone.
+///
+/// `aria_label` ("left operand"/"right operand") replaces `glyph` as this marker's own accessible name — `role`
+/// `"img"` tells assistive technology to announce that name instead of reading the single-letter glyph literally.
+///
+/// Created as a direct child of the SVG root, the same absolute-coordinate way a connector's own `<path>` is — see
+/// [`crate::scene::connector`]. [`crate::scene::SceneInner::redraw_binary_operator_inputs`] repositions this
+/// marker, rather than recreating it, on every later redraw.
+fn draw_port_marker(svg: &SvgRoot, anchor: Point, side: Side, glyph: &str, aria_label: &str) -> Result<SvgNode, Error> {
+    let marker = svg.text(port_marker_position(anchor, side), glyph)?;
+    marker.set_text_anchor(TextAnchor::Middle)?;
+    marker.set_dominant_baseline(DominantBaseline::Middle)?;
+    marker.set_font_size(PORT_MARKER_FONT_SIZE)?;
+    marker.set_fill("#555")?;
+    marker.set_attr("role", "img")?;
+    marker.set_attr("aria-label", aria_label)?;
+    Ok(marker)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -333,7 +366,7 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options)
+        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options, operator.commutes())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -343,9 +376,9 @@ impl Scene {
     /// `svg-dom-graph` never evaluates `operator` itself. `result` must already be `operator` applied to `inputs`'
     /// own two values, computed by the caller. See this module's own doc comment ("Operator nodes").
     ///
-    /// Unlike [`add_binary_operator_node`](Self::add_binary_operator_node)'s own [`BinaryOperator`], every
-    /// [`ArithmeticOperator`] variant is non-commutative — see its own doc comment. `inputs.0` is always the
-    /// left-hand operand, `inputs.1` the right-hand one.
+    /// Unlike [`add_binary_operator_node`](Self::add_binary_operator_node)'s own [`BinaryOperator`], the
+    /// [`ArithmeticOperator`] variant is only commutative for `add` and `multiply` — see its own doc comment.
+    /// `inputs.0` is always the left-hand operand and `inputs.1` the right-hand one.
     ///
     /// Equivalent to [`add_arithmetic_operator_node_with`](Self::add_arithmetic_operator_node_with) with
     /// [`NodeOptions::default`].
@@ -403,7 +436,7 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options)
+        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options, operator.commutes())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -420,6 +453,7 @@ impl Scene {
         inputs: (NodeId, NodeId),
         result: DataNodeContent,
         options: NodeOptions,
+        commutes: bool,
     ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
         validate_operator_result(&result)?;
@@ -433,7 +467,7 @@ impl Scene {
             }));
         }
 
-        let id = {
+        let (id, rect) = {
             let mut inner = self.inner.borrow_mut();
             let left_type = operand_content(&inner.graph, inputs.0)?.type_name();
             let right_type = operand_content(&inner.graph, inputs.1)?.type_name();
@@ -459,7 +493,7 @@ impl Scene {
             handles.binary_operator_inputs = Some(inputs);
             let id = inner.graph.add_node(rect, result);
             inner.insert_node_handle(id, handles);
-            id
+            (id, rect)
         };
 
         let mut guard = OperatorConstructionGuard::new(self.clone(), id);
@@ -476,6 +510,24 @@ impl Scene {
             .node_handle_mut(id)
             .ok_or(Error::UnknownNode(id))?
             .binary_operator_input_edges = Some((edge_a, edge_b));
+
+        // Non-commutative operators only — `SUB`/`DIV`/`MOD` — where `inputs.0`/`inputs.1` order changes the
+        // result. See `draw_port_marker`'s own doc comment for why this stable indicator is needed and what it
+        // shows. Skipped for a commutative operator, where operand order carries no meaning to mark.
+        if !commutes {
+            let mut inner = self.inner.borrow_mut();
+            let fixing_points = options.edge_anchors.map(|EdgeAnchors(n)| n);
+            let a_centre = centre(inner.node_rect(inputs.0)?);
+            let b_centre = centre(inner.node_rect(inputs.1)?);
+            let [(anchor_a, side_a), (anchor_b, side_b)] =
+                binary_operator_anchors(rect, a_centre, b_centre, fixing_points);
+
+            let marker_a = draw_port_marker(&inner.svg, anchor_a, side_a, "L", "left operand")?;
+            inner.edge_handle_mut(edge_a).ok_or(Error::UnknownEdge(edge_a))?.port_marker = Some(marker_a);
+
+            let marker_b = draw_port_marker(&inner.svg, anchor_b, side_b, "R", "right operand")?;
+            inner.edge_handle_mut(edge_b).ok_or(Error::UnknownEdge(edge_b))?.port_marker = Some(marker_b);
+        }
 
         guard.disarm();
         Ok(id)

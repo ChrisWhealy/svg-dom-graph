@@ -6,12 +6,13 @@
 /// This crate never calculates the result of the operation. See this module's parent doc comment. Each variant exists
 /// purely to drive the rendered node's own label; the caller must supply the correctly-calculated result.
 ///
-/// Covers the five plain arithmetic operators on unsigned integers: addition, subtraction, multiplication,
+/// This `enum` covers the five plain arithmetic operators on unsigned integers: addition, subtraction, multiplication,
 /// division and modulus.
 ///
-/// Unlike all of the [`super::binary::BinaryOperator`]s, the operands are commutative:
-/// When passing the `input` tuple to [`crate::scene::Scene::add_arithmetic_operator_node_with`], `inputs.0` is always
-/// the left-hand operand and `inputs.1` always the right-hand one.
+/// Unlike all of the [`super::binary::BinaryOperator`]s, the operands for the arithmetic operators `subtract`, `divide`
+/// and `modulo` are not commutative: When passing the `input` tuple to
+/// [`crate::scene::Scene::add_arithmetic_operator_node_with`], `inputs.0` is always the left-hand operand and
+/// `inputs.1` always the right-hand one.
 ///
 /// Division and modulus by zero panic in plain Rust arithmetic. Like computing every other operator's result, avoiding
 /// division-by-zero is the caller's responsibility.
@@ -43,5 +44,11 @@ impl ArithmeticOperator {
             Self::Divide => "DIV",
             Self::Modulus => "MOD",
         }
+    }
+
+    /// Whether swapping the two operands leaves the result unchanged.
+    /// `true` for `Add` and `Multiply`, `false` for everything else
+    pub(crate) fn commutes(self) -> bool {
+        matches!(self, Self::Add | Self::Multiply)
     }
 }

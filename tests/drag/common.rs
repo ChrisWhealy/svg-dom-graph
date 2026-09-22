@@ -180,6 +180,29 @@ pub fn marker_ids(container_id: &str) -> Result<Vec<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns how many non-commutative-operator "L"/"R" port marker `<text>` children `container` has — direct
+/// children, the same absolute-coordinate way a `<path>` connector is, never nested inside any node's own `<g>`.
+pub fn port_marker_count(container_id: &str) -> Result<u32, String> {
+    let selector = format!("#{container_id} > text[role=\"img\"]");
+    let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+    Ok(markers.length())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns the `n`th port marker `<text>` child of `container` (0-indexed), in the order each was added — see
+/// [`port_marker_count`].
+pub fn nth_port_marker(container_id: &str, n: u32) -> Result<web_sys::Element, String> {
+    let selector = format!("#{container_id} > text[role=\"img\"]");
+    let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
+    let marker = markers
+        .get(n)
+        .ok_or_else(|| format!("expected at least {} port marker(s) under #{container_id}, found fewer", n + 1))?;
+    marker
+        .dyn_into::<web_sys::Element>()
+        .map_err(|_| "port marker is not an Element".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `attr` off `element` and parses it as `f64`.
 pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
     let value = element

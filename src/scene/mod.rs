@@ -24,7 +24,10 @@ pub use node::{EdgeAnchors, NodeOptions};
 
 use crate::{
     error::Error,
-    geometry::{apply_matrix, binary_operator_anchors, elbow_path_into, nearest_clear_centre, rects_overlap},
+    geometry::{
+        apply_matrix, binary_operator_anchors, elbow_path_into, nearest_clear_centre, port_marker_position,
+        rects_overlap, side::Side,
+    },
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use std::{
@@ -404,6 +407,31 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Moves edge `id`'s own "L"/"R" port marker — if it has one — to [`port_marker_position`]'s own point for
+    /// `anchor`/`side`. Does nothing for an edge with no marker: an ordinary edge, or a commutative operator's own
+    /// input edge — see `node::operator::draw_port_marker`'s own doc comment for which edges get one.
+    ///
+    /// Repositions the existing element rather than recreating it, the same as [`write_edge_path`](Self::write_edge_path)
+    /// does for the connector's own `<path>` — both are direct SVG-root children in absolute coordinates, rewritten
+    /// on every redraw rather than relying on any node's own `transform`.
+    ///
+    /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
+    /// event.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
+    fn reposition_port_marker(&self, id: EdgeId, anchor: Point, side: Side, scratch: &mut String) -> Result<(), Error> {
+        let Some(marker) = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?.port_marker.as_ref() else {
+            return Ok(());
+        };
+        let point = port_marker_position(anchor, side);
+        marker.set_attr_display(scratch, "x", point.x)?;
+        marker.set_attr_display(scratch, "y", point.y)?;
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
     ///
     /// The ordinary-edge fallback: correct for a binary operator input edge too (`binary_operator_to_override`
@@ -425,6 +453,9 @@ impl SceneInner {
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
+        if let Some(connector::BinaryOperatorRoute { anchor, side, .. }) = &to_override {
+            self.reposition_port_marker(id, *anchor, *side, scratch)?;
+        }
         let connector_type = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?.connector_type;
         let (vertices, radius) =
             connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
@@ -485,6 +516,7 @@ impl SceneInner {
             }),
         );
         self.write_edge_path(edge_a, &vertices_a, radius_a, scratch)?;
+        self.reposition_port_marker(edge_a, anchor_a, side_a, scratch)?;
 
         let connector_type_b = self.edge_handle(edge_b).ok_or(Error::UnknownEdge(edge_b))?.connector_type;
         let (vertices_b, radius_b) = connector::route(
@@ -499,7 +531,8 @@ impl SceneInner {
                 sibling_end: same_side.then_some(anchor_a),
             }),
         );
-        self.write_edge_path(edge_b, &vertices_b, radius_b, scratch)
+        self.write_edge_path(edge_b, &vertices_b, radius_b, scratch)?;
+        self.reposition_port_marker(edge_b, anchor_b, side_b, scratch)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

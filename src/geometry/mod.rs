@@ -432,6 +432,54 @@ pub(crate) fn binary_operator_anchors(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How far a non-commutative operator's own "L"/"R" port marker sits clear of the operator box's own edge, in
+/// user-space units. Comfortably past the arrowhead marker's own 10-unit length (see `define_arrow_marker`), so the
+/// glyph reads clearly on the connector's own shaft rather than sitting on top of the arrowhead. Shared between
+/// [`crate::scene::node::operator`], which places each marker at construction, and
+/// [`crate::scene::SceneInner::redraw_binary_operator_inputs`], which repositions it on every later redraw — both
+/// must offset by the same distance, or a drag would visibly snap the marker to a new position the first time it
+/// redraws.
+pub(crate) const PORT_MARKER_OFFSET: f64 = 22.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `anchor` moved `distance` further outward from a box, away from the box `side` it sits on.
+///
+/// Used to place a non-commutative operator's own "L"/"R" port marker just clear of the box edge, rather than
+/// directly on top of the connector line landing at `anchor` itself.
+pub(crate) fn offset_from_side(anchor: Point, side: side::Side, distance: f64) -> Point {
+    match side {
+        side::Side::North => Point::new(anchor.x, anchor.y - distance),
+        side::Side::South => Point::new(anchor.x, anchor.y + distance),
+        side::Side::East => Point::new(anchor.x + distance, anchor.y),
+        side::Side::West => Point::new(anchor.x - distance, anchor.y),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How far a non-commutative operator's own "L"/"R" port marker sits clear of the connector line itself, in
+/// user-space units — perpendicular to [`offset_from_side`]'s own outward offset. See [`port_marker_position`] for
+/// which direction that clearance goes in.
+pub(crate) const PORT_MARKER_CLEARANCE: f64 = 10.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where a non-commutative operator's own "L"/"R" port marker is drawn, given `anchor` and the `side` of the
+/// operator box the connector lands on.
+///
+/// First offsets `anchor` outward from the box by [`PORT_MARKER_OFFSET`], clear of the connector's own arrowhead —
+/// see that constant's own doc comment. Then offsets again, by [`PORT_MARKER_CLEARANCE`], perpendicular to the
+/// connector's own approach direction at that point, so the marker sits beside the line rather than straddling it:
+///
+/// - An east/west side's own connector approaches horizontally, so the marker moves up, clear above the line.
+/// - A north/south side's own connector approaches vertically, so the marker moves right, clear beside the line.
+pub(crate) fn port_marker_position(anchor: Point, side: side::Side) -> Point {
+    let along = offset_from_side(anchor, side, PORT_MARKER_OFFSET);
+    match side {
+        side::Side::East | side::Side::West => Point::new(along.x, along.y - PORT_MARKER_CLEARANCE),
+        side::Side::North | side::Side::South => Point::new(along.x + PORT_MARKER_CLEARANCE, along.y),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The elbow route for one of a two-input operator node's own two same-side inputs — `mine`'s own edge, from `start`
 /// to `end`, given `sibling_end` too, so the two routes cannot cross for the case that matters most: dragging one
 /// operand to a position where its own route would otherwise sweep across the other's.

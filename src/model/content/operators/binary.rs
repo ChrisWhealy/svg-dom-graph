@@ -41,4 +41,10 @@ impl BinaryOperator {
             Self::Xnor => "XNOR",
         }
     }
+
+    /// Whether swapping the two operands leaves the result unchanged. Always `true`: every `BinaryOperator`
+    /// variant commutes.
+    pub(crate) fn commutes(self) -> bool {
+        true
+    }
 }

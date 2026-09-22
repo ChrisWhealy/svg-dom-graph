@@ -4,6 +4,7 @@
 
 use crate::common::{
     attr_f64, check, check_close, connector_count, dispatch_pointer_event, group_translate, make_svg, nth_group,
+    nth_port_marker, port_marker_count,
 };
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -968,4 +969,222 @@ fn two_operands_above_a_binary_operator_node_with_two_configured_fixing_points_u
     // Two candidates on a side divided into three equal segments: 1/3 and 2/3 of the side's width.
     check_close(end_a.0, op_x + op_width / 3.0)?;
     check_close(end_b.0, op_x + op_width * 2.0 / 3.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Non-commutative operand port markers
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// A commutative binary operator — swapping the operands never changes the result — draws no "L"/"R" port marker
+/// at all: there is nothing ambiguous about operand order for a reader to be told apart.
+#[wasm_bindgen_test]
+fn a_commutative_binary_operator_node_draws_no_port_markers() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-markers-commutative-binary",
+        Size::new(400.0, 260.0),
+        Size::new(400.0, 260.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_binary_operator_node(Point::new(220.0, 60.0), BinaryOperator::Xor, (a, b), result)
+        .map_err(|e| e.to_string())?;
+
+    check(
+        port_marker_count("operator-markers-commutative-binary")? == 0,
+        &format!(
+            "expected no port markers for a commutative operator, found {}",
+            port_marker_count("operator-markers-commutative-binary")?
+        ),
+    )
+}
+
+/// `Add` and `Multiply` are the only two commutative [`ArithmeticOperator`] variants — neither draws a port marker.
+#[wasm_bindgen_test]
+fn commutative_arithmetic_operators_draw_no_port_markers() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-markers-commutative-arithmetic",
+        Size::new(400.0, 260.0),
+        Size::new(400.0, 260.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    for operator in [ArithmeticOperator::Add, ArithmeticOperator::Multiply] {
+        let a = scene
+            .add_data_node(
+                Point::new(10.0, 10.0),
+                DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+            )
+            .map_err(|e| e.to_string())?;
+        let b = scene
+            .add_data_node(
+                Point::new(10.0, 120.0),
+                DataNodeContent::new(NodeValues::U8(vec![2]), DataFormat::Decimal),
+            )
+            .map_err(|e| e.to_string())?;
+        let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+        scene
+            .add_arithmetic_operator_node(Point::new(220.0, 60.0), operator, (a, b), result)
+            .map_err(|e| e.to_string())?;
+    }
+
+    check(
+        port_marker_count("operator-markers-commutative-arithmetic")? == 0,
+        &format!(
+            "expected no port markers for Add or Multiply, found {}",
+            port_marker_count("operator-markers-commutative-arithmetic")?
+        ),
+    )
+}
+
+/// `Subtract`, `Divide`, and `Modulus` each draw exactly two port markers — one per input — labelled "L"/"R", with
+/// an `aria-label` naming which operand each one is, and `role="img"` so assistive technology announces that name
+/// rather than reading the bare glyph.
+#[wasm_bindgen_test]
+fn non_commutative_arithmetic_operators_draw_labelled_port_markers() -> Result<(), String> {
+    for operator in [
+        ArithmeticOperator::Subtract,
+        ArithmeticOperator::Divide,
+        ArithmeticOperator::Modulus,
+    ] {
+        let id = format!("operator-markers-non-commutative-{operator:?}");
+        let svg = make_svg(&id, Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+        let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+        let a = scene
+            .add_data_node(
+                Point::new(10.0, 10.0),
+                DataNodeContent::new(NodeValues::U8(vec![9]), DataFormat::Decimal),
+            )
+            .map_err(|e| e.to_string())?;
+        let b = scene
+            .add_data_node(
+                Point::new(10.0, 120.0),
+                DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal),
+            )
+            .map_err(|e| e.to_string())?;
+        let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+        scene
+            .add_arithmetic_operator_node(Point::new(220.0, 60.0), operator, (a, b), result)
+            .map_err(|e| e.to_string())?;
+
+        check(
+            port_marker_count(&id)? == 2,
+            &format!("expected 2 port markers for {operator:?}, found {}", port_marker_count(&id)?),
+        )?;
+
+        let left = nth_port_marker(&id, 0)?;
+        check(
+            left.text_content().as_deref() == Some("L"),
+            "expected the first port marker's own glyph to be \"L\"",
+        )?;
+        check(
+            left.get_attribute("aria-label").as_deref() == Some("left operand"),
+            "expected the first port marker's own aria-label to be \"left operand\"",
+        )?;
+        check(
+            left.get_attribute("role").as_deref() == Some("img"),
+            "expected the first port marker's own role to be \"img\"",
+        )?;
+
+        let right = nth_port_marker(&id, 1)?;
+        check(
+            right.text_content().as_deref() == Some("R"),
+            "expected the second port marker's own glyph to be \"R\"",
+        )?;
+        check(
+            right.get_attribute("aria-label").as_deref() == Some("right operand"),
+            "expected the second port marker's own aria-label to be \"right operand\"",
+        )?;
+    }
+    Ok(())
+}
+
+/// The core regression this feature exists to fix: dragging one operand onto its sibling's own side forces the
+/// anti-crossing router to reassign which operand's connector lands on the near/far slot — see
+/// `dragging_an_operand_onto_its_siblings_side_re_splits_both_connectors_live`, the matching test for the plain
+/// connector routing this builds on. Despite that reassignment, the "L" marker must stay bound to `inputs.0`'s own
+/// connector and the "R" marker to `inputs.1`'s — never swapped just because the router moved one of them to a
+/// different visual slot.
+#[wasm_bindgen_test]
+fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identity_stays_correct() -> Result<(), String>
+{
+    let svg = make_svg(
+        "operator-markers-live-identity",
+        Size::new(500.0, 400.0),
+        Size::new(500.0, 400.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![9]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(450.0, 300.0),
+            DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(b).map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    scene
+        .add_arithmetic_operator_node(Point::new(220.0, 300.0), ArithmeticOperator::Subtract, (a, b), result)
+        .map_err(|e| e.to_string())?;
+
+    // Marker 0 ("L", bound to `a` == `inputs.0`'s own edge, connector 0) must sit much closer to connector 0's own
+    // endpoint than to connector 1's — and marker 1 ("R") the other way round — both before and after the drag
+    // below reassigns which connector lands on which side.
+    let check_marker_identity = || -> Result<(), String> {
+        let end_0 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+            "operator-markers-live-identity",
+            0,
+        )?)?)?;
+        let end_1 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+            "operator-markers-live-identity",
+            1,
+        )?)?)?;
+        let marker_0 = nth_port_marker("operator-markers-live-identity", 0)?;
+        let marker_1 = nth_port_marker("operator-markers-live-identity", 1)?;
+        let pos_0 = (attr_f64(&marker_0, "x")?, attr_f64(&marker_0, "y")?);
+        let pos_1 = (attr_f64(&marker_1, "x")?, attr_f64(&marker_1, "y")?);
+
+        let dist = |p: (f64, f64), q: (f64, f64)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+        check(
+            dist(pos_0, end_0) < dist(pos_0, end_1),
+            &format!(
+                "expected the \"L\" marker {pos_0:?} to sit nearer connector 0's own end {end_0:?} than \
+                       connector 1's own end {end_1:?}"
+            ),
+        )?;
+        check(
+            dist(pos_1, end_1) < dist(pos_1, end_0),
+            &format!(
+                "expected the \"R\" marker {pos_1:?} to sit nearer connector 1's own end {end_1:?} than \
+                       connector 0's own end {end_0:?}"
+            ),
+        )
+    };
+
+    check_marker_identity()?;
+
+    // Drag `b` to join `a` above the operator, forcing the same-side split — and, for at least one of the two
+    // input rows, a near/far reassignment relative to before the drag.
+    let b_group = nth_group("operator-markers-live-identity", 1)?;
+    dispatch_pointer_event(&b_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&b_group, "pointermove", -50, -190, 1)?;
+    dispatch_pointer_event(&b_group, "pointerup", -50, -190, 1)?;
+
+    check_marker_identity()
 }
