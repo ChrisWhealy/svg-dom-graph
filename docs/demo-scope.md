@@ -140,7 +140,11 @@ Supplying a `value_a & value_b` that does not match the actual operands will dra
 
 An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
 
-The demo's "Chained operators" panel shows this directly: `B` rotated right by one bit, then `XOR`'ed with `A`; `XOR(w0, AND(NOT(w1), w2))` for three plain values; and SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)`, whose `x` feeds two separate operator nodes.
+The demo's "Chained operators" panel shows this directly:
+
+* `B` rotated right by one bit, then `XOR`'ed with `A`
+* `XOR(w0, AND(NOT(w1), w2))` for three plain values
+* SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)`, whose `x` feeds two separate operator nodes
 
 ## Cell Selection
 
