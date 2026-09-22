@@ -13,6 +13,15 @@ body {
     min-height: 100vh;
 }
 
+/* Every browser's own default stylesheet sets `code { font-family: monospace }` — the bare generic keyword, not
+   body's own named stack above. That is a real declared rule, not just an absence of one, so it overrides
+   inheritance: without this, every <code> renders in whichever generic monospace font the browser substitutes,
+   which most browsers draw distinctly smaller than a named font at the same font-size. This is what actually
+   caused <code> to look undersized next to its surrounding text — not a missing font-size override. */
+code {
+    font-family: inherit;
+}
+
 /* App shell. The menu spans the full height on the left. The title sits above the stage on the right. */
 #app {
     display: grid;
@@ -163,11 +172,17 @@ h2 code {
     color: #f0883e;
 }
 
+/* The global box-sizing reset at the top of this file zeroes every element's own margin, h3's own default included
+   — without this, an h3 butts straight up against whatever content precedes it, with no visible gap at all. */
+h3 {
+    margin-top: 1.5rem;
+}
+
 /* svg-dom-graph's own addition: svg-dom's panels keep their explanatory text inside <figcaption> (see that rule's
    own margin-bottom below), but svg-dom-graph's own panels write plain <p> tags directly under .section instead.
    The global box-sizing reset at the top of this file zeroes every element's own margin, so without this those
    paragraphs would render with no gap between them at all. */
-.section > p {
+.section>p {
     margin-bottom: 0.5rem;
 }
 
@@ -319,8 +334,7 @@ figcaption ol {
 }
 
 .source code {
-    font-family: inherit;
-    font-size: 0.78rem;
+    font-size: 0.9rem;
     line-height: 1.5;
     color: #c9d1d9;
     white-space: pre;

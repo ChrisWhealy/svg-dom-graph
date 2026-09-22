@@ -15,7 +15,8 @@
         <span>Selected index: <output id="selection-1d-index">0</output></span>
     </p>
     <div class="canvas">
-        <svg id="selection-1d-diagram" width="400" height="90" viewBox="0 0 400 90" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="selection-1d-diagram" width="400" height="90" viewBox="0 0 400 90"
+            xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     <h3>Two-dimensional array</h3>
     <p class="controls">
@@ -24,6 +25,37 @@
         <span>Selected: <output id="selection-2d-index">row 0, col 0</output></span>
     </p>
     <div class="canvas">
-        <svg id="selection-2d-diagram" width="400" height="180" viewBox="0 0 400 180" xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="selection-2d-diagram" width="400" height="180" viewBox="0 0 400 180"
+            xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+    <h3>Operator chain over an array (SHA-3's <code>ThetaC</code>) Function</h3>
+    <p>An operator chain is supplied with a fresh row of values from an input array on each step, with its own
+        final result written to an output array. SHA-3's <code>ThetaC</code> function is a real example: for each
+        row <code>n</code> of a 5&times;5 input array <code>A</code>,
+        <code>C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)</code>, written to output array
+        <code>O(n)</code>.
+    </p>
+    <p><code>svg-dom-graph</code> has no way to change an existing node's own displayed value — only its selection
+        (colour/focus). So each step clears and redraws the whole diagram from scratch with the current row's own
+        real values, rather than trying to update any node in place.
+    </p>
+    <p><code>A</code> sits at the top of the canvas, above the chain it feeds; <code>O</code> sits directly below
+        the chain's own final <code>XOR</code> node. A connector always lands on a node's own outer edge, never a
+        specific cell inside it, so putting <code>O</code> right after the chain, with nothing else in between,
+        lets a plain edge from that final node reach <code>O</code> directly — reading as "into the output," not
+        "into the input."
+    </p>
+    <p>"Previous"/"Next" move <code>n</code> from <code>0</code> to <code>4</code> — clamped, not wrapped. Stepping
+        "Previous" also resets the row being left back to <code>O</code>'s own initial value (all-zero), so a
+        walked-past output only ever reads as valid because the walk itself produced it.
+    </p>
+    <p class="controls">
+        <button id="selection-thetac-prev" type="button">Previous</button>
+        <button id="selection-thetac-next" type="button">Next</button>
+        <span>Row: <output id="selection-thetac-index">0</output></span>
+    </p>
+    <div class="canvas">
+        <svg id="selection-thetac-diagram" width="1100" height="920" viewBox="0 0 1100 920"
+            xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
 </section>

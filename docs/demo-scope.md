@@ -178,3 +178,19 @@ scene.set_selection(node, Selection::Cell(2))?;
 scene.set_selection(node, Selection::Row { row: 1, col: Some(2) })?;
 scene.set_selection(node, Selection::None)?; // clears back to the default colour
 ```
+
+The demo's third example steps an operator chain across an array, rather than just highlighting one.
+For each row `n` of a 5×5 input array `A`, SHA-3's own `ThetaC` step computes `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)`, and writes it to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
+
+`svg-dom-graph` has no API to change a node's own displayed value once drawn, only its selection.
+So each step clears and redraws the whole diagram from scratch with the current row's own real values, the same approach `demo-app`'s own `edge_anchors::rebuild_edge_anchors_scene` already takes for a different reason (a fixing-point count with a different child spread).
+
+`A` and `O` each keep their own real shape — `A` is `[5; [5; u64]]`, `O` is `[5; u64]` — rather than folding into one shared grid.
+`A` sits at the top of the canvas, above the chain it feeds; `O` sits directly below the chain's own final `XOR` node.
+`A`'s own row `n` is banded, and `O`'s own cell `n` is focused, via the same `Scene::set_selection` each step reapplies to both.
+A connector only ever lands on a node's own outer edge, never a specific cell inside it — `svg-dom-graph` connects whole nodes, not cells.
+Putting `O` right after the chain, with nothing else in between, is what lets a plain edge from the chain's own final `XOR` node reach `O` directly, reading as "into the output."
+That final `XOR` node's own position is fixed — the same position it would occupy for `n == 3` — rather than tracking `n`; nothing sits between it and `O` regardless of which row is current, so there was never a correctness reason for it to move.
+
+`n` is clamped to `0..=4`, not wrapped like the first two examples.
+Stepping "Previous" also resets the row being left — not the row arrived at — back to `O`'s own initial (all-zero) value, so a walked-past output only ever reads as valid because the forward walk itself produced it.

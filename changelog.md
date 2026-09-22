@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement complete set of bitwise operators and add chained operator demos (`61f0dc5`)
 - Add arithmetic operators (`e773f50`)
 - Add arithmetic operator demos (`6478e6f`)
+- Use ThetaC function to demo array selection and operator chaining (``)
 
 ## Fixed
 
@@ -20,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Fully enclose result within the outer operator node (``)
+- Fully enclose result within the outer operator node (`ab16d00`)
 
 # [Released]
 
