@@ -15,16 +15,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add arithmetic operator demos (`6478e6f`)
 - Use ThetaC function to demo array selection and operator chaining (`d9b224b`)
 - Provide "L" and "R" markers to distinguish the operands of non-commutative operators (`de7acc6`)
-- Add regression tests for operator composability (``)
+- Add regression tests for operator composability (`4be089d`)
 
 ## Fixed
 
 - Correct doc formatting (`1f28171`)
-- Correct failing "L", "R" markers tests failing in CI (``)
+- Correct failing "L", "R" markers tests failing in CI (`38a8d1a`)
 
 ## Changed
 
 - Fully enclose result within the outer operator node (`ab16d00`)
+- Refactor the tests in `tests/drag/operator_node` (``)
 
 # [Released]
 

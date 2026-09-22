@@ -15,8 +15,9 @@
 //!   clamped to its edge.
 //! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
 //!   dragging every row, and ordinary connector routing.
-//! - [`operator_node`] — `Scene::add_unary_operator_node`/`add_binary_operator_node`: label/value rendering,
-//!   auto-wired input edges, operand-type validation, and dragging.
+//! - [`operator_node`] — `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`:
+//!   label/value rendering, auto-wired input edges, operand-type validation, dragging, the same-side anti-crossing
+//!   split, non-commutative port markers, and operator-to-operator chaining.
 //! - [`selection`] — `Scene::set_selection`: cell/row/column highlighting, including the two-tier row-plus-cell and
 //!   column-plus-cell case, resetting via `Selection::None`, and validation.
 //!
