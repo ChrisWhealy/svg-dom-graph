@@ -10,8 +10,8 @@ use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
     scene::{
-        ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, NodeOptions, NodeValues, Scene,
-        UnaryOperator,
+        ArithmeticOperator, BinaryOperator, CollisionPolicy, DataFormat, DataNodeContent, DragOptions, EdgeAnchors,
+        NodeOptions, NodeValues, Scene, UnaryOperator,
     },
 };
 use wasm_bindgen::JsCast;
@@ -1185,6 +1185,259 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
     dispatch_pointer_event(&b_group, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&b_group, "pointermove", -50, -190, 1)?;
     dispatch_pointer_event(&b_group, "pointerup", -50, -190, 1)?;
+
+    check_marker_identity()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Operator → operator chaining
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// A chain — `A`/`B` feed `XOR`, whose own result feeds `AND` alongside `C` — auto-wires all four edges from a plain
+/// data node's own value, an operator node's own single-value result, or a mix of both. `add_binary_operator_node`
+/// makes no distinction: `XOR`'s own [`NodeId`] is just as valid an operand as any [`DataNodeContent`] node's own,
+/// since an operator node's own result is itself stored as `NodeContent::Data`.
+///
+/// Dragging each of `A`, `XOR`, and `AND` in turn then proves the routing this chain depends on: an edge always
+/// reroutes when either of its own two endpoints moves, and — just as important — never touches an edge whose own
+/// endpoints did not, whether that edge sits upstream or downstream of the node that actually moved.
+#[wasm_bindgen_test]
+fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_incident_connectors() -> Result<(), String>
+{
+    let svg = make_svg("operator-chain-drag", Size::new(700.0, 600.0), Size::new(700.0, 600.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+
+    let a = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![0b1010_1010]), DataFormat::Binary),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![0b0101_0101]), DataFormat::Binary),
+        )
+        .map_err(|e| e.to_string())?;
+    let c = scene
+        .add_data_node(
+            Point::new(550.0, 420.0),
+            DataNodeContent::new(NodeValues::U8(vec![0b0000_1111]), DataFormat::Binary),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let xor_value = 0b1010_1010 ^ 0b0101_0101;
+    let xor = scene
+        .add_binary_operator_node(
+            Point::new(220.0, 150.0),
+            BinaryOperator::Xor,
+            (a, b),
+            DataNodeContent::new(NodeValues::U8(vec![xor_value]), DataFormat::Binary),
+        )
+        .map_err(|e| e.to_string())?;
+
+    // `xor` — an operator node's own id, not a plain data node's — is `AND`'s own first operand here: this is the
+    // "operator feeding operator" wiring the demos show but no prior test exercises directly.
+    let and = scene
+        .add_binary_operator_node(
+            Point::new(220.0, 400.0),
+            BinaryOperator::And,
+            (xor, c),
+            DataNodeContent::new(NodeValues::U8(vec![xor_value & 0b0000_1111]), DataFormat::Binary),
+        )
+        .map_err(|e| e.to_string())?;
+
+    scene.make_draggable(a).map_err(|e| e.to_string())?;
+    scene.make_draggable(xor).map_err(|e| e.to_string())?;
+    scene.make_draggable(and).map_err(|e| e.to_string())?;
+
+    check(
+        connector_count("operator-chain-drag")? == 4,
+        &format!(
+            "expected 4 auto-wired connectors, found {}",
+            connector_count("operator-chain-drag")?
+        ),
+    )?;
+
+    // Connector indices, in creation order: 0 = A→XOR, 1 = B→XOR, 2 = XOR→AND, 3 = C→AND.
+    let path = |n: u32| -> Result<String, String> {
+        crate::common::path_d(&crate::common::nth_connector("operator-chain-drag", n)?)
+    };
+
+    // `C` feeds `AND` from a different side than `XOR` does — `XOR` sits directly above `AND`, `C` sits far to its
+    // east — so each of `AND`'s own two inputs resolves its own anchor independently, and every "must stay exactly
+    // as it was" check below holds regardless of how the same-side anti-crossing split behaves elsewhere in the
+    // chain.
+
+    // --- Drag A: only A's own edge into XOR touches A at all. ---
+    let (path_xor_and_before, path_c_and_before) = (path(2)?, path(3)?);
+    let path_a_xor_before = path(0)?;
+    let a_group = nth_group("operator-chain-drag", 0)?;
+    dispatch_pointer_event(&a_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&a_group, "pointermove", 160, 180, 1)?;
+    dispatch_pointer_event(&a_group, "pointerup", 160, 180, 1)?;
+
+    check(
+        path(0)? != path_a_xor_before,
+        "expected A's own edge into XOR to reroute after dragging A",
+    )?;
+    check(
+        path(2)? == path_xor_and_before,
+        "expected XOR's own edge into AND to stay put while only A moved",
+    )?;
+    check(
+        path(3)? == path_c_and_before,
+        "expected C's own edge into AND to stay put while only A moved",
+    )?;
+
+    // --- Drag XOR: both of its own inputs, and its own output into AND, all touch XOR. C's own edge into AND does
+    // not — proving a moved *intermediate* operator correctly reroutes both its incoming and its outgoing edges,
+    // without disturbing a sibling edge into the same downstream node. ---
+    let (path_a_xor_before, path_b_xor_before, path_xor_and_before, path_c_and_before) =
+        (path(0)?, path(1)?, path(2)?, path(3)?);
+    let xor_group = nth_group("operator-chain-drag", 3)?;
+    dispatch_pointer_event(&xor_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&xor_group, "pointermove", 60, 40, 1)?;
+    dispatch_pointer_event(&xor_group, "pointerup", 60, 40, 1)?;
+
+    check(
+        path(0)? != path_a_xor_before,
+        "expected A's own edge into XOR to reroute after dragging XOR",
+    )?;
+    check(
+        path(1)? != path_b_xor_before,
+        "expected B's own edge into XOR to reroute after dragging XOR",
+    )?;
+    check(
+        path(2)? != path_xor_and_before,
+        "expected XOR's own edge into AND to reroute after dragging XOR",
+    )?;
+    check(
+        path(3)? == path_c_and_before,
+        "expected C's own edge into AND to stay put while only XOR moved",
+    )?;
+
+    // --- Drag AND: both of its own inputs touch AND. Neither of XOR's own inputs does — proving a moved
+    // *downstream* operator never disturbs the edges feeding the operator upstream of it. ---
+    let (path_a_xor_before, path_b_xor_before, path_xor_and_before, path_c_and_before) =
+        (path(0)?, path(1)?, path(2)?, path(3)?);
+    let and_group = nth_group("operator-chain-drag", 4)?;
+    dispatch_pointer_event(&and_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&and_group, "pointermove", 150, 60, 1)?;
+    dispatch_pointer_event(&and_group, "pointerup", 150, 60, 1)?;
+
+    check(
+        path(2)? != path_xor_and_before,
+        "expected XOR's own edge into AND to reroute after dragging AND",
+    )?;
+    check(
+        path(3)? != path_c_and_before,
+        "expected C's own edge into AND to reroute after dragging AND",
+    )?;
+    check(
+        path(0)? == path_a_xor_before,
+        "expected A's own edge into XOR to stay put while only AND moved",
+    )?;
+    check(
+        path(1)? == path_b_xor_before,
+        "expected B's own edge into XOR to stay put while only AND moved",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Non-commutative operand identity survives a full position exchange
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Physically exchanging `SUB`'s own two operand nodes' positions — not just dragging one across, but swapping
+/// which one sits where — must never disturb which port marker names which operand: `inputs.0`'s own edge keeps the
+/// "L" marker and `inputs.1`'s own edge keeps "R", wherever each one now physically sits. This is the concrete case
+/// the original report calls out: a diagram reader cannot tell `A - B` from `B - A` by position alone, so the
+/// marker's own identity must survive exactly this kind of exchange.
+#[wasm_bindgen_test]
+fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_identity() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-markers-exchange-identity",
+        Size::new(500.0, 400.0),
+        Size::new(500.0, 400.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let lhs = scene
+        .add_data_node(
+            Point::new(140.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![9]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let rhs = scene
+        .add_data_node(
+            Point::new(320.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    // `CollisionPolicy::Allow`: the exchange below drags `lhs` onto `rhs`'s own (still current) position and vice
+    // versa, so the two nodes briefly overlap mid-exchange — the default push-clear policy would fight that.
+    let drag_options = DragOptions::default().with_collision(CollisionPolicy::Allow);
+    scene.make_draggable_with(lhs, drag_options).map_err(|e| e.to_string())?;
+    scene.make_draggable_with(rhs, drag_options).map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![9 - 3]), DataFormat::Decimal);
+    scene
+        .add_arithmetic_operator_node(Point::new(220.0, 220.0), ArithmeticOperator::Subtract, (lhs, rhs), result)
+        .map_err(|e| e.to_string())?;
+
+    // Marker 0 ("L", bound to `lhs` == `inputs.0`'s own edge) must sit much closer to connector 0's own endpoint
+    // than to connector 1's — and marker 1 ("R") the other way round.
+    let check_marker_identity = || -> Result<(), String> {
+        let end_0 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+            "operator-markers-exchange-identity",
+            0,
+        )?)?)?;
+        let end_1 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
+            "operator-markers-exchange-identity",
+            1,
+        )?)?)?;
+        let marker_0 = nth_port_marker("operator-markers-exchange-identity", 0)?;
+        let marker_1 = nth_port_marker("operator-markers-exchange-identity", 1)?;
+        let pos_0 = (attr_f64(&marker_0, "x")?, attr_f64(&marker_0, "y")?);
+        let pos_1 = (attr_f64(&marker_1, "x")?, attr_f64(&marker_1, "y")?);
+
+        let dist = |p: (f64, f64), q: (f64, f64)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+        check(
+            dist(pos_0, end_0) < dist(pos_0, end_1),
+            &format!(
+                "expected the \"L\" marker {pos_0:?} to sit nearer connector 0's own end {end_0:?} than \
+                 connector 1's own end {end_1:?}"
+            ),
+        )?;
+        check(
+            dist(pos_1, end_1) < dist(pos_1, end_0),
+            &format!(
+                "expected the \"R\" marker {pos_1:?} to sit nearer connector 1's own end {end_1:?} than \
+                 connector 0's own end {end_0:?}"
+            ),
+        )
+    };
+
+    check_marker_identity()?;
+
+    // Exchange the two operands' own physical positions outright: `lhs` moves to where `rhs` started, and `rhs`
+    // moves to where `lhs` started.
+    let (lhs_x, lhs_y) = group_translate(&nth_group("operator-markers-exchange-identity", 0)?)?;
+    let (rhs_x, rhs_y) = group_translate(&nth_group("operator-markers-exchange-identity", 1)?)?;
+
+    let lhs_group = nth_group("operator-markers-exchange-identity", 0)?;
+    let lhs_end = (100.0 + (rhs_x - lhs_x), 100.0 + (rhs_y - lhs_y));
+    dispatch_pointer_event(&lhs_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&lhs_group, "pointermove", lhs_end.0 as i32, lhs_end.1 as i32, 1)?;
+    dispatch_pointer_event(&lhs_group, "pointerup", lhs_end.0 as i32, lhs_end.1 as i32, 1)?;
+
+    let rhs_group = nth_group("operator-markers-exchange-identity", 1)?;
+    let rhs_end = (100.0 + (lhs_x - rhs_x), 100.0 + (lhs_y - rhs_y));
+    dispatch_pointer_event(&rhs_group, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&rhs_group, "pointermove", rhs_end.0 as i32, rhs_end.1 as i32, 1)?;
+    dispatch_pointer_event(&rhs_group, "pointerup", rhs_end.0 as i32, rhs_end.1 as i32, 1)?;
+
+    // Confirm the exchange actually happened: `lhs` is now where `rhs` started, and vice versa.
+    check_close(group_translate(&nth_group("operator-markers-exchange-identity", 0)?)?.0, rhs_x)?;
+    check_close(group_translate(&nth_group("operator-markers-exchange-identity", 1)?)?.0, lhs_x)?;
 
     check_marker_identity()
 }
