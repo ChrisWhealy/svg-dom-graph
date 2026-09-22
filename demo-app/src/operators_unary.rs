@@ -1,17 +1,17 @@
-//! `panel-operators` / `#operators-diagram`: one operand node (or two, for a binary operator) feeding an operator
-//! node, for every unary and binary operator this crate names. Every result shown is computed here with plain Rust
-//! integer ops, never by the library itself — see [`build_operator_demo`]'s own doc comment.
+//! `panel-operators-unary` / `#operators-unary-diagram`: one operand node feeding an operator node, for every
+//! [`UnaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by
+//! the library itself — see [`build_unary_operator_demo`]'s own doc comment.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{SvgRoot, root::utils::Point};
 use svg_dom_graph::{
     NodeId,
-    scene::{BinaryOperator, DataFormat, DataNodeContent, DragOptions, NodeValues, Scene, UnaryOperator},
+    scene::{DataFormat, DataNodeContent, DragOptions, NodeValues, Scene, UnaryOperator},
 };
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
-pub(crate) const SOURCE: &str = include_str!("operators.rs");
+pub(crate) const SOURCE: &str = include_str!("operators_unary.rs");
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`.
@@ -19,29 +19,27 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo scene: one operand node (or two, for a binary operator) feeding an operator node, for every
-/// [`UnaryOperator`]/[`BinaryOperator`] this crate names.
+/// Builds the demo scene: one operand node feeding an operator node, for every [`UnaryOperator`] this crate names.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`!`, `<<`, `>>`, `rotate_left`,
-/// `rotate_right`, `&`, `|`, `^`). `svg_dom_graph` itself never evaluates an operator — see
+/// `rotate_right`, `reverse_bits`, `swap_bytes`). `svg_dom_graph` itself never evaluates an operator — see
 /// [`Scene::add_unary_operator_node`]'s own doc comment for why — so this function's job is exactly the one a real
 /// caller would have: compute the real value, then hand it to the library alongside the operator that produced it.
 ///
-/// The last row is the two-step chain from the feature request that started this: `B` rotated right by one bit,
-/// then XOR'ed with `A`. It shows an operator node feeding a second operator node — its own [`DataNodeContent`]
-/// result is a valid operand like any other data node's.
+/// See [`crate::operators_binary::build_binary_operator_demo`] for this demo's own binary-operator counterpart, and
+/// [`crate::operators_chained::build_chained_operator_demo`] for operator nodes feeding further operator nodes.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-diagram`.
-pub(crate) fn build_operator_demo() -> Result<(), String> {
-    let svg = SvgRoot::attach("operators-diagram").map_err(stringify)?;
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-unary-diagram`.
+pub(crate) fn build_unary_operator_demo() -> Result<(), String> {
+    let svg = SvgRoot::attach("operators-unary-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every row's operand(s) share this left-hand x; every row's operator node shares one of these two, depending
-    // on how far right it needs to sit to receive its own operand(s).
+    // Every row's operand shares this left-hand x; every row's operator node shares this one, a fixed distance to
+    // its right.
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 
@@ -136,86 +134,40 @@ pub(crate) fn build_operator_demo() -> Result<(), String> {
         .map_err(stringify)?;
     scene.make_draggable_with(ror_node, drag_options).map_err(stringify)?;
 
-    // AND — u32, two operands stacked in one column, feeding one operator node between them.
-    let and_a: u32 = 0xFF00_FF00;
-    let and_b: u32 = 0x0F0F_0F0F;
-    let and_a_node = place_operand(
+    // Reverse bits — u8, binary, so the end-to-end bit reversal reads digit by digit, the same reason NOT above
+    // uses binary too.
+    let rbit_input: u8 = 0b1100_0010;
+    let rbit_operand = place_operand(
         X_OPERAND,
         570.0,
-        DataNodeContent::new(NodeValues::U32(vec![and_a]), DataFormat::Hexadecimal),
+        DataNodeContent::new(NodeValues::U8(vec![rbit_input]), DataFormat::Binary),
     )?;
-    let and_b_node = place_operand(
-        X_OPERAND,
-        660.0,
-        DataNodeContent::new(NodeValues::U32(vec![and_b]), DataFormat::Hexadecimal),
-    )?;
-    let and_node = scene
-        .add_binary_operator_node(
-            Point::new(X_OPERATOR, 615.0),
-            BinaryOperator::And,
-            (and_a_node, and_b_node),
-            DataNodeContent::new(NodeValues::U32(vec![and_a & and_b]), DataFormat::Hexadecimal),
-        )
-        .map_err(stringify)?;
-    scene.make_draggable_with(and_node, drag_options).map_err(stringify)?;
-
-    // OR — u64, two operands stacked, same layout as AND above.
-    let or_a: u64 = 0x0000_0000_FFFF_0000;
-    let or_b: u64 = 0x1234_5678_0000_ABCD;
-    let or_a_node = place_operand(
-        X_OPERAND,
-        740.0,
-        DataNodeContent::new(NodeValues::U64(vec![or_a]), DataFormat::Hexadecimal),
-    )?;
-    let or_b_node = place_operand(
-        X_OPERAND,
-        830.0,
-        DataNodeContent::new(NodeValues::U64(vec![or_b]), DataFormat::Hexadecimal),
-    )?;
-    let or_node = scene
-        .add_binary_operator_node(
-            Point::new(X_OPERATOR, 785.0),
-            BinaryOperator::Or,
-            (or_a_node, or_b_node),
-            DataNodeContent::new(NodeValues::U64(vec![or_a | or_b]), DataFormat::Hexadecimal),
-        )
-        .map_err(stringify)?;
-    scene.make_draggable_with(or_node, drag_options).map_err(stringify)?;
-
-    // XOR chain — the motivating example: B rotated right by one bit, then XOR'ed with A. The ROR node's own
-    // result feeds the XOR node as its second operand, a further x-coordinate over to make room for it.
-    let a: u64 = 0x0123_4567_89AB_CDEF;
-    let b: u64 = 0xFEDC_BA98_7654_3210;
-    let b_node = place_operand(
-        X_OPERAND,
-        910.0,
-        DataNodeContent::new(NodeValues::U64(vec![b]), DataFormat::Hexadecimal),
-    )?;
-    let ror_b = b.rotate_right(1);
-    let ror_b_node = scene
+    let rbit_node = scene
         .add_unary_operator_node(
-            Point::new(X_OPERATOR, 910.0),
-            UnaryOperator::RotateRight(1),
-            b_node,
-            DataNodeContent::new(NodeValues::U64(vec![ror_b]), DataFormat::Hexadecimal),
+            Point::new(X_OPERATOR, 570.0),
+            UnaryOperator::ReverseBits,
+            rbit_operand,
+            DataNodeContent::new(NodeValues::U8(vec![rbit_input.reverse_bits()]), DataFormat::Binary),
         )
         .map_err(stringify)?;
-    scene.make_draggable_with(ror_b_node, drag_options).map_err(stringify)?;
+    scene.make_draggable_with(rbit_node, drag_options).map_err(stringify)?;
 
-    let a_node = place_operand(
+    // Swap bytes — u32, hexadecimal, so the reversed byte-group order reads clearly.
+    let bswap_input: u32 = 0x1234_5678;
+    let bswap_operand = place_operand(
         X_OPERAND,
-        1030.0,
-        DataNodeContent::new(NodeValues::U64(vec![a]), DataFormat::Hexadecimal),
+        680.0,
+        DataNodeContent::new(NodeValues::U32(vec![bswap_input]), DataFormat::Hexadecimal),
     )?;
-    let xor_node = scene
-        .add_binary_operator_node(
-            Point::new(500.0, 970.0),
-            BinaryOperator::Xor,
-            (a_node, ror_b_node),
-            DataNodeContent::new(NodeValues::U64(vec![a ^ ror_b]), DataFormat::Hexadecimal),
+    let bswap_node = scene
+        .add_unary_operator_node(
+            Point::new(X_OPERATOR, 680.0),
+            UnaryOperator::SwapBytes,
+            bswap_operand,
+            DataNodeContent::new(NodeValues::U32(vec![bswap_input.swap_bytes()]), DataFormat::Hexadecimal),
         )
         .map_err(stringify)?;
-    scene.make_draggable_with(xor_node, drag_options).map_err(stringify)?;
+    scene.make_draggable_with(bswap_node, drag_options).map_err(stringify)?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));

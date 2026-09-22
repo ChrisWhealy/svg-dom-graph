@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.11] - 2026-09-22
+
+## Added
+
+- Implement complete set of bitwise operators and add chained operator demos (``)
+
 # [Released]
 
 ## [0.2.10] - 2026-09-21

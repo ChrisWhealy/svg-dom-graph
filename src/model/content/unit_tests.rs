@@ -695,8 +695,17 @@ fn unary_operator_label_includes_the_shift_or_rotate_amount() -> Result<(), Stri
 }
 
 #[test]
+fn unary_operator_label_names_reverse_bits_and_swap_bytes_with_no_operand() -> Result<(), String> {
+    check_eq(UnaryOperator::ReverseBits.label(), "RBIT".to_owned())?;
+    check_eq(UnaryOperator::SwapBytes.label(), "BSWAP".to_owned())
+}
+
+#[test]
 fn binary_operator_label_names_each_variant() -> Result<(), String> {
     check_eq(BinaryOperator::And.label(), "AND")?;
     check_eq(BinaryOperator::Or.label(), "OR")?;
-    check_eq(BinaryOperator::Xor.label(), "XOR")
+    check_eq(BinaryOperator::Xor.label(), "XOR")?;
+    check_eq(BinaryOperator::Nand.label(), "NAND")?;
+    check_eq(BinaryOperator::Nor.label(), "NOR")?;
+    check_eq(BinaryOperator::Xnor.label(), "XNOR")
 }

@@ -85,7 +85,7 @@ mod data_format;
 mod data_node_content;
 mod grid_layout;
 mod node_values;
-mod operator;
+mod operators;
 mod selection;
 
 pub use byte_order::ByteOrder;
@@ -93,7 +93,7 @@ pub use data_format::DataFormat;
 pub use data_node_content::DataNodeContent;
 pub use grid_layout::GridLayout;
 pub use node_values::NodeValues;
-pub use operator::{BinaryOperator, UnaryOperator};
+pub use operators::{binary::BinaryOperator, unary::UnaryOperator};
 pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 

@@ -1,0 +1,20 @@
+<section class="section" id="panel-operators-chained">
+    <h2>Chained operators</h2>
+    <p>An operator node's own <code>DataNodeContent</code> result is a valid operand for a further operator node,
+        just like any other data node's. This panel shows that chaining directly, rather than the
+        <a href="#panel-operators-unary">Unary operators</a>/<a href="#panel-operators-binary">Binary operators</a>
+        panels' one-operator-per-row layout.
+    </p>
+    <p>Three chains, each one stage deeper than the last:</p>
+    <ul>
+        <li><code>B</code> rotated right by one bit then <code>XOR</code>'ed with <code>A</code></li>
+        <li><code>XOR(w0, AND(NOT(w1), w2))</code> for three plain values</li>
+        <li>SHA-256's "Choose" function <code>Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)</code>, whose <code>x</code>
+            feeds two separate operator nodes — one operand, more than one operator. Every result shown is computed by
+            the demo, in plain Rust, exactly the way a real caller would; see <code>DataNodeContent</code>.</li>
+    </ul>
+    <div class="canvas" style="margin-top: 1.5rem;">
+        <svg id="operators-chained-diagram" width="950" height="1100" viewBox="0 0 950 1100"
+            xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

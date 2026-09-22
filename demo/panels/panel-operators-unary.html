@@ -1,0 +1,19 @@
+<section class="section" id="panel-operators-unary">
+    <h2>Unary operators</h2>
+    <p>An operator node names the operation that produced its own single value — <code>NOT</code>, a shift or
+        rotate, or a bit/byte reversal (<code>RBIT</code>/<code>BSWAP</code>) — without this crate ever computing
+        that value itself. Each result shown here is computed by the demo, in plain Rust, exactly the way a real
+        caller would; see <code>DataNodeContent</code>.
+    </p>
+    <p>A unary operator node has one incoming edge, drawn automatically when the node is created, so the rendered
+        graph can never drift from the operand relationship the node claims to represent.
+    </p>
+    <p>See the <a href="#panel-operators-binary">Binary operators</a> panel for <code>AND</code>/<code>OR</code>/
+        <code>XOR</code>/<code>NAND</code>/<code>NOR</code>/<code>XNOR</code>, and the
+        <a href="#panel-operators-chained">Chained operators</a> panel for an operator node's own result feeding a
+        further operator node.
+    </p>
+    <div class="canvas" style="margin-top: 1.5rem;">
+        <svg id="operators-unary-diagram" width="700" height="850" viewBox="0 0 700 850" xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

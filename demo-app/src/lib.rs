@@ -18,10 +18,15 @@
 //!   single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`), the multi-value counts
 //!   chosen to cover every combination the grid layout rule can produce. See that function's own doc comment for
 //!   exactly which.
-//! - `panel-operators` / `#operators-diagram` — [`operators::build_operator_demo`]: one operand node (or two, for a
-//!   binary operator) feeding an operator node, for every unary and binary operator this crate names. Every result
-//!   shown is computed here with plain Rust integer ops, never by the library itself — see that function's own doc
-//!   comment.
+//! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one
+//!   operand node feeding an operator node, for every unary operator this crate names.
+//! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
+//!   operand nodes feeding an operator node, for every binary operator this crate names.
+//! - `panel-operators-chained` / `#operators-chained-diagram` —
+//!   [`operators_chained::build_chained_operator_demo`]: operator nodes feeding further operator nodes, including
+//!   the operator-chaining example that motivated this whole trio of panels. Every result any of the three
+//!   operator panels shows is computed here with plain Rust integer ops, never by the library itself — see each
+//!   function's own doc comment.
 //! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]:
 //!   a one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
 //!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's
@@ -38,7 +43,9 @@ mod data;
 mod edge_anchors;
 mod elbow;
 mod highlight;
-mod operators;
+mod operators_binary;
+mod operators_chained;
+mod operators_unary;
 mod selection;
 mod source_frame;
 mod tree;
@@ -84,7 +91,9 @@ demo_gallery! {
     "panel-elbow" => elbow::build_elbow_demo,
     "panel-edge-anchors" => edge_anchors::build_edge_anchors_demo,
     "panel-data" => data::build_data_demo,
-    "panel-operators" => operators::build_operator_demo,
+    "panel-operators-unary" => operators_unary::build_unary_operator_demo,
+    "panel-operators-binary" => operators_binary::build_binary_operator_demo,
+    "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
 }
 
