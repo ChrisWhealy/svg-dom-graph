@@ -8,7 +8,10 @@ use crate::common::{
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, NodeOptions, NodeValues, Scene, UnaryOperator},
+    scene::{
+        ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, NodeOptions, NodeValues, Scene,
+        UnaryOperator,
+    },
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -108,6 +111,87 @@ fn a_binary_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
             "expected 2 auto-wired connectors, found {}",
             connector_count("operator-binary")?
         ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An arithmetic operator node renders and auto-wires exactly like a [`BinaryOperator`] one — same box shape, same
+/// two auto-wired input edges — via the two-input operator construction the two share.
+#[wasm_bindgen_test]
+fn an_arithmetic_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
+    let svg = make_svg("operator-arithmetic", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let dividend = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![17]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let divisor = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U8(vec![5]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![17 % 5]), DataFormat::Decimal);
+    scene
+        .add_arithmetic_operator_node(
+            Point::new(220.0, 60.0),
+            ArithmeticOperator::Modulus,
+            (dividend, divisor),
+            result,
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("operator-arithmetic", 2)?;
+    let texts = text_children(&group)?;
+    check(
+        texts[0].text_content().as_deref() == Some("MOD"),
+        &format!("expected the label row to read \"MOD\", got {:?}", texts[0].text_content()),
+    )?;
+    check(
+        texts[1].text_content().as_deref() == Some("2"),
+        &format!("expected the value row to read \"2\", got {:?}", texts[1].text_content()),
+    )?;
+    check(
+        connector_count("operator-arithmetic")? == 2,
+        &format!(
+            "expected 2 auto-wired connectors, found {}",
+            connector_count("operator-arithmetic")?
+        ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Both operands to an arithmetic operator node must share one [`NodeValues`] width, exactly like a
+/// [`BinaryOperator`] node's — validated by the same shared construction path.
+#[wasm_bindgen_test]
+fn add_arithmetic_operator_node_rejects_mismatched_operand_widths() -> Result<(), String> {
+    let svg = make_svg(
+        "operator-arithmetic-type-mismatch",
+        Size::new(400.0, 260.0),
+        Size::new(400.0, 260.0),
+    );
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+
+    let outcome =
+        scene.add_arithmetic_operator_node(Point::new(220.0, 60.0), ArithmeticOperator::Modulus, (a, b), result);
+    check(
+        matches!(outcome, Err(Error::OperatorTypeMismatch { .. })),
+        &format!("expected Err(Error::OperatorTypeMismatch {{ .. }}), got {outcome:?}"),
     )
 }
 

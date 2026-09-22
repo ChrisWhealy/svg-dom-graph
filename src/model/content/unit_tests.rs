@@ -709,3 +709,12 @@ fn binary_operator_label_names_each_variant() -> Result<(), String> {
     check_eq(BinaryOperator::Nor.label(), "NOR")?;
     check_eq(BinaryOperator::Xnor.label(), "XNOR")
 }
+
+#[test]
+fn arithmetic_operator_label_names_each_variant() -> Result<(), String> {
+    check_eq(ArithmeticOperator::Add.label(), "ADD")?;
+    check_eq(ArithmeticOperator::Subtract.label(), "SUB")?;
+    check_eq(ArithmeticOperator::Multiply.label(), "MUL")?;
+    check_eq(ArithmeticOperator::Divide.label(), "DIV")?;
+    check_eq(ArithmeticOperator::Modulus.label(), "MOD")
+}

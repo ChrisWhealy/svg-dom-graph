@@ -11,10 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement complete set of bitwise operators and add chained operator demos (`61f0dc5`)
+- Add arithmetic operators (``)
 
 ## Fixed
 
-- Correct doc formatting (``)
+- Correct doc formatting (`1f28171`)
 
 # [Released]
 

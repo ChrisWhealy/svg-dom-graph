@@ -8,8 +8,8 @@ use crate::{
 /// operation. This happens if a later step fails after the node itself was already drawn and registered.
 ///
 /// `draw_operator_box`'s own [`RenderGuard`](super::render_guard::RenderGuard) already makes the node's *own* DOM
-/// construction atomic. But `add_unary_operator_node_with`/`add_binary_operator_node_with` don't stop there — once
-/// the node is registered in the graph and `node_handles`, one or two further `Scene::add_edge` calls wire its
+/// construction atomic. But `add_unary_operator_node_with`/`add_two_input_operator_node_with` don't stop there —
+/// once the node is registered in the graph and `node_handles`, one or two further `Scene::add_edge` calls wire its
 /// input(s). A failure in any of those would otherwise leave the node, and any edge that did succeed, behind. That
 /// is exactly the "operator plus one input connection" state this guard exists to prevent.
 ///

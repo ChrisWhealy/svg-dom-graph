@@ -13,7 +13,8 @@ pub(crate) mod drag;
 pub(crate) mod node;
 
 pub use crate::model::content::{
-    BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection, UnaryOperator,
+    ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection,
+    UnaryOperator,
 };
 pub(crate) use box_handles::BoxHandles;
 pub(crate) use connector::ConnectorHandle;
@@ -258,13 +259,13 @@ impl SceneInner {
     /// The `to`-side routing override for the edge from `from` to `to`, if `to` is a binary operator node and
     /// `from` is one of its own two known inputs — see [`connector::route`]'s own `to_override` parameter.
     ///
-    /// `None` for every other edge: an unknown `from`/`to`, a `to` that is not a binary operator node, or a `from`
-    /// that is not one of its two inputs (an edge a caller wired up by hand, bypassing
-    /// [`Scene::add_binary_operator_node_with`]). Each of those falls back to `route`'s own existing default, exactly
-    /// as before this existed.
+    /// `None` for every other edge: an unknown `from`/`to`, a `to` that is not a two-input operator node, or a
+    /// `from` that is not one of its two inputs (an edge a caller wired up by hand, bypassing both
+    /// [`Scene::add_binary_operator_node_with`] and [`Scene::add_arithmetic_operator_node_with`]). Each of those
+    /// falls back to `route`'s own existing default, exactly as before this existed.
     fn binary_operator_to_override(&self, from: NodeId, to: NodeId) -> Option<connector::BinaryOperatorRoute> {
         let (input_a, input_b) = self.node_handle(to)?.binary_operator_inputs?;
-        // `add_binary_operator_node_with` rejects `input_a == input_b`, so this is an unambiguous, stable identity
+        // Both two-input operator constructors reject `input_a == input_b`, so this is an unambiguous, stable identity
         // — not just "which `NodeId`", but "which of the two operand *slots* this edge is" — see
         // `binary_operator_anchors`'s own doc comment for why that stability matters.
         let from_is_a = if from == input_a {
@@ -299,9 +300,9 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// If `edge_id` runs from `mover` into a binary operator node with `mover` registered as one of its own two
-    /// inputs, that operator's own id. `None` otherwise: an ordinary edge, or one a caller wired by hand,
-    /// bypassing [`Scene::add_binary_operator_node_with`].
+    /// If `edge_id` runs from `mover` into a two-input operator node with `mover` registered as one of its own two
+    /// inputs, that operator's own id. `None` otherwise: an ordinary edge, or one a caller wired by hand, bypassing
+    /// both [`Scene::add_binary_operator_node_with`] and [`Scene::add_arithmetic_operator_node_with`].
     ///
     /// `move_node` redraws every edge already incident to the node that moved. For an edge this identifies, it
     /// calls [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) instead of
@@ -320,10 +321,11 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
-    /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at creation,
-    /// in local coordinates relative to `(0, 0)`. See [`node::draw_box`]/[`node::draw_content_box`]. So moving the node
-    /// only ever means rewriting the group's own `transform`. It never touches any child's own coordinates. This stays
-    /// exactly as cheap for a data node with hundreds of value cells as for a plain label.
+    /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at
+    /// creation, in local coordinates relative to `(0, 0)`. See
+    /// [`node::plain::draw_box`]/[`node::data::draw_content_box`]. So moving the node only ever means rewriting the
+    /// group's own `transform`. It never touches any child's own coordinates. This stays exactly as cheap for a
+    /// data node with hundreds of value cells as for a plain label.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid a fresh allocation on every move. See
     /// [`SvgNode::set_transform_fmt`] — not [`SvgNode::set_translate`], whose fixed one-decimal-place precision would

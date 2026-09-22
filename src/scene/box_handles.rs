@@ -26,16 +26,16 @@ pub(crate) struct BoxHandles {
     /// `redraw_edge` has no other way to learn a node's own anchor configuration once an incident edge needs a reroute.
     /// This value must live alongside the rendered handle, not just get used once at creation.
     pub(crate) edge_anchors: Option<EdgeAnchors>,
-    /// `Some((left, right))` for a binary operator node — its own two operand ids, in the order
-    /// `Scene::add_binary_operator_node_with` received them. `None` for every other node, unary operator nodes
-    /// included, since only a binary node's two inputs can ever collide on the same side.
+    /// `Some((left, right))` for a two-input operator node — a `BinaryOperator` or `ArithmeticOperator` one — its
+    /// own two operand ids, in the order its own constructor received them. `None` for every other node, unary
+    /// operator nodes included, since only a two-input node's inputs can ever collide on the same side.
     ///
     /// `SceneInner::binary_operator_to_override` reads this on every redraw, so the two connectors split apart whenever
     /// they land on the same side, live — not just once, at creation.
     pub(crate) binary_operator_inputs: Option<(NodeId, NodeId)>,
-    /// `Some((left, right))` for a binary operator node — the ids of the two edges
-    /// `Scene::add_binary_operator_node_with` auto-wired from `binary_operator_inputs.0`/`.1`, in the same order.
-    /// `None` for every other node, exactly matching `binary_operator_inputs`.
+    /// `Some((left, right))` for a two-input operator node — the ids of the two edges its own constructor
+    /// auto-wired from `binary_operator_inputs.0`/`.1`, in the same order. `None` for every other node, exactly
+    /// matching `binary_operator_inputs`.
     ///
     /// `SceneInner::redraw_binary_operator_inputs` reads this to redraw both edges together in one pass, rather
     /// than searching either operand's own incident edges for the one that also points at this operator.

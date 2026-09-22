@@ -340,10 +340,11 @@ fn anchor_from_crossing(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Both of a binary operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
-/// together in one call. `first` and `second` are the two operands' own centres, in
-/// [`Scene::add_binary_operator_node_with`](crate::scene::Scene::add_binary_operator_node_with)'s own `inputs` order.
-/// Returns `first`'s own anchor, then `second`'s own anchor, each paired with the side of `rect` it lands on.
+/// Both of a two-input operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
+/// together in one call. `first` and `second` are the two operands' own centres, in the order the node's own
+/// two-input constructor — `Scene::add_binary_operator_node_with` or `Scene::add_arithmetic_operator_node_with` —
+/// received them as its own `inputs`. Returns `first`'s own anchor, then `second`'s own anchor, each paired with
+/// the side of `rect` it lands on.
 ///
 /// `fixing_points` is `rect`'s own node's [`crate::scene::EdgeAnchors`] configuration, already unwrapped to a plain
 /// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`.
@@ -431,7 +432,7 @@ pub(crate) fn binary_operator_anchors(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The elbow route for one of a binary operator node's own two same-side inputs — `mine`'s own edge, from `start`
+/// The elbow route for one of a two-input operator node's own two same-side inputs — `mine`'s own edge, from `start`
 /// to `end`, given `sibling_end` too, so the two routes cannot cross for the case that matters most: dragging one
 /// operand to a position where its own route would otherwise sweep across the other's.
 ///

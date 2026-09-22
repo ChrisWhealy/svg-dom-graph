@@ -2,10 +2,12 @@
 //! [`Scene::add_data_node`](crate::scene::Scene::add_data_node)
 //! and [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with).
 //!
-//! [`UnaryOperator`]/[`BinaryOperator`] name a bitwise operation an operator node's own label describes. This crate
-//! never evaluates one: a caller supplies the already-computed result, the same way it supplies every other data
-//! node's own values. See [`Scene::add_unary_operator_node`](crate::scene::Scene::add_unary_operator_node) and
-//! [`Scene::add_binary_operator_node`](crate::scene::Scene::add_binary_operator_node).
+//! [`UnaryOperator`]/[`BinaryOperator`] name a bitwise operation, and [`ArithmeticOperator`] a plain arithmetic one,
+//! that an operator node's own label describes. This crate never evaluates one: a caller supplies the
+//! already-computed result, the same way it supplies every other data node's own values. See
+//! [`Scene::add_unary_operator_node`](crate::scene::Scene::add_unary_operator_node),
+//! [`Scene::add_binary_operator_node`](crate::scene::Scene::add_binary_operator_node), and
+//! [`Scene::add_arithmetic_operator_node`](crate::scene::Scene::add_arithmetic_operator_node).
 //!
 //! This module contains pure data and formatting logic, with no DOM of its own. It is unit-tested with a plain `cargo
 //! test`. This follows the same convention [`crate::geometry`] uses for its own DOM-free routing mathematics.
@@ -93,7 +95,7 @@ pub use data_format::DataFormat;
 pub use data_node_content::DataNodeContent;
 pub use grid_layout::GridLayout;
 pub use node_values::NodeValues;
-pub use operators::{binary::BinaryOperator, unary::UnaryOperator};
+pub use operators::{arithmetic::ArithmeticOperator, binary::BinaryOperator, unary::UnaryOperator};
 pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 

@@ -96,19 +96,19 @@ pub enum Error {
     OperandNotData(NodeId),
     /// An operator node's own operand(s) and result did not all share one [`crate::scene::NodeValues`] width.
     ///
-    /// A binary operator's two operands must share a width, and the supplied result must share that same width —
-    /// see `Scene::add_binary_operator_node_with`'s own doc comment. Rejected before drawing anything or touching the
-    /// graph's model, so a rejected call leaves the scene unchanged.
+    /// Both of the operands to a two-input operator, and the supplied result must all share the same width
+    /// — see `Scene::add_binary_operator_node_with`'s / `Scene::add_arithmetic_operator_node_with`'s own doc comments.
+    /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     OperatorTypeMismatch { expected: &'static str, found: &'static str },
     /// An operator node's own `result` held other than exactly one value.
     ///
     /// An operator always produces one value, never a grid of them. Rejected before drawing anything or touching the
     /// graph's model, so a rejected call leaves the scene unchanged.
     OperatorResultNotSingleValue(usize),
-    /// `Scene::add_binary_operator_node`/`Scene::add_binary_operator_node_with` was given the same node as both of
-    /// `inputs`.
+    /// A two-input operator constructor — `Scene::add_binary_operator_node`/`_with`, or
+    /// `Scene::add_arithmetic_operator_node`/`_with` — was given the same node as both of `inputs`.
     ///
-    /// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second
+    /// Both the operands of a two-input operator must be distinct nodes — combining a node with itself has no second
     /// "other side" to route a connector to. Rejected before drawing anything or touching the graph's model, so a
     /// rejected call leaves the scene unchanged.
     DuplicateOperands(NodeId),
@@ -163,7 +163,7 @@ impl fmt::Display for Error {
                 write!(f, "operator result must hold exactly one value, found {len}")
             },
             Error::DuplicateOperands(id) => {
-                write!(f, "node {id:?} cannot be used as both operands of a binary operator node")
+                write!(f, "node {id:?} cannot be used as both operands of a two-input operator node")
             },
             Error::InvalidSelection(id, selection) => {
                 write!(f, "selection {selection:?} cannot be applied to node {id:?}")

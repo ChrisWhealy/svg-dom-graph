@@ -1,6 +1,9 @@
-use super::*;
-use crate::test_support::check;
-use svg_dom::root::utils::Size;
+use super::{construction_guard::OperatorConstructionGuard, render_guard::RenderGuard};
+use crate::{scene::Scene, test_support::check};
+use svg_dom::{
+    SvgRoot,
+    root::utils::{Point, Size},
+};
 use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
