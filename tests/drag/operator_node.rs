@@ -1143,41 +1143,11 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
         .add_arithmetic_operator_node(Point::new(220.0, 300.0), ArithmeticOperator::Subtract, (a, b), result)
         .map_err(|e| e.to_string())?;
 
-    // Marker 0 ("L", bound to `a` == `inputs.0`'s own edge, connector 0) must sit much closer to connector 0's own
-    // endpoint than to connector 1's — and marker 1 ("R") the other way round — both before and after the drag
-    // below reassigns which connector lands on which side.
-    let check_marker_identity = || -> Result<(), String> {
-        let end_0 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
-            "operator-markers-live-identity",
-            0,
-        )?)?)?;
-        let end_1 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
-            "operator-markers-live-identity",
-            1,
-        )?)?)?;
-        let marker_0 = nth_port_marker("operator-markers-live-identity", 0)?;
-        let marker_1 = nth_port_marker("operator-markers-live-identity", 1)?;
-        let pos_0 = (attr_f64(&marker_0, "x")?, attr_f64(&marker_0, "y")?);
-        let pos_1 = (attr_f64(&marker_1, "x")?, attr_f64(&marker_1, "y")?);
-
-        let dist = |p: (f64, f64), q: (f64, f64)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
-        check(
-            dist(pos_0, end_0) < dist(pos_0, end_1),
-            &format!(
-                "expected the \"L\" marker {pos_0:?} to sit nearer connector 0's own end {end_0:?} than \
-                       connector 1's own end {end_1:?}"
-            ),
-        )?;
-        check(
-            dist(pos_1, end_1) < dist(pos_1, end_0),
-            &format!(
-                "expected the \"R\" marker {pos_1:?} to sit nearer connector 1's own end {end_1:?} than \
-                       connector 0's own end {end_0:?}"
-            ),
-        )
-    };
-
-    check_marker_identity()?;
+    // Marker 0 ("L") stays bound to `a` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to connector 1 —
+    // never swapped — both before the drag below (where `a` and `b` start on different operator sides) and after
+    // (where the drag forces them onto the same side, triggering a near/far reassignment). See
+    // `check_port_marker_identity`'s own doc comment for how it stays exact in both cases.
+    crate::common::check_port_marker_identity("operator-markers-live-identity")?;
 
     // Drag `b` to join `a` above the operator, forcing the same-side split — and, for at least one of the two
     // input rows, a near/far reassignment relative to before the drag.
@@ -1186,7 +1156,7 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
     dispatch_pointer_event(&b_group, "pointermove", -50, -190, 1)?;
     dispatch_pointer_event(&b_group, "pointerup", -50, -190, 1)?;
 
-    check_marker_identity()
+    crate::common::check_port_marker_identity("operator-markers-live-identity")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -1383,40 +1353,10 @@ fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_ide
         .add_arithmetic_operator_node(Point::new(220.0, 220.0), ArithmeticOperator::Subtract, (lhs, rhs), result)
         .map_err(|e| e.to_string())?;
 
-    // Marker 0 ("L", bound to `lhs` == `inputs.0`'s own edge) must sit much closer to connector 0's own endpoint
-    // than to connector 1's — and marker 1 ("R") the other way round.
-    let check_marker_identity = || -> Result<(), String> {
-        let end_0 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
-            "operator-markers-exchange-identity",
-            0,
-        )?)?)?;
-        let end_1 = crate::common::last_point_of_path(&crate::common::path_d(&crate::common::nth_connector(
-            "operator-markers-exchange-identity",
-            1,
-        )?)?)?;
-        let marker_0 = nth_port_marker("operator-markers-exchange-identity", 0)?;
-        let marker_1 = nth_port_marker("operator-markers-exchange-identity", 1)?;
-        let pos_0 = (attr_f64(&marker_0, "x")?, attr_f64(&marker_0, "y")?);
-        let pos_1 = (attr_f64(&marker_1, "x")?, attr_f64(&marker_1, "y")?);
-
-        let dist = |p: (f64, f64), q: (f64, f64)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
-        check(
-            dist(pos_0, end_0) < dist(pos_0, end_1),
-            &format!(
-                "expected the \"L\" marker {pos_0:?} to sit nearer connector 0's own end {end_0:?} than \
-                 connector 1's own end {end_1:?}"
-            ),
-        )?;
-        check(
-            dist(pos_1, end_1) < dist(pos_1, end_0),
-            &format!(
-                "expected the \"R\" marker {pos_1:?} to sit nearer connector 1's own end {end_1:?} than \
-                 connector 0's own end {end_0:?}"
-            ),
-        )
-    };
-
-    check_marker_identity()?;
+    // Marker 0 ("L") stays bound to `lhs` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to `rhs`'s
+    // (connector 1) — never swapped. See `check_port_marker_identity`'s own doc comment for how it stays exact
+    // through the exchange below.
+    crate::common::check_port_marker_identity("operator-markers-exchange-identity")?;
 
     // Exchange the two operands' own physical positions outright: `lhs` moves to where `rhs` started, and `rhs`
     // moves to where `lhs` started.
@@ -1439,5 +1379,5 @@ fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_ide
     check_close(group_translate(&nth_group("operator-markers-exchange-identity", 0)?)?.0, rhs_x)?;
     check_close(group_translate(&nth_group("operator-markers-exchange-identity", 1)?)?.0, lhs_x)?;
 
-    check_marker_identity()
+    crate::common::check_port_marker_identity("operator-markers-exchange-identity")
 }

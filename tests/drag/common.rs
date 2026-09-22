@@ -203,6 +203,50 @@ pub fn nth_port_marker(container_id: &str, n: u32) -> Result<web_sys::Element, S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks that port marker 0 stays bound to connector 0's own endpoint, and marker 1 to connector 1's own endpoint
+/// — never swapped, however the anti-crossing router currently assigns the near/far slots.
+///
+/// Splits on whether the two connectors currently land on the operator's own same side:
+///
+/// - Same side (one of `end_0`/`end_1`'s own x or y coordinates matches, since every anchor on a given side shares
+///   that side's own fixed coordinate): both markers go through the identical side-based offset formula, so
+///   marker 1 minus marker 0 must equal connector 1's own endpoint minus connector 0's, exactly. A plain
+///   nearest-connector distance comparison was tried here first and dropped: once the near/far split narrows
+///   enough that the marker's own perpendicular clearance rivals the spacing between the two connectors, "nearest"
+///   becomes a near-tie that flips on ordinary floating-point rounding differences between platforms.
+/// - Different sides: the two endpoints are never close together in that case, so a plain nearest-connector
+///   distance comparison is unambiguous.
+pub fn check_port_marker_identity(container_id: &str) -> Result<(), String> {
+    let end_0 = last_point_of_path(&path_d(&nth_connector(container_id, 0)?)?)?;
+    let end_1 = last_point_of_path(&path_d(&nth_connector(container_id, 1)?)?)?;
+    let marker_0 = nth_port_marker(container_id, 0)?;
+    let marker_1 = nth_port_marker(container_id, 1)?;
+    let pos_0 = (attr_f64(&marker_0, "x")?, attr_f64(&marker_0, "y")?);
+    let pos_1 = (attr_f64(&marker_1, "x")?, attr_f64(&marker_1, "y")?);
+
+    if (end_0.0 - end_1.0).abs() < 1.0 || (end_0.1 - end_1.1).abs() < 1.0 {
+        check_close(pos_1.0 - pos_0.0, end_1.0 - end_0.0)?;
+        return check_close(pos_1.1 - pos_0.1, end_1.1 - end_0.1);
+    }
+
+    let dist = |p: (f64, f64), q: (f64, f64)| ((p.0 - q.0).powi(2) + (p.1 - q.1).powi(2)).sqrt();
+    check(
+        dist(pos_0, end_0) < dist(pos_0, end_1),
+        &format!(
+            "expected the \"L\" marker {pos_0:?} to sit nearer connector 0's own end {end_0:?} than connector 1's \
+             own end {end_1:?}"
+        ),
+    )?;
+    check(
+        dist(pos_1, end_1) < dist(pos_1, end_0),
+        &format!(
+            "expected the \"R\" marker {pos_1:?} to sit nearer connector 1's own end {end_1:?} than connector 0's \
+             own end {end_0:?}"
+        ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `attr` off `element` and parses it as `f64`.
 pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
     let value = element
