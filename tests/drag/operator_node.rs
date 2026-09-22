@@ -1,6 +1,6 @@
 //! `Scene::add_unary_operator_node`/`add_binary_operator_node`: a node labelled with the operation that produced its
-//! single value, wired with an auto-drawn edge from each of its operand(s). Covers rendering (label row plus value
-//! row), the auto-wired input edge(s), operand-type validation, and dragging.
+//! single value, wired with an auto-drawn edge from each of its operand(s). Covers rendering (label row plus an
+//! inset value cell), the auto-wired input edge(s), operand-type validation, and dragging.
 
 use crate::common::{
     attr_f64, check, check_close, connector_count, dispatch_pointer_event, group_translate, make_svg, nth_group,
@@ -40,8 +40,9 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A unary operator node renders two rows: the operator's own label, and its single result value, coloured by the
-/// result's own type — one outer rect plus one value-row rect, one label text plus one value text.
+/// A unary operator node renders a label row naming the operator, and its single result value in its own inset
+/// cell, coloured by the result's own type — one outer rect plus one value-cell rect, one label text plus one
+/// value text.
 #[wasm_bindgen_test]
 fn a_unary_operator_node_renders_its_label_and_value_rows() -> Result<(), String> {
     let svg = make_svg("operator-unary", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -62,7 +63,7 @@ fn a_unary_operator_node_renders_its_label_and_value_rows() -> Result<(), String
     let texts = text_children(&group)?;
     check(
         rects.len() == 2,
-        &format!("expected 1 outer + 1 value-row rect, found {}", rects.len()),
+        &format!("expected 1 outer + 1 value-cell rect, found {}", rects.len()),
     )?;
     check(
         texts.len() == 2,
@@ -110,6 +111,66 @@ fn a_binary_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
         &format!(
             "expected 2 auto-wired connectors, found {}",
             connector_count("operator-binary")?
+        ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The value cell drawn inside an operator node's own box never touches that box's own left, right, or bottom
+/// edge. A connector's own anchor point is always somewhere on the outer box's own perimeter — never on some
+/// inner sub-region — so an inset value cell keeps every such anchor visually attached to the "named operation"
+/// box, rather than looking like it terminates at the result cell instead.
+#[wasm_bindgen_test]
+fn operator_node_value_cell_is_inset_from_every_outer_edge() -> Result<(), String> {
+    let svg = make_svg("operator-value-cell-inset", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U32(vec![0xFF00_FF00]), DataFormat::Hexadecimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U32(vec![0x0F0F_0F0F]), DataFormat::Hexadecimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U32(vec![0xFF00_FF00 & 0x0F0F_0F0F]), DataFormat::Hexadecimal);
+    scene
+        .add_binary_operator_node(Point::new(220.0, 60.0), BinaryOperator::And, (a, b), result)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("operator-value-cell-inset", 2)?;
+    let rects = rect_children(&group)?;
+    let outer = &rects[0];
+    let value_cell = &rects[1];
+
+    let outer_width = attr_f64(outer, "width")?;
+    let outer_height = attr_f64(outer, "height")?;
+    let cell_x = attr_f64(value_cell, "x")?;
+    let cell_y = attr_f64(value_cell, "y")?;
+    let cell_width = attr_f64(value_cell, "width")?;
+    let cell_height = attr_f64(value_cell, "height")?;
+
+    check(
+        cell_x > 0.0,
+        &format!("expected the value cell's left edge inset from the outer box's own, got x={cell_x}"),
+    )?;
+    check(
+        cell_x + cell_width < outer_width,
+        &format!(
+            "expected the value cell's right edge inset from the outer box's own, got {} against an outer width of \
+             {outer_width}",
+            cell_x + cell_width
+        ),
+    )?;
+    check(
+        cell_y + cell_height < outer_height,
+        &format!(
+            "expected the value cell's bottom edge inset from the outer box's own, got {} against an outer height \
+             of {outer_height}",
+            cell_y + cell_height
         ),
     )
 }

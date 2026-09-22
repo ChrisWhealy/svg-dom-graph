@@ -12,11 +12,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implement complete set of bitwise operators and add chained operator demos (`61f0dc5`)
 - Add arithmetic operators (`e773f50`)
-- Add arithmetic operator demos (``)
+- Add arithmetic operator demos (`6478e6f`)
 
 ## Fixed
 
 - Correct doc formatting (`1f28171`)
+
+## Changed
+
+- Fully enclose result within the outer operator node (``)
 
 # [Released]
 

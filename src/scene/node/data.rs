@@ -5,8 +5,8 @@
 //! operation that produced its own value.
 
 use super::{
-    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, NodeOptions, render_guard::RenderGuard,
-    validate_edge_anchors,
+    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, NodeOptions, OUTER_PADDING,
+    render_guard::RenderGuard, validate_edge_anchors,
 };
 use crate::{
     error::Error,
@@ -29,9 +29,6 @@ use svg_dom::{
 ///
 /// [`NodeValues`]: crate::model::content::NodeValues
 const CELL_GAP: f64 = 6.0;
-
-/// The gap kept clear, on every side, between a multi-value grid's own cells and the node's outer box edges.
-const OUTER_PADDING: f64 = 10.0;
 
 /// `Scene::set_selection`'s own row/column-level highlight colour — a warm yellow, chosen to read clearly against
 /// every [`NodeValues::type_color`](crate::model::content::NodeValues::type_color) pastel and against the plain

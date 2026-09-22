@@ -2,10 +2,15 @@
 //! `Scene::add_unary_operator_node`/`Scene::add_binary_operator_node`/`Scene::add_arithmetic_operator_node` for why
 //! this crate never computes that value itself. See [`super::plain`] for a node with a plain text label instead,
 //! and [`super::data`] for one whose content is a [`DataNodeContent`] grid with no operator label at all.
+//!
+//! An incoming connector anchors somewhere on the node's own outer perimeter — never on some inner sub-region —
+//! the same as for any other node. So the value cell [`draw_operator_box`] draws is inset from every outer edge by
+//! [`OUTER_PADDING`], never flush against it. Otherwise a connector anchored low on the box would look like it
+//! terminates at the *result*, when what it actually feeds is the *operation* the whole node represents.
 
 use super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, NodeOptions,
-    construction_guard::OperatorConstructionGuard, render_guard::RenderGuard, validate_edge_anchors,
+    OUTER_PADDING, construction_guard::OperatorConstructionGuard, render_guard::RenderGuard, validate_edge_anchors,
 };
 use crate::{
     error::Error,
@@ -53,13 +58,15 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
 const OPERATOR_LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDING;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws an operator node: a label row naming the operation, stacked above `result`'s own single value, grouped
-/// under one `<g>`, and returns their handles alongside the box's own final `Rect`.
+/// Draws an operator node: a label row naming the operation, with `result`'s own single value in its own inset
+/// cell beneath it, grouped under one `<g>`, and returns their handles alongside the box's own final `Rect`.
 ///
-/// `result` renders exactly like a single-value [`DataNodeContent`] — [`draw_content_box`](super::data::draw_content_box)'s
-/// own single-value path — with one extra row above it: `label`, in the plain style
-/// [`draw_box`](super::plain::draw_box) already uses for an ordinary node's own text, measured the same "read the
-/// real rendered width back" way every cell in this file already is.
+/// The value cell is sized exactly like a single-value [`DataNodeContent`]'s own cell —
+/// [`draw_content_box`](super::data::draw_content_box)'s own single-value path — but, unlike there, never grows to
+/// fill the node's own outer box. It stays inset by [`OUTER_PADDING`] instead, for the reason this module's own
+/// doc comment gives. `label` renders in the plain style [`draw_box`](super::plain::draw_box) already uses for an
+/// ordinary node's own text, measured the same "read the real rendered width back" way every cell in this file
+/// already is.
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction, for the same reason as
 /// [`draw_content_box`](super::data::draw_content_box).
@@ -78,7 +85,7 @@ fn draw_operator_box(
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
-    // Always exactly 4: the label, the value text, and the outer/value-row rects.
+    // Always exactly 4: the label, the value text, and the outer/value-cell rects.
     let mut guard = RenderGuard::new(group.clone());
     let type_color = result.type_color();
     let type_name = result.type_name();
@@ -106,9 +113,14 @@ fn draw_operator_box(
     value_el.set_fill("#1b1b1b")?;
     let value_width = value_el.bounding_box()?.size.width;
 
-    let box_width = (label_width.max(value_width)) + 2.0 * CELL_PADDING;
-    let value_row_height = CELL_HEIGHT + 2.0 * CELL_PADDING;
-    let size = Size::new(box_width, OPERATOR_LABEL_ROW_HEIGHT + value_row_height);
+    // The value cell's own width, plus `OUTER_PADDING` kept clear on either side of it, competes with the label's
+    // own width, plus `CELL_PADDING`, for the box's own final width — whichever of the two needs more room wins.
+    // Either way the value cell itself never reaches the box's own left/right edges.
+    let value_cell_size = Size::new(value_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
+    let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
+    // `OUTER_PADDING` again below the value cell, so it never reaches the box's own bottom edge either. Above it,
+    // the label row's own height already keeps it clear of the box's own top edge.
+    let size = Size::new(box_width, OPERATOR_LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING);
     let rect = Rect { origin: top_left, size };
 
     let outer_el = svg.rect(origin, size)?;
@@ -118,20 +130,22 @@ fn draw_operator_box(
     outer_el.set_stroke_width(1.5)?;
     group.append(&outer_el)?;
 
-    let value_row_origin = Point::new(0.0, OPERATOR_LABEL_ROW_HEIGHT);
-    let value_row_el = svg.rect(value_row_origin, Size::new(box_width, value_row_height))?;
-    guard.track(value_row_el.clone());
-    value_row_el.set_fill(type_color)?;
-    value_row_el.set_stroke("#2a5db0")?;
-    value_row_el.set_stroke_width(1.0)?;
-    group.append(&value_row_el)?;
+    let value_cell_origin = Point::new((box_width - value_cell_size.width) / 2.0, OPERATOR_LABEL_ROW_HEIGHT);
+    let value_cell_el = svg.rect(value_cell_origin, value_cell_size)?;
+    guard.track(value_cell_el.clone());
+    value_cell_el.set_fill(type_color)?;
+    value_cell_el.set_stroke("#2a5db0")?;
+    value_cell_el.set_stroke_width(1.0)?;
+    group.append(&value_cell_el)?;
 
     label_el.set_attr_display(scratch, "x", box_width / 2.0)?;
     label_el.set_attr_display(scratch, "y", OPERATOR_LABEL_ROW_HEIGHT / 2.0)?;
     group.append(&label_el)?;
 
+    // Horizontally centred the same as the value cell itself — `box_width / 2.0` either way, since the cell is
+    // itself centred in the box.
     value_el.set_attr_display(scratch, "x", box_width / 2.0)?;
-    value_el.set_attr_display(scratch, "y", OPERATOR_LABEL_ROW_HEIGHT + value_row_height / 2.0)?;
+    value_el.set_attr_display(scratch, "y", value_cell_origin.y + value_cell_size.height / 2.0)?;
     group.append(&value_el)?;
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
@@ -153,7 +167,7 @@ fn draw_operator_box(
             edge_anchors,
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
-            cell_rects: vec![value_row_el],
+            cell_rects: vec![value_cell_el],
             cell_stroke_width: "1",
             selection: Selection::None,
             aria_label: node_label,

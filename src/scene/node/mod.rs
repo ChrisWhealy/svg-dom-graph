@@ -58,6 +58,11 @@ const CELL_HEIGHT: f64 = GRID_FONT_SIZE * 1.4;
 /// The gap kept clear, on every side, between one value's own text and that value's own cell edges.
 const CELL_PADDING: f64 = 6.0;
 
+/// The gap kept clear, on every side, between a node's own inset value cell(s) and its outer box edges — so a
+/// connector anchored anywhere on the outer box's own perimeter never coincides with a cell's own border. See
+/// [`operator`]'s own module doc comment for why this matters for an operator node specifically.
+const OUTER_PADDING: f64 = 10.0;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Updates node `id`'s [`EdgeAnchors`] configuration, and redraws every incident connector immediately with the
