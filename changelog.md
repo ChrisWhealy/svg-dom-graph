@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.14] - 2026-09-23
+
+## Fixed
+
+- `add_named_data_node`/`add_named_data_node_with` rejects an empty or whitespace-only `name` (``)
+
 # [Released]
 
 ## [0.2.13] - 2026-09-23

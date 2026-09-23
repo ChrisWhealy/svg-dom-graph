@@ -82,6 +82,14 @@ pub enum Error {
     /// If there is no data to draw inside a grid, then no sensible box size can be computed. This condition is rejected
     /// before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     EmptyNodeContent,
+    /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
+    /// whitespace.
+    ///
+    /// A later node's own description names this one by `name` — see `BoxHandles::ref_name`'s own doc comment. An
+    /// empty or blank name would still draw, but its own accessible name would then read as `": u8 = 12"` rather than
+    /// naming anything. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the
+    /// scene unchanged.
+    EmptyNodeName,
     /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] whose
     /// [`crate::scene::GridLayout`] wraps `0` — `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`.
     ///
@@ -152,6 +160,7 @@ impl fmt::Display for Error {
                 )
             },
             Error::EmptyNodeContent => write!(f, "DataNodeContent must have at least one value to display"),
+            Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
             },

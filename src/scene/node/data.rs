@@ -459,6 +459,10 @@ impl Scene {
     /// Returns [`Error::InvalidEdgeAnchors`] if `options.edge_anchors` is `Some(EdgeAnchors(0))`. Checked before
     /// drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it was.
     ///
+    /// Returns [`Error::EmptyNodeName`] if `name` is empty, or holds only whitespace. Also checked before drawing
+    /// anything — see [`Error::EmptyNodeName`]'s own doc comment for why a blank name is rejected outright, rather
+    /// than merely drawing an oddly-worded label.
+    ///
     /// Returns [`Error::EmptyNodeContent`] if `content` holds no values. Also checked before drawing anything.
     ///
     /// Returns [`Error::InvalidGridLayout`] if `content`'s own [`GridLayout`](crate::scene::GridLayout) wraps `0` —
@@ -491,6 +495,9 @@ impl Scene {
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
+        if name.is_some_and(|name| name.trim().is_empty()) {
+            return Err(Error::EmptyNodeName);
+        }
 
         if content.len() == 0 {
             return Err(Error::EmptyNodeContent);
