@@ -17,9 +17,11 @@
 //!   re-snaps one of them.
 //! - [`bounds`] — a real drag past the view box's own edge clamps `bounded` to it, and the clamped node stays
 //!   real-hit-testable for a second, separate drag.
+//! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach
+//!   Chrome's own computed accessibility tree, and its own descendant value text stays exposed alongside them.
 //!
-//! All six drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once, served
-//! locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
+//! All seven drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
+//! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
 //!
 //! # Why this lives in its own on-demand workspace member
 //!
@@ -33,6 +35,7 @@
 //!
 //! See [`cdp_integration_test::launch_browser`]'s own doc comment.
 
+mod accessibility_tree;
 mod bounds;
 mod common;
 mod connectors;

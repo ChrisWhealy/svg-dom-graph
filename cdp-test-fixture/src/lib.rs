@@ -21,6 +21,9 @@
 //!    the top-right corner, far from every other node, so a drag past the viewBox's own right/bottom edge has nothing
 //!    else to collide with on the way. Used to prove a real mouse drag past the visible area clamps to the edge, and
 //!    that the clamped node stays real-hit-testable — see `bounds.rs`.
+//! 8. `named_value` — not draggable, a named single-value data node (`"B: u64 = AB CD EF 01 23 45 67 89"`). Used by
+//!    `accessibility_tree.rs` to query the real, browser-computed accessibility tree via CDP's own `Accessibility`
+//!    domain, not just the rendered DOM `wasm-pack test`'s own suite already checks.
 //!
 //! Connectors, in add order (`#diagram > path:nth-of-type(N)`):
 //!
@@ -49,7 +52,10 @@ use svg_dom::{
 };
 use svg_dom_graph::{
     Error,
-    scene::{ConnectorOptions, ConnectorType, DragOptions, EdgeAnchors, NodeOptions, Scene},
+    scene::{
+        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, NodeOptions,
+        NodeValues, Scene,
+    },
 };
 use wasm_bindgen::prelude::*;
 
@@ -101,6 +107,23 @@ fn build() -> Result<(), Error> {
     };
     let bounded = scene.add_node(Point::new(400.0, 20.0), box_size, "bounded")?;
     scene.make_draggable_with(bounded, DragOptions::default().with_bounds(Some(view_box)))?;
+
+    // Not draggable — this one exists purely for `accessibility_tree.rs` to query, never for hit-testing or
+    // dragging. Same value `tests/drag/data_node.rs`'s own
+    // `a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real_value` test already checks at
+    // the DOM level, so the two tests cover the same content at two different layers.
+    //
+    // Placed well outside the diagram's own `(0, 0, 500, 400)` viewBox, rather than merely far from every other
+    // node within it. `Scene::make_draggable`'s own `PushClear` collision resolution checks every node's rect for
+    // overlap on drop, this one included, regardless of on-screen position within the viewBox. A spot far outside
+    // it can never overlap another node's landing rect, whatever that test's own drag distance turns out to be.
+    // This node plays no visual role, so being off-canvas costs nothing. `Accessibility.getPartialAXTree` reads
+    // the accessibility tree, not the painted picture, so clipping outside the viewBox does not affect it either.
+    scene.add_named_data_node(
+        Point::new(2000.0, 2000.0),
+        "B",
+        DataNodeContent::new(NodeValues::U64(vec![0xABCD_EF01_2345_6789]), DataFormat::Hexadecimal),
+    )?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 
