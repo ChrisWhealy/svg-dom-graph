@@ -28,11 +28,11 @@
         <svg id="selection-2d-diagram" width="400" height="180" viewBox="0 0 400 180"
             xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
-    <h3>Operator chain over an array (SHA-3's <code>ThetaC</code>) Function</h3>
-    <p>An operator chain is supplied with a fresh row of values from an input array on each step, with its own
-        final result written to an output array. SHA-3's <code>ThetaC</code> function is a real example: for each
-        row <code>n</code> of a 5&times;5 input array <code>A</code>,
-        <code>C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)</code>, written to output array
+    <h3>Operator chain over an array (SHA3's <code>ThetaC</code>) Function</h3>
+    <p>On each step, an operator chain is supplied with a fresh set of values from successive rows of an input array,
+        with the final result written to successive elements of an output array.</p>
+    <p>SHA3's <code>ThetaC</code> function is a real example: for each row <code>n</code> of a 5&times;5 input array
+        <code>A</code>, <code>C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)</code>, written to output array
         <code>O(n)</code>.
     </p>
     <p><code>svg-dom-graph</code> has no way to change an existing node's own displayed value — only its selection

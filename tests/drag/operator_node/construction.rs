@@ -75,6 +75,45 @@ fn a_unary_operator_node_renders_its_label_and_value_rows() -> Result<(), String
     )
 }
 
+/// `<title>` child text, or `None` if `element` has no direct `<title>` child.
+fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
+    Ok(element
+        .query_selector(":scope > title")
+        .map_err(|e| format!("{e:?}"))?
+        .map(|title| title.text_content().unwrap_or_default()))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its
+/// own real formatted result value as text, rather than just the result's own type. Its `<title>` — the browser's
+/// own mouse-hover tooltip — carries that exact same text, so hovering shows the same thing a screen reader
+/// announces.
+#[wasm_bindgen_test]
+fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value() -> Result<(), String> {
+    let svg = make_svg("operator-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let operand = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U32(vec![0x0F0F_0F0F]), DataFormat::Hexadecimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let result = DataNodeContent::new(NodeValues::U32(vec![!0x0F0F_0F0Fu32]), DataFormat::Hexadecimal);
+    scene
+        .add_unary_operator_node(Point::new(200.0, 10.0), UnaryOperator::Not, operand, result)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("operator-aria-label", 1)?;
+    check(
+        group.get_attribute("aria-label").as_deref() == Some("NOT result = F0 F0 F0 F0"),
+        &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
+    )?;
+    check(
+        title_of(&group)?.as_deref() == Some("NOT result = F0 F0 F0 F0"),
+        &format!("unexpected <title>: {:?}", title_of(&group)?),
+    )
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A binary operator node auto-wires an edge from each of its two operands — no separate `add_edge` call is
 /// needed, or even possible to get wrong.

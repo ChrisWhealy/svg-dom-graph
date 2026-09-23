@@ -21,6 +21,11 @@ thread_local! {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the demo scene: one operand node feeding an operator node, for every [`UnaryOperator`] this crate names.
 ///
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"` — the raw value's own outer box, wrapping
+/// its value cell, the same way an operator node's own outer box wraps its result. Naming the operand this way,
+/// rather than leaving it a plain [`Scene::add_data_node`] box, gives the reader an unambiguous handle for the
+/// value the operator acts on.
+///
 /// Every result shown is computed right here, with plain Rust integer operators (`!`, `<<`, `>>`, `rotate_left`,
 /// `rotate_right`, `reverse_bits`, `swap_bytes`). `svg_dom_graph` itself never evaluates an operator — see
 /// [`Scene::add_unary_operator_node`]'s own doc comment for why — so this function's job is exactly the one a real
@@ -44,7 +49,7 @@ pub(crate) fn build_unary_operator_demo() -> Result<(), String> {
     const X_OPERATOR: f64 = 260.0;
 
     let place_operand = |x: f64, y: f64, content: DataNodeContent| -> Result<NodeId, String> {
-        let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
+        let node = scene.add_named_data_node(Point::new(x, y), "A", content).map_err(stringify)?;
         scene.make_draggable_with(node, drag_options).map_err(stringify)?;
         Ok(node)
     };

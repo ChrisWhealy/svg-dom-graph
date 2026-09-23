@@ -9,7 +9,7 @@
     <ul>
         <li><code>B</code> rotated right by one bit then <code>XOR</code>'ed with <code>A</code></li>
         <li><code>XOR(w0, AND(NOT(w1), w2))</code> for three plain values</li>
-        <li>SHA-256's "Choose" function <code>Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)</code>, whose <code>x</code>
+        <li>SHA256's "Choose" function <code>Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)</code>, whose <code>x</code>
             feeds two separate operator nodes — one operand, more than one operator. Every result shown is computed by
             the demo, in plain Rust, exactly the way a real caller would; see <code>DataNodeContent</code>.</li>
     </ul>

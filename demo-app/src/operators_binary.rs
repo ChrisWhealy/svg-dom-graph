@@ -22,6 +22,10 @@ thread_local! {
 /// Builds the demo scene: two operand nodes feeding an operator node, for every [`BinaryOperator`] this crate
 /// names.
 ///
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"` — the raw value's own outer box,
+/// wrapping its value cell, the same way an operator node's own outer box wraps its result — rather than a plain
+/// [`Scene::add_data_node`] box.
+///
 /// Every result shown is computed right here, with plain Rust integer operators (`&`, `|`, `^`, and their own
 /// complements). `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_binary_operator_node`]'s
 /// own doc comment for why — so this function's job is exactly the one a real caller would have: compute the real
@@ -45,8 +49,8 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 
-    let place_operand = |x: f64, y: f64, content: DataNodeContent| -> Result<NodeId, String> {
-        let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
+    let place_operand = |x: f64, y: f64, name: &str, content: DataNodeContent| -> Result<NodeId, String> {
+        let node = scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)?;
         scene.make_draggable_with(node, drag_options).map_err(stringify)?;
         Ok(node)
     };
@@ -57,11 +61,13 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let and_a_node = place_operand(
         X_OPERAND,
         20.0,
+        "A",
         DataNodeContent::new(NodeValues::U32(vec![and_a]), DataFormat::Hexadecimal),
     )?;
     let and_b_node = place_operand(
         X_OPERAND,
         110.0,
+        "B",
         DataNodeContent::new(NodeValues::U32(vec![and_b]), DataFormat::Hexadecimal),
     )?;
     let and_node = scene
@@ -80,11 +86,13 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let or_a_node = place_operand(
         X_OPERAND,
         190.0,
+        "A",
         DataNodeContent::new(NodeValues::U64(vec![or_a]), DataFormat::Hexadecimal),
     )?;
     let or_b_node = place_operand(
         X_OPERAND,
         280.0,
+        "B",
         DataNodeContent::new(NodeValues::U64(vec![or_b]), DataFormat::Hexadecimal),
     )?;
     let or_node = scene
@@ -103,11 +111,13 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let nand_a_node = place_operand(
         X_OPERAND,
         360.0,
+        "A",
         DataNodeContent::new(NodeValues::U16(vec![nand_a]), DataFormat::Hexadecimal),
     )?;
     let nand_b_node = place_operand(
         X_OPERAND,
         450.0,
+        "B",
         DataNodeContent::new(NodeValues::U16(vec![nand_b]), DataFormat::Hexadecimal),
     )?;
     let nand_node = scene
@@ -126,11 +136,13 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let nor_a_node = place_operand(
         X_OPERAND,
         530.0,
+        "A",
         DataNodeContent::new(NodeValues::U8(vec![nor_a]), DataFormat::Binary),
     )?;
     let nor_b_node = place_operand(
         X_OPERAND,
         620.0,
+        "B",
         DataNodeContent::new(NodeValues::U8(vec![nor_b]), DataFormat::Binary),
     )?;
     let nor_node = scene
@@ -149,11 +161,13 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let xnor_a_node = place_operand(
         X_OPERAND,
         700.0,
+        "A",
         DataNodeContent::new(NodeValues::U32(vec![xnor_a]), DataFormat::Hexadecimal),
     )?;
     let xnor_b_node = place_operand(
         X_OPERAND,
         790.0,
+        "B",
         DataNodeContent::new(NodeValues::U32(vec![xnor_b]), DataFormat::Hexadecimal),
     )?;
     let xnor_node = scene

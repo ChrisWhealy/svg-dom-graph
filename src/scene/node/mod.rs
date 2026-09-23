@@ -63,6 +63,11 @@ const CELL_PADDING: f64 = 6.0;
 /// [`operator`]'s own module doc comment for why this matters for an operator node specifically.
 const OUTER_PADDING: f64 = 10.0;
 
+/// The height of an outer labelled box's own label row, in user-space units — a fixed multiple of
+/// [`LABEL_FONT_SIZE`], the same [`CELL_HEIGHT`] approach applied at [`LABEL_FONT_SIZE`] rather than
+/// [`GRID_FONT_SIZE`]. Shared by [`operator`]'s own operator-name row and [`data`]'s own optional variable-name row.
+const LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDING;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Updates node `id`'s [`EdgeAnchors`] configuration, and redraws every incident connector immediately with the

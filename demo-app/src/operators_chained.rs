@@ -38,6 +38,11 @@ thread_local! {
 ///   operator nodes (its own `NOT`, and the `AND` with `y`), so this row also demonstrates one operand feeding more
 ///   than one operator.
 ///
+/// Every leaf operand — never an intermediate operator's own result, which already carries the operator's own
+/// label — is a [`Scene::add_named_data_node`] node, labelled with its own variable name from the prose above
+/// (`"A"`/`"B"`, `"w0"`/`"w1"`/`"w2"`, `"x"`/`"y"`/`"z"`), so the rendered diagram reads directly against the
+/// formula it draws.
+///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-chained-diagram`.
@@ -54,8 +59,8 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     const X_STAGE_2: f64 = 500.0;
     const X_STAGE_3: f64 = 740.0;
 
-    let place_operand = |x: f64, y: f64, content: DataNodeContent| -> Result<NodeId, String> {
-        let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
+    let place_operand = |x: f64, y: f64, name: &str, content: DataNodeContent| -> Result<NodeId, String> {
+        let node = scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)?;
         scene.make_draggable_with(node, drag_options).map_err(stringify)?;
         Ok(node)
     };
@@ -67,6 +72,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let b_node = place_operand(
         X_OPERAND,
         20.0,
+        "B",
         DataNodeContent::new(NodeValues::U64(vec![b]), DataFormat::Hexadecimal),
     )?;
     let ror_b = b.rotate_right(1);
@@ -83,6 +89,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let a_node = place_operand(
         X_OPERAND,
         140.0,
+        "A",
         DataNodeContent::new(NodeValues::U64(vec![a]), DataFormat::Hexadecimal),
     )?;
     let chain1_result = scene
@@ -104,6 +111,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let w1_node = place_operand(
         X_OPERAND,
         280.0,
+        "w1",
         DataNodeContent::new(NodeValues::U32(vec![w1]), DataFormat::Hexadecimal),
     )?;
     let not_w1 = !w1;
@@ -120,6 +128,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let w2_node = place_operand(
         X_OPERAND,
         400.0,
+        "w2",
         DataNodeContent::new(NodeValues::U32(vec![w2]), DataFormat::Hexadecimal),
     )?;
     let and_val = not_w1 & w2;
@@ -136,6 +145,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let w0_node = place_operand(
         X_OPERAND,
         520.0,
+        "w0",
         DataNodeContent::new(NodeValues::U32(vec![w0]), DataFormat::Hexadecimal),
     )?;
     let chain2_result = scene
@@ -165,11 +175,13 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let y_node = place_operand(
         X_OPERAND,
         660.0,
+        "y",
         DataNodeContent::new(NodeValues::U32(vec![y]), DataFormat::Hexadecimal),
     )?;
     let x_node = place_operand(
         X_OPERAND,
         750.0,
+        "x",
         DataNodeContent::new(NodeValues::U32(vec![x]), DataFormat::Hexadecimal),
     )?;
     let not_x = !x;
@@ -186,6 +198,7 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let z_node = place_operand(
         X_OPERAND,
         970.0,
+        "z",
         DataNodeContent::new(NodeValues::U32(vec![z]), DataFormat::Hexadecimal),
     )?;
 

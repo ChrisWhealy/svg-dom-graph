@@ -22,6 +22,11 @@ thread_local! {
 /// Builds the demo scene: two operand nodes feeding an operator node, for every [`ArithmeticOperator`] this crate
 /// names.
 ///
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"` — the raw value's own outer box,
+/// wrapping its value cell, the same way an operator node's own outer box wraps its result — rather than a plain
+/// [`Scene::add_data_node`] box. Naming `inputs.0`/`inputs.1` this way pairs naturally with the non-commutative
+/// operators' own "L"/"R" port markers: `A` is always the left-hand operand, `B` the right-hand one.
+///
 /// Every result shown is computed right here, with plain Rust integer operators (`+`, `-`, `*`, `/`, `%`).
 /// `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_arithmetic_operator_node`]'s own doc
 /// comment for why — so this function's job is exactly the one a real caller would have: compute the real value,
@@ -47,8 +52,8 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 
-    let place_operand = |x: f64, y: f64, content: DataNodeContent| -> Result<NodeId, String> {
-        let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
+    let place_operand = |x: f64, y: f64, name: &str, content: DataNodeContent| -> Result<NodeId, String> {
+        let node = scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)?;
         scene.make_draggable_with(node, drag_options).map_err(stringify)?;
         Ok(node)
     };
@@ -59,11 +64,13 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let add_a_node = place_operand(
         X_OPERAND,
         20.0,
+        "A",
         DataNodeContent::new(NodeValues::U8(vec![add_a]), DataFormat::Decimal),
     )?;
     let add_b_node = place_operand(
         X_OPERAND,
         110.0,
+        "B",
         DataNodeContent::new(NodeValues::U8(vec![add_b]), DataFormat::Decimal),
     )?;
     let add_node = scene
@@ -83,11 +90,13 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let sub_a_node = place_operand(
         X_OPERAND,
         190.0,
+        "A",
         DataNodeContent::new(NodeValues::U16(vec![sub_a]), DataFormat::Decimal),
     )?;
     let sub_b_node = place_operand(
         X_OPERAND,
         280.0,
+        "B",
         DataNodeContent::new(NodeValues::U16(vec![sub_b]), DataFormat::Decimal),
     )?;
     let sub_node = scene
@@ -107,11 +116,13 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let mul_a_node = place_operand(
         X_OPERAND,
         360.0,
+        "A",
         DataNodeContent::new(NodeValues::U32(vec![mul_a]), DataFormat::Decimal),
     )?;
     let mul_b_node = place_operand(
         X_OPERAND,
         450.0,
+        "B",
         DataNodeContent::new(NodeValues::U32(vec![mul_b]), DataFormat::Decimal),
     )?;
     let mul_node = scene
@@ -130,11 +141,13 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let div_a_node = place_operand(
         X_OPERAND,
         530.0,
+        "A",
         DataNodeContent::new(NodeValues::U64(vec![div_a]), DataFormat::Decimal),
     )?;
     let div_b_node = place_operand(
         X_OPERAND,
         620.0,
+        "B",
         DataNodeContent::new(NodeValues::U64(vec![div_b]), DataFormat::Decimal),
     )?;
     let div_node = scene
@@ -154,11 +167,13 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let mod_a_node = place_operand(
         X_OPERAND,
         700.0,
+        "A",
         DataNodeContent::new(NodeValues::U8(vec![mod_a]), DataFormat::Decimal),
     )?;
     let mod_b_node = place_operand(
         X_OPERAND,
         790.0,
+        "B",
         DataNodeContent::new(NodeValues::U8(vec![mod_b]), DataFormat::Decimal),
     )?;
     let mod_node = scene

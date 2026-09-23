@@ -22,6 +22,20 @@ code {
     font-family: inherit;
 }
 
+/* Neither browsers' own default link blue nor, especially, their default *visited* purple reads clearly against
+   this page's own near-black background. `#58a6ff` is the same accent blue already used for the brand/active-menu
+   text below, so a link reads as "this page's own accent colour," not a mismatched default; `:visited` stays that
+   same blue rather than shifting to the low-contrast purple that prompted this rule; `:hover` brightens to
+   `#79c0ff`, the lighter blue `h2` already uses, for a visible but still-coordinated hover cue. */
+a,
+a:visited {
+    color: #58a6ff;
+}
+
+a:hover {
+    color: #79c0ff;
+}
+
 /* App shell. The menu spans the full height on the left. The title sits above the stage on the right. */
 #app {
     display: grid;

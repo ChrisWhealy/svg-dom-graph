@@ -30,6 +30,14 @@ fn fill_of(element: &web_sys::Element) -> Option<String> {
     element.get_attribute("fill")
 }
 
+/// `<title>` child text, or `None` if `element` has no direct `<title>` child.
+fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
+    Ok(element
+        .query_selector(":scope > title")
+        .map_err(|e| format!("{e:?}"))?
+        .map(|title| title.text_content().unwrap_or_default()))
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single-value node has no separate inner cell — `Scene::set_selection`'s own `Selection::Cell(0)` recolours the
 /// node's own outer rect directly, and `Selection::None` restores its default type colour.
@@ -304,7 +312,8 @@ fn selection_gives_band_and_focus_cells_a_thicker_stroke_than_the_default() -> R
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The current selection is also exposed as text, via the node's own `aria-label`, not only through colour and
-/// stroke width.
+/// stroke width. `<title>` — the browser's own mouse-hover tooltip — is kept in sync with it at every step, not
+/// just at creation.
 #[wasm_bindgen_test]
 fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
     let svg = make_svg("selection-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -321,6 +330,13 @@ fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
     let base_label = group
         .get_attribute("aria-label")
         .ok_or("expected an aria-label to already be set at creation")?;
+    check(
+        title_of(&group)?.as_deref() == Some(base_label.as_str()),
+        &format!(
+            "expected <title> to match aria-label {base_label:?} at creation, got {:?}",
+            title_of(&group)?
+        ),
+    )?;
 
     scene
         .set_selection(node, Selection::Row { row: 1, col: Some(2) })
@@ -330,13 +346,28 @@ fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
         selected_label == format!("{base_label}, row 1 selected, column 2 focused"),
         &format!("got aria-label {selected_label:?}"),
     )?;
+    check(
+        title_of(&group)?.as_deref() == Some(selected_label.as_str()),
+        &format!(
+            "expected <title> to track the updated aria-label {selected_label:?}, got {:?}",
+            title_of(&group)?
+        ),
+    )?;
 
-    // `Selection::None` restores exactly the original label, with no leftover selection text.
+    // `Selection::None` restores exactly the original label, with no leftover selection text — and `<title>`
+    // right along with it.
     scene.set_selection(node, Selection::None).map_err(|e| e.to_string())?;
     let cleared_label = group.get_attribute("aria-label").unwrap_or_default();
     check(
         cleared_label == base_label,
         &format!("expected the original aria-label {base_label:?} restored, got {cleared_label:?}"),
+    )?;
+    check(
+        title_of(&group)?.as_deref() == Some(base_label.as_str()),
+        &format!(
+            "expected <title> restored to {base_label:?} alongside aria-label, got {:?}",
+            title_of(&group)?
+        ),
     )
 }
 
@@ -480,5 +511,70 @@ fn set_selection_moving_the_band_to_a_different_column_only_touches_the_two_colu
     check(
         fill_of(&cells[0]).as_deref() == Some("#ffe066") && fill_of(&cells[3]).as_deref() == Some("#ffe066"),
         "the new column should have been banded",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Scene::set_selection` on a named data node (`Scene::add_named_data_node`) recolours the same inner value box a
+/// plain (unnamed) single-value node's own outer rect gets recoloured — `BoxHandles::cell_rects` still points at
+/// the inner content box the name wraps, not the further outer named box around it. The outer named box's own
+/// light-blue fill never changes: selection is a property of the *value*, not of the name labelling it.
+#[wasm_bindgen_test]
+fn cell_selection_on_a_named_single_value_node_recolours_the_inner_value_box_not_the_outer_named_box()
+-> Result<(), String> {
+    let svg = make_svg("selection-named-single-value", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_named_data_node(
+            Point::new(10.0, 10.0),
+            "A",
+            DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let group = crate::common::nth_group("selection-named-single-value", 0)?;
+    let rects = rect_children(&group)?;
+    check(
+        rects.len() == 2,
+        &format!("expected 1 outer named box + 1 inner value box, found {}", rects.len()),
+    )?;
+    check(
+        fill_of(&rects[0]).as_deref() == Some("#d6f2ee"),
+        &format!(
+            "expected the outer named box's own pastel-teal fill, got {:?}",
+            fill_of(&rects[0])
+        ),
+    )?;
+    check(
+        fill_of(&rects[1]).as_deref() == Some("#fdebd3"),
+        &format!(
+            "expected the u8 type colour on the inner value box, got {:?}",
+            fill_of(&rects[1])
+        ),
+    )?;
+
+    scene.set_selection(node, Selection::Cell(0)).map_err(|e| e.to_string())?;
+    check(
+        fill_of(&rects[1]).as_deref() == Some("#ff6b4a"),
+        &format!(
+            "expected the inner value box to take the focus colour, got {:?}",
+            fill_of(&rects[1])
+        ),
+    )?;
+    check(
+        fill_of(&rects[0]).as_deref() == Some("#d6f2ee"),
+        &format!(
+            "expected the outer named box's own fill to stay untouched by selection, got {:?}",
+            fill_of(&rects[0])
+        ),
+    )?;
+
+    scene.set_selection(node, Selection::None).map_err(|e| e.to_string())?;
+    check(
+        fill_of(&rects[1]).as_deref() == Some("#fdebd3"),
+        &format!(
+            "expected the inner value box back to its default type colour, got {:?}",
+            fill_of(&rects[1])
+        ),
     )
 }

@@ -5,8 +5,8 @@
 //! operation that produced its own value.
 
 use super::{
-    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, NodeOptions, OUTER_PADDING,
-    render_guard::RenderGuard, validate_edge_anchors,
+    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
+    NodeOptions, OUTER_PADDING, render_guard::RenderGuard, validate_edge_anchors,
 };
 use crate::{
     error::Error,
@@ -29,6 +29,14 @@ use svg_dom::{
 ///
 /// [`NodeValues`]: crate::model::content::NodeValues
 const CELL_GAP: f64 = 6.0;
+
+/// A pastel teal is used as the background colour for a named data node's outer box. This is distinct from the plain
+/// `#eef4ff` background colour used for unnamed data nodes. Every operator node's own outer box (and an unnamed
+/// multi-value grid's own outer box) already uses this colour.
+///
+/// So the outer box containing either an operator name or a label, and the inner box containing the value use distinct
+/// background colours.
+const NAMED_BOX_COLOR: &str = "#d6f2ee";
 
 /// `Scene::set_selection`'s own row/column-level highlight colour — a warm yellow, chosen to read clearly against
 /// every [`NodeValues::type_color`](crate::model::content::NodeValues::type_color) pastel and against the plain
@@ -137,22 +145,33 @@ fn cell_style(
 /// parameter follows. This is a distinct concern from pass 1/2's own per-value formatting buffer above, which holds
 /// cell *content*, not attribute values, and stays a plain local: nothing outside a single `draw_content_box` call
 /// ever needs it.
+///
+/// `name`, when `Some`, wraps the box described above in a further outer box of its own, with `name` in a label
+/// row above it — the same "outer box labelled with a name, inset value box beneath it" shape
+/// [`draw_operator_box`](super::operator::draw_operator_box) already draws for an operator's own result. The
+/// returned `Rect` is then that outer box's own, so an incoming connector anchors to it, never to the inner
+/// (unlabelled, exactly as drawn below) content box directly — see [`draw_operator_box`]'s own module doc comment
+/// for why a connector must never land on an inset inner box. `name` is `None` for every plain (unnamed) data
+/// node, which renders exactly as before this parameter existed: no label row, no further outer box, the content
+/// box itself starting flush at local `(0, 0)`.
 pub(super) fn draw_content_box(
     svg: &SvgRoot,
     scratch: &mut String,
     top_left: Point,
+    name: Option<&str>,
     content: &DataNodeContent,
     edge_anchors: Option<EdgeAnchors>,
 ) -> Result<(BoxHandles, Rect), Error> {
     if content.len() == 0 {
         return Err(Error::Svg(svg_dom::Error::Dom(
-            "draw_content_box: content has no values".into(),
+            "draw_content_box: content length must be > 0".into(),
         )));
     }
 
     let group = svg.group()?;
     // At most two nodes are ever loose (created but not yet appended) at once here — see `RenderGuard::release`'s
-    // own doc comment — regardless of how many values `content` holds.
+    // own doc comment — regardless of how many values `content` holds, or whether `name` is given: each of the
+    // name label's own text/outer-box elements below is released again, in turn, before the next is created.
     let mut guard = RenderGuard::new(group.clone());
     let type_color = content.type_color();
     let type_name = content.type_name();
@@ -180,7 +199,7 @@ pub(super) fn draw_content_box(
 
     let cell_size = Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
 
-    let size = if single_value {
+    let content_size = if single_value {
         cell_size
     } else {
         #[allow(clippy::cast_precision_loss)]
@@ -189,9 +208,46 @@ pub(super) fn draw_content_box(
             grid_rows as f64 * cell_size.height + (grid_rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
         )
     };
+
+    // `content_origin` is where the content box drawn below sits, local to `group` — `(0, 0)` exactly as before
+    // this parameter existed, unless `name` wraps it in a further named outer box, in which case it is inset and
+    // centred under that outer box's own label row instead.
+    let (content_origin, size) = if let Some(name) = name {
+        let label_el = svg.text(origin, name)?;
+        guard.track(label_el.clone());
+        label_el.set_text_anchor(TextAnchor::Middle)?;
+        label_el.set_dominant_baseline(DominantBaseline::Middle)?;
+        label_el.set_font_size(LABEL_FONT_SIZE)?;
+        label_el.set_fill("#1b1b1b")?;
+        let label_width = label_el.bounding_box()?.size.width;
+
+        // Same competition `draw_operator_box` resolves for its own label vs. value cell: the content box's own
+        // width, plus `OUTER_PADDING` clear on either side, against the label's own width, plus `CELL_PADDING` —
+        // whichever needs more room sets the outer box's own width. Either way the content box itself never
+        // reaches the outer box's own left/right edges.
+        let box_width = (label_width + 2.0 * CELL_PADDING).max(content_size.width + 2.0 * OUTER_PADDING);
+        let box_size = Size::new(box_width, LABEL_ROW_HEIGHT + content_size.height + OUTER_PADDING);
+
+        let outer_el = svg.rect(origin, box_size)?;
+        guard.track(outer_el.clone());
+        outer_el.set_fill(NAMED_BOX_COLOR)?;
+        outer_el.set_stroke("#2a5db0")?;
+        outer_el.set_stroke_width(1.5)?;
+        group.append(&outer_el)?;
+        guard.release();
+
+        label_el.set_attr_display(scratch, "x", box_width / 2.0)?;
+        label_el.set_attr_display(scratch, "y", LABEL_ROW_HEIGHT / 2.0)?;
+        group.append(&label_el)?;
+        guard.release();
+
+        (Point::new((box_width - content_size.width) / 2.0, LABEL_ROW_HEIGHT), box_size)
+    } else {
+        (origin, content_size)
+    };
     let rect = Rect { origin: top_left, size };
 
-    let rect_el = svg.rect(origin, size)?;
+    let rect_el = svg.rect(content_origin, content_size)?;
     guard.track(rect_el.clone());
     rect_el.set_fill(if single_value { type_color } else { "#eef4ff" })?;
     rect_el.set_stroke("#2a5db0")?;
@@ -206,6 +262,12 @@ pub(super) fn draw_content_box(
     if single_value {
         cell_rects.push(rect_el.clone());
     }
+
+    // Captured only in the `single_value` case — the same formatted text that one cell's own `<text>` renders,
+    // reused again below for the node's own `aria-label`, so the value reads as text without visiting the cell
+    // directly. Left empty for a multi-value grid, whose own `aria-label` names a value count instead — see that
+    // `node_label` match below.
+    let mut single_value_text = String::new();
 
     let mut error: Option<Error> = None;
     content.for_each_cell_string(&mut text_scratch, |i, cell_text| {
@@ -222,8 +284,9 @@ pub(super) fn draw_content_box(
             text.set_fill("#1b1b1b")?;
 
             if single_value {
-                text.set_attr_display(scratch, "x", cell_size.width / 2.0)?;
-                text.set_attr_display(scratch, "y", cell_size.height / 2.0)?;
+                single_value_text.push_str(cell_text);
+                text.set_attr_display(scratch, "x", content_origin.x + cell_size.width / 2.0)?;
+                text.set_attr_display(scratch, "y", content_origin.y + cell_size.height / 2.0)?;
                 group.append(&text)?;
                 guard.release();
             } else {
@@ -231,8 +294,8 @@ pub(super) fn draw_content_box(
                 let (row, col) = (i / grid_cols, i % grid_cols);
                 #[allow(clippy::cast_precision_loss)]
                 let cell_origin = Point::new(
-                    OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
-                    OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
+                    content_origin.x + OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
+                    content_origin.y + OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
                 );
 
                 let cell_rect = svg.rect(cell_origin, cell_size)?;
@@ -263,6 +326,24 @@ pub(super) fn draw_content_box(
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
+    // This names the whole node for assistive technology, and — via `<title>` below — for the browser's own
+    // mouse-hover tooltip too. Assistive technology usually announces a group before its children, so a reader
+    // need not visit every individual cell to learn the node's own name, type, or (for a single value) its real
+    // value.
+    //
+    // `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
+    // `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over
+    // `img` deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values
+    // an assistive technology user could otherwise still reach.
+    let node_label = match (name, single_value) {
+        (Some(name), true) => format!("{name}: {type_name} = {single_value_text}"),
+        (Some(name), false) => format!("{name}: {type_name} data grid, {} values", content.len()),
+        (None, true) => format!("{type_name} = {single_value_text}"),
+        (None, false) => format!("{type_name} data grid, {} values", content.len()),
+    };
+    group.set_attr("role", "group")?;
+    group.set_attr("aria-label", &node_label)?;
+
     // A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling.
     // So it belongs on `group`, the one element every rect and every text drawn above actually shares as a
     // parent. It does not belong on any individual cell's own rect. That rect is a sibling of that cell's text,
@@ -272,25 +353,10 @@ pub(super) fn draw_content_box(
     // problem: a `<title>` as one of `text`'s own DOM children would leak its text into `text.textContent`. That
     // would mix the title text in with the actual rendered digits.
     //
-    // One `<title>` for the whole node reads correctly for every cell here regardless. Every value in a
-    // `DataNodeContent` shares the same type — see [`NodeValues`]'s own doc comment on that. So `type_name` is
-    // the same string for every cell the mouse pointer could be hovering over.
-    group.set_title(type_name)?;
-
-    // This names the whole node for assistive technology. Assistive technology usually announces a group before
-    // its children. So a reader need not visit every individual cell to learn the node's type.
-    //
-    // `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
-    // `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over
-    // `img` deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values
-    // an assistive technology user could otherwise still reach.
-    let node_label = if single_value {
-        format!("{type_name} value")
-    } else {
-        format!("{type_name} data grid, {} values", content.len())
-    };
-    group.set_attr("role", "group")?;
-    group.set_attr("aria-label", &node_label)?;
+    // Set to `node_label` — the same text `aria-label` carries — so the browser's own mouse-hover tooltip reads
+    // exactly what a screen reader announces, not just the node's own type. `Scene::set_selection` keeps the two
+    // in sync afterward too, rewriting this alongside `aria-label` on every selection change.
+    group.set_title(&node_label)?;
 
     guard.disarm();
     let base_label_len = node_label.len();
@@ -356,6 +422,72 @@ impl Scene {
         content: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
+        self.add_data_node_with_impl(top_left, None, content, options)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Gives a raw value a variable name.
+    /// Adds a data node to the graph, exactly as [`add_data_node`](Self::add_data_node), but wrapped in a further
+    /// outer box of its own labelled `name`. The same shape an "outer box labelled with a name with an inset value box
+    /// beneath it" already drawn for an operator node's own result.
+    ///
+    /// Equivalent to [`add_named_data_node_with`](Self::add_named_data_node_with) with [`NodeOptions::default`].
+    ///
+    /// # Errors
+    ///
+    /// See [`add_named_data_node_with`](Self::add_named_data_node_with)'s own `# Errors` section.
+    pub fn add_named_data_node(&self, top_left: Point, name: &str, content: DataNodeContent) -> Result<NodeId, Error> {
+        self.add_named_data_node_with(top_left, name, content, NodeOptions::default())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Adds a named data node, as [`add_named_data_node`](Self::add_named_data_node), but with `options`
+    /// controlling how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
+    ///
+    /// An incoming connector still anchors to this node's own *outer* (named) box, never to the inner content box
+    /// `name` wraps — the same reasoning [`add_binary_operator_node`](Self::add_binary_operator_node)'s own module
+    /// doc comment gives for why a connector must never land on an inset inner box.
+    ///
+    /// `name` is not stored in the graph's own model — unlike [`add_node`](Self::add_node)'s own `label`, it exists
+    /// only to draw this one label row, the same way an operator's own label (`"ADD"`, `"XOR"`, …) is never stored
+    /// either. Query this node's own value(s) back through `content` itself, exactly as for an unnamed data node.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidEdgeAnchors`] if `options.edge_anchors` is `Some(EdgeAnchors(0))`. Checked before
+    /// drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as it was.
+    ///
+    /// Returns [`Error::EmptyNodeContent`] if `content` holds no values. Also checked before drawing anything.
+    ///
+    /// Returns [`Error::InvalidGridLayout`] if `content`'s own [`GridLayout`](crate::scene::GridLayout) wraps `0` —
+    /// `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`. Also checked before drawing anything.
+    ///
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Unlike
+    /// [`add_node_with`](Self::add_node_with), there is no caller-supplied size to validate — the box is always sized
+    /// to fit `content` and `name` together.
+    pub fn add_named_data_node_with(
+        &self,
+        top_left: Point,
+        name: &str,
+        content: DataNodeContent,
+        options: NodeOptions,
+    ) -> Result<NodeId, Error> {
+        self.add_data_node_with_impl(top_left, Some(name), content, options)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Shared implementation behind [`add_data_node_with`](Self::add_data_node_with) and
+    /// [`add_named_data_node_with`](Self::add_named_data_node_with) — every check, and the rendered box itself
+    /// (modulo `name`'s own outer wrapper), is identical between a plain and a named data node.
+    ///
+    /// See either public wrapper's own doc comment for the full contract this enforces.
+    fn add_data_node_with_impl(
+        &self,
+        top_left: Point,
+        name: Option<&str>,
+        content: DataNodeContent,
+        options: NodeOptions,
+    ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
 
         if content.len() == 0 {
@@ -374,7 +506,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let result = draw_content_box(&inner.svg, &mut scratch, top_left, &content, options.edge_anchors);
+        let result = draw_content_box(&inner.svg, &mut scratch, top_left, name, &content, options.edge_anchors);
         inner.scratch = scratch;
         let (handles, rect) = result?;
         let id = inner.graph.add_node(rect, content);
@@ -499,6 +631,9 @@ impl Scene {
         handles.aria_label.truncate(handles.base_label_len);
         selection.describe_into(&mut handles.aria_label);
         handles.group.set_attr("aria-label", &handles.aria_label)?;
+        // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
+        // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
+        handles.group.set_title(&handles.aria_label)?;
 
         Ok(())
     }

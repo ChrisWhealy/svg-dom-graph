@@ -9,8 +9,9 @@
 //! terminates at the *result*, when what it actually feeds is the *operation* the whole node represents.
 
 use super::{
-    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, NodeOptions,
-    OUTER_PADDING, construction_guard::OperatorConstructionGuard, render_guard::RenderGuard, validate_edge_anchors,
+    CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
+    NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, render_guard::RenderGuard,
+    validate_edge_anchors,
 };
 use crate::{
     error::Error,
@@ -54,10 +55,6 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
     Ok(())
 }
 
-/// The height of an operator node's own label row, in user-space units — the same fixed-multiple-of-font-size
-/// approach [`CELL_HEIGHT`] already uses, at [`LABEL_FONT_SIZE`] rather than [`GRID_FONT_SIZE`].
-const OPERATOR_LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDING;
-
 /// A non-commutative operator's own "L"/"R" port marker font size, in user-space units — smaller than
 /// [`LABEL_FONT_SIZE`], so the marker reads as a secondary annotation rather than competing with the node's own
 /// label, but large enough to stay legible once offset clear of the connector's own arrowhead.
@@ -94,7 +91,6 @@ fn draw_operator_box(
     // Always exactly 4: the label, the value text, and the outer/value-cell rects.
     let mut guard = RenderGuard::new(group.clone());
     let type_color = result.type_color();
-    let type_name = result.type_name();
     let origin = Point::origin();
 
     let label_el = svg.text(origin, label)?;
@@ -110,6 +106,9 @@ fn draw_operator_box(
             "draw_operator_box: expected exactly one value".into(),
         )));
     }
+    // Cloned out now, before `scratch` is reused below for `x`/`y`/`transform` formatting — this is the same
+    // formatted text `value_el` shows, reused again for the node's own `aria-label`.
+    let value_text = scratch.clone();
     let value_el = svg.text(origin, scratch.as_str())?;
     guard.track(value_el.clone());
     value_el.set_text_anchor(TextAnchor::Middle)?;
@@ -126,7 +125,7 @@ fn draw_operator_box(
     let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
     // `OUTER_PADDING` again below the value cell, so it never reaches the box's own bottom edge either. Above it,
     // the label row's own height already keeps it clear of the box's own top edge.
-    let size = Size::new(box_width, OPERATOR_LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING);
+    let size = Size::new(box_width, LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING);
     let rect = Rect { origin: top_left, size };
 
     let outer_el = svg.rect(origin, size)?;
@@ -136,7 +135,7 @@ fn draw_operator_box(
     outer_el.set_stroke_width(1.5)?;
     group.append(&outer_el)?;
 
-    let value_cell_origin = Point::new((box_width - value_cell_size.width) / 2.0, OPERATOR_LABEL_ROW_HEIGHT);
+    let value_cell_origin = Point::new((box_width - value_cell_size.width) / 2.0, LABEL_ROW_HEIGHT);
     let value_cell_el = svg.rect(value_cell_origin, value_cell_size)?;
     guard.track(value_cell_el.clone());
     value_cell_el.set_fill(type_color)?;
@@ -145,7 +144,7 @@ fn draw_operator_box(
     group.append(&value_cell_el)?;
 
     label_el.set_attr_display(scratch, "x", box_width / 2.0)?;
-    label_el.set_attr_display(scratch, "y", OPERATOR_LABEL_ROW_HEIGHT / 2.0)?;
+    label_el.set_attr_display(scratch, "y", LABEL_ROW_HEIGHT / 2.0)?;
     group.append(&label_el)?;
 
     // Horizontally centred the same as the value cell itself — `box_width / 2.0` either way, since the cell is
@@ -158,11 +157,17 @@ fn draw_operator_box(
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // Same reasoning as `draw_content_box`'s own `<title>`/`aria-label` pair: colour alone conveys the result's own
-    // type to neither assistive technology nor a colour-blind reader.
-    group.set_title(type_name)?;
+    // type to neither assistive technology nor a colour-blind reader. The label names the operator and shows its
+    // own real result value — `value_text`, the same formatted text `value_el` itself renders — so the result is
+    // available as text even without visiting the value cell directly.
     group.set_attr("role", "group")?;
-    let node_label = format!("{label} result, {type_name}");
+    let node_label = format!("{label} result = {value_text}");
     group.set_attr("aria-label", &node_label)?;
+    // Set to `node_label` — the same text `aria-label` carries — so the browser's own mouse-hover tooltip reads
+    // exactly what a screen reader announces, not just the result's own type. `Scene::set_selection` keeps the
+    // two in sync afterward too, since an operator's own result is itself a `DataNodeContent` node like any
+    // other — see that method's own doc comment.
+    group.set_title(&node_label)?;
 
     guard.disarm();
     let base_label_len = node_label.len();
