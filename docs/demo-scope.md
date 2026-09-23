@@ -53,7 +53,8 @@ So, a single value is simply displayed as-is; two values stack as a single colum
 
 `GridLayout::Automatic` sizes a grid by cell *count*, not physical width.
 
-A handful of very long values, such as a `u64` under `DataFormat::Binary`, can still render as a square (based on cell count), but the rendered width will be far wider than it is tall.
+A handful of very long values, such as a `u64` under `DataFormat::Binary`, can still render as a square (based on cell count).
+Even so, the rendered width will be far wider than its height.
 
 `GridLayout::Columns`, `Rows`, and `MaxColumns` let a caller override the shape directly.
 `MaxColumns` caps how wide such a grid can get, regardless of value count.
@@ -61,10 +62,15 @@ A handful of very long values, such as a `u64` under `DataFormat::Binary`, can s
 Nodes in this panel are draggable and have built-in connector routing and drag-collision handling.
 
 ***Displaying Binary or Hexadecimal Values***<br>
-Displaying successive byte-groups as a long string would make the end of one string and the start of the next indistinguishable; therefore, each value is displayed in a separate box, coloured according to its type of `u8`, `u16`, `u32` or `u64`.
+Displaying successive byte-groups as a long string would make the end of one string and the start of the next indistinguishable.
+Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, or `u64`.
 
 As far as assistive technology is concerned, colour alone does not convey any useful information.
 Therefore, the node's type name is attached both as an SVG `<title>` (shown as a browser tooltip) and as an `aria-label`.
+
+A multi-value grid's own `aria-label` spells out its row/column shape too, not just its flat value count — e.g. `"u8 data grid, 2 rows by 3 columns, 6 values"`.
+Each individual cell also carries its own `aria-label`, naming its row and column directly — e.g. `"row 1, column 2: 6"`.
+That relationship is no longer left implicit in the cell's own on-screen position.
 
 Binary and hexadecimal values are displayed in their natural byte order, with the most-significant-byte first (`ByteOrder::BigEndian`).
 
@@ -84,12 +90,17 @@ These nodes are simply display tools: they do not compute any result themselves!
 
 `Scene::add_unary_operator_node`, `add_binary_operator_node`, or `add_arithmetic_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to represent.
 
+Every operand in this demo is a named data node (`Scene::add_named_data_node`), e.g. `"A"`/`"B"`, not a bare, unnamed value.
+Auto-wiring each operand's edge also extends both its own `aria-label` and the operator's own `aria-label` with an "Output to"/"Input from" clause naming the other.
+So which value feeds which operator is never conveyed by the connector's `<path>` alone.
+
 A unary operator node takes a single operand and draws a connector on its incoming edge:
 
 ```rust
 let demo_value = 0b1010_1010u8;
-let operand = scene.add_data_node(
+let operand = scene.add_named_data_node(
     Point::new(10.0, 10.0),
+    "A",
     DataNodeContent::new(NodeValues::U8(vec![demo_value]), DataFormat::Binary),
 )?;
 scene.add_unary_operator_node(
@@ -106,16 +117,22 @@ scene.add_unary_operator_node(
 The binary operator nodes (`AND`, `OR`, `XOR`, `NAND`, `NOR`, `XNOR`) take two operands and draw two incoming connectors the same way, via `Scene::add_binary_operator_node`.
 Both operands must share one `NodeValues` width, and must be two distinct nodes; if this is not the case, either will be rejected before anything is drawn.
 
+A non-commutative binary or arithmetic operator's own two operand connectors carry small "L"/"R" port markers.
+That keeps each operand's own identity visible, even after dragging swaps which side it renders on.
+A commutative operator (`AND`, `OR`, `XOR`, and so on, where operand order makes no difference) draws no such markers.
+
 ```rust
 let value_a = 0xFF00_FF00u32;
 let value_b = 0x0F0F_0F0Fu32;
 
-let operand_a = scene.add_data_node(
+let operand_a = scene.add_named_data_node(
     Point::new(10.0, 10.0),
+    "A",
     DataNodeContent::new(NodeValues::U32(vec![value_a]), DataFormat::Hexadecimal),
 )?;
-let operand_b = scene.add_data_node(
+let operand_b = scene.add_named_data_node(
     Point::new(10.0, 100.0),
+    "B",
     DataNodeContent::new(NodeValues::U32(vec![value_b]), DataFormat::Hexadecimal),
 )?;
 
@@ -167,7 +184,7 @@ This two-tier highlight marks "we are now processing this row" and "specifically
 
 For assistive technologies, the selection state cannot be conveyed by colour alone.
 The focused row is outlined using a slightly thicker stroke, within which, the highlighted cell again has a slightly thicker stroke.
-The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 6 values, row 1 selected, column 2 focused"`.
+The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 2 rows by 3 columns, 6 values, row 1 selected, column 2 focused"`.
 
 A grid can contain an incomplete last row or column: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns` can leave a row or column short of real cells.
 
@@ -180,17 +197,27 @@ scene.set_selection(node, Selection::None)?; // clears back to the default colou
 ```
 
 The demo's third example steps an operator chain across an array, rather than just highlighting one.
-For each row `n` of a 5×5 input array `A`, SHA-3's own `ThetaC` step computes `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)`, and writes it to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
+For each row `n` of the 5×5 input array `A`, SHA-3's own `ThetaC` step computes `C(n)`:
+
+```text
+C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)
+```
+
+The result is written to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
 
 `svg-dom-graph` has no API to change a node's own displayed value once drawn, only its selection.
-So each step clears and redraws the whole diagram from scratch with the current row's own real values, the same approach `demo-app`'s own `edge_anchors::rebuild_edge_anchors_scene` already takes for a different reason (a fixing-point count with a different child spread).
+So each step clears and redraws the whole diagram from scratch with the current row's own real values.
+`demo-app`'s own `edge_anchors::rebuild_edge_anchors_scene` already takes the same approach, for a different reason — a fixing-point count with a different child spread.
 
 `A` and `O` each keep their own real shape — `A` is `[5; [5; u64]]`, `O` is `[5; u64]` — rather than folding into one shared grid.
 `A` sits at the top of the canvas, above the chain it feeds; `O` sits directly below the chain's own final `XOR` node.
 `A`'s own row `n` is banded, and `O`'s own cell `n` is focused, via the same `Scene::set_selection` each step reapplies to both.
 A connector only ever lands on a node's own outer edge, never a specific cell inside it — `svg-dom-graph` connects whole nodes, not cells.
 Putting `O` right after the chain, with nothing else in between, is what lets a plain edge from the chain's own final `XOR` node reach `O` directly, reading as "into the output."
-That final `XOR` node's own position is fixed — the same position it would occupy for `n == 3` — rather than tracking `n`; nothing sits between it and `O` regardless of which row is current, so there was never a correctness reason for it to move.
+That final `XOR` node's own position is fixed — the same position it would occupy for `n == 3` — rather than tracking `n`.
+Nothing sits between it and `O`, regardless of which row is current.
+So there was never a correctness reason for it to move.
 
 `n` is clamped to `0..=4`, not wrapped like the first two examples.
-Stepping "Previous" also resets the row being left — not the row arrived at — back to `O`'s own initial (all-zero) value, so a walked-past output only ever reads as valid because the forward walk itself produced it.
+Stepping "Previous" also resets the row being left — not the row arrived at — back to `O`'s own initial (all-zero) value.
+So a walked-past output only ever reads as valid because the forward walk itself produced it.

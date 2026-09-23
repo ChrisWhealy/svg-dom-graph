@@ -5,4 +5,35 @@
 | `src/geometry/` | Pure, DOM-free routing mathematics (`boundary_point`, `snapped_anchor`, `clamp_to_bounds`, elbow-corner routing), unit-tested in `unit_tests.rs` with a plain `cargo test`
 | `src/model/`  | The graph's topology (`Graph`, `Node`, `Edge`), also DOM-free and unit-tested in `unit_tests.rs`; crate-private while the API is still taking shape, exposing only the opaque `NodeId`/`EdgeId` handles it hands out
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants; crate-private, exposing only `Error` itself
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle using `add_node` and `add_node_with`. These give configurable per-node connector fixing points — see `NodeOptions` and `EdgeAnchors`<ul><li>`add_data_node`</li><li>`add_data_node_with` a node whose content is a `DataNodeContent` grid of values rather than a plain label, self-sizing to fit. See `DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout` and`ByteOrder`</li><li>`add_unary_operator_node`</li><li>`add_unary_operator_node_with`</li><li>`add_binary_operator_node`</li><li>`add_binary_operator_node_with` a node naming the bitwise operation that produced the value it displays (this value is never computed, it must be supplied!), auto-wiring its incoming operand edge(s) — see `UnaryOperator` and `BinaryOperator`)</li><li>`set_selection` highlights a cell, row, or column of a `DataNodeContent` grid, exposing the current selection through colour, stroke width and its own `aria-label` — see `Selection`</li><li>`set_edge_anchors`</li><li>`add_edge`</li><li>`add_edge_with`</li><li>`set_connector_type` a straight or elbowed connector with configurable corner rounding — see `ConnectorOptions` and `ConnectorType`</li><li>`make_draggable`</li><li>`make_draggable_with` configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`, `CollisionPolicy` and `DragOptions::bounds`</li></ul>
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. Its own public API is grouped by area below, not spelled out in this table — it has grown too large for one cell to stay readable.
+
+## `Scene`'s own public API
+
+- `add_node`/`add_node_with` draw a box with a single text label.
+  `NodeOptions`/`EdgeAnchors` configure how many connector fixing points a node's own sides offer.
+
+- `add_data_node`/`add_data_node_with` draw a node whose content is a `DataNodeContent` grid of values instead of a plain label, self-sizing to fit.
+  See `DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout`, and `ByteOrder`.
+
+- `add_named_data_node`/`add_named_data_node_with` wrap a data node in a further outer box labelled with a caller-given `name`.
+  A value then reads as a variable, not just a bare type — `"B: u64 = ..."` rather than `"u64 = ..."`.
+  `name` must not be empty or hold only whitespace.
+
+- `add_unary_operator_node`/`_with`, `add_binary_operator_node`/`_with`, and `add_arithmetic_operator_node`/`_with` each draw a node labelled with the operation that produced its value.
+  That value is never computed by this crate — it must be supplied.
+  Each one also auto-wires its own incoming operand edge(s).
+  See `UnaryOperator`, `BinaryOperator`, and `ArithmeticOperator`.
+  A non-commutative binary or arithmetic operator's own two operand connectors carry "L"/"R" port markers.
+  Which operand is which stays visible even after either is dragged to a different side.
+
+- `set_selection` highlights a cell, row, or column of a `DataNodeContent` grid, exposing the current selection through colour, stroke width, and its own `aria-label` — see `Selection`.
+  This updates the node's own accessible name; it does not create a live-region announcement.
+
+- `add_edge`/`add_edge_with` draw a directed, arrow-tipped connector between two nodes.
+  Both endpoints' own `aria-label`/`<title>` are extended with an "Output to"/"Input from" relationship clause.
+  So which node feeds which is never conveyed by the connector's own `<path>` alone.
+  `set_connector_type` switches an already-drawn connector between straight and elbowed, with configurable corner rounding — see `ConnectorOptions` and `ConnectorType`.
+  `set_edge_anchors` reconfigures a node's own fixing points live.
+
+- `make_draggable`/`make_draggable_with` wire up pointer-based dragging for a node, with configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`, `CollisionPolicy`, and `DragOptions::bounds`.
+  Pointer dragging is the only interaction mechanism this offers; an application for which a node's own position is functionally significant needs to provide a keyboard/non-drag alternative itself.

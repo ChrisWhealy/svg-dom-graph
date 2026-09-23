@@ -34,10 +34,16 @@ Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is
   It also owns the panel-lifecycle bookkeeping (`run_panel`, `report_panel_error`) that reports a build failure directly in the gallery instead of panicking.
 - `demo-app/src/util.rs`<br>Small DOM/error helpers shared by more than one demo module.
 - `demo-app/src/source_frame.rs`<br>Builds each panel's own collapsible `<details>` block, showing the exact Rust source of the function that built it — sliced from that demo's own module source, embedded at compile time.
-- `demo-app/src/tree.rs`, `elbow.rs`, `edge_anchors.rs`, `data.rs`, `operators.rs`, and `selection.rs`<br>One module per demo panel, each owning its own `build_*` function and any struct/helper only it needs.
+- `demo-app/src/tree.rs`, `elbow.rs`, `edge_anchors.rs`, `data.rs`, `operators_unary.rs`, `operators_binary.rs`, `operators_arithmetic.rs`, `operators_chained.rs`, and `selection.rs`<br>One module per demo panel, each owning its own `build_*` function and any struct/helper only it needs.
+  `operators_unary.rs`/`operators_binary.rs`/`operators_arithmetic.rs` each show one operand node (or two) feeding an operator node, for every `UnaryOperator`/`BinaryOperator`/`ArithmeticOperator` this crate names.
+  `operators_chained.rs` shows an operator's own result reused as a further operator's operand.
+  `selection.rs` covers three separate examples: a one-dimensional array, a two-dimensional array, and an operator chain stepped across a 5×5 input array via SHA-3's own `ThetaC` function.
+  Every result these panels display is computed with plain Rust integer arithmetic, never by the library itself — `svg-dom-graph` only ever draws the value it is given.
 - `demo-app/src/highlight/`<br>The syntax highlighter `source_frame.rs` uses to colour each source frame's displayed code.
 
 `demo-server/` is a further on-demand workspace member, used only by `cargo demo`.
-A small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`, that assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`, validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package and serves the result with no dependency on external HTTP-server tooling.
+It is a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`.
+It assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`.
+It validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package, and serves the result — with no dependency on external HTTP-server tooling.
 
 `wasm-pack` is required to build the demo.
