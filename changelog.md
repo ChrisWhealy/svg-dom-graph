@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add `BoxHandles::current_ref_name`, layering the current `Selection` onto `BoxHandles::ref_name` (`957b927`)
 - Add relationship text to both endpoints' `aria-label`/`<title>` (`25508a7`)
-- Add row/column shape and per-cell row/column labels to a multi-value data grid's `aria-label` (``)
+- Add row/column shape and per-cell row/column labels to a multi-value data grid's `aria-label` (`5ea6198`)
+- Doc only: `set_selection` updates the accessible name but does not make a live-region announcement (``)
 
 # [Released]
 

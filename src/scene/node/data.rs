@@ -544,6 +544,11 @@ impl Scene {
     /// depends on colour alone — the same reasoning `NodeValues::type_colour`'s own `<title>`/`aria-label` pairing
     /// already follows.
     ///
+    /// This updates the node's own accessible name, making the current selection available to assistive technology.
+    /// It does not create a live-region announcement, so a screen reader whose virtual cursor sits elsewhere may not
+    /// notice the change until the user navigates back to this node. An application needing an immediate announcement
+    /// should provide its own status/live region; this method does not.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
