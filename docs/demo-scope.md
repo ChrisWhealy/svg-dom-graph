@@ -200,7 +200,7 @@ The demo's third example steps an operator chain across an array, rather than ju
 For each row `n` of the 5×5 input array `A`, SHA-3's own `ThetaC` step computes `C(n)`:
 
 ```text
-C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)
+ThetaC(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)
 ```
 
 The result is written to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
