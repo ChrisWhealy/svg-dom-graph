@@ -206,6 +206,15 @@ impl Scene {
                 port_marker: None,
             },
         );
+
+        // Every edge, not just an operator's own auto-wired input, gets both endpoints' own descriptions extended
+        // this way. So a `<path>` is never the only place that conveys which node feeds which — see
+        // `SceneInner::append_relationship`'s own doc comment.
+        let from_name = inner.node_handle(from).ok_or(Error::UnknownNode(from))?.current_ref_name();
+        let to_name = inner.node_handle(to).ok_or(Error::UnknownNode(to))?.current_ref_name();
+        inner.append_relationship(from, &format!("Output to {to_name}"))?;
+        inner.append_relationship(to, &format!("Input from {from_name}"))?;
+
         Ok(id)
     }
 

@@ -95,13 +95,8 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_selection` rewrites on every selection change. A node's own name stays fixed for its whole
     /// lifetime; `Scene`'s own public API offers no way to rename one once drawn.
     ///
-    /// No production code reads this field yet — it exists so a later node's own description can name this one,
-    /// for example "Output to XOR". That avoids revisiting every node-construction call site again, just to
-    /// recover a name that was never kept. `scene::node::unit_tests` already exercises this field under
-    /// `#[cfg(test)]`, proving every node kind captures the right name at construction. Hence the
-    /// `#[allow(dead_code)]` below: a normal (non-test) build has no reader for it yet. The tests already rule out
-    /// the real risk: this field being silently left unset or wrong.
-    #[allow(dead_code)]
+    /// `current_ref_name` reads this to build a node's own name right now. `SceneInner::append_relationship` reads
+    /// it too, seeding a plain label node's first relationship clause.
     pub(crate) ref_name: String,
 }
 
@@ -120,9 +115,8 @@ impl BoxHandles {
     /// demos. A `Row`/`Column` with no focus names its whole group instead — `"{ref_name}(row {row})"` or
     /// `"{ref_name}(column {col})"`.
     ///
-    /// No production code calls this yet — `scene::node::unit_tests` exercises every match arm under
-    /// `#[cfg(test)]`, so the `#[allow(dead_code)]` below is the same as `ref_name`'s own.
-    #[allow(dead_code)]
+    /// `Scene::add_edge_with` calls this for both of a new edge's own endpoints, via `SceneInner::append_relationship`.
+    /// That is the "A" or "A(0)" a peer node's own new relationship clause names it by.
     pub(crate) fn current_ref_name(&self) -> String {
         match self.selection {
             Selection::None => self.ref_name.clone(),

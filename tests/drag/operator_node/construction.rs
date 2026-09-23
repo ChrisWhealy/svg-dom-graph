@@ -105,11 +105,11 @@ fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value
 
     let group = nth_group("operator-aria-label", 1)?;
     check(
-        group.get_attribute("aria-label").as_deref() == Some("NOT result = F0 F0 F0 F0"),
+        group.get_attribute("aria-label").as_deref() == Some("NOT result = F0 F0 F0 F0. Input from u32."),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )?;
     check(
-        title_of(&group)?.as_deref() == Some("NOT result = F0 F0 F0 F0"),
+        title_of(&group)?.as_deref() == Some("NOT result = F0 F0 F0 F0. Input from u32."),
         &format!("unexpected <title>: {:?}", title_of(&group)?),
     )
 }

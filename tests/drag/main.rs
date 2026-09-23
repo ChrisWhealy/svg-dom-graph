@@ -20,8 +20,10 @@
 //!   split, non-commutative port markers, and operator-to-operator chaining.
 //! - [`selection`] — `Scene::set_selection`: cell/row/column highlighting, including the two-tier row-plus-cell and
 //!   column-plus-cell case, resetting via `Selection::None`, and validation.
+//! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of
+//!   its own endpoints, fan-out to more than one destination, and surviving a later `Scene::set_selection`.
 //!
-//! All nine drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All ten drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -32,6 +34,7 @@ mod data_node;
 mod drag_basics;
 mod edge_anchors;
 mod operator_node;
+mod relationships;
 mod scene_validation;
 mod selection;
 

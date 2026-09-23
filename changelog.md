@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add `BoxHandles::current_ref_name`, layering the current `Selection` onto `BoxHandles::ref_name` (``)
+- Add `BoxHandles::current_ref_name`, layering the current `Selection` onto `BoxHandles::ref_name` (`957b927`)
+- Add relationship text to both endpoints' `aria-label`/`<title>` (``)
 
 # [Released]
 

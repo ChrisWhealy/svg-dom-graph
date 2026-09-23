@@ -160,6 +160,44 @@ impl SceneInner {
         self.node_handles.get_mut(id.index)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Appends `clause` to node `id`'s own `aria-label`/`<title>`, as a new sentence.
+    ///
+    /// `Scene::add_edge_with` calls this once per endpoint of every edge it adds. So a connector's own `<path>` is
+    /// never the only place that conveys which node feeds which. See `BoxHandles::ref_name`'s own doc comment for
+    /// the accessibility reasoning behind naming nodes at all.
+    ///
+    /// A plain label node starts with an empty `aria_label` — its own visible text already serves as its accessible
+    /// name, so nothing ever set one. Seeds it with `ref_name` first in that case, so this call adds to that name
+    /// instead of silently replacing it once `aria-label` is set.
+    ///
+    /// Advances `base_label_len` past whatever this call appends. So a later `Scene::set_selection` on the same
+    /// node truncates back to the base description plus every relationship clause appended so far, never past one.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    fn append_relationship(&mut self, id: NodeId, clause: &str) -> Result<(), Error> {
+        let handles = self.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        if handles.aria_label.is_empty() {
+            handles.aria_label.push_str(&handles.ref_name);
+        }
+        // Only a node's own base description, or its first clause, can lack a trailing period here. A clause
+        // already appended always leaves one, so a second clause never doubles it.
+        if !handles.aria_label.ends_with('.') {
+            handles.aria_label.push('.');
+        }
+        handles.aria_label.push(' ');
+        handles.aria_label.push_str(clause);
+        handles.aria_label.push('.');
+        handles.base_label_len = handles.aria_label.len();
+        handles.group.set_attr("aria-label", &handles.aria_label)?;
+        // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
+        // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
+        handles.group.set_title(&handles.aria_label)?;
+        Ok(())
+    }
+
     /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph` —
     /// always in lockstep with it, so `id.index` is always exactly `self.node_handles.len()` here, the same
     /// always-an-append reasoning [`Graph::add_node`](crate::model::graph::Graph::add_node)'s own comment gives.
