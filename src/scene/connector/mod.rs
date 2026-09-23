@@ -5,6 +5,7 @@ mod connector_type;
 
 use super::{Scene, node::EdgeAnchors};
 use crate::{
+    colours::CONNECTOR_STROKE,
     error::Error,
     geometry::{
         binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, route::Route,
@@ -192,7 +193,7 @@ impl Scene {
         inner.scratch = d;
         let path = path_result?;
         path.set_fill("none")?;
-        path.set_stroke("#555")?;
+        path.set_stroke(CONNECTOR_STROKE)?;
         path.set_stroke_width(1.5)?;
         path.set_marker_end_ref(&inner.arrow)?;
 

@@ -14,7 +14,7 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub enum Selection {
-    /// No selection: every cell renders in its own default `NodeValues::type_color`.
+    /// No selection: every cell renders in its own default `NodeValues::type_colour`.
     #[default]
     None,
     /// Highlights the value at 0-based flat index `0`, addressing the whole content as one flat sequence regardless
@@ -41,7 +41,7 @@ impl Selection {
     /// fresh `String` on every call.
     ///
     /// Colour alone conveys nothing to assistive technology or a colour-blind reader — the same reasoning
-    /// [`super::NodeValues::type_color`]'s own `<title>`/`aria-label` pairing already follows.
+    /// [`super::NodeValues::type_colour`]'s own `<title>`/`aria-label` pairing already follows.
     pub(crate) fn describe_into(self, out: &mut String) {
         use std::fmt::Write as _;
         // `String`'s own `Write` impl only ever fails on allocation, which panics rather than returning `Err` —

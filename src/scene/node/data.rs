@@ -9,6 +9,7 @@ use super::{
     NodeOptions, OUTER_PADDING, render_guard::RenderGuard, validate_edge_anchors,
 };
 use crate::{
+    colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, SELECTION_BAND, SELECTION_FOCUS, TEXT_FILL},
     error::Error,
     model::{
         content::ResolvedBand,
@@ -23,38 +24,19 @@ use svg_dom::{
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The gap left between adjacent value cells in a multi-value grid, so the node's own background colour shows through
-/// as a visible seam between them — this, together with each cell's own [`NodeValues::type_color`], is what lets a
+/// as a visible seam between them — this, together with each cell's own [`NodeValues::type_colour`], is what lets a
 /// reader tell where one value ends and the next begins, rather than reading a wall of digits with no indication of
 /// which byte belongs to which value.
 ///
 /// [`NodeValues`]: crate::model::content::NodeValues
 const CELL_GAP: f64 = 6.0;
 
-/// A pastel teal is used as the background colour for a named data node's outer box. This is distinct from the plain
-/// `#eef4ff` background colour used for unnamed data nodes. Every operator node's own outer box (and an unnamed
-/// multi-value grid's own outer box) already uses this colour.
-///
-/// So the outer box containing either an operator name or a label, and the inner box containing the value use distinct
-/// background colours.
-const NAMED_BOX_COLOR: &str = "#d6f2ee";
-
-/// `Scene::set_selection`'s own row/column-level highlight colour — a warm yellow, chosen to read clearly against
-/// every [`NodeValues::type_color`](crate::model::content::NodeValues::type_color) pastel and against the plain
-/// `#eef4ff` outer box alike. Marks "we are now processing this row/column" in a [`Selection::Row`]/
-/// [`Selection::Column`] walk.
-const SELECTION_BAND_COLOR: &str = "#ffe066";
-
-/// `Scene::set_selection`'s own cell-level highlight colour — a stronger orange-red, overriding
-/// [`SELECTION_BAND_COLOR`] for the one cell a [`Selection::Cell`], or a `Row`/`Column`'s own optional cell, names.
-/// Marks "and specifically this element."
-const SELECTION_FOCUS_COLOR: &str = "#ff6b4a";
-
 /// `Scene::set_selection`'s own row/column-level stroke width, thicker than every cell's own default border (see
 /// [`BoxHandles::cell_stroke_width`]).
 ///
 /// Colour alone is not a reliable channel: it conveys nothing to assistive technology, and can be hard to tell
 /// apart for a colour-blind reader. A band is therefore also distinguishable by its own thicker border, the same
-/// "not colour alone" reasoning [`NodeValues::type_color`](crate::model::content::NodeValues::type_color)'s own
+/// "not colour alone" reasoning [`NodeValues::type_colour`](crate::model::content::NodeValues::type_colour)'s own
 /// `<title>`/`aria-label` pairing already follows.
 ///
 /// Already formatted — see [`BoxHandles::cell_stroke_width`]'s own doc comment for why.
@@ -67,7 +49,7 @@ const SELECTION_BAND_STROKE_WIDTH: &str = "2";
 const SELECTION_FOCUS_STROKE_WIDTH: &str = "3.5";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Cell `i`'s own fill colour and stroke width under a resolved `focus`/`band`, against `base_color`/
+/// Cell `i`'s own fill colour and stroke width under a resolved `focus`/`band`, against `base_colour`/
 /// `base_stroke_width` for a cell neither names.
 ///
 /// `Scene::set_selection` calls this twice — once for the old selection, once for the new one — for each cell it
@@ -77,15 +59,15 @@ fn cell_style(
     i: usize,
     focus: Option<usize>,
     band: ResolvedBand,
-    base_color: &'static str,
+    base_colour: &'static str,
     base_stroke_width: &'static str,
 ) -> (&'static str, &'static str) {
     if Some(i) == focus {
-        (SELECTION_FOCUS_COLOR, SELECTION_FOCUS_STROKE_WIDTH)
+        (SELECTION_FOCUS, SELECTION_FOCUS_STROKE_WIDTH)
     } else if band.contains(i) {
-        (SELECTION_BAND_COLOR, SELECTION_BAND_STROKE_WIDTH)
+        (SELECTION_BAND, SELECTION_BAND_STROKE_WIDTH)
     } else {
-        (base_color, base_stroke_width)
+        (base_colour, base_stroke_width)
     }
 }
 
@@ -120,8 +102,8 @@ fn cell_style(
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
 /// - A single value has no sibling to be told apart from, so it gets no inner cell box at all — the node's own
-///   `rect_el` is filled directly with [`NodeValues::type_color`], and the value's text sits centred in it.
-/// - Two or more values each get their own small [`NodeValues::type_color`]-filled `<rect>`, arranged into the
+///   `rect_el` is filled directly with [`NodeValues::type_colour`], and the value's text sits centred in it.
+/// - Two or more values each get their own small [`NodeValues::type_colour`]-filled `<rect>`, arranged into the
 ///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer box.
 ///
 /// [`DataFormat::Decimal`]: crate::model::content::DataFormat
@@ -173,7 +155,7 @@ pub(super) fn draw_content_box(
     // own doc comment — regardless of how many values `content` holds, or whether `name` is given: each of the
     // name label's own text/outer-box elements below is released again, in turn, before the next is created.
     let mut guard = RenderGuard::new(group.clone());
-    let type_color = content.type_color();
+    let type_colour = content.type_colour();
     let type_name = content.type_name();
     let origin = Point::origin();
     let len = content.len();
@@ -218,7 +200,7 @@ pub(super) fn draw_content_box(
         label_el.set_text_anchor(TextAnchor::Middle)?;
         label_el.set_dominant_baseline(DominantBaseline::Middle)?;
         label_el.set_font_size(LABEL_FONT_SIZE)?;
-        label_el.set_fill("#1b1b1b")?;
+        label_el.set_fill(TEXT_FILL)?;
         let label_width = label_el.bounding_box()?.size.width;
 
         // Same competition `draw_operator_box` resolves for its own label vs. value cell: the content box's own
@@ -230,8 +212,8 @@ pub(super) fn draw_content_box(
 
         let outer_el = svg.rect(origin, box_size)?;
         guard.track(outer_el.clone());
-        outer_el.set_fill(NAMED_BOX_COLOR)?;
-        outer_el.set_stroke("#2a5db0")?;
+        outer_el.set_fill(NAMED_BOX_FILL)?;
+        outer_el.set_stroke(BOX_STROKE)?;
         outer_el.set_stroke_width(1.5)?;
         group.append(&outer_el)?;
         guard.release();
@@ -249,8 +231,8 @@ pub(super) fn draw_content_box(
 
     let rect_el = svg.rect(content_origin, content_size)?;
     guard.track(rect_el.clone());
-    rect_el.set_fill(if single_value { type_color } else { "#eef4ff" })?;
-    rect_el.set_stroke("#2a5db0")?;
+    rect_el.set_fill(if single_value { type_colour } else { PLAIN_BOX_FILL })?;
+    rect_el.set_stroke(BOX_STROKE)?;
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
     guard.release();
@@ -281,7 +263,7 @@ pub(super) fn draw_content_box(
             text.set_dominant_baseline(DominantBaseline::Middle)?;
             text.set_font_family(GRID_FONT_FAMILY)?;
             text.set_font_size(GRID_FONT_SIZE)?;
-            text.set_fill("#1b1b1b")?;
+            text.set_fill(TEXT_FILL)?;
 
             if single_value {
                 single_value_text.push_str(cell_text);
@@ -300,8 +282,8 @@ pub(super) fn draw_content_box(
 
                 let cell_rect = svg.rect(cell_origin, cell_size)?;
                 guard.track(cell_rect.clone());
-                cell_rect.set_fill(type_color)?;
-                cell_rect.set_stroke("#2a5db0")?;
+                cell_rect.set_fill(type_colour)?;
+                cell_rect.set_stroke(BOX_STROKE)?;
                 cell_rect.set_stroke_width(1.0)?;
                 group.append(&cell_rect)?;
                 guard.release();
@@ -525,7 +507,7 @@ impl Scene {
     /// This is the only way to change a node's own selection after it is first drawn. A live "previous"/"next"
     /// control stepping through an array as it is processed is one example.
     ///
-    /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_color`. So there is no need to
+    /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_colour`. So there is no need to
     /// clear before setting a new selection.
     ///
     /// An identical `selection` to `id`'s own current one is an immediate no-op — no cell is touched, and no
@@ -539,7 +521,7 @@ impl Scene {
     ///
     /// Also gives the focused cell, and, less strongly, a banded row/column, a thicker stroke than its own default
     /// border. It also rebuilds the node's own `aria-label` to describe the current selection as text. Neither
-    /// depends on colour alone — the same reasoning `NodeValues::type_color`'s own `<title>`/`aria-label` pairing
+    /// depends on colour alone — the same reasoning `NodeValues::type_colour`'s own `<title>`/`aria-label` pairing
     /// already follows.
     ///
     /// # Errors
@@ -563,7 +545,7 @@ impl Scene {
         let (new_band, new_focus) = content
             .resolve_selection(selection)
             .ok_or(Error::InvalidSelection(id, selection))?;
-        let base_color = content.type_color();
+        let base_colour = content.type_colour();
 
         let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
         if old_selection == selection {
@@ -589,8 +571,8 @@ impl Scene {
                 return;
             }
             let Some(cell) = cell_rects.get(i) else { return };
-            let old_style = cell_style(i, old_focus, old_band, base_color, cell_stroke_width);
-            let new_style = cell_style(i, new_focus, new_band, base_color, cell_stroke_width);
+            let old_style = cell_style(i, old_focus, old_band, base_colour, cell_stroke_width);
+            let new_style = cell_style(i, new_focus, new_band, base_colour, cell_stroke_width);
             if new_style == old_style {
                 return;
             }

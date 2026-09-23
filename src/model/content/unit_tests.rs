@@ -363,7 +363,7 @@ fn len_reports_the_value_count_regardless_of_width() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// is_single_value / type_color
+// is_single_value / type_colour
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -379,17 +379,17 @@ fn two_values_are_not_reported_as_a_single_value() -> Result<(), String> {
 }
 
 #[test]
-fn every_width_gets_a_distinct_type_color() -> Result<(), String> {
-    let colors = [
-        DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).type_color(),
-        DataNodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal).type_color(),
-        DataNodeContent::new(NodeValues::U32(vec![1]), DataFormat::Decimal).type_color(),
-        DataNodeContent::new(NodeValues::U64(vec![1]), DataFormat::Decimal).type_color(),
+fn every_width_gets_a_distinct_type_colour() -> Result<(), String> {
+    let colours = [
+        DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).type_colour(),
+        DataNodeContent::new(NodeValues::U16(vec![1]), DataFormat::Decimal).type_colour(),
+        DataNodeContent::new(NodeValues::U32(vec![1]), DataFormat::Decimal).type_colour(),
+        DataNodeContent::new(NodeValues::U64(vec![1]), DataFormat::Decimal).type_colour(),
     ];
-    let mut unique = colors.to_vec();
+    let mut unique = colours.to_vec();
     unique.sort_unstable();
     unique.dedup();
-    check_eq(unique.len(), colors.len())
+    check_eq(unique.len(), colours.len())
 }
 
 #[test]

@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add labelled data nodes (``)
+- Add labelled data nodes (`6f2c6fb`)
+
+## Changed
+
+- Refactor all hardcoded colour values into a common module (``)
 
 # [Released]
 

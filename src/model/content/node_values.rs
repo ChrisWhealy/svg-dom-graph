@@ -1,4 +1,5 @@
 use super::{ByteOrder, DataFormat, format_binary_into, format_decimal_into, format_hex_into};
+use crate::colours::{TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
@@ -31,7 +32,7 @@ fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The values a [`super::DataNodeContent`] displays. Each variant names the Rust integer type the values were captured as.
 /// This determines how many bytes [`super::DataFormat::Hexadecimal`]/[`super::DataFormat::Binary`] split each value into. It also
-/// determines which colour is assigned (`super::NodeValues::type_color`, crate-private).
+/// determines which colour is assigned (`super::NodeValues::type_colour`, crate-private).
 ///
 /// Only the widths a caller is actually likely to inspect byte-by-byte are supported. A wider type — for example `u128`
 /// — can be added the same way later, additively, if it turns out to be needed.
@@ -42,7 +43,7 @@ fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
 /// width. A node can display `[u32, u32, u32, u32]`, never `[u8, u16, u32, u64]`. This is a deliberate scope decision,
 /// not a limitation to lift later. The intended abstraction here is "display an array/vector of homogeneous numeric
 /// values" — a memory dump, a register bank, a typed buffer — not a general, per-cell-typed data inspector. Every value
-/// in one node sharing the same `type_color` follows directly from that: colour identifies the node's own type, not
+/// in one node sharing the same `type_colour` follows directly from that: colour identifies the node's own type, not
 /// each individual cell's.
 ///
 /// A heterogeneous node — `Vec<NodeValue>` with one width per value, à la a tagged-union cell type — is a legitimate,
@@ -272,21 +273,23 @@ impl NodeValues {
     /// A gentle pastel background colour identifies this content's own Rust type. It is deliberately soft, not a harsh
     /// primary. So a data node's colouring reads as a quiet label, not an alarm.
     ///
-    /// Each width gets a distinct hue, chosen to stay visually distinct from `#eef4ff`. `#eef4ff` is the pale blue
-    /// every ordinary node — and a multi-value data node's own outer box — already uses.
-    pub(crate) fn type_color(&self) -> &'static str {
+    /// Each width gets a distinct hue, chosen to stay visually distinct from
+    /// [`PLAIN_BOX_FILL`](crate::colours::PLAIN_BOX_FILL), the pale blue every ordinary node — and a multi-value
+    /// data node's own outer box — already uses. See [`crate::colours`] for every shade this crate draws with,
+    /// including these four.
+    pub(crate) fn type_colour(&self) -> &'static str {
         match self {
-            Self::U8(_) => "#fdebd3",  // pastel apricot
-            Self::U16(_) => "#dcefdc", // pastel mint
-            Self::U32(_) => "#e6dcf5", // pastel lavender
-            Self::U64(_) => "#f5dce4", // pastel rose
+            Self::U8(_) => TYPE_COLOUR_U8,
+            Self::U16(_) => TYPE_COLOUR_U16,
+            Self::U32(_) => TYPE_COLOUR_U32,
+            Self::U64(_) => TYPE_COLOUR_U64,
         }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64").
     ///
-    /// [`type_color`](Self::type_color) is the only visual cue distinguishing one width from another. A caller who
+    /// [`type_colour`](Self::type_colour) is the only visual cue distinguishing one width from another. A caller who
     /// cannot distinguish colours has no other way to recover the type. Assistive technology does not perceive fill
     /// colour at all either. `scene::node` attaches this as the node's own `<g>`'s `<title>`, and as its `aria-label`.
     /// That way the type exists as text somewhere, not only as colour.

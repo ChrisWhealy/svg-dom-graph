@@ -64,14 +64,14 @@
 //! A byte-group string alone does not say where one value ends and the next begins. `"00 11 22 33 44 55 66 77"` reads
 //! the same whether it is one `u64`, two `u32`s, four `u16`s, or eight `u8`s. `scene::node::draw_content_box` avoids
 //! leaning on whitespace to imply a boundary. Instead it gives each value its own inner box, coloured by its own type
-//! (`NodeValues::type_color`, crate-private). A value's own width and boundaries then become a property of the box it
+//! (`NodeValues::type_colour`, crate-private). A value's own width and boundaries then become a property of the box it
 //! sits in, not something a reader must count bytes to infer. With two or more values, that box sits inside the node's
 //! own unchanged, light blue box. With exactly one value, the inner box is dropped instead. The type colour applies
 //! directly to the node's own box — see [`DataNodeContent::is_single_value`]'s own doc comment for why.
 //!
 //! # Colour is not the only way to distinguish a type
 //!
-//! `type_color` distinguishes datatypes visually, using colour. But colour alone is invisible to assistive technology,
+//! `type_colour` distinguishes datatypes visually, using colour. But colour alone is invisible to assistive technology,
 //! and unreliable for a colour-blind reader. This crate offers no caller-facing way to map a colour back to a type name
 //! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64" — as
 //! an SVG `<title>` on the node's own `<g>`. This gives a native browser tooltip when the mouse pointer hovers over any

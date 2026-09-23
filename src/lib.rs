@@ -19,6 +19,7 @@
 //!
 //! See [`geometry::boundary_point`] for the routing math and [`scene::Scene`] for the public rendering API.
 
+pub(crate) mod colours;
 pub(crate) mod error;
 pub mod geometry;
 pub(crate) mod model;

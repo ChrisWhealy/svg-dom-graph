@@ -71,7 +71,7 @@ impl DataNodeContent {
     /// `true` for exactly one value.
     ///
     /// A single value has no sibling to be told apart from. So `draw_content_box` skips the per-value inner box
-    /// [`NodeValues::type_color`] would otherwise use. It applies that colour straight to the node's own single box
+    /// [`NodeValues::type_colour`] would otherwise use. It applies that colour straight to the node's own single box
     /// instead. That gives one box, one colour, and no redundant box-within-a-box.
     pub(crate) fn is_single_value(&self) -> bool {
         self.values.len() == 1
@@ -123,9 +123,9 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The pastel colour identifying this content's own value type — see [`NodeValues::type_color`].
-    pub(crate) fn type_color(&self) -> &'static str {
-        self.values.type_color()
+    /// The pastel colour identifying this content's own value type — see [`NodeValues::type_colour`].
+    pub(crate) fn type_colour(&self) -> &'static str {
+        self.values.type_colour()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

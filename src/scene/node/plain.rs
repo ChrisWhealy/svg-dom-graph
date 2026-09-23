@@ -4,6 +4,7 @@
 
 use super::{EdgeAnchors, LABEL_FONT_SIZE, NodeOptions, render_guard::RenderGuard, validate_edge_anchors};
 use crate::{
+    colours::{BOX_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     model::node::NodeId,
     scene::{BoxHandles, Scene, Selection, box_centre},
@@ -72,8 +73,8 @@ pub(super) fn draw_box(
 
     let rect_el = svg.rect(local_rect.origin, local_rect.size)?;
     guard.track(rect_el.clone());
-    rect_el.set_fill("#eef4ff")?;
-    rect_el.set_stroke("#2a5db0")?;
+    rect_el.set_fill(PLAIN_BOX_FILL)?;
+    rect_el.set_stroke(BOX_STROKE)?;
     rect_el.set_stroke_width(1.5)?;
 
     let label_el = svg.text(box_centre(local_rect), label)?;
@@ -81,7 +82,7 @@ pub(super) fn draw_box(
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
     label_el.set_font_size(LABEL_FONT_SIZE)?;
-    label_el.set_fill("#1b1b1b")?;
+    label_el.set_fill(TEXT_FILL)?;
     shrink_label_to_fit(&label_el, local_rect.size)?;
 
     group.append(&rect_el)?;

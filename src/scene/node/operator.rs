@@ -14,6 +14,7 @@ use super::{
     validate_edge_anchors,
 };
 use crate::{
+    colours::{BOX_STROKE, CONNECTOR_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     geometry::{binary_operator_anchors, centre, port_marker_position, side::Side},
     model::{
@@ -90,7 +91,7 @@ fn draw_operator_box(
     let group = svg.group()?;
     // Always exactly 4: the label, the value text, and the outer/value-cell rects.
     let mut guard = RenderGuard::new(group.clone());
-    let type_color = result.type_color();
+    let type_colour = result.type_colour();
     let origin = Point::origin();
 
     let label_el = svg.text(origin, label)?;
@@ -98,7 +99,7 @@ fn draw_operator_box(
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
     label_el.set_font_size(LABEL_FONT_SIZE)?;
-    label_el.set_fill("#1b1b1b")?;
+    label_el.set_fill(TEXT_FILL)?;
     let label_width = label_el.bounding_box()?.size.width;
 
     if !result.single_cell_string_into(scratch) {
@@ -115,7 +116,7 @@ fn draw_operator_box(
     value_el.set_dominant_baseline(DominantBaseline::Middle)?;
     value_el.set_font_family(GRID_FONT_FAMILY)?;
     value_el.set_font_size(GRID_FONT_SIZE)?;
-    value_el.set_fill("#1b1b1b")?;
+    value_el.set_fill(TEXT_FILL)?;
     let value_width = value_el.bounding_box()?.size.width;
 
     // The value cell's own width, plus `OUTER_PADDING` kept clear on either side of it, competes with the label's
@@ -130,16 +131,16 @@ fn draw_operator_box(
 
     let outer_el = svg.rect(origin, size)?;
     guard.track(outer_el.clone());
-    outer_el.set_fill("#eef4ff")?;
-    outer_el.set_stroke("#2a5db0")?;
+    outer_el.set_fill(PLAIN_BOX_FILL)?;
+    outer_el.set_stroke(BOX_STROKE)?;
     outer_el.set_stroke_width(1.5)?;
     group.append(&outer_el)?;
 
     let value_cell_origin = Point::new((box_width - value_cell_size.width) / 2.0, LABEL_ROW_HEIGHT);
     let value_cell_el = svg.rect(value_cell_origin, value_cell_size)?;
     guard.track(value_cell_el.clone());
-    value_cell_el.set_fill(type_color)?;
-    value_cell_el.set_stroke("#2a5db0")?;
+    value_cell_el.set_fill(type_colour)?;
+    value_cell_el.set_stroke(BOX_STROKE)?;
     value_cell_el.set_stroke_width(1.0)?;
     group.append(&value_cell_el)?;
 
@@ -209,7 +210,7 @@ fn draw_port_marker(svg: &SvgRoot, anchor: Point, side: Side, glyph: &str, aria_
     marker.set_text_anchor(TextAnchor::Middle)?;
     marker.set_dominant_baseline(DominantBaseline::Middle)?;
     marker.set_font_size(PORT_MARKER_FONT_SIZE)?;
-    marker.set_fill("#555")?;
+    marker.set_fill(CONNECTOR_STROKE)?;
     marker.set_attr("role", "img")?;
     marker.set_attr("aria-label", aria_label)?;
     Ok(marker)
