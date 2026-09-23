@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.13] - 2026-09-23
 
 ## Added
@@ -15,9 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add row/column shape and per-cell row/column labels to a multi-value data grid's `aria-label` (`5ea6198`)
 - Doc only: `set_selection` updates the accessible name but does not make a live-region announcement (``)
 - Doc only: The only interaction mechanism offered by `make_draggable`/`make_draggable_with` is pointer dragging, not complete WCAG compliance (`27863d1`)
-- Add a CDP `Accessibility.getPartialAXTree`/`getChildAXNodes` regression test (``)
-
-# [Released]
+- Add a CDP `Accessibility.getPartialAXTree`/`getChildAXNodes` regression test (`72ea447`)
 
 ## [0.2.12] - 2026-09-23
 
