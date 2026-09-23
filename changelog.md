@@ -6,14 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.15] - 2026-09-23
 
 ## Changed
 
 - Add ToC to README and update stale documentation (`0c6924a`)
-- Update `docs/library.md` (``)
-
-# [Released]
+- Update `docs/library.md` (`fbddca8`)
 
 ## [0.2.14] - 2026-09-23
 
