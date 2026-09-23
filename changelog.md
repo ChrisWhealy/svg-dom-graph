@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.13] - 2026-09-23
+
+## Added
+
+- Add `BoxHandles::current_ref_name`, layering the current `Selection` onto `BoxHandles::ref_name` (``)
+
 # [Released]
 
 ## [0.2.12] - 2026-09-23

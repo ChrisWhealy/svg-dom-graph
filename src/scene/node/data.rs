@@ -323,6 +323,9 @@ pub(super) fn draw_content_box(
         (None, true) => format!("{type_name} = {single_value_text}"),
         (None, false) => format!("{type_name} data grid, {} values", content.len()),
     };
+    // A named node is called by that name. An unnamed one, having none, is called by its own type instead. See
+    // `BoxHandles::ref_name`'s own doc comment.
+    let ref_name = name.unwrap_or(type_name).to_owned();
     group.set_attr("role", "group")?;
     group.set_attr("aria-label", &node_label)?;
 
@@ -354,6 +357,7 @@ pub(super) fn draw_content_box(
             selection: Selection::None,
             aria_label: node_label,
             base_label_len,
+            ref_name,
         },
         rect,
     ))

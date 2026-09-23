@@ -107,6 +107,7 @@ pub(super) fn draw_box(
         selection: Selection::None,
         aria_label: String::new(),
         base_label_len: 0,
+        ref_name: label.to_owned(),
     })
 }
 

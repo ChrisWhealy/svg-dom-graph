@@ -184,6 +184,7 @@ fn draw_operator_box(
             selection: Selection::None,
             aria_label: node_label,
             base_label_len,
+            ref_name: label.to_owned(),
         },
         rect,
     ))

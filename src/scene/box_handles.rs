@@ -86,4 +86,51 @@ pub(crate) struct BoxHandles {
     /// `aria_label`'s own length at creation, before any selection was ever appended — the point
     /// `Scene::set_selection` truncates back to before appending a new selection's own description.
     pub(crate) base_label_len: usize,
+    /// A short, stable name for this node, so a later node's own description can refer to it by name. A plain
+    /// label node uses its own visible text; a named data node uses its own given `name`. An operator node uses
+    /// its own label — `"NOT"`, `"XOR"`, `"ROTR 1"`, and so on; an unnamed data node falls back to its own type
+    /// name instead.
+    ///
+    /// Set once at construction, this name is never rewritten afterward — unlike `aria_label`, which
+    /// `Scene::set_selection` rewrites on every selection change. A node's own name stays fixed for its whole
+    /// lifetime; `Scene`'s own public API offers no way to rename one once drawn.
+    ///
+    /// No production code reads this field yet — it exists so a later node's own description can name this one,
+    /// for example "Output to XOR". That avoids revisiting every node-construction call site again, just to
+    /// recover a name that was never kept. `scene::node::unit_tests` already exercises this field under
+    /// `#[cfg(test)]`, proving every node kind captures the right name at construction. Hence the
+    /// `#[allow(dead_code)]` below: a normal (non-test) build has no reader for it yet. The tests already rule out
+    /// the real risk: this field being silently left unset or wrong.
+    #[allow(dead_code)]
+    pub(crate) ref_name: String,
+}
+
+impl BoxHandles {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// This node's own name right now, layering whatever `selection` currently highlights onto `ref_name`.
+    ///
+    /// `ref_name` alone names a node's whole self — "A" for an array `Scene::set_selection` re-bands each step,
+    /// never rebuilt. This method adds back the element selection currently picks out, so a later description can
+    /// call it "A(0)" on one step, "A(1)" on the next. `ref_name` itself never changes — it stays exactly as fixed
+    /// at construction.
+    ///
+    /// `Selection::None` returns `ref_name` unchanged. `Cell(i)` reads as `"{ref_name}({i})"` — one flat index, the
+    /// same notation a 1-D array's own step already uses. A `Row`/`Column` with its own focus index reads as
+    /// `"{ref_name}({row}, {col})"` instead — matrix notation, matching `A(row, col)` elsewhere in this crate's own
+    /// demos. A `Row`/`Column` with no focus names its whole group instead — `"{ref_name}(row {row})"` or
+    /// `"{ref_name}(column {col})"`.
+    ///
+    /// No production code calls this yet — `scene::node::unit_tests` exercises every match arm under
+    /// `#[cfg(test)]`, so the `#[allow(dead_code)]` below is the same as `ref_name`'s own.
+    #[allow(dead_code)]
+    pub(crate) fn current_ref_name(&self) -> String {
+        match self.selection {
+            Selection::None => self.ref_name.clone(),
+            Selection::Cell(i) => format!("{}({i})", self.ref_name),
+            Selection::Row { row, col: None } => format!("{}(row {row})", self.ref_name),
+            Selection::Row { row, col: Some(col) } => format!("{}({row}, {col})", self.ref_name),
+            Selection::Column { col, row: None } => format!("{}(column {col})", self.ref_name),
+            Selection::Column { col, row: Some(row) } => format!("{}({row}, {col})", self.ref_name),
+        }
+    }
 }
