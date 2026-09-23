@@ -59,6 +59,7 @@ impl Scene {
     /// units of padding.
     ///
     /// See [`make_draggable_with`](Self::make_draggable_with) to allow overlapping nodes, or to use different padding.
+    /// See that method's own doc comment for this call's accessibility contract too.
     ///
     /// # Errors
     ///
@@ -80,6 +81,10 @@ impl Scene {
     /// only coincide when the `<svg>` has no CSS scaling and its `viewBox` matches its pixel size exactly. This
     /// converts through the dragged group's own screen CTM (see `invert_matrix`/`apply_matrix` in `geometry`), so
     /// dragging stays correct under scaling, a resized `viewBox`, or CSS transforms.
+    ///
+    /// Pointer-based dragging is the only interaction mechanism offered here: not a complete WCAG-compliant way to
+    /// reposition a node. The keyboard equivalent required by WCAG 2.1.1 has not been implemented, neither has the WCAG
+    /// 2.5.single-pointer alternative.
     ///
     /// # Errors
     ///
