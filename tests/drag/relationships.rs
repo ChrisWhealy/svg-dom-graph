@@ -132,7 +132,7 @@ fn set_selection_after_an_edge_keeps_the_relationship_clause() -> Result<(), Str
     let group_a = nth_group("relationships-selection", 0)?;
     check(
         group_a.get_attribute("aria-label").as_deref()
-            == Some("A: u8 data grid, 3 values. Output to OUT., cell 1 selected"),
+            == Some("A: u8 data grid, 1 row by 3 columns, 3 values. Output to OUT., cell 1 selected"),
         &format!("unexpected aria-label: {:?}", group_a.get_attribute("aria-label")),
     )
 }

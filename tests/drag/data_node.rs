@@ -318,11 +318,11 @@ fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
         &format!("unexpected role: {:?}", group.get_attribute("role")),
     )?;
     check(
-        group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 values"),
+        group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 rows by 1 column, 2 values"),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )?;
     check(
-        title_of(&group)?.as_deref() == Some("u8 data grid, 2 values"),
+        title_of(&group)?.as_deref() == Some("u8 data grid, 2 rows by 1 column, 2 values"),
         &format!("unexpected <title> on the node's own <g>: {:?}", title_of(&group)?),
     )?;
 
@@ -345,6 +345,38 @@ fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
     check(
         texts[1].text_content().as_deref() == Some("BB"),
         "digit text content 1 was corrupted",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A 2-D grid's own row/column shape is spelled out on the group, not just implicit in each cell's own `x`/`y`
+/// position. Each cell's own `<text>` also names its row and column directly, not just its bare digits.
+#[wasm_bindgen_test]
+fn a_two_dimensional_grids_own_shape_and_cells_are_named_by_row_and_column() -> Result<(), String> {
+    let svg = make_svg("data-node-a11y-grid", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+
+    let group = nth_group("data-node-a11y-grid", 0)?;
+    check(
+        group.get_attribute("aria-label").as_deref() == Some("u8 data grid, 2 rows by 3 columns, 6 values"),
+        &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
+    )?;
+
+    // Flat index 3 is row 1, column 0 (value 4); flat index 5 is row 1, column 2 (value 6) — row-major, per
+    // `GridLayout::Rows(2)`.
+    let texts = text_children(&group)?;
+    check(
+        texts[3].get_attribute("aria-label").as_deref() == Some("row 1, column 0: 4"),
+        &format!("unexpected cell 3 aria-label: {:?}", texts[3].get_attribute("aria-label")),
+    )?;
+    check(
+        texts[5].get_attribute("aria-label").as_deref() == Some("row 1, column 2: 6"),
+        &format!("unexpected cell 5 aria-label: {:?}", texts[5].get_attribute("aria-label")),
     )
 }
 

@@ -290,6 +290,10 @@ pub(super) fn draw_content_box(
 
                 text.set_attr_display(scratch, "x", cell_origin.x + cell_size.width / 2.0)?;
                 text.set_attr_display(scratch, "y", cell_origin.y + cell_size.height / 2.0)?;
+                // A bare digit string, read on its own, says nothing about which row/column it belongs to — that
+                // relationship exists only in `cell_origin`'s own `x`/`y`, invisible to assistive technology. This
+                // overrides `text`'s own default accessible name (its rendered digits) with its row and column too.
+                text.set_attr_display(scratch, "aria-label", format_args!("row {row}, column {col}: {cell_text}"))?;
                 group.append(&text)?;
                 guard.release();
 
@@ -317,11 +321,23 @@ pub(super) fn draw_content_box(
     // `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over
     // `img` deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values
     // an assistive technology user could otherwise still reach.
+    //
+    // A multi-value grid's own row/column shape is spelled out here too — "2 rows by 3 columns". Not just left
+    // implicit in each cell's own `x`/`y` position, which conveys nothing to assistive technology. Each cell's own
+    // `aria-label`, set below, names its row and column directly, the same "not visual position alone" reasoning.
+    let row_word = if grid_rows == 1 { "row" } else { "rows" };
+    let col_word = if grid_cols == 1 { "column" } else { "columns" };
     let node_label = match (name, single_value) {
         (Some(name), true) => format!("{name}: {type_name} = {single_value_text}"),
-        (Some(name), false) => format!("{name}: {type_name} data grid, {} values", content.len()),
+        (Some(name), false) => format!(
+            "{name}: {type_name} data grid, {grid_rows} {row_word} by {grid_cols} {col_word}, {} values",
+            content.len()
+        ),
         (None, true) => format!("{type_name} = {single_value_text}"),
-        (None, false) => format!("{type_name} data grid, {} values", content.len()),
+        (None, false) => format!(
+            "{type_name} data grid, {grid_rows} {row_word} by {grid_cols} {col_word}, {} values",
+            content.len()
+        ),
     };
     // A named node is called by that name. An unnamed one, having none, is called by its own type instead. See
     // `BoxHandles::ref_name`'s own doc comment.
