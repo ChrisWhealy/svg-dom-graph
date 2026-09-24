@@ -6,11 +6,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.16] - 2026-09-24
 
 ## Added
 
-- Add `XOR` demo to the "Binary operators" demo panel (``)
+- Add `XOR` demo to the "Binary operators" demo panel (`d5d7486`)
 
 ## Changed
 
@@ -19,8 +21,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct image path typos and add ToC (`06689a0`)
-
-# [Released]
 
 ## [0.2.15] - 2026-09-23
 
