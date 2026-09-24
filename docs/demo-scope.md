@@ -68,7 +68,7 @@ Lowering it hides them again.
 
 ![Data Node](../img/demo-data-node.png)
 
-Demonstrates the idea that a node rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
+Demonstrates the idea that rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
 At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`, and can be formatted as decimal, hexadecimal, or binary.
 

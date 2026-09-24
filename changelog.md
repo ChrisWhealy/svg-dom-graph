@@ -8,13 +8,17 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.2.16] - 2026-09-24
 
+## Added
+
+- Add `XOR` demo to the "Binary operators" demo panel (``)
+
 ## Changed
 
 - Update `demo-scope.md` to include images (`82e4786`)
 
 ## Fixed
 
-- Correct image path typos and add ToC (``)
+- Correct image path typos and add ToC (`06689a0`)
 
 # [Released]
 

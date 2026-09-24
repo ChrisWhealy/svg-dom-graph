@@ -105,24 +105,49 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
         .map_err(stringify)?;
     scene.make_draggable_with(or_node, drag_options).map_err(stringify)?;
 
+    // XOR — u8 hex, chosen so the two nybbles are each other's complement: XOR of them is `0xFF`.
+    let xor_a: u8 = 0xF0;
+    let xor_b: u8 = 0x0F;
+    let xor_a_node = place_operand(
+        X_OPERAND,
+        360.0,
+        "A",
+        DataNodeContent::new(NodeValues::U8(vec![xor_a]), DataFormat::Hexadecimal),
+    )?;
+    let xor_b_node = place_operand(
+        X_OPERAND,
+        450.0,
+        "B",
+        DataNodeContent::new(NodeValues::U8(vec![xor_b]), DataFormat::Hexadecimal),
+    )?;
+    let xor_node = scene
+        .add_binary_operator_node(
+            Point::new(X_OPERATOR, 405.0),
+            BinaryOperator::Xor,
+            (xor_a_node, xor_b_node),
+            DataNodeContent::new(NodeValues::U8(vec![xor_a ^ xor_b]), DataFormat::Hexadecimal),
+        )
+        .map_err(stringify)?;
+    scene.make_draggable_with(xor_node, drag_options).map_err(stringify)?;
+
     // NAND — u16, two operands stacked, same layout as AND/OR above.
     let nand_a: u16 = 0xFF0F;
     let nand_b: u16 = 0x0FFF;
     let nand_a_node = place_operand(
         X_OPERAND,
-        360.0,
+        530.0,
         "A",
         DataNodeContent::new(NodeValues::U16(vec![nand_a]), DataFormat::Hexadecimal),
     )?;
     let nand_b_node = place_operand(
         X_OPERAND,
-        450.0,
+        620.0,
         "B",
         DataNodeContent::new(NodeValues::U16(vec![nand_b]), DataFormat::Hexadecimal),
     )?;
     let nand_node = scene
         .add_binary_operator_node(
-            Point::new(X_OPERATOR, 405.0),
+            Point::new(X_OPERATOR, 575.0),
             BinaryOperator::Nand,
             (nand_a_node, nand_b_node),
             DataNodeContent::new(NodeValues::U16(vec![!(nand_a & nand_b)]), DataFormat::Hexadecimal),
@@ -135,19 +160,19 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let nor_b: u8 = 0b0000_1010;
     let nor_a_node = place_operand(
         X_OPERAND,
-        530.0,
+        700.0,
         "A",
         DataNodeContent::new(NodeValues::U8(vec![nor_a]), DataFormat::Binary),
     )?;
     let nor_b_node = place_operand(
         X_OPERAND,
-        620.0,
+        790.0,
         "B",
         DataNodeContent::new(NodeValues::U8(vec![nor_b]), DataFormat::Binary),
     )?;
     let nor_node = scene
         .add_binary_operator_node(
-            Point::new(X_OPERATOR, 575.0),
+            Point::new(X_OPERATOR, 745.0),
             BinaryOperator::Nor,
             (nor_a_node, nor_b_node),
             DataNodeContent::new(NodeValues::U8(vec![!(nor_a | nor_b)]), DataFormat::Binary),
@@ -160,19 +185,19 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let xnor_b: u32 = 0x5555_5555;
     let xnor_a_node = place_operand(
         X_OPERAND,
-        700.0,
+        870.0,
         "A",
         DataNodeContent::new(NodeValues::U32(vec![xnor_a]), DataFormat::Hexadecimal),
     )?;
     let xnor_b_node = place_operand(
         X_OPERAND,
-        790.0,
+        960.0,
         "B",
         DataNodeContent::new(NodeValues::U32(vec![xnor_b]), DataFormat::Hexadecimal),
     )?;
     let xnor_node = scene
         .add_binary_operator_node(
-            Point::new(X_OPERATOR, 745.0),
+            Point::new(X_OPERATOR, 915.0),
             BinaryOperator::Xnor,
             (xnor_a_node, xnor_b_node),
             DataNodeContent::new(NodeValues::U32(vec![!(xnor_a ^ xnor_b)]), DataFormat::Hexadecimal),
