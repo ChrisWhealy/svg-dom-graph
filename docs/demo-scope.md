@@ -2,6 +2,8 @@
 
 ## Directed Tree
 
+![Directed Tree](img/demo-directed-tree.png)
+
 Shows a directed tree of three boxes (one root, two children), connected by straight, arrow-tipped connectors attached at each node's centre.
 
 The two child boxes are draggable.
@@ -9,10 +11,14 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 
 ## Connector Routing
 
+![Connector Routing Straight](img/demo-connector-routing%201.png)
+
 Shows two boxes and radio buttons that toggle between straight and elbow connectors.
 
 When the elbow connector is selected, the slider dynamically controls the elbow's corner radius up to a maximum that fits the available space.
 This maximum is calculated as half the available vertical/horizontal space between the two boxes.
+
+![Connector Routing Elbow](img/demo-connector-routing%202.png)
 
 Drag a box to see the connector reroute.
 
@@ -23,7 +29,12 @@ Drag the boxes close together and watch the corner radius slider itself get pull
 
 ## Fixing points
 
+![Fixing Points Straight](img/demo-fixing-points%201.png)
+
 Demonstrates the idea of `EdgeAnchors`: a slider from `0` to `5` sets how many evenly spaced connector fixing points exist along a node's edges.
+This is applicable for both straight and elbow connectors.
+
+![Fixing Points Elbow](img/demo-fixing-points%202.png)
 
 `0` maps to `None`, which drops back to the default arrangement where a connector automatically anchors to the node's centre.
 An important distinction here is that the point along the edge to which the connector anchors will vary based on the angle between the centres of the nodes.
@@ -37,6 +48,8 @@ Raising it reveals more children, each settling on its own fixing point in the p
 Lowering it hides them again.
 
 ## Data Node
+
+![Data Node](img/demo-data-node.png)
 
 Demonstrates the idea that a node rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
@@ -83,18 +96,80 @@ This will visualise the actual in-memory byte layout, rather than the network by
 
 ## Operator Nodes
 
-Building on `DataNodeContent`, an operator node displays the operator name in the top row and a user-supplied value in the bottom row.
+Building on `DataNodeContent`, an operator node displays the operator name in the outer node and a user-supplied value in the inner node.
 
 ***IMPORTANT***<br>
-These nodes are simply display tools: they do not compute any result themselves!
+It is important to understand that operator nodes exist only for the purpose of visualisation, not calculation!
+You must calculate the correct value yourself!
 
-`Scene::add_unary_operator_node`, `add_binary_operator_node`, or `add_arithmetic_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to represent.
+Each oif the functions `Scene::add_unary_operator_node`, `add_binary_operator_node`, and `add_arithmetic_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to visualise.
+
+### Unary Operators
+
+![Unary Operators](img/demo-unary-operator-nodes.png)
+
+The standard bitwise unary operators can be represented by `Scene::add_unary_operator_node`.
+These are:
+* `NOT` Bitwise complement
+* `SHL` Arithmetic shift left
+* `SHR` Arithmetic shift right
+* `ROTL` Rotate left
+* `ROTR` Rotate right
+* `RBIT` Reverse bit order
+* `BSWAP` Swap byte order
+
+### Binary Operators
+
+![Binary Operators](img/demo-binary-operator-nodes.png)
+
+The standard bitwise binary operators can be represented by `Scene::add_binary_operator_node`.
+These are:
+* `AND` Logical conjunction
+* `OR` Logical disjunction
+* `XOR` Logical exclusive disjunction
+* `NAND` Negation of logical conjunction
+* `NOR` Negation of logical disjunction
+* `XNOR` Negation of logical exclusive disjunction
 
 Every operand in this demo is a named data node (`Scene::add_named_data_node`), e.g. `"A"`/`"B"`, not a bare, unnamed value.
 Auto-wiring each operand's edge also extends both its own `aria-label` and the operator's own `aria-label` with an "Output to"/"Input from" clause naming the other.
 So which value feeds which operator is never conveyed by the connector's `<path>` alone.
 
 A unary operator node takes a single operand and draws a connector on its incoming edge:
+
+### Arithmetic Operators
+
+![Arithmetic Operators](img/demo-arithmetic-operator-nodes.png)
+
+A basic set of arithmetic operators can be represented by `Scene::add_arithmetic_operator_node`.
+These are:
+* `ADD` Addition
+* `SUB` Subtraction
+* `MUL` Multiplication
+* `DIV` Division
+* `MOD` Modulus
+
+Each of these nodes takes two input values, identified in the coding as `inputs.0` and `inputs.1`.
+Irrespective of whether the operator commutes or not, `inputs.0` is always treated as the left-hand operand, and `inputs.1` as the right-hand one.
+
+For non-commutative operators, the two operand connectors carry small "L" and "R" port markers.
+This keeps each operand's identity visible, even after dragging swaps which side the connector renders on.
+
+For commutative operators such as `ADD`, `MUL`, `AND` and `OR` etc, no such markers are drawn.
+
+### Chained Operators
+
+The output of one operator can feed into another operator.
+This allows you to visualise the flow of data through an arbitrary sequence of operators.
+
+![Chained Operators](img/demo-chained-operator-nodes.png)
+
+The functions shown above are the following:
+* `B` rotated right by one bit, then `XOR`'ed with `A`
+* `XOR(w0, AND(NOT(w1), w2))` for three `u32` values
+* SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)`, whose `x` feeds two separate operator nodes
+
+The coding below shows an example of how you must calculate the correct value displayed within a `NOT` operator node.
 
 ```rust
 let demo_value = 0b1010_1010u8;
@@ -116,10 +191,6 @@ scene.add_unary_operator_node(
 
 The binary operator nodes (`AND`, `OR`, `XOR`, `NAND`, `NOR`, `XNOR`) take two operands and draw two incoming connectors the same way, via `Scene::add_binary_operator_node`.
 Both operands must share one `NodeValues` width, and must be two distinct nodes; if this is not the case, either will be rejected before anything is drawn.
-
-A non-commutative binary or arithmetic operator's own two operand connectors carry small "L"/"R" port markers.
-That keeps each operand's own identity visible, even after dragging swaps which side it renders on.
-A commutative operator (`AND`, `OR`, `XOR`, and so on, where operand order makes no difference) draws no such markers.
 
 ```rust
 let value_a = 0xFF00_FF00u32;
@@ -153,21 +224,9 @@ The result passed to `add_binary_operator_node` must be that same operator corre
 `svg-dom-graph` makes no attempt to check this: it only checks that `operand_a`, `operand_b`, and the result share one `NodeValues` width, not that the result is arithmetically correct.
 
 ***IMPORTANT***<br>
-Supplying a `value_a & value_b` that does not match the actual operands will draw a node whose displayed value is silently wrong!
-
-The arithmetic operator nodes (`ADD`, `SUB`, `MUL`, `DIV`, `MOD`) take two operands the same way, via `Scene::add_arithmetic_operator_node`.
-Unlike a `BinaryOperator`, an `ArithmeticOperator` does not commute: `inputs.0` is always the left-hand operand, `inputs.1` the right-hand one.
-`Subtract` underflows, and `Divide`/`Modulus` panic on a zero divisor, exactly the way plain Rust arithmetic does; avoiding that is the caller's own responsibility, the same as computing every other operator's result correctly.
-
-The demo's "Arithmetic operators" panel shows all five, one row per operator, cycling through `u8`/`u16`/`u32`/`u64` so every operand width this crate supports appears at least once.
+Supplying some inncorrect value (instead of the correct `value_a & value_b`) will draw a node whose displayed value is silently wrong!
 
 An operator node's own result is itself a `DataNodeContent`, so it is a valid operand for a further operator node.
-
-The demo's "Chained operators" panel shows this directly:
-
-* `B` rotated right by one bit, then `XOR`'ed with `A`
-* `XOR(w0, AND(NOT(w1), w2))` for three plain values
-* SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)`, whose `x` feeds two separate operator nodes
 
 ## Cell Selection
 
@@ -175,16 +234,24 @@ Demonstrates `Selection` and `Scene::set_selection` in which a highlight is draw
 
 This allows there to be a visual representation of stepping through an array's values using "previous" and "next" controls.
 
+### One-Dimensional Array
+
 For a one-dimensional array (a single row or column), `Selection::Cell(i)` is enough.
 There is no separate "row" to highlight distinctly from the element within it.
 
-However, for a two-dimensional array, `Selection::Row` or `Selection::Column` are used to highlight a whole row or column.
+![One-dimensional array cell selection 1](img/demo-cell-selection-1d%201.png)
+![One-dimensional array cell selection 2](img/demo-cell-selection-1d%202.png)
+![One-dimensional array cell selection 3](img/demo-cell-selection-1d%203.png)
+
+### Two-Dimensional Array
+
+For a two-dimensional array, `Selection::Row` or `Selection::Column` are used to highlight a whole row or column.
 Then within this, a specific cell can be highlighted, in a second, stronger colour.
 This two-tier highlight marks "we are now processing this row" and "specifically this element" as two distinct steps of a data-flow walk.
 
-For assistive technologies, the selection state cannot be conveyed by colour alone.
-The focused row is outlined using a slightly thicker stroke, within which, the highlighted cell again has a slightly thicker stroke.
-The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 2 rows by 3 columns, 6 values, row 1 selected, column 2 focused"`.
+![Two-dimensional array cell selection 1](img/demo-cell-selection-2d%201.png)
+![Two-dimensional array cell selection 2](img/demo-cell-selection-2d%202.png)
+![Two-dimensional array cell selection 3](img/demo-cell-selection-2d%203.png)
 
 A grid can contain an incomplete last row or column: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns` can leave a row or column short of real cells.
 
@@ -196,6 +263,8 @@ scene.set_selection(node, Selection::Row { row: 1, col: Some(2) })?;
 scene.set_selection(node, Selection::None)?; // clears back to the default colour
 ```
 
+### Selecting Rows Values to Supply Into an Operator Chain
+
 The demo's third example steps an operator chain across an array, rather than just highlighting one.
 For each row `n` of the 5×5 input array `A`, SHA-3's own `ThetaC` step computes `C(n)`:
 
@@ -204,6 +273,8 @@ ThetaC(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)
 ```
 
 The result is written to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
+
+![Array operator chain example](img/array-operator-chain.png)
 
 `svg-dom-graph` has no API to change a node's own displayed value once drawn, only its selection.
 So each step clears and redraws the whole diagram from scratch with the current row's own real values.
@@ -221,3 +292,10 @@ So there was never a correctness reason for it to move.
 `n` is clamped to `0..=4`, not wrapped like the first two examples.
 Stepping "Previous" also resets the row being left — not the row arrived at — back to `O`'s own initial (all-zero) value.
 So a walked-past output only ever reads as valid because the forward walk itself produced it.
+
+## Selection State and Assistive Technologies
+
+For assistive technologies, the selection state cannot be conveyed simply by using the text or background colour.
+
+The focused row is outlined using a slightly thicker stroke, within which, the highlighted cell again has a slightly thicker stroke.
+The node's own `aria-label` is rebuilt on every call to describe the current selection as text, e.g. `"u8 data grid, 2 rows by 3 columns, 6 values, row 1 selected, column 2 focused"`.
