@@ -1,8 +1,25 @@
 # Demo Scope
 
+## Table of Contents
+
+- [Directed Tree](#directed-tree)
+- [Connector Routing](#connector-routing)
+- [Fixing points](#fixing-points)
+- [Data Node](#data-node)
+- [Operator Nodes](#operator-nodes)
+  - [Unary Operators](#unary-operators)
+  - [Binary Operators](#binary-operators)
+  - [Arithmetic Operators](#arithmetic-operators)
+  - [Chained Operators](#chained-operators)
+- [Cell Selection](#cell-selection)
+  - [One-Dimensional Array](#one-dimensional-array)
+  - [Two-Dimensional Array](#two-dimensional-array)
+  - [Selecting Rows Values to Supply Into an Operator Chain](#selecting-rows-values-to-supply-into-an-operator-chain)
+- [Selection State and Assistive Technologies](#selection-state-and-assistive-technologies)
+
 ## Directed Tree
 
-![Directed Tree](img/demo-directed-tree.png)
+![Directed Tree](../img/demo-directed-tree.png)
 
 Shows a directed tree of three boxes (one root, two children), connected by straight, arrow-tipped connectors attached at each node's centre.
 
@@ -11,14 +28,14 @@ Dragging one redraws its connector on every pointer-move, so it stays attached t
 
 ## Connector Routing
 
-![Connector Routing Straight](img/demo-connector-routing%201.png)
+![Connector Routing Straight](../img/demo-connector-routing%201.png)
 
 Shows two boxes and radio buttons that toggle between straight and elbow connectors.
 
 When the elbow connector is selected, the slider dynamically controls the elbow's corner radius up to a maximum that fits the available space.
 This maximum is calculated as half the available vertical/horizontal space between the two boxes.
 
-![Connector Routing Elbow](img/demo-connector-routing%202.png)
+![Connector Routing Elbow](../img/demo-connector-routing%202.png)
 
 Drag a box to see the connector reroute.
 
@@ -29,12 +46,12 @@ Drag the boxes close together and watch the corner radius slider itself get pull
 
 ## Fixing points
 
-![Fixing Points Straight](img/demo-fixing-points%201.png)
+![Fixing Points Straight](../img/demo-fixing-points%201.png)
 
 Demonstrates the idea of `EdgeAnchors`: a slider from `0` to `5` sets how many evenly spaced connector fixing points exist along a node's edges.
 This is applicable for both straight and elbow connectors.
 
-![Fixing Points Elbow](img/demo-fixing-points%202.png)
+![Fixing Points Elbow](../img/demo-fixing-points%202.png)
 
 `0` maps to `None`, which drops back to the default arrangement where a connector automatically anchors to the node's centre.
 An important distinction here is that the point along the edge to which the connector anchors will vary based on the angle between the centres of the nodes.
@@ -49,7 +66,7 @@ Lowering it hides them again.
 
 ## Data Node
 
-![Data Node](img/demo-data-node.png)
+![Data Node](../img/demo-data-node.png)
 
 Demonstrates the idea that a node rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
@@ -106,7 +123,7 @@ Each oif the functions `Scene::add_unary_operator_node`, `add_binary_operator_no
 
 ### Unary Operators
 
-![Unary Operators](img/demo-unary-operator-nodes.png)
+![Unary Operators](../img/demo-unary-operator-nodes.png)
 
 The standard bitwise unary operators can be represented by `Scene::add_unary_operator_node`.
 These are:
@@ -120,7 +137,7 @@ These are:
 
 ### Binary Operators
 
-![Binary Operators](img/demo-binary-operator-nodes.png)
+![Binary Operators](../img/demo-binary-operator-nodes.png)
 
 The standard bitwise binary operators can be represented by `Scene::add_binary_operator_node`.
 These are:
@@ -139,7 +156,7 @@ A unary operator node takes a single operand and draws a connector on its incomi
 
 ### Arithmetic Operators
 
-![Arithmetic Operators](img/demo-arithmetic-operator-nodes.png)
+![Arithmetic Operators](../img/demo-arithmetic-operator-nodes.png)
 
 A basic set of arithmetic operators can be represented by `Scene::add_arithmetic_operator_node`.
 These are:
@@ -162,7 +179,7 @@ For commutative operators such as `ADD`, `MUL`, `AND` and `OR` etc, no such mark
 The output of one operator can feed into another operator.
 This allows you to visualise the flow of data through an arbitrary sequence of operators.
 
-![Chained Operators](img/demo-chained-operator-nodes.png)
+![Chained Operators](../img/demo-chained-operator-nodes.png)
 
 The functions shown above are the following:
 * `B` rotated right by one bit, then `XOR`'ed with `A`
@@ -239,9 +256,9 @@ This allows there to be a visual representation of stepping through an array's v
 For a one-dimensional array (a single row or column), `Selection::Cell(i)` is enough.
 There is no separate "row" to highlight distinctly from the element within it.
 
-![One-dimensional array cell selection 1](img/demo-cell-selection-1d%201.png)
-![One-dimensional array cell selection 2](img/demo-cell-selection-1d%202.png)
-![One-dimensional array cell selection 3](img/demo-cell-selection-1d%203.png)
+![One-dimensional array cell selection 1](../img/demo-cell-selection-1d%201.png)
+![One-dimensional array cell selection 2](../img/demo-cell-selection-1d%202.png)
+![One-dimensional array cell selection 3](../img/demo-cell-selection-1d%203.png)
 
 ### Two-Dimensional Array
 
@@ -249,9 +266,9 @@ For a two-dimensional array, `Selection::Row` or `Selection::Column` are used to
 Then within this, a specific cell can be highlighted, in a second, stronger colour.
 This two-tier highlight marks "we are now processing this row" and "specifically this element" as two distinct steps of a data-flow walk.
 
-![Two-dimensional array cell selection 1](img/demo-cell-selection-2d%201.png)
-![Two-dimensional array cell selection 2](img/demo-cell-selection-2d%202.png)
-![Two-dimensional array cell selection 3](img/demo-cell-selection-2d%203.png)
+![Two-dimensional array cell selection 1](../img/demo-cell-selection-2d%201.png)
+![Two-dimensional array cell selection 2](../img/demo-cell-selection-2d%202.png)
+![Two-dimensional array cell selection 3](../img/demo-cell-selection-2d%203.png)
 
 A grid can contain an incomplete last row or column: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns` can leave a row or column short of real cells.
 
@@ -274,7 +291,7 @@ ThetaC(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)
 
 The result is written to output array `O(n)` — five `u64` values folded through four `BinaryOperator::Xor` nodes.
 
-![Array operator chain example](img/array-operator-chain.png)
+![Array operator chain example](../img/array_operator_chain.png)
 
 `svg-dom-graph` has no API to change a node's own displayed value once drawn, only its selection.
 So each step clears and redraws the whole diagram from scratch with the current row's own real values.

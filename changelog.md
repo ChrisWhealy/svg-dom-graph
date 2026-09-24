@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Update `demo-scope.md` to include images (``)
+- Update `demo-scope.md` to include images (`82e4786`)
+
+## Fixed
+
+- Correct image path typos and add ToC (``)
 
 # [Released]
 
