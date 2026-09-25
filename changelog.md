@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.18] - 2026-09-25
+
+## Changed
+
+- Promoted `SceneInner` to its own module (``)
+
 # [Released]
 
 ## [0.2.17] - 2026-09-25
