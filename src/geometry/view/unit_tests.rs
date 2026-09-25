@@ -424,3 +424,23 @@ fn repeated_zoom_cycles_do_not_accumulate_error() -> Result<(), String> {
         &format!("drifted from {start:?} to {view:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A pan or zoom writes this attribute for every animation frame. Once its buffer is large enough it must be reused, not
+/// reallocated, however the transform changes.
+#[test]
+fn writing_the_transform_attribute_reuses_its_buffer() -> Result<(), String> {
+    let mut buffer = String::with_capacity(96);
+    let (pointer, capacity) = (buffer.as_ptr(), buffer.capacity());
+
+    let mut view = ViewTransform::IDENTITY;
+    for step in 0..200 {
+        let anchor = Point::new(f64::from(step) * 3.7 - 200.0, f64::from(step) * -1.3 + 90.0);
+        view = view.zoomed_about(if step % 2 == 0 { ZOOM_STEP } else { 1.0 / ZOOM_STEP }, anchor);
+        view = view.translated(f64::from(step) * 0.37, -f64::from(step) * 0.11);
+        view.write_attr(&mut buffer);
+        check(buffer.starts_with("translate("), &buffer)?;
+    }
+    check(buffer.as_ptr() == pointer, "the buffer was moved to a new allocation")?;
+    check(buffer.capacity() == capacity, "the buffer's capacity changed")
+}

@@ -15,6 +15,7 @@ The toolbar's own pure arithmetic is covered too.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
 It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.
 
+The zoom tests also check that writing the `transform` attribute and the accessible name reuses its buffer and never reallocates it once it has grown to fit.
 The zoom tests also check anchoring at the scale limits explicitly.
 A request that would exceed 4.0 or fall below 0.25 must be clamped, and the point under the pointer must still not move.
 That only holds if the translation is calculated from the scale actually applied after clamping, not the one requested.
@@ -160,6 +161,10 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- performance of zoom and pan:
+  - every route into the view — buttons, wheel, drag, and keyboard — changing only the content layer's own `transform`, checked with a `MutationObserver` that watches the content layer and everything beneath it, so no node, connector, label, or marker is ever rewritten
+  - a burst of wheel and pan events inside one frame writing nothing until that frame, and then exactly once
+  - every node's position and every connector's path being exactly what they were after zooming and panning
 - accessibility of the toolbar and the view:
   - every button having the `button` role, an explicit name that does not depend on its visible "100%", and a place in the Tab order
   - a focused button drawing a thicker, differently coloured border, and blur restoring it

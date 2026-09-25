@@ -32,8 +32,20 @@ const ATTRIBUTES: [&str; 4] = ["role", "tabindex", "aria-label", "aria-descripti
 ///
 /// The zoom is part of the *name*, not a live region, so changing it never interrupts a screen reader that is reading
 /// something else. It is read the next time the scene takes focus.
+///
+/// Writes into a caller-owned buffer, replacing its content, so a run of zoom updates reuses one allocation instead of
+/// building a new `String` for every animation frame. See [`label`] for a version that returns one.
+pub(super) fn write_label(scale: f64, out: &mut String) {
+    use std::fmt::Write as _;
+    out.clear();
+    let _ = write!(out, "Graph view, zoom {}%", (scale * 100.0).round());
+}
+
+/// [`write_label`] into a new `String`, for the one-off case where nothing is being reused.
 pub(super) fn label(scale: f64) -> String {
-    format!("Graph view, zoom {}%", (scale * 100.0).round())
+    let mut out = String::new();
+    write_label(scale, &mut out);
+    out
 }
 
 /// What the keys do, for the scene's accessible description.

@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Promoted `SceneInner` to its own module (`dd93185`)
 - Make pan/zoom settings independent of toolbar visibility (`e19b03b`)
+- Remove per-frame `String` allocation when building zoom level into accessible name (``)
 
 # [Released]
 

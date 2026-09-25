@@ -153,6 +153,20 @@
   Each step scales by 1.25 about the centre of the visible area, between a scale of 0.25 and 4.0.
 
    Every node, connector, and port marker lives in one content `<g class="svg-dom-graph-content">`, and zooming and panning set that group's `transform`.
+
+   **Performance.**
+   Because zoom and pan change one group's `transform`, the work does not grow with the graph.
+   No node is moved, no connector is rerouted, and no label or marker is rewritten, so zoom and pan never invalidate any routing geometry.
+   A graph of a thousand nodes costs the same to zoom as one of two.
+
+   Two things keep the cost of that one write down:
+
+   - The attribute value is built in a buffer the scene reuses, so a run of zoom or pan updates allocates nothing once the buffer has grown to fit.
+     The accessible name that reports the zoom is built the same way.
+   - Wheel and pan events update the view at once, but write the DOM at most once per animation frame, so a trackpad pinch that fires more events than the browser paints frames still costs one write per frame.
+     Releasing a pan writes its final position immediately.
+
+   Keyboard presses are written immediately, since a held key repeats far more slowly than a pointer moves.
    Dragging a node keeps working under zoom, because it converts pointer positions through the node's own screen matrix.
 
 - `Side` (`North`, `South`, `East`, `West`) names one side of a rectangle.

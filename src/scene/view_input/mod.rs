@@ -162,12 +162,22 @@ impl SceneInner {
     ///
     /// Does nothing if there is no keyboard handling, and writes only if the text changes. It is a name, not a live
     /// region, so it never interrupts a screen reader with an announcement on every zoom step.
-    pub(super) fn sync_view_label(&self) -> Result<(), Error> {
-        let Some(input) = &self.view_input else { return Ok(()) };
-        input
-            .root
-            .set_attr_if_changed("aria-label", &keyboard::label(self.view.scale))?;
-        Ok(())
+    ///
+    /// Runs on every flushed frame of a pan or zoom, so it builds the text in the scene's reused scratch buffer rather
+    /// than allocating a new `String` each time.
+    pub(super) fn sync_view_label(&mut self) -> Result<(), Error> {
+        if self.view_input.is_none() {
+            return Ok(());
+        }
+
+        let mut scratch = std::mem::take(&mut self.scratch);
+        keyboard::write_label(self.view.scale, &mut scratch);
+        let result = self
+            .view_input
+            .as_ref()
+            .map_or(Ok(()), |input| input.root.set_attr_if_changed("aria-label", &scratch));
+        self.scratch = scratch;
+        Ok(result?)
     }
 
     /// Whether panning is active right now, given its mode and whether a toolbar is shown.
@@ -308,3 +318,7 @@ impl Scene {
         inner.resize_view_input()
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;
