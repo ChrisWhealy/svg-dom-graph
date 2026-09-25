@@ -26,6 +26,7 @@ As a box is dragged, the connectors between it and its connected nodes are redra
 - [`docs/demo-scope.md`](docs/demo-scope.md) — what each demo panel shows, and why.
 - [`docs/demo.md`](docs/demo.md) — how the demo server works, and how `demo-app`/`demo-server` are put together.
 - [`docs/testing.md`](docs/testing.md) — the test suite: native unit tests, browser integration tests, and the CDP tests.
+- [`docs/security.md`](docs/security.md) — resource limits to impose when building a graph from untrusted input.
 
 ## Running the demo
 

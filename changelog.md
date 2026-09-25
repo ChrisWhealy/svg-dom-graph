@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.17] - 2026-09-25
+
+## Added
+
+- Add `docs/security.md` describing resource limits for attacker-controlled graph descriptions (``)
+
 # [Released]
 
 ## [0.2.16] - 2026-09-24
