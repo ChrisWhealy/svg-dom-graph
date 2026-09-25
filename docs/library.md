@@ -196,6 +196,16 @@
 
    Keyboard presses are written immediately, since a held key repeats far more slowly than a pointer moves.
 
+   **When a view change cannot be written.**
+   A view change is a transaction.
+   `zoom_in`, `zoom_out`, and `reset_view` return an error if the `transform` cannot be written, and then nothing has changed: the previous zoom is kept, `zoom_scale` still agrees with what is drawn, and a view that was already waiting for its frame is still waiting.
+   Once the `transform` is written the operation has succeeded.
+   The accessible name and the toolbar buttons that follow are bookkeeping, and a failure to update either is not reported, since the graph has visibly zoomed.
+   Neither is treated as up to date until its write succeeds, so the next change puts it right.
+
+   A change made by the wheel or a pan is drawn by an animation frame, which has nobody to report an error to.
+   If that write fails the view stays waiting, and the next thing that draws the view draws it, so the scene and the drawing agree again.
+
    **Teardown while a frame is pending.**
    A wheel or pan event can leave its DOM write to the next animation frame, and the handling that asked for it can be torn down before that frame arrives: the toolbar hidden, an input mode changed, or every `Scene` handle dropped.
    Two things keep that safe:

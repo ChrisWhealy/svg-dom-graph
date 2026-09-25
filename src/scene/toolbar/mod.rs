@@ -238,16 +238,33 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes `view` the current view and writes it to the content layer's `transform` at once.
     ///
-    /// Also brings every toolbar button's enabled state in line with it, and settles any earlier
+    /// Also brings the accessible name and every toolbar button's enabled state in line with it, and settles any earlier
     /// [`set_view_deferred`](Self::set_view_deferred) change still waiting for its frame. Does nothing if `view` is
     /// already current and already written.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Svg`] if the `transform` cannot be written. Then nothing has changed: the view, and whether it was
+    /// waiting to be drawn, are exactly as they were, so [`zoom_scale`](Scene::zoom_scale) still agrees with what is drawn.
+    /// A view that was already waiting for its frame is still waiting.
+    ///
+    /// Once the `transform` is written the view has changed, and that is what this reports. A failure to update the
+    /// accessible name or a button afterwards is not an error here — see [`flush_view`](Self::flush_view).
     pub(super) fn set_view(&mut self, view: ViewTransform) -> Result<(), Error> {
         if view == self.view && !self.view_dirty {
             return Ok(());
         }
+
+        // What to go back to if the write fails: the view, and whether it was still waiting for a frame.
+        let (previous, was_waiting) = (self.view, self.view_dirty);
         self.view = view;
         self.view_dirty = true;
-        self.flush_view()
+        if let Err(err) = self.flush_view() {
+            self.view = previous;
+            self.view_dirty = was_waiting;
+            return Err(err);
+        }
+        Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -267,7 +284,15 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the current view to the content layer, if it has changed since it was last written.
     ///
-    /// If the DOM write fails the view stays marked as waiting, so the next flush tries again.
+    /// # Errors
+    ///
+    /// Returns [`Error::Svg`] if the `transform` cannot be written. The view stays marked as waiting, so the next flush
+    /// tries again.
+    ///
+    /// Only that write can fail this. Once it has succeeded the graph has been redrawn, so the accessible name and the
+    /// toolbar buttons that follow are bookkeeping: an error from either would report failure for something that has
+    /// visibly happened, and is not returned. Neither is treated as up to date until its write succeeds, so the next flush
+    /// puts it right.
     pub(super) fn flush_view(&mut self) -> Result<(), Error> {
         if !self.view_dirty {
             return Ok(());
@@ -280,8 +305,10 @@ impl SceneInner {
         result?;
 
         self.view_dirty = false;
-        self.sync_view_label()?;
-        self.sync_toolbar_state()
+        // The graph has been redrawn, so these cannot fail the operation. See above.
+        let _ = self.sync_view_label();
+        let _ = self.sync_toolbar_state();
+        Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -497,7 +524,9 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Svg`] if the DOM write fails, in which case the previous zoom is kept.
+    /// Returns [`Error::Svg`] if the `transform` cannot be written. Then nothing has changed: the previous zoom is kept,
+    /// and [`zoom_scale`](Self::zoom_scale) still agrees with what is drawn. A failure to update the accessible name or a
+    /// toolbar button afterwards is not reported, since the graph has already zoomed. The next change puts them right.
     pub fn zoom_in(&self) -> Result<(), Error> {
         self.zoom_by(ZOOM_STEP)
     }
@@ -508,7 +537,9 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Svg`] if the DOM write fails, in which case the previous zoom is kept.
+    /// Returns [`Error::Svg`] if the `transform` cannot be written. Then nothing has changed: the previous zoom is kept,
+    /// and [`zoom_scale`](Self::zoom_scale) still agrees with what is drawn. A failure to update the accessible name or a
+    /// toolbar button afterwards is not reported, since the graph has already zoomed. The next change puts them right.
     pub fn zoom_out(&self) -> Result<(), Error> {
         self.zoom_by(1.0 / ZOOM_STEP)
     }
@@ -517,7 +548,9 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Svg`] if the DOM write fails, in which case the previous zoom is kept.
+    /// Returns [`Error::Svg`] if the `transform` cannot be written. Then nothing has changed: the previous zoom is kept,
+    /// and [`zoom_scale`](Self::zoom_scale) still agrees with what is drawn. A failure to update the accessible name or a
+    /// toolbar button afterwards is not reported, since the graph has already zoomed. The next change puts them right.
     pub fn reset_view(&self) -> Result<(), Error> {
         self.inner.borrow_mut().set_view(ViewTransform::IDENTITY)
     }

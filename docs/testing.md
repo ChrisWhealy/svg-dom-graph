@@ -187,6 +187,12 @@ The test suite covers:
   - a pan, then a wheel zoom, then more panning, and the same for `zoom_in` and for the keyboard, so the zoom is kept and not overwritten by the next move
   - a node drag with the "100%" button pressed in the middle, so the pointer is over a different point of content
   - a drag beginning in the same frame as a wheel zoom that has not yet been written to the DOM, which needs the pending write settled first
+- a view change being a transaction, with `Element.setAttribute` made to throw for chosen attributes so that failures which almost never happen for real are exercised:
+  - a zoom whose `transform` cannot be written reporting the error and leaving `zoom_scale()` as it was, with nothing drawn, and the next zoom being one step and not two
+  - the same for a reset, which keeps the zoom that is drawn
+  - a failed change falling back to a view that is still waiting for its frame, which the waiting frame then draws
+  - a failure writing only the accessible name, or only a button's state, neither failing nor undoing the zoom, and the next change putting it right
+  - a frame whose write fails leaving the view waiting, and the next write catching up
 - performance of zoom and pan:
   - a pan frame, keyboard panning, a wheel burst, and every kind of zoom step making no `getAttribute` call at all, checked by counting calls to `Element.prototype.getAttribute` with a counter that is itself tested
   - this needs its own test because reading an attribute back costs a call across the WASM and JavaScript boundary and a `String`, which a `MutationObserver` cannot see, since it reports only writes
