@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.18] - 2026-09-25
 
 ## Added
@@ -33,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix a pending animation frame outliving the callback behind it when input handling is torn down (`1d6c902`)
 - Stop the keyboard control taking over the application's `<svg>` (`e4eaff7`)
 - Make `set_view` transactional (``)
-
-# [Released]
 
 ## [0.2.17] - 2026-09-25
 
