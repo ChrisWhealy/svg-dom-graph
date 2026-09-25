@@ -10,6 +10,11 @@ cargo test
 
 Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`, `src/model/unit_tests.rs`, and `src/error/unit_tests.rs`.
 
+The public surface of the toolbar is pinned by doc tests on `ToolbarOptions`, run by the same `cargo test`.
+One confirms `svg_dom_graph::scene::ToolbarOptions` is the path to use.
+Two `compile_fail` tests, each asserting a specific error code, confirm that the module path `scene::toolbar` is private (`E0603`) and that `ToolbarOptions::is_valid` is crate-private (`E0624`).
+Asserting the code means they fail only for that reason and not because the crate stopped compiling, and they fail if either is widened again.
+
 The toolbar's own pure arithmetic is covered too.
 `src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.

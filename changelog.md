@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Make pan/zoom settings independent of toolbar visibility (`e19b03b`)
 - Remove per-frame `String` allocation when building zoom level into accessible name (`ddadf3a`)
 - Remove avoidable `String` allocation every animation frame of a pan or zoom (`fe7d24a`)
+- Change `toolbar` module and `ToolbarOptions::is_valid` visibility (``)
 
 ## Fixed
 

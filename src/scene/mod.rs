@@ -13,7 +13,7 @@ pub(crate) mod drag;
 mod frame_request;
 pub(crate) mod node;
 mod scene_inner;
-pub mod toolbar;
+mod toolbar;
 mod view_input;
 
 pub use crate::geometry::side::Side;
