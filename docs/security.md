@@ -29,6 +29,10 @@ A label such as `<script>alert("You've been hacked!")</script>` is passed to `sv
 `svg-dom-graph` does not expose caller-supplied attribute names, URLs, CSS, or paint strings.
 Every attribute name and style it writes is fixed in the crate.
 
+The toolbar, panning, and wheel zoom add no caller-supplied input.
+The zoom scale is limited to 0.25 to 4.0, and panning only changes a single `transform` attribute, so neither changes the size of the DOM.
+While a toolbar is shown, a Ctrl or Cmd plus wheel event over the scene is cancelled so the browser does not zoom the whole page.
+
 Node coordinates and dimensions must be finite, dimensions must be positive, and elbow corner radii must be finite and non-negative.
 Non-finite geometry is therefore rejected up front and needs no separate precaution.
 

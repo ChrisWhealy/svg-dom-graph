@@ -243,7 +243,7 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
     let elbow_radio = required_input(&document, "connector-type-elbow")?;
     let radius_slider = required_input(&document, "corner-radius")?;
     let radius_output = crate::util::required_element(&document, "corner-radius-value")?;
-    let connector_path = required_query(&document, "#elbow-diagram > path")?;
+    let connector_path = required_query(&document, "#elbow-diagram > g.svg-dom-graph-content > path")?;
 
     // Establishes the slider's real initial ceiling from P/Q's actual starting positions, rather than leaving it at
     // index.html's own hard-coded fallback until the first control change or drag.

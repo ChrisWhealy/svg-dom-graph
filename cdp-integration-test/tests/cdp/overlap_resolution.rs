@@ -1,6 +1,6 @@
 //! Dropping a node onto another node pushes it back to the expected clear position, via real, CDP-driven mouse input.
 //!
-//! Drags the fixture's `mover` node (`#diagram > g:nth-of-type(3)`) onto `blocker` (`#diagram > g:nth-of-type(2)`, not
+//! Drags the fixture's `mover` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(3)`) onto `blocker` (`#diagram > g.svg-dom-graph-content > g:nth-of-type(2)`, not
 //! draggable, fixed in place), then checks that `mover`'s final position is the one the documented overlap-resolution
 //! rule predicted: pushed back along a straight line from its own pre-drag centre through `blocker`'s centre, stopping
 //! just outside `blocker`'s boundary (inflated by half of `mover`'s own size, so `mover`'s rectangle — not just its
@@ -30,14 +30,14 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
     let tab = new_tab()?;
 
     let mover_rect = tab
-        .find_element("#diagram > g:nth-of-type(3) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(3) rect")
         .map_err(|e| format!("could not find mover's <rect>: {e}"))?;
     let mover_midpoint = mover_rect
         .get_midpoint()
         .map_err(|e| format!("could not get mover's midpoint: {e}"))?;
 
     let blocker_rect = tab
-        .find_element("#diagram > g:nth-of-type(2) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(2) rect")
         .map_err(|e| format!("could not find blocker's <rect>: {e}"))?;
     let blocker_midpoint = blocker_rect
         .get_midpoint()
@@ -61,7 +61,7 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
     std::thread::sleep(Duration::from_millis(100));
 
     let mover_group = tab
-        .find_element("#diagram > g:nth-of-type(3)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(3)")
         .map_err(|e| format!("could not re-find mover's <g> after the drag: {e}"))?;
     let (after_x, after_y) = group_translate(&mover_group)?;
 
@@ -75,7 +75,7 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
     }
 
     let blocker_group = tab
-        .find_element("#diagram > g:nth-of-type(2)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(2)")
         .map_err(|e| format!("could not re-find blocker's <g>: {e}"))?;
     let (blocker_x, blocker_y) = group_translate(&blocker_group)?;
     // mover: (80, 40) at (after_x, after_y); blocker: (80, 40) at (blocker_x, blocker_y).

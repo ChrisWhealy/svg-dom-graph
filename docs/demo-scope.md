@@ -119,6 +119,10 @@ Building on `DataNodeContent`, an operator node displays the operator name in th
 It is important to understand that operator nodes exist only for the purpose of visualisation, not calculation!
 You must calculate the correct value yourself!
 
+Every operator panel, and the "operator chain over an array" example under [Cell Selection](#cell-selection), shows the toolbar along its east edge.
+Its "+", "−", and "100%" buttons zoom the diagram, dragging the background pans it, and Ctrl or Cmd plus the mouse wheel zooms about the pointer.
+See `Scene::show_toolbar`.
+
 Each oif the functions `Scene::add_unary_operator_node`, `add_binary_operator_node`, and `add_arithmetic_operator_node` draws a labelled node and auto-wires it to its operand(s), so the rendered graph can never drift from the relationship it claims to visualise.
 
 ### Unary Operators
@@ -305,6 +309,10 @@ Putting `O` right after the chain, with nothing else in between, is what lets a 
 That final `XOR` node's own position is fixed — the same position it would occupy for `n == 3` — rather than tracking `n`.
 Nothing sits between it and `O`, regardless of which row is current.
 So there was never a correctness reason for it to move.
+
+This example keeps its current `Scene` alive, replacing it on each step.
+The toolbar's buttons hold only a weak reference to their scene, so a scene dropped at the end of the step would leave them dead.
+Each step draws a new `Scene`, so zoom and pan return to their starting position whenever "Previous" or "Next" is pressed.
 
 `n` is clamped to `0..=4`, not wrapped like the first two examples.
 Stepping "Previous" also resets the row being left — not the row arrived at — back to `O`'s own initial (all-zero) value.

@@ -25,14 +25,14 @@ fn dragging_a_node_prevents_the_pointerdowns_default_action() -> Result<(), Stri
     // handler already did to this event.
     tab.evaluate(
         "window.__defaultPrevented = null; \
-         document.querySelector('#diagram > g:nth-of-type(1)') \
+         document.querySelector('#diagram > g.svg-dom-graph-content > g:nth-of-type(1)') \
              .addEventListener('pointerdown', (e) => { window.__defaultPrevented = e.defaultPrevented; });",
         false,
     )
     .map_err(|e| format!("could not install the pointerdown probe listener: {e}"))?;
 
     let rect = tab
-        .find_element("#diagram > g:nth-of-type(1) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(1) rect")
         .map_err(|e| format!("could not find solo's <rect>: {e}"))?;
     let midpoint = rect.get_midpoint().map_err(|e| format!("could not get solo's midpoint: {e}"))?;
 

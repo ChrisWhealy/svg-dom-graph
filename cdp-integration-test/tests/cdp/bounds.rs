@@ -1,7 +1,7 @@
 //! A real, CDP-driven mouse drag past the visible view box clamps to the edge — and the clamped node stays
 //! real-hit-testable, not clipped and unclickable.
 //!
-//! Uses the fixture's `bounded` node (`#diagram > g:nth-of-type(7)`), whose `DragOptions::bounds` matches the diagram's
+//! Uses the fixture's `bounded` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(7)`), whose `DragOptions::bounds` matches the diagram's
 //! own viewBox, `(0, 0, 500, 400)` — see `cdp-test-fixture/src/lib.rs`'s own module doc comment for why it sits in the
 //! top-right corner, far from every other node.
 //!
@@ -32,7 +32,7 @@ use std::time::Duration;
 /// doc comment.
 fn rect_origin(tab: &headless_chrome::Tab) -> Result<(f64, f64), String> {
     let group = tab
-        .find_element("#diagram > g:nth-of-type(7)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(7)")
         .map_err(|e| format!("could not find bounded's <g>: {e}"))?;
     group_translate(&group)
 }
@@ -43,7 +43,7 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
     let tab = new_tab()?;
 
     let rect = tab
-        .find_element("#diagram > g:nth-of-type(7) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(7) rect")
         .map_err(|e| format!("could not find bounded's <rect>: {e}"))?;
     let start = rect
         .get_midpoint()
@@ -78,7 +78,7 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
     // never resolve this to a paintable point at all — this call is standing in for a user's own mouse cursor
     // finding something to click.
     let clamped_rect = tab
-        .find_element("#diagram > g:nth-of-type(7) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(7) rect")
         .map_err(|e| format!("could not re-find bounded's <rect> after the first drag: {e}"))?;
     let clamped_midpoint = clamped_rect
         .get_midpoint()

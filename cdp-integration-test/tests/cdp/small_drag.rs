@@ -1,6 +1,6 @@
 //! A node can be dragged a small distance with no overlap involved, via real, CDP-driven mouse input.
 //!
-//! Uses the fixture's `solo` node (`#diagram > g:nth-of-type(1)`), positioned far from every other node so no
+//! Uses the fixture's `solo` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(1)`), positioned far from every other node so no
 //! overlap-resolution logic can be in play. This isolates whether ordinary dragging itself works under a real mouse
 //! sequence, before `overlap_resolution.rs` layers the drop-onto-another-node case on top.
 
@@ -12,12 +12,12 @@ fn solo_node_can_be_dragged_a_small_distance() -> Result<(), String> {
     let tab = new_tab()?;
 
     let group = tab
-        .find_element("#diagram > g:nth-of-type(1)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(1)")
         .map_err(|e| format!("could not find solo's <g>: {e}"))?;
     let (before_x, before_y) = group_translate(&group)?;
 
     let rect = tab
-        .find_element("#diagram > g:nth-of-type(1) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(1) rect")
         .map_err(|e| format!("could not find solo's <rect>: {e}"))?;
     let midpoint = rect.get_midpoint().map_err(|e| format!("could not get solo's midpoint: {e}"))?;
 
@@ -36,7 +36,7 @@ fn solo_node_can_be_dragged_a_small_distance() -> Result<(), String> {
     std::thread::sleep(Duration::from_millis(100));
 
     let group = tab
-        .find_element("#diagram > g:nth-of-type(1)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(1)")
         .map_err(|e| format!("could not re-find solo's <g> after the drag: {e}"))?;
     let (after_x, after_y) = group_translate(&group)?;
 

@@ -82,6 +82,14 @@ fn invalid_drag_bounds_display_names_the_rejected_rect() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn invalid_toolbar_options_display_names_the_rejected_options() -> Result<(), String> {
+    let options = crate::scene::ToolbarOptions::new(crate::scene::Side::West);
+    let message = Error::InvalidToolbarOptions(options).to_string();
+    check(message.contains("West") && message.contains("button_height"), &message)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn invalid_corner_radius_display_names_the_rejected_value() -> Result<(), String> {
     let message = Error::InvalidCornerRadius(f64::NAN).to_string();
     check(message.contains("NaN"), &message)

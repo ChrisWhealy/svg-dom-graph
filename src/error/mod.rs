@@ -127,6 +127,12 @@ pub enum Error {
     ///
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
+    /// `Scene::show_toolbar` was given a [`crate::scene::ToolbarOptions`] with a non-finite length, a `button_height`
+    /// that is not `> 0.0`, or a negative `gap` or `margin`.
+    ///
+    /// Rejected before drawing anything or touching any toolbar already shown, so a rejected call leaves the scene
+    /// unchanged.
+    InvalidToolbarOptions(crate::scene::ToolbarOptions),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -176,6 +182,12 @@ impl fmt::Display for Error {
             },
             Error::InvalidSelection(id, selection) => {
                 write!(f, "selection {selection:?} cannot be applied to node {id:?}")
+            },
+            Error::InvalidToolbarOptions(options) => {
+                write!(
+                    f,
+                    "toolbar options {options:?} are invalid: button_height must be finite and > 0.0, and gap and margin must be finite and >= 0.0"
+                )
             },
         }
     }

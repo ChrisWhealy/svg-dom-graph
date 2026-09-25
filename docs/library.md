@@ -2,10 +2,10 @@
 
 | Module | Description | Visibility | Tested Using |
 |---|---|---|---|
-| `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li></ul> | crate-private | `cargo test`
+| `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li><li>zoom and pan arithmetic (`ViewTransform`)</li></ul> | crate-private | `cargo test`
 | `src/model/`  | DOM-free graph's topology <ul><li>`Graph`</li><li>`Node`</li><li>`Edge`</li></ul> | crate-private: exposes opaque `NodeId`/`EdgeId` handles | `cargo test`
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants | crate-private, only exposes `Error` | `cargo test`
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. | public | `cargo test`
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. Also owns the optional toolbar, with its zoom and pan controls. | public | `cargo test`
 
 ## `Scene`'s own public API
 
@@ -45,4 +45,40 @@
 
 - `make_draggable`/`make_draggable_with` wire up pointer-based dragging for a node, with configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`, `CollisionPolicy`, and `DragOptions::bounds`.
 
-   Pointer dragging is the only interaction mechanism this crate offers; a keyboard or non-drag alternative is not provided.
+   Pointer dragging is the only way this crate offers to move a node; a keyboard or non-drag alternative is not provided.
+   The toolbar's own buttons (see below) are keyboard operable, but they zoom the view rather than move a node.
+
+- `show_toolbar`/`hide_toolbar` add and remove a fixed-size button bar along one edge of the scene — see `ToolbarOptions`.
+  `has_toolbar` reports whether one is shown.
+
+   The bar holds three zoom buttons: "+", "−", and "100%".
+   "100%" returns the view to its original scale and position, and its accessible name is "Reset zoom".
+   `ToolbarOptions::edge` takes a `Side` and fixes the bar to the north, south, east, or west edge.
+
+   The bar is a sibling of the content layer, not a child, so it stays the same size however far the content is zoomed and draws on top of it.
+   Tab reaches each button and Enter or Space activates it.
+   A button that could currently do nothing is dimmed and marked `aria-disabled`, but stays focusable.
+
+   `set_toolbar_edge` moves the bar to another edge.
+   `refresh_toolbar_layout` repositions it after the `<svg>`'s size or `viewBox` changes, since the scene cannot observe either.
+
+   While the bar is shown, two further gestures work anywhere in the scene:
+
+   - Dragging empty background pans the content, so content zoomed past the edge of the view can always be brought back.
+     This works through a transparent surface behind the content layer, so dragging a node still drags only that node.
+   - Holding Ctrl or Cmd while turning the mouse wheel zooms about the pointer.
+     Cmd is the Mac convention and Ctrl is the Windows and Linux one.
+     Browsers report a trackpad pinch as ctrl+wheel, so pinch-to-zoom works too.
+     A wheel without a modifier is left alone, so the page still scrolls.
+
+   The 100% button undoes a pan as well as a zoom.
+   Hiding the bar removes the pan surface and the wheel handling with it.
+
+- `zoom_in`, `zoom_out`, `reset_view`, and `zoom_scale` drive the same zoom the buttons do, with or without a toolbar.
+  Each step scales by 1.25 about the centre of the visible area, between a scale of 0.25 and 4.0.
+
+   Every node, connector, and port marker lives in one content `<g class="svg-dom-graph-content">`, and zooming and panning set that group's `transform`.
+   Dragging a node keeps working under zoom, because it converts pointer positions through the node's own screen matrix.
+
+- `Side` (`North`, `South`, `East`, `West`) names one side of a rectangle.
+  It is used both for the side of a box a connector leaves from, and for the edge of a scene its toolbar is fixed to.

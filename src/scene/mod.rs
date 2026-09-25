@@ -12,7 +12,9 @@ mod connector;
 pub(crate) mod drag;
 pub(crate) mod node;
 mod scene_inner;
+pub mod toolbar;
 
+pub use crate::geometry::side::Side;
 pub use crate::model::content::{
     ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection,
     UnaryOperator,
@@ -21,8 +23,13 @@ pub(crate) use box_handles::BoxHandles;
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
+pub use toolbar::ToolbarOptions;
 
-use crate::{error::Error, geometry::apply_matrix, model::graph::Graph};
+use crate::{
+    error::Error,
+    geometry::{apply_matrix, view::ViewTransform},
+    model::graph::Graph,
+};
 use scene_inner::SceneInner;
 use std::{
     cell::RefCell,
@@ -135,9 +142,14 @@ impl Scene {
     pub fn new(svg: SvgRoot) -> Result<Self, Error> {
         let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
         let arrow = define_arrow_marker(&svg, &marker_id)?;
+        let content = svg.group()?;
+        content.set_attr("class", "svg-dom-graph-content")?;
         Ok(Self {
             inner: Rc::new(RefCell::new(SceneInner {
                 svg,
+                content,
+                view: ViewTransform::default(),
+                toolbar: None,
                 graph: Graph::new(),
                 node_handles: Vec::new(),
                 edge_handles: Vec::new(),

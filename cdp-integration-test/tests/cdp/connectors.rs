@@ -1,8 +1,8 @@
 //! An elbowed connector's real rendered `<path>` matches its hand-worked route, both as first drawn and after a real,
 //! CDP-driven drag moves one of its endpoints.
 //!
-//! Uses the fixture's two `solo`-to-`blocker` connectors. The first (`#diagram > path:nth-of-type(1)`) has sharp
-//! corners. The second (`#diagram > path:nth-of-type(2)`) has `corner_radius: 8.0`. See `cdp-test-fixture/src/lib.rs`'s
+//! Uses the fixture's two `solo`-to-`blocker` connectors. The first (`#diagram > g.svg-dom-graph-content > path:nth-of-type(1)`) has sharp
+//! corners. The second (`#diagram > g.svg-dom-graph-content > path:nth-of-type(2)`) has `corner_radius: 8.0`. See `cdp-test-fixture/src/lib.rs`'s
 //! own module doc comment for why this pair, out of the fixture's three nodes, is the one that actually bends.
 //!
 //! # Expected path, worked by hand
@@ -31,7 +31,7 @@ use std::time::Duration;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn connector_d(tab: &headless_chrome::Tab, nth: u32) -> Result<String, String> {
-    let selector = format!("#diagram > path:nth-of-type({nth})");
+    let selector = format!("#diagram > g.svg-dom-graph-content > path:nth-of-type({nth})");
     let path = tab
         .find_element(&selector)
         .map_err(|e| format!("could not find {selector}: {e}"))?;
@@ -71,7 +71,7 @@ fn the_two_connectors_render_the_expected_sharp_and_rounded_elbow_routes() -> Re
 fn a_connector_path_does_not_fill_and_carries_the_arrow_marker() -> Result<(), String> {
     let tab = new_tab()?;
 
-    let selector = "#diagram > path:nth-of-type(1)";
+    let selector = "#diagram > g.svg-dom-graph-content > path:nth-of-type(1)";
     let path = tab
         .find_element(selector)
         .map_err(|e| format!("could not find {selector}: {e}"))?;
@@ -105,7 +105,7 @@ fn dragging_solo_reroutes_both_connectors_and_keeps_their_own_corner_radius() ->
     let tab = new_tab()?;
 
     let solo_rect = tab
-        .find_element("#diagram > g:nth-of-type(1) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(1) rect")
         .map_err(|e| format!("could not find solo's <rect>: {e}"))?;
     let midpoint = solo_rect
         .get_midpoint()

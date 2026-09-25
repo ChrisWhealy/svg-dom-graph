@@ -79,7 +79,7 @@ pub fn dispatch_pointer_event_with_button(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns the `n`th `<g>` child of `container` (0-indexed), as an `Element`.
 pub fn nth_group(container_id: &str, n: u32) -> Result<web_sys::Element, String> {
-    let selector = format!("#{container_id} > g");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > g");
     let groups = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
     let group = groups
         .get(n)
@@ -92,7 +92,7 @@ pub fn nth_group(container_id: &str, n: u32) -> Result<web_sys::Element, String>
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns the sole `<path>` connector child of `container`, as an `Element`.
 pub fn the_connector(container_id: &str) -> Result<web_sys::Element, String> {
-    let selector = format!("#{container_id} > path");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > path");
     document()
         .query_selector(&selector)
         .map_err(|e| format!("{e:?}"))?
@@ -102,7 +102,7 @@ pub fn the_connector(container_id: &str) -> Result<web_sys::Element, String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns how many `<path>` connector children `container` has.
 pub fn connector_count(container_id: &str) -> Result<u32, String> {
-    let selector = format!("#{container_id} > path");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > path");
     let paths = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
     Ok(paths.length())
 }
@@ -110,7 +110,7 @@ pub fn connector_count(container_id: &str) -> Result<u32, String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns the `n`th `<path>` connector child of `container` (0-indexed), in the order each was added.
 pub fn nth_connector(container_id: &str, n: u32) -> Result<web_sys::Element, String> {
-    let selector = format!("#{container_id} > path");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > path");
     let paths = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
     let path = paths
         .get(n)
@@ -183,7 +183,7 @@ pub fn marker_ids(container_id: &str) -> Result<Vec<String>, String> {
 /// Returns how many non-commutative-operator "L"/"R" port marker `<text>` children `container` has — direct
 /// children, the same absolute-coordinate way a `<path>` connector is, never nested inside any node's own `<g>`.
 pub fn port_marker_count(container_id: &str) -> Result<u32, String> {
-    let selector = format!("#{container_id} > text[role=\"img\"]");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > text[role=\"img\"]");
     let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
     Ok(markers.length())
 }
@@ -192,7 +192,7 @@ pub fn port_marker_count(container_id: &str) -> Result<u32, String> {
 /// Returns the `n`th port marker `<text>` child of `container` (0-indexed), in the order each was added — see
 /// [`port_marker_count`].
 pub fn nth_port_marker(container_id: &str, n: u32) -> Result<web_sys::Element, String> {
-    let selector = format!("#{container_id} > text[role=\"img\"]");
+    let selector = format!("#{container_id} > g.svg-dom-graph-content > text[role=\"img\"]");
     let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
     let marker = markers
         .get(n)

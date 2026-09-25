@@ -1,16 +1,18 @@
 pub(super) use super::node::EdgeAnchors;
+pub(super) use super::toolbar::Toolbar;
 pub(crate) use super::{box_handles::BoxHandles, connector::ConnectorHandle};
 
 use super::*;
 use crate::{
     error::Error,
     geometry::{
-        binary_operator_anchors, elbow_path_into, nearest_clear_centre, port_marker_position, rects_overlap, side::Side,
+        binary_operator_anchors, elbow_path_into, nearest_clear_centre, port_marker_position, rects_overlap,
+        side::Side, view::ViewTransform,
     },
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
 use svg_dom::{
-    SvgMarker, SvgRoot,
+    SvgMarker, SvgNode, SvgRoot,
     root::utils::{Point, Rect},
 };
 
@@ -30,6 +32,14 @@ use svg_dom::{
 /// comment for why, and its `remove_node`/`remove_edge` for what "append-only" allows removal to still do.
 pub(super) struct SceneInner {
     pub svg: SvgRoot,
+    /// The `<g>` layer every node, connector, and port marker lives in, so a single `transform` on it zooms and pans
+    /// the whole graph. Anything that must not scale with the graph, such as the button bar, is a sibling of this
+    /// layer under `svg`, never a child of it.
+    pub content: SvgNode,
+    /// The current zoom and pan applied to [`content`](Self::content).
+    pub view: ViewTransform,
+    /// The button bar, if one is currently shown. See [`toolbar`](super::toolbar).
+    pub toolbar: Option<Toolbar>,
     pub graph: Graph,
     pub node_handles: Vec<BoxHandles>,
     pub edge_handles: Vec<ConnectorHandle>,
@@ -53,6 +63,21 @@ pub(super) struct SceneInner {
 }
 
 impl SceneInner {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Moves `element` — freshly created by one of `svg`'s own factory methods, which always append to the `<svg>`
+    /// root — into the [`content`](Self::content) layer.
+    ///
+    /// Removes `element` again if the move fails, so a failed call never leaves a stray element behind at the root.
+    /// Every caller creates its element and then attaches it here, before touching the graph model. So a failure is
+    /// reported with the model still unchanged.
+    ///
+    /// # Errors
+    ///
+    /// Returns whatever error the underlying DOM append reports.
+    pub(super) fn attach(&self, element: &SvgNode) -> Result<(), Error> {
+        Ok(self.content.append(element).inspect_err(|_| element.remove())?)
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current rectangle of node `id`.
     ///

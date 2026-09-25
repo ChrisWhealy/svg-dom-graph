@@ -518,6 +518,7 @@ impl Scene {
         let result = draw_content_box(&inner.svg, &mut scratch, top_left, name, &content, options.edge_anchors);
         inner.scratch = scratch;
         let (handles, rect) = result?;
+        inner.attach(&handles.group)?;
         let id = inner.graph.add_node(rect, content);
         inner.insert_node_handle(id, handles);
         Ok(id)

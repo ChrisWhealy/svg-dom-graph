@@ -8,7 +8,8 @@ use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     NodeId,
     scene::{
-        BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene, Selection,
+        BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene,
+        Selection, Side, ToolbarOptions,
     },
 };
 use wasm_bindgen::{JsCast, prelude::*};
@@ -19,9 +20,12 @@ pub(crate) const SOURCE: &str = include_str!("selection.rs");
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own two, separate `Scene`s — one per
-    // array dimension. The third example's own canvas needs no such handle — see
-    // [`rebuild_theta_c_diagram`]'s own doc comment for why.
+    // array dimension.
     static SCENE: RefCell<Option<(Scene, Scene)>> = const { RefCell::new(None) };
+
+    // The third example's own canvas has a `Scene` too, replaced by each step's own rebuild — see
+    // [`rebuild_theta_c_diagram`]'s own doc comment for why it must be kept.
+    static THETA_C_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
 /// Live state `wire_selection_controls`' four button listeners share: each array's own `Scene`, node id, current
@@ -326,10 +330,12 @@ fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
 /// — a connector can only land on a node's own outer perimeter, never a specific cell inside it, and `O` is the
 /// node whose perimeter that connector actually reaches.
 ///
-/// This canvas needs no `Scene` kept alive afterward, unlike every other demo in this crate: nothing here is
-/// draggable, so nothing installs a listener that could later call back into a dropped `Scene`. The next step's
-/// own [`web_sys::Element::set_inner_html`] clears the DOM directly, independently of whether any `Scene` handle
-/// for the previous step still exists. So this function simply lets its own `Scene` drop at its own end.
+/// The new `Scene` is kept in `THETA_C_SCENE`, replacing the previous step's. Nothing here is draggable, but the
+/// zoom toolbar's own buttons hold only a `Weak` reference to their `Scene`, so they stop responding the moment the
+/// last handle is dropped. The next step's own [`web_sys::Element::set_inner_html`] clears the previous step's DOM,
+/// and replacing the stored handle then frees the previous `Scene`.
+///
+/// Each step draws a new `Scene`, so zoom starts again at `1.0` on every step.
 ///
 /// # Errors
 ///
@@ -427,6 +433,9 @@ fn rebuild_theta_c_diagram(n: usize, display: [u64; 5]) -> Result<(), String> {
     scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
 
     scene.add_edge(result, output).map_err(stringify)?;
+    scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
+
+    THETA_C_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 
     Ok(())
 }

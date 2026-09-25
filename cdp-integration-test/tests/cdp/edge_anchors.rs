@@ -1,8 +1,8 @@
 //! `hub`'s two connectors render at the expected, distinct `EdgeAnchors(3)` fixing points, both as first drawn and
 //! after a real, CDP-driven drag moves `branch_a` far enough to re-snap onto a different one.
 //!
-//! Uses the fixture's `hub`-to-`branch_a` and `hub`-to-`branch_b` connectors (`#diagram > path:nth-of-type(3)` and
-//! `#diagram > path:nth-of-type(4)`). See `cdp-test-fixture/src/lib.rs`'s own module doc comment for this pair's place
+//! Uses the fixture's `hub`-to-`branch_a` and `hub`-to-`branch_b` connectors (`#diagram > g.svg-dom-graph-content > path:nth-of-type(3)` and
+//! `#diagram > g.svg-dom-graph-content > path:nth-of-type(4)`). See `cdp-test-fixture/src/lib.rs`'s own module doc comment for this pair's place
 //! among the fixture's six nodes and four connectors.
 //!
 //! # Expected paths, worked by hand
@@ -37,7 +37,7 @@ use std::time::Duration;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn connector_d(tab: &headless_chrome::Tab, nth: u32) -> Result<String, String> {
-    let selector = format!("#diagram > path:nth-of-type({nth})");
+    let selector = format!("#diagram > g.svg-dom-graph-content > path:nth-of-type({nth})");
     let path = tab
         .find_element(&selector)
         .map_err(|e| format!("could not find {selector}: {e}"))?;
@@ -78,7 +78,7 @@ fn dragging_branch_a_re_snaps_its_connector_onto_a_different_fixing_point() -> R
     let tab = new_tab()?;
 
     let branch_a_rect = tab
-        .find_element("#diagram > g:nth-of-type(5) rect")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(5) rect")
         .map_err(|e| format!("could not find branch_a's <rect>: {e}"))?;
     let midpoint = branch_a_rect
         .get_midpoint()

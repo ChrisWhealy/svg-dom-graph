@@ -51,7 +51,7 @@ fn descendant_name_contains(tab: &Tab, root: &AXNodeId, needle: &str) -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fixture's `named_value` node (`#diagram > g:nth-of-type(8)`) is a named, single-value `u64` data node. Its
+/// The fixture's `named_value` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(8)`) is a named, single-value `u64` data node. Its
 /// own `aria-label` reads `"B: u64 = AB CD EF 01 23 45 67 89"`. This test proves that exact `role`/`name` pair
 /// reaches Chrome's own computed accessibility tree. It also proves the rendered value text still reaches it
 /// somewhere in the node's own descendant subtree.
@@ -64,7 +64,7 @@ fn descendant_name_contains(tab: &Tab, root: &AXNodeId, needle: &str) -> Result<
 fn a_named_data_nodes_own_accessibility_tree_exposes_role_name_and_descendant_text() -> Result<(), String> {
     let tab = new_tab()?;
     let group = tab
-        .find_element("#diagram > g:nth-of-type(8)")
+        .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(8)")
         .map_err(|e| format!("could not find named_value's own <g>: {e}"))?;
 
     tab.call_method(Accessibility::Enable(None))

@@ -192,6 +192,7 @@ impl Scene {
         let path_result = inner.svg.path(&d);
         inner.scratch = d;
         let path = path_result?;
+        inner.attach(&path)?;
         path.set_fill("none")?;
         path.set_stroke(CONNECTOR_STROKE)?;
         path.set_stroke_width(1.5)?;

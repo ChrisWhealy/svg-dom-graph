@@ -8,7 +8,7 @@
 //! `index.html`'s `<svg id="diagram">` uses a `viewBox` matching its pixel size 1:1, so a CSS-pixel mouse delta is the
 //! same size in this scene's user-space units. This removes the need for the tests to care about scaling.
 //!
-//! Nodes, in add order (`#diagram > g:nth-of-type(N)`):
+//! Nodes, in add order (`#diagram > g.svg-dom-graph-content > g:nth-of-type(N)`):
 //!
 //! 1. `solo` — draggable, far from every other node. Used to prove an ordinary drag with no overlap involved.
 //! 2. `blocker` — not draggable, fixed in place. The node `mover` is dragged onto.
@@ -25,7 +25,7 @@
 //!    `accessibility_tree.rs` to query the real, browser-computed accessibility tree via CDP's own `Accessibility`
 //!    domain, not just the rendered DOM `wasm-pack test`'s own suite already checks.
 //!
-//! Connectors, in add order (`#diagram > path:nth-of-type(N)`):
+//! Connectors, in add order (`#diagram > g.svg-dom-graph-content > path:nth-of-type(N)`):
 //!
 //! 1. `solo` to `blocker`, sharp corners (`Scene::add_edge`'s default). `solo` and `blocker` sit at a diagonal offset,
 //!    so this connector bends — see `connectors.rs` for the hand-worked path.

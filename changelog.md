@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## Added
+
+- Add optional fixed-size toolbar with "+", "−", and "100%" zoom buttons and scroll wheel zooming (``)
+
 ## [0.2.18] - 2026-09-25
 
 ## Changed
 
-- Promoted `SceneInner` to its own module (``)
+- Promoted `SceneInner` to its own module (`dd93185`)
 
 # [Released]
 

@@ -54,8 +54,11 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
         .map_err(|e| format!("failed to navigate to fixture page: {e}"))?;
     tab.bring_to_front().map_err(|e| format!("failed to bring tab to front: {e}"))?;
     tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
-    tab.wait_for_element_with_custom_timeout("#diagram > g:nth-of-type(8)", Duration::from_secs(10))
-        .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
+    tab.wait_for_element_with_custom_timeout(
+        "#diagram > g.svg-dom-graph-content > g:nth-of-type(8)",
+        Duration::from_secs(10),
+    )
+    .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
     Ok(tab)
 }
 

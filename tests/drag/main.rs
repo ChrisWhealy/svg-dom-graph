@@ -22,8 +22,11 @@
 //!   column-plus-cell case, resetting via `Selection::None`, and validation.
 //! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of
 //!   its own endpoints, fan-out to more than one destination, and surviving a later `Scene::set_selection`.
+//! - [`toolbar`] — `Scene::show_toolbar` and the zoom controls: placement against each edge, staying a fixed size
+//!   while the content zooms, click and keyboard activation, disabled state at the zoom limits, and dragging under
+//!   zoom.
 //!
-//! All ten drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All eleven drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -37,5 +40,6 @@ mod operator_node;
 mod relationships;
 mod scene_validation;
 mod selection;
+mod toolbar;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

@@ -35,7 +35,7 @@ wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
 version = "0.3"
-features = ["Window"]
+features = ["Element", "KeyboardEvent", "WheelEvent", "Window"]
 
 [dev-dependencies]
 wasm-bindgen-test = "0.3"
@@ -44,8 +44,16 @@ wasm-bindgen-test = "0.3"
 version = "0.3"
 features = [
     "Document",
+    "DomRect",
     "Element",
     "EventTarget",
+    "KeyboardEvent",
+    "KeyboardEventInit",
+    "MouseEvent",
+    "MouseEventInit",
+    "EventModifierInit",
+    "WheelEvent",
+    "WheelEventInit",
     "Node",
     "NodeList",
     "PointerEvent",

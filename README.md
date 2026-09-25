@@ -20,6 +20,9 @@ See [`library.md`](docs/library.md) for more details.
 The goal is to draw a set of labelled boxes arranged in a graph that may be cyclic or acyclic, directed or undirected.
 As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically with automatic collision handling.
 
+An optional toolbar adds zoom controls fixed to any edge of the scene.
+While it is shown, dragging the background pans the view, and holding down Ctrl or Cmd while using the mouse wheel zooms about the pointer.
+
 ## Documentation
 
 - [`docs/library.md`](docs/library.md) — the crate's own module layout, and `Scene`'s public API grouped by area.

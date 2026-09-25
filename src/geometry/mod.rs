@@ -5,6 +5,7 @@
 
 pub(crate) mod route;
 pub(crate) mod side;
+pub(crate) mod view;
 
 use std::fmt::Write as _;
 use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};

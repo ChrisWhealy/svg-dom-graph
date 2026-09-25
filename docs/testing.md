@@ -10,6 +10,10 @@ cargo test
 
 Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`, `src/model/unit_tests.rs`, and `src/error/unit_tests.rs`.
 
+The toolbar's own pure arithmetic is covered too.
+`src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
+`src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
+
 ## Demo App Tests
 
 ```sh
@@ -58,6 +62,7 @@ It then runs the browser integration tests in `tests/drag/`, split by category:
 * `operator_node/` — split into `construction.rs`, `port_markers.rs`, `anchor_routing.rs`, and `chaining.rs`
 * `selection.rs`
 * `relationships.rs`
+* `toolbar.rs`
 
 These drive real `pointerdown`, `pointermove`, `pointerup` and `pointercancel` sequences within the actual rendered DOM.
 They make assertions about actual attributes of the generated `<rect>`, `<text>`, `<path>` and `<marker>` elements, not simply on the internal Rust state that generated them.
@@ -121,6 +126,22 @@ The test suite covers:
   - the focused cell's own thicker stroke width, distinguishing it from a banded cell and from an unselected one by more than colour alone
   - the node's own `aria-label` describing the current selection as text, exposing it to assistive technology as well as through the visual properties of colour and stroke width
   - rejecting a `Selection` that names a plain label node, a foreign-scene id, or a cell/row/column index out of range for the node's own actual value count or grid shape, all before recolouring anything
+- the toolbar and view controls (`Scene::show_toolbar`, `zoom_in`/`zoom_out`/`reset_view`):
+  - the bar existing only while shown, and sitting after the content layer as a sibling, never inside it
+  - placement against each of the four `Side`s, and the bar's `aria-orientation` following the edge
+  - zooming changing the content layer's `transform` while the bar's own position and every button's size stay unchanged
+  - zoom about the centre of the visible area keeping that point fixed
+  - click, Enter, and Space activating a button, and other keys not doing so
+  - each button being focusable and named, and a button at its limit reporting `aria-disabled`
+  - rejecting invalid `ToolbarOptions` while leaving an existing toolbar alone
+  - a button doing nothing, rather than panicking, once every `Scene` handle has been dropped
+  - dragging a node under zoom moving it by the pointer delta divided by the scale
+  - dragging empty background panning the content at any zoom, following the pointer and stopping on release
+  - a pan ignoring a second pointer and a non-primary button, ending on `pointercancel`, and not starting when a node is dragged
+  - the 100% button being enabled by a pan and undoing it
+  - Ctrl+wheel and Cmd+wheel zooming about the pointer, the wheel's direction and size setting the zoom's direction and amount, and the zoom working over a node
+  - a wheel without a modifier neither zooming nor being cancelled
+  - pan and wheel handling being present only while the toolbar is shown, and not stacking after it is shown again
 
 ## Tests Using Chrome DevTools Protocol (CDP)
 

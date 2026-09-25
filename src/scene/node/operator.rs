@@ -300,6 +300,7 @@ impl Scene {
                 draw_operator_box(&inner.svg, &mut scratch, top_left, &label, &result, options.edge_anchors);
             inner.scratch = scratch;
             let (handles, rect) = draw_result?;
+            inner.attach(&handles.group)?;
             let id = inner.graph.add_node(rect, result);
             inner.insert_node_handle(id, handles);
             id
@@ -497,6 +498,7 @@ impl Scene {
                 draw_operator_box(&inner.svg, &mut scratch, top_left, label, &result, options.edge_anchors);
             inner.scratch = scratch;
             let (mut handles, rect) = draw_result?;
+            inner.attach(&handles.group)?;
             handles.binary_operator_inputs = Some(inputs);
             let id = inner.graph.add_node(rect, result);
             inner.insert_node_handle(id, handles);
@@ -530,9 +532,11 @@ impl Scene {
                 binary_operator_anchors(rect, a_centre, b_centre, fixing_points);
 
             let marker_a = draw_port_marker(&inner.svg, anchor_a, side_a, "L", "left operand")?;
+            inner.attach(&marker_a)?;
             inner.edge_handle_mut(edge_a).ok_or(Error::UnknownEdge(edge_a))?.port_marker = Some(marker_a);
 
             let marker_b = draw_port_marker(&inner.svg, anchor_b, side_b, "R", "right operand")?;
+            inner.attach(&marker_b)?;
             inner.edge_handle_mut(edge_b).ok_or(Error::UnknownEdge(edge_b))?.port_marker = Some(marker_b);
         }
 

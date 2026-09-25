@@ -7,7 +7,10 @@ use std::cell::RefCell;
 use svg_dom::{SvgRoot, root::utils::Point};
 use svg_dom_graph::{
     NodeId,
-    scene::{BinaryOperator, DataFormat, DataNodeContent, DragOptions, NodeValues, Scene, UnaryOperator},
+    scene::{
+        BinaryOperator, DataFormat, DataNodeContent, DragOptions, NodeValues, Scene, Side, ToolbarOptions,
+        UnaryOperator,
+    },
 };
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
@@ -235,6 +238,8 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
         )
         .map_err(stringify)?;
     scene.make_draggable_with(chain3_result, drag_options).map_err(stringify)?;
+
+    scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
