@@ -148,7 +148,17 @@ The test suite covers:
   - a wheel without a modifier neither zooming nor being cancelled
   - a burst of small wheel events composing to the same zoom as one large event, with the DOM written once, on the next frame
   - a button pressed while a wheel burst is still waiting for its frame winning over the pending write
-  - pan and wheel handling being present only while the toolbar is shown, and not stacking after it is shown again
+  - by default, pan and wheel handling being present only while the toolbar is shown, and not stacking after it is shown again
+- pan and wheel zoom modes (`InputMode`), independent of the toolbar:
+  - both defaulting to `WithToolbar`, and following the toolbar on show and hide
+  - both being forced `On` with no toolbar at all, for an application that supplies its own controls
+  - a forced-on gesture surviving `hide_toolbar` while a following one does not
+  - a gesture being forced `Off` while the toolbar is shown, without affecting the other
+  - no surface existing at all when both gestures are off
+  - only the requested gesture being wired, so forcing pan on does not enable wheel zoom
+  - switching a gesture back off removing its surface and its wheel listener from the content layer
+  - setting the same mode again not rebuilding the surface
+  - `refresh_layout` resizing the surface with no toolbar shown
 
 ## Tests Using Chrome DevTools Protocol (CDP)
 

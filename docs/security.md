@@ -31,7 +31,8 @@ Every attribute name and style it writes is fixed in the crate.
 
 The toolbar, panning, and wheel zoom add no caller-supplied input.
 The zoom scale is limited to 0.25 to 4.0, and panning only changes a single `transform` attribute, so neither changes the size of the DOM.
-While a toolbar is shown, a Ctrl or Cmd plus wheel event over the scene is cancelled so the browser does not zoom the whole page.
+While wheel zoom is active, a Ctrl or Cmd plus wheel event over the scene is cancelled so the browser does not zoom the whole page.
+By default that is only while a toolbar is shown, but an application can set it to be always on or always off.
 
 Node coordinates and dimensions must be finite, dimensions must be positive, and elbow corner radii must be finite and non-negative.
 Non-finite geometry is therefore rejected up front and needs no separate precaution.

@@ -21,7 +21,8 @@ The goal is to draw a set of labelled boxes arranged in a graph that may be cycl
 As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically with automatic collision handling.
 
 An optional toolbar adds zoom controls fixed to any edge of the scene.
-While it is shown, dragging the background pans the view, and holding down Ctrl or Cmd while using the mouse wheel zooms about the pointer.
+By default, while it is shown, dragging the background pans the view, and holding down Ctrl or Cmd while using the mouse wheel zooms about the pointer.
+Both gestures can also be switched on or off independently of the toolbar, for an application that supplies its own controls.
 
 ## Documentation
 

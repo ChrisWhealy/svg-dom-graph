@@ -18,11 +18,12 @@ use svg_dom::{SvgNode, WeakSvgNode, root::utils::Point};
 use web_sys::WheelEvent;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Listens for modifier-plus-wheel over both the pan `surface` and the `content` layer, zooming about the pointer.
+/// Listens for modifier-plus-wheel over both the `surface` behind the content and the `content` layer, zooming about
+/// the pointer.
 ///
 /// Both are needed. Nodes and connectors draw on top of the surface, so a wheel over one reaches `content` and never
-/// the surface. Between them they cover the whole visible area, and the toolbar's own buttons, which sit above both,
-/// are left out.
+/// the surface. Between them they cover the whole visible area. The toolbar's own buttons, which sit above both, are
+/// left out.
 ///
 /// The listeners hold only `Weak` references, for the same reason [`Scene::make_draggable_with`](
 /// crate::scene::Scene::make_draggable_with)'s do. Remove the `content` listener with

@@ -60,9 +60,16 @@
    A button that could currently do nothing is dimmed and marked `aria-disabled`, but stays focusable.
 
    `set_toolbar_edge` moves the bar to another edge.
-   `refresh_toolbar_layout` repositions it after the `<svg>`'s size or `viewBox` changes, since the scene cannot observe either.
+   `refresh_toolbar_layout` repositions it after the `<svg>`'s size or `viewBox` changes, since the scene cannot observe either (see `refresh_layout` below).
 
-   While the bar is shown, two further gestures work anywhere in the scene:
+   Showing the bar also switches on two further gestures that work anywhere in the scene.
+   They are not part of the toolbar, and are described in the next entry.
+
+   The 100% button undoes a pan as well as a zoom.
+   Hiding the bar switches off whichever gestures are set to follow it, but leaves any forced on.
+
+- `set_pan_mode` and `set_wheel_zoom_mode` control two mouse and trackpad gestures, each with its own `InputMode`.
+  `pan_mode`, `wheel_zoom_mode`, `pan_enabled`, and `wheel_zoom_enabled` report the settings and whether each gesture is active right now.
 
    - Dragging empty background pans the content, so content zoomed past the edge of the view can always be brought back.
      This works through a transparent surface behind the content layer, so dragging a node still drags only that node.
@@ -71,6 +78,11 @@
      Browsers report a trackpad pinch as ctrl+wheel, so pinch-to-zoom works too.
      A wheel without a modifier is left alone, so the page still scrolls.
 
+   `InputMode::WithToolbar`, the default, makes a gesture active only while a toolbar is shown.
+   `InputMode::On` makes it active whether or not a toolbar is shown, and `InputMode::Off` never activates it.
+   So an application that supplies its own controls can call `hide_toolbar` and still keep both gestures, or switch either one off with the stock toolbar showing.
+   The two gestures are independent of each other.
+
    A trackpad pinch delivers many small wheel events rather than one notch.
    Each event zooms in proportion to its `deltaY`, converted from lines or pages to pixels where the browser reports them that way.
    One 100 pixel notch is one 1.25 step, and ten 10 pixel events compose to exactly the same zoom, so a pinch never jumps straight to a limit.
@@ -78,8 +90,8 @@
    Wheel and pan events update the view at once, but write the DOM once per animation frame, the same way a dragged node's moves are coalesced.
    Releasing a pan writes its final position immediately.
 
-   The 100% button undoes a pan as well as a zoom.
-   Hiding the bar removes the pan surface and the wheel handling with it.
+   `refresh_layout` resizes the gestures' surface, and repositions the toolbar if there is one, after the `<svg>`'s size or `viewBox` changes.
+   `refresh_toolbar_layout` does the same and is kept for compatibility.
 
 - `zoom_in`, `zoom_out`, `reset_view`, and `zoom_scale` drive the same zoom the buttons do, with or without a toolbar.
   Each step scales by 1.25 about the centre of the visible area, between a scale of 0.25 and 4.0.

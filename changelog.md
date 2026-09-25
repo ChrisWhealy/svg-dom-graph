@@ -6,21 +6,18 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## Changed
-
-- Coalesce wheel-zoom and pan updates into one DOM write per animation frame, and skip toolbar button attribute writes that would not change anything (``)
-
 ## [0.2.18] - 2026-09-25
 
 ## Added
 
 - Add optional fixed-size toolbar with "+", "−", and "100%" zoom buttons and scroll wheel zooming (`5b0f541`)
 - Add tests to validate `ViewTransform` calculations (`59fa212`)
-- Add DOM-write event coalescing functionality for zoom/scroll events (``)
+- Add DOM-write event coalescing functionality for zoom/scroll events (`5663562`)
 
 ## Changed
 
 - Promoted `SceneInner` to its own module (`dd93185`)
+- Make pan/zoom settings independent of toolbar visibility (``)
 
 # [Released]
 

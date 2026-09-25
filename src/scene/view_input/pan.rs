@@ -1,11 +1,11 @@
 //! Dragging the scene's background pans its content.
 //!
 //! Zooming in pushes content past the edge of the visible area. Without a way to move it back, that content would be
-//! unreachable. So while a toolbar is shown, the scene also holds a transparent surface behind the content layer.
-//! Dragging that surface — which is to say, dragging any empty background, since nodes and connectors draw on top of it
-//! and take their own pointer events — translates the content layer.
+//! unreachable. So when panning is on, dragging the transparent surface behind the content layer — which is to say,
+//! dragging any empty background, since nodes and connectors draw on top of it and take their own pointer events —
+//! translates the content layer.
 
-use super::{frame::ViewFlusher, wheel};
+use super::frame::ViewFlusher;
 use crate::{
     error::Error,
     geometry::{invert_matrix, view::ViewTransform},
@@ -16,8 +16,8 @@ use std::{
     rc::{Rc, Weak},
 };
 use svg_dom::{
-    SvgNode, SvgRoot, WeakSvgNode,
-    root::utils::{Matrix2D, Point, Size},
+    SvgNode, WeakSvgNode,
+    root::utils::{Matrix2D, Point},
 };
 
 /// The surface's own style while idle: a grab cursor, and no touch scrolling of the page so a touch drag pans instead.
@@ -41,46 +41,16 @@ struct PanStart {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates the transparent pan surface, places it directly beneath `content`, and wires its pointer listeners.
-///
-/// The surface's size is left for the toolbar's own layout to write. Removes it again if anything fails.
+/// Wires panning onto `surface`: the pointer listeners, and the grab cursor that shows the surface can be dragged.
 ///
 /// The listeners hold only a `Weak` reference to the scene's shared state, for the same reason
-/// [`Scene::make_draggable_with`](crate::scene::Scene::make_draggable_with)'s do.
-pub(super) fn build_pan_surface(
-    svg: &SvgRoot,
-    content: &SvgNode,
-    inner: &Weak<RefCell<SceneInner>>,
-) -> Result<SvgNode, Error> {
-    let surface = svg.rect(Point::origin(), Size::new(1.0, 1.0))?;
-    // One flusher serves both gestures, so a pan and a wheel zoom in the same frame still cost a single DOM write.
-    let flusher = ViewFlusher::new(inner.clone())?;
-    wire(content, &surface, inner, &flusher).inspect_err(|_| surface.remove())?;
-    wheel::install(content, &surface, inner, &flusher).inspect_err(|_| {
-        surface.remove();
-        content.remove_listeners("wheel");
-    })?;
-    Ok(surface)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn wire(
-    content: &SvgNode,
+/// [`Scene::make_draggable_with`](crate::scene::Scene::make_draggable_with)'s do. They go when the surface does.
+pub(super) fn install(
     surface: &SvgNode,
     inner: &Weak<RefCell<SceneInner>>,
     flusher: &ViewFlusher,
 ) -> Result<(), Error> {
-    // `transparent`, not `none`: an SVG shape only receives pointer events where it is painted.
-    surface.set_fill("transparent")?;
-    surface.set_attr("aria-hidden", "true")?;
     surface.set_attr("style", IDLE_STYLE)?;
-    // `content` is always a child of the `<svg>` root, so this always finds it. Were it ever detached, a surface left
-    // on top of everything would swallow every node's pointer events. So it is removed instead, and panning is lost.
-    let Some(parent) = content.parent() else {
-        surface.remove();
-        return Ok(());
-    };
-    parent.insert_before(surface, content)?;
 
     let start: Rc<Cell<Option<PanStart>>> = Rc::new(Cell::new(None));
 

@@ -13,6 +13,7 @@ pub(crate) mod drag;
 pub(crate) mod node;
 mod scene_inner;
 pub mod toolbar;
+mod view_input;
 
 pub use crate::geometry::side::Side;
 pub use crate::model::content::{
@@ -24,6 +25,7 @@ pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
 pub use toolbar::ToolbarOptions;
+pub use view_input::InputMode;
 
 use crate::{
     error::Error,
@@ -151,6 +153,9 @@ impl Scene {
                 view: ViewTransform::default(),
                 view_dirty: false,
                 toolbar: None,
+                pan_mode: InputMode::default(),
+                wheel_zoom_mode: InputMode::default(),
+                view_input: None,
                 graph: Graph::new(),
                 node_handles: Vec::new(),
                 edge_handles: Vec::new(),

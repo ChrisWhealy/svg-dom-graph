@@ -1,6 +1,9 @@
 pub(super) use super::node::EdgeAnchors;
-pub(super) use super::toolbar::Toolbar;
 pub(crate) use super::{box_handles::BoxHandles, connector::ConnectorHandle};
+pub(super) use super::{
+    toolbar::Toolbar,
+    view_input::{InputMode, ViewInput},
+};
 
 use super::*;
 use crate::{
@@ -45,6 +48,12 @@ pub(super) struct SceneInner {
     pub view_dirty: bool,
     /// The button bar, if one is currently shown. See [`toolbar`](super::toolbar).
     pub toolbar: Option<Toolbar>,
+    /// When dragging the background pans the content. See [`InputMode`].
+    pub pan_mode: InputMode,
+    /// When Ctrl or Cmd plus the wheel zooms the content. See [`InputMode`].
+    pub wheel_zoom_mode: InputMode,
+    /// The surface behind the content layer that both gestures work through, while either is active.
+    pub view_input: Option<ViewInput>,
     pub graph: Graph,
     pub node_handles: Vec<BoxHandles>,
     pub edge_handles: Vec<ConnectorHandle>,

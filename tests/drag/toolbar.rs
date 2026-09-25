@@ -7,7 +7,7 @@ use super::common::*;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{Scene, Side, ToolbarOptions},
+    scene::{InputMode, Scene, Side, ToolbarOptions},
 };
 use wasm_bindgen_test::*;
 
@@ -820,4 +820,228 @@ fn releasing_a_pan_writes_its_final_position_immediately() -> Result<(), String>
         transform == "translate(60, 30) scale(1)",
         &format!("release did not flush: {transform}"),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Pan and wheel zoom are independent of the toolbar. Each has its own `InputMode`: `WithToolbar` (the default, which
+// follows the toolbar), `On`, or `Off`.
+
+/// Ctrl+wheel one notch up, then reports whether the scene zoomed. Uses a bounding-box-relative pointer position.
+fn ctrl_wheel_zooms(scene: &Scene, id: &str) -> Result<bool, String> {
+    let before = scene.zoom_scale();
+    let target = query(&format!("#{id} > rect"))?.unwrap_or(required(&format!("#{id}"))?);
+    wheel(&target, 100, 100, -100.0, true, false)?;
+    Ok((scene.zoom_scale() - before).abs() > 1e-9)
+}
+
+/// Drags the background 40 pixels right, then reports whether the content moved. Needs a pan surface to exist.
+fn background_drag_pans(id: &str) -> Result<bool, String> {
+    let surface = match query(&format!("#{id} > rect"))? {
+        Some(surface) => surface,
+        None => return Ok(false),
+    };
+    let content = content(id)?;
+    let before = content.get_attribute("transform");
+    dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointermove", 140, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointerup", 140, 100, 1)?;
+    Ok(content.get_attribute("transform") != before)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The default follows the toolbar exactly as before: off with no toolbar, on while one is shown, off again once hidden.
+#[wasm_bindgen_test]
+fn by_default_both_gestures_follow_the_toolbar() -> Result<(), String> {
+    let scene = new_scene("im-default")?;
+    check(
+        scene.pan_mode() == InputMode::WithToolbar,
+        "pan does not default to WithToolbar",
+    )?;
+    check(
+        scene.wheel_zoom_mode() == InputMode::WithToolbar,
+        "wheel zoom does not default to WithToolbar",
+    )?;
+    check(
+        !scene.pan_enabled() && !scene.wheel_zoom_enabled(),
+        "a gesture is active with no toolbar",
+    )?;
+
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    check(
+        scene.pan_enabled() && scene.wheel_zoom_enabled(),
+        "showing the toolbar did not activate the gestures",
+    )?;
+
+    scene.hide_toolbar();
+    check(
+        !scene.pan_enabled() && !scene.wheel_zoom_enabled(),
+        "hiding the toolbar left a gesture active",
+    )?;
+    check(query("#im-default > rect")?.is_none(), "the surface outlived the toolbar")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The motivating case: an application supplies its own controls, hides the stock toolbar, and still wants both
+/// gestures.
+#[wasm_bindgen_test]
+fn both_gestures_can_be_forced_on_with_no_toolbar_at_all() -> Result<(), String> {
+    let scene = new_scene("im-own-controls")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+
+    check(!scene.has_toolbar(), "test setup: a toolbar is shown")?;
+    check(
+        scene.pan_enabled() && scene.wheel_zoom_enabled(),
+        "a forced gesture is not enabled",
+    )?;
+    check(background_drag_pans("im-own-controls")?, "dragging the background did not pan")?;
+    check(ctrl_wheel_zooms(&scene, "im-own-controls")?, "ctrl+wheel did not zoom")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A forced-on gesture survives the toolbar being shown and hidden, while one following the toolbar does not.
+#[wasm_bindgen_test]
+fn a_forced_gesture_survives_hiding_the_toolbar_and_a_following_one_does_not() -> Result<(), String> {
+    let scene = new_scene("im-mixed")?;
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    check(
+        scene.pan_enabled() && scene.wheel_zoom_enabled(),
+        "both should be active with the toolbar",
+    )?;
+
+    scene.hide_toolbar();
+    check(!scene.pan_enabled(), "pan followed the toolbar away but is still active")?;
+    check(
+        scene.wheel_zoom_enabled(),
+        "a forced wheel zoom was switched off with the toolbar",
+    )?;
+    check(
+        ctrl_wheel_zooms(&scene, "im-mixed")?,
+        "wheel zoom stopped working after the toolbar was hidden",
+    )?;
+    check(
+        !background_drag_pans("im-mixed")?,
+        "the background still pans with no pan mode active",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Off` beats a shown toolbar, and the two gestures are independent of each other.
+#[wasm_bindgen_test]
+fn a_gesture_can_be_forced_off_even_while_the_toolbar_is_shown() -> Result<(), String> {
+    let scene = new_scene("im-off")?;
+    scene.set_pan_mode(InputMode::Off).map_err(|e| e.to_string())?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    check(!scene.pan_enabled(), "pan is active despite being forced off")?;
+    check(scene.wheel_zoom_enabled(), "wheel zoom was affected by the pan mode")?;
+    check(
+        !background_drag_pans("im-off")?,
+        "dragging the background panned despite pan being off",
+    )?;
+    check(ctrl_wheel_zooms(&scene, "im-off")?, "ctrl+wheel stopped zooming")?;
+    check(
+        query("#im-off > rect")?.and_then(|r| r.get_attribute("style")).is_none(),
+        "a surface with panning off still shows a grab cursor",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Both `Off` with a toolbar shown leaves no surface at all, so nothing sits behind the content.
+#[wasm_bindgen_test]
+fn with_both_gestures_off_there_is_no_surface_even_with_a_toolbar() -> Result<(), String> {
+    let scene = new_scene("im-both-off")?;
+    scene.set_pan_mode(InputMode::Off).map_err(|e| e.to_string())?;
+    scene.set_wheel_zoom_mode(InputMode::Off).map_err(|e| e.to_string())?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    check(scene.has_toolbar(), "the toolbar is not shown")?;
+    check(
+        query("#im-both-off > rect")?.is_none(),
+        "a surface exists with both gestures off",
+    )?;
+    check(!ctrl_wheel_zooms(&scene, "im-both-off")?, "wheel zoom worked with the mode off")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Pan on, wheel zoom untouched: only the requested gesture is wired.
+#[wasm_bindgen_test]
+fn forcing_only_pan_on_leaves_wheel_zoom_off() -> Result<(), String> {
+    let scene = new_scene("im-pan-only")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+
+    check(background_drag_pans("im-pan-only")?, "dragging the background did not pan")?;
+    check(
+        !ctrl_wheel_zooms(&scene, "im-pan-only")?,
+        "wheel zoom worked though it was never enabled",
+    )?;
+    check(scene.zoom_scale() == 1.0, "the scale changed")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Going back to `WithToolbar`, or to `Off`, tears the gesture down completely: no surface, no leftover wheel listener
+/// on the content layer, so a wheel over a node is no longer cancelled.
+#[wasm_bindgen_test]
+fn switching_a_gesture_back_off_removes_its_surface_and_listener() -> Result<(), String> {
+    let scene = new_scene("im-teardown")?;
+    scene
+        .add_node(Point::new(100.0, 100.0), Size::new(60.0, 30.0), "A")
+        .map_err(|e| e.to_string())?;
+    let node = nth_group("im-teardown", 0)?;
+
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    check(
+        wheel(&node, 110, 110, -100.0, true, false)?,
+        "a wheel over a node was not cancelled while on",
+    )?;
+
+    scene.set_wheel_zoom_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
+    check(
+        query("#im-teardown > rect")?.is_none(),
+        "the surface remained after switching back",
+    )?;
+    let before = scene.zoom_scale();
+    check(
+        !wheel(&node, 110, 110, -100.0, true, false)?,
+        "a leftover wheel listener still cancels",
+    )?;
+    check_close(scene.zoom_scale(), before)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Setting the same mode again changes nothing — in particular it does not rebuild the surface.
+#[wasm_bindgen_test]
+fn setting_the_same_mode_again_keeps_the_same_surface() -> Result<(), String> {
+    let scene = new_scene("im-idempotent")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    let first = required("#im-idempotent > rect")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    let second = required("#im-idempotent > rect")?;
+    check(first.is_same_node(Some(&second)), "an unchanged mode rebuilt the surface")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `refresh_layout` resizes the surface with no toolbar shown, and `refresh_toolbar_layout` still works as before.
+#[wasm_bindgen_test]
+fn refresh_layout_resizes_the_surface_with_no_toolbar() -> Result<(), String> {
+    let scene = new_scene("im-refresh")?;
+    let svg_element = required("#im-refresh")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    let surface = required("#im-refresh > rect")?;
+    check_close(attr_f64(&surface, "width")?, 400.0)?;
+
+    // The scene cannot observe a `viewBox` change, which is why `refresh_layout` exists.
+    svg_element
+        .set_attribute("viewBox", "0 0 800 600")
+        .map_err(|e| format!("{e:?}"))?;
+    scene.refresh_layout().map_err(|e| e.to_string())?;
+    check_close(attr_f64(&surface, "width")?, 800.0)?;
+    check_close(attr_f64(&surface, "height")?, 600.0)?;
+
+    svg_element
+        .set_attribute("viewBox", "0 0 500 350")
+        .map_err(|e| format!("{e:?}"))?;
+    scene.refresh_toolbar_layout().map_err(|e| e.to_string())?;
+    check_close(attr_f64(&surface, "width")?, 500.0)
 }

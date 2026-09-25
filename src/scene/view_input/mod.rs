@@ -1,0 +1,257 @@
+//! Mouse and trackpad control of the scene's view: dragging the background to pan, and Ctrl or Cmd plus the wheel to
+//! zoom.
+//!
+//! Both work through one transparent surface placed directly beneath the content layer. Nodes and connectors draw on
+//! top of it and take their own pointer events, so only empty background reaches it.
+//!
+//! Each gesture has its own [`InputMode`], independent of the others and of the toolbar. By default each follows the
+//! toolbar: on while one is shown, off otherwise. An application that supplies its own controls can instead force
+//! either gesture on, or force it off even with the stock toolbar showing.
+
+mod frame;
+mod pan;
+mod wheel;
+
+use super::{Scene, SceneInner};
+use crate::error::Error;
+use frame::ViewFlusher;
+use std::{
+    cell::RefCell,
+    rc::{Rc, Weak},
+};
+use svg_dom::{SvgNode, SvgRoot, root::utils::Rect};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// When a mouse or trackpad gesture is active. See [`Scene::set_pan_mode`] and [`Scene::set_wheel_zoom_mode`].
+///
+/// Deriving `Copy` is a deliberate compatibility commitment, the same as [`DragOptions`](crate::scene::DragOptions).
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
+pub enum InputMode {
+    /// Active while a toolbar is shown, and inactive otherwise. This is the default.
+    #[default]
+    WithToolbar,
+    /// Always active, whether or not a toolbar is shown.
+    On,
+    /// Never active, even while a toolbar is shown.
+    Off,
+}
+
+impl InputMode {
+    fn is_active(self, toolbar_shown: bool) -> bool {
+        match self {
+            Self::WithToolbar => toolbar_shown,
+            Self::On => true,
+            Self::Off => false,
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The surface behind the content layer, and which gestures are currently wired onto it.
+///
+/// Exists only while at least one gesture is active. Lives in [`SceneInner::view_input`].
+pub(super) struct ViewInput {
+    surface: SvgNode,
+    /// The content layer, kept so removing this can also remove the wheel listener registered on it — see [`wheel`].
+    content: SvgNode,
+    pan: bool,
+    wheel: bool,
+}
+
+impl ViewInput {
+    /// Removes the surface, and with it every listener registered on it, from the DOM.
+    fn remove(self) {
+        self.surface.remove();
+        if self.wheel {
+            self.content.remove_listeners("wheel");
+        }
+    }
+
+    /// Makes the surface cover `area`.
+    fn place(&self, area: Rect, scratch: &mut String) -> Result<(), Error> {
+        for (name, value) in [
+            ("x", area.origin.x),
+            ("y", area.origin.y),
+            ("width", area.size.width),
+            ("height", area.size.height),
+        ] {
+            self.surface.set_attr_display(scratch, name, value)?;
+        }
+        Ok(())
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it.
+///
+/// Returns `Ok(None)` if `content` is somehow detached from the `<svg>`. A surface left on top of everything would
+/// swallow every node's pointer events, so it is removed instead and the gestures are simply unavailable.
+///
+/// Removes everything it created if anything fails.
+fn build(
+    svg: &SvgRoot,
+    content: &SvgNode,
+    inner: &Weak<RefCell<SceneInner>>,
+    pan: bool,
+    wheel: bool,
+    area: Rect,
+) -> Result<Option<ViewInput>, Error> {
+    let surface = svg.rect(area.origin, area.size)?;
+
+    let wired = (|| {
+        // `transparent`, not `none`: an SVG shape only receives pointer events where it is painted.
+        surface.set_fill("transparent")?;
+        surface.set_attr("aria-hidden", "true")?;
+        let Some(parent) = content.parent() else { return Ok::<_, Error>(false) };
+        parent.insert_before(&surface, content)?;
+
+        // One flusher serves both gestures, so a pan and a wheel zoom in the same frame still cost a single DOM write.
+        let flusher = ViewFlusher::new(inner.clone())?;
+        if pan {
+            pan::install(&surface, inner, &flusher)?;
+        }
+        if wheel {
+            wheel::install(content, &surface, inner, &flusher)?;
+        }
+        Ok(true)
+    })();
+
+    match wired {
+        Ok(true) => Ok(Some(ViewInput {
+            surface,
+            content: content.clone(),
+            pan,
+            wheel,
+        })),
+        Ok(false) => {
+            surface.remove();
+            Ok(None)
+        },
+        Err(err) => {
+            surface.remove();
+            if wheel {
+                content.remove_listeners("wheel");
+            }
+            Err(err)
+        },
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl SceneInner {
+    /// Whether panning is active right now, given its mode and whether a toolbar is shown.
+    pub(super) fn pan_active(&self) -> bool {
+        self.pan_mode.is_active(self.toolbar.is_some())
+    }
+
+    /// Whether wheel zoom is active right now, given its mode and whether a toolbar is shown.
+    pub(super) fn wheel_zoom_active(&self) -> bool {
+        self.wheel_zoom_mode.is_active(self.toolbar.is_some())
+    }
+
+    /// Makes the surface cover the visible area as it is now. Does nothing if there is no surface.
+    pub(super) fn resize_view_input(&mut self) -> Result<(), Error> {
+        let area = self.visible_area();
+        let mut scratch = std::mem::take(&mut self.scratch);
+        let result = self.view_input.as_ref().map_or(Ok(()), |input| input.place(area, &mut scratch));
+        self.scratch = scratch;
+        result
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl Scene {
+    /// Sets when dragging empty background pans the content. The default is [`InputMode::WithToolbar`].
+    ///
+    /// Panning lets content zoomed past the edge of the visible area always be brought back. Nodes and connectors take
+    /// their own pointer events, so dragging one still drags only that node.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Svg`] if the DOM cannot be updated, in which case nothing is left behind.
+    pub fn set_pan_mode(&self, mode: InputMode) -> Result<(), Error> {
+        self.inner.borrow_mut().pan_mode = mode;
+        self.sync_view_input()
+    }
+
+    /// Sets when Ctrl or Cmd plus the mouse wheel zooms the content about the pointer. The default is
+    /// [`InputMode::WithToolbar`].
+    ///
+    /// Cmd is the Mac convention and Ctrl is the Windows and Linux one. Browsers report a trackpad pinch as ctrl+wheel,
+    /// so pinch-to-zoom works too. While active, a wheel event with either modifier is cancelled, so the browser does
+    /// not also zoom the page. A wheel without a modifier is left alone, so the page still scrolls.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Svg`] if the DOM cannot be updated, in which case nothing is left behind.
+    pub fn set_wheel_zoom_mode(&self, mode: InputMode) -> Result<(), Error> {
+        self.inner.borrow_mut().wheel_zoom_mode = mode;
+        self.sync_view_input()
+    }
+
+    /// The pan mode last set. This is the setting, not whether panning is active right now — see
+    /// [`pan_enabled`](Self::pan_enabled).
+    pub fn pan_mode(&self) -> InputMode {
+        self.inner.borrow().pan_mode
+    }
+
+    /// The wheel-zoom mode last set. This is the setting, not whether wheel zoom is active right now — see
+    /// [`wheel_zoom_enabled`](Self::wheel_zoom_enabled).
+    pub fn wheel_zoom_mode(&self) -> InputMode {
+        self.inner.borrow().wheel_zoom_mode
+    }
+
+    /// Whether dragging empty background pans the content right now: its mode, combined with whether a toolbar is
+    /// shown.
+    pub fn pan_enabled(&self) -> bool {
+        self.inner.borrow().pan_active()
+    }
+
+    /// Whether Ctrl or Cmd plus the wheel zooms the content right now: its mode, combined with whether a toolbar is
+    /// shown.
+    pub fn wheel_zoom_enabled(&self) -> bool {
+        self.inner.borrow().wheel_zoom_active()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Brings the wired gestures in line with what is now wanted: adds or removes the surface, and the listeners on it,
+    /// as the two modes and the toolbar's visibility require.
+    ///
+    /// Called whenever either mode changes, or a toolbar is shown or hidden. Does nothing if what is wired already
+    /// matches. Otherwise it rebuilds the surface from scratch, so a gesture in progress at that moment is dropped.
+    pub(super) fn sync_view_input(&self) -> Result<(), Error> {
+        let weak = Rc::downgrade(&self.inner);
+        let mut inner = self.inner.borrow_mut();
+        let (pan, wheel) = (inner.pan_active(), inner.wheel_zoom_active());
+
+        let wired = inner.view_input.as_ref().map(|input| (input.pan, input.wheel));
+        if wired == Some((pan, wheel)) || (wired.is_none() && !pan && !wheel) {
+            return Ok(());
+        }
+        if let Some(old) = inner.view_input.take() {
+            old.remove();
+        }
+        if !pan && !wheel {
+            return Ok(());
+        }
+
+        let area = inner.visible_area();
+        inner.view_input = build(&inner.svg, &inner.content, &weak, pan, wheel, area)?;
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Repositions the toolbar and resizes the pan and wheel-zoom surface for the `<svg>`'s visible area as it is now.
+    ///
+    /// Call this after changing the `<svg>`'s size (`SvgRoot::set_viewport`) or `viewBox`, since the scene cannot
+    /// observe either. Each part is skipped if there is nothing to update, so it is always safe to call.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::Svg`] if updating fails.
+    pub fn refresh_layout(&self) -> Result<(), Error> {
+        let mut inner = self.inner.borrow_mut();
+        inner.layout_toolbar()?;
+        inner.resize_view_input()
+    }
+}

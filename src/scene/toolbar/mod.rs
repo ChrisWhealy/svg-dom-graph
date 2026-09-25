@@ -9,11 +9,8 @@
 
 mod action;
 mod button;
-mod frame;
 mod layout;
 mod options;
-mod pan;
-mod wheel;
 
 use super::{Scene, SceneInner};
 use crate::{
@@ -29,7 +26,6 @@ use action::ToolbarAction;
 use button::ToolbarButton;
 use layout::{layout, parse_view_box};
 pub use options::ToolbarOptions;
-use pan::build_pan_surface;
 use std::{cell::RefCell, rc::Weak};
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -64,15 +60,6 @@ fn place(toolbar: &Toolbar, area: Rect, scratch: &mut String) -> Result<(), Erro
         .map(|button| button.action.natural_size(options.button_height))
         .collect();
     let laid_out = layout(options.edge, area, &sizes, options.gap, options.margin);
-
-    for (name, value) in [
-        ("x", area.origin.x),
-        ("y", area.origin.y),
-        ("width", area.size.width),
-        ("height", area.size.height),
-    ] {
-        toolbar.pan_surface.set_attr_display(scratch, name, value)?;
-    }
 
     toolbar.group.set_transform_fmt(
         scratch,
@@ -166,21 +153,14 @@ fn apply(inner: &Weak<RefCell<SceneInner>>, action: ToolbarAction) {
 /// A rendered toolbar. Lives in [`SceneInner::toolbar`] for as long as it is shown.
 pub(super) struct Toolbar {
     pub group: SvgNode,
-    /// The transparent surface behind the content layer that a drag on empty background pans — see [`pan`].
-    pub pan_surface: SvgNode,
-    /// The content layer, kept so removing the toolbar can also remove the wheel-zoom listener registered on it — see
-    /// [`wheel`].
-    pub content: SvgNode,
     pub options: ToolbarOptions,
     pub buttons: Vec<ToolbarButton>,
 }
 
 impl Toolbar {
-    /// Removes the whole bar, and with it every button, the pan surface, and their listeners, from the DOM.
+    /// Removes the whole bar, and with it every button and listener, from the DOM.
     fn remove(self) {
         self.group.remove();
-        self.pan_surface.remove();
-        self.content.remove_listeners("wheel");
     }
 }
 
@@ -264,7 +244,7 @@ impl SceneInner {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Positions the bar and its buttons for the current visible area.
-    fn layout_toolbar(&mut self) -> Result<(), Error> {
+    pub(super) fn layout_toolbar(&mut self) -> Result<(), Error> {
         let area = self.visible_area();
         let mut scratch = std::mem::take(&mut self.scratch);
         let result = self
@@ -280,12 +260,12 @@ impl SceneInner {
 impl Scene {
     /// Shows the toolbar with `options`, replacing any toolbar already shown.
     ///
-    /// While the toolbar is shown, holding Ctrl or Cmd and turning the mouse wheel also zooms, about the pointer. A
-    /// trackpad pinch works too, since browsers report it as ctrl+wheel. A wheel without a modifier is left alone.
+    /// By default, showing the toolbar also switches on dragging empty background to pan the content, and holding Ctrl or
+    /// Cmd while turning the mouse wheel to zoom about the pointer. Hiding the toolbar switches them off again.
     ///
-    /// While the toolbar is shown, dragging empty background also pans the content, so content zoomed past the edge of
-    /// the visible area can always be brought back. Nodes and connectors take their own pointer events, so dragging
-    /// one still drags only that node.
+    /// Those two gestures are not part of the toolbar and can be set independently of it — see
+    /// [`set_pan_mode`](Self::set_pan_mode) and [`set_wheel_zoom_mode`](Self::set_wheel_zoom_mode). An application that
+    /// supplies its own controls can hide this toolbar and keep both.
     ///
     /// The bar holds three buttons — zoom in, zoom out, and reset. It stays a fixed size however far the content is
     /// zoomed, and draws on top of it. Every button is keyboard operable: Tab to reach one, Enter or Space to activate.
@@ -311,14 +291,7 @@ impl Scene {
         }
 
         let weak = std::rc::Rc::downgrade(&self.inner);
-        let pan_surface = build_pan_surface(&inner.svg, &inner.content, &weak)?;
-        let group = match inner.svg.group() {
-            Ok(group) => group,
-            Err(err) => {
-                pan_surface.remove();
-                return Err(err.into());
-            },
-        };
+        let group = inner.svg.group()?;
         let built = (|| {
             group.set_attr("role", "toolbar")?;
             group.set_attr("aria-label", "Scene controls")?;
@@ -333,23 +306,23 @@ impl Scene {
             Ok(buttons) => buttons,
             Err(err) => {
                 group.remove();
-                pan_surface.remove();
                 return Err(err);
             },
         };
 
-        inner.toolbar = Some(Toolbar {
-            group,
-            pan_surface,
-            content: inner.content.clone(),
-            options,
-            buttons,
-        });
+        inner.toolbar = Some(Toolbar { group, options, buttons });
         let laid_out = inner.layout_toolbar().and_then(|()| inner.sync_toolbar_state());
         if let Err(err) = laid_out {
             if let Some(toolbar) = inner.toolbar.take() {
                 toolbar.remove();
             }
+            return Err(err);
+        }
+        drop(inner);
+
+        // Showing a toolbar switches on whichever gestures are set to follow it. If that fails, no toolbar is shown.
+        if let Err(err) = self.sync_view_input() {
+            self.hide_toolbar();
             return Err(err);
         }
         Ok(())
@@ -359,10 +332,17 @@ impl Scene {
     /// Removes the toolbar from the DOM entirely. Does nothing if none is shown.
     ///
     /// The scene's current zoom is kept. Use [`reset_view`](Self::reset_view) to undo it.
+    ///
+    /// Also switches off whichever of panning and wheel zoom are set to follow the toolbar. A gesture forced
+    /// [`On`](crate::scene::InputMode::On) stays active. See [`set_pan_mode`](Self::set_pan_mode) and
+    /// [`set_wheel_zoom_mode`](Self::set_wheel_zoom_mode).
     pub fn hide_toolbar(&self) {
-        if let Some(toolbar) = self.inner.borrow_mut().toolbar.take() {
-            toolbar.remove();
-        }
+        let Some(toolbar) = self.inner.borrow_mut().toolbar.take() else { return };
+        toolbar.remove();
+        // This method cannot report an error. Switching gestures off only removes things, and the one case that
+        // rebuilds — another gesture forced on while this one was following the toolbar — leaves it unavailable if
+        // the DOM refuses, without disturbing anything else.
+        let _ = self.sync_view_input();
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -390,14 +370,15 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the shown toolbar against the `<svg>`'s visible area as it is now. Does nothing if none is shown.
     ///
-    /// Call this after changing the `<svg>`'s size (`SvgRoot::set_viewport`) or `viewBox`, since the scene cannot
-    /// observe either.
+    /// Also resizes the surface that panning and wheel zoom work through, so this is the same call as
+    /// [`refresh_layout`](Self::refresh_layout), which describes it better now that those gestures no longer depend on
+    /// the toolbar.
     ///
     /// # Errors
     ///
     /// Returns [`Error::Svg`] if repositioning fails.
     pub fn refresh_toolbar_layout(&self) -> Result<(), Error> {
-        self.inner.borrow_mut().layout_toolbar()
+        self.refresh_layout()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
