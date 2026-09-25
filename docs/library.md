@@ -181,6 +181,17 @@
      Releasing a pan writes its final position immediately.
 
    Keyboard presses are written immediately, since a held key repeats far more slowly than a pointer moves.
+
+   **Teardown while a frame is pending.**
+   A wheel or pan event can leave its DOM write to the next animation frame, and the handling that asked for it can be torn down before that frame arrives: the toolbar hidden, an input mode changed, or every `Scene` handle dropped.
+   Two things keep that safe:
+
+   - The pending frame is cancelled when the callback behind it goes.
+     Otherwise the browser would call a freed callback, which throws "closure invoked recursively or after being dropped".
+     The node-drag coalescer uses the same mechanism.
+   - Teardown writes the view first, so the graph is drawn as the last input left it and agrees with `zoom_scale()`.
+     Dropping the last `Scene` handle does the same.
+     The exception is a node position pushed by a drag but not yet applied when the scene is dropped, which is simply not applied.
    Dragging a node keeps working under zoom, because it converts pointer positions through the node's own screen matrix.
 
 - `Side` (`North`, `South`, `East`, `West`) names one side of a rectangle.

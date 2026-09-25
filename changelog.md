@@ -27,7 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Fix error in node drag and pan when the view changes at the same time (``)
+- Fix a pending animation frame outliving the callback behind it when input handling is torn down (``)
+- Fix error in node drag and pan when the view changes at the same time (`fce316c`)
 
 # [Released]
 

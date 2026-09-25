@@ -162,6 +162,13 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- teardown between an input and its animation frame, checked by watching the page for uncaught errors:
+  - a wheel zoom, then the toolbar hidden before its frame
+  - a pan move, then panning switched off before its frame, which rebuilds the gestures
+  - a wheel zoom, then wheel zoom switched off before its frame
+  - a wheel zoom, then every `Scene` handle dropped before its frame
+  - a node drag move, then the scene dropped before its frame
+  - in each, nothing throwing, and where there is a view to check, what is drawn agreeing with `zoom_scale()` or the pan made so far
 - the toolbar's lifecycle, so that showing and hiding it repeatedly leaves no stale handler:
   - the sequence show, hide, show, hide, show, after which each kind of input does exactly one thing: one button click is one zoom step, one arrow key press is exactly 40 units, one `+` key is one step, one wheel notch is one step, and a 40 pixel drag is 40 units
   - the same after many more cycles that also move the toolbar to every edge and replace it while it is shown

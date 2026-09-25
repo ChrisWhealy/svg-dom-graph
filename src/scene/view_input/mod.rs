@@ -284,6 +284,10 @@ impl Scene {
             return Ok(());
         }
         if let Some(old) = inner.view_input.take() {
+            // A wheel or pan event may have changed the view only moments ago, leaving its write to the next animation
+            // frame. That frame is about to be cancelled along with the handling that asked for it, so write the view
+            // now. Otherwise what is drawn and what `zoom_scale()` reports would disagree.
+            let _ = inner.flush_view();
             old.remove();
         }
         if !pan && !wheel {

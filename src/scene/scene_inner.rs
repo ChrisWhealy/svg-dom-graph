@@ -76,6 +76,18 @@ pub(super) struct SceneInner {
     pub scratch: String,
 }
 
+impl Drop for SceneInner {
+    /// Writes a view change that has not reached the DOM yet.
+    ///
+    /// A wheel or pan event updates the view at once but leaves the DOM write to the next animation frame. If the last
+    /// `Scene` handle goes before that frame, the handling that would have run it is dropped along with this state, and
+    /// its frame is cancelled. Writing here means the graph is drawn as the last input left it, however the scene ends.
+    fn drop(&mut self) {
+        // Nowhere to report an error to, and nothing left to keep consistent.
+        let _ = self.flush_view();
+    }
+}
+
 impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves `element` — freshly created by one of `svg`'s own factory methods, which always append to the `<svg>`
