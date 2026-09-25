@@ -16,6 +16,7 @@ The toolbar's own pure arithmetic is covered too.
 It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.
 
 The zoom tests also check that writing the `transform` attribute and the accessible name reuses its buffer and never reallocates it once it has grown to fit.
+The zoom tests also check re-reading a point under a changed view: that `apply` and `unapply` are inverses, that an unchanged view changes nothing, that the same screen position is a different content point after a zoom or a pan, and that the point found is always drawn where the pointer is.
 The zoom tests also check anchoring at the scale limits explicitly.
 A request that would exceed 4.0 or fall below 0.25 must be clamped, and the point under the pointer must still not move.
 That only holds if the translation is calculated from the scale actually applied after clamping, not the one requested.
@@ -172,6 +173,12 @@ The test suite covers:
   - repeated show, hide, and mode changes leaving nothing holding the state
   - a pending animation frame not keeping the state alive
   - a scene whose toolbar has been hidden
+- changing the view in the middle of a pointer gesture, which must compose with it:
+  - a node drag, then a wheel zoom at the pointer, then more dragging: 25 pixels at 1.25× is 20 units, so the node ends where it should and not 5 units further
+  - the same with the application calling `zoom_in`, which zooms about the centre and so moves the grabbed point on screen, so the node has to follow the pointer to it
+  - a pan, then a wheel zoom, then more panning, and the same for `zoom_in` and for the keyboard, so the zoom is kept and not overwritten by the next move
+  - a node drag with the "100%" button pressed in the middle, so the pointer is over a different point of content
+  - a drag beginning in the same frame as a wheel zoom that has not yet been written to the DOM, which needs the pending write settled first
 - performance of zoom and pan:
   - every route into the view — buttons, wheel, drag, and keyboard — changing only the content layer's own `transform`, checked with a `MutationObserver` that watches the content layer and everything beneath it, so no node, connector, label, or marker is ever rewritten
   - a burst of wheel and pan events inside one frame writing nothing until that frame, and then exactly once
@@ -235,6 +242,20 @@ Pressing on a node never gives the pan surface a capture, even though it lies be
 
 Its `pan.rs` scenario also covers the keyboard, through the browser's own focus order and real key events rather than a synthetic `keydown`.
 Pressing Tab puts focus on the scene, and the arrow keys then pan it by 40 units a press.
+
+Its `pan.rs` scenario also zooms with a real Ctrl and wheel event in the middle of a real node drag and a real pan, with pointer capture held.
+The fixture switches wheel zoom on with no toolbar.
+
+That last scenario is `#[ignore]`d, and is run on its own:
+
+```sh
+cargo test -p cdp-integration-test -- --ignored
+```
+
+A real mouse wheel is only delivered to a tab the browser treats as active.
+Every other CDP test opens its own tab in the one shared Chrome and runs at the same time, so with the rest of the suite the wheel call times out.
+Both scenarios pass alone.
+What it adds over the synthetic browser tests is a genuine wheel event during a genuine, pointer-captured gesture, and that the gesture composes with a view change is proved by those synthetic tests.
 
 Its own `accessibility_tree.rs` scenario asks a different question: not what the rendered DOM's own attributes say, but what Chrome's own computed accessibility tree actually exposes.
 `wasm-pack test`'s own DOM-attribute checks can prove `role`/`aria-label` land on the right element.

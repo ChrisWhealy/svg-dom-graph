@@ -77,6 +77,28 @@ impl ViewTransform {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Where content point `p` is drawn under this transform, in the `<svg>`'s own user space.
+    pub(crate) fn apply(self, p: Point) -> Point {
+        Point::new(p.x * self.scale + self.tx, p.y * self.scale + self.ty)
+    }
+
+    /// The content point that is drawn at `v` under this transform: the inverse of [`apply`](Self::apply).
+    pub(crate) fn unapply(self, v: Point) -> Point {
+        Point::new((v.x - self.tx) / self.scale, (v.y - self.ty) / self.scale)
+    }
+
+    /// Re-reads a content point under a different view.
+    ///
+    /// `p` is a content point that was worked out while this transform was the view, from a pointer position. If the
+    /// view has since become `now`, the same pointer position is over a different content point: this returns it.
+    ///
+    /// A pointer gesture that measured something at its start, and cannot rely on the view staying as it was, uses
+    /// this to stay true to where the pointer really is. It is `p` itself if `now` equals this transform.
+    pub(crate) fn reinterpret(self, p: Point, now: Self) -> Point {
+        now.unapply(self.apply(p))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This transform moved by `(dx, dy)` in viewport space, leaving the scale alone.
     ///
     /// Viewport space, not content space: a pan of 10 moves the content 10 on screen, whatever the current zoom.

@@ -444,3 +444,85 @@ fn writing_the_transform_attribute_reuses_its_buffer() -> Result<(), String> {
     check(buffer.as_ptr() == pointer, "the buffer was moved to a new allocation")?;
     check(buffer.capacity() == capacity, "the buffer's capacity changed")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Re-reading a pointer position under a changed view. A pointer gesture that measured something when it began must go on
+// tracking the pointer if the view changes underneath it.
+
+#[test]
+fn unapply_is_the_inverse_of_apply() -> Result<(), String> {
+    let view = ViewTransform {
+        scale: 2.5,
+        tx: -37.0,
+        ty: 81.5,
+    };
+    for p in [Point::new(0.0, 0.0), Point::new(12.5, -40.0), Point::new(-300.0, 250.0)] {
+        let back = view.unapply(view.apply(p));
+        check(
+            close(back.x, p.x) && close(back.y, p.y),
+            &format!("{p:?} came back as {back:?}"),
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn reinterpreting_under_an_unchanged_view_changes_nothing() -> Result<(), String> {
+    let view = ViewTransform {
+        scale: 1.25,
+        tx: 30.0,
+        ty: -12.0,
+    };
+    let p = Point::new(140.0, 96.0);
+    let same = view.reinterpret(p, view);
+    check(close(same.x, p.x) && close(same.y, p.y), &format!("{p:?} became {same:?}"))
+}
+
+/// The same place on screen is a different point of content once the view has changed. Under 1.0x, a pointer 150 across
+/// is over content point 150. After zooming to 1.25x about the origin, that same screen position is content point 120.
+#[test]
+fn the_same_screen_position_is_a_different_content_point_after_a_zoom() -> Result<(), String> {
+    let before = ViewTransform::IDENTITY;
+    let after = before.zoomed_about(ZOOM_STEP, Point::new(0.0, 0.0));
+    let now = before.reinterpret(Point::new(150.0, 50.0), after);
+    check(
+        close(now.x, 120.0) && close(now.y, 40.0),
+        &format!("expected (120, 40), got {now:?}"),
+    )
+}
+
+/// A pan moves the content, so the point under a fixed screen position shifts the other way by the same amount.
+#[test]
+fn the_same_screen_position_is_a_different_content_point_after_a_pan() -> Result<(), String> {
+    let before = ViewTransform::IDENTITY;
+    let after = before.translated(30.0, -10.0);
+    let now = before.reinterpret(Point::new(100.0, 100.0), after);
+    check(
+        close(now.x, 70.0) && close(now.y, 110.0),
+        &format!("expected (70, 110), got {now:?}"),
+    )
+}
+
+/// Whatever the two views, the content point found is drawn exactly where the pointer is: that is what "the node keeps
+/// following the pointer" means.
+#[test]
+fn the_reinterpreted_point_is_drawn_where_the_pointer_is() -> Result<(), String> {
+    let start = ViewTransform {
+        scale: 0.8,
+        tx: 44.0,
+        ty: -17.0,
+    };
+    let now = ViewTransform {
+        scale: 3.2,
+        tx: -210.0,
+        ty: 95.0,
+    };
+    let p = Point::new(75.0, 33.0);
+    let on_screen = start.apply(p);
+    let found = start.reinterpret(p, now);
+    let drawn = now.apply(found);
+    check(
+        close(drawn.x, on_screen.x) && close(drawn.y, on_screen.y),
+        &format!("{on_screen:?} vs {drawn:?}"),
+    )
+}

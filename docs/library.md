@@ -119,7 +119,7 @@
    `refresh_toolbar_layout` does the same and is kept for compatibility.
 
    ***IMPORTANT***<br>
-   **Responsive layouts.**
+   **Responsive layouts.**<br>
    The scene cannot observe its `<svg>` being resized.
    The toolbar and the gestures' surface are laid out against the visible area at the moment they are created, and stay there until `refresh_layout` is called.
    Nothing reports an error when they go stale, so the failure is easy to miss.
@@ -138,7 +138,7 @@
    A stale layout is not only cosmetic.
    The surface for panning and wheel zoom is sized the same way, so if the `<svg>` grows and the layout is not refreshed, those gestures stop working in the new area.
 
-   **The visible area.**
+   **The visible area.**<br>
    The toolbar, the gestures' surface, and the centre that `zoom_in` and `zoom_out` zoom about are all placed against the part of the `<svg>`'s user space that is actually on screen.
    That is not always the `viewBox`, and is found by mapping the rendered box back into user space through the `<svg>`'s own screen matrix:
 
@@ -154,7 +154,21 @@
 
    Every node, connector, and port marker lives in one content `<g class="svg-dom-graph-content">`, and zooming and panning set that group's `transform`.
 
-   **Performance.**
+   **Changing the view during a gesture.**<br>
+   The view can change at any moment: the wheel, the keyboard, a toolbar button, or the application calling `zoom_in` or `reset_view` can all change it while a node is being dragged or the background is being panned.
+   These compose with the gesture rather than being blocked or corrupting it, so whatever changes the view, the gesture carries on tracking the pointer.
+
+   - A node drag holds the point it was grabbed at under the pointer.
+     After a zoom that point is over a different part of the content, so on each move the pointer's position is re-read under the view as it is now.
+     Zooming with the wheel at the pointer holds the grabbed point still, so 25 pixels of further movement at 1.25× is 20 units.
+     A zoom about the centre of the view, such as from `zoom_in`, moves the grabbed point on screen, and the node follows the pointer to it.
+   - A pan applies each move to the view as it is now, by how far the pointer has moved since the last move.
+     A zoom made in the middle of it is kept, and the pan carries on from the new view.
+
+   A zoom from the wheel, keyboard, or a button is written to the DOM one animation frame after it is made.
+   A drag that begins inside that frame settles it first, so the node's screen matrix is never read from a picture of the view that is one frame old.
+
+   **Performance.**<br>
    Because zoom and pan change one group's `transform`, the work does not grow with the graph.
    No node is moved, no connector is rerouted, and no label or marker is rewritten, so zoom and pan never invalidate any routing geometry.
    A graph of a thousand nodes costs the same to zoom as one of two.

@@ -128,6 +128,39 @@ pub(crate) fn group_translate(group: &Element<'_>) -> Result<(f64, f64), String>
     Ok((x, y))
 }
 
+/// Turns the real mouse wheel one notch at `(x, y)` with Ctrl held, over CDP's `Input.dispatchMouseEvent`.
+///
+/// `delta_y` is in pixels, and negative scrolls up, which zooms in: one notch is `-100.0`. This is a genuine `wheel`
+/// event, hit-tested and dispatched by the browser like one from a real device, not one built by a test and sent straight
+/// at an element.
+pub(crate) fn ctrl_wheel(tab: &Tab, (x, y): (f64, f64), delta_y: f64) -> Result<(), String> {
+    /// The `Input.dispatchMouseEvent` modifier bit for Ctrl.
+    const CTRL: u32 = 2;
+    tab.call_method(Input::DispatchMouseEvent {
+        Type: Input::DispatchMouseEventTypeOption::MouseWheel,
+        x,
+        y,
+        modifiers: Some(CTRL),
+        timestamp: None,
+        // The left button is held down: this is a wheel turned in the middle of a drag.
+        button: Some(Input::MouseButton::Left),
+        buttons: Some(1),
+        click_count: None,
+        force: None,
+        tangential_pressure: None,
+        tilt_x: None,
+        tilt_y: None,
+        twist: None,
+        delta_x: Some(0.0),
+        delta_y: Some(delta_y),
+        pointer_Type: None,
+    })
+    .map_err(|e| format!("mouse wheel at ({x}, {y}) failed: {e}"))?;
+    std::thread::sleep(SETTLE);
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn mouse_event(
     tab: &Tab,
     kind: Input::DispatchMouseEventTypeOption,

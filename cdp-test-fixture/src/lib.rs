@@ -25,7 +25,8 @@
 //!    `accessibility_tree.rs` to query the real, browser-computed accessibility tree via CDP's own `Accessibility`
 //!    domain, not just the rendered DOM `wasm-pack test`'s own suite already checks.
 //!
-//! Panning is switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the whole scene. The
+//! Panning and wheel zoom are switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the whole
+//! scene and Ctrl plus the wheel zooms it. The
 //! background is clear of every node and connector at, for example, `(450, 200)` and `(150, 90)`.
 //!
 //! Connectors, in add order (`#diagram > g.svg-dom-graph-content > path:nth-of-type(N)`):
@@ -132,6 +133,8 @@ fn build() -> Result<(), Error> {
     // mouse input and prove it never interferes with a node drag, and vice versa. It also proves panning works without
     // a toolbar, since that is what `InputMode::On` is for.
     scene.set_pan_mode(InputMode::On)?;
+    // Wheel zoom on as well, so `pan.rs` can zoom with a real wheel in the middle of a real drag.
+    scene.set_wheel_zoom_mode(InputMode::On)?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 

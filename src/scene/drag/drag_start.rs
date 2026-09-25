@@ -1,3 +1,4 @@
+use crate::geometry::view::ViewTransform;
 use svg_dom::root::utils::{Matrix2D, Point, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -24,14 +25,18 @@ pub(super) struct DragStart {
     /// would incur another graph lookup and `RefCell` borrow on every bounded `pointermove` / collision-correcting
     /// `pointerup` event.
     pub(super) box_size: Size,
-    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag event.
+    /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. Caching it here assumes that ancestor transforms up to the viewport remain unchanged for the
-    /// duration of the drag. The dragged group's own translation is expected to change as the drag proceeds.
+    /// pointermove. It reflects the scene's view *as it was at pointerdown* — see [`view`](Self::view) — and the dragged
+    /// group's own translation at that moment, which is why it is never re-read: that translation changes on every move.
     ///
-    /// The inverse CTM is captured at drag start so all pointer deltas remain expressed in a stable drag-start
-    /// coordinate system. Ancestor transforms must remain unchanged during the drag; the node group's translation
-    /// itself is expected to change.
+    /// The view can change during a drag, so this matrix alone is not enough to place the pointer once it has.
     pub(super) inverse_ctm: Matrix2D,
+    /// The scene's view — its zoom and pan — that [`inverse_ctm`](Self::inverse_ctm) was taken under.
+    ///
+    /// A drag cannot assume the view stays as it was. The wheel, the keyboard, a toolbar button, or the application
+    /// itself can all change it mid-drag. Each pointermove compares this with the view as it is now, and re-reads the
+    /// pointer's content position under that, so the node goes on following the pointer.
+    pub(super) view: ViewTransform,
 }

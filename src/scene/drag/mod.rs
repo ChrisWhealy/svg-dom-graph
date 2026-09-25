@@ -162,6 +162,10 @@ impl Scene {
                 evt.prevent_default();
                 let Some(group) = group_weak.upgrade() else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
+                // A zoom or pan from the wheel, keyboard, or a button is written to the DOM one animation frame after it
+                // is made. Settle it first, so the screen matrix read below shows the view the scene really has, and not
+                // the one before it.
+                let _ = inner.borrow_mut().flush_view();
                 // Can't route the drag without a way to convert client pixels into this group's own coordinates.
                 let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
                     return;
@@ -171,8 +175,10 @@ impl Scene {
 
                 let _ = group.as_element().set_pointer_capture(evt.pointer_id());
                 let _ = group.set_attr("style", GRABBING_STYLE);
-                let Ok(rect) = inner.borrow().node_rect(id) else {
-                    return;
+                let (rect, view) = {
+                    let inner = inner.borrow();
+                    let Ok(rect) = inner.node_rect(id) else { return };
+                    (rect, inner.view)
                 };
                 drag_start.set(Some(DragStart {
                     pointer_id: evt.pointer_id(),
@@ -180,6 +186,7 @@ impl Scene {
                     box_origin: rect.origin,
                     box_size: rect.size,
                     inverse_ctm,
+                    view,
                 }));
             })?;
         }
@@ -189,6 +196,7 @@ impl Scene {
             let drag_start = drag_start.clone();
             let bounds = options.bounds;
             let coalescer = coalescer.clone();
+            let inner_weak = Rc::downgrade(&self.inner);
 
             group.on_pointermove(move |evt| {
                 let Some(start) = drag_start.get() else { return };
@@ -202,10 +210,16 @@ impl Scene {
                 let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
                 let pointer_now = client_to_user_space(client, start.inverse_ctm);
 
-                let new_origin = Point::new(
-                    start.box_origin.x + (pointer_now.x - start.pointer.x),
-                    start.box_origin.y + (pointer_now.y - start.pointer.y),
-                );
+                // Where the pointer is, in content coordinates, as the view was when the drag began.
+                let under_pointer = Point::new(start.box_origin.x + pointer_now.x, start.box_origin.y + pointer_now.y);
+                // The view can have changed since — by the wheel, the keyboard, a button, or the application. The same
+                // pointer position is then over a different point of content, so read it again under the view as it is
+                // now. This is `under_pointer` itself, unchanged, when nothing has moved.
+                let view_now = inner_weak.upgrade().map_or(start.view, |inner| inner.borrow().view);
+                let under_pointer = start.view.reinterpret(under_pointer, view_now);
+
+                // The node keeps hold of the same point of itself, `start.pointer` from its corner, under the pointer.
+                let new_origin = Point::new(under_pointer.x - start.pointer.x, under_pointer.y - start.pointer.y);
 
                 // Clamps before the move, not after: this keeps a bounded node from ever being rendered outside
                 // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters —

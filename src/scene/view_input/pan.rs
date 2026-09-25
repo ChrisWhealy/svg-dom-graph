@@ -8,7 +8,7 @@
 use super::frame::ViewFlusher;
 use crate::{
     error::Error,
-    geometry::{invert_matrix, view::ViewTransform},
+    geometry::invert_matrix,
     scene::{SceneInner, client_to_user_space},
 };
 use std::{
@@ -27,15 +27,16 @@ const IDLE_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -
 const PANNING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where a pan started. Kept for as long as the pan lasts.
+/// Where a pan has got to. Kept for as long as the pan lasts.
+///
+/// It holds the pointer's last position and nothing about the view. Each move pans the view *as it is now* by how far
+/// the pointer has moved since the previous one. So a zoom made in the middle of a pan, by the wheel, the keyboard, a
+/// button, or the application, is kept: the pan carries on from the new view, not the one it started with.
 #[derive(Clone, Copy)]
 struct PanStart {
     pointer_id: i32,
-    /// The pointer's position when the pan began, in the `<svg>`'s user space.
+    /// The pointer's most recent position, in the `<svg>`'s user space. Each move updates it.
     pointer: Point,
-    /// The content layer's transform when the pan began. Every move is applied to this, not to the latest view, so the
-    /// content follows the pointer exactly however many moves arrive.
-    view: ViewTransform,
     /// Converts client pixels to the `<svg>`'s user space. The surface never moves, so it stays valid all pan long.
     inverse_ctm: Matrix2D,
 }
@@ -57,7 +58,6 @@ pub(super) fn install(
     {
         let start = start.clone();
         let surface_weak = surface.downgrade();
-        let inner = inner.clone();
         surface.on_pointerdown(move |evt| {
             if start.get().is_some() || evt.button() != 0 {
                 return;
@@ -65,7 +65,6 @@ pub(super) fn install(
             // Stops the browser starting its own text selection from this pointerdown.
             evt.prevent_default();
             let Some(surface) = surface_weak.upgrade() else { return };
-            let Some(inner) = inner.upgrade() else { return };
             let Some(inverse_ctm) = surface.screen_ctm().and_then(invert_matrix) else {
                 return;
             };
@@ -76,7 +75,6 @@ pub(super) fn install(
             start.set(Some(PanStart {
                 pointer_id: evt.pointer_id(),
                 pointer: client_to_user_space(client, inverse_ctm),
-                view: inner.borrow().view,
                 inverse_ctm,
             }));
         })?;
@@ -95,10 +93,16 @@ pub(super) fn install(
             let Some(inner) = inner.upgrade() else { return };
             let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
             let now = client_to_user_space(client, pan.inverse_ctm);
+            // Each move pans the view as it is *now* by how far the pointer has travelled since the last move, and
+            // remembers where it got to. So a zoom made in the middle of the pan is kept rather than overwritten.
+            start.set(Some(PanStart { pointer: now, ..pan }));
+            let (dx, dy) = (now.x - pan.pointer.x, now.y - pan.pointer.y);
+
             // Updates the view now but leaves the DOM write to one animation frame: a pointer can move more often than
-            // the browser paints. The pan follows the pointer exactly, since each move is applied to where it started.
-            let view = pan.view.translated(now.x - pan.pointer.x, now.y - pan.pointer.y);
-            if inner.borrow_mut().set_view_deferred(view) {
+            // the browser paints.
+            let mut inner = inner.borrow_mut();
+            let view = inner.view.translated(dx, dy);
+            if inner.set_view_deferred(view) {
                 flusher.schedule();
             }
         })?;
