@@ -6,11 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.18] - 2026-09-25
+
 ## Added
 
 - Add optional fixed-size toolbar with "+", "−", and "100%" zoom buttons and scroll wheel zooming (`5b0f541`)
-
-## [0.2.18] - 2026-09-25
+- Add tests to validate `ViewTransform` calculations (``)
 
 ## Changed
 
