@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.17] - 2026-09-25
 
 ## Added
@@ -14,9 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct typos in `docs/security.md` (``)
-
-# [Released]
+- Correct typos in `docs/security.md` (`1508c1d`)
 
 ## [0.2.16] - 2026-09-24
 
