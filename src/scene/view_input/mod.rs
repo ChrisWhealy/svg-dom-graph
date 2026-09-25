@@ -245,8 +245,8 @@ impl Scene {
     ///
     /// **The scene cannot observe its `<svg>` being resized, so call this whenever the size or `viewBox` changes,**
     /// for example after `SvgRoot::set_viewport` or `SvgRoot::set_view_box`, or from a `resize` handler. The one
-    /// exception is an `<svg>` with a `viewBox` whose CSS size alone changes, since the browser then scales everything
-    /// together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full picture.
+    /// exception is an `<svg>` with a `viewBox` whose CSS size changes without changing its shape, since the browser
+    /// then scales everything together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full picture.
     ///
     /// A stale layout is not only cosmetic. A toolbar is left where it was, and the surface that panning and wheel zoom
     /// work through no longer covers a `<svg>` that has grown, so those gestures stop working in the new area.

@@ -1,5 +1,6 @@
-use super::*;
+use super::{layout::visible_user_area, *};
 use crate::test_support::check;
+use svg_dom::root::utils::Matrix2D;
 
 fn area() -> Rect {
     Rect {
@@ -92,4 +93,104 @@ fn view_box_parsing_accepts_spaces_and_commas_and_rejects_bad_input() -> Result<
     check(parse_view_box("0 0 x 480").is_none(), "non-number accepted")?;
     check(parse_view_box("0 0 inf 480").is_none(), "infinite width accepted")?;
     check(parse_view_box("").is_none(), "empty string accepted")
+}
+
+/// Builds the inverse of "user space to pixels" for a uniform `scale` (pixels per user unit) and an offset of the user
+/// space's origin, in pixels.
+fn inverse_of(scale: f64, offset_x: f64, offset_y: f64) -> Matrix2D {
+    Matrix2D {
+        h_scale: 1.0 / scale,
+        v_scale: 1.0 / scale,
+        h_skew: 0.0,
+        v_skew: 0.0,
+        h_trans: -offset_x / scale,
+        v_trans: -offset_y / scale,
+    }
+}
+
+fn client(x: f64, y: f64, width: f64, height: f64) -> Rect {
+    Rect {
+        origin: Point::new(x, y),
+        size: Size::new(width, height),
+    }
+}
+
+fn near(a: f64, b: f64) -> bool {
+    (a - b).abs() < 1e-9
+}
+
+#[test]
+fn a_one_to_one_box_shows_exactly_its_own_pixels_as_user_units() -> Result<(), String> {
+    let area = visible_user_area(client(0.0, 0.0, 400.0, 300.0), inverse_of(1.0, 0.0, 0.0)).ok_or("no area")?;
+    check(
+        near(area.origin.x, 0.0) && near(area.size.width, 400.0) && near(area.size.height, 300.0),
+        &format!("{area:?}"),
+    )
+}
+
+/// `viewBox="-500 -300 1000 600"` in a 400 x 240 box: 0.4 px per unit, with the user origin 200 px in and 120 px down.
+#[test]
+fn a_view_box_centred_on_the_origin_gives_a_negative_origin() -> Result<(), String> {
+    let area = visible_user_area(client(0.0, 0.0, 400.0, 240.0), inverse_of(0.4, 200.0, 120.0)).ok_or("no area")?;
+    check(
+        near(area.origin.x, -500.0) && near(area.origin.y, -300.0),
+        &format!("origin {:?}", area.origin),
+    )?;
+    check(
+        near(area.size.width, 1000.0) && near(area.size.height, 600.0),
+        &format!("size {:?}", area.size),
+    )
+}
+
+/// `meet`: `viewBox="0 0 400 400"` in a 400 x 200 box scales by 0.5 and centres, so x runs from -200 to 600.
+#[test]
+fn meet_letterboxing_shows_more_than_the_view_box() -> Result<(), String> {
+    let area = visible_user_area(client(0.0, 0.0, 400.0, 200.0), inverse_of(0.5, 100.0, 0.0)).ok_or("no area")?;
+    check(
+        near(area.origin.x, -200.0) && near(area.origin.y, 0.0),
+        &format!("origin {:?}", area.origin),
+    )?;
+    check(
+        near(area.size.width, 800.0) && near(area.size.height, 400.0),
+        &format!("size {:?}", area.size),
+    )
+}
+
+/// `slice`: the same box scales by 1 and centres vertically, so y runs from 100 to 300 and the rest is cropped.
+#[test]
+fn slice_cropping_shows_less_than_the_view_box() -> Result<(), String> {
+    let area = visible_user_area(client(0.0, 0.0, 400.0, 200.0), inverse_of(1.0, 0.0, -100.0)).ok_or("no area")?;
+    check(
+        near(area.origin.x, 0.0) && near(area.origin.y, 100.0),
+        &format!("origin {:?}", area.origin),
+    )?;
+    check(
+        near(area.size.width, 400.0) && near(area.size.height, 200.0),
+        &format!("size {:?}", area.size),
+    )
+}
+
+/// The box's own position on the page is part of the pixels on both sides, so it cancels out.
+#[test]
+fn a_box_offset_on_the_page_gives_the_same_area() -> Result<(), String> {
+    let at_origin = visible_user_area(client(0.0, 0.0, 400.0, 300.0), inverse_of(2.0, 0.0, 0.0)).ok_or("no area")?;
+    let offset = visible_user_area(client(75.0, 40.0, 400.0, 300.0), inverse_of(2.0, 75.0, 40.0)).ok_or("no area")?;
+    check(
+        near(at_origin.origin.x, offset.origin.x)
+            && near(at_origin.origin.y, offset.origin.y)
+            && near(at_origin.size.width, offset.size.width),
+        &format!("{at_origin:?} vs {offset:?}"),
+    )
+}
+
+#[test]
+fn a_degenerate_or_non_finite_area_is_rejected() -> Result<(), String> {
+    check(
+        visible_user_area(client(0.0, 0.0, 0.0, 300.0), inverse_of(1.0, 0.0, 0.0)).is_none(),
+        "zero width accepted",
+    )?;
+    check(
+        visible_user_area(client(0.0, 0.0, f64::NAN, 300.0), inverse_of(1.0, 0.0, 0.0)).is_none(),
+        "NaN accepted",
+    )
 }

@@ -17,14 +17,14 @@ use crate::{
     colours::{BOX_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     geometry::{
-        centre,
+        centre, invert_matrix,
         side::Side,
         view::{ViewTransform, ZOOM_STEP},
     },
 };
 use action::ToolbarAction;
 use button::ToolbarButton;
-use layout::{layout, parse_view_box};
+use layout::{layout, parse_view_box, visible_user_area};
 pub use options::ToolbarOptions;
 use std::{cell::RefCell, rc::Weak};
 use svg_dom::{
@@ -178,10 +178,33 @@ impl Toolbar {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl SceneInner {
-    /// The rectangle of the `<svg>`'s own user space that is currently visible: its `viewBox`, or failing that
-    /// `(0, 0, width, height)`.
+    /// The rectangle of the `<svg>`'s own user space that is visible right now.
+    ///
+    /// This is what the browser actually shows, which is not always the `viewBox`: a `viewBox` origin other than
+    /// `(0, 0)` shifts it, `preserveAspectRatio="meet"` (the default) shows more than the `viewBox` when the box is a
+    /// different shape, and `"slice"` shows less. So it is found by mapping the rendered box back into user space
+    /// through the `<svg>`'s own screen matrix, which accounts for all of those and for any CSS scaling at once.
+    ///
+    /// Falls back to [`visible_area`], which reads the `viewBox` or size attributes, if the browser cannot give a
+    /// screen matrix — for example for an `<svg>` that is not being displayed.
     pub(super) fn visible_area(&self) -> Rect {
-        visible_area(&self.svg)
+        self.rendered_user_area().unwrap_or_else(|| visible_area(&self.svg))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The part of the `<svg>`'s user space its rendered box shows, or `None` if it cannot be measured.
+    fn rendered_user_area(&self) -> Option<Rect> {
+        // The `<svg>` root as a node, so its own screen matrix can be read. It is the content layer's parent.
+        let root = self.content.parent()?;
+        let inverse_ctm = root.screen_ctm().and_then(invert_matrix)?;
+        let rendered = self.svg.root.get_bounding_client_rect();
+        visible_user_area(
+            Rect {
+                origin: Point::new(rendered.left(), rendered.top()),
+                size: Size::new(rendered.width(), rendered.height()),
+            },
+            inverse_ctm,
+        )
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -293,11 +316,22 @@ impl Scene {
     ///
     /// | The `<svg>` | When its size changes | Call `refresh_layout`? |
     /// |---|---|---|
-    /// | has a `viewBox`, and only its CSS size changes | The browser scales the whole `<svg>`, toolbar included. | No |
+    /// | has a `viewBox`, and its CSS size changes but not its shape | The browser scales the whole `<svg>`, toolbar included. | No |
+    /// | has a `viewBox`, and its CSS size changes *shape* | The visible area changes (see below). The bar keeps its old place. | **Yes** |
     /// | has a `viewBox`, and the `viewBox` itself changes | The bar keeps its old place. | **Yes** |
     /// | has no `viewBox`, and its size changes | The bar keeps its old place. | **Yes** |
     ///
-    /// So a responsive page is simplest with a `viewBox`, and needs no refresh at all as its CSS size changes.
+    /// So a responsive page whose `<svg>` keeps its aspect ratio, with a `viewBox`, needs no refresh as its CSS size
+    /// changes.
+    ///
+    /// # The visible area
+    ///
+    /// The bar is placed against the part of the `<svg>`'s user space that is actually on screen, which is not always
+    /// the `viewBox`. A `viewBox` origin other than `(0, 0)`, such as `-500 -300 1000 600`, is honoured. So is
+    /// `preserveAspectRatio`: with the default `meet`, an `<svg>` shaped differently from its `viewBox` shows *more*
+    /// than the `viewBox`, and with `slice` it shows *less*, so the bar follows the visible edge rather than
+    /// disappearing off-screen. The centre that [`zoom_in`](Self::zoom_in) and [`zoom_out`](Self::zoom_out) zoom about
+    /// is the centre of that same area.
     ///
     /// A stale layout is not only cosmetic. The surface that panning and wheel zoom work through is sized the same way,
     /// so if the `<svg>` grows and the layout is not refreshed, the new area has no surface behind it and those

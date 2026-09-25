@@ -13,6 +13,7 @@ Runs the native, DOM-free unit tests in `src/geometry/unit_tests.rs`, `src/model
 The toolbar's own pure arithmetic is covered too.
 `src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
+It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.
 
 The zoom tests also check anchoring at the scale limits explicitly.
 A request that would exceed 4.0 or fall below 0.25 must be clamped, and the point under the pointer must still not move.
@@ -163,6 +164,14 @@ The test suite covers:
   - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size rather than the `0 × 0` that `svg-dom` caches for it
   - a resize not being picked up until `refresh_layout` is called, which pins down the documented requirement so it is not mistaken for a bug
   - an `<svg>` with a `viewBox` needing no refresh when only its CSS size changes
+- the visible area under different `viewBox` origins, aspect ratios, and CSS scales:
+  - a `viewBox` centred on the origin (`-500 -300 1000 600`), where zooming about the centre must leave the translation at zero rather than zooming about `(width / 2, height / 2)`
+  - a `viewBox` with a positive origin (`100 50 400 300`) on both axes
+  - the toolbar's position and the surface's origin and size under both of those
+  - pointer-centred wheel zoom holding its point under a non-zero origin and a CSS scale together
+  - `preserveAspectRatio` `meet`, where more than the `viewBox` is visible, and `slice`, where less is, with the toolbar staying on the visible edge in both
+  - panning under a CSS scale moving the content by user units, not pixels
+  - reset restoring the identity
 - pan and node dragging never being confused for each other:
   - dragging a selected node moving only that node, leaving its selection text and cell colours untouched, and not panning
   - a toolbar button never starting a pan, but still clicking

@@ -3,7 +3,8 @@
 //! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`.
 
 use super::Side;
-use svg_dom::root::utils::{Point, Rect, Size};
+use crate::geometry::apply_matrix;
+use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where a toolbar's bar and each of its buttons sit.
@@ -72,6 +73,39 @@ pub(super) fn layout(edge: Side, area: Rect, sizes: &[Size], gap: f64, margin: f
         },
         buttons,
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The part of an `<svg>`'s own user space that its rendered box `client` actually shows, given `inverse_ctm`, which
+/// converts viewport pixels back into that user space.
+///
+/// This is what the browser really displays, and it differs from the `viewBox` whenever the two disagree:
+///
+/// - a `viewBox` origin other than `(0, 0)` shifts it;
+/// - `preserveAspectRatio="meet"` (the default) letterboxes, so *more* than the `viewBox` is visible along one axis;
+/// - `preserveAspectRatio="slice"` crops, so *less* than the `viewBox` is visible along one axis.
+///
+/// The transform is a scale and a translation, so two opposite corners are enough. Both are mapped and the result is
+/// normalised, so a flipped axis still gives a positive size.
+///
+/// Returns `None` if the result is not a finite, positive-sized rectangle.
+pub(super) fn visible_user_area(client: Rect, inverse_ctm: Matrix2D) -> Option<Rect> {
+    let top_left = apply_matrix(inverse_ctm, client.origin);
+    let bottom_right = apply_matrix(
+        inverse_ctm,
+        Point::new(client.origin.x + client.size.width, client.origin.y + client.size.height),
+    );
+
+    let (x, y) = (top_left.x.min(bottom_right.x), top_left.y.min(bottom_right.y));
+    let (width, height) = ((bottom_right.x - top_left.x).abs(), (bottom_right.y - top_left.y).abs());
+    if ![x, y, width, height].iter().all(|n| n.is_finite()) || width <= 0.0 || height <= 0.0 {
+        return None;
+    }
+
+    Some(Rect {
+        origin: Point::new(x, y),
+        size: Size::new(width, height),
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
