@@ -48,7 +48,15 @@ const FOCUS_OUTLINE_WIDTH: f64 = 6.0;
 pub(super) fn write_label(scale: f64, out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
-    let _ = write!(out, "Graph view, zoom {}%", (scale * 100.0).round());
+    let _ = write!(out, "Graph view, zoom {}%", percent(scale));
+}
+
+/// The zoom as the whole percentage the label shows.
+///
+/// A pan never changes it, and a zoom usually does. Remembering the last one lets a frame that has not changed it skip
+/// building and writing the label altogether.
+pub(super) fn percent(scale: f64) -> i64 {
+    (scale * 100.0).round() as i64
 }
 
 /// [`write_label`] into a new `String`, for the one-off case where nothing is being reused.

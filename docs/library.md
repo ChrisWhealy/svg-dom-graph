@@ -179,12 +179,20 @@
    No node is moved, no connector is rerouted, and no label or marker is rewritten, so zoom and pan never invalidate any routing geometry.
    A graph of a thousand nodes costs the same to zoom as one of two.
 
-   Two things keep the cost of that one write down:
+   Three things keep the cost of that one write down:
 
-   - The attribute value is built in a buffer the scene reuses, so a run of zoom or pan updates allocates nothing once the buffer has grown to fit.
-     The accessible name that reports the zoom is built the same way.
+   - The attribute value is built in a buffer the scene reuses, so a run of zoom or pan updates allocates nothing for it once the buffer has grown to fit.
+     The accessible name that reports the zoom is built the same way when it changes.
    - Wheel and pan events update the view at once, but write the DOM at most once per animation frame, so a trackpad pinch that fires more events than the browser paints frames still costs one write per frame.
      Releasing a pan writes its final position immediately.
+   - A frame never reads from the DOM to decide whether there is anything to write.
+     Reading an attribute back crosses the WASM and JavaScript boundary and allocates a `String` for the answer, so the scene keeps what it needs on the Rust side.
+     Each toolbar button remembers whether it was last drawn enabled and writes its two attributes only when that changes.
+     The scene remembers the zoom percentage its accessible name shows, so a pan, which never changes it, does not even build the text.
+
+   So a pure pan frame writes only the content layer's `transform`, and reads nothing.
+   A zoom frame also writes the accessible name, and the toolbar buttons only if one has just been enabled or disabled.
+   Every zoom step, from a button, the keyboard, the wheel, or the API, works out the centre of the visible area without reading anything back from the DOM either.
 
    Keyboard presses are written immediately, since a held key repeats far more slowly than a pointer moves.
 

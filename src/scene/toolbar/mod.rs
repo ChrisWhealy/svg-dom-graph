@@ -166,7 +166,14 @@ fn build_button(
         }
     })?;
 
-    Ok(ToolbarButton { action, group, rect, label })
+    Ok(ToolbarButton {
+        action,
+        group,
+        rect,
+        label,
+        // Not drawn yet: the first sync writes it.
+        enabled: std::cell::Cell::new(None),
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -283,18 +290,21 @@ impl SceneInner {
     /// A disabled button is dimmed and carries `aria-disabled`. It stays focusable, so keyboard focus is never lost
     /// from under someone who has just pressed it into its own limit.
     ///
-    /// Writes an attribute only if its value changes, so a run of zoom or pan updates that changes no button's state
-    /// costs no DOM writes here.
+    /// Each button remembers whether it was last drawn enabled, and writes its attributes only when that changes. A pan, or
+    /// a zoom that leaves every button as it was, therefore neither writes to the DOM nor reads from it: reading an
+    /// attribute back to compare it costs a call across the WASM and JavaScript boundary and a `String`, on every
+    /// animation frame.
     fn sync_toolbar_state(&self) -> Result<(), Error> {
         let Some(toolbar) = &self.toolbar else { return Ok(()) };
         for button in &toolbar.buttons {
             let enabled = button.action.is_enabled(self.view);
-            button
-                .group
-                .set_attr_if_changed("aria-disabled", if enabled { "false" } else { "true" })?;
-            button
-                .group
-                .set_attr_if_changed("opacity", if enabled { "1" } else { DISABLED_OPACITY })?;
+            if button.enabled.get() == Some(enabled) {
+                continue;
+            }
+            button.group.set_attr("aria-disabled", if enabled { "false" } else { "true" })?;
+            button.group.set_attr("opacity", if enabled { "1" } else { DISABLED_OPACITY })?;
+            // Only once both writes have succeeded, so a failure is tried again on the next frame.
+            button.enabled.set(Some(enabled));
         }
         Ok(())
     }

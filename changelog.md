@@ -24,12 +24,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Promoted `SceneInner` to its own module (`dd93185`)
 - Make pan/zoom settings independent of toolbar visibility (`e19b03b`)
 - Remove per-frame `String` allocation when building zoom level into accessible name (`ddadf3a`)
+- Remove avoidable `String` allocation every animation frame of a pan or zoom (``)
 
 ## Fixed
 
 - Fix error in node drag and pan when the view changes at the same time (`fce316c`)
 - Fix a pending animation frame outliving the callback behind it when input handling is torn down (`1d6c902`)
-- Stop the keyboard control taking over the application's `<svg>` (``)
+- Stop the keyboard control taking over the application's `<svg>` (`e4eaff7`)
 
 # [Released]
 

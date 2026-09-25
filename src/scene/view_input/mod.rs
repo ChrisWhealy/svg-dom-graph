@@ -60,6 +60,11 @@ pub(super) struct ViewInput {
     target: SvgNode,
     pan: bool,
     wheel: bool,
+    /// The zoom percentage the target's accessible name currently shows.
+    ///
+    /// Remembered here so a frame that has not changed it, which is every frame of a pan, does not format the label, read
+    /// it back from the DOM, or write it. See [`SceneInner::sync_view_label`].
+    label_percent: i64,
 }
 
 impl ViewInput {
@@ -146,6 +151,8 @@ fn build(
             content: content.clone(),
             pan,
             wheel,
+            // `keyboard::install` has just written the name for this scale.
+            label_percent: keyboard::percent(scale),
         })),
         Ok(false) => {
             surface.remove();
@@ -168,13 +175,16 @@ fn build(
 impl SceneInner {
     /// Brings the focus target's accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
     ///
-    /// Does nothing if there is no keyboard handling, and writes only if the text changes. It is a name, not a live
-    /// region, so it never interrupts a screen reader with an announcement on every zoom step.
+    /// Does nothing if there is no keyboard handling, and writes only if the percentage shown changes. It is a name, not a
+    /// live region, so it never interrupts a screen reader with an announcement on every zoom step.
     ///
     /// Runs on every flushed frame of a pan or zoom, so it builds the text in the scene's reused scratch buffer rather
     /// than allocating a new `String` each time.
     pub(super) fn sync_view_label(&mut self) -> Result<(), Error> {
-        if self.view_input.is_none() {
+        let percent = keyboard::percent(self.view.scale);
+        let Some(input) = self.view_input.as_mut() else { return Ok(()) };
+        // A pan never changes the percentage. Comparing it here costs nothing, unlike asking the DOM what the name is.
+        if input.label_percent == percent {
             return Ok(());
         }
 
@@ -182,10 +192,16 @@ impl SceneInner {
         keyboard::write_label(self.view.scale, &mut scratch);
         let result = self
             .view_input
-            .as_ref()
-            .map_or(Ok(()), |input| input.target.set_attr_if_changed("aria-label", &scratch));
+            .as_mut()
+            .map_or(Ok(()), |input| input.target.set_attr("aria-label", &scratch));
         self.scratch = scratch;
-        Ok(result?)
+        result?;
+
+        // Only once the write has succeeded, so a failure is tried again on the next frame.
+        if let Some(input) = self.view_input.as_mut() {
+            input.label_percent = percent;
+        }
+        Ok(())
     }
 
     /// Whether panning is active right now, given its mode and whether a toolbar is shown.

@@ -15,6 +15,7 @@ The toolbar's own pure arithmetic is covered too.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
 It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.
 
+The zoom tests also check that the zoom percentage the accessible name shows changes exactly when the label's text would, so comparing it is a faithful stand-in for asking the DOM.
 The zoom tests also check that writing the `transform` attribute and the accessible name reuses its buffer and never reallocates it once it has grown to fit.
 The zoom tests also check re-reading a point under a changed view: that `apply` and `unapply` are inverses, that an unchanged view changes nothing, that the same screen position is a different content point after a zoom or a pan, and that the point found is always drawn where the pointer is.
 The zoom tests also check anchoring at the scale limits explicitly.
@@ -187,6 +188,8 @@ The test suite covers:
   - a node drag with the "100%" button pressed in the middle, so the pointer is over a different point of content
   - a drag beginning in the same frame as a wheel zoom that has not yet been written to the DOM, which needs the pending write settled first
 - performance of zoom and pan:
+  - a pan frame, keyboard panning, a wheel burst, and every kind of zoom step making no `getAttribute` call at all, checked by counting calls to `Element.prototype.getAttribute` with a counter that is itself tested
+  - this needs its own test because reading an attribute back costs a call across the WASM and JavaScript boundary and a `String`, which a `MutationObserver` cannot see, since it reports only writes
   - every route into the view — buttons, wheel, drag, and keyboard — changing only the content layer's own `transform`, checked with a `MutationObserver` that watches the content layer and everything beneath it, so no node, connector, label, or marker is ever rewritten
   - a burst of wheel and pan events inside one frame writing nothing until that frame, and then exactly once
   - every node's position and every connector's path being exactly what they were after zooming and panning

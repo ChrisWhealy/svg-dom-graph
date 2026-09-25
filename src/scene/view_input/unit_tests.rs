@@ -1,4 +1,4 @@
-use super::keyboard::{label, write_label};
+use super::keyboard::{label, percent, write_label};
 use crate::test_support::check;
 
 #[test]
@@ -23,4 +23,29 @@ fn writing_the_label_replaces_the_buffer_and_never_reallocates_it() -> Result<()
     }
     check(buffer.as_ptr() == pointer, "the buffer was moved to a new allocation")?;
     check(buffer.capacity() == capacity, "the buffer's capacity changed")
+}
+
+/// A pan never changes the zoom, so it never changes the percentage, and the label is then left alone. The percentage is
+/// what is compared, so it must agree with what the label says, and must change exactly when the label's text would.
+#[test]
+fn the_percentage_changes_exactly_when_the_labels_text_does() -> Result<(), String> {
+    let scales = [0.25, 0.8, 1.0, 1.004, 1.0049, 1.25, 1.5625, 1.9531, 2.4414, 4.0];
+    for pair in scales.windows(2) {
+        let (a, b) = (pair[0], pair[1]);
+        check(
+            (percent(a) == percent(b)) == (label(a) == label(b)),
+            &format!(
+                "{a} and {b}: percent {} vs {}, label {:?} vs {:?}",
+                percent(a),
+                percent(b),
+                label(a),
+                label(b)
+            ),
+        )?;
+    }
+    check(
+        percent(1.0) == 100 && percent(1.25) == 125 && percent(0.25) == 25,
+        "wrong percentages",
+    )?;
+    check(label(1.004) == label(1.0), "a change too small to show altered the label")
 }
