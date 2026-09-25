@@ -40,7 +40,7 @@ An application that builds a `Scene` from externally supplied data must impose i
 ### Graph and Data Size
 
 A data node's grid can hold an arbitrarily large number of cells, and each multi-value cell creates DOM elements.
-A crafted description can therefore produce a very large DOM tree, with matching CPU and memory cost.
+A crafted description can therefore produce a very large DOM tree, with a correspondingly high CPU and memory cost.
 
 The same applies to the total number of nodes and edges in the scene.
 
@@ -58,12 +58,12 @@ A node's degree matters separately from the total edge count, for two reasons.
 
 - **Per-frame drag cost.**
 
-   The high resolution pointer movements created at the hardware level are coalesced to at most one `move_node` per animation frame.
+   The high resolution pointer movement events created at the hardware level are coalesced to at most one `move_node` event per animation frame.
 
    ⚠️ Caveat ⚠️
 
    `move_node` must still redraw every edge incident to the moving node.
-   The coalescing process limits how often a new frame is rendered; however, it cannot limit how much work is involved in rendering any given frame.
+   The coalescing process limits how often a new frame is rendered, not how much work must be performed to render that frame.
 
 ### String Lengths
 
@@ -75,7 +75,7 @@ Limit string lengths as well as node counts.
 
 ### Suggested Budgets
 
-An application accepting untrusted graph descriptions should consider imposing the following budget contraints:
+An application accepting untrusted graph descriptions should consider imposing the following budget constraints:
 
 - total nodes and edges
 - the maximum degree of any individual node
@@ -91,7 +91,8 @@ Reject or truncate a description that exceeds a budget limit before any `Scene` 
 
 `svg-dom` documents its own trust boundaries, including caller-supplied URLs, CSS, paint strings, arbitrary attributes, and its resource-limit guidance.
 Those are upstream rules, not vulnerabilities introduced by this crate.
-See `svg-dom`'s security documentation at <https://github.com/ChrisWhealy/svg-dom>.
+
+See `svg-dom`'s [security](https://github.com/ChrisWhealy/svg-dom/blob/main/docs/security.md) documentation for details.
 
 `svg-dom-graph` does not expose any of those inputs itself.
 An application that also uses the same `SvgRoot` through `svg-dom` directly remains subject to them.

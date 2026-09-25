@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add `docs/security.md` describing resource limits for attacker-controlled graph descriptions (``)
+- Add `docs/security.md` describing resource limits for attacker-controlled graph descriptions (`d167e10`)
+
+## Fixed
+
+- Correct typos in `docs/security.md` (``)
 
 # [Released]
 
