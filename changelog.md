@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add DOM-write event coalescing functionality for zoom/scroll events (`5663562`)
 - Add explicit tests to distinguish scene zoom/pan behaviour from node movement (`602063d`)
 - Make explicit the need to call `Scene::refresh_toolbar_layout` after changing SVG size or `ViewBox` (`51681ea`)
-- Add explicit tests for non-zero `ViewBox` origin and fix `preserveAspectRatio` bug (``)
+- Add explicit tests for non-zero `ViewBox` origin and fix `preserveAspectRatio` bug (`2f41e97`)
+- Extend keyboard control to include panning (``)
 
 ## Changed
 

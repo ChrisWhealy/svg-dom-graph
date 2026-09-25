@@ -1541,3 +1541,387 @@ fn panning_under_a_css_scale_moves_the_content_by_user_units_not_pixels() -> Res
     check_close(tx, 20.0)?;
     check_close(ty, 0.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Accessibility. A keyboard user can zoom from the toolbar, so they must also be able to move the view afterwards, and
+// see where focus is.
+
+/// A bubbling, cancelable `keydown`, optionally with Shift, Ctrl, or Meta held. Reports whether a listener cancelled it.
+fn key(element: &web_sys::Element, key: &str, shift: bool, ctrl: bool, meta: bool) -> Result<bool, String> {
+    let init = web_sys::KeyboardEventInit::new();
+    init.set_key(key);
+    init.set_bubbles(true);
+    init.set_cancelable(true);
+    init.set_shift_key(shift);
+    init.set_ctrl_key(ctrl);
+    init.set_meta_key(meta);
+    let event =
+        web_sys::KeyboardEvent::new_with_keyboard_event_init_dict("keydown", &init).map_err(|e| format!("{e:?}"))?;
+    element.dispatch_event(&event).map_err(|e| format!("{e:?}"))?;
+    Ok(event.default_prevented())
+}
+
+/// The content layer's `(tx, ty)`, or `(0, 0)` if it has never moved.
+fn content_translate(id: &str) -> Result<(f64, f64), String> {
+    match content(id)?.get_attribute("transform") {
+        Some(transform) => parse_view(&transform).map(|(tx, ty, _)| (tx, ty)),
+        None => Ok((0.0, 0.0)),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every button exposes the button role, a name that does not depend on its visible text, and a place in the Tab order.
+#[wasm_bindgen_test]
+fn every_toolbar_button_has_the_button_role_an_explicit_name_and_a_tab_stop() -> Result<(), String> {
+    let scene = new_scene("a11y-buttons")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    // "Reset" is drawn as "100%", so its name must not be read from the visible text.
+    for (n, name) in ["Zoom in", "Zoom out", "Reset zoom"].iter().enumerate() {
+        let b = button("a11y-buttons", n)?;
+        check(
+            attr(&b, "role")? == "button",
+            &format!("button {n} does not have the button role"),
+        )?;
+        check(attr(&b, "aria-label")? == *name, &format!("button {n} is not named {name:?}"))?;
+        check(attr(&b, "tabindex")? == "0", &format!("button {n} is not in the Tab order"))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Keyboard focus is drawn explicitly — a thicker, differently coloured border — rather than left to whatever outline a
+/// browser draws for a focused SVG element, and goes away again on blur.
+#[wasm_bindgen_test]
+fn a_focused_toolbar_button_shows_an_obvious_focus_ring_that_blur_removes() -> Result<(), String> {
+    let scene = new_scene("a11y-focus")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let plus = button("a11y-focus", 0)?;
+    let rect = plus.first_element_child().ok_or("a button has no rect")?;
+    let resting = (attr(&rect, "stroke")?, attr_f64(&rect, "stroke-width")?);
+
+    plus.dispatch_event(&web_sys::FocusEvent::new("focus").map_err(|e| format!("{e:?}"))?.into())
+        .map_err(|e| format!("{e:?}"))?;
+    check(attr(&rect, "stroke")? != resting.0, "focus did not change the border colour")?;
+    check(attr_f64(&rect, "stroke-width")? > resting.1, "focus did not thicken the border")?;
+
+    plus.dispatch_event(&web_sys::FocusEvent::new("blur").map_err(|e| format!("{e:?}"))?.into())
+        .map_err(|e| format!("{e:?}"))?;
+    check(attr(&rect, "stroke")? == resting.0, "blur did not restore the border colour")?;
+    check_close(attr_f64(&rect, "stroke-width")?, resting.1)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Activating a control marked `aria-disabled` does nothing at all — by click or by keyboard. In particular it writes
+/// nothing to the DOM, so the content layer still has no `transform`.
+#[wasm_bindgen_test]
+fn activating_an_aria_disabled_button_does_nothing() -> Result<(), String> {
+    let scene = new_scene("a11y-disabled")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    // Unzoomed, "Reset" has nothing to do.
+    let reset = button("a11y-disabled", 2)?;
+    check(attr(&reset, "aria-disabled")? == "true", "test setup: Reset is not disabled")?;
+    click(&reset)?;
+    keydown(&reset, "Enter")?;
+    keydown(&reset, " ")?;
+    check(
+        content("a11y-disabled")?.get_attribute("transform").is_none(),
+        "activating a disabled Reset changed the view",
+    )?;
+
+    // At maximum zoom, "zoom in" has nothing to do.
+    for _ in 0..30 {
+        scene.zoom_in().map_err(|e| e.to_string())?;
+    }
+    let plus = button("a11y-disabled", 0)?;
+    check(
+        attr(&plus, "aria-disabled")? == "true",
+        "test setup: zoom in is not disabled at the limit",
+    )?;
+    let before = attr(&content("a11y-disabled")?, "transform")?;
+    click(&plus)?;
+    keydown(&plus, "Enter")?;
+    check(
+        attr(&content("a11y-disabled")?, "transform")? == before,
+        "activating a disabled zoom in changed the view",
+    )?;
+    check_close(scene.zoom_scale(), 4.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// With panning on, the `<svg>` itself is a keyboard target with a role and a name that says how far it is zoomed.
+#[wasm_bindgen_test]
+async fn the_scene_is_a_named_keyboard_target_that_reports_its_zoom() -> Result<(), String> {
+    let scene = new_scene("a11y-root")?;
+    let root = required("#a11y-root")?;
+    check(
+        !root.has_attribute("tabindex"),
+        "the scene is a keyboard target before anything asks for it",
+    )?;
+
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    check(attr(&root, "tabindex")? == "0", "the scene is not in the Tab order")?;
+    check(
+        attr(&root, "role")? == "application",
+        "the scene does not have the application role",
+    )?;
+    check(
+        attr(&root, "aria-label")? == "Graph view, zoom 100%",
+        "the scene's name does not report its zoom",
+    )?;
+    check(
+        attr(&root, "aria-description")?.contains("Arrow keys pan"),
+        "the scene does not say how to pan it",
+    )?;
+
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    check(
+        attr(&root, "aria-label")? == "Graph view, zoom 125%",
+        "the name did not follow a button zoom",
+    )?;
+
+    // The name is updated by a zoom that is deferred to an animation frame, too.
+    scene.reset_view().map_err(|e| e.to_string())?;
+    wheel(&pan_surface("a11y-root")?, 100, 100, -100.0, true, false)?;
+    next_frame().await?;
+    check(
+        attr(&root, "aria-label")? == "Graph view, zoom 125%",
+        "the name did not follow a wheel zoom",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Arrow keys move the view like scrolling: pressing right moves the view right, so the content moves left. One press is
+/// 40 units, and Shift makes it five times further. This is the keyboard way back to content that zooming pushed out of
+/// view.
+#[wasm_bindgen_test]
+fn arrow_keys_pan_the_view_and_shift_pans_further() -> Result<(), String> {
+    let scene = new_scene("a11y-arrows")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let root = required("#a11y-arrows")?;
+
+    check(
+        key(&root, "ArrowRight", false, false, false)?,
+        "a handled arrow key was not cancelled",
+    )?;
+    check(
+        content_translate("a11y-arrows")? == (-40.0, 0.0),
+        "ArrowRight did not move the content left by 40",
+    )?;
+    key(&root, "ArrowDown", false, false, false)?;
+    check(
+        content_translate("a11y-arrows")? == (-40.0, -40.0),
+        "ArrowDown did not move the content up by 40",
+    )?;
+    key(&root, "ArrowLeft", false, false, false)?;
+    key(&root, "ArrowUp", false, false, false)?;
+    check(
+        content_translate("a11y-arrows")? == (0.0, 0.0),
+        "opposite arrows did not cancel out",
+    )?;
+
+    key(&root, "ArrowLeft", true, false, false)?;
+    check(
+        content_translate("a11y-arrows")? == (200.0, 0.0),
+        "Shift did not make a press five times further",
+    )?;
+    // The 100% button is enabled by a pan, and undoes it.
+    check(
+        attr(&button("a11y-arrows", 2)?, "aria-disabled")? == "false",
+        "a keyboard pan did not enable Reset",
+    )?;
+    click(&button("a11y-arrows", 2)?)?;
+    check(
+        content_translate("a11y-arrows")? == (0.0, 0.0),
+        "Reset did not undo a keyboard pan",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The pan step is in the `<svg>`'s own units, so it looks the same on screen however far the content is zoomed.
+#[wasm_bindgen_test]
+fn a_keyboard_pan_step_is_the_same_distance_at_any_zoom() -> Result<(), String> {
+    let scene = new_scene("a11y-arrows-zoom")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    for _ in 0..4 {
+        scene.zoom_in().map_err(|e| e.to_string())?;
+    }
+    let (before, _) = content_translate("a11y-arrows-zoom")?;
+    key(&required("#a11y-arrows-zoom")?, "ArrowRight", false, false, false)?;
+    let (after, _) = content_translate("a11y-arrows-zoom")?;
+    check_close(after - before, -40.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Plus, minus, and zero zoom from the keyboard, about the centre of the visible area.
+#[wasm_bindgen_test]
+fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
+    let scene = new_scene("a11y-zoom-keys")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let root = required("#a11y-zoom-keys")?;
+
+    check(key(&root, "+", false, false, false)?, "a handled zoom key was not cancelled")?;
+    check_close(scene.zoom_scale(), 1.25)?;
+    key(&root, "=", false, false, false)?; // the unshifted key that shares a cap with "+"
+    check_close(scene.zoom_scale(), 1.5625)?;
+    key(&root, "-", false, false, false)?;
+    check_close(scene.zoom_scale(), 1.25)?;
+    key(&root, "0", false, false, false)?;
+    check_close(scene.zoom_scale(), 1.0)?;
+    check(
+        attr(&content("a11y-zoom-keys")?, "transform")? == "translate(0, 0) scale(1)",
+        "zero did not restore the identity",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Keys the scene does not use, and keys held with Ctrl, Cmd, or Alt, are neither acted on nor cancelled — so the
+/// browser's own page zoom (Ctrl or Cmd with plus or minus) and other shortcuts keep working.
+#[wasm_bindgen_test]
+fn unrelated_keys_and_browser_shortcuts_are_left_alone() -> Result<(), String> {
+    let scene = new_scene("a11y-shortcuts")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let root = required("#a11y-shortcuts")?;
+
+    check(!key(&root, "a", false, false, false)?, "an unrelated key was cancelled")?;
+    check(
+        !key(&root, "Tab", false, false, false)?,
+        "Tab was cancelled, which would trap keyboard focus",
+    )?;
+    check(!key(&root, "ArrowRight", false, true, false)?, "Ctrl+Arrow was cancelled")?;
+    check(
+        !key(&root, "+", false, true, false)?,
+        "Ctrl+plus was cancelled, which would block browser page zoom",
+    )?;
+    check(
+        !key(&root, "-", false, false, true)?,
+        "Cmd+minus was cancelled, which would block browser page zoom",
+    )?;
+    check(
+        scene.zoom_scale() == 1.0 && content_translate("a11y-shortcuts")? == (0.0, 0.0),
+        "an ignored key moved the view",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A key pressed on a toolbar button bubbles up through the `<svg>`, but is the button's, not the scene's: an arrow key
+/// on a focused button must not pan the view.
+#[wasm_bindgen_test]
+fn a_key_pressed_on_a_toolbar_button_does_not_pan_the_view() -> Result<(), String> {
+    let scene = new_scene("a11y-bubble")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    check(
+        !key(&button("a11y-bubble", 0)?, "ArrowRight", false, false, false)?,
+        "a button's arrow key was cancelled",
+    )?;
+    check(
+        content_translate("a11y-bubble")? == (0.0, 0.0),
+        "an arrow key on a button panned the view",
+    )?;
+    check_close(scene.zoom_scale(), 1.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Each key group follows its own mode: the arrows are the keyboard side of panning, and plus, minus, and zero the
+/// keyboard side of wheel zoom.
+#[wasm_bindgen_test]
+fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mode() -> Result<(), String> {
+    let scene = new_scene("a11y-modes")?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    let root = required("#a11y-modes")?;
+
+    // Panning on, wheel zoom off: arrows work, zoom keys do not.
+    key(&root, "ArrowRight", false, false, false)?;
+    check(content_translate("a11y-modes")? == (-40.0, 0.0), "the arrow keys did not pan")?;
+    check(
+        !key(&root, "+", false, false, false)?,
+        "a zoom key was handled with wheel zoom off",
+    )?;
+    check_close(scene.zoom_scale(), 1.0)?;
+    check(
+        !attr(&root, "aria-description")?.contains("Plus and minus"),
+        "the description mentions keys that are off",
+    )?;
+
+    // Wheel zoom on, panning off: the reverse.
+    scene.set_pan_mode(InputMode::Off).map_err(|e| e.to_string())?;
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    let before = content_translate("a11y-modes")?;
+    check(
+        !key(&root, "ArrowRight", false, false, false)?,
+        "an arrow key was handled with panning off",
+    )?;
+    check(
+        content_translate("a11y-modes")? == before,
+        "an arrow key panned with panning off",
+    )?;
+    key(&root, "+", false, false, false)?;
+    check_close(scene.zoom_scale(), 1.25)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `<svg>` is only a keyboard target while a gesture that needs it is active. Once none is, everything this added —
+/// the tab stop, the role, the name, the description, and the key listener — is gone again.
+#[wasm_bindgen_test]
+fn hiding_the_toolbar_takes_the_keyboard_handling_off_the_scene() -> Result<(), String> {
+    let scene = new_scene("a11y-teardown")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let root = required("#a11y-teardown")?;
+    check(root.has_attribute("tabindex"), "test setup: no keyboard handling was added")?;
+
+    scene.hide_toolbar();
+    for name in ["tabindex", "role", "aria-label", "aria-description"] {
+        check(
+            !root.has_attribute(name),
+            &format!("{name} was left on the scene after the toolbar was hidden"),
+        )?;
+    }
+    check(
+        !key(&root, "ArrowRight", false, false, false)?,
+        "a key listener was left behind",
+    )?;
+    check(
+        content_translate("a11y-teardown")? == (0.0, 0.0),
+        "a leftover key listener panned the view",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Zoom changes must not cause disruptive announcements. Nothing here is a live region, and the state attributes are only
+/// rewritten when they actually change, so a run of zoom steps that changes no button's state touches none of them.
+#[wasm_bindgen_test]
+fn zooming_adds_no_live_region_and_rewrites_no_unchanged_button_state() -> Result<(), String> {
+    let scene = new_scene("a11y-quiet")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+
+    let live = web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("no document")?
+        .query_selector_all("#a11y-quiet [aria-live], #a11y-quiet [role=\"status\"], #a11y-quiet [role=\"alert\"]")
+        .map_err(|e| format!("{e:?}"))?
+        .length();
+    check(live == 0, "a live region was added, which would announce every zoom step")?;
+
+    // Watch every button's state attributes through more zoom steps that leave every button's state as it was.
+    let observed = ["aria-disabled", "opacity"];
+    let before: Vec<Vec<String>> = (0..3)
+        .map(|n| {
+            button("a11y-quiet", n).map(|b| observed.iter().map(|a| b.get_attribute(a).unwrap_or_default()).collect())
+        })
+        .collect::<Result<_, _>>()?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    scene.zoom_out().map_err(|e| e.to_string())?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    let after: Vec<Vec<String>> = (0..3)
+        .map(|n| {
+            button("a11y-quiet", n).map(|b| observed.iter().map(|a| b.get_attribute(a).unwrap_or_default()).collect())
+        })
+        .collect::<Result<_, _>>()?;
+    check(
+        before == after,
+        "a zoom step that changed no button's state changed its attributes",
+    )
+}

@@ -14,7 +14,7 @@ mod options;
 
 use super::{Scene, SceneInner};
 use crate::{
-    colours::{BOX_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
+    colours::{BOX_STROKE, FOCUS_RING, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     geometry::{
         centre, invert_matrix,
@@ -35,6 +35,10 @@ use svg_dom::{
 /// Every toolbar button shares this look: an arrow-friendly pointer, and no accidental text selection when clicked
 /// twice in quick succession.
 const BUTTON_STYLE: &str = "cursor: pointer; user-select: none; -webkit-user-select: none;";
+
+/// A toolbar button's border width at rest, and while it has keyboard focus.
+const BUTTON_STROKE_WIDTH: f64 = 1.0;
+const FOCUS_STROKE_WIDTH: f64 = 3.0;
 
 /// The opacity of a button whose action would currently change nothing, such as zoom-in at maximum zoom.
 const DISABLED_OPACITY: &str = "0.4";
@@ -121,7 +125,7 @@ fn build_button(
     group.append(&rect)?;
     rect.set_fill(PLAIN_BOX_FILL)?;
     rect.set_stroke(BOX_STROKE)?;
-    rect.set_stroke_width(1.0)?;
+    rect.set_stroke_width(BUTTON_STROKE_WIDTH)?;
     rect.set_attr("rx", "4")?;
 
     let label = svg.text(Point::origin(), action.label())?;
@@ -130,6 +134,23 @@ fn build_button(
     label.set_dominant_baseline(DominantBaseline::Middle)?;
     label.set_font_size(height * 0.55)?;
     label.set_fill(TEXT_FILL)?;
+
+    // Keyboard focus must be obvious. A browser's own outline on a focused SVG element varies, so draw one explicitly:
+    // a thicker, distinctly coloured border while focused. The rect is held weakly, like the scene below.
+    let focused_rect = rect.downgrade();
+    group.on_focus(move |_| {
+        if let Some(rect) = focused_rect.upgrade() {
+            let _ = rect.set_stroke(FOCUS_RING);
+            let _ = rect.set_stroke_width(FOCUS_STROKE_WIDTH);
+        }
+    })?;
+    let blurred_rect = rect.downgrade();
+    group.on_blur(move |_| {
+        if let Some(rect) = blurred_rect.upgrade() {
+            let _ = rect.set_stroke(BOX_STROKE);
+            let _ = rect.set_stroke_width(BUTTON_STROKE_WIDTH);
+        }
+    })?;
 
     // Both listeners hold only a `Weak` reference to the scene's shared state. A strong one would form a cycle
     // through `SceneInner::toolbar` and leak the scene — see `Scene::make_draggable_with`'s own comment on this.
@@ -252,6 +273,7 @@ impl SceneInner {
         result?;
 
         self.view_dirty = false;
+        self.sync_view_label()?;
         self.sync_toolbar_state()
     }
 

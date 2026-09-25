@@ -38,6 +38,11 @@ pub(crate) const NAMED_BOX_FILL: &str = "#d6f2ee";
 /// part of the connector it names, not as a separate accent colour competing for attention.
 pub(crate) const CONNECTOR_STROKE: &str = "#555";
 
+/// The stroke colour of a toolbar button while it has keyboard focus — a strong blue, clearly distinct from
+/// [`BOX_STROKE`] and drawn thicker, so keyboard focus is obvious without relying on whatever outline a browser happens
+/// to draw for a focused SVG element.
+pub(crate) const FOCUS_RING: &str = "#0b57d0";
+
 /// [`Scene`](crate::scene::Scene)`::set_selection`'s own row/column-level highlight colour — a warm yellow, chosen
 /// to read clearly against every [`TYPE_COLOUR_U8`]/[`TYPE_COLOUR_U16`]/[`TYPE_COLOUR_U32`]/[`TYPE_COLOUR_U64`]
 /// pastel and against [`PLAIN_BOX_FILL`] alike. Marks "we are now processing this row/column" in a

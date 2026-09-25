@@ -45,8 +45,8 @@
 
 - `make_draggable`/`make_draggable_with` wire up pointer-based dragging for a node, with configurable drop-collision handling and an optional drag-bounding rectangle — see `DragOptions`, `CollisionPolicy`, and `DragOptions::bounds`.
 
-   Pointer dragging is the only way this crate offers to move a node; a keyboard or non-drag alternative is not provided.
-   The toolbar's own buttons (see below) are keyboard operable, but they zoom the view rather than move a node.
+   Pointer dragging is the only way this crate offers to move a *node*; a keyboard or non-drag alternative for that is not provided.
+   The view is different: the toolbar's buttons, and the keyboard handling of `set_pan_mode` and `set_wheel_zoom_mode` (see below), let a keyboard user zoom and pan it.
 
 - `show_toolbar`/`hide_toolbar` add and remove a fixed-size button bar along one edge of the scene — see `ToolbarOptions`.
   `has_toolbar` reports whether one is shown.
@@ -57,7 +57,10 @@
 
    The bar is a sibling of the content layer, not a child, so it stays the same size however far the content is zoomed and draws on top of it.
    Tab reaches each button and Enter or Space activates it.
-   A button that could currently do nothing is dimmed and marked `aria-disabled`, but stays focusable.
+   A button that could currently do nothing is dimmed and marked `aria-disabled`, but stays focusable, so keyboard focus is never lost from under someone who has just pressed into a limit.
+   Activating a disabled button does nothing.
+   A focused button draws a thicker, differently coloured border, so keyboard focus is obvious in every browser rather than depending on the browser's own outline for an SVG element.
+   Each button has the `button` role and an explicit name — "Zoom in", "Zoom out", and "Reset zoom" — so the "100%" it shows is not what a screen reader reads.
 
    `set_toolbar_edge` moves the bar to another edge.
    `refresh_layout` repositions it after the `<svg>`'s size or `viewBox` changes — see "Responsive layouts" below, since forgetting this fails silently.
@@ -68,7 +71,7 @@
    The 100% button undoes a pan as well as a zoom.
    Hiding the bar switches off whichever gestures are set to follow it, but leaves any forced on.
 
-- `set_pan_mode` and `set_wheel_zoom_mode` control two mouse and trackpad gestures, each with its own `InputMode`.
+- `set_pan_mode` and `set_wheel_zoom_mode` control two gestures, each with its own `InputMode`, that a mouse, trackpad, or keyboard can perform.
   `pan_mode`, `wheel_zoom_mode`, `pan_enabled`, and `wheel_zoom_enabled` report the settings and whether each gesture is active right now.
 
    - Dragging empty background pans the content, so content zoomed past the edge of the view can always be brought back.
@@ -77,6 +80,28 @@
      Cmd is the Mac convention and Ctrl is the Windows and Linux one.
      Browsers report a trackpad pinch as ctrl+wheel, so pinch-to-zoom works too.
      A wheel without a modifier is left alone, so the page still scrolls.
+
+   **Keyboard**<br>
+   Zooming from the toolbar can push content out of view, so the same gestures can be reached without a pointer.
+   While either is active, the `<svg>` itself becomes a keyboard target: it joins the Tab order and has the `application` role.
+   The role tells a screen reader to pass keys through to it instead of keeping them for reading.
+
+   - The arrow keys pan the view, like scrolling: right moves the view right, so the content moves left.
+     One press moves 40 units of the `<svg>`'s own space, which is the same distance on screen at any zoom, and Shift moves five times as far.
+     They belong to `pan_mode`.
+   - `+` (or `=`), `-`, and `0` zoom in, zoom out, and restore the original zoom, about the centre of the visible area.
+     They belong to `wheel_zoom_mode`.
+
+   Only a key pressed while the `<svg>` itself has focus is handled, so an arrow key on a focused toolbar button is left to that button.
+   Keys held with Ctrl, Cmd, or Alt are left alone, so the browser's own page zoom keeps working.
+   Everything that is handled has its default action cancelled, so the page does not also scroll.
+
+   The `<svg>`'s accessible name says how far it is zoomed, such as "Graph view, zoom 125%", and its description lists the keys that are active.
+   The zoom is part of the name and not a live region, so a run of zoom steps never interrupts a screen reader with an announcement.
+   It is read the next time the scene takes focus.
+
+   The keyboard handling sets `tabindex`, `role`, `aria-label`, and `aria-description` on the `<svg>`, and removes them again when no gesture needs it.
+   An application that sets its own values for those on the same element should not also enable these gestures.
 
    `InputMode::WithToolbar`, the default, makes a gesture active only while a toolbar is shown.
    `InputMode::On` makes it active whether or not a toolbar is shown, and `InputMode::Off` never activates it.

@@ -160,6 +160,19 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- accessibility of the toolbar and the view:
+  - every button having the `button` role, an explicit name that does not depend on its visible "100%", and a place in the Tab order
+  - a focused button drawing a thicker, differently coloured border, and blur restoring it
+  - activating an `aria-disabled` button, by click, Enter, or Space, doing nothing at all, and writing nothing to the DOM
+  - the `<svg>` becoming a keyboard target with the `application` role, a name reporting its zoom, and a description of its keys
+  - that name following a zoom made by a button and one made by the wheel
+  - the arrow keys panning like scrolling, 40 units a press at any zoom, and Shift making it five times further
+  - plus, minus, and zero zooming from the keyboard
+  - unrelated keys, Tab, and keys held with Ctrl, Cmd, or Alt being neither handled nor cancelled, so browser page zoom and focus movement still work
+  - a key pressed on a focused toolbar button not panning the view, although the event bubbles through the `<svg>`
+  - the arrow keys following `pan_mode` and the zoom keys following `wheel_zoom_mode`
+  - hiding the toolbar taking the tab stop, role, name, description, and key listener off the `<svg>`
+  - zooming adding no live region, and rewriting no button state attribute that did not change
 - responsive layouts:
   - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size rather than the `0 × 0` that `svg-dom` caches for it
   - a resize not being picked up until `refresh_layout` is called, which pins down the documented requirement so it is not mistaken for a bug
@@ -203,6 +216,9 @@ Dragging empty background pans the whole scene, and the pan surface holds pointe
 A pan that sweeps across a node stays a pan, and the node's own position is unchanged.
 A node drag that travels across empty background stays a node drag, so the scene never pans.
 Pressing on a node never gives the pan surface a capture, even though it lies behind the node.
+
+Its `pan.rs` scenario also covers the keyboard, through the browser's own focus order and real key events rather than a synthetic `keydown`.
+Pressing Tab puts focus on the scene, and the arrow keys then pan it by 40 units a press.
 
 Its own `accessibility_tree.rs` scenario asks a different question: not what the rendered DOM's own attributes say, but what Chrome's own computed accessibility tree actually exposes.
 `wasm-pack test`'s own DOM-attribute checks can prove `role`/`aria-label` land on the right element.

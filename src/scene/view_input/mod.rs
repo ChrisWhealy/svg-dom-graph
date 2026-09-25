@@ -9,6 +9,7 @@
 //! either gesture on, or force it off even with the stock toolbar showing.
 
 mod frame;
+mod keyboard;
 mod pan;
 mod wheel;
 
@@ -16,7 +17,7 @@ use super::{Scene, SceneInner};
 use crate::error::Error;
 use frame::ViewFlusher;
 use std::{
-    cell::RefCell,
+    cell::{Cell, RefCell},
     rc::{Rc, Weak},
 };
 use svg_dom::{SvgNode, SvgRoot, root::utils::Rect};
@@ -54,6 +55,8 @@ pub(super) struct ViewInput {
     surface: SvgNode,
     /// The content layer, kept so removing this can also remove the wheel listener registered on it — see [`wheel`].
     content: SvgNode,
+    /// The `<svg>` root, kept so removing this can take the keyboard handling off it again — see [`keyboard`].
+    root: SvgNode,
     pan: bool,
     wheel: bool,
 }
@@ -65,6 +68,7 @@ impl ViewInput {
         if self.wheel {
             self.content.remove_listeners("wheel");
         }
+        keyboard::remove(&self.root);
     }
 
     /// Makes the surface cover `area`.
@@ -82,7 +86,10 @@ impl ViewInput {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it.
+/// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it. The
+/// `<svg>` itself becomes a keyboard target too, so the same gestures can be reached without a pointer.
+///
+/// `scale` is the current zoom, for the `<svg>`'s accessible name.
 ///
 /// Returns `Ok(None)` if `content` is somehow detached from the `<svg>`. A surface left on top of everything would
 /// swallow every node's pointer events, so it is removed instead and the gestures are simply unavailable.
@@ -95,15 +102,19 @@ fn build(
     pan: bool,
     wheel: bool,
     area: Rect,
+    scale: f64,
 ) -> Result<Option<ViewInput>, Error> {
     let surface = svg.rect(area.origin, area.size)?;
+    // Set just before the keyboard handling is installed, so a failure earlier on never removes attributes this did not
+    // set — the `<svg>` may carry a `tabindex` or a `role` of the application's own.
+    let keyboard_attempted = Cell::new(false);
 
     let wired = (|| {
         // `transparent`, not `none`: an SVG shape only receives pointer events where it is painted.
         surface.set_fill("transparent")?;
         surface.set_attr("aria-hidden", "true")?;
-        let Some(parent) = content.parent() else { return Ok::<_, Error>(false) };
-        parent.insert_before(&surface, content)?;
+        let Some(root) = content.parent() else { return Ok::<_, Error>(None) };
+        root.insert_before(&surface, content)?;
 
         // One flusher serves both gestures, so a pan and a wheel zoom in the same frame still cost a single DOM write.
         let flusher = ViewFlusher::new(inner.clone())?;
@@ -113,17 +124,20 @@ fn build(
         if wheel {
             wheel::install(content, &surface, inner, &flusher)?;
         }
-        Ok(true)
+        keyboard_attempted.set(true);
+        keyboard::install(&root, inner, pan, wheel, scale)?;
+        Ok(Some(root))
     })();
 
     match wired {
-        Ok(true) => Ok(Some(ViewInput {
+        Ok(Some(root)) => Ok(Some(ViewInput {
             surface,
             content: content.clone(),
+            root,
             pan,
             wheel,
         })),
-        Ok(false) => {
+        Ok(None) => {
             surface.remove();
             Ok(None)
         },
@@ -132,6 +146,11 @@ fn build(
             if wheel {
                 content.remove_listeners("wheel");
             }
+            if keyboard_attempted.get() {
+                if let Some(root) = content.parent() {
+                    keyboard::remove(&root);
+                }
+            }
             Err(err)
         },
     }
@@ -139,6 +158,18 @@ fn build(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl SceneInner {
+    /// Brings the `<svg>`'s accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
+    ///
+    /// Does nothing if there is no keyboard handling, and writes only if the text changes. It is a name, not a live
+    /// region, so it never interrupts a screen reader with an announcement on every zoom step.
+    pub(super) fn sync_view_label(&self) -> Result<(), Error> {
+        let Some(input) = &self.view_input else { return Ok(()) };
+        input
+            .root
+            .set_attr_if_changed("aria-label", &keyboard::label(self.view.scale))?;
+        Ok(())
+    }
+
     /// Whether panning is active right now, given its mode and whether a toolbar is shown.
     pub(super) fn pan_active(&self) -> bool {
         self.pan_mode.is_active(self.toolbar.is_some())
@@ -166,6 +197,17 @@ impl Scene {
     /// Panning lets content zoomed past the edge of the visible area always be brought back. Nodes and connectors take
     /// their own pointer events, so dragging one still drags only that node.
     ///
+    /// # Keyboard
+    ///
+    /// While panning is active the `<svg>` itself also joins the Tab order, so a keyboard user can pan too: the arrow keys
+    /// move the view like scrolling, 40 units a press, and Shift moves it five times further. Otherwise zooming in from
+    /// the toolbar could leave content that a keyboard user cannot get back to. The `<svg>` is given the `application`
+    /// role, and its accessible name reports the current zoom, such as "Graph view, zoom 125%".
+    ///
+    /// This sets `tabindex`, `role`, `aria-label`, and `aria-description` on the `<svg>`, and removes them when no gesture
+    /// needs them. Only a key pressed while the `<svg>` itself has focus is handled, and Ctrl, Cmd, and Alt combinations
+    /// are left alone.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::Svg`] if the DOM cannot be updated, in which case nothing is left behind.
@@ -180,6 +222,9 @@ impl Scene {
     /// Cmd is the Mac convention and Ctrl is the Windows and Linux one. Browsers report a trackpad pinch as ctrl+wheel,
     /// so pinch-to-zoom works too. While active, a wheel event with either modifier is cancelled, so the browser does
     /// not also zoom the page. A wheel without a modifier is left alone, so the page still scrolls.
+    ///
+    /// The keyboard equivalent is `+` (or `=`), `-`, and `0`, which zoom in, zoom out, and restore the original zoom
+    /// while the `<svg>` has focus. See [`set_pan_mode`](Self::set_pan_mode) for how the `<svg>` becomes a keyboard target.
     ///
     /// # Errors
     ///
@@ -236,7 +281,8 @@ impl Scene {
         }
 
         let area = inner.visible_area();
-        inner.view_input = build(&inner.svg, &inner.content, &weak, pan, wheel, area)?;
+        let scale = inner.view.scale;
+        inner.view_input = build(&inner.svg, &inner.content, &weak, pan, wheel, area, scale)?;
         Ok(())
     }
 

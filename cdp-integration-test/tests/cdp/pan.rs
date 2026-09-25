@@ -180,3 +180,42 @@ fn pressing_on_a_node_never_starts_a_pan() -> Result<(), String> {
 fn check(condition: bool, msg: &str) -> Result<(), String> {
     if condition { Ok(()) } else { Err(msg.into()) }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The id of the element that currently has keyboard focus, or an empty string if it has none.
+fn focused_id(tab: &Tab) -> Result<String, String> {
+    let result = tab
+        .evaluate("document.activeElement && document.activeElement.id || ''", false)
+        .map_err(|e| format!("could not read the focused element: {e}"))?;
+    Ok(result.value.and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A keyboard-only user can reach the scene with the Tab key, and the arrow keys then pan it. This goes through the
+/// browser's own focus order and key handling, which a synthetic `keydown` dispatched at the element does not.
+#[test]
+fn tab_reaches_the_scene_and_the_arrow_keys_then_pan_it() -> Result<(), String> {
+    let tab = new_tab()?;
+    check(
+        focused_id(&tab)?.is_empty(),
+        "something already has focus before any key is pressed",
+    )?;
+    check(content_translate(&tab)?.is_none(), "the scene was already panned")?;
+
+    tab.press_key("Tab").map_err(|e| format!("could not press Tab: {e}"))?;
+    check(focused_id(&tab)? == "diagram", "Tab did not put focus on the scene")?;
+
+    for _ in 0..2 {
+        tab.press_key("ArrowRight")
+            .map_err(|e| format!("could not press ArrowRight: {e}"))?;
+    }
+    tab.press_key("ArrowDown")
+        .map_err(|e| format!("could not press ArrowDown: {e}"))?;
+
+    // The view moved right and down, so the content moved left and up: 40 units per press.
+    let (x, y) = content_translate(&tab)?.ok_or("the arrow keys did not pan the scene")?;
+    check(
+        close(x, -80.0) && close(y, -40.0),
+        &format!("expected a pan of (-80, -40), got ({x}, {y})"),
+    )
+}
