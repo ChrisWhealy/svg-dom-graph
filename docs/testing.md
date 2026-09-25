@@ -194,14 +194,18 @@ The test suite covers:
   - every button having the `button` role, an explicit name that does not depend on its visible "100%", and a place in the Tab order
   - a focused button drawing a thicker, differently coloured border, and blur restoring it
   - activating an `aria-disabled` button, by click, Enter, or Space, doing nothing at all, and writing nothing to the DOM
-  - the `<svg>` becoming a keyboard target with the `application` role, a name reporting its zoom, and a description of its keys
+  - the scene adding a keyboard focus target of its own, a `<rect>` with the `application` role, a name reporting its zoom, and a description of its keys, and none of those going on the application's `<svg>`
+  - the application's own `<svg>` role, `tabindex`, name, and description being untouched, not just at the end but throughout a sequence of showing, zooming, panning, changing every mode, moving, and hiding the toolbar, checked with a `MutationObserver` on the `<svg>`'s attributes that must record nothing
+  - a key sent to the `<svg>` itself being neither handled nor cancelled
+  - the focus target drawing nothing until it has focus, then outlining the visible area, and blur removing the outline
+  - the focus target taking no pointer events, lying between the pan surface and the content layer, covering the same area, and leaving panning working
   - that name following a zoom made by a button and one made by the wheel
   - the arrow keys panning like scrolling, 40 units a press at any zoom, and Shift making it five times further
   - plus, minus, and zero zooming from the keyboard
   - unrelated keys, Tab, and keys held with Ctrl, Cmd, or Alt being neither handled nor cancelled, so browser page zoom and focus movement still work
   - a key pressed on a focused toolbar button not panning the view, although the event bubbles through the `<svg>`
   - the arrow keys following `pan_mode` and the zoom keys following `wheel_zoom_mode`
-  - hiding the toolbar taking the tab stop, role, name, description, and key listener off the `<svg>`
+  - hiding the toolbar removing the whole focus target, with its tab stop, role, name, description, and key listener, and leaving the `<svg>` as it was
   - zooming adding no live region, and rewriting no button state attribute that did not change
 - responsive layouts:
   - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size rather than the `0 × 0` that `svg-dom` caches for it
@@ -248,7 +252,7 @@ A node drag that travels across empty background stays a node drag, so the scene
 Pressing on a node never gives the pan surface a capture, even though it lies behind the node.
 
 Its `pan.rs` scenario also covers the keyboard, through the browser's own focus order and real key events rather than a synthetic `keydown`.
-Pressing Tab puts focus on the scene, and the arrow keys then pan it by 40 units a press.
+Pressing Tab puts focus on the scene's keyboard focus target, not on the application's `<svg>`, and the arrow keys then pan it by 40 units a press.
 
 Its `pan.rs` scenario also zooms with a real Ctrl and wheel event in the middle of a real node drag and a real pan, with pointer capture held.
 The fixture switches wheel zoom on with no toolbar.

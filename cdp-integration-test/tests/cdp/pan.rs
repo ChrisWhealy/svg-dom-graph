@@ -196,10 +196,16 @@ fn check(condition: bool, msg: &str) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The id of the element that currently has keyboard focus, or an empty string if it has none.
-fn focused_id(tab: &Tab) -> Result<String, String> {
+/// The `role` of the element that currently has keyboard focus, or an empty string if nothing does.
+///
+/// The scene's focus target is an element of its own with no id, so it is recognised by its role. The application's own
+/// `<svg>`, which has an id but never a role from the scene, is what must *not* be the one focused.
+fn focused_role(tab: &Tab) -> Result<String, String> {
     let result = tab
-        .evaluate("document.activeElement && document.activeElement.id || ''", false)
+        .evaluate(
+            "document.activeElement && document.activeElement.getAttribute('role') || ''",
+            false,
+        )
         .map_err(|e| format!("could not read the focused element: {e}"))?;
     Ok(result.value.and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default())
 }
@@ -211,13 +217,16 @@ fn focused_id(tab: &Tab) -> Result<String, String> {
 fn tab_reaches_the_scene_and_the_arrow_keys_then_pan_it() -> Result<(), String> {
     let tab = new_tab()?;
     check(
-        focused_id(&tab)?.is_empty(),
+        focused_role(&tab)?.is_empty(),
         "something already has focus before any key is pressed",
     )?;
     check(content_translate(&tab)?.is_none(), "the scene was already panned")?;
 
     tab.press_key("Tab").map_err(|e| format!("could not press Tab: {e}"))?;
-    check(focused_id(&tab)? == "diagram", "Tab did not put focus on the scene")?;
+    check(
+        focused_role(&tab)? == "application",
+        "Tab did not put focus on the scene's keyboard target",
+    )?;
 
     for _ in 0..2 {
         tab.press_key("ArrowRight")
@@ -258,7 +267,7 @@ fn a_node_drag_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), Stri
         &format!("expected solo at ({}, {before_y}), got ({after_x}, {after_y})", before_x + 45.0),
     )?;
     check(
-        has_capture(&tab, SOLO)? == false,
+        !has_capture(&tab, SOLO)?,
         "the node still holds pointer capture after the button came up",
     )
 }

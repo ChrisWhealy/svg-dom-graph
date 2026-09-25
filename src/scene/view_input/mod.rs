@@ -17,7 +17,7 @@ use super::{Scene, SceneInner};
 use crate::error::Error;
 use frame::ViewFlusher;
 use std::{
-    cell::{Cell, RefCell},
+    cell::RefCell,
     rc::{Rc, Weak},
 };
 use svg_dom::{SvgNode, SvgRoot, root::utils::Rect};
@@ -55,8 +55,9 @@ pub(super) struct ViewInput {
     surface: SvgNode,
     /// The content layer, kept so removing this can also remove the wheel listener registered on it — see [`wheel`].
     content: SvgNode,
-    /// The `<svg>` root, kept so removing this can take the keyboard handling off it again — see [`keyboard`].
-    root: SvgNode,
+    /// The keyboard focus target: a transparent `<rect>` of the scene's own, never the application's `<svg>` — see
+    /// [`keyboard`].
+    target: SvgNode,
     pan: bool,
     wheel: bool,
 }
@@ -68,10 +69,10 @@ impl ViewInput {
         if self.wheel {
             self.content.remove_listeners("wheel");
         }
-        keyboard::remove(&self.root);
+        self.target.remove();
     }
 
-    /// Makes the surface cover `area`.
+    /// Makes the surface, and the focus target that outlines the same area, cover `area`.
     fn place(&self, area: Rect, scratch: &mut String) -> Result<(), Error> {
         for (name, value) in [
             ("x", area.origin.x),
@@ -80,14 +81,16 @@ impl ViewInput {
             ("height", area.size.height),
         ] {
             self.surface.set_attr_display(scratch, name, value)?;
+            self.target.set_attr_display(scratch, name, value)?;
         }
         Ok(())
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it. The
-/// `<svg>` itself becomes a keyboard target too, so the same gestures can be reached without a pointer.
+/// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it. A
+/// keyboard focus target of its own, another `<rect>`, is added beside it, so the same gestures can be reached without a
+/// pointer. The application's `<svg>` is never touched.
 ///
 /// `scale` is the current zoom, for the `<svg>`'s accessible name.
 ///
@@ -105,16 +108,24 @@ fn build(
     scale: f64,
 ) -> Result<Option<ViewInput>, Error> {
     let surface = svg.rect(area.origin, area.size)?;
-    // Set just before the keyboard handling is installed, so a failure earlier on never removes attributes this did not
-    // set — the `<svg>` may carry a `tabindex` or a `role` of the application's own.
-    let keyboard_attempted = Cell::new(false);
+    let target = svg.rect(area.origin, area.size);
+    let target = match target {
+        Ok(target) => target,
+        Err(err) => {
+            surface.remove();
+            return Err(err.into());
+        },
+    };
 
     let wired = (|| {
         // `transparent`, not `none`: an SVG shape only receives pointer events where it is painted.
         surface.set_fill("transparent")?;
         surface.set_attr("aria-hidden", "true")?;
-        let Some(root) = content.parent() else { return Ok::<_, Error>(None) };
+        let Some(root) = content.parent() else { return Ok::<_, Error>(false) };
+        // Both go directly beneath the content layer. The focus target is inserted second, so it lies above the surface —
+        // and takes no pointer events, so the surface still gets every one.
         root.insert_before(&surface, content)?;
+        root.insert_before(&target, content)?;
 
         // One flusher serves both gestures, so a pan and a wheel zoom in the same frame still cost a single DOM write.
         let flusher = ViewFlusher::new(inner.clone())?;
@@ -124,32 +135,29 @@ fn build(
         if wheel {
             wheel::install(content, &surface, inner, &flusher)?;
         }
-        keyboard_attempted.set(true);
-        keyboard::install(&root, inner, pan, wheel, scale)?;
-        Ok(Some(root))
+        keyboard::install(&target, inner, pan, wheel, scale)?;
+        Ok(true)
     })();
 
     match wired {
-        Ok(Some(root)) => Ok(Some(ViewInput {
+        Ok(true) => Ok(Some(ViewInput {
             surface,
+            target,
             content: content.clone(),
-            root,
             pan,
             wheel,
         })),
-        Ok(None) => {
+        Ok(false) => {
             surface.remove();
+            target.remove();
             Ok(None)
         },
         Err(err) => {
+            // Everything created here is the scene's own, so removing it cannot disturb anything of the application's.
             surface.remove();
+            target.remove();
             if wheel {
                 content.remove_listeners("wheel");
-            }
-            if keyboard_attempted.get() {
-                if let Some(root) = content.parent() {
-                    keyboard::remove(&root);
-                }
             }
             Err(err)
         },
@@ -158,7 +166,7 @@ fn build(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl SceneInner {
-    /// Brings the `<svg>`'s accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
+    /// Brings the focus target's accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
     ///
     /// Does nothing if there is no keyboard handling, and writes only if the text changes. It is a name, not a live
     /// region, so it never interrupts a screen reader with an announcement on every zoom step.
@@ -175,7 +183,7 @@ impl SceneInner {
         let result = self
             .view_input
             .as_ref()
-            .map_or(Ok(()), |input| input.root.set_attr_if_changed("aria-label", &scratch));
+            .map_or(Ok(()), |input| input.target.set_attr_if_changed("aria-label", &scratch));
         self.scratch = scratch;
         Ok(result?)
     }
@@ -209,14 +217,15 @@ impl Scene {
     ///
     /// # Keyboard
     ///
-    /// While panning is active the `<svg>` itself also joins the Tab order, so a keyboard user can pan too: the arrow keys
-    /// move the view like scrolling, 40 units a press, and Shift moves it five times further. Otherwise zooming in from
-    /// the toolbar could leave content that a keyboard user cannot get back to. The `<svg>` is given the `application`
-    /// role, and its accessible name reports the current zoom, such as "Graph view, zoom 125%".
+    /// While panning is active the scene also adds a keyboard focus target, so a keyboard user can pan too: the arrow
+    /// keys move the view like scrolling, 40 units a press, and Shift moves it five times further. Otherwise zooming in
+    /// from the toolbar could leave content that a keyboard user cannot get back to. The target is given the
+    /// `application` role, and its accessible name reports the current zoom, such as "Graph view, zoom 125%".
     ///
-    /// This sets `tabindex`, `role`, `aria-label`, and `aria-description` on the `<svg>`, and removes them when no gesture
-    /// needs them. Only a key pressed while the `<svg>` itself has focus is handled, and Ctrl, Cmd, and Alt combinations
-    /// are left alone.
+    /// The focus target is a transparent `<rect>` that the scene creates and removes. **The application's own `<svg>` is
+    /// never touched**, so a role, name, description, or `tabindex` it was given is left exactly as it was, and the
+    /// `application` role is confined to that one control. Only a key pressed while the target has focus is handled, and
+    /// Ctrl, Cmd, and Alt combinations are left alone.
     ///
     /// # Errors
     ///
@@ -234,7 +243,7 @@ impl Scene {
     /// not also zoom the page. A wheel without a modifier is left alone, so the page still scrolls.
     ///
     /// The keyboard equivalent is `+` (or `=`), `-`, and `0`, which zoom in, zoom out, and restore the original zoom
-    /// while the `<svg>` has focus. See [`set_pan_mode`](Self::set_pan_mode) for how the `<svg>` becomes a keyboard target.
+    /// while the keyboard focus target has focus. See [`set_pan_mode`](Self::set_pan_mode) for what that is.
     ///
     /// # Errors
     ///

@@ -83,8 +83,12 @@
 
    **Keyboard**<br>
    Zooming from the toolbar can push content out of view, so the same gestures can be reached without a pointer.
-   While either is active, the `<svg>` itself becomes a keyboard target: it joins the Tab order and has the `application` role.
+   While either is active, the scene adds a keyboard focus target of its own: a transparent `<rect>` inside the `<svg>` that joins the Tab order and has the `application` role.
    The role tells a screen reader to pass keys through to it instead of keeping them for reading.
+
+   The application's own `<svg>` is never touched.
+   Whatever role, name, description, or `tabindex` it was given, often a description of the whole graph, is left exactly as it was, throughout and afterwards, so the default `InputMode::WithToolbar` is safe to use with an `<svg>` that has its own.
+   The `application` role is confined to that one small control, so the nodes inside the `<svg>` keep their ordinary accessible descriptions and are read as normal.
 
    - The arrow keys pan the view, like scrolling: right moves the view right, so the content moves left.
      One press moves 40 units of the `<svg>`'s own space, which is the same distance on screen at any zoom, and Shift moves five times as far.
@@ -92,16 +96,18 @@
    - `+` (or `=`), `-`, and `0` zoom in, zoom out, and restore the original zoom, about the centre of the visible area.
      They belong to `wheel_zoom_mode`.
 
-   Only a key pressed while the `<svg>` itself has focus is handled, so an arrow key on a focused toolbar button is left to that button.
+   Only a key pressed while the focus target has focus is handled, so an arrow key on a focused toolbar button is left to that button, and a key sent to the `<svg>` itself is ignored.
    Keys held with Ctrl, Cmd, or Alt are left alone, so the browser's own page zoom keeps working.
    Everything that is handled has its default action cancelled, so the page does not also scroll.
 
-   The `<svg>`'s accessible name says how far it is zoomed, such as "Graph view, zoom 125%", and its description lists the keys that are active.
+   The focus target's accessible name says how far it is zoomed, such as "Graph view, zoom 125%", and its description lists the keys that are active.
    The zoom is part of the name and not a live region, so a run of zoom steps never interrupts a screen reader with an announcement.
    It is read the next time the scene takes focus.
 
-   The keyboard handling sets `tabindex`, `role`, `aria-label`, and `aria-description` on the `<svg>`, and removes them again when no gesture needs it.
-   An application that sets its own values for those on the same element should not also enable these gestures.
+   The focus target draws nothing until it has keyboard focus.
+   Then it outlines the visible area, so it is obvious where focus is.
+   It takes no pointer events, so it never gets in the way of panning.
+   It is removed, with its role, name, description, tab stop, and key listener, when no gesture needs it.
 
    `InputMode::WithToolbar`, the default, makes a gesture active only while a toolbar is shown.
    `InputMode::On` makes it active whether or not a toolbar is shown, and `InputMode::Off` never activates it.

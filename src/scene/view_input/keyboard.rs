@@ -2,16 +2,25 @@
 //!
 //! Zooming is reachable from the keyboard through the toolbar, but zooming in can push content out of view. Without a
 //! keyboard way to move the view, that content would be somewhere the same person can no longer reach. So when panning
-//! is active the `<svg>` itself becomes a keyboard focus target. Its arrow keys pan the view, and its plus, minus and
+//! or wheel zoom is active the scene adds a keyboard focus target. Its arrow keys pan the view, and its plus, minus and
 //! zero keys zoom when wheel zoom is active.
 //!
-//! The `<svg>` is given `role="application"`, since it handles its own keys. Screen readers that would otherwise keep
-//! arrow keys for reading then pass them through to it.
+//! # A dedicated element, not the application's `<svg>`
 //!
-//! Only a key pressed while the `<svg>` itself has focus is handled. A key pressed on a toolbar button, which sits inside
-//! the `<svg>` and so sees the same event bubble up, is left to the button.
+//! The focus target is a transparent `<rect>` that the scene creates and removes, and that is the only thing given a role,
+//! a name, a description, or a `tabindex`. The application's own `<svg>` is never touched. So whatever role, name, or
+//! `tabindex` the application gave it — often a description of the whole graph — is left exactly as it was, and is there
+//! again when the keyboard control goes.
+//!
+//! It also keeps the `application` role, which asks a screen reader to pass keys through instead of keeping them for
+//! reading, confined to one small control. The nodes inside the `<svg>` keep their ordinary accessible descriptions and
+//! are read as normal.
+//!
+//! The target has `pointer-events="none"`, so it never gets in the way of the pan surface beneath it. Nothing is drawn
+//! for it until it has keyboard focus. Then it outlines the visible area, so it is obvious where focus is.
 
 use super::super::Scene;
+use crate::colours::FOCUS_RING;
 use crate::{error::Error, scene::SceneInner};
 use std::{cell::RefCell, rc::Weak};
 use svg_dom::SvgNode;
@@ -24,8 +33,9 @@ const PAN_STEP: f64 = 40.0;
 /// How many times further a press moves the view while Shift is held.
 const SHIFT_FACTOR: f64 = 5.0;
 
-/// The attributes this module sets on the `<svg>`, and which [`remove`] takes away again.
-const ATTRIBUTES: [&str; 4] = ["role", "tabindex", "aria-label", "aria-description"];
+/// The width of the outline drawn around the visible area while the target has focus, in the `<svg>`'s own units. Half
+/// of it falls outside the visible area and is clipped, so this is twice the width that shows.
+const FOCUS_OUTLINE_WIDTH: f64 = 6.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the scene while it is a keyboard target: what it is, and how far it is zoomed.
@@ -61,55 +71,53 @@ fn description(pan: bool, zoom: bool) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Makes `root`, the `<svg>` itself, a keyboard target and wires its keys.
+/// Makes `target`, a `<rect>` the scene has created for the purpose, a keyboard target and wires its keys.
 ///
 /// `pan` enables the arrow keys and `zoom` enables plus, minus and zero. `scale` is the current zoom, for the name.
 ///
-/// The listener holds only a `Weak` reference to the scene's shared state, for the same reason
-/// [`Scene::make_draggable_with`](crate::scene::Scene::make_draggable_with)'s do.
+/// The listeners hold only a `Weak` reference to the scene's shared state, for the same reason
+/// [`Scene::make_draggable_with`](crate::scene::Scene::make_draggable_with)'s do. They go when `target` does.
 pub(super) fn install(
-    root: &SvgNode,
+    target: &SvgNode,
     inner: &Weak<RefCell<SceneInner>>,
     pan: bool,
     zoom: bool,
     scale: f64,
 ) -> Result<(), Error> {
-    root.set_attr("role", "application")?;
-    root.set_attr("tabindex", "0")?;
-    root.set_attr("aria-label", &label(scale))?;
-    root.set_attr("aria-description", &description(pan, zoom))?;
+    // Nothing is drawn until it has focus, and it never takes a pointer event from the surface beneath it.
+    target.set_fill("none")?;
+    target.set_stroke("none")?;
+    target.set_attr("pointer-events", "none")?;
 
-    let target = root.downgrade();
+    target.set_attr("role", "application")?;
+    target.set_attr("tabindex", "0")?;
+    target.set_attr("aria-label", &label(scale))?;
+    target.set_attr("aria-description", &description(pan, zoom))?;
+
+    // Keyboard focus must be obvious, so outline the visible area while it has it.
+    let focused = target.downgrade();
+    target.on_focus(move |_| {
+        if let Some(target) = focused.upgrade() {
+            let _ = target.set_stroke(FOCUS_RING);
+            let _ = target.set_stroke_width(FOCUS_OUTLINE_WIDTH);
+        }
+    })?;
+    let blurred = target.downgrade();
+    target.on_blur(move |_| {
+        if let Some(target) = blurred.upgrade() {
+            let _ = target.set_stroke("none");
+        }
+    })?;
+
     let inner = inner.clone();
-    root.on_keydown(move |event| on_key(&target, &inner, pan, zoom, &event))?;
+    target.on_keydown(move |event| on_key(&inner, pan, zoom, &event))?;
     Ok(())
 }
 
-/// Takes the keyboard handling off `root`: its listener, and the attributes [`install`] set.
-///
-/// `svg-dom` also removes a node handle's listeners once its last handle is dropped, which the scene's `root` handle is
-/// as soon as the surface goes. So removing the listener here is belt and braces, done so that it does not depend on
-/// when that drop happens. The attributes are the part only this removes.
-pub(super) fn remove(root: &SvgNode) {
-    root.remove_listeners("keydown");
-    for name in ATTRIBUTES {
-        let _ = root.remove_attr(name);
-    }
-}
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn on_key(
-    root: &svg_dom::WeakSvgNode,
-    inner: &Weak<RefCell<SceneInner>>,
-    pan: bool,
-    zoom: bool,
-    event: &KeyboardEvent,
-) {
-    // Only when the scene itself has focus: a key pressed on a toolbar button bubbles up to here too.
-    let Some(root) = root.upgrade() else { return };
-    if event.target().as_ref() != Some(root.as_element().as_ref()) {
-        return;
-    }
+fn on_key(inner: &Weak<RefCell<SceneInner>>, pan: bool, zoom: bool, event: &KeyboardEvent) {
+    // Only this element receives the event, since it has no children and nothing else in the `<svg>` is its ancestor. A
+    // key pressed on a toolbar button, for one, never reaches it.
     // Leave browser and assistive-technology shortcuts alone, such as Ctrl and Cmd plus plus or minus for page zoom.
     if event.ctrl_key() || event.meta_key() || event.alt_key() {
         return;

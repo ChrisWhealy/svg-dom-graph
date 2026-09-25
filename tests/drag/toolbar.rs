@@ -28,6 +28,11 @@ fn required(selector: &str) -> Result<web_sys::Element, String> {
     query(selector)?.ok_or_else(|| format!("nothing matches {selector}"))
 }
 
+/// The scene's keyboard focus target: a `<rect>` of its own with the `application` role, never the application's `<svg>`.
+fn focus_target(id: &str) -> Result<web_sys::Element, String> {
+    required(&format!("#{id} > rect[role=\"application\"]"))
+}
+
 fn bar(id: &str) -> Result<web_sys::Element, String> {
     required(&format!("#{id} > [role=\"toolbar\"]"))
 }
@@ -405,7 +410,7 @@ fn zoom_works_without_a_toolbar_and_new_nodes_join_the_zoomed_layer() -> Result<
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn pan_surface(id: &str) -> Result<web_sys::Element, String> {
-    required(&format!("#{id} > rect"))
+    required(&format!("#{id} > rect[aria-hidden=\"true\"]"))
 }
 
 /// The pan surface exists only while a toolbar is shown, sits directly beneath the content layer, and covers the whole
@@ -414,23 +419,29 @@ fn pan_surface(id: &str) -> Result<web_sys::Element, String> {
 fn a_pan_surface_exists_only_while_the_toolbar_is_shown() -> Result<(), String> {
     let scene = new_scene("tb-pan-exists")?;
     check(
-        query("#tb-pan-exists > rect")?.is_none(),
+        query("#tb-pan-exists > rect[aria-hidden=\"true\"]")?.is_none(),
         "a pan surface exists before any toolbar",
     )?;
 
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-pan-exists")?;
-    let next = surface.next_element_sibling().ok_or("nothing follows the pan surface")?;
+    // Beneath the content layer, with the keyboard focus target between the two: surface, target, content.
+    let target = surface.next_element_sibling().ok_or("nothing follows the pan surface")?;
+    check(
+        target.get_attribute("role").as_deref() == Some("application"),
+        "the keyboard target does not directly follow the pan surface",
+    )?;
+    let next = target.next_element_sibling().ok_or("nothing follows the keyboard target")?;
     check(
         next.get_attribute("class").as_deref() == Some("svg-dom-graph-content"),
-        "the pan surface is not directly beneath the content layer",
+        "the pan surface and keyboard target are not directly beneath the content layer",
     )?;
     check_close(attr_f64(&surface, "width")?, 400.0)?;
     check_close(attr_f64(&surface, "height")?, 300.0)?;
 
     scene.hide_toolbar();
     check(
-        query("#tb-pan-exists > rect")?.is_none(),
+        query("#tb-pan-exists > rect[aria-hidden=\"true\"]")?.is_none(),
         "the pan surface outlived the toolbar",
     )
 }
@@ -830,14 +841,14 @@ fn releasing_a_pan_writes_its_final_position_immediately() -> Result<(), String>
 /// Ctrl+wheel one notch up, then reports whether the scene zoomed. Uses a bounding-box-relative pointer position.
 fn ctrl_wheel_zooms(scene: &Scene, id: &str) -> Result<bool, String> {
     let before = scene.zoom_scale();
-    let target = query(&format!("#{id} > rect"))?.unwrap_or(required(&format!("#{id}"))?);
+    let target = query(&format!("#{id} > rect[aria-hidden=\"true\"]"))?.unwrap_or(required(&format!("#{id}"))?);
     wheel(&target, 100, 100, -100.0, true, false)?;
     Ok((scene.zoom_scale() - before).abs() > 1e-9)
 }
 
 /// Drags the background 40 pixels right, then reports whether the content moved. Needs a pan surface to exist.
 fn background_drag_pans(id: &str) -> Result<bool, String> {
-    let surface = match query(&format!("#{id} > rect"))? {
+    let surface = match query(&format!("#{id} > rect[aria-hidden=\"true\"]"))? {
         Some(surface) => surface,
         None => return Ok(false),
     };
@@ -878,7 +889,10 @@ fn by_default_both_gestures_follow_the_toolbar() -> Result<(), String> {
         !scene.pan_enabled() && !scene.wheel_zoom_enabled(),
         "hiding the toolbar left a gesture active",
     )?;
-    check(query("#im-default > rect")?.is_none(), "the surface outlived the toolbar")
+    check(
+        query("#im-default > rect[aria-hidden=\"true\"]")?.is_none(),
+        "the surface outlived the toolbar",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -943,7 +957,9 @@ fn a_gesture_can_be_forced_off_even_while_the_toolbar_is_shown() -> Result<(), S
     )?;
     check(ctrl_wheel_zooms(&scene, "im-off")?, "ctrl+wheel stopped zooming")?;
     check(
-        query("#im-off > rect")?.and_then(|r| r.get_attribute("style")).is_none(),
+        query("#im-off > rect[aria-hidden=\"true\"]")?
+            .and_then(|r| r.get_attribute("style"))
+            .is_none(),
         "a surface with panning off still shows a grab cursor",
     )
 }
@@ -959,7 +975,7 @@ fn with_both_gestures_off_there_is_no_surface_even_with_a_toolbar() -> Result<()
 
     check(scene.has_toolbar(), "the toolbar is not shown")?;
     check(
-        query("#im-both-off > rect")?.is_none(),
+        query("#im-both-off > rect[aria-hidden=\"true\"]")?.is_none(),
         "a surface exists with both gestures off",
     )?;
     check(!ctrl_wheel_zooms(&scene, "im-both-off")?, "wheel zoom worked with the mode off")
@@ -999,7 +1015,7 @@ fn switching_a_gesture_back_off_removes_its_surface_and_listener() -> Result<(),
 
     scene.set_wheel_zoom_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
     check(
-        query("#im-teardown > rect")?.is_none(),
+        query("#im-teardown > rect[aria-hidden=\"true\"]")?.is_none(),
         "the surface remained after switching back",
     )?;
     let before = scene.zoom_scale();
@@ -1016,9 +1032,9 @@ fn switching_a_gesture_back_off_removes_its_surface_and_listener() -> Result<(),
 fn setting_the_same_mode_again_keeps_the_same_surface() -> Result<(), String> {
     let scene = new_scene("im-idempotent")?;
     scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
-    let first = required("#im-idempotent > rect")?;
+    let first = required("#im-idempotent > rect[aria-hidden=\"true\"]")?;
     scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
-    let second = required("#im-idempotent > rect")?;
+    let second = required("#im-idempotent > rect[aria-hidden=\"true\"]")?;
     check(first.is_same_node(Some(&second)), "an unchanged mode rebuilt the surface")
 }
 
@@ -1029,7 +1045,7 @@ fn refresh_layout_resizes_the_surface_with_no_toolbar() -> Result<(), String> {
     let scene = new_scene("im-refresh")?;
     let svg_element = required("#im-refresh")?;
     scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
-    let surface = required("#im-refresh > rect")?;
+    let surface = required("#im-refresh > rect[aria-hidden=\"true\"]")?;
     check_close(attr_f64(&surface, "width")?, 400.0)?;
 
     // The scene cannot observe a `viewBox` change, which is why `refresh_layout` exists.
@@ -1211,7 +1227,10 @@ fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() ->
         .show_toolbar(ToolbarOptions::new(Side::South))
         .map_err(|e| e.to_string())?;
 
-    check(count("#tb-cycles > rect")? == 1, "there is not exactly one pan surface")?;
+    check(
+        count("#tb-cycles > rect[aria-hidden=\"true\"]")? == 1,
+        "there is not exactly one pan surface",
+    )?;
     check(
         count("#tb-cycles > [role=\"toolbar\"]")? == 1,
         "there is not exactly one toolbar",
@@ -1226,7 +1245,10 @@ fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() ->
 
     // Tear it all down: nothing left from any earlier cycle may still react to the wheel.
     scene.hide_toolbar();
-    check(count("#tb-cycles > rect")? == 0, "a surface survived hiding the toolbar")?;
+    check(
+        count("#tb-cycles > rect[aria-hidden=\"true\"]")? == 0,
+        "a surface survived hiding the toolbar",
+    )?;
     check(
         !wheel(&node, 110, 110, -100.0, true, false)?,
         "a listener left by an earlier cycle still cancels the wheel",
@@ -1255,7 +1277,7 @@ fn toggling_input_modes_repeatedly_installs_no_duplicate_handlers() -> Result<()
     let surfaces = web_sys::window()
         .and_then(|w| w.document())
         .ok_or("no document")?
-        .query_selector_all("#im-cycles > rect")
+        .query_selector_all("#im-cycles > rect[aria-hidden=\"true\"]")
         .map_err(|e| format!("{e:?}"))?
         .length();
     check(surfaces == 1, &format!("expected one surface, found {surfaces}"))?;
@@ -1650,34 +1672,35 @@ fn activating_an_aria_disabled_button_does_nothing() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With panning on, the `<svg>` itself is a keyboard target with a role and a name that says how far it is zoomed.
+/// With panning on, the scene adds a keyboard focus target of its own: a role, a name that says how far it is zoomed, and
+/// a description of its keys. All of that is on that element, and none of it on the application's `<svg>`.
 #[wasm_bindgen_test]
-async fn the_scene_is_a_named_keyboard_target_that_reports_its_zoom() -> Result<(), String> {
+async fn the_scene_adds_a_named_keyboard_target_that_reports_its_zoom() -> Result<(), String> {
     let scene = new_scene("a11y-root")?;
-    let root = required("#a11y-root")?;
+    let svg = required("#a11y-root")?;
     check(
-        !root.has_attribute("tabindex"),
-        "the scene is a keyboard target before anything asks for it",
+        query("#a11y-root > rect[role=\"application\"]")?.is_none(),
+        "a keyboard target exists before anything asks for it",
     )?;
 
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
-    check(attr(&root, "tabindex")? == "0", "the scene is not in the Tab order")?;
+    let target = focus_target("a11y-root")?;
+    check(attr(&target, "tabindex")? == "0", "the target is not in the Tab order")?;
     check(
-        attr(&root, "role")? == "application",
-        "the scene does not have the application role",
+        attr(&target, "aria-label")? == "Graph view, zoom 100%",
+        "the target's name does not report its zoom",
     )?;
     check(
-        attr(&root, "aria-label")? == "Graph view, zoom 100%",
-        "the scene's name does not report its zoom",
+        attr(&target, "aria-description")?.contains("Arrow keys pan"),
+        "the target does not say how to pan",
     )?;
-    check(
-        attr(&root, "aria-description")?.contains("Arrow keys pan"),
-        "the scene does not say how to pan it",
-    )?;
+    for name in ["role", "tabindex", "aria-label", "aria-description"] {
+        check(!svg.has_attribute(name), &format!("{name} was put on the application's <svg>"))?;
+    }
 
     scene.zoom_in().map_err(|e| e.to_string())?;
     check(
-        attr(&root, "aria-label")? == "Graph view, zoom 125%",
+        attr(&target, "aria-label")? == "Graph view, zoom 125%",
         "the name did not follow a button zoom",
     )?;
 
@@ -1686,11 +1709,10 @@ async fn the_scene_is_a_named_keyboard_target_that_reports_its_zoom() -> Result<
     wheel(&pan_surface("a11y-root")?, 100, 100, -100.0, true, false)?;
     next_frame().await?;
     check(
-        attr(&root, "aria-label")? == "Graph view, zoom 125%",
+        attr(&target, "aria-label")? == "Graph view, zoom 125%",
         "the name did not follow a wheel zoom",
     )
 }
-
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Arrow keys move the view like scrolling: pressing right moves the view right, so the content moves left. One press is
 /// 40 units, and Shift makes it five times further. This is the keyboard way back to content that zooming pushed out of
@@ -1699,7 +1721,7 @@ async fn the_scene_is_a_named_keyboard_target_that_reports_its_zoom() -> Result<
 fn arrow_keys_pan_the_view_and_shift_pans_further() -> Result<(), String> {
     let scene = new_scene("a11y-arrows")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
-    let root = required("#a11y-arrows")?;
+    let root = focus_target("a11y-arrows")?;
 
     check(
         key(&root, "ArrowRight", false, false, false)?,
@@ -1748,7 +1770,7 @@ fn a_keyboard_pan_step_is_the_same_distance_at_any_zoom() -> Result<(), String> 
         scene.zoom_in().map_err(|e| e.to_string())?;
     }
     let (before, _) = content_translate("a11y-arrows-zoom")?;
-    key(&required("#a11y-arrows-zoom")?, "ArrowRight", false, false, false)?;
+    key(&focus_target("a11y-arrows-zoom")?, "ArrowRight", false, false, false)?;
     let (after, _) = content_translate("a11y-arrows-zoom")?;
     check_close(after - before, -40.0)
 }
@@ -1759,7 +1781,7 @@ fn a_keyboard_pan_step_is_the_same_distance_at_any_zoom() -> Result<(), String> 
 fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
     let scene = new_scene("a11y-zoom-keys")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
-    let root = required("#a11y-zoom-keys")?;
+    let root = focus_target("a11y-zoom-keys")?;
 
     check(key(&root, "+", false, false, false)?, "a handled zoom key was not cancelled")?;
     check_close(scene.zoom_scale(), 1.25)?;
@@ -1782,7 +1804,7 @@ fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
 fn unrelated_keys_and_browser_shortcuts_are_left_alone() -> Result<(), String> {
     let scene = new_scene("a11y-shortcuts")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
-    let root = required("#a11y-shortcuts")?;
+    let root = focus_target("a11y-shortcuts")?;
 
     check(!key(&root, "a", false, false, false)?, "an unrelated key was cancelled")?;
     check(
@@ -1830,7 +1852,7 @@ fn a_key_pressed_on_a_toolbar_button_does_not_pan_the_view() -> Result<(), Strin
 fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mode() -> Result<(), String> {
     let scene = new_scene("a11y-modes")?;
     scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
-    let root = required("#a11y-modes")?;
+    let root = focus_target("a11y-modes")?;
 
     // Panning on, wheel zoom off: arrows work, zoom keys do not.
     key(&root, "ArrowRight", false, false, false)?;
@@ -1848,6 +1870,8 @@ fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mo
     // Wheel zoom on, panning off: the reverse.
     scene.set_pan_mode(InputMode::Off).map_err(|e| e.to_string())?;
     scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    // Changing a mode rebuilds the gestures, and with them the focus target, so the old element is gone.
+    let root = focus_target("a11y-modes")?;
     let before = content_translate("a11y-modes")?;
     check(
         !key(&root, "ArrowRight", false, false, false)?,
@@ -1862,25 +1886,28 @@ fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mo
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `<svg>` is only a keyboard target while a gesture that needs it is active. Once none is, everything this added —
-/// the tab stop, the role, the name, the description, and the key listener — is gone again.
+/// The keyboard target is the scene's own, so once no gesture needs it the whole element goes, along with its role, name,
+/// description, tab stop, and key listener. Nothing of the application's `<svg>` was involved, so nothing on it changes.
 #[wasm_bindgen_test]
-fn hiding_the_toolbar_takes_the_keyboard_handling_off_the_scene() -> Result<(), String> {
+fn hiding_the_toolbar_removes_the_keyboard_target_and_leaves_the_svg_alone() -> Result<(), String> {
     let scene = new_scene("a11y-teardown")?;
+    let svg = required("#a11y-teardown")?;
+    let before = attributes_of(&svg);
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
-    let root = required("#a11y-teardown")?;
-    check(root.has_attribute("tabindex"), "test setup: no keyboard handling was added")?;
+    let target = focus_target("a11y-teardown")?;
 
     scene.hide_toolbar();
-    for name in ["tabindex", "role", "aria-label", "aria-description"] {
-        check(
-            !root.has_attribute(name),
-            &format!("{name} was left on the scene after the toolbar was hidden"),
-        )?;
-    }
     check(
-        !key(&root, "ArrowRight", false, false, false)?,
-        "a key listener was left behind",
+        query("#a11y-teardown > rect[role=\"application\"]")?.is_none(),
+        "the keyboard target was left in the DOM after the toolbar was hidden",
+    )?;
+    check(
+        attributes_of(&svg) == before,
+        "hiding the toolbar changed the application's <svg>",
+    )?;
+    check(
+        !key(&target, "ArrowRight", false, false, false)?,
+        "a key listener was left behind on the removed target",
     )?;
     check(
         content_translate("a11y-teardown")? == (0.0, 0.0),
@@ -1888,6 +1915,86 @@ fn hiding_the_toolbar_takes_the_keyboard_handling_off_the_scene() -> Result<(), 
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A key sent to the application's `<svg>` itself is not the scene's: only the focus target takes keys, so an application
+/// that handles keys on its own `<svg>` is not competing with anything.
+#[wasm_bindgen_test]
+fn a_key_sent_to_the_svg_itself_does_nothing() -> Result<(), String> {
+    let scene = new_scene("a11y-svg-key")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let svg = required("#a11y-svg-key")?;
+
+    check(
+        !key(&svg, "ArrowRight", false, false, false)?,
+        "the scene cancelled a key sent to the <svg>",
+    )?;
+    key(&svg, "+", false, false, false)?;
+    check(
+        content_translate("a11y-svg-key")? == (0.0, 0.0) && scene.zoom_scale() == 1.0,
+        "a key sent to the <svg> changed the view",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The target draws nothing until it has keyboard focus. Then it outlines the visible area, so it is obvious where focus
+/// is, and blur takes the outline away again.
+#[wasm_bindgen_test]
+fn the_keyboard_target_outlines_the_scene_only_while_it_has_focus() -> Result<(), String> {
+    let scene = new_scene("a11y-outline")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let target = focus_target("a11y-outline")?;
+
+    check(attr(&target, "stroke")? == "none", "the target draws an outline when unfocused")?;
+    check(attr(&target, "fill")? == "none", "the target fills the scene")?;
+
+    target
+        .dispatch_event(&web_sys::FocusEvent::new("focus").map_err(|e| format!("{e:?}"))?.into())
+        .map_err(|e| format!("{e:?}"))?;
+    check(attr(&target, "stroke")? != "none", "focus did not outline the scene")?;
+    check(attr_f64(&target, "stroke-width")? > 0.0, "the focus outline has no width")?;
+
+    target
+        .dispatch_event(&web_sys::FocusEvent::new("blur").map_err(|e| format!("{e:?}"))?.into())
+        .map_err(|e| format!("{e:?}"))?;
+    check(attr(&target, "stroke")? == "none", "blur did not remove the outline")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The target lies above the pan surface but takes no pointer events, and covers the same area, so it neither blocks
+/// panning nor is left behind when the layout is refreshed.
+#[wasm_bindgen_test]
+fn the_keyboard_target_never_gets_in_the_way_of_the_pan_surface() -> Result<(), String> {
+    let scene = new_scene("a11y-passthrough")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let target = focus_target("a11y-passthrough")?;
+    let surface = pan_surface("a11y-passthrough")?;
+
+    check(attr(&target, "pointer-events")? == "none", "the target takes pointer events")?;
+    // Beneath the content layer, and after the surface: surface, target, content.
+    check(
+        surface.next_element_sibling().is_some_and(|n| n.is_same_node(Some(&target))),
+        "the target does not directly follow the surface",
+    )?;
+    check(
+        target
+            .next_element_sibling()
+            .is_some_and(|n| n.is_same_node(Some(&content("a11y-passthrough").unwrap_or(target.clone())))),
+        "the target does not lie directly beneath the content layer",
+    )?;
+    for name in ["x", "y", "width", "height"] {
+        check_close(attr_f64(&target, name)?, attr_f64(&surface, name)?)?;
+    }
+
+    // And panning through the same area still works.
+    dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointermove", 140, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointerup", 140, 100, 1)?;
+    check(
+        content_translate("a11y-passthrough")? == (40.0, 0.0),
+        "the surface no longer pans",
+    )?;
+    check_close(scene.zoom_scale(), 1.0)
+}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zoom changes must not cause disruptive announcements. Nothing here is a live region, and the state attributes are only
 /// rewritten when they actually change, so a run of zoom steps that changes no button's state touches none of them.
@@ -2016,7 +2123,7 @@ async fn zooming_and_panning_change_only_the_content_layers_own_transform() -> R
 
     let content_element = content("perf-only-transform")?;
     let surface = pan_surface("perf-only-transform")?;
-    let root = required("#perf-only-transform")?;
+    let root = focus_target("perf-only-transform")?;
     let recorder = Recorder::watch(&content_element)?;
 
     // Every route into the view.
@@ -2124,7 +2231,7 @@ fn zoom_and_pan_leave_every_node_position_and_connector_path_untouched() -> Resu
     dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&surface, "pointermove", 160, 60, 1)?;
     dispatch_pointer_event(&surface, "pointerup", 160, 60, 1)?;
-    key(&required("#perf-routing")?, "ArrowLeft", true, false, false)?;
+    key(&focus_target("perf-routing")?, "ArrowLeft", true, false, false)?;
 
     check(
         snapshot()? == before,
@@ -2141,7 +2248,7 @@ fn zoom_and_pan_leave_every_node_position_and_connector_path_untouched() -> Resu
 /// measured from a reset view, so a doubled handler shows up as double the distance or double the zoom.
 async fn every_input_does_exactly_one_thing(scene: &Scene, id: &str) -> Result<(), String> {
     let surface = pan_surface(id)?;
-    let root = required(&format!("#{id}"))?;
+    let root = focus_target(id)?;
 
     // A toolbar button: one click is one step, not two.
     scene.reset_view().map_err(|e| e.to_string())?;
@@ -2254,7 +2361,7 @@ fn a_dropped_scene_answers_no_input_of_any_kind() -> Result<(), String> {
 
     let plus = button("lifecycle-dropped", 0)?;
     let surface = pan_surface("lifecycle-dropped")?;
-    let root = required("#lifecycle-dropped")?;
+    let root = focus_target("lifecycle-dropped")?;
     drop(scene);
 
     click(&plus)?;
@@ -2439,7 +2546,7 @@ async fn the_keyboard_and_a_toolbar_button_also_compose_with_a_gesture_in_progre
 
     dispatch_pointer_event(&surface, "pointerdown", x0, y0, 1)?;
     dispatch_pointer_event(&surface, "pointermove", x0 + 30, y0, 1)?;
-    key(&required("#mid-pan-key")?, "+", false, false, false)?;
+    key(&focus_target("mid-pan-key")?, "+", false, false, false)?;
     dispatch_pointer_event(&surface, "pointermove", x0 + 50, y0, 1)?;
     dispatch_pointer_event(&surface, "pointerup", x0 + 50, y0, 1)?;
     next_frame().await?;
@@ -2639,5 +2746,70 @@ async fn dropping_the_scene_between_a_drag_move_and_its_frame_throws_nothing() -
     check(
         watch.errors().is_empty(),
         &format!("a pending frame threw: {:?}", watch.errors()),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// The application's own `<svg>`. It may carry accessibility attributes of its own — a role, a name, a description, a
+// `tabindex` — and the scene must never take them over, even while its keyboard control is switched on.
+
+/// Every attribute of `element` as `name=value`, sorted, so two snapshots can be compared.
+fn attributes_of(element: &web_sys::Element) -> Vec<String> {
+    let names = element.get_attribute_names();
+    let mut out: Vec<String> = (0..names.length())
+        .filter_map(|i| names.get(i).as_string())
+        .map(|name| format!("{name}={}", element.get_attribute(&name).unwrap_or_default()))
+        .collect();
+    out.sort();
+    out
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The application's `<svg>` supplies its own role, name, description, and `tabindex`. Showing the toolbar, zooming,
+/// panning, changing every input mode, and hiding the toolbar must leave every one of them exactly as it was — not just at
+/// the end, but throughout, so no moment exists when the application's own name has been replaced.
+#[wasm_bindgen_test]
+fn the_applications_own_svg_attributes_are_never_touched() -> Result<(), String> {
+    let scene = scene_in_svg("own-attrs", 400, 300, "0 0 400 300", None)?;
+    let root = required("#own-attrs")?;
+    for (name, value) in [
+        ("role", "img"),
+        ("tabindex", "-1"),
+        ("aria-label", "SHA-256 data flow"),
+        ("aria-description", "How the message schedule feeds the compression function"),
+    ] {
+        root.set_attribute(name, value).map_err(|e| format!("{e:?}"))?;
+    }
+    let before = attributes_of(&root);
+
+    // Watch the root's own attributes for the whole sequence. Its children are not in question here.
+    let observer = web_sys::MutationObserver::new(&js_sys::Function::new_no_args("")).map_err(|e| format!("{e:?}"))?;
+    let init = web_sys::MutationObserverInit::new();
+    init.set_attributes(true);
+    observer.observe_with_options(&root, &init).map_err(|e| format!("{e:?}"))?;
+
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    let surface = pan_surface("own-attrs")?;
+    dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointermove", 140, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointerup", 140, 100, 1)?;
+    for mode in [InputMode::On, InputMode::Off, InputMode::WithToolbar] {
+        scene.set_pan_mode(mode).map_err(|e| e.to_string())?;
+        scene.set_wheel_zoom_mode(mode).map_err(|e| e.to_string())?;
+    }
+    scene.set_toolbar_edge(Side::South).map_err(|e| e.to_string())?;
+    scene.hide_toolbar();
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    scene.hide_toolbar();
+
+    let records = observer.take_records().length();
+    check(
+        records == 0,
+        &format!("the scene changed the application's own <svg> attributes {records} time(s)"),
+    )?;
+    check(
+        attributes_of(&root) == before,
+        "the application's own <svg> attributes are not as they were",
     )
 }
