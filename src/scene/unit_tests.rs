@@ -63,3 +63,149 @@ fn move_node_to_the_same_origin_skips_the_edge_redraw_loop_entirely() -> Result<
         ),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Lifetime. A `Scene` is a cheap handle to `Rc`-shared state, and every listener it installs — node dragging, toolbar
+// buttons, the pan surface, wheel zoom, keyboard control — holds only a `Weak` reference back to that state. If any of
+// them held a strong one, the state would sit in a cycle (`SceneInner` -> DOM node -> listener -> `SceneInner`) and never
+// be freed, still responding to input after every `Scene` handle had gone.
+//
+// The proof is a `Weak` taken from the shared state: once every handle is dropped, it must no longer upgrade.
+
+/// A scene with everything switched on: several nodes and connectors, draggable nodes, the toolbar, and both gestures.
+fn busy_scene(id: &str) -> Result<Scene, String> {
+    let scene = Scene::new(make_svg(id)).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(10.0, 10.0), Size::new(40.0, 20.0), "a")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(100.0, 10.0), Size::new(40.0, 20.0), "b")
+        .map_err(|e| e.to_string())?;
+    let c = scene
+        .add_node(Point::new(100.0, 100.0), Size::new(40.0, 20.0), "c")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(a, b).map_err(|e| e.to_string())?;
+    scene.add_edge(b, c).map_err(|e| e.to_string())?;
+    for node in [a, b, c] {
+        scene.make_draggable(node).map_err(|e| e.to_string())?;
+    }
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    Ok(scene)
+}
+
+/// Dispatches a cancelable ctrl+wheel at the scene's pan surface, which schedules a frame.
+fn ctrl_wheel_at_surface(id: &str) -> Result<(), String> {
+    let surface = document()
+        .query_selector(&format!("#{id} > rect"))
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no pan surface")?;
+    let init = web_sys::WheelEventInit::new();
+    init.set_bubbles(true);
+    init.set_cancelable(true);
+    init.set_ctrl_key(true);
+    init.set_delta_y(-100.0);
+    let event = web_sys::WheelEvent::new_with_event_init_dict("wheel", &init).map_err(|e| format!("{e:?}"))?;
+    surface.dispatch_event(&event).map_err(|e| format!("{e:?}"))?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[wasm_bindgen_test]
+fn dropping_every_handle_of_a_busy_scene_frees_its_shared_state() -> Result<(), String> {
+    let scene = busy_scene("lifetime-busy")?;
+    let state = Rc::downgrade(&scene.inner);
+
+    check(
+        state.upgrade().is_some(),
+        "test setup: the state is already gone while a handle is held",
+    )?;
+    drop(scene);
+    check(
+        state.upgrade().is_none(),
+        "the shared state outlived every Scene handle: a listener holds a strong reference to it",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A clone is a real handle: the state lives while any one of them does, and is freed when the last goes.
+#[wasm_bindgen_test]
+fn the_shared_state_lives_until_the_last_clone_is_dropped() -> Result<(), String> {
+    let scene = busy_scene("lifetime-clones")?;
+    let clone = scene.clone();
+    let state = Rc::downgrade(&scene.inner);
+
+    drop(scene);
+    check(state.upgrade().is_some(), "the state was freed while a clone was still held")?;
+    drop(clone);
+    check(state.upgrade().is_none(), "the state outlived the last handle")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The reviewer's sequence, and then some: repeated showing and hiding, and every mode switched back and forth. Each
+/// show builds listeners afresh, and each hide takes them away again, so none may be left holding the state.
+#[wasm_bindgen_test]
+fn repeated_show_hide_and_mode_changes_leave_nothing_holding_the_state() -> Result<(), String> {
+    let scene = busy_scene("lifetime-cycles")?;
+    let state = Rc::downgrade(&scene.inner);
+
+    for _ in 0..5 {
+        scene.hide_toolbar();
+        scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    }
+    for mode in [
+        InputMode::Off,
+        InputMode::WithToolbar,
+        InputMode::On,
+        InputMode::Off,
+        InputMode::On,
+    ] {
+        scene.set_pan_mode(mode).map_err(|e| e.to_string())?;
+        scene.set_wheel_zoom_mode(mode).map_err(|e| e.to_string())?;
+    }
+    scene.hide_toolbar();
+    scene
+        .show_toolbar(ToolbarOptions::new(Side::South))
+        .map_err(|e| e.to_string())?;
+
+    drop(scene);
+    check(
+        state.upgrade().is_none(),
+        "a listener left by an earlier show, hide, or mode change holds the state",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A frame can be pending when the last handle goes: a wheel event schedules one, and it has not run yet. The scheduled
+/// frame holds the state weakly too, so it neither keeps it alive nor breaks when it finds it gone.
+#[wasm_bindgen_test]
+fn a_scheduled_frame_does_not_keep_the_state_alive() -> Result<(), String> {
+    let scene = busy_scene("lifetime-frame")?;
+    let state = Rc::downgrade(&scene.inner);
+
+    ctrl_wheel_at_surface("lifetime-frame")?;
+    drop(scene);
+    check(
+        state.upgrade().is_none(),
+        "a pending animation frame keeps the shared state alive",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A toolbar that was never shown, and one shown and then hidden, are freed just the same.
+#[wasm_bindgen_test]
+fn a_scene_that_hid_its_toolbar_is_freed_too() -> Result<(), String> {
+    let scene = busy_scene("lifetime-hidden")?;
+    scene.hide_toolbar();
+    scene.set_pan_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
+    scene.set_wheel_zoom_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
+    let state = Rc::downgrade(&scene.inner);
+
+    drop(scene);
+    check(
+        state.upgrade().is_none(),
+        "the shared state outlived a scene whose toolbar was hidden",
+    )
+}

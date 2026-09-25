@@ -16,13 +16,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add explicit tests to distinguish scene zoom/pan behaviour from node movement (`602063d`)
 - Make explicit the need to call `Scene::refresh_toolbar_layout` after changing SVG size or `ViewBox` (`51681ea`)
 - Add explicit tests for non-zero `ViewBox` origin and fix `preserveAspectRatio` bug (`2f41e97`)
-- Extend keyboard control to include panning (``)
+- Extend keyboard control to include panning (`ab7cb51`)
+- Add regression tests for `ToolBar`'s show/hide lifecycle (``)
 
 ## Changed
 
 - Promoted `SceneInner` to its own module (`dd93185`)
 - Make pan/zoom settings independent of toolbar visibility (`e19b03b`)
-- Remove per-frame `String` allocation when building zoom level into accessible name (``)
+- Remove per-frame `String` allocation when building zoom level into accessible name (`ddadf3a`)
 
 # [Released]
 

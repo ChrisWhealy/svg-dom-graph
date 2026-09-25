@@ -161,6 +161,17 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- the toolbar's lifecycle, so that showing and hiding it repeatedly leaves no stale handler:
+  - the sequence show, hide, show, hide, show, after which each kind of input does exactly one thing: one button click is one zoom step, one arrow key press is exactly 40 units, one `+` key is one step, one wheel notch is one step, and a 40 pixel drag is 40 units
+  - the same after many more cycles that also move the toolbar to every edge and replace it while it is shown
+  - the same after the input modes are switched off, on, and back again many times
+  - a scene with every handle dropped answering no input of any kind, checked in the rendered DOM because no handle is left to read the zoom from
+- listener lifetime, checked inside the crate by taking a `Weak` reference to the scene's shared state and asserting it cannot be upgraded once every handle is dropped:
+  - a scene with draggable nodes, the toolbar, and both gestures switched on
+  - a clone keeping the state alive until the last handle goes
+  - repeated show, hide, and mode changes leaving nothing holding the state
+  - a pending animation frame not keeping the state alive
+  - a scene whose toolbar has been hidden
 - performance of zoom and pan:
   - every route into the view — buttons, wheel, drag, and keyboard — changing only the content layer's own `transform`, checked with a `MutationObserver` that watches the content layer and everything beneath it, so no node, connector, label, or marker is ever rewritten
   - a burst of wheel and pan events inside one frame writing nothing until that frame, and then exactly once

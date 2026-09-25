@@ -86,6 +86,10 @@ pub(super) fn install(
 }
 
 /// Takes the keyboard handling off `root`: its listener, and the attributes [`install`] set.
+///
+/// `svg-dom` also removes a node handle's listeners once its last handle is dropped, which the scene's `root` handle is
+/// as soon as the surface goes. So removing the listener here is belt and braces, done so that it does not depend on
+/// when that drop happens. The attributes are the part only this removes.
 pub(super) fn remove(root: &SvgNode) {
     root.remove_listeners("keydown");
     for name in ATTRIBUTES {
