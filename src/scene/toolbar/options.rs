@@ -1,7 +1,7 @@
 use crate::geometry::side::Side;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How a [`Scene`]'s toolbar is drawn and where it sits. See [`Scene::show_toolbar`].
+/// How a [`super::Scene`]'s toolbar is drawn and where it sits. See [`super::Scene::show_toolbar`].
 ///
 /// All lengths are in the `<svg>`'s own user space — the same units as its `viewBox`, or as pixels when it has none.
 /// They never scale with the scene's zoom.
