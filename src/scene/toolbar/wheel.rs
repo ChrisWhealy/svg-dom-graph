@@ -7,6 +7,7 @@
 //!
 //! Without a modifier the wheel is left alone, so the page scrolls as usual.
 
+use super::frame::ViewFlusher;
 use crate::{
     error::Error,
     geometry::{invert_matrix, view::wheel_zoom_factor},
@@ -26,18 +27,24 @@ use web_sys::WheelEvent;
 /// The listeners hold only `Weak` references, for the same reason [`Scene::make_draggable_with`](
 /// crate::scene::Scene::make_draggable_with)'s do. Remove the `content` listener with
 /// `content.remove_listeners("wheel")`. The surface's own listener goes when the surface does.
-pub(super) fn install(content: &SvgNode, surface: &SvgNode, inner: &Weak<RefCell<SceneInner>>) -> Result<(), Error> {
+pub(super) fn install(
+    content: &SvgNode,
+    surface: &SvgNode,
+    inner: &Weak<RefCell<SceneInner>>,
+    flusher: &ViewFlusher,
+) -> Result<(), Error> {
     for target in [content, surface] {
         let surface = surface.downgrade();
         let inner = inner.clone();
+        let flusher = flusher.clone();
         // Not passive: `prevent_default` is what stops ctrl+wheel zooming the whole page.
-        target.on_wheel(move |event| zoom_on_wheel(&surface, &inner, &event))?;
+        target.on_wheel(move |event| zoom_on_wheel(&surface, &inner, &flusher, &event))?;
     }
     Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn zoom_on_wheel(surface: &WeakSvgNode, inner: &Weak<RefCell<SceneInner>>, event: &WheelEvent) {
+fn zoom_on_wheel(surface: &WeakSvgNode, inner: &Weak<RefCell<SceneInner>>, flusher: &ViewFlusher, event: &WheelEvent) {
     if !(event.ctrl_key() || event.meta_key()) {
         return;
     }
@@ -56,8 +63,12 @@ fn zoom_on_wheel(surface: &WeakSvgNode, inner: &Weak<RefCell<SceneInner>>, event
     let pivot = client_to_user_space(client, inverse_ctm);
 
     let factor = wheel_zoom_factor(event.delta_y(), event.delta_mode());
+    // A trackpad pinch delivers many small events, so this only updates the view. Each event composes against the latest
+    // one — the factors multiply, so ten events of 10 pixels zoom exactly as one of 100 does — and the DOM is written
+    // once per animation frame.
     let mut inner = inner.borrow_mut();
     let next = inner.view.zoomed_about(factor, pivot);
-    // A listener has nowhere to report an error to, and a failed DOM write leaves the previous view in place.
-    let _ = inner.set_view(next);
+    if inner.set_view_deferred(next) {
+        flusher.schedule();
+    }
 }

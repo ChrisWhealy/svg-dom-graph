@@ -38,6 +38,11 @@ pub(super) struct SceneInner {
     pub content: SvgNode,
     /// The current zoom and pan applied to [`content`](Self::content).
     pub view: ViewTransform,
+    /// Whether [`view`](Self::view) has changed since it was last written to the content layer's `transform`.
+    ///
+    /// High-frequency gestures (wheel zoom, panning) update `view` at once but leave the DOM write to one animation
+    /// frame — see [`toolbar`](super::toolbar)'s own `frame` module.
+    pub view_dirty: bool,
     /// The button bar, if one is currently shown. See [`toolbar`](super::toolbar).
     pub toolbar: Option<Toolbar>,
     pub graph: Graph,

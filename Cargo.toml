@@ -38,6 +38,8 @@ version = "0.3"
 features = ["Element", "KeyboardEvent", "WheelEvent", "Window"]
 
 [dev-dependencies]
+js-sys = "0.3"
+wasm-bindgen-futures = "0.4"
 wasm-bindgen-test = "0.3"
 
 [dev-dependencies.web-sys]

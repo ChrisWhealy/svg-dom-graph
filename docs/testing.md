@@ -14,6 +14,10 @@ The toolbar's own pure arithmetic is covered too.
 `src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
 
+The zoom tests also check anchoring at the scale limits explicitly.
+A request that would exceed 4.0 or fall below 0.25 must be clamped, and the point under the pointer must still not move.
+That only holds if the translation is calculated from the scale actually applied after clamping, not the one requested.
+
 ## Demo App Tests
 
 ```sh
@@ -139,8 +143,11 @@ The test suite covers:
   - dragging empty background panning the content at any zoom, following the pointer and stopping on release
   - a pan ignoring a second pointer and a non-primary button, ending on `pointercancel`, and not starting when a node is dragged
   - the 100% button being enabled by a pan and undoing it
+  - a pan's DOM write being deferred to one animation frame while it runs, and settled immediately on release
   - Ctrl+wheel and Cmd+wheel zooming about the pointer, the wheel's direction and size setting the zoom's direction and amount, and the zoom working over a node
   - a wheel without a modifier neither zooming nor being cancelled
+  - a burst of small wheel events composing to the same zoom as one large event, with the DOM written once, on the next frame
+  - a button pressed while a wheel burst is still waiting for its frame winning over the pending write
   - pan and wheel handling being present only while the toolbar is shown, and not stacking after it is shown again
 
 ## Tests Using Chrome DevTools Protocol (CDP)

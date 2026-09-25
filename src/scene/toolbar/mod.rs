@@ -9,6 +9,7 @@
 
 mod action;
 mod button;
+mod frame;
 mod layout;
 mod options;
 mod pan;
@@ -192,21 +193,50 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Makes `view` the content layer's transform and brings every toolbar button's enabled state in line with it.
+    /// Makes `view` the current view and writes it to the content layer's `transform` at once.
     ///
-    /// Does nothing if `view` is already current.
+    /// Also brings every toolbar button's enabled state in line with it, and settles any earlier
+    /// [`set_view_deferred`](Self::set_view_deferred) change still waiting for its frame. Does nothing if `view` is
+    /// already current and already written.
     pub(super) fn set_view(&mut self, view: ViewTransform) -> Result<(), Error> {
-        if view == self.view {
+        if view == self.view && !self.view_dirty {
+            return Ok(());
+        }
+        self.view = view;
+        self.view_dirty = true;
+        self.flush_view()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes `view` the current view without touching the DOM. Returns whether there is now a write to flush.
+    ///
+    /// For a gesture that can fire many times per frame. The next [`flush_view`](Self::flush_view) writes only the
+    /// latest view, so however many events arrived in between cost one DOM write. Reading [`view`](Self::view) in the
+    /// meantime already gives the latest value, so consecutive events compose correctly.
+    pub(super) fn set_view_deferred(&mut self, view: ViewTransform) -> bool {
+        if view != self.view {
+            self.view = view;
+            self.view_dirty = true;
+        }
+        self.view_dirty
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Writes the current view to the content layer, if it has changed since it was last written.
+    ///
+    /// If the DOM write fails the view stays marked as waiting, so the next flush tries again.
+    pub(super) fn flush_view(&mut self) -> Result<(), Error> {
+        if !self.view_dirty {
             return Ok(());
         }
 
         let mut scratch = std::mem::take(&mut self.scratch);
-        view.write_attr(&mut scratch);
+        self.view.write_attr(&mut scratch);
         let result = self.content.set_attr("transform", &scratch);
         self.scratch = scratch;
         result?;
 
-        self.view = view;
+        self.view_dirty = false;
         self.sync_toolbar_state()
     }
 
@@ -215,12 +245,19 @@ impl SceneInner {
     ///
     /// A disabled button is dimmed and carries `aria-disabled`. It stays focusable, so keyboard focus is never lost
     /// from under someone who has just pressed it into its own limit.
+    ///
+    /// Writes an attribute only if its value changes, so a run of zoom or pan updates that changes no button's state
+    /// costs no DOM writes here.
     fn sync_toolbar_state(&self) -> Result<(), Error> {
         let Some(toolbar) = &self.toolbar else { return Ok(()) };
         for button in &toolbar.buttons {
             let enabled = button.action.is_enabled(self.view);
-            button.group.set_attr("aria-disabled", if enabled { "false" } else { "true" })?;
-            button.group.set_attr("opacity", if enabled { "1" } else { DISABLED_OPACITY })?;
+            button
+                .group
+                .set_attr_if_changed("aria-disabled", if enabled { "false" } else { "true" })?;
+            button
+                .group
+                .set_attr_if_changed("opacity", if enabled { "1" } else { DISABLED_OPACITY })?;
         }
         Ok(())
     }

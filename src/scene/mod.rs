@@ -149,6 +149,7 @@ impl Scene {
                 svg,
                 content,
                 view: ViewTransform::default(),
+                view_dirty: false,
                 toolbar: None,
                 graph: Graph::new(),
                 node_handles: Vec::new(),

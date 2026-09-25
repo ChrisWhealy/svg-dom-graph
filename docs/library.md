@@ -71,6 +71,13 @@
      Browsers report a trackpad pinch as ctrl+wheel, so pinch-to-zoom works too.
      A wheel without a modifier is left alone, so the page still scrolls.
 
+   A trackpad pinch delivers many small wheel events rather than one notch.
+   Each event zooms in proportion to its `deltaY`, converted from lines or pages to pixels where the browser reports them that way.
+   One 100 pixel notch is one 1.25 step, and ten 10 pixel events compose to exactly the same zoom, so a pinch never jumps straight to a limit.
+
+   Wheel and pan events update the view at once, but write the DOM once per animation frame, the same way a dragged node's moves are coalesced.
+   Releasing a pan writes its final position immediately.
+
    The 100% button undoes a pan as well as a zoom.
    Hiding the bar removes the pan surface and the wheel handling with it.
 

@@ -5,7 +5,7 @@
 //! Dragging that surface — which is to say, dragging any empty background, since nodes and connectors draw on top of it
 //! and take their own pointer events — translates the content layer.
 
-use super::wheel;
+use super::{frame::ViewFlusher, wheel};
 use crate::{
     error::Error,
     geometry::{invert_matrix, view::ViewTransform},
@@ -53,8 +53,10 @@ pub(super) fn build_pan_surface(
     inner: &Weak<RefCell<SceneInner>>,
 ) -> Result<SvgNode, Error> {
     let surface = svg.rect(Point::origin(), Size::new(1.0, 1.0))?;
-    wire(content, &surface, inner).inspect_err(|_| surface.remove())?;
-    wheel::install(content, &surface, inner).inspect_err(|_| {
+    // One flusher serves both gestures, so a pan and a wheel zoom in the same frame still cost a single DOM write.
+    let flusher = ViewFlusher::new(inner.clone())?;
+    wire(content, &surface, inner, &flusher).inspect_err(|_| surface.remove())?;
+    wheel::install(content, &surface, inner, &flusher).inspect_err(|_| {
         surface.remove();
         content.remove_listeners("wheel");
     })?;
@@ -62,7 +64,12 @@ pub(super) fn build_pan_surface(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn wire(content: &SvgNode, surface: &SvgNode, inner: &Weak<RefCell<SceneInner>>) -> Result<(), Error> {
+fn wire(
+    content: &SvgNode,
+    surface: &SvgNode,
+    inner: &Weak<RefCell<SceneInner>>,
+    flusher: &ViewFlusher,
+) -> Result<(), Error> {
     // `transparent`, not `none`: an SVG shape only receives pointer events where it is painted.
     surface.set_fill("transparent")?;
     surface.set_attr("aria-hidden", "true")?;
@@ -108,6 +115,7 @@ fn wire(content: &SvgNode, surface: &SvgNode, inner: &Weak<RefCell<SceneInner>>)
     {
         let start = start.clone();
         let inner = inner.clone();
+        let flusher = flusher.clone();
         surface.on_pointermove(move |evt| {
             let Some(pan) = start.get() else { return };
             if evt.pointer_id() != pan.pointer_id {
@@ -117,37 +125,43 @@ fn wire(content: &SvgNode, surface: &SvgNode, inner: &Weak<RefCell<SceneInner>>)
             let Some(inner) = inner.upgrade() else { return };
             let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
             let now = client_to_user_space(client, pan.inverse_ctm);
-            // A failed DOM write leaves the previous view in place, and a listener has nowhere to report it.
-            let _ = inner
-                .borrow_mut()
-                .set_view(pan.view.translated(now.x - pan.pointer.x, now.y - pan.pointer.y));
+            // Updates the view now but leaves the DOM write to one animation frame: a pointer can move more often than
+            // the browser paints. The pan follows the pointer exactly, since each move is applied to where it started.
+            let view = pan.view.translated(now.x - pan.pointer.x, now.y - pan.pointer.y);
+            if inner.borrow_mut().set_view_deferred(view) {
+                flusher.schedule();
+            }
         })?;
     }
 
     {
         let start = start.clone();
         let surface_weak = surface.downgrade();
-        surface.on_pointerup(move |evt| end_pan(&start, &surface_weak, evt.pointer_id()))?;
+        let flusher = flusher.clone();
+        surface.on_pointerup(move |evt| end_pan(&start, &surface_weak, &flusher, evt.pointer_id()))?;
     }
 
     {
         let surface_weak = surface.downgrade();
-        surface.on_pointercancel(move |evt| end_pan(&start, &surface_weak, evt.pointer_id()))?;
+        let flusher = flusher.clone();
+        surface.on_pointercancel(move |evt| end_pan(&start, &surface_weak, &flusher, evt.pointer_id()))?;
     }
 
     Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Ends the pan `start` holds, if `pointer_id` is the pointer that began it.
+/// Ends the pan `start` holds, writing its final position to the DOM first, if `pointer_id` is the pointer that began it.
 ///
 /// Ignores any other pointer, such as a second finger lifting while the first is still panning.
-fn end_pan(start: &Cell<Option<PanStart>>, surface: &WeakSvgNode, pointer_id: i32) {
+fn end_pan(start: &Cell<Option<PanStart>>, surface: &WeakSvgNode, flusher: &ViewFlusher, pointer_id: i32) {
     let Some(pan) = start.get() else { return };
     if pan.pointer_id != pointer_id {
         return;
     }
     start.set(None);
+    // Settles the DOM at the pan's final position now, rather than leaving it up to one frame behind.
+    flusher.flush_now();
     if let Some(surface) = surface.upgrade() {
         let _ = surface.as_element().release_pointer_capture(pointer_id);
         let _ = surface.set_attr("style", IDLE_STYLE);

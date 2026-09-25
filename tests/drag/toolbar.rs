@@ -59,6 +59,34 @@ fn keydown(element: &web_sys::Element, key: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// Resolves after the browser's next animation frame. Wheel zoom and panning write the DOM once per frame, so a test
+/// that reads the rendered `transform` mid-gesture must wait for it.
+async fn next_frame() -> Result<(), String> {
+    let promise = js_sys::Promise::new(&mut |resolve, _reject| {
+        if let Some(window) = web_sys::window() {
+            let _ = window.request_animation_frame(&resolve);
+        }
+    });
+    wasm_bindgen_futures::JsFuture::from(promise)
+        .await
+        .map(|_| ())
+        .map_err(|e| format!("{e:?}"))
+}
+
+/// Parses a `translate(tx, ty) scale(s)` attribute into `(tx, ty, s)`, so a test can compare numbers with a tolerance
+/// rather than exact text — repeated multiplication does not always land on the exact decimal.
+fn parse_view(transform: &str) -> Result<(f64, f64, f64), String> {
+    let numbers: Vec<f64> = transform
+        .split(|c: char| !(c.is_ascii_digit() || c == '.' || c == '-' || c == 'e' || c == 'E'))
+        .filter(|part| !part.is_empty())
+        .filter_map(|part| part.parse().ok())
+        .collect();
+    match numbers[..] {
+        [tx, ty, scale] => Ok((tx, ty, scale)),
+        _ => Err(format!("cannot parse transform {transform:?}")),
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn there_is_no_toolbar_until_one_is_shown_and_none_after_it_is_hidden() -> Result<(), String> {
@@ -440,7 +468,7 @@ fn dragging_the_background_pans_the_content_at_any_zoom() -> Result<(), String> 
 /// Every move applies to where the pan started, so the content follows the pointer, and finishing a pan changes
 /// nothing further.
 #[wasm_bindgen_test]
-fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(), String> {
+async fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(), String> {
     let scene = new_scene("tb-pan-follow")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-pan-follow")?;
@@ -448,6 +476,7 @@ fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(), Strin
     dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&surface, "pointermove", 140, 100, 1)?;
     dispatch_pointer_event(&surface, "pointermove", 110, 100, 1)?;
+    next_frame().await?;
     let transform = attr(&content("tb-pan-follow")?, "transform")?;
     check(
         transform == "translate(10, 0) scale(1)",
@@ -466,7 +495,7 @@ fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(), Strin
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A second pointer cannot steal or end the pan, a cancel ends it, and only the primary button starts one.
 #[wasm_bindgen_test]
-fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_cancel() -> Result<(), String> {
+async fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_cancel() -> Result<(), String> {
     let scene = new_scene("tb-pan-edge")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-pan-edge")?;
@@ -486,6 +515,7 @@ fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_cancel() 
     dispatch_pointer_event(&surface, "pointermove", 0, 90, 2)?;
     dispatch_pointer_event(&surface, "pointerup", 0, 90, 2)?;
     dispatch_pointer_event(&surface, "pointermove", 120, 100, 1)?;
+    next_frame().await?;
     check(
         transform()? == "translate(20, 0) scale(1)",
         &format!("a second pointer interfered: {}", transform()?),
@@ -493,6 +523,7 @@ fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_cancel() 
 
     dispatch_pointer_event(&surface, "pointercancel", 120, 100, 1)?;
     dispatch_pointer_event(&surface, "pointermove", 200, 200, 1)?;
+    next_frame().await?;
     check(
         transform()? == "translate(20, 0) scale(1)",
         "a move after pointercancel still panned",
@@ -572,21 +603,25 @@ fn wheel(element: &web_sys::Element, x: i32, y: i32, delta_y: f64, ctrl: bool, m
 /// Ctrl+wheel and Cmd+wheel both zoom, about the pointer. One notch up at (100, 100) is one 1.25 step, and the content
 /// point under the pointer stays put: (100 - 100 * 1.25) = -25 on each axis.
 #[wasm_bindgen_test]
-fn ctrl_or_cmd_plus_wheel_zooms_about_the_pointer() -> Result<(), String> {
+async fn ctrl_or_cmd_plus_wheel_zooms_about_the_pointer() -> Result<(), String> {
     let scene = new_scene("tb-wheel")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-wheel")?;
 
     // Every test's `<svg>` shares one page, so client coordinates must be built from this one's own position.
+    // The client position is a whole number of pixels, but the `<svg>` itself can sit at a fractional offset. So the
+    // pivot the scene sees is the difference, not exactly (100, 100).
     let bounds = surface.get_bounding_client_rect();
-    let (x, y) = (bounds.left() as i32 + 100, bounds.top() as i32 + 100);
+    let (x, y) = (bounds.left().round() as i32 + 100, bounds.top().round() as i32 + 100);
+    let (pivot_x, pivot_y) = (x as f64 - bounds.left(), y as f64 - bounds.top());
 
     check(wheel(&surface, x, y, -100.0, true, false)?, "ctrl+wheel was not cancelled")?;
-    let transform = attr(&content("tb-wheel")?, "transform")?;
-    check(
-        transform == "translate(-25, -25) scale(1.25)",
-        &format!("unexpected transform: {transform}"),
-    )?;
+    next_frame().await?;
+    let (tx, ty, scale) = parse_view(&attr(&content("tb-wheel")?, "transform")?)?;
+    // One notch is one 1.25 step, and the pivot is fixed: t' = pivot - 1.25 * pivot.
+    check_close(scale, 1.25)?;
+    check_close(tx, pivot_x - 1.25 * pivot_x)?;
+    check_close(ty, pivot_y - 1.25 * pivot_y)?;
 
     scene.reset_view().map_err(|e| e.to_string())?;
     check(wheel(&surface, x, y, -100.0, false, true)?, "cmd+wheel was not cancelled")?;
@@ -674,12 +709,13 @@ fn wheel_zoom_needs_a_shown_toolbar() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wheel zoom stops at the same limits as the buttons, and enables Reset.
 #[wasm_bindgen_test]
-fn wheel_zoom_is_limited_and_enables_reset() -> Result<(), String> {
+async fn wheel_zoom_is_limited_and_enables_reset() -> Result<(), String> {
     let scene = new_scene("tb-wheel-limit")?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-wheel-limit")?;
 
     wheel(&surface, 100, 100, -100.0, true, false)?;
+    next_frame().await?;
     check(
         attr(&button("tb-wheel-limit", 2)?, "aria-disabled")? == "false",
         "wheel zoom did not enable Reset",
@@ -688,8 +724,100 @@ fn wheel_zoom_is_limited_and_enables_reset() -> Result<(), String> {
         wheel(&surface, 100, 100, -100.0, true, false)?;
     }
     check_close(scene.zoom_scale(), 4.0)?;
+    next_frame().await?;
     check(
         attr(&button("tb-wheel-limit", 0)?, "aria-disabled")? == "true",
         "zoom-in stayed enabled at the limit",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A trackpad pinch is many small ctrl+wheel events, not one notch. Twenty events of -10 pixels each must compose to
+/// exactly two notches (1.25 squared), not twenty full steps that slam into the maximum. The DOM is not written for
+/// each one: nothing is rendered until the frame, and then the final view is written once.
+#[wasm_bindgen_test]
+async fn a_burst_of_small_wheel_events_composes_proportionally_and_writes_the_dom_once_per_frame() -> Result<(), String>
+{
+    let scene = new_scene("tb-wheel-burst")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-wheel-burst")?;
+
+    for _ in 0..20 {
+        wheel(&surface, 100, 100, -10.0, true, false)?;
+    }
+
+    // The model already holds the composed result...
+    check_close(scene.zoom_scale(), 1.5625)?;
+    // ...but no event has written the DOM yet.
+    check(
+        content("tb-wheel-burst")?.get_attribute("transform").is_none(),
+        "a wheel event wrote the DOM immediately instead of waiting for the frame",
+    )?;
+
+    next_frame().await?;
+    let (_, _, scale) = parse_view(&attr(&content("tb-wheel-burst")?, "transform")?)?;
+    check_close(scale, 1.5625)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Small events and one big event zoom identically: the factors multiply.
+#[wasm_bindgen_test]
+fn ten_wheel_events_of_ten_pixels_zoom_exactly_as_one_of_a_hundred() -> Result<(), String> {
+    let split = new_scene("tb-wheel-split")?;
+    split.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-wheel-split")?;
+    for _ in 0..10 {
+        wheel(&surface, 100, 100, -10.0, true, false)?;
+    }
+
+    let whole = new_scene("tb-wheel-whole")?;
+    whole.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    wheel(&pan_surface("tb-wheel-whole")?, 100, 100, -100.0, true, false)?;
+
+    check_close(split.zoom_scale(), whole.zoom_scale())?;
+    check_close(split.zoom_scale(), 1.25)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A button pressed while a wheel burst is still waiting for its frame acts on the latest view, and the frame that
+/// follows cannot resurrect the stale wheel view over it.
+#[wasm_bindgen_test]
+async fn a_button_pressed_mid_burst_wins_over_the_pending_frame() -> Result<(), String> {
+    let scene = new_scene("tb-wheel-then-reset")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-wheel-then-reset")?;
+
+    wheel(&surface, 100, 100, -100.0, true, false)?;
+    click(&button("tb-wheel-then-reset", 2)?)?; // 100%
+    next_frame().await?;
+
+    check_close(scene.zoom_scale(), 1.0)?;
+    let transform = attr(&content("tb-wheel-then-reset")?, "transform")?;
+    check(
+        transform == "translate(0, 0) scale(1)",
+        &format!("a pending frame overwrote the reset: {transform}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A pan is written to the DOM one frame late while it runs, but the moment the pointer is released the DOM is exact
+/// — nothing is left for a later frame to catch up on.
+#[wasm_bindgen_test]
+fn releasing_a_pan_writes_its_final_position_immediately() -> Result<(), String> {
+    let scene = new_scene("tb-pan-release")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-pan-release")?;
+
+    dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&surface, "pointermove", 160, 130, 1)?;
+    check(
+        content("tb-pan-release")?.get_attribute("transform").is_none(),
+        "a pan move wrote the DOM immediately instead of waiting for the frame",
+    )?;
+    dispatch_pointer_event(&surface, "pointerup", 160, 130, 1)?;
+    let transform = attr(&content("tb-pan-release")?, "transform")?;
+    check(
+        transform == "translate(60, 30) scale(1)",
+        &format!("release did not flush: {transform}"),
     )
 }
