@@ -13,11 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add optional fixed-size toolbar with "+", "−", and "100%" zoom buttons and scroll wheel zooming (`5b0f541`)
 - Add tests to validate `ViewTransform` calculations (`59fa212`)
 - Add DOM-write event coalescing functionality for zoom/scroll events (`5663562`)
+- Add explicit tests to distinguish scene zoom/pan behaviour from node movement (``)
 
 ## Changed
 
 - Promoted `SceneInner` to its own module (`dd93185`)
-- Make pan/zoom settings independent of toolbar visibility (``)
+- Make pan/zoom settings independent of toolbar visibility (`e19b03b`)
 
 # [Released]
 

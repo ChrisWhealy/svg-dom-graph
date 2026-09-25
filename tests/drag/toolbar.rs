@@ -7,8 +7,9 @@ use super::common::*;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{InputMode, Scene, Side, ToolbarOptions},
+    scene::{DataFormat, DataNodeContent, GridLayout, InputMode, NodeValues, Scene, Selection, Side, ToolbarOptions},
 };
+use wasm_bindgen::JsCast;
 use wasm_bindgen_test::*;
 
 fn new_scene(id: &str) -> Result<Scene, String> {
@@ -1044,4 +1045,228 @@ fn refresh_layout_resizes_the_surface_with_no_toolbar() -> Result<(), String> {
         .map_err(|e| format!("{e:?}"))?;
     scene.refresh_toolbar_layout().map_err(|e| e.to_string())?;
     check_close(attr_f64(&surface, "width")?, 500.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dragging a node that is currently selected drags only that node. Its selection — the text it exposes to assistive
+/// technology, and every cell's colour — is untouched by the drag, and the scene does not pan.
+#[wasm_bindgen_test]
+fn dragging_a_selected_node_moves_it_keeps_its_selection_and_does_not_pan() -> Result<(), String> {
+    let scene = new_scene("tb-selected-drag")?;
+    let node = scene
+        .add_data_node(
+            Point::new(100.0, 100.0),
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal)
+                .with_layout(GridLayout::Rows(2)),
+        )
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(node).map_err(|e| e.to_string())?;
+    scene
+        .set_selection(node, Selection::Row { row: 1, col: Some(0) })
+        .map_err(|e| e.to_string())?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+
+    let group = nth_group("tb-selected-drag", 0)?;
+    let fills = |group: &web_sys::Element| -> Result<Vec<Option<String>>, String> {
+        let rects = group.query_selector_all("rect").map_err(|e| format!("{e:?}"))?;
+        Ok((0..rects.length())
+            .filter_map(|i| rects.get(i))
+            .filter_map(|n| n.dyn_into::<web_sys::Element>().ok())
+            .map(|r| r.get_attribute("fill"))
+            .collect())
+    };
+    let title = |group: &web_sys::Element| -> Result<Option<String>, String> {
+        Ok(group
+            .query_selector(":scope > title")
+            .map_err(|e| format!("{e:?}"))?
+            .and_then(|t| t.text_content()))
+    };
+    let (label_before, fills_before) = (title(&group)?, fills(&group)?);
+    check(
+        fills_before.iter().any(|f| f.as_deref() == Some("#ff6b4a")),
+        "test setup: no cell shows the focused colour",
+    )?;
+
+    dispatch_pointer_event(&group, "pointerdown", 110, 110, 1)?;
+    dispatch_pointer_event(&group, "pointermove", 140, 130, 1)?;
+    dispatch_pointer_event(&group, "pointerup", 140, 130, 1)?;
+
+    let (x, y) = group_translate(&group)?;
+    check_close(x, 130.0)?;
+    check_close(y, 120.0)?;
+    check(
+        title(&group)? == label_before,
+        "the drag changed the node's accessible description",
+    )?;
+    check(fills(&group)? == fills_before, "the drag changed a cell's colour")?;
+    check(
+        content("tb-selected-drag")?.get_attribute("transform").is_none(),
+        "dragging a selected node panned the scene",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The surface's cursor tracks the pan: grabbing while the button is down, back to grab after a release or a cancel.
+/// Real pointer capture is checked separately, against real input, in the CDP suite — a synthetic pointer id is not one
+/// the browser will let a test capture.
+#[wasm_bindgen_test]
+fn the_pan_cursor_returns_to_idle_after_release_and_after_cancel() -> Result<(), String> {
+    let scene = new_scene("tb-pan-cursor")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-pan-cursor")?;
+    let style = || attr(&surface, "style");
+
+    check(
+        style()?.contains("cursor: grab;"),
+        "the idle surface does not show a grab cursor",
+    )?;
+
+    for end in ["pointerup", "pointercancel"] {
+        dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+        check(
+            style()?.contains("cursor: grabbing;"),
+            "a pan in progress does not show a grabbing cursor",
+        )?;
+        dispatch_pointer_event(&surface, end, 120, 100, 1)?;
+        check(
+            style()?.contains("cursor: grab;"),
+            &format!("the cursor did not return to grab after {end}"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// However a pan ends — released, or cancelled — the next one starts cleanly and adds to the last, so no stale gesture
+/// state is left behind.
+#[wasm_bindgen_test]
+fn a_pan_can_be_started_again_after_any_way_of_ending_one() -> Result<(), String> {
+    let scene = new_scene("tb-pan-reuse")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let surface = pan_surface("tb-pan-reuse")?;
+
+    let mut expected = 0.0;
+    for end in ["pointerup", "pointercancel", "pointerup"] {
+        dispatch_pointer_event(&surface, "pointerdown", 100, 100, 1)?;
+        dispatch_pointer_event(&surface, "pointermove", 110, 100, 1)?;
+        dispatch_pointer_event(&surface, end, 110, 100, 1)?;
+        // `pointerup` flushes at once. A cancel does too, since it also ends the gesture.
+        expected += 10.0;
+        let (tx, _, _) = parse_view(&attr(&content("tb-pan-reuse")?, "transform")?)?;
+        check_close(tx, expected)?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The toolbar's own buttons sit above the pan surface, so pressing one never starts a pan — but does still click.
+#[wasm_bindgen_test]
+fn pressing_a_toolbar_button_does_not_start_a_pan() -> Result<(), String> {
+    let scene = new_scene("tb-button-pan")?;
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    let plus = button("tb-button-pan", 0)?;
+
+    dispatch_pointer_event(&plus, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&plus, "pointermove", 160, 100, 1)?;
+    dispatch_pointer_event(&plus, "pointerup", 160, 100, 1)?;
+    check(
+        content("tb-button-pan")?.get_attribute("transform").is_none(),
+        "pressing a toolbar button panned the scene",
+    )?;
+
+    click(&plus)?;
+    check_close(scene.zoom_scale(), 1.25)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Showing and hiding the toolbar repeatedly must never leave a handler behind. Every listener lives on the surface,
+/// which is removed with the gestures, except the wheel listener on the content layer.
+///
+/// A leaked wheel listener cannot zoom, since it only holds a weak reference to a surface that no longer exists. What it
+/// can still do is cancel the event, so the test that catches a leak is the last one: with everything torn down, a
+/// modified wheel over a node must no longer be cancelled by anything.
+#[wasm_bindgen_test]
+fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() -> Result<(), String> {
+    let scene = new_scene("tb-cycles")?;
+    scene
+        .add_node(Point::new(100.0, 100.0), Size::new(60.0, 30.0), "A")
+        .map_err(|e| e.to_string())?;
+    let node = nth_group("tb-cycles", 0)?;
+    let count = |selector: &str| -> Result<u32, String> {
+        Ok(web_sys::window()
+            .and_then(|w| w.document())
+            .ok_or("no document")?
+            .query_selector_all(selector)
+            .map_err(|e| format!("{e:?}"))?
+            .length())
+    };
+
+    for _ in 0..5 {
+        scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+        scene.hide_toolbar();
+    }
+    scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
+    // Showing again with a toolbar already up must replace it, not add a second.
+    scene
+        .show_toolbar(ToolbarOptions::new(Side::South))
+        .map_err(|e| e.to_string())?;
+
+    check(count("#tb-cycles > rect")? == 1, "there is not exactly one pan surface")?;
+    check(
+        count("#tb-cycles > [role=\"toolbar\"]")? == 1,
+        "there is not exactly one toolbar",
+    )?;
+
+    // One notch over a node reaches the content layer's own listener; over the background, the surface's.
+    wheel(&node, 110, 110, -100.0, true, false)?;
+    check_close(scene.zoom_scale(), 1.25)?;
+    scene.reset_view().map_err(|e| e.to_string())?;
+    wheel(&pan_surface("tb-cycles")?, 100, 100, -100.0, true, false)?;
+    check_close(scene.zoom_scale(), 1.25)?;
+
+    // Tear it all down: nothing left from any earlier cycle may still react to the wheel.
+    scene.hide_toolbar();
+    check(count("#tb-cycles > rect")? == 0, "a surface survived hiding the toolbar")?;
+    check(
+        !wheel(&node, 110, 110, -100.0, true, false)?,
+        "a listener left by an earlier cycle still cancels the wheel",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same, for a mode toggled back and forth: no accumulated surfaces or listeners.
+#[wasm_bindgen_test]
+fn toggling_input_modes_repeatedly_installs_no_duplicate_handlers() -> Result<(), String> {
+    let scene = new_scene("im-cycles")?;
+    scene
+        .add_node(Point::new(100.0, 100.0), Size::new(60.0, 30.0), "A")
+        .map_err(|e| e.to_string())?;
+    let node = nth_group("im-cycles", 0)?;
+
+    for _ in 0..8 {
+        for mode in [InputMode::On, InputMode::Off, InputMode::WithToolbar] {
+            scene.set_wheel_zoom_mode(mode).map_err(|e| e.to_string())?;
+            scene.set_pan_mode(mode).map_err(|e| e.to_string())?;
+        }
+    }
+    scene.set_wheel_zoom_mode(InputMode::On).map_err(|e| e.to_string())?;
+    scene.set_pan_mode(InputMode::On).map_err(|e| e.to_string())?;
+
+    let surfaces = web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("no document")?
+        .query_selector_all("#im-cycles > rect")
+        .map_err(|e| format!("{e:?}"))?
+        .length();
+    check(surfaces == 1, &format!("expected one surface, found {surfaces}"))?;
+    wheel(&node, 110, 110, -100.0, true, false)?;
+    check_close(scene.zoom_scale(), 1.25)?;
+
+    // Tear it all down: nothing left from any earlier toggle may still react to the wheel.
+    scene.set_wheel_zoom_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
+    scene.set_pan_mode(InputMode::WithToolbar).map_err(|e| e.to_string())?;
+    check(
+        !wheel(&node, 110, 110, -100.0, true, false)?,
+        "a listener left by an earlier toggle still cancels the wheel",
+    )
 }

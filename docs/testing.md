@@ -159,6 +159,13 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- pan and node dragging never being confused for each other:
+  - dragging a selected node moving only that node, leaving its selection text and cell colours untouched, and not panning
+  - a toolbar button never starting a pan, but still clicking
+  - the pan cursor returning to idle after a release and after a cancel, and a new pan starting cleanly after either
+  - showing and hiding the toolbar, and toggling the input modes, repeatedly leaving exactly one surface and no leftover handler
+    A leaked wheel listener cannot zoom, because it holds only a weak reference to a surface that is gone, but it would still cancel the event.
+    So the tests tear everything down at the end and check that a modified wheel is no longer cancelled by anything.
 
 ## Tests Using Chrome DevTools Protocol (CDP)
 
@@ -176,6 +183,13 @@ This is the only way to catch, for example, a missing `prevent_default()` that l
 Its own `edge_anchors.rs` scenario proves a real drag re-snaps a connector onto a different fixing point, through this same real pointer pipeline.
 Its own `bounds.rs` scenario proves the property `wasm-bindgen-test`'s synthetic dispatch cannot.
 A real drag past the view box clamps to the edge and the clamped node stays real-hit-testable for a second, separately hit-tested drag.
+
+Its own `pan.rs` scenario proves what synthetic events cannot: that pointer capture keeps each gesture to itself.
+The fixture switches panning on with no toolbar.
+Dragging empty background pans the whole scene, and the pan surface holds pointer capture while the button is down and releases it afterwards.
+A pan that sweeps across a node stays a pan, and the node's own position is unchanged.
+A node drag that travels across empty background stays a node drag, so the scene never pans.
+Pressing on a node never gives the pan surface a capture, even though it lies behind the node.
 
 Its own `accessibility_tree.rs` scenario asks a different question: not what the rendered DOM's own attributes say, but what Chrome's own computed accessibility tree actually exposes.
 `wasm-pack test`'s own DOM-attribute checks can prove `role`/`aria-label` land on the right element.

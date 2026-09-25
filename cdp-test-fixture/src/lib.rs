@@ -25,6 +25,9 @@
 //!    `accessibility_tree.rs` to query the real, browser-computed accessibility tree via CDP's own `Accessibility`
 //!    domain, not just the rendered DOM `wasm-pack test`'s own suite already checks.
 //!
+//! Panning is switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the whole scene. The
+//! background is clear of every node and connector at, for example, `(450, 200)` and `(150, 90)`.
+//!
 //! Connectors, in add order (`#diagram > g.svg-dom-graph-content > path:nth-of-type(N)`):
 //!
 //! 1. `solo` to `blocker`, sharp corners (`Scene::add_edge`'s default). `solo` and `blocker` sit at a diagonal offset,
@@ -53,7 +56,7 @@ use svg_dom::{
 use svg_dom_graph::{
     Error,
     scene::{
-        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, NodeOptions,
+        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, InputMode, NodeOptions,
         NodeValues, Scene,
     },
 };
@@ -124,6 +127,11 @@ fn build() -> Result<(), Error> {
         "B",
         DataNodeContent::new(NodeValues::U64(vec![0xABCD_EF01_2345_6789]), DataFormat::Hexadecimal),
     )?;
+
+    // Panning on, with no toolbar. Dragging empty background then pans the content, so `pan.rs` can drive it with real
+    // mouse input and prove it never interferes with a node drag, and vice versa. It also proves panning works without
+    // a toolbar, since that is what `InputMode::On` is for.
+    scene.set_pan_mode(InputMode::On)?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
 

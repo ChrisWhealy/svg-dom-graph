@@ -128,7 +128,7 @@ pub(crate) fn group_translate(group: &Element<'_>) -> Result<(f64, f64), String>
     Ok((x, y))
 }
 
-fn mouse_event(
+pub(crate) fn mouse_event(
     tab: &Tab,
     kind: Input::DispatchMouseEventTypeOption,
     (x, y): (f64, f64),

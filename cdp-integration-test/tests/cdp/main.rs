@@ -17,10 +17,13 @@
 //!   re-snaps one of them.
 //! - [`bounds`] — a real drag past the view box's own edge clamps `bounded` to it, and the clamped node stays
 //!   real-hit-testable for a second, separate drag.
+//! - [`pan`] — dragging empty background pans the whole scene, and a real, captured pointer keeps a pan a pan (and a
+//!   node drag a node drag) even when it crosses over the other kind of target. Pointer capture is held during either
+//!   and released afterwards.
 //! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach
 //!   Chrome's own computed accessibility tree, and its own descendant value text stays exposed alongside them.
 //!
-//! All seven drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
+//! All eight drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
 //!
 //! # Why this lives in its own on-demand workspace member
@@ -41,5 +44,6 @@ mod common;
 mod connectors;
 mod edge_anchors;
 mod overlap_resolution;
+mod pan;
 mod small_drag;
 mod text_selection;
