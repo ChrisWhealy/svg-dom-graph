@@ -40,14 +40,26 @@ const BUTTON_STYLE: &str = "cursor: pointer; user-select: none; -webkit-user-sel
 const DISABLED_OPACITY: &str = "0.4";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The part of the `<svg>`'s own user space that is visible: its `viewBox` if it has one, otherwise `(0, 0)` to its
+/// size in pixels.
+///
+/// `svg-dom` reads the size once, from the `width` and `height` attributes, and never measures the rendered size. An
+/// `<svg>` sized purely by CSS therefore reports `0 x 0`, which would lay everything out in a zero-sized area. So when
+/// there is no `viewBox` and either cached dimension is not positive, the rendered size is used instead.
 fn visible_area(svg: &SvgRoot) -> Rect {
-    svg.root
-        .get_attribute("viewBox")
-        .and_then(|value| parse_view_box(&value))
-        .unwrap_or(Rect {
-            origin: Point::origin(),
-            size: Size::new(svg.width(), svg.height()),
-        })
+    if let Some(view_box) = svg.root.get_attribute("viewBox").and_then(|value| parse_view_box(&value)) {
+        return view_box;
+    }
+
+    let (mut width, mut height) = (svg.width(), svg.height());
+    if !(width > 0.0 && height > 0.0) {
+        let rendered = svg.root.get_bounding_client_rect();
+        (width, height) = (rendered.width(), rendered.height());
+    }
+    Rect {
+        origin: Point::origin(),
+        size: Size::new(width, height),
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -270,8 +282,29 @@ impl Scene {
     /// The bar holds three buttons — zoom in, zoom out, and reset. It stays a fixed size however far the content is
     /// zoomed, and draws on top of it. Every button is keyboard operable: Tab to reach one, Enter or Space to activate.
     ///
-    /// The bar is positioned against the `<svg>`'s visible area as it is now. Call
-    /// [`refresh_toolbar_layout`](Self::refresh_toolbar_layout) after that area changes.
+    /// # Keeping the layout current
+    ///
+    /// **The scene cannot observe its `<svg>` being resized.** The bar is positioned against the `<svg>`'s visible area
+    /// as it is at the moment of this call, and stays there until told otherwise. Nothing reports an error when it
+    /// goes stale, so it is easy to miss. Call [`refresh_layout`](Self::refresh_layout) whenever the visible area
+    /// changes.
+    ///
+    /// Whether it does depends on how the `<svg>` is sized:
+    ///
+    /// | The `<svg>` | When its size changes | Call `refresh_layout`? |
+    /// |---|---|---|
+    /// | has a `viewBox`, and only its CSS size changes | The browser scales the whole `<svg>`, toolbar included. | No |
+    /// | has a `viewBox`, and the `viewBox` itself changes | The bar keeps its old place. | **Yes** |
+    /// | has no `viewBox`, and its size changes | The bar keeps its old place. | **Yes** |
+    ///
+    /// So a responsive page is simplest with a `viewBox`, and needs no refresh at all as its CSS size changes.
+    ///
+    /// A stale layout is not only cosmetic. The surface that panning and wheel zoom work through is sized the same way,
+    /// so if the `<svg>` grows and the layout is not refreshed, the new area has no surface behind it and those
+    /// gestures stop working there.
+    ///
+    /// Without a `viewBox`, an `<svg>` sized purely by CSS is measured by its rendered size, at each call that lays it
+    /// out.
     ///
     /// # Errors
     ///
@@ -354,6 +387,11 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves the shown toolbar to `edge`. Does nothing if none is shown.
     ///
+    /// The bar is placed against the `<svg>`'s visible area as it is at this call, so this also picks up a change the
+    /// bar has not yet been told about. It does not resize the surface that panning and wheel zoom work through. If the
+    /// `<svg>` has been resized, call [`refresh_layout`](Self::refresh_layout), which does both. See "Keeping the layout
+    /// current" under [`show_toolbar`](Self::show_toolbar).
+    ///
     /// # Errors
     ///
     /// Returns [`Error::Svg`] if repositioning fails.
@@ -369,6 +407,11 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the shown toolbar against the `<svg>`'s visible area as it is now. Does nothing if none is shown.
+    ///
+    /// **The scene cannot observe its `<svg>` being resized, so call this — or better, [`refresh_layout`](
+    /// Self::refresh_layout) — whenever the size or `viewBox` changes,** unless the `<svg>` has a `viewBox` and only its
+    /// CSS size changed. Nothing reports an error when the layout goes stale. See "Keeping the layout current" under
+    /// [`show_toolbar`](Self::show_toolbar) for exactly when it is needed.
     ///
     /// Also resizes the surface that panning and wheel zoom work through, so this is the same call as
     /// [`refresh_layout`](Self::refresh_layout), which describes it better now that those gestures no longer depend on

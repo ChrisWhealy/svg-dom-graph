@@ -60,7 +60,7 @@
    A button that could currently do nothing is dimmed and marked `aria-disabled`, but stays focusable.
 
    `set_toolbar_edge` moves the bar to another edge.
-   `refresh_toolbar_layout` repositions it after the `<svg>`'s size or `viewBox` changes, since the scene cannot observe either (see `refresh_layout` below).
+   `refresh_layout` repositions it after the `<svg>`'s size or `viewBox` changes — see "Responsive layouts" below, since forgetting this fails silently.
 
    Showing the bar also switches on two further gestures that work anywhere in the scene.
    They are not part of the toolbar, and are described in the next entry.
@@ -92,6 +92,28 @@
 
    `refresh_layout` resizes the gestures' surface, and repositions the toolbar if there is one, after the `<svg>`'s size or `viewBox` changes.
    `refresh_toolbar_layout` does the same and is kept for compatibility.
+
+   ***IMPORTANT***<br>
+   **Responsive layouts.**
+   The scene cannot observe its `<svg>` being resized.
+   The toolbar and the gestures' surface are laid out against the visible area at the moment they are created, and stay there until `refresh_layout` is called.
+   Nothing reports an error when they go stale, so the failure is easy to miss.
+
+   Whether a refresh is needed depends on how the `<svg>` is sized:
+
+   | The `<svg>` | When its size changes | Call `refresh_layout`? |
+   |---|---|---|
+   | has a `viewBox`, and only its CSS size changes | The browser scales the whole `<svg>`, toolbar included | No |
+   | has a `viewBox`, and the `viewBox` itself changes | The toolbar keeps its old place | **Yes** |
+   | has no `viewBox`, and its size changes | The toolbar keeps its old place | **Yes** |
+
+   So a responsive page is simplest with a `viewBox`, and needs no refresh as its CSS size changes.
+
+   A stale layout is not only cosmetic.
+   The surface for panning and wheel zoom is sized the same way, so if the `<svg>` grows and the layout is not refreshed, those gestures stop working in the new area.
+
+   With no `viewBox`, an `<svg>` sized purely by CSS is measured by its rendered size when it is laid out.
+   `svg-dom` alone would report `0 × 0` for it, since it only reads the `width` and `height` attributes.
 
 - `zoom_in`, `zoom_out`, `reset_view`, and `zoom_scale` drive the same zoom the buttons do, with or without a toolbar.
   Each step scales by 1.25 about the centre of the visible area, between a scale of 0.25 and 4.0.

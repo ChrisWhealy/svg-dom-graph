@@ -159,6 +159,10 @@ The test suite covers:
   - switching a gesture back off removing its surface and its wheel listener from the content layer
   - setting the same mode again not rebuilding the surface
   - `refresh_layout` resizing the surface with no toolbar shown
+- responsive layouts:
+  - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size rather than the `0 × 0` that `svg-dom` caches for it
+  - a resize not being picked up until `refresh_layout` is called, which pins down the documented requirement so it is not mistaken for a bug
+  - an `<svg>` with a `viewBox` needing no refresh when only its CSS size changes
 - pan and node dragging never being confused for each other:
   - dragging a selected node moving only that node, leaving its selection text and cell colours untouched, and not panning
   - a toolbar button never starting a pan, but still clicking

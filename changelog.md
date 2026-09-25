@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add optional fixed-size toolbar with "+", "−", and "100%" zoom buttons and scroll wheel zooming (`5b0f541`)
 - Add tests to validate `ViewTransform` calculations (`59fa212`)
 - Add DOM-write event coalescing functionality for zoom/scroll events (`5663562`)
-- Add explicit tests to distinguish scene zoom/pan behaviour from node movement (``)
+- Add explicit tests to distinguish scene zoom/pan behaviour from node movement (`602063d`)
+- Make explicit the need to call `Scene::refresh_toolbar_layout` after changing SVG size or `ViewBox` (``)
 
 ## Changed
 

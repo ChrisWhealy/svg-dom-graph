@@ -243,8 +243,15 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the toolbar and resizes the pan and wheel-zoom surface for the `<svg>`'s visible area as it is now.
     ///
-    /// Call this after changing the `<svg>`'s size (`SvgRoot::set_viewport`) or `viewBox`, since the scene cannot
-    /// observe either. Each part is skipped if there is nothing to update, so it is always safe to call.
+    /// **The scene cannot observe its `<svg>` being resized, so call this whenever the size or `viewBox` changes,**
+    /// for example after `SvgRoot::set_viewport` or `SvgRoot::set_view_box`, or from a `resize` handler. The one
+    /// exception is an `<svg>` with a `viewBox` whose CSS size alone changes, since the browser then scales everything
+    /// together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full picture.
+    ///
+    /// A stale layout is not only cosmetic. A toolbar is left where it was, and the surface that panning and wheel zoom
+    /// work through no longer covers a `<svg>` that has grown, so those gestures stop working in the new area.
+    ///
+    /// Each part is skipped if there is nothing to update, so it is always safe to call.
     ///
     /// # Errors
     ///
