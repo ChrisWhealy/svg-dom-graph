@@ -774,3 +774,86 @@ fn keydown_on_an_enterable_container_node_enters_it() -> Result<(), String> {
         "pressing Enter on the enterable container node did not enter its nested Scene",
     )
 }
+
+/// Makes `Element.setAttribute` throw for the named attributes while it is alive, and restores the original when
+/// dropped. A small, self-contained copy of `tests/drag/toolbar.rs`'s own `FailingWrites`: that one lives in the
+/// external integration-test crate, out of reach from this crate's own internal `#[cfg(test)]` suite.
+struct FailingWrites;
+
+impl FailingWrites {
+    fn start(names: &[&str]) -> Result<Self, String> {
+        let list = names.iter().map(|n| format!("{n:?}")).collect::<Vec<_>>().join(", ");
+        js_sys::Function::new_no_args(&format!(
+            "const proto = Element.prototype;
+             if (!proto.__originalSetAttribute) {{ proto.__originalSetAttribute = proto.setAttribute; }}
+             const failing = [{list}];
+             proto.setAttribute = function (name, value) {{
+                 if (failing.includes(name)) {{ throw new Error('injected failure writing ' + name); }}
+                 return proto.__originalSetAttribute.apply(this, arguments);
+             }};"
+        ))
+        .call0(&wasm_bindgen::JsValue::NULL)
+        .map_err(|e| format!("{e:?}"))?;
+        Ok(Self)
+    }
+}
+
+impl Drop for FailingWrites {
+    fn drop(&mut self) {
+        let _ = js_sys::Function::new_no_args(
+            "const proto = Element.prototype;
+             if (proto.__originalSetAttribute) { proto.setAttribute = proto.__originalSetAttribute; }",
+        )
+        .call0(&wasm_bindgen::JsValue::NULL);
+    }
+}
+
+/// The external review that caught this: a failed attribute write or listener registration inside
+/// `make_enterable` must leave the node exactly as it was — not a container node advertising `role="button"` with
+/// no working click handler behind it, and not a caller's own pre-existing `style` clobbered and never restored.
+/// Forces the `tabindex` write to fail, after `role` has already been written successfully, so a correct rollback
+/// has real work to do beyond just removing listeners that were never reached.
+#[wasm_bindgen_test]
+fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> Result<(), String> {
+    let parent = Scene::new(make_svg("make-enterable-rollback-parent")).map_err(|e| e.to_string())?;
+    let child = Scene::new(make_svg("make-enterable-rollback-child")).map_err(|e| e.to_string())?;
+    let node = parent
+        .add_container_node(Point::origin(), Size::new(60.0, 40.0), "A", child)
+        .map_err(|e| e.to_string())?;
+
+    let group = parent.inner.borrow().node_handle(node).unwrap().group.as_element().clone();
+    // Deliberately non-empty and unrelated to anything `make_enterable` itself writes, so a correct rollback must
+    // restore *this exact value*, not merely remove whatever `make_enterable` would have written.
+    group
+        .set_attribute("style", "opacity: 0.5;")
+        .map_err(|e| format!("could not seed a pre-existing style: {e:?}"))?;
+
+    {
+        let _failing = FailingWrites::start(&["tabindex"])?;
+        check(
+            parent.make_enterable(node).is_err(),
+            "make_enterable with a failing tabindex write reported success",
+        )?;
+    }
+
+    check(
+        group.get_attribute("role").is_none(),
+        "role was left behind after a failed make_enterable",
+    )?;
+    check(
+        group.get_attribute("tabindex").is_none(),
+        "tabindex was left behind after a failed make_enterable",
+    )?;
+    check(
+        group.get_attribute("style").as_deref() == Some("opacity: 0.5;"),
+        "the node's own pre-existing style was not restored after a failed make_enterable",
+    )?;
+
+    // A retry, with the injector gone, must still succeed — the failed attempt left nothing behind for a fresh
+    // one to conflict with.
+    parent.make_enterable(node).map_err(|e| e.to_string())?;
+    check(
+        group.get_attribute("role").as_deref() == Some("button"),
+        "a retried make_enterable did not install role",
+    )
+}

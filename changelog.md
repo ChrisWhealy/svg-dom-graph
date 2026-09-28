@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add nested `Scene` functionality (``)
+- Add nested `Scene` functionality (`f3b37f0`)
+
+## Fixed
+
+- Correct rollback guarantee for `make_enterable()` (``)
 
 # [Released]
 

@@ -21,7 +21,7 @@ use std::{
     cell::RefCell,
     rc::{Rc, Weak},
 };
-use svg_dom::SvgRoot;
+use svg_dom::{SvgNode, SvgRoot};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The (parent `Scene`, container `NodeId`) pair that owns a nested `Scene` as its child. `SceneInner::parent`'s
@@ -262,8 +262,10 @@ impl Scene {
     ///
     /// If `set_attr` or either listener registration this method makes fails partway through — expected to be
     /// extremely rare, since it means the underlying `addEventListener`/`setAttribute` DOM call itself failed —
-    /// `id` is left exactly as it was before the call: not marked enterable, and with none of this method's own
-    /// listeners left attached.
+    /// `id` is left exactly as it was before the call: not marked enterable, with none of this method's own
+    /// listeners left attached, and with `role`/`tabindex`/`style` restored to whatever they held before this
+    /// call — removed again if any of the three was absent, rather than left at whichever of "button"/"0"/
+    /// `"cursor: pointer;"` this method's own attempt got as far as writing.
     pub fn make_enterable(&self, id: NodeId) -> Result<(), Error> {
         let group = {
             let inner = self.inner.borrow();
@@ -276,6 +278,12 @@ impl Scene {
             }
             handles.group.clone()
         };
+
+        // Captured before any write, so a failure partway through can restore exactly what was there —
+        // `None` means the attribute was absent, undone by removing it again, never by writing back `""`.
+        let previous_role = group.attr("role");
+        let previous_tabindex = group.attr("tabindex");
+        let previous_style = group.attr("style");
 
         let result: Result<(), svg_dom::Error> = (|| {
             group.set_attr("role", "button")?;
@@ -302,6 +310,9 @@ impl Scene {
         if let Err(err) = result {
             group.remove_listeners("click");
             group.remove_listeners("keydown");
+            restore_attr(&group, "role", previous_role.as_deref());
+            restore_attr(&group, "tabindex", previous_tabindex.as_deref());
+            restore_attr(&group, "style", previous_style.as_deref());
             return Err(err.into());
         }
 
@@ -309,4 +320,18 @@ impl Scene {
         self.inner.borrow_mut().node_handle_mut(id).expect("checked above").enterable = true;
         Ok(())
     }
+}
+
+/// Restores attribute `name` on `group` to `previous` — removes it if `previous` is `None` (it was absent
+/// before this call), otherwise writes it back exactly. [`Scene::make_enterable`]'s own way of unwinding its
+/// attribute writes on failure.
+///
+/// Errors are ignored: there is nowhere left to report a second failure to once the first one — the reason this
+/// is unwinding at all — is already on its way out, the same reasoning [`enter`](Scene::enter)'s own rollback of
+/// `hide_root` already follows for `show_root`.
+fn restore_attr(group: &SvgNode, name: &str, previous: Option<&str>) {
+    let _ = match previous {
+        Some(value) => group.set_attr(name, value),
+        None => group.remove_attr(name),
+    };
 }
