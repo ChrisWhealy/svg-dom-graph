@@ -1,0 +1,31 @@
+<section class="section" id="panel-theta">
+    <h2>Nested Scenes: SHA3's <code>Theta</code> function</h2>
+    <p>A container node looks like any other node, but it owns one or more nested <code>Scene</code>s of its own —
+        <code>Scene::enter</code> and <code>Scene::exit</code> navigate into and out of it, hiding and showing each
+        <code>&lt;svg&gt;</code> root as they go. This lets a diagram stay small at the top level while a step
+        that is genuinely complex still gets its own full-size view, one level down, without cluttering the parent.
+    </p>
+    <p>The <code>Theta</code> function used within the SHA3 algorithm is a small, real example of exactly that shape.
+        Internally, this function contains three subfunctions:</p>
+    <ol>
+        <li><code>ThetaC</code>,</li>
+        <li><code>ThetaD</code>, and</li>
+        <li>a final <code>XOR</code> loop that folds the <code>ThetaD</code> result back into the state array</li>
+    </ol>
+    <p>Each inner function contains more functionality than can be displayed by a box on the parent diagram.</p>
+    <p><code>ThetaC</code> below is a genuine container node: its own nested <code>Scene</code> is the exact same
+        operator chain the <a href="#panel-selection">Cell selection</a> demo already draws — the same function,
+        called again here, grafted under this diagram's own <code>A</code> node instead of drawn standalone. Click
+        <code>ThetaC</code> to drill into it; a rounded, bordered frame marks it as a nested view, and the &times;
+        in its corner closes it. <code>ThetaD</code> and the <code>XOR</code> loop are still plain placeholder
+        boxes: there is no nested <code>Scene</code> behind them yet. This demo is deliberately incomplete — a
+        start, not the finished function.
+    </p>
+    <div class="canvas nested-scene-stage">
+        <svg id="theta-diagram" width="1100" height="920" viewBox="0 0 1100 920"
+            xmlns="http://www.w3.org/2000/svg"></svg>
+        <svg id="theta-thetac-child" width="1100" height="920" viewBox="0 0 1100 920" class="nested-scene"
+            xmlns="http://www.w3.org/2000/svg"></svg>
+        <button id="theta-close" class="nested-scene-close" type="button" aria-label="Close ThetaC">&times;</button>
+    </div>
+</section>

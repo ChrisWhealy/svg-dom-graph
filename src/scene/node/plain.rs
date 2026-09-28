@@ -99,6 +99,7 @@ pub(super) fn draw_box(
     Ok(BoxHandles {
         group,
         draggable: false,
+        enterable: false,
         edge_anchors,
         binary_operator_inputs: None,
         binary_operator_input_edges: None,
@@ -108,6 +109,7 @@ pub(super) fn draw_box(
         aria_label: String::new(),
         base_label_len: 0,
         ref_name: label.to_owned(),
+        child: None,
     })
 }
 

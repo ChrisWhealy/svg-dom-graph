@@ -24,6 +24,10 @@ An optional toolbar adds zoom controls fixed to any edge of the scene.
 By default, while it is shown, dragging the background pans the view, and holding down Ctrl or Cmd while using the mouse wheel zooms about the pointer.
 Both gestures can also be switched on or off independently of the toolbar, for an application that supplies its own controls.
 
+## [Changelog](changelog.md)
+
+A list of the significant commits making up each release.
+
 ## Documentation
 
 - [`docs/library.md`](docs/library.md) — the crate's own module layout, and `Scene`'s public API grouped by area.

@@ -11,6 +11,7 @@ mod box_handles;
 mod connector;
 pub(crate) mod drag;
 mod frame_request;
+mod navigation;
 pub(crate) mod node;
 mod scene_inner;
 mod toolbar;
@@ -33,10 +34,11 @@ use crate::{
     geometry::{apply_matrix, view::ViewTransform},
     model::graph::Graph,
 };
+use navigation::NavigationState;
 use scene_inner::SceneInner;
 use std::{
     cell::RefCell,
-    rc::Rc,
+    rc::{Rc, Weak},
     sync::atomic::{AtomicUsize, Ordering},
 };
 use svg_dom::{
@@ -142,28 +144,43 @@ impl Scene {
     ///
     /// Also defines the arrow marker every edge's connector uses, since every `Scene` needs exactly one, shared across
     /// all its edges.
+    ///
+    /// Starts as the root of a brand-new scene tree, focused on itself. It stays that way unless and until
+    /// [`add_container_node`](Self::add_container_node)/[`add_container_node_with`](Self::add_container_node_with)
+    /// grafts it underneath another `Scene` — see [`enter`](Self::enter)/[`exit`](Self::exit).
     pub fn new(svg: SvgRoot) -> Result<Self, Error> {
         let marker_id = format!("svg-dom-graph-arrow-{}", NEXT_SCENE_ID.fetch_add(1, Ordering::Relaxed));
         let arrow = define_arrow_marker(&svg, &marker_id)?;
         let content = svg.group()?;
         content.set_attr("class", "svg-dom-graph-content")?;
-        Ok(Self {
-            inner: Rc::new(RefCell::new(SceneInner {
-                svg,
-                content,
-                view: ViewTransform::default(),
-                view_dirty: false,
-                toolbar: None,
-                pan_mode: InputMode::default(),
-                wheel_zoom_mode: InputMode::default(),
-                view_input: None,
-                graph: Graph::new(),
-                node_handles: Vec::new(),
-                edge_handles: Vec::new(),
-                arrow,
-                scratch: String::new(),
-            })),
-        })
+
+        // `NavigationState::focused` is a `Weak<RefCell<SceneInner>>`, but the `Rc<RefCell<SceneInner>>` it would
+        // downgrade from does not exist until `inner`, below, is built. So construction is two-stage: `navigation`
+        // is created first, holding a `Weak` that upgrades to nothing; `inner` is then built, cloning `navigation`
+        // in; and only then is `focused` written for real, once `inner` exists to downgrade from. `focused` is
+        // briefly non-upgradeable between those two steps, never observed from outside this function since nothing
+        // else runs in between.
+        let navigation = Rc::new(RefCell::new(NavigationState { focused: Weak::new() }));
+        let inner = Rc::new(RefCell::new(SceneInner {
+            svg,
+            content,
+            view: ViewTransform::default(),
+            view_dirty: false,
+            toolbar: None,
+            pan_mode: InputMode::default(),
+            wheel_zoom_mode: InputMode::default(),
+            view_input: None,
+            graph: Graph::new(),
+            node_handles: Vec::new(),
+            edge_handles: Vec::new(),
+            arrow,
+            scratch: String::new(),
+            parent: None,
+            navigation: navigation.clone(),
+        }));
+        navigation.borrow_mut().focused = Rc::downgrade(&inner);
+
+        Ok(Self { inner })
     }
 }
 

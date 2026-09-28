@@ -36,7 +36,7 @@ use svg_dom::{
 fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error> {
     match &graph.node(id).ok_or(Error::UnknownNode(id))?.content {
         NodeContent::Data(content) => Ok(content),
-        NodeContent::Label(_) => Err(Error::OperandNotData(id)),
+        NodeContent::Label(_) | NodeContent::Container(_) => Err(Error::OperandNotData(id)),
     }
 }
 
@@ -176,6 +176,7 @@ fn draw_operator_box(
         BoxHandles {
             group,
             draggable: false,
+            enterable: false,
             edge_anchors,
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
@@ -185,6 +186,7 @@ fn draw_operator_box(
             aria_label: node_label,
             base_label_len,
             ref_name: label.to_owned(),
+            child: None,
         },
         rect,
     ))

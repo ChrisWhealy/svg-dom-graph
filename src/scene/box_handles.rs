@@ -1,17 +1,22 @@
+use super::SceneInner;
 use crate::{
     model::{content::Selection, edge::EdgeId, node::NodeId},
     scene::node::EdgeAnchors,
 };
+use std::{cell::RefCell, rc::Rc};
 use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
 ///
 /// Every one of a box's own children — its outer rect, its label or grid cells — is drawn once, at creation, in local
-/// coordinates relative to `(0, 0)`. `group`'s own `transform="translate(...)"` is the only thing that ever changes
-/// afterward. [`SceneInner::move_node`] repositions a box by rewriting this one transform. This cost stays the same
-/// regardless of how many children `group` holds. So a data node with hundreds of value cells moves exactly as cheaply
-/// as a plain label. Moving a box needs no handle to any individual child beyond `group` — but recolouring one for
+/// coordinates relative to `(0, 0)`.
+///
+/// `group`'s own `transform="translate(...)"` is the only thing that ever changes afterward.
+///
+/// [`SceneInner::move_node`] repositions a box by rewriting this one transform. This cost stays the same regardless of
+/// how many children a `group` might hold. So a data node with hundreds of value cells can be moved as cheaply as a
+/// plain label. Moving a box needs no handle to any individual child beyond `group` — but recolouring one for
 /// [`Scene::set_selection`](crate::scene::Scene::set_selection) does, hence `cell_rects` below.
 pub(crate) struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
@@ -21,6 +26,12 @@ pub(crate) struct BoxHandles {
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
     /// pointer listeners rather than replacing the first — see [`crate::Error::AlreadyDraggable`].
     pub(crate) draggable: bool,
+    /// Whether `Scene::make_enterable` has already been called for this node.
+    ///
+    /// Same reasoning as [`draggable`](Self::draggable), for the same underlying cause: `svg-dom`'s listener
+    /// registration is append-only, so a second call would add a second, independent click/keydown listener rather
+    /// than replacing the first — see [`crate::Error::AlreadyEnterable`].
+    pub(crate) enterable: bool,
     /// How many evenly spaced connector fixing points this node's own sides offer — see [`EdgeAnchors`].
     ///
     /// `redraw_edge` has no other way to learn a node's own anchor configuration once an incident edge needs a reroute.
@@ -98,6 +109,16 @@ pub(crate) struct BoxHandles {
     /// `current_ref_name` reads this to build a node's own name right now. `SceneInner::append_relationship` reads
     /// it too, seeding a plain label node's first relationship clause.
     pub(crate) ref_name: String,
+    /// The nested `Scene` this node owns, if it is a container node — `Some` only for a node whose
+    /// [`NodeContent`](crate::model::node::NodeContent) is `Container`. `None` for every other node kind.
+    ///
+    /// Kept here, not in `NodeContent::Container` itself, because a `Scene`/`SceneInner` is DOM/wasm state and the
+    /// graph model is deliberately kept free of that — see `NodeContent`'s own doc comment. This is exactly the
+    /// same reasoning `cell_rects`/`selection` above already follow for a data node's own DOM-side state.
+    ///
+    /// `Scene::enter` reads this to find which `Scene` to show. `Scene::add_container_node`/
+    /// `add_container_node_with` are the only place this is ever set.
+    pub(super) child: Option<Rc<RefCell<SceneInner>>>,
 }
 
 impl BoxHandles {

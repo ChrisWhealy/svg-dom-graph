@@ -7,6 +7,7 @@
 //! [`Scene::set_edge_anchors`], which applies to any node kind.
 
 mod construction_guard;
+mod container;
 mod data;
 mod edge_anchors;
 mod node_options;

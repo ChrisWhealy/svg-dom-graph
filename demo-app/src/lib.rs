@@ -34,6 +34,10 @@
 //!   a one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
 //!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's
 //!   own doc comment for what each demonstrates.
+//! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]: SHA3's `Theta` function as a parent `Scene`
+//!   whose `ThetaC` node is a genuine container node, owning the same `ThetaC` chain the Cell Selection demo
+//!   already draws as its own nested `Scene` — entered and exited via "Enter ThetaC"/"Exit". `ThetaD` and the
+//!   final `XOR` loop are still plain placeholder boxes; see that function's own doc comment for why.
 //!
 //! Each feature this crate gains should keep this pattern: land it in a module of its own, add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
@@ -52,6 +56,7 @@ mod operators_chained;
 mod operators_unary;
 mod selection;
 mod source_frame;
+mod theta;
 mod tree;
 mod util;
 
@@ -100,6 +105,7 @@ demo_gallery! {
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
+    "panel-theta" => theta::build_theta_demo,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

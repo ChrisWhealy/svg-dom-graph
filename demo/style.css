@@ -200,6 +200,22 @@ h3 {
     margin-bottom: 0.5rem;
 }
 
+/* The same global reset zeroes an <ol>/<ul>'s own `padding-left` too, not just its margin. That padding is what a
+   browser's own default stylesheet normally uses to hang a marker ("1.", "•") to the *left* of the text column —
+   with it reset to `0`, the marker has nowhere to go and the list stops lining up with this section's own
+   paragraphs at all. `list-style-position: inside` sidesteps that rather than re-adding a guessed padding value:
+   the marker becomes part of the text's own first line instead of hanging outside it, so both the marker and the
+   text that follows it start at the exact same left edge `.section>p`'s own text already does — no padding
+   number to keep in sync with anything.
+
+   `margin` gives it the same `0.5rem` gap above and below that every paragraph already carries below itself —
+   set explicitly here, rather than left to rely on margin collapsing with whatever happens to sit next to it. */
+.section ol,
+.section ul {
+    list-style-position: inside;
+    margin: 0.5rem 0;
+}
+
 figure {
     margin: 0;
 }
@@ -231,6 +247,138 @@ figure {
     display: flex;
     flex-wrap: wrap;
     gap: 12px;
+}
+
+/* Nested Scenes (panel-theta, and any future demo that nests one the same way): a base diagram's own <svg> and
+   one or more nested-Scene <svg>s sit in the same .canvas box, one drawn directly on top of another — so drilling
+   down replaces the visible content in place, rather than swapping to a differently sized block elsewhere on the
+   page. `.nested-scene-stage` (a `.canvas`) is `position: relative` so its own nested children can anchor to it,
+   not to the page; give it whichever size is large enough to hold the biggest nested Scene it will ever show.
+
+   `svg-dom-graph` hides a nested Scene's own <svg> root with `visibility: hidden`, deliberately not `display:
+   none` (so it stays measurable while hidden — see the library's own nested-Scene docs). `visibility: hidden`
+   alone does not take an element out of the page's layout flow, so without `position: absolute` a hidden
+   `.nested-scene` would still reserve its own full-size, empty block in the page.
+
+   Deliberately no `visibility` rule anywhere on a `.nested-scene` itself, or anything it inherits from — not even
+   as a "just in case it flashes visible" belt-and-braces default. The library toggles `visibility` as a plain SVG
+   attribute (`setAttribute`), which is the lowest-priority visibility source there is: any CSS declaration of
+   `visibility` — inline `style`, or a stylesheet rule — wins over that attribute and pins the element permanently,
+   regardless of what `Scene::enter`/`exit` do afterward. An earlier version of this file learned this the hard
+   way: an inline `style="visibility: hidden"` on the nested <svg> meant `Scene::enter`'s own
+   `visibility="visible"` attribute write never had any visible effect, so entering it hid the parent without ever
+   showing the child — both <svg>s empty, the page's own dark background showing through.
+
+   The `[visibility="visible"]` attribute selector below is unaffected by any of that: it only ever reads the
+   attribute's current value to decide whether to show `.nested-scene-close`, a plain HTML button, never a CSS
+   property applied back to the <svg> itself. */
+.nested-scene-stage {
+    position: relative;
+    /* How far `.nested-scene` sits from every edge of this stage, and its own `border-radius` — both shared with
+       `.nested-scene-close`'s own position below, so the close button can be defined relative to the frame's own
+       corner (and the curve of that corner) rather than second, independently maintained copies of these same two
+       numbers. */
+    --nested-scene-margin: 40px;
+    --nested-scene-radius: 20px;
+}
+
+/* A decorative duplicate of the base diagram (see `theta::add_backdrop_clone`'s own doc comment for why it exists
+   at all), positioned to exactly overlay the real one underneath it, edge to edge. Whichever nested Scene is
+   currently shown paints over the middle of this; the base diagram's own content stays visible in whatever margin
+   its own `.nested-scene` leaves around itself.
+
+   `pointer-events: none` is load-bearing, not decorative: without it, this clone — sitting on top of the real,
+   interactive diagram in paint order — would intercept every click, drag, and wheel event meant for it, since a
+   pointer event always targets whatever is topmost at that point, regardless of which one looks interactive. With
+   it, the browser skips this element during hit-testing entirely, so every one of those events reaches the real
+   `#theta-diagram` beneath exactly as if this clone were not there. */
+.nested-scene-backdrop {
+    position: absolute;
+    inset: 0;
+    pointer-events: none;
+}
+
+/* A rounded, bordered, shadowed frame, inset from `.nested-scene-stage`'s own edges on all four sides — deliberately
+   smaller than the parent underneath it, not just a different-content copy of the exact same box, so the parent's
+   own diagram stays visible in the margin all the way around. This reads as a modal window floating over its
+   parent rather than a full replacement of it.
+
+   The inset changes only where the <svg> is drawn on the page, never its own coordinate space: `viewBox` is
+   unchanged, so `preserveAspectRatio`'s own default (`xMidYMid meet`) simply scales the whole, unmodified diagram
+   down to fit the smaller box — nothing in the nested Scene's own construction code needs to know its own `<svg>`
+   ends up smaller than its `width`/`height` attributes say.
+
+   `width`/`height` are given explicitly, as `calc()`, rather than left `auto` alongside `top`/`left` — an <svg> is
+   replaced content, and a replaced element's own `width`/`height` *attributes* act as its intrinsic size for
+   layout purposes unless a CSS `width`/`height` *property* overrides them. `top`/`left` alone (an `inset`
+   shorthand, or `right`/`bottom` set the same way, without also giving `width`/`height`) leaves both properties
+   `auto`, so many browsers fall back to that intrinsic attribute size — 1100x920 here — using only `top`/`left`
+   for position and ignoring `right`/`bottom` entirely. The box then overflows past this element's own right/
+   bottom edges by exactly the inset amount, which `.nested-scene-stage`'s own `overflow: hidden` (inherited from
+   `.canvas`) then silently crops — visually indistinguishable from "the whole nested view is offset down and to
+   the right, with its own far edge missing." Explicit `width`/`height` leaves nothing for that fallback to apply
+   to. */
+.nested-scene {
+    position: absolute;
+    top: var(--nested-scene-margin);
+    left: var(--nested-scene-margin);
+    width: calc(100% - 2 * var(--nested-scene-margin));
+    height: calc(100% - 2 * var(--nested-scene-margin));
+    border: 4px solid #58a6ff;
+    border-radius: var(--nested-scene-radius);
+    box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
+    /* Clips the <svg>'s own drawn content — its background rect included — to the rounded corners above; without
+       this, a square corner would still show through past the border's own curve. */
+    overflow: hidden;
+}
+
+/* The nested Scene's own close control, in place of an external "Exit" button: a small circular &times;
+   centred exactly on the single point of its own rounded frame's top-right corner that is simultaneously closest
+   to the top and to the right — the topmost-rightmost point of the *curve* itself, not the frame's sharp
+   geometric corner, which its rounded border never actually reaches (the arc cuts inside it).
+
+   `top`/`right` start from the same two numbers `.nested-scene` itself is built from — its own margin from this
+   stage, pulled back by half this button's own size, so a centring offset alone would land the button's centre
+   on that sharp geometric corner — then both add the same further offset, moving the centre down and left along
+   the 45° line into the curve. A quarter-circle's own centre sits inset from that geometric corner by its radius
+   in both directions; the point on the circle 45° around from there, toward the corner, sits `radius * sin(45°)`
+   back toward the centre along each axis — so the remaining gap from the geometric corner to that point is
+   `radius - radius * sin(45°)`, i.e. `radius * (1 - sin(45°))`. `sin(45°) = cos(45°) ≈ 0.70711`, so this constant
+   is `radius * 0.29289` — about 8.2px at this frame's own 28px radius. Hidden by default, and visible only while
+   its own nested Scene actually is — see the `:has()` rule below — so it is never there to click when there is
+   nothing to close. `visibility: hidden` (not `display: none`) also keeps it out of the tab order while hidden,
+   for free. */
+.nested-scene-close {
+    --nested-scene-close-size: 34px;
+    position: absolute;
+    top: calc(
+        var(--nested-scene-margin) - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
+    );
+    right: calc(
+        var(--nested-scene-margin) - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
+    );
+    visibility: hidden;
+    width: var(--nested-scene-close-size);
+    height: var(--nested-scene-close-size);
+    padding: 0;
+    border: none;
+    border-radius: 50%;
+    background: #21262d;
+    color: #f0f6fc;
+    font-size: 22px;
+    line-height: 1;
+    cursor: pointer;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nested-scene-close:hover {
+    background: #30363d;
+}
+
+.nested-scene-stage:has(.nested-scene[visibility="visible"]) .nested-scene-close {
+    visibility: visible;
 }
 
 figcaption {

@@ -312,6 +312,17 @@ fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The output array's own initial `display` value: row `0`'s own real result, every other row still blank — the
+/// same starting state [`build_selection_demo`] applies before any step is taken. [`crate::theta`]'s own nested
+/// `ThetaC` child scene starts from this same state, so it reads as "the same computation," not a fresh one.
+pub(crate) fn initial_theta_c_display() -> [u64; 5] {
+    let outputs = THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4]);
+    let mut written = [false; 5];
+    written[0] = true;
+    display_outputs(outputs, written)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds `#selection-thetac-diagram` from scratch, for row `n`: a fresh five-operand, four-`XOR` chain
 /// computing `ThetaC` over `THETA_C_INPUT[n]`, a fresh output array showing `display`'s own current values with
 /// cell `n` focused, and a fresh input array with row `n` banded — plus a plain edge from the chain's own final
@@ -337,14 +348,20 @@ fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
 ///
 /// Each step draws a new `Scene`, so zoom starts again at `1.0` on every step.
 ///
+/// Shared by the standalone Cell Selection demo ([`rebuild_theta_c_diagram`], which attaches to
+/// `#selection-thetac-diagram` and keeps the result in [`THETA_C_SCENE`]) and [`crate::theta`]'s own nested-Scene
+/// demo, which attaches to a different `<svg>` and keeps the result as a container node's own child `Scene`
+/// instead — both draw exactly the same chain from exactly the same code, over `svg_id` rather than a hardcoded
+/// element id.
+///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#selection-thetac-diagram`, or if any library call fails.
-fn rebuild_theta_c_diagram(n: usize, display: [u64; 5]) -> Result<(), String> {
+/// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
+pub(crate) fn build_theta_c_scene(svg_id: &str, n: usize, display: [u64; 5]) -> Result<Scene, String> {
     let document = crate::util::document()?;
-    let container = required_element(&document, "selection-thetac-diagram")?;
+    let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
-    let svg = svg_dom::SvgRoot::attach("selection-thetac-diagram").map_err(stringify)?;
+    let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
     let row = THETA_C_INPUT[n];
@@ -435,8 +452,26 @@ fn rebuild_theta_c_diagram(n: usize, display: [u64; 5]) -> Result<(), String> {
     scene.add_edge(result, output).map_err(stringify)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
-    THETA_C_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+    Ok(scene)
+}
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Rebuilds `#selection-thetac-diagram` from scratch, for row `n` — see [`build_theta_c_scene`] for what is drawn
+/// and why a fresh `Scene` is unavoidable here.
+///
+/// The new `Scene` is kept in [`THETA_C_SCENE`], replacing the previous step's. Nothing here is draggable, but the
+/// zoom toolbar's own buttons hold only a `Weak` reference to their `Scene`, so they stop responding the moment the
+/// last handle is dropped. `build_theta_c_scene`'s own `set_inner_html("")` clears the previous step's DOM, and
+/// replacing the stored handle then frees the previous `Scene`.
+///
+/// Each step draws a new `Scene`, so zoom starts again at `1.0` on every step.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#selection-thetac-diagram`, or if any library call fails.
+fn rebuild_theta_c_diagram(n: usize, display: [u64; 5]) -> Result<(), String> {
+    let scene = build_theta_c_scene("selection-thetac-diagram", n, display)?;
+    THETA_C_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
     Ok(())
 }
 

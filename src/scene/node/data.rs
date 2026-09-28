@@ -365,6 +365,7 @@ pub(super) fn draw_content_box(
         BoxHandles {
             group,
             draggable: false,
+            enterable: false,
             edge_anchors,
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
@@ -374,6 +375,7 @@ pub(super) fn draw_content_box(
             aria_label: node_label,
             base_label_len,
             ref_name,
+            child: None,
         },
         rect,
     ))
@@ -573,7 +575,7 @@ impl Scene {
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
-            NodeContent::Label(_) => return Err(Error::InvalidSelection(id, selection)),
+            NodeContent::Label(_) | NodeContent::Container(_) => return Err(Error::InvalidSelection(id, selection)),
         };
         let (new_band, new_focus) = content
             .resolve_selection(selection)

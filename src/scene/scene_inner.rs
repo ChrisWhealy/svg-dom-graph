@@ -1,6 +1,7 @@
 pub(super) use super::node::EdgeAnchors;
 pub(crate) use super::{box_handles::BoxHandles, connector::ConnectorHandle};
 pub(super) use super::{
+    navigation::{NavigationState, ParentLink},
     toolbar::Toolbar,
     view_input::{InputMode, ViewInput},
 };
@@ -58,6 +59,17 @@ pub(super) struct SceneInner {
     pub node_handles: Vec<BoxHandles>,
     pub edge_handles: Vec<ConnectorHandle>,
     pub arrow: SvgMarker,
+    /// The (parent `Scene`, container `NodeId`) pair that owns this `Scene` as its nested child, if any — `None`
+    /// for a `Scene` that has never been grafted into another one via `Scene::add_container_node`/
+    /// `add_container_node_with`. See [`navigation`](super::navigation)'s own module doc comment.
+    pub parent: Option<ParentLink>,
+    /// Shared by every `Scene` in this one's own scene tree: which of them is currently focused. Created once, when
+    /// a `Scene` that starts a new tree is made — see [`Scene::new`](super::Scene::new) for the two-stage
+    /// construction this needs, since the `Rc<RefCell<SceneInner>>` a `Weak` inside it would downgrade from does
+    /// not exist yet at the point this field is first written. Every `Scene` `Scene::add_container_node`/
+    /// `add_container_node_with` ever grafts underneath this one adopts this same shared value in place of
+    /// whichever one it held before — see [`navigation::repoint_subtree`](super::navigation::repoint_subtree).
+    pub navigation: Rc<RefCell<NavigationState>>,
     /// A single reused buffer, shared by every one-shot construction/redraw call that needs to format a path `d` or
     /// element attribute — [`Scene::add_edge_with`], [`Scene::set_connector_type`], [`Scene::set_edge_anchors`],
     /// and node construction (`draw_box`/`draw_content_box`/`draw_operator_box`, called from

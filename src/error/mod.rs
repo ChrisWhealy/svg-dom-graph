@@ -133,6 +133,42 @@ pub enum Error {
     /// Rejected before drawing anything or touching any toolbar already shown, so a rejected call leaves the scene
     /// unchanged.
     InvalidToolbarOptions(crate::scene::ToolbarOptions),
+    /// `Scene::enter` was called with a `NodeId` that names a `Label` or `Data` node, not a container node.
+    NotAContainerNode(NodeId),
+    /// `Scene::enter`or `Scene::exit` was called on a `Scene` that is not the one actually shown and receiving input.
+    ///
+    /// Checked before hiding or showing anything, so a rejected call leaves every `Scene` in the tree exactly as
+    /// visible, and exactly as focused, as it was.
+    NotFocused,
+    /// `Scene::add_container_node` or `add_container_node_with` was given a `child` that is not currently the focused
+    /// `Scene` of its own tree.
+    ///
+    /// A subtree may only be grafted into another scene tree by its own root, while that root is still focused —
+    /// never by one of its own hidden descendants. Rejected before drawing anything or touching either scene's own
+    /// model, so a rejected call leaves both scenes exactly as they were.
+    ChildNotFocused,
+    /// `Scene::add_container_node` or `add_container_node_with` was given a `child` `Scene` that already has a live
+    /// parent — one whose own `Scene` has not yet been dropped.
+    ///
+    /// A nested `Scene` has exactly one owner at a time. A `child` whose previous parent has since been dropped is
+    /// not rejected this way: it is simply detached, and may be attached again. Rejected before drawing anything or
+    /// touching either scene's own model, so a rejected call leaves both scenes exactly as they were.
+    AlreadyNested,
+    /// `Scene::make_enterable` was called more than once for the same node.
+    ///
+    /// Same reasoning as [`Error::AlreadyDraggable`]: `svg-dom`'s listener registration is append-only, so a second
+    /// call would add a second, independent click/keydown listener rather than replacing the first.
+    AlreadyEnterable(NodeId),
+    /// `Scene::add_container_node`/`add_container_node_with` was given a `child` that is `self`, or that is already
+    /// an ancestor of `self` in the scene tree.
+    ///
+    /// Either would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from. No node has
+    /// been added yet when this is checked, so — unlike [`Error::AlreadyDraggable`]'s/[`Error::SelfLoopUnsupported`]'s
+    /// own `NodeId` — there is no existing node to name here: it is `self` and `child` (both already in the caller's
+    /// own hands) that are the wrong combination, not any particular node in either one's graph. Rejected before
+    /// drawing anything or touching either scene's own model, so a rejected call leaves both scenes exactly as they
+    /// were.
+    SelfNesting,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -144,6 +180,7 @@ impl fmt::Display for Error {
             Error::UnknownEdge(id) => write!(f, "edge {id:?} does not belong to this Scene"),
             Error::SelfLoopUnsupported(id) => write!(f, "self-loop on node {id:?} is not yet supported"),
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
+            Error::AlreadyEnterable(id) => write!(f, "node {id:?} is already enterable"),
             Error::InvalidCollisionPadding(padding) => {
                 write!(f, "collision padding {padding} is not a finite value >= 0.0")
             },
@@ -187,6 +224,18 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "toolbar options {options:?} are invalid: button_height must be finite and > 0.0, and gap and margin must be finite and >= 0.0"
+                )
+            },
+            Error::NotAContainerNode(id) => write!(f, "node {id:?} is not a container node"),
+            Error::NotFocused => write!(f, "this Scene is not its own scene tree's currently focused Scene"),
+            Error::ChildNotFocused => {
+                write!(f, "the supplied child Scene is not the currently focused Scene of its own tree")
+            },
+            Error::AlreadyNested => write!(f, "the supplied child Scene already has a live parent"),
+            Error::SelfNesting => {
+                write!(
+                    f,
+                    "a Scene cannot be given a child Scene that is itself or one of its own ancestors"
                 )
             },
         }
