@@ -1153,3 +1153,68 @@ fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> 
         "a retried make_enterable did not install role",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `replace_container_child`'s own documented transactional guarantee, forced open: every precondition has already
+/// passed by the time `hide_root(&new_child...)` runs, so that is the one DOM write left that can still fail — and
+/// at that point neither scene's own model has been touched yet, so a failure there has nothing to roll back, only
+/// something to not do. Forces exactly that write to fail, then proves both scenes are left exactly as they were:
+/// the original child stays attached, focused-through-`parent`, and hidden; `new_child` stays independent, focused,
+/// and visible; and `parent.enter(node)` still shows the original child.
+#[wasm_bindgen_test]
+fn a_failed_hide_of_new_childs_root_leaves_both_scenes_exactly_as_they_were() -> Result<(), String> {
+    let parent = Scene::new(make_svg("replace-failed-hide-parent")).map_err(|e| e.to_string())?;
+    let old_child = Scene::new(make_svg("replace-failed-hide-old")).map_err(|e| e.to_string())?;
+    let new_child = Scene::new(make_svg("replace-failed-hide-new")).map_err(|e| e.to_string())?;
+    let node = parent
+        .add_container_node(Point::origin(), Size::new(60.0, 40.0), "A", old_child.clone())
+        .map_err(|e| e.to_string())?;
+
+    let result = {
+        let _failing = FailingWrites::start(&["visibility"])?;
+        parent.replace_container_child(node, new_child.clone())
+    };
+    check(
+        matches!(result, Err(Error::Svg(_))),
+        "replace_container_child with a failing visibility write did not fail with Error::Svg",
+    )?;
+
+    // The original child is still exactly where it was: attached, focused through parent, hidden.
+    check(
+        old_child.is_nested(),
+        "the original child was detached despite the rejected call",
+    )?;
+    let (reported_parent, reported_node) = old_child
+        .parent()
+        .ok_or("old_child.parent() was None after the rejected call")?;
+    check(
+        reported_parent.is_focused(),
+        "old_child's own reported parent was not the focused Scene after the rejected call",
+    )?;
+    check(
+        reported_node == node,
+        "old_child.parent() reported the wrong container NodeId after the rejected call",
+    )?;
+    check(
+        visibility(&old_child.inner.borrow().svg).as_deref() == Some("hidden"),
+        "the original child was made visible despite the rejected call",
+    )?;
+
+    // `new_child` is exactly as it was too: independent, focused, visible.
+    check(!new_child.is_nested(), "new_child was grafted in despite the rejected call")?;
+    check(
+        new_child.is_focused(),
+        "new_child stopped being focused despite the rejected call",
+    )?;
+    check(
+        visibility(&new_child.inner.borrow().svg).as_deref() != Some("hidden"),
+        "new_child was hidden despite the rejected call",
+    )?;
+
+    // Entering the container still reaches the original child, not new_child.
+    let entered = parent.enter(node).map_err(|e| e.to_string())?;
+    check(
+        visibility(&entered.inner.borrow().svg).as_deref() != Some("hidden"),
+        "entering the container after the rejected call did not show the original child",
+    )
+}
