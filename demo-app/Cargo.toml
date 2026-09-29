@@ -23,3 +23,20 @@ features = [
     "HtmlInputElement",
     "Window",
 ]
+
+# `wasm-pack build` (no `--dev`/`--profiling`/`--release` flag is passed anywhere this crate is actually built —
+# see demo-server/src/build/mod.rs's own `build_wasm`) defaults to the release profile, where wasm-pack tries to
+# download a prebuilt `wasm-opt` (binaryen) binary from GitHub Releases on every build that doesn't already have
+# one cached. That third-party download has failed in CI ("Build the demo" in .github/workflows/ci.yml) with a
+# plain network/asset-fetch error unrelated to anything in this crate. A demo gains nothing from wasm-opt's own
+# size/perf optimisation that justifies depending on that download succeeding on every single CI run, so it is
+# switched off outright — for every profile wasm-pack might build with, not just release, in case a `--dev`/
+# `--profiling` build is ever added.
+[package.metadata.wasm-pack.profile.dev]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.profiling]
+wasm-opt = false
+
+[package.metadata.wasm-pack.profile.release]
+wasm-opt = false

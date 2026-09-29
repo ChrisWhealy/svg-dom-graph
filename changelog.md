@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct rollback guarantee for `make_enterable()` (`de0de55`)
 - Doc only: Clarify transactionality of `enter()` and `exit()` (`bfa8608`)
 - Doc only: Clarify behaviour of the CSS `visibility` property of nested scenes (`ea3deaf`)
+- Correct CI error in demo build step (``)
 
 # [Released]
 
