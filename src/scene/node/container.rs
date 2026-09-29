@@ -8,7 +8,7 @@ use crate::{
     model::node::{NodeContent, NodeId},
     scene::{
         Scene,
-        navigation::{ParentLink, hide_root, is_ancestor_or_self, repoint_subtree, show_root},
+        navigation::{ParentLink, detach_subtree, hide_root, is_ancestor_or_self, repoint_subtree, show_root},
     },
 };
 use std::rc::Rc;
@@ -152,5 +152,104 @@ impl Scene {
         });
 
         Ok(id)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Replaces container node `node`'s own nested child `Scene` with `new_child`, and returns the one it replaced.
+    ///
+    /// The returned `Scene` is detached, and comes back **visible and focused** — the same state any freshly
+    /// constructed, standalone `Scene` starts in, not hidden. This crate's navigation model treats "focused" as
+    /// meaning "the scene actually shown and receiving input"; a detached child that stayed focused but hidden
+    /// would quietly break that equivalence. Making it visible again is safe precisely because `self` is required
+    /// to be focused for this call to succeed at all (see "Errors" below): the old child was therefore already
+    /// hidden going in, so revealing it again on the way out can never produce two visible `Scene`s within one
+    /// navigation tree — only two separate, independent trees, each with exactly one visible, focused root, which
+    /// is the invariant this crate already guarantees everywhere else. Whether the two `<svg>` roots then sit
+    /// somewhere sensible on the page is a host layout concern, exactly as it already is for any standalone
+    /// `Scene` a host constructs directly.
+    ///
+    /// The returned `Scene`'s own subtree no longer shares `self`'s own tree-wide navigation state either — it is
+    /// given a fresh one of its own, the same two-stage bootstrap [`Scene::new`] uses, so it starts out as the sole
+    /// focused root of its own, newly independent tree. Merely clearing its own `parent` link would not be enough
+    /// on its own: the whole subtree would still share the *former* parent's navigation state, so a later
+    /// `enter`/`exit`/`is_focused` call anywhere in it would still be answered by a navigation state that has
+    /// nothing to do with this now-independent tree anymore.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. This rules out
+    /// replacing a child while looking at one of its own descendants, which would otherwise leave focus with no
+    /// defined destination — with this precondition, `self` stays focused throughout the whole call, the one
+    /// property every other part of this method leans on. Checked first, so a rejected call touches nothing.
+    ///
+    /// Returns [`Error::UnknownNode`] if `node` does not name a node in this scene, or
+    /// [`Error::NotAContainerNode`] if it names one that is not a container node.
+    ///
+    /// Returns [`Error::SelfNesting`] if `new_child` is `self`, or already an ancestor of `self` in the scene
+    /// tree. Returns [`Error::AlreadyNested`] if `new_child` already has a live parent — which also, and
+    /// deliberately, rejects replacing a container node's child with itself: the old child already counts as
+    /// `new_child`'s own live parent at this point, since it has not been detached yet. Returns
+    /// [`Error::ChildNotFocused`] if `new_child` is not currently the focused `Scene` of its own tree. All three
+    /// are exactly the checks [`add_container_node_with`](Self::add_container_node_with) already makes for the
+    /// same reasons, applied here to `new_child` in `new_child`'s place.
+    ///
+    /// Also returns a wrapped [`Error::Svg`] if hiding `new_child`'s own `<svg>` root fails. Every one of the
+    /// checks above, and that hide, happens before any ownership or navigation state changes — so a rejected call
+    /// leaves the original child attached to `node` exactly as it was, and `new_child` exactly as it was: still an
+    /// independent, focused tree of its own. The only DOM write still to come after this point — making the old
+    /// child visible again — cannot itself fail this call: by then the replacement has already fully succeeded,
+    /// so that write is attempted on a best-effort basis, the same "already happened, so a failure to finish a
+    /// secondary step is not reported as this call's own failure" reasoning this crate's own zoom-view bookkeeping
+    /// already follows after a successful view change.
+    pub fn replace_container_child(&self, node: NodeId, new_child: Scene) -> Result<Scene, Error> {
+        if !self.is_focused() {
+            return Err(Error::NotFocused);
+        }
+
+        let old_child_rc = {
+            let inner = self.inner.borrow();
+            let handles = inner.node_handle(node).ok_or(Error::UnknownNode(node))?;
+            handles.child.clone().ok_or(Error::NotAContainerNode(node))?
+        };
+
+        if is_ancestor_or_self(&new_child.inner, &self.inner) {
+            return Err(Error::SelfNesting);
+        }
+        let new_child_has_live_parent = new_child
+            .inner
+            .borrow()
+            .parent
+            .as_ref()
+            .is_some_and(|link| link.scene.upgrade().is_some());
+        if new_child_has_live_parent {
+            return Err(Error::AlreadyNested);
+        }
+        if !new_child.is_focused() {
+            return Err(Error::ChildNotFocused);
+        }
+
+        // `new_child` is folding into `self`'s own tree, so it is no longer the focused Scene of anything: hide
+        // its own `<svg>` root now, while a failure still costs nothing — nothing below this point has touched
+        // either scene's own model yet.
+        hide_root(&new_child.inner.borrow().svg)?;
+
+        // Commit: nothing past this point can fail. `new_child`'s own subtree adopts `self`'s own shared
+        // navigation state and records `self`/`node` as the (parent Scene, container NodeId) pair that now owns
+        // it — exactly `add_container_node_with`'s own commit, just onto an already-existing container node
+        // instead of a freshly drawn one.
+        let navigation = self.inner.borrow().navigation.clone();
+        repoint_subtree(&new_child.inner, &navigation);
+        new_child.inner.borrow_mut().parent = Some(ParentLink {
+            scene: Rc::downgrade(&self.inner),
+            node,
+        });
+        self.inner.borrow_mut().node_handle_mut(node).expect("checked above").child = Some(new_child.inner.clone());
+
+        // The old child is detached: give it a fresh navigation state of its own, and reveal it again — see this
+        // method's own doc comment ("Errors") for why that second write's own failure is not reported here.
+        detach_subtree(&old_child_rc);
+        let _ = show_root(&old_child_rc.borrow().svg);
+
+        Ok(Scene { inner: old_child_rc })
     }
 }

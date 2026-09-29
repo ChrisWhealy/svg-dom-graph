@@ -132,6 +132,26 @@ pub(super) fn repoint_subtree(root: &Rc<RefCell<SceneInner>>, navigation: &Rc<Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The mirror image of the graft half of [`Scene::add_container_node_with`]/[`Scene::replace_container_child`]:
+/// gives `scene`'s own subtree a fresh, independent [`NavigationState`] — focused on `scene` itself, the same
+/// two-stage bootstrap [`Scene::new`](super::Scene::new) uses for a brand-new tree — and clears `scene`'s own
+/// `parent` link.
+///
+/// Merely clearing `parent` is not enough on its own: `scene`'s whole subtree would still share the *former*
+/// parent's `NavigationState`, so a later `enter`/`exit`/`is_focused` call anywhere in it would still be answered
+/// by a navigation state that has nothing to do with this now-independent tree anymore. [`repoint_subtree`] already
+/// exists for exactly this "make an entire subtree share one navigation state" job — this just points it at a
+/// freshly allocated one instead of the parent's.
+///
+/// [`Scene::replace_container_child`] is this crate's one caller: `scene` is the old child it just detached.
+pub(super) fn detach_subtree(scene: &Rc<RefCell<SceneInner>>) {
+    let navigation = Rc::new(RefCell::new(NavigationState { focused: Weak::new() }));
+    repoint_subtree(scene, &navigation);
+    navigation.borrow_mut().focused = Rc::downgrade(scene);
+    scene.borrow_mut().parent = None;
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Enters `node`'s own nested child `Scene`: hides `self`'s whole `<svg>` root, shows the child's, and returns
     /// a handle to it.
