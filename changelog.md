@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Implement `replace_child_container` to replace a nested `Scene` (``)
+- Implement `replace_child_container` to replace a nested `Scene` (`0dfa13b`)
+- Add test for detatched child with its own descendants (``)
 
 # [Released]
 

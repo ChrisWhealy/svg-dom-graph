@@ -927,6 +927,58 @@ fn replace_container_child_gives_the_detached_child_a_fresh_independent_navigati
     )
 }
 
+/// The recursive half of the previous test: `detach_subtree` calls `repoint_subtree`, which walks the *whole*
+/// subtree, not just its own root — so a descendant of the detached child, not only the detached child itself,
+/// must end up sharing its fresh `NavigationState` too. `parent → old_child → grandchild`, with `old_child` (not
+/// `grandchild`) focused within its own tree before the replacement. After detaching `old_child`: it is focused
+/// and `grandchild` is not; entering `grandchild` from `old_child` succeeds and focuses it, without disturbing
+/// `parent`'s own, now entirely separate, tree; and exiting `grandchild` returns focus to `old_child`.
+#[wasm_bindgen_test]
+fn replace_container_child_migrates_every_descendant_onto_the_detached_childs_own_navigation_state()
+-> Result<(), String> {
+    let parent = Scene::new(make_svg("replace-descendants-parent")).map_err(|e| e.to_string())?;
+    let old_child = Scene::new(make_svg("replace-descendants-old")).map_err(|e| e.to_string())?;
+    let grandchild = Scene::new(make_svg("replace-descendants-grandchild")).map_err(|e| e.to_string())?;
+    let new_child = Scene::new(make_svg("replace-descendants-new")).map_err(|e| e.to_string())?;
+
+    let grandchild_node = old_child
+        .add_container_node(Point::origin(), Size::new(30.0, 30.0), "GC", grandchild.clone())
+        .map_err(|e| e.to_string())?;
+    let node = parent
+        .add_container_node(Point::origin(), Size::new(60.0, 40.0), "A", old_child.clone())
+        .map_err(|e| e.to_string())?;
+
+    let detached = parent.replace_container_child(node, new_child).map_err(|e| e.to_string())?;
+    check(detached.is_focused(), "old_child was not focused right after being detached")?;
+    check(
+        !grandchild.is_focused(),
+        "grandchild was already focused right after old_child was detached",
+    )?;
+
+    let entered = detached.enter(grandchild_node).map_err(|e| e.to_string())?;
+    check(entered.is_focused(), "the Scene returned by enter() was not focused")?;
+    check(
+        grandchild.is_focused(),
+        "grandchild did not report itself as focused after being entered",
+    )?;
+    check(
+        !detached.is_focused(),
+        "old_child was still focused after entering its own grandchild",
+    )?;
+    check(
+        parent.is_focused(),
+        "entering grandchild within the detached tree disturbed parent's own, unrelated tree",
+    )?;
+
+    let exited = entered.exit().map_err(|e| e.to_string())?;
+    let exited = exited.ok_or("exit() from grandchild returned None")?;
+    check(exited.is_focused(), "the Scene returned by exit() was not focused")?;
+    check(
+        detached.is_focused(),
+        "old_child was not focused again after grandchild exited back to it",
+    )
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // `Scene::make_enterable` — a container node made clickable/keyboard-activatable.
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
