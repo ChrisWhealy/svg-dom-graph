@@ -85,11 +85,10 @@ impl SelectionToolbar {
 /// Writes the position of `toolbar`'s own bar and every one of its buttons, for `area`.
 fn place(toolbar: &SelectionToolbar, area: svg_dom::root::utils::Rect, scratch: &mut String) -> Result<(), Error> {
     let options = toolbar.options;
-    let sizes: Vec<svg_dom::root::utils::Size> = toolbar
-        .buttons
-        .iter()
-        .map(|_| svg_dom::root::utils::Size::new(BUTTON_WIDTH, options.button_height))
-        .collect();
+    // Exactly three buttons, always — see `SelectionToolbarAction::ALL` — so this is a fixed-size array, not a
+    // `Vec` collected from `toolbar.buttons`: every button shares the same size, so there's nothing in `toolbar`
+    // itself this genuinely needs to read, and `layout` only ever needs a `&[Size]` slice.
+    let sizes = [svg_dom::root::utils::Size::new(BUTTON_WIDTH, options.button_height); 3];
     let laid_out = layout(options.edge, area, &sizes, options.gap, options.margin);
 
     toolbar.group.set_transform_fmt(
