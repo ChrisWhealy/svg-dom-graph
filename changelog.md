@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.20] - 2026-09-29
 
 ## Added
@@ -20,9 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Ensure that `Drop`ping a `SelectionToolbar` calls `remove()` (`163cf8f`)
-- Remove minor unneccessary allocation in toolbar layout (``)
-
-# [Released]
+- Remove minor unneccessary allocation in toolbar layout (`6553610`)
 
 ## [0.2.19] - 2026-09-29
 
