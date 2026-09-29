@@ -58,10 +58,14 @@ impl Scene {
     /// would close a cycle through the strong `Rc` chain this ownership is built from. All three are checked before
     /// drawing anything or touching either scene's own model.
     ///
-    /// Also returns a wrapped [`Error::Svg`] if drawing the container's own box, or hiding `child`'s `<svg>` root,
-    /// fails. Every fallible step happens before `child` is actually folded into `self`'s own scene tree — the
-    /// `Rc`/`Weak` updates that do that cannot themselves fail — so a failed call leaves `child` exactly as it was:
-    /// still its own standalone, focused root, not merely "the parent's `Graph` is unchanged".
+    /// Also returns a wrapped [`Error::Svg`] if drawing the container's own box, hiding `child`'s `<svg>` root, or
+    /// attaching the drawn box fails. Every fallible step happens before `child` is actually folded into `self`'s
+    /// own scene tree — the `Rc`/`Weak` updates that do that cannot themselves fail — so a failed call leaves
+    /// `child` exactly as it was in every realistic case: still its own standalone, focused root, not merely "the
+    /// parent's `Graph` is unchanged". The one exception: if attaching the drawn box fails after `child`'s own
+    /// `<svg>` root was already hidden, this attempts to show it again, and that attempt is not itself guaranteed
+    /// to succeed — see [`Scene::enter`]'s own doc comment for the same caveat, which applies here for the same
+    /// reason.
     pub fn add_container_node_with(
         &self,
         top_left: Point,

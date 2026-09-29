@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct rollback guarantee for `make_enterable()` (``)
+- Correct rollback guarantee for `make_enterable()` (`de0de55`)
+- Doc only: Clarify transactionality of `enter()` and `exit()` (``)
 
 # [Released]
 

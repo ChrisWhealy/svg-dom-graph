@@ -144,10 +144,14 @@ impl Scene {
     /// Returns [`Error::UnknownNode`] if `node` does not name a node in this scene, or [`Error::NotAContainerNode`]
     /// if it names one that is not a container node. Also checked before anything is hidden or shown.
     ///
-    /// Returns a wrapped [`Error::Svg`] if hiding `self` or showing the child fails. This is transactional: if
-    /// showing the child fails after `self` was already hidden, `self` is shown again before returning, so a
-    /// failed `enter` never leaves two Scenes hidden, or the wrong one visible. The tree's focused `Scene` is only
-    /// ever updated once both DOM writes have already succeeded.
+    /// Returns a wrapped [`Error::Svg`] if hiding `self` or showing the child fails. If showing the child fails
+    /// after `self` was already hidden, this attempts to show `self` again before returning. That second write is
+    /// exactly the same kind of DOM operation as the first, so in practice it succeeds even though the first one
+    /// just failed — but it is not *guaranteed* to: if it fails too, its own error is discarded (there is already
+    /// one error on its way out, and only one can be returned), and `self` can be left hidden, with the child not
+    /// shown either. Only when both writes succeed is anything actually restored. The tree's focused `Scene` is
+    /// only ever updated once both DOM writes have already succeeded, so a failure here never re-points `focused`
+    /// at a `Scene` the DOM does not agree is the one actually visible.
     pub fn enter(&self, node: NodeId) -> Result<Scene, Error> {
         if !self.is_focused() {
             return Err(Error::NotFocused);
@@ -183,7 +187,8 @@ impl Scene {
     /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so
     /// a rejected call touches nothing.
     ///
-    /// Returns a wrapped [`Error::Svg`] under the same transactional guarantee [`enter`](Self::enter) documents.
+    /// Returns a wrapped [`Error::Svg`] under the same rollback behaviour [`enter`](Self::enter) documents —
+    /// attempted, in the same way, but not guaranteed if that attempt itself also fails.
     pub fn exit(&self) -> Result<Option<Scene>, Error> {
         if !self.is_focused() {
             return Err(Error::NotFocused);
