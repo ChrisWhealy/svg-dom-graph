@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactor the toolbar drag tests into submodules (``)
+- Refactor the toolbar drag tests into submodules (`21a1e9b`)
+- Refactor `src/scene/node/unit_tests.rs` into submodules (``)
 
 # [Released]
 
