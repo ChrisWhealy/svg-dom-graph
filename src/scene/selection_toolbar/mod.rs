@@ -413,6 +413,15 @@ impl Scene {
             inner.selection_toolbar = previous;
             return Err(err);
         }
+
+        // Only now is the new toolbar fully committed — built, installed, laid out, and the managed node's own
+        // `Selection` reset. Only now is it safe to remove whatever toolbar this one replaced: `previous`'s own DOM
+        // group (and with it, its buttons' own listeners and their `Rc<dyn Fn>` clone of its own `on_step`) must
+        // stay intact until this point, since either of the two failure branches above puts it straight back into
+        // `inner.selection_toolbar` as the still-live, still-shown toolbar.
+        if let Some(previous) = previous {
+            previous.remove();
+        }
         Ok(())
     }
 

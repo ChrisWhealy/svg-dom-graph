@@ -14,7 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Update array operator screenshot (``)
+- Update array operator screenshot (`076175a`)
+
+## Fixed
+
+- Ensure that `Drop`ping a `SelectionToolbar` calls `remove()` (``)
 
 # [Released]
 

@@ -31,6 +31,15 @@ fn bar(id: &str) -> Result<web_sys::Element, String> {
     required(&format!("#{id} > [role=\"toolbar\"][aria-label=\"Selection controls\"]"))
 }
 
+fn bar_count(id: &str) -> Result<u32, String> {
+    web_sys::window()
+        .and_then(|w| w.document())
+        .ok_or("no document")?
+        .query_selector_all(&format!("#{id} > [role=\"toolbar\"][aria-label=\"Selection controls\"]"))
+        .map_err(|e| format!("{e:?}"))
+        .map(|list| list.length())
+}
+
 /// The `n`th selection toolbar button: 0 is Prev, 1 is Next, 2 is Restart.
 fn button(id: &str, n: usize) -> Result<web_sys::Element, String> {
     required(&format!(
@@ -127,6 +136,50 @@ fn invalid_options_are_rejected_and_leave_any_existing_toolbar_unchanged() -> Re
         "the existing toolbar was removed by the rejected call",
     )?;
     bar("st-invalid-options").map(|_| ())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Showing a second selection toolbar removes the first's own bar from the DOM — not just from
+/// `SceneInner::selection_toolbar` — drops the first's own `on_step` along with it, and leaves only the second one
+/// responding to activation.
+#[wasm_bindgen_test]
+fn showing_a_second_selection_toolbar_replaces_the_first_in_the_dom_and_drops_its_callback() -> Result<(), String> {
+    let scene = new_scene("st-replace")?;
+    let node_a = add_four_values(&scene)?;
+    let node_b = add_four_values(&scene)?;
+
+    let sentinel_a = Rc::new(());
+    let weak_a = Rc::downgrade(&sentinel_a);
+    scene
+        .show_selection_toolbar(node_a, SelectionToolbarOptions::default(), move |_, _, _| {
+            // Captured only so `sentinel_a`'s own refcount reflects this closure's lifetime. Never actually called.
+            let _ = &sentinel_a;
+        })
+        .map_err(|e| e.to_string())?;
+
+    let seen_b: Rc<RefCell<Vec<SelectionTransition>>> = Rc::new(RefCell::new(Vec::new()));
+    let recorder = seen_b.clone();
+    scene
+        .show_selection_toolbar(node_b, SelectionToolbarOptions::default(), move |_, _, t| {
+            recorder.borrow_mut().push(t);
+        })
+        .map_err(|e| e.to_string())?;
+
+    check(
+        bar_count("st-replace")? == 1,
+        "more than one selection toolbar bar remains in the DOM after replacing it",
+    )?;
+    check(
+        weak_a.upgrade().is_none(),
+        "the first toolbar's on_step outlived being replaced by the second",
+    )?;
+
+    // Only the second toolbar's own button now exists at all, and it responds.
+    click(&button("st-replace", 1)?)?;
+    check(
+        seen_b.borrow().len() == 1,
+        &format!("the second toolbar's own on_step did not fire: {:?}", seen_b.borrow()),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
