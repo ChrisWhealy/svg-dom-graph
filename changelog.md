@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.21] - 2026-09-29
 
 ## Added
@@ -23,9 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Preserve zoom/pan values when next/prev cell selection buttons are used (`a990032`)
-- Fix `cargo doc` error (``)
-
-# [Released]
+- Fix `cargo doc` error (`7a85fcd`)
 
 ## [0.2.20] - 2026-09-29
 
