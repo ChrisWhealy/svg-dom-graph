@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Implement a `SelectionToolbar` to step through array selection (``)
+- Implement a `SelectionToolbar` to step through array selection (`8a49933`)
+
+## Changed
+
+- Update array operator screenshot (``)
 
 # [Released]
 
