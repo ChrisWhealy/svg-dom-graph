@@ -192,7 +192,7 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     wire_selection_controls(document, Rc::new(RefCell::new(demo)))?;
 
     // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
-    let outputs = THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4]);
+    let outputs = theta_c_outputs();
     let written = [false; 5];
     let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs, written }));
     rebuild_theta_c_diagram(None, display_outputs(outputs, written), theta_c_demo)
@@ -308,9 +308,17 @@ fn wire_selection_controls(document: web_sys::Document, state: Rc<RefCell<Select
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`]. Shared by every caller that needs it:
+/// [`build_selection_demo`]'s own initial state, and [`crate::theta`]'s own nested walk, both standalone and
+/// nested starting from row `0` already stepped.
+pub(crate) fn theta_c_outputs() -> [u64; 5] {
+    THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `outputs[i]` where `written[i]`, or `0` — the output array's own initial value — where not. See
 /// [`ThetaCDemo::written`]'s own doc comment.
-fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
+pub(crate) fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
     let mut display = [0u64; 5];
     for i in 0..5 {
         if written[i] {
@@ -318,17 +326,6 @@ fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
         }
     }
     display
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The output array's own initial `display` value: row `0`'s own real result, every other row still blank — the
-/// same starting state [`build_selection_demo`] applies before any step is taken. [`crate::theta`]'s own nested
-/// `ThetaC` child scene starts from this same state, so it reads as "the same computation," not a fresh one.
-pub(crate) fn initial_theta_c_display() -> [u64; 5] {
-    let outputs = THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4]);
-    let mut written = [false; 5];
-    written[0] = true;
-    display_outputs(outputs, written)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -360,10 +357,9 @@ pub(crate) fn initial_theta_c_display() -> [u64; 5] {
 ///
 /// Shared by the standalone Cell Selection demo ([`rebuild_theta_c_diagram`], which attaches to
 /// `#selection-thetac-diagram` and keeps the result in [`THETA_C_SCENE`]) and [`crate::theta`]'s own nested-Scene
-/// demo, which attaches to a different `<svg>` and keeps the result as a container node's own child `Scene`
-/// instead — both draw exactly the same chain from exactly the same code, over `svg_id` rather than a hardcoded
-/// element id. `crate::theta` always passes `Some(_)`: its own nested view is a static snapshot, not (yet) wired to
-/// step — see its own doc comment.
+/// demo, which attaches to a fresh sibling `<svg>` on every step and grafts the result in as a container node's own
+/// child `Scene`, via `Scene::replace_container_child` — both draw exactly the same chain from exactly the same
+/// code, over `svg_id` rather than a hardcoded element id.
 ///
 /// # Errors
 ///
@@ -504,13 +500,21 @@ pub(crate) fn build_theta_c_scene(
 /// handle then frees the previous `Scene` — along with the selection toolbar's own `on_step` closure it was the
 /// sole owner of, per [`Scene::hide_selection_toolbar`]'s own doc comment ("Ownership").
 ///
-/// Each step draws a new `Scene`, so zoom starts again at `1.0` on every step.
+/// Each step draws a new `Scene`, which would otherwise reset zoom/pan back to `1.0`/`(0, 0)` — jarring, if the
+/// previous step's own view had been zoomed or panned in first. So the outgoing `Scene`'s own
+/// [`Scene::view`](svg_dom_graph::scene::Scene::view) is read before it is replaced, and carried over onto the
+/// fresh one via [`Scene::set_view`](svg_dom_graph::scene::Scene::set_view).
 ///
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `#selection-thetac-diagram`, or if any library call fails.
 fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCell<ThetaCDemo>>) -> Result<(), String> {
+    let view = THETA_C_SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
+
     let (scene, output) = build_theta_c_scene("selection-thetac-diagram", n, display)?;
+    if let Some(view) = view {
+        scene.set_view(view).map_err(stringify)?;
+    }
 
     scene
         .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {

@@ -2,11 +2,14 @@
 //! see [`build_theta_demo`]'s own doc comment for what each node represents and what is, and is not, built yet.
 
 use crate::util::{required_element, stringify};
-use std::cell::RefCell;
+use std::{
+    cell::{Cell, RefCell},
+    rc::Rc,
+};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     NodeId,
-    scene::{Scene, Side, ToolbarOptions},
+    scene::{Scene, Selection, SelectionToolbarOptions, Side, ToolbarOptions},
 };
 use wasm_bindgen::{JsCast, prelude::*};
 
@@ -18,8 +21,27 @@ thread_local! {
     // page's own lifetime, the same reasoning every other demo's own `SCENE` thread_local already follows.
     // `enter`/`exit` are driven from this same trio: `parent.enter(thetac_node)` to descend, `child.exit()` to
     // return, with no further state to track — `Scene::is_focused` already answers "which one is active right
-    // now" without this module keeping a duplicate copy of it.
+    // now" without this module keeping a duplicate copy of it. The child itself is replaced wholesale on every
+    // step — see [`rebuild_thetac_child`]'s own doc comment.
     static SCENE: RefCell<Option<(Scene, Scene, NodeId)>> = const { RefCell::new(None) };
+
+    // A fresh numeric suffix for every step's own ThetaC child `<svg>` id — see [`next_child_svg_id`]'s own doc
+    // comment.
+    static NEXT_CHILD_SVG_SUFFIX: Cell<u32> = const { Cell::new(0) };
+}
+
+/// Live state the nested ThetaC child's own selection toolbar shares across steps — the same shape as
+/// `crate::selection::ThetaCDemo`, since this is the same demo, stepped from inside its own nested view instead of
+/// standalone.
+struct ThetaCState {
+    /// Row `i`'s own `ThetaC` result — see `crate::selection::theta_c_outputs`'s own doc comment.
+    outputs: [u64; 5],
+    /// `written[i]` is `true` once row `i` has been stepped into going forward, and not since stepped away from
+    /// going backward — see `crate::selection::ThetaCDemo::written`'s own doc comment.
+    written: [bool; 5],
+    /// The id of whichever `<svg>` currently backs the nested child — see [`rebuild_thetac_child`]'s own doc
+    /// comment for why every step needs a fresh one.
+    child_svg_id: String,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -38,6 +60,15 @@ thread_local! {
 /// of what makes this a nested-Scene demo: everything else — the box, the operator chain, the toolbar it shows —
 /// is drawn by code that has no idea it is being nested at all. That is the point: nesting is a property of how a
 /// `Scene` is *used*, not something a `Scene` has to be built differently to support.
+///
+/// # Stepping the nested view
+///
+/// `ThetaC`'s own nested `Scene` carries a [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar)
+/// bar too, bound the same way the standalone demo's own third example is — see
+/// `crate::selection::rebuild_theta_c_diagram`'s own doc comment. `build_theta_c_scene` has no way to redraw an
+/// already-drawn chain in place, so every step needs a genuinely fresh `Scene`. [`rebuild_thetac_child`] grafts the
+/// fresh one in via `Scene::replace_container_child`, exiting back to `parent` first — that call's own precondition
+/// — and re-entering the fresh child immediately after, so stepping never visibly leaves the nested view.
 ///
 /// # What is, and is not, built yet
 ///
@@ -63,15 +94,19 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     let parent = Scene::new(parent_svg).map_err(stringify)?;
 
     // The same starting state (row 0 already stepped, rows 1-4 still blank) the standalone Cell Selection demo
-    // opens on — see `initial_theta_c_display`'s own doc comment. A static snapshot, not (yet) wired to step — see
-    // this function's own doc comment ("What is, and is not, built yet") — so only the `Scene` is kept, not the
-    // output array's own `NodeId` `build_theta_c_scene` also returns for a caller that wants to attach its own
-    // selection toolbar, the way `selection::rebuild_theta_c_diagram` does.
-    let (child, _output) = crate::selection::build_theta_c_scene(
-        "theta-thetac-child",
-        Some(0),
-        crate::selection::initial_theta_c_display(),
-    )?;
+    // opens on — see `crate::selection::ThetaCDemo::written`'s own doc comment.
+    let outputs = crate::selection::theta_c_outputs();
+    let mut written = [false; 5];
+    written[0] = true;
+    let display = crate::selection::display_outputs(outputs, written);
+    let (child, output) = crate::selection::build_theta_c_scene("theta-thetac-child", Some(0), display)?;
+
+    let state = Rc::new(RefCell::new(ThetaCState {
+        outputs,
+        written,
+        child_svg_id: "theta-thetac-child".to_string(),
+    }));
+    attach_thetac_toolbar(&child, output, Some(0), state)?;
 
     let a = parent
         .add_node(Point::new(20.0, 75.0), Size::new(90.0, 70.0), "A")
@@ -108,6 +143,144 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     SCENE.with_borrow_mut(|slot| *slot = Some((parent, child, thetac)));
 
     wire_theta_controls(document)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows a selection toolbar on `child`, bound to `output`, driving the nested walk's *next* step — the nested
+/// counterpart to `crate::selection::rebuild_theta_c_diagram`'s own toolbar. Reapplies `Selection::Cell(n)`
+/// afterward for the same reason that function's own doc comment gives: `show_selection_toolbar` always resets to
+/// unstarted first.
+///
+/// # Errors
+///
+/// Returns `Err` if showing the toolbar or reapplying the selection fails.
+fn attach_thetac_toolbar(
+    child: &Scene,
+    output: NodeId,
+    n: Option<usize>,
+    state: Rc<RefCell<ThetaCState>>,
+) -> Result<(), String> {
+    child
+        .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+            step_thetac(&state, transition.to);
+        })
+        .map_err(stringify)?;
+    if let Some(n) = n {
+        child.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A fresh, never-reused id for this step's own ThetaC child `<svg>` — see [`rebuild_thetac_child`]'s own doc
+/// comment for why every step needs one.
+fn next_child_svg_id() -> String {
+    NEXT_CHILD_SVG_SUFFIX.with(|counter| {
+        let n = counter.get();
+        counter.set(n + 1);
+        format!("theta-thetac-child-{n}")
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Clones `previous_id`'s own `<svg>` — shallow, attributes only, no content — gives the clone `next_id`, and
+/// inserts it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class="nested-scene"` from
+/// whichever element is currently in the DOM, rather than a second, hardcoded copy of them.
+///
+/// # Errors
+///
+/// Returns `Err` if `previous_id` names no element currently in the DOM, or if cloning or inserting the fresh
+/// element fails.
+fn create_child_svg(document: &web_sys::Document, previous_id: &str, next_id: &str) -> Result<(), String> {
+    let previous = required_element(document, previous_id)?;
+    let fresh = previous
+        .clone_node_with_deep(false)
+        .map_err(|e| format!("could not clone #{previous_id} for its own next step: {e:?}"))?;
+    let fresh: web_sys::Element = fresh
+        .dyn_into()
+        .map_err(|_| "cloning the ThetaC child <svg> did not produce an Element".to_string())?;
+    fresh
+        .set_attribute("id", next_id)
+        .map_err(|e| format!("could not id the fresh ThetaC child <svg>: {e:?}"))?;
+    previous
+        .after_with_node_1(&fresh)
+        .map_err(|e| format!("could not insert the fresh ThetaC child <svg>: {e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Rebuilds the nested ThetaC child for `to`, and grafts it into [`SCENE`]'s own `parent` in place of whichever
+/// child is currently shown — the nested counterpart to `crate::selection::rebuild_theta_c_diagram`.
+/// `crate::selection::build_theta_c_scene` has no way to update an already-drawn chain in place (see its own doc
+/// comment), so each step needs a genuinely fresh `Scene`; grafting it in is exactly what
+/// `Scene::replace_container_child` is for.
+///
+/// A fresh `Scene` needs a fresh `<svg>` of its own too: reusing the element the outgoing child already drew into
+/// would leave two `Scene`s — the one about to be replaced, and this step's own new one — both quietly backed by
+/// the identical DOM node while `replace_container_child` runs. [`create_child_svg`] avoids that by cloning a
+/// genuinely new, empty sibling for every step; the element the outgoing child used is removed once this step has
+/// fully succeeded, and the outgoing `Scene` itself is simply dropped along with it.
+///
+/// Exits the nested view back to `parent` first, since `replace_container_child` requires `self` — here, `parent`
+/// — to be the tree's own currently focused `Scene`, then re-enters the freshly grafted child immediately
+/// afterward — so from the caller's own perspective, stepping never actually leaves the nested view at all.
+///
+/// A fresh `Scene` would otherwise also reset zoom/pan back to `1.0`/`(0, 0)` — jarring, mid-walk, if the outgoing
+/// child's own view had been zoomed or panned in first. So the outgoing child's own
+/// [`Scene::view`](svg_dom_graph::scene::Scene::view) is read before it is replaced, and carried over onto the
+/// fresh one via [`Scene::set_view`](svg_dom_graph::scene::Scene::set_view) — the nested counterpart to
+/// `crate::selection::rebuild_theta_c_diagram`'s own same fix.
+///
+/// # Errors
+///
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
+/// DOM, or if any library call fails.
+fn rebuild_thetac_child(to: Option<usize>, display: [u64; 5], state: Rc<RefCell<ThetaCState>>) -> Result<(), String> {
+    let document = crate::util::document()?;
+    let previous_id = state.borrow().child_svg_id.clone();
+    let next_id = next_child_svg_id();
+    create_child_svg(&document, &previous_id, &next_id)?;
+
+    let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
+
+    let (new_child, output) = crate::selection::build_theta_c_scene(&next_id, to, display)?;
+    if let Some(view) = view {
+        new_child.set_view(view).map_err(stringify)?;
+    }
+    attach_thetac_toolbar(&new_child, output, to, state.clone())?;
+
+    SCENE.with_borrow_mut(|slot| -> Result<(), String> {
+        let (parent, old_child, thetac_node) = slot.take().ok_or("the Theta scene was not initialised")?;
+        old_child.exit().map_err(stringify)?;
+        parent
+            .replace_container_child(thetac_node, new_child.clone())
+            .map_err(stringify)?;
+        parent.enter(thetac_node).map_err(stringify)?;
+        *slot = Some((parent, new_child, thetac_node));
+        Ok(())
+    })?;
+
+    required_element(&document, &previous_id)?.remove();
+    state.borrow_mut().child_svg_id = next_id;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar)'s own `on_step` callback
+/// for the nested view — the nested counterpart to `crate::selection::step_theta_c`. Updates `state`'s own
+/// `written` flags for the walk's new position `to`, then rebuilds the nested child for it via
+/// [`rebuild_thetac_child`].
+///
+/// A [`rebuild_thetac_child`] failure here is ignored, the same "cannot fail in practice, and nowhere to report it
+/// to" reasoning `crate::selection::step_theta_c` already follows.
+fn step_thetac(state: &Rc<RefCell<ThetaCState>>, to: Option<usize>) {
+    let mut demo = state.borrow_mut();
+    match to {
+        None => demo.written = [false; 5],
+        Some(n) => demo.written[n] = true,
+    }
+    let display = crate::selection::display_outputs(demo.outputs, demo.written);
+    drop(demo);
+    let _ = rebuild_thetac_child(to, display, state.clone());
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

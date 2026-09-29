@@ -18,7 +18,7 @@ mod selection_toolbar;
 mod toolbar;
 mod view_input;
 
-pub use crate::geometry::side::Side;
+pub use crate::geometry::{side::Side, view::ViewTransform};
 pub use crate::model::content::{
     ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection,
     UnaryOperator,
@@ -31,11 +31,7 @@ pub use selection_toolbar::{SelectionToolbarOptions, SelectionTransition};
 pub use toolbar::ToolbarOptions;
 pub use view_input::InputMode;
 
-use crate::{
-    error::Error,
-    geometry::{apply_matrix, view::ViewTransform},
-    model::graph::Graph,
-};
+use crate::{error::Error, geometry::apply_matrix, model::graph::Graph};
 use navigation::NavigationState;
 use scene_inner::SceneInner;
 use std::{

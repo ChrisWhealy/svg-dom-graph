@@ -175,6 +175,13 @@ pub enum Error {
     /// drawing anything or touching either scene's own model, so a rejected call leaves both scenes exactly as they
     /// were.
     SelfNesting,
+    /// `Scene::set_view` was given a [`crate::scene::ViewTransform`] whose `scale` is not within `0.25..=4.0`, or
+    /// whose `tx`/`ty` is not finite.
+    ///
+    /// The same range `Scene::zoom_in`/`Scene::zoom_out` already clamp to, so a restored view can never put a
+    /// `Scene`'s own zoom buttons at odds with what `Scene::zoom_scale` reports. Rejected before writing anything,
+    /// so a rejected call leaves the current view exactly as it was.
+    InvalidView(crate::scene::ViewTransform),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -248,6 +255,12 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "a Scene cannot be given a child Scene that is itself or one of its own ancestors"
+                )
+            },
+            Error::InvalidView(view) => {
+                write!(
+                    f,
+                    "view {view:?} is invalid: scale must be finite and within 0.25..=4.0, and tx/ty must be finite"
                 )
             },
         }

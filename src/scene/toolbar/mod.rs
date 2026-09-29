@@ -19,7 +19,7 @@ use crate::{
     geometry::{
         centre, invert_matrix,
         side::Side,
-        view::{ViewTransform, ZOOM_STEP},
+        view::{MAX_SCALE, MIN_SCALE, ViewTransform, ZOOM_STEP},
     },
 };
 use action::ToolbarAction;
@@ -558,6 +558,39 @@ impl Scene {
     /// The content's current scale factor: `1.0` when unzoomed.
     pub fn zoom_scale(&self) -> f64 {
         self.inner.borrow().view.scale
+    }
+
+    /// The content's current view — scale and translation together, as one value.
+    ///
+    /// Pairs with [`set_view`](Self::set_view) to carry a pan/zoom state across to another `Scene`, typically one
+    /// just rebuilt from scratch to show different content at the same position — a fresh `Scene` otherwise starts
+    /// at [`ViewTransform::IDENTITY`], unzoomed and unpanned, regardless of what the one it replaces last showed.
+    pub fn view(&self) -> ViewTransform {
+        self.inner.borrow().view
+    }
+
+    /// Makes `view` the current view, and writes it to the content layer at once — the exact counterpart to
+    /// [`view`](Self::view).
+    ///
+    /// Unlike [`zoom_in`](Self::zoom_in)/[`zoom_out`](Self::zoom_out)/[`reset_view`](Self::reset_view), `view` is
+    /// written exactly as given: there is no "zoom about a pivot" adjustment, since the caller — typically restoring
+    /// a value [`view`](Self::view) read from elsewhere — already has the exact scale and translation it wants.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::InvalidView`] if `view.scale` is not finite and within `0.25..=4.0` — the same range
+    /// [`zoom_in`](Self::zoom_in)/[`zoom_out`](Self::zoom_out) already clamp to, so a restored view can never put
+    /// this `Scene`'s own zoom buttons at odds with what [`zoom_scale`](Self::zoom_scale) reports — or if
+    /// `view.tx`/`view.ty` is not finite. Checked first, so a rejected call leaves the current view exactly as it
+    /// was.
+    ///
+    /// Otherwise returns [`Error::Svg`] if the `transform` cannot be written — see [`zoom_in`](Self::zoom_in)'s own
+    /// doc comment for the same failure-leaves-nothing-changed guarantee.
+    pub fn set_view(&self, view: ViewTransform) -> Result<(), Error> {
+        if !(MIN_SCALE..=MAX_SCALE).contains(&view.scale) || !view.tx.is_finite() || !view.ty.is_finite() {
+            return Err(Error::InvalidView(view));
+        }
+        self.inner.borrow_mut().set_view(view)
     }
 
     fn zoom_by(&self, factor: f64) -> Result<(), Error> {

@@ -6,7 +6,7 @@ use crate::common::{check, check_close, group_translate};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{Side, ToolbarOptions},
+    scene::{Side, ToolbarOptions, ViewTransform},
 };
 use wasm_bindgen_test::*;
 
@@ -153,6 +153,127 @@ fn the_buttons_zoom_and_reset_by_click() -> Result<(), String> {
     check_close(scene.zoom_scale(), 1.0)?;
     let transform = attr(&content("tb-click")?, "transform")?;
     check(transform == "translate(0, 0) scale(1)", &format!("reset left {transform}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `view()` reads back exactly the scale and translation `zoom_in`/`zoom_out` last wrote — `zoom_scale()`'s own
+/// narrower cousin, but the whole transform, not just its scale.
+#[wasm_bindgen_test]
+fn view_reads_back_the_current_scale_and_translation() -> Result<(), String> {
+    let scene = new_scene("tb-view-read")?;
+    check(
+        scene.view() == ViewTransform { scale: 1.0, tx: 0.0, ty: 0.0 },
+        "a fresh scene's own view was not the identity",
+    )?;
+
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    let view = scene.view();
+    check_close(view.scale, scene.zoom_scale())?;
+    let transform = attr(&content("tb-view-read")?, "transform")?;
+    check(
+        transform == format!("translate({}, {}) scale({})", view.tx, view.ty, view.scale),
+        &format!("view() {view:?} did not match the drawn transform {transform}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_view` writes exactly the given scale and translation — no "zoom about the visible area's own centre"
+/// adjustment the way `zoom_in`/`zoom_out` make, since a caller restoring a value `view()` read from elsewhere
+/// already has the exact numbers it wants.
+#[wasm_bindgen_test]
+fn set_view_writes_the_exact_given_scale_and_translation() -> Result<(), String> {
+    let scene = new_scene("tb-view-write")?;
+    let view = ViewTransform { scale: 2.0, tx: 10.0, ty: -5.0 };
+    scene.set_view(view).map_err(|e| e.to_string())?;
+
+    check(scene.view() == view, "view() did not read back the value set_view was given")?;
+    check_close(scene.zoom_scale(), 2.0)?;
+    let transform = attr(&content("tb-view-write")?, "transform")?;
+    check(
+        transform == "translate(10, -5) scale(2)",
+        &format!("unexpected transform after set_view: {transform}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The real motivating case: a view read from one `Scene` round-trips onto a second, independent one — carrying a
+/// pan/zoom state across a `Scene` rebuilt from scratch to show different content at the same position.
+#[wasm_bindgen_test]
+fn set_view_round_trips_a_view_from_one_scene_onto_another() -> Result<(), String> {
+    let source = new_scene("tb-view-source")?;
+    source.zoom_in().map_err(|e| e.to_string())?;
+    source.zoom_in().map_err(|e| e.to_string())?;
+    let view = source.view();
+
+    let destination = new_scene("tb-view-destination")?;
+    check(
+        destination.view() != view,
+        "the fresh destination scene already matched the source's own view",
+    )?;
+    destination.set_view(view).map_err(|e| e.to_string())?;
+
+    check(
+        destination.view() == view,
+        "the destination did not end up with the source's own view",
+    )?;
+    let transform = attr(&content("tb-view-destination")?, "transform")?;
+    check(
+        transform == format!("translate({}, {}) scale({})", view.tx, view.ty, view.scale),
+        &format!("the destination's own drawn transform {transform} did not match the carried-over view"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_view` rejects a `scale` outside `0.25..=4.0` — the same range `zoom_in`/`zoom_out` already clamp to — and
+/// leaves the current view untouched.
+#[wasm_bindgen_test]
+fn set_view_rejects_a_scale_outside_the_valid_range() -> Result<(), String> {
+    let scene = new_scene("tb-view-bad-scale")?;
+
+    let too_small = scene.set_view(ViewTransform { scale: 0.1, tx: 0.0, ty: 0.0 });
+    check(
+        matches!(too_small, Err(Error::InvalidView(_))),
+        "a scale below the minimum did not fail with InvalidView",
+    )?;
+    let too_large = scene.set_view(ViewTransform { scale: 5.0, tx: 0.0, ty: 0.0 });
+    check(
+        matches!(too_large, Err(Error::InvalidView(_))),
+        "a scale above the maximum did not fail with InvalidView",
+    )?;
+    check(
+        scene.view() == ViewTransform { scale: 1.0, tx: 0.0, ty: 0.0 },
+        "a rejected set_view call changed the current view anyway",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `set_view` rejects a non-finite `tx`/`ty`, and leaves the current view untouched.
+#[wasm_bindgen_test]
+fn set_view_rejects_a_non_finite_translation() -> Result<(), String> {
+    let scene = new_scene("tb-view-bad-translation")?;
+
+    let bad_tx = scene.set_view(ViewTransform {
+        scale: 1.0,
+        tx: f64::NAN,
+        ty: 0.0,
+    });
+    check(
+        matches!(bad_tx, Err(Error::InvalidView(_))),
+        "a NaN tx did not fail with InvalidView",
+    )?;
+    let bad_ty = scene.set_view(ViewTransform {
+        scale: 1.0,
+        tx: 0.0,
+        ty: f64::INFINITY,
+    });
+    check(
+        matches!(bad_ty, Err(Error::InvalidView(_))),
+        "an infinite ty did not fail with InvalidView",
+    )?;
+    check(
+        scene.view() == ViewTransform { scale: 1.0, tx: 0.0, ty: 0.0 },
+        "a rejected set_view call changed the current view anyway",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -13,11 +13,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement `replace_child_container` to replace a nested `Scene` (`0dfa13b`)
 - Add test for detatched child with its own descendants (`aa81604`)
 - Add test for failure to hide `new_child` (`090352a`)
+- Add `SelectionToolbar` to ThetaC nested scene demo function (``)
 
 ## Changed
 
 - Refactor the toolbar drag tests into submodules (`21a1e9b`)
-- Refactor `src/scene/node/unit_tests.rs` into submodules (``)
+- Refactor `src/scene/node/unit_tests.rs` into submodules (`ac8f67b`)
+
+## Fixed
+
+- Preserve zoom/pan values when next/prev cell selection buttons are used (``)
 
 # [Released]
 
