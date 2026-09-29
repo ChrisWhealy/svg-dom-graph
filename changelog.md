@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Preserve zoom/pan values when next/prev cell selection buttons are used (``)
+- Preserve zoom/pan values when next/prev cell selection buttons are used (`a990032`)
+- Fix `cargo doc` error (``)
 
 # [Released]
 

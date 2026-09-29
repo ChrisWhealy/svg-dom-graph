@@ -564,7 +564,7 @@ impl Scene {
     ///
     /// Pairs with [`set_view`](Self::set_view) to carry a pan/zoom state across to another `Scene`, typically one
     /// just rebuilt from scratch to show different content at the same position — a fresh `Scene` otherwise starts
-    /// at [`ViewTransform::IDENTITY`], unzoomed and unpanned, regardless of what the one it replaces last showed.
+    /// at [`ViewTransform::default`], unzoomed and unpanned, regardless of what the one it replaces last showed.
     pub fn view(&self) -> ViewTransform {
         self.inner.borrow().view
     }
