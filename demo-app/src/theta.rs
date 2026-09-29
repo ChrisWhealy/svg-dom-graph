@@ -63,9 +63,15 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     let parent = Scene::new(parent_svg).map_err(stringify)?;
 
     // The same starting state (row 0 already stepped, rows 1-4 still blank) the standalone Cell Selection demo
-    // opens on — see `initial_theta_c_display`'s own doc comment.
-    let child =
-        crate::selection::build_theta_c_scene("theta-thetac-child", 0, crate::selection::initial_theta_c_display())?;
+    // opens on — see `initial_theta_c_display`'s own doc comment. A static snapshot, not (yet) wired to step — see
+    // this function's own doc comment ("What is, and is not, built yet") — so only the `Scene` is kept, not the
+    // output array's own `NodeId` `build_theta_c_scene` also returns for a caller that wants to attach its own
+    // selection toolbar, the way `selection::rebuild_theta_c_diagram` does.
+    let (child, _output) = crate::selection::build_theta_c_scene(
+        "theta-thetac-child",
+        Some(0),
+        crate::selection::initial_theta_c_display(),
+    )?;
 
     let a = parent
         .add_node(Point::new(20.0, 75.0), Size::new(90.0, 70.0), "A")

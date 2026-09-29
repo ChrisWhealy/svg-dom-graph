@@ -133,6 +133,12 @@ pub enum Error {
     /// Rejected before drawing anything or touching any toolbar already shown, so a rejected call leaves the scene
     /// unchanged.
     InvalidToolbarOptions(crate::scene::ToolbarOptions),
+    /// `Scene::show_selection_toolbar` was given a [`crate::scene::SelectionToolbarOptions`] with a non-finite length,
+    /// a `button_height` that is not `> 0.0`, or a negative `gap` or `margin`.
+    ///
+    /// Rejected before drawing anything or touching any selection toolbar already shown, so a rejected call leaves the
+    /// scene unchanged.
+    InvalidSelectionToolbarOptions(crate::scene::SelectionToolbarOptions),
     /// `Scene::enter` was called with a `NodeId` that names a `Label` or `Data` node, not a container node.
     NotAContainerNode(NodeId),
     /// `Scene::enter`or `Scene::exit` was called on a `Scene` that is not the one actually shown and receiving input.
@@ -224,6 +230,12 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "toolbar options {options:?} are invalid: button_height must be finite and > 0.0, and gap and margin must be finite and >= 0.0"
+                )
+            },
+            Error::InvalidSelectionToolbarOptions(options) => {
+                write!(
+                    f,
+                    "selection toolbar options {options:?} are invalid: button_height must be finite and > 0.0, and gap and margin must be finite and >= 0.0"
                 )
             },
             Error::NotAContainerNode(id) => write!(f, "node {id:?} is not a container node"),

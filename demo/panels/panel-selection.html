@@ -45,15 +45,14 @@
         lets a plain edge from that final node reach <code>O</code> directly — reading as "into the output," not
         "into the input."
     </p>
-    <p>"Previous"/"Next" move <code>n</code> from <code>0</code> to <code>4</code> — clamped, not wrapped. Stepping
-        "Previous" also resets the row being left back to <code>O</code>'s own initial value (all-zero), so a
-        walked-past output only ever reads as valid because the walk itself produced it.
-    </p>
-    <p class="controls">
-        <button id="selection-thetac-prev" type="button">Previous</button>
-        <button id="selection-thetac-next" type="button">Next</button>
-        <span>Row: <output id="selection-thetac-index">0</output></span>
-    </p>
+    <p>Stepping through the elements of an array is driven by enabling a <code>Scene::show_selection_toolbar</code>.
+        This creates a toolbar inside the diagram containing the buttons Prev, Next and Restart.</p>
+    <p>The walk starts in an initialised, or "not started" state: that is, before row <code>0</code> is processed.
+        Consequently, no row of <code>A</code> is highlighted, and the output row <code>O</code> is entirely blank.</p>
+    <p>Pressing "Next" or "Previous" move <code>n</code> between the clamped value <code>0</code> and <code>4</code>
+        When <code>n = 4</code>, pressing Next will not wrap the value round to <code>0</code>; similarly, pressing
+        "Previous" enough times returns the value to <code>0</code> and does not wrap around to <code>4</code>.</p>
+    <p>In order to initialise the cell selection to its "not started" state, press "Restart".</p>
     <div class="canvas">
         <svg id="selection-thetac-diagram" width="1100" height="920" viewBox="0 0 1100 920"
             xmlns="http://www.w3.org/2000/svg"></svg>

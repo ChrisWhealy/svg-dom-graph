@@ -741,3 +741,96 @@ fn only_add_and_multiply_commute_among_arithmetic_operators() -> Result<(), Stri
     check_eq(ArithmeticOperator::Divide.commutes(), false)?;
     check_eq(ArithmeticOperator::Modulus.commutes(), false)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// natural_selection / flat_index
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn natural_selection_of_a_one_dimensional_content_is_always_a_cell() -> Result<(), String> {
+    // Forced to a single row: a one-dimensional shape, regardless of what `Automatic` would otherwise pick for 4
+    // values (a 2x2 square).
+    let content =
+        DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal).with_layout(GridLayout::Rows(1));
+    check_eq(content.natural_selection(0), Some(Selection::Cell(0)))?;
+    check_eq(content.natural_selection(3), Some(Selection::Cell(3)))
+}
+
+#[test]
+fn natural_selection_out_of_range_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    check_eq(content.natural_selection(4), None)
+}
+
+#[test]
+fn natural_selection_of_an_empty_content_is_always_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![]), DataFormat::Decimal);
+    check_eq(content.natural_selection(0), None)
+}
+
+#[test]
+fn natural_selection_of_a_two_dimensional_content_is_a_row_with_a_focused_column() -> Result<(), String> {
+    // 6 values forced into 2 rows of 3: a genuinely two-dimensional shape.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.natural_selection(4), Some(Selection::Row { row: 1, col: Some(1) }))
+}
+
+#[test]
+fn flat_index_is_the_inverse_of_natural_selection_over_a_one_dimensional_content() -> Result<(), String> {
+    let content =
+        DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal).with_layout(GridLayout::Rows(1));
+    for i in 0..4 {
+        let selection = content.natural_selection(i).expect("in range");
+        check_eq(content.flat_index(&selection), Some(i))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn flat_index_is_the_inverse_of_natural_selection_over_a_two_dimensional_content() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    for i in 0..6 {
+        let selection = content.natural_selection(i).expect("in range");
+        check_eq(content.flat_index(&selection), Some(i))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn flat_index_of_a_column_is_none() -> Result<(), String> {
+    // `natural_selection` never produces `Column` — this content's own shape would never have produced it.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.flat_index(&Selection::Column { col: 1, row: None }), None)
+}
+
+#[test]
+fn flat_index_of_a_row_with_no_focused_column_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.flat_index(&Selection::Row { row: 1, col: None }), None)
+}
+
+#[test]
+fn flat_index_of_a_cell_on_a_two_dimensional_shape_is_none() -> Result<(), String> {
+    // A two-dimensional shape's own `natural_selection` never produces `Cell` — only `Row { .., col: Some(_) }`.
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6]), DataFormat::Decimal)
+        .with_layout(GridLayout::Rows(2));
+    check_eq(content.flat_index(&Selection::Cell(4)), None)
+}
+
+#[test]
+fn flat_index_of_none_is_none() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    check_eq(content.flat_index(&Selection::None), None)
+}
+
+#[test]
+fn flat_index_of_an_out_of_range_cell_is_none() -> Result<(), String> {
+    // One-dimensional, so `Cell` is otherwise the right shape — only the out-of-range index itself is at fault.
+    let content =
+        DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal).with_layout(GridLayout::Rows(1));
+    check_eq(content.flat_index(&Selection::Cell(4)), None)
+}

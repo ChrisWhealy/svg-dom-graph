@@ -25,8 +25,12 @@
 //! - [`toolbar`] — `Scene::show_toolbar` and the zoom controls: placement against each edge, staying a fixed size
 //!   while the content zooms, click and keyboard activation, disabled state at the zoom limits, and dragging under
 //!   zoom.
+//! - [`selection_toolbar`] — `Scene::show_selection_toolbar` and the Prev/Next/Restart controls: showing/hiding,
+//!   rejecting a non-data node and invalid options, resetting to unstarted on show, stepping by click and by
+//!   keyboard, disabled-button no-ops, `on_step` reentering the same `Scene`, and the callback's own lifetime once
+//!   the toolbar is hidden.
 //!
-//! All eleven drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All twelve drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -40,6 +44,7 @@ mod operator_node;
 mod relationships;
 mod scene_validation;
 mod selection;
+mod selection_toolbar;
 mod toolbar;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

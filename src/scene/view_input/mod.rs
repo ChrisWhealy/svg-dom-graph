@@ -344,6 +344,7 @@ impl Scene {
     pub fn refresh_layout(&self) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
         inner.layout_toolbar()?;
+        inner.layout_selection_toolbar()?;
         inner.resize_view_input()
     }
 }

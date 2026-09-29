@@ -183,4 +183,50 @@ impl DataNodeContent {
             },
         }
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The walk at position (`flat_index`) shown by a data-node selection toolbar's [`Selection`]:
+    /// [`Selection::Cell`] for a one-dimensional grid (a single row or a single column — see [`Selection`]'s own doc
+    /// comment for why that case only ever needs `Cell`), [`Selection::Row`] with a `col` for any other shape.
+    ///
+    /// Returns `None` if `flat_index` is out of range for this content's own actual value count.
+    /// [`flat_index`](Self::flat_index) is the inverse of this, over the selections it can produce — see its own
+    /// doc comment for why "over the selections it can produce" rather than "over `Selection`'s whole domain."
+    #[must_use]
+    pub fn natural_selection(&self, flat_index: usize) -> Option<Selection> {
+        if flat_index >= self.len() {
+            return None;
+        }
+        let (rows, cols) = self.shape();
+        if rows <= 1 || cols <= 1 {
+            return Some(Selection::Cell(flat_index));
+        }
+        Some(Selection::Row {
+            row: flat_index / cols,
+            col: Some(flat_index % cols),
+        })
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The inverse of [`natural_selection`](Self::natural_selection): the flat index `selection` names, if
+    /// `selection` is exactly the shape `natural_selection` would produce for this content's own current grid shape.
+    ///
+    /// Returns `None` for any other `Selection` — a [`Selection::Column`], a [`Selection::Row`] with no `col`, a
+    /// [`Selection::Cell`] on a genuinely two-dimensional shape, or an index out of range. Not only when `selection`
+    /// is invalid, but also whenever it is a `Selection` this content's own current shape would never have produced
+    /// through [`natural_selection`](Self::natural_selection) itself — this is deliberately narrower than "any
+    /// selection that resolves to a real cell." A data-node selection toolbar built on top of this treats that
+    /// `None` exactly like its own unstarted state — see
+    /// [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)'s own doc comment.
+    #[must_use]
+    pub fn flat_index(&self, selection: &Selection) -> Option<usize> {
+        let (rows, cols) = self.shape();
+        let one_dimensional = rows <= 1 || cols <= 1;
+        let index = match (*selection, one_dimensional) {
+            (Selection::Cell(i), true) => i,
+            (Selection::Row { row, col: Some(col) }, false) => row * cols + col,
+            _ => return None,
+        };
+        (index < self.len()).then_some(index)
+    }
 }

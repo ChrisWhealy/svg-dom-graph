@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.20] - 2026-09-29
+
+## Added
+
+- Implement a `SelectionToolbar` to step through array selection (``)
+
 # [Released]
 
 ## [0.2.19] - 2026-09-29

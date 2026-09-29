@@ -652,6 +652,11 @@ impl Scene {
         // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
         handles.group.set_title(&handles.aria_label)?;
 
+        // The selection has already changed, so a failure to keep a selection toolbar's own button states in sync
+        // with it is not reported as this call's own failure — same reasoning as `SceneInner::flush_view`'s own
+        // `let _ = self.sync_toolbar_state();`. The next selection change puts it right.
+        let _ = inner.sync_selection_toolbar_state();
+
         Ok(())
     }
 }
