@@ -584,6 +584,12 @@ impl Scene {
 
         let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
         if old_selection == selection {
+            // No cell needs recolouring, but a selection toolbar just installed against this node (its own commit
+            // is exactly a same-as-current `set_selection` call whenever the node's `Selection` already happened
+            // to be `Selection::None`) has never had its own button states synced at all — see
+            // `sync_selection_toolbar_state`'s own doc comment. Skipping this call here would leave every button
+            // with no `aria-disabled`/`opacity` written, not just a stale one.
+            let _ = inner.sync_selection_toolbar_state();
             return Ok(());
         }
         // `old_selection` was itself accepted by an earlier, successful `set_selection` call against this same,

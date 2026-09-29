@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement a `SelectionToolbar` to step through array selection (`8a49933`)
+- Widen CDP test coverage for `SelectionToolbar` accessibility features (``)
 
 ## Changed
 
@@ -18,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Ensure that `Drop`ping a `SelectionToolbar` calls `remove()` (``)
+- Ensure that `Drop`ping a `SelectionToolbar` calls `remove()` (`163cf8f`)
 
 # [Released]
 

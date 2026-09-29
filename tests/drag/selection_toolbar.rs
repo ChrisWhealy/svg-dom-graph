@@ -100,6 +100,36 @@ fn there_is_no_selection_toolbar_until_one_is_shown_and_none_after_it_is_hidden(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The ordinary case: a freshly built data node's own `Selection` is already `Selection::None` before
+/// `show_selection_toolbar` ever runs, so its own commit (`set_selection(node, Selection::None)`) is a same-as-
+/// current no-op — it must still sync every button's own `aria-disabled`, not skip it because nothing needed
+/// recolouring. Reproduces a real regression: `set_selection`'s own no-op fast path used to return before ever
+/// reaching that sync, so a toolbar installed against an already-unstarted node drew every button with no
+/// `aria-disabled` attribute at all.
+#[wasm_bindgen_test]
+fn showing_it_on_an_already_unstarted_node_still_syncs_every_buttons_disabled_state() -> Result<(), String> {
+    let scene = new_scene("st-fresh-node")?;
+    let node = add_four_values(&scene)?;
+
+    scene
+        .show_selection_toolbar(node, SelectionToolbarOptions::default(), no_op)
+        .map_err(|e| e.to_string())?;
+
+    check(
+        attr(&button("st-fresh-node", 0)?, "aria-disabled")? == "true",
+        "Prev has no synced aria-disabled after showing the toolbar on an already-unstarted node",
+    )?;
+    check(
+        attr(&button("st-fresh-node", 1)?, "aria-disabled")? == "false",
+        "Next has no synced aria-disabled after showing the toolbar on an already-unstarted node",
+    )?;
+    check(
+        attr(&button("st-fresh-node", 2)?, "aria-disabled")? == "true",
+        "Restart has no synced aria-disabled after showing the toolbar on an already-unstarted node",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn showing_it_on_a_plain_label_node_is_rejected_and_installs_nothing() -> Result<(), String> {
     let scene = new_scene("st-label-node")?;
