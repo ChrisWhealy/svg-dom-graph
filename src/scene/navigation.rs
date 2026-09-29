@@ -136,6 +136,12 @@ impl Scene {
     /// Enters `node`'s own nested child `Scene`: hides `self`'s whole `<svg>` root, shows the child's, and returns
     /// a handle to it.
     ///
+    /// **Both writes are a plain SVG `visibility` attribute, not `style` — see
+    /// [`add_container_node`](Self::add_container_node)'s own doc comment for why that matters and what it means
+    /// for the host: a CSS `visibility` rule reaching either `<svg>` root, however it gets there, silently defeats
+    /// this call's own hiding/showing from then on, even though `self`/the child's own `is_focused()` still update
+    /// correctly.**
+    ///
     /// # Errors
     ///
     /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so
@@ -181,6 +187,9 @@ impl Scene {
     /// Does nothing — returns `Ok(None)` — if `self` is the root of its own tree, or has become detached from one
     /// (its own parent's last strong handle has been dropped). Both read the same way here: there is no live parent
     /// to exit to.
+    ///
+    /// Hides/shows both `<svg>` roots the same way [`enter`](Self::enter) does — see that method's own warning
+    /// about a CSS `visibility` rule silently overriding it.
     ///
     /// # Errors
     ///

@@ -44,6 +44,17 @@ impl Scene {
     /// root as one of its own steps, since `child` is no longer the focused `Scene` of anything once nested inside
     /// `self` — `self` stays focused, exactly as it was before this call.
     ///
+    /// **This hides `child`'s `<svg>` root by writing its `visibility` as a plain SVG attribute, not through
+    /// `style` — and [`enter`](Self::enter)/[`exit`](Self::exit) keep toggling it that way for as long as `child`
+    /// stays nested. A CSS `visibility` declaration on that same `<svg>` root — an inline `style`, a stylesheet
+    /// rule, or anything it inherits the property from — always wins over an attribute, permanently, no matter how
+    /// many times `enter`/`exit` run afterward.** A single `your-selector { visibility: visible; }` rule reaching
+    /// `child`'s own root is enough to defeat this crate's whole navigation model for it — the child would simply
+    /// never actually hide, `enter`/`exit` update `focused` regardless. The host remains free to size, position
+    /// (`position`/`top`/`left`, to stop a hidden root reserving page layout it does not need), and otherwise
+    /// style that root however it likes; `visibility` alone is this crate's own, for as long as the `Scene` stays
+    /// nested.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::InvalidEdgeAnchors`] if `options.edge_anchors` is `Some(EdgeAnchors(0))`, or
