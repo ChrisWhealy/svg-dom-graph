@@ -332,6 +332,41 @@ figure {
     overflow: hidden;
 }
 
+/* `#theta-thetad-child`'s own content is shorter, relative to its own width, than `#theta-thetac-child`'s — a
+   mostly-horizontal row of operator boxes under one input array, not ThetaC's own five-stage vertical cascade —
+   so sharing `.nested-scene`'s own full-height box with it would force its own 1130×600 viewBox into a box shaped
+   nothing like it, letterboxing it top and bottom (`preserveAspectRatio`'s default `xMidYMid meet` fitting the
+   whole viewBox into a box taller than it needs). `aspect-ratio` overrides `.nested-scene`'s own fixed `height`
+   with one derived straight from this box's own (still shared, unchanged) width instead, so the box is already
+   the same shape as the viewBox and `meet` has nothing left to pad.
+
+   A *class*, not `#theta-thetad-child`'s own id: every step clones the currently-shown nested child into a fresh
+   sibling with a fresh, never-reused id (`theta-thetad-child-0`, `-1`, ...) — see
+   `demo-app/src/theta/support.rs`'s own `create_child_svg` — so an id selector would only ever match the first,
+   pre-rebuild element, and every later one would silently fall back to `.nested-scene`'s own full height the
+   moment "Next" was pressed once. `clone_node_with_deep` does carry the `class` attribute over verbatim, though,
+   which is why `panel-theta.html` gives `#theta-thetad-child` this class alongside `nested-scene` up front — every
+   clone keeps it automatically, with no Rust-side change needed to add it again per step.
+
+   This ratio is a plain mirror of `panel-theta.html`'s own `#theta-thetad-child` viewBox, not derived from it, so
+   the two need updating together — see `demo-app/src/theta/theta_d.rs`'s own `MID_Y` if this box's real content
+   shape changes again. */
+.theta-thetad-child {
+    height: auto;
+    aspect-ratio: 1130 / 600;
+}
+
+/* Same reasoning as `.theta-thetad-child` just above, for `#theta-xorloop-child` instead: `D` and `A` now sit side
+   by side in one row, not stacked, so this box's own content is wider and shorter relative to its own width than
+   `.nested-scene`'s own full height allows for — and, being cloned on every step the same way `#theta-thetad-child`
+   is (`demo-app/src/theta/support.rs`'s own `create_child_svg`, shared by both), needs the same class-not-id fix
+   for the same reason. This ratio mirrors `panel-theta.html`'s own `#theta-xorloop-child` viewBox — see
+   `demo-app/src/theta/xor_loop.rs`'s own `build_scene` if this box's real content shape changes again. */
+.theta-xorloop-child {
+    height: auto;
+    aspect-ratio: 1400 / 750;
+}
+
 /* The nested Scene's own close control, in place of an external "Exit" button: a small circular &times;
    centred exactly on the single point of its own rounded frame's top-right corner that is simultaneously closest
    to the top and to the right — the topmost-rightmost point of the *curve* itself, not the frame's sharp

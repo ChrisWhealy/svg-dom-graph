@@ -7,10 +7,7 @@ use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     NodeId,
-    scene::{
-        BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene,
-        Selection, SelectionToolbarOptions, Side, ToolbarOptions,
-    },
+    scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, SelectionToolbarOptions},
 };
 use wasm_bindgen::{JsCast, prelude::*};
 use web_sys::Element;
@@ -138,8 +135,9 @@ struct ThetaCDemo {
 ///    [`rebuild_theta_c_diagram`]'s own doc comment.
 /// 5. The walk starts unstarted — before row `0` is ever processed, `A` has no row highlighted and `O` is entirely
 ///    blank. The chain itself is still drawn, over five zero operands, rather than left out entirely — see
-///    [`build_theta_c_scene`]'s own doc comment for why: an absent chain would read as "this does not exist yet,"
-///    when what is actually true is "this has not run yet." Stepping "Previous" (or "Restart", from further along)
+///    [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene)'s own doc comment for why: an absent chain
+///    would read as "this does not exist yet," when what is actually true is "this has not run yet." Stepping
+///    "Previous" (or "Restart", from further along)
 ///    resets every row it walks back past — not just the row
 ///    arrived at — to `O`'s own initial value, demonstrating that a walked-past output is only ever valid because
 ///    the walk itself produced it, not because it is somehow always available. See [`ThetaCDemo::written`]'s own
@@ -337,155 +335,11 @@ pub(crate) fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5]
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Rebuilds `#selection-thetac-diagram` from scratch, for `n`: a fresh five-operand, four-`XOR` chain, an input
-/// array, an output array, and a plain edge from the chain's own final `XOR` node into the output array. `Some(row)`
-/// computes the chain over `THETA_C_INPUT[row]` and bands that row in the input array; `None` — the unstarted
-/// state, before row `0` is ever processed — computes the same chain over five zero operands instead, and leaves
-/// the input array unbanded. The chain is always drawn, even unstarted: showing it with every value at zero, rather
-/// than not drawing it at all, is what keeps it reading as "not yet run" instead of "does not exist until iteration
-/// starts." Either way, the output array always shows `display`'s own current values, with cell `row` focused for
-/// `Some(row)`.
-///
-/// `svg-dom-graph` has no way to change a node's own displayed value once drawn — only its selection (see
-/// `Scene::set_selection`'s own doc comment). Since every value here — the row currently feeding the chain, the
-/// chain's own intermediate results, and however many output cells have so far been "written" — changes on every
-/// step, there is no existing node any of this could update in place. So, exactly like
-/// `edge_anchors::rebuild_edge_anchors_scene`, each step clears `#selection-thetac-diagram`'s own children and
-/// draws everything again, fresh, from this row's own real values.
-///
-/// `O` is its own `[5; u64]` node, not folded into `A`'s own `[5; [5; u64]]` shape — each keeps the type its own
-/// values actually have. `A` sits at the very top of the canvas, above the chain it feeds; `O` sits right below
-/// the chain's own final `XOR` node, so a connector from there reaches `O` directly, with nothing else in the way
-/// — a connector can only land on a node's own outer perimeter, never a specific cell inside it, and `O` is the
-/// node whose perimeter that connector actually reaches.
-///
-/// Returns `O`'s own [`NodeId`] alongside the `Scene`, so a caller can attach its own selection toolbar to it —
-/// see [`rebuild_theta_c_diagram`]'s own doc comment for why that toolbar must be attached fresh on every rebuild
-/// rather than kept across them.
-///
-/// Shared by the standalone Cell Selection demo ([`rebuild_theta_c_diagram`], which attaches to
-/// `#selection-thetac-diagram` and keeps the result in [`THETA_C_SCENE`]) and [`crate::theta`]'s own nested-Scene
-/// demo, which attaches to a fresh sibling `<svg>` on every step and grafts the result in as a container node's own
-/// child `Scene`, via `Scene::replace_container_child` — both draw exactly the same chain from exactly the same
-/// code, over `svg_id` rather than a hardcoded element id.
-///
-/// # Errors
-///
-/// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
-pub(crate) fn build_theta_c_scene(
-    svg_id: &str,
-    n: Option<usize>,
-    display: [u64; 5],
-) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
-    let container = required_element(&document, svg_id)?;
-    container.set_inner_html("");
-    let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
-    let scene = Scene::new(svg).map_err(stringify)?;
-
-    // The input array: `A`'s own 25 values, its own `[5; [5; u64]]` node, at the very top of the canvas — see
-    // this function's own doc comment.
-    let array = scene
-        .add_data_node(
-            Point::new(20.0, 20.0),
-            DataNodeContent::new(
-                NodeValues::U64(THETA_C_INPUT.iter().flatten().copied().collect()),
-                DataFormat::Hexadecimal,
-            )
-            .with_layout(GridLayout::Rows(5)),
-        )
-        .map_err(stringify)?;
-    if let Some(n) = n {
-        scene
-            .set_selection(array, Selection::Row { row: n, col: None })
-            .map_err(stringify)?;
-    }
-
-    // Unstarted (`n` is `None`): the chain still exists, over five zero operands — see this function's own doc
-    // comment for why that reads better than not drawing it at all.
-    let row = n.map_or([0u64; 5], |n| THETA_C_INPUT[n]);
-    let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
-    let place = |x: f64, y: f64, value: u64| -> Result<NodeId, String> {
-        scene.add_data_node(Point::new(x, y), hex(value)).map_err(stringify)
-    };
-
-    // The five operands sit in one horizontal row below the input array, in the same left-to-right order as
-    // `row`'s own values there — so this canvas reads as "here is that row, unpacked." Their own spacing
-    // approximates the array's own real cell stride (a single-value `u64` hex cell, plus the same `CELL_GAP`
-    // the array's own adjacent cells use). `svg-dom-graph` only knows a cell's own real rendered width once it
-    // has actually measured the text — those constants are private to it, unavailable here — so this is a
-    // close estimate, not an exact figure, as requested.
-    //
-    // Each `XOR` stage cascades down and to the left of the operand row, combining the running total with the
-    // next operand to its own right; every stage's own `x` sits strictly left of the operand it still has to
-    // reach, and every operand's own connector drops straight down its own column before turning, so nothing
-    // here ever crosses an earlier stage's box.
-    const OPERAND_X: [f64; 5] = [20.0, 220.0, 420.0, 620.0, 820.0];
-    const OPERAND_Y: f64 = 275.0;
-
-    // `t1` sits close enough below the operand row that the gap between them — the operand box's own bottom
-    // edge (30.2 units tall: a fixed constant, not measured text) to `t1`'s own top — is roughly half of what
-    // every earlier version of this diagram left there (≈99.8 units, down to ≈50).
-    let op0 = place(OPERAND_X[0], OPERAND_Y, row[0])?;
-    let op1 = place(OPERAND_X[1], OPERAND_Y, row[1])?;
-    let xor01 = row[0] ^ row[1];
-    let t1 = scene
-        .add_binary_operator_node(Point::new(120.0, 355.0), BinaryOperator::Xor, (op0, op1), hex(xor01))
-        .map_err(stringify)?;
-
-    // Each later stage sits 112 units below the previous one: an operator node's own height (71.8 units, again
-    // a fixed constant) plus a ≈40-unit gap between them, per request.
-    let op2 = place(OPERAND_X[2], OPERAND_Y, row[2])?;
-    let xor012 = xor01 ^ row[2];
-    let t2 = scene
-        .add_binary_operator_node(Point::new(270.0, 467.0), BinaryOperator::Xor, (t1, op2), hex(xor012))
-        .map_err(stringify)?;
-
-    let op3 = place(OPERAND_X[3], OPERAND_Y, row[3])?;
-    let xor0123 = xor012 ^ row[3];
-    let t3 = scene
-        .add_binary_operator_node(Point::new(445.0, 579.0), BinaryOperator::Xor, (t2, op3), hex(xor0123))
-        .map_err(stringify)?;
-
-    // The final stage always sits at the same position — the one it would occupy for `n == 3` — rather than
-    // tracking column `n` the way earlier attempts here did. Nothing else occupies the space between it and
-    // the output array below, so moving it was never necessary for the connector's own safety; it just moved
-    // without a reason to.
-    let op4 = place(OPERAND_X[4], OPERAND_Y, row[4])?;
-    let xor01234 = xor0123 ^ row[4];
-    let result = scene
-        .add_binary_operator_node(Point::new(OPERAND_X[3], 691.0), BinaryOperator::Xor, (t3, op4), hex(xor01234))
-        .map_err(stringify)?;
-
-    // The output array: `O`'s own five values, its own `[5; u64]` node — see this function's own doc comment for
-    // why it stays distinct from `A` rather than folding into `A`'s own shape. Five fixing points on every side,
-    // so the connector below can snap to whichever of them best approximates column `n`, rather than landing
-    // wherever a single, unconfigured anchor would pick.
-    let output_options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(5)));
-    let output = scene
-        .add_data_node_with(
-            Point::new(20.0, 823.0),
-            DataNodeContent::new(NodeValues::U64(display.to_vec()), DataFormat::Hexadecimal)
-                .with_layout(GridLayout::Rows(1)),
-            output_options,
-        )
-        .map_err(stringify)?;
-    if let Some(n) = n {
-        scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
-    }
-
-    scene.add_edge(result, output).map_err(stringify)?;
-    scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
-
-    Ok((scene, output))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds `#selection-thetac-diagram` from scratch for `n`, and attaches a fresh
 /// [`Scene::show_selection_toolbar`] — bound to the freshly drawn output array `O` — to drive the *next* step. See
-/// [`build_theta_c_scene`] for what is drawn and why a fresh `Scene` is unavoidable here; this is the standalone
-/// Cell Selection demo's own wrapper around it, the counterpart to [`wire_selection_controls`] for the third
-/// example.
+/// [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene) for what is drawn and why a fresh `Scene` is
+/// unavoidable here; this is the standalone Cell Selection demo's own wrapper around it, the counterpart to
+/// [`wire_selection_controls`] for the third example.
 ///
 /// `Scene::show_selection_toolbar` always resets its own managed node back to [`Selection::None`] as its first
 /// *committed* act (see its own doc comment) — exactly wrong here whenever `n` is `Some`, since the diagram was just
@@ -504,9 +358,9 @@ pub(crate) fn build_theta_c_scene(
 /// The new `Scene` is kept in [`THETA_C_SCENE`], replacing the previous step's. Nothing here is draggable, but
 /// every listener this crate installs — the zoom toolbar's, the selection toolbar's — holds only a `Weak`
 /// reference to its own `Scene`, so all of them stop responding the moment the last handle is dropped.
-/// `build_theta_c_scene`'s own `set_inner_html("")` clears the previous step's DOM, and replacing the stored
-/// handle then frees the previous `Scene` — along with the selection toolbar's own `on_step` closure it was the
-/// sole owner of, per [`Scene::hide_selection_toolbar`]'s own doc comment ("Ownership").
+/// `theta::theta_c::build_scene`'s own `set_inner_html("")` clears the previous step's DOM, and replacing the
+/// stored handle then frees the previous `Scene` — along with the selection toolbar's own `on_step` closure it was
+/// the sole owner of, per [`Scene::hide_selection_toolbar`]'s own doc comment ("Ownership").
 ///
 /// Each step draws a new `Scene`, which would otherwise reset zoom/pan back to `1.0`/`(0, 0)` — jarring, if the
 /// previous step's own view had been zoomed or panned in first. So the outgoing `Scene`'s own
@@ -519,7 +373,7 @@ pub(crate) fn build_theta_c_scene(
 fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCell<ThetaCDemo>>) -> Result<(), String> {
     let view = THETA_C_SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
 
-    let (scene, output) = build_theta_c_scene("selection-thetac-diagram", n, display)?;
+    let (scene, output) = crate::theta::theta_c::build_scene("selection-thetac-diagram", n, display)?;
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
     }

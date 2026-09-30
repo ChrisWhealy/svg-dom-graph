@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Allow connectors to anchor to specified node edges. Allow node dimensions to be measured (`56be91c`)
-- Allow a `Scene` to have a `SceneTitle` (``)
+- Allow a `Scene` to have a `SceneTitle` (`c49a549`)
+- Implement `ThetaD` in nested scenes demo (``)
 
 # [Released]
 
@@ -22,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement `replace_child_container` to replace a nested `Scene` (`0dfa13b`)
 - Add test for detatched child with its own descendants (`aa81604`)
 - Add test for failure to hide `new_child` (`090352a`)
-- Add `SelectionToolbar` to ThetaC nested scene demo function (``)
+- Implement Theta subfunctions for nested scene demo (``)
 
 ## Changed
 
