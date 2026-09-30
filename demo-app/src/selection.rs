@@ -46,10 +46,18 @@ struct SelectionDemo {
 /// deliberately does not divide evenly by this, so the grid's own last row renders short.
 const SELECTION_TWO_D_COLS: usize = 4;
 
+pub(crate) const INITIAL_5X5_BUFFER: [[u64; 5]; 5] = [
+    [0x0, 0x0, 0x0, 0x0, 0x0],
+    [0x0, 0x0, 0x0, 0x0, 0x0],
+    [0x0, 0x0, 0x0, 0x0, 0x0],
+    [0x0, 0x0, 0x0, 0x0, 0x0],
+    [0x0, 0x0, 0x0, 0x0, 0x0],
+];
+
 /// The third example's own fixed input, `A(row, col)` — made-up values, not a real Keccak state, chosen only to
 /// give each row's own `ThetaC` chain a visibly distinct result. See [`build_selection_demo`]'s own doc comment
 /// (point 4).
-const THETA_C_INPUT: [[u64; 5]; 5] = [
+pub(crate) const THETA_C_INPUT: [[u64; 5]; 5] = [
     [
         0x1C80_317F_A3B1_799D,
         0xBDD6_40FB_0667_1AD1,
@@ -316,8 +324,8 @@ pub(crate) fn theta_c_outputs() -> [u64; 5] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `outputs[i]` where `written[i]`, or `0` — the output array's own initial value — where not. See
-/// [`ThetaCDemo::written`]'s own doc comment.
+/// Returns an array `[u64; 5]` containing all values from `outputs[]` where `written[]` is `true`.
+/// See [`ThetaCDemo::written`]'s own doc comment.
 pub(crate) fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
     let mut display = [0u64; 5];
     for i in 0..5 {

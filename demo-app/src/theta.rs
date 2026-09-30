@@ -1,7 +1,10 @@
 //! `panel-theta` / `#theta-diagram`: SHA3's `Theta` function, as a parent `Scene` with a nested child `Scene` —
 //! see [`build_theta_demo`]'s own doc comment for what each node represents and what is, and is not, built yet.
 
-use crate::util::{required_element, stringify};
+use crate::{
+    selection::{INITIAL_5X5_BUFFER, THETA_C_INPUT},
+    util::{required_element, stringify},
+};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -9,7 +12,10 @@ use std::{
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     NodeId,
-    scene::{Scene, Selection, SelectionToolbarOptions, Side, ToolbarOptions},
+    scene::{
+        ConnectorOptions, DataFormat, DataNodeContent, NodeValues, Scene, Selection, SelectionToolbarOptions, Side,
+        ToolbarOptions,
+    },
 };
 use wasm_bindgen::{JsCast, prelude::*};
 
@@ -45,11 +51,11 @@ struct ThetaCState {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested-Scene demo: SHA3's own `Theta` function, drawn as five stages left to right — `A` (the input
-/// state), `ThetaC`, `ThetaD`, the `XOR` loop that folds `D` back into `A`, and `A'` (the updated state) — with
-/// `ThetaC` a genuine container node owning its own nested `Scene`. Click `ThetaC` itself to drill into it — see
-/// [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable) — and the &times; in its own rounded
-/// frame's corner to come back, the way a modal window's own close button would.
+/// Builds the nested-Scene demo: SHA3's own `Theta` function, drawn top to bottom — `A` (the real 25-value input
+/// array), `ThetaC`, then `ThetaD` and a clone of `A` side by side in one row, both feeding `XOR loop`, which feeds
+/// `ThetaC Output` — with `ThetaC` a genuine container node owning its own nested `Scene`. Click `ThetaC` itself to
+/// drill into it — see [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable) — and the &times; in
+/// its own rounded frame's corner to come back, the way a modal window's own close button would.
 ///
 /// # What this demonstrates
 ///
@@ -74,10 +80,11 @@ struct ThetaCState {
 ///
 /// SHA3's real `Theta` function is `C(x) = A(x,0) ⊕ A(x,1) ⊕ A(x,2) ⊕ A(x,3) ⊕ A(x,4)` (`ThetaC`, already fully
 /// built — see above), `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` (`ThetaD`), and finally `A'(x,y) = A(x,y) ⊕ D(x)` for
-/// every cell (the `XOR` loop). Only `ThetaC` is a real, working nested `Scene` here. `ThetaD` and the `XOR` loop
-/// are plain placeholder boxes, not container nodes — there is nothing behind them yet to nest. `A` and `A'` are
-/// plain boxes too, standing in for the real `[5; [5; u64]]` state `ThetaC`'s own nested view already shows in
-/// full.
+/// every cell (`XOR loop`, feeding `ThetaC Output`) — the real step needs both `A` and `D` as its own two inputs,
+/// which is why `A`'s own clone sits alongside `ThetaD` feeding `XOR loop` directly, not only through `ThetaC`.
+/// Only `ThetaC` is a real, working nested `Scene` here. `ThetaD`, `XOR loop`, and `ThetaC Output` are plain
+/// placeholder boxes, not container nodes — there is nothing behind them yet to nest. `A` itself is drawn as the
+/// real `[5; [5; u64]]` array `ThetaC`'s own nested view already shows in full — the same content, twice over.
 ///
 /// Extending either placeholder into its own nested `Scene`, the same way `ThetaC` already is, is exactly the kind
 /// of "a further piece nested one level deeper" case this crate's nested-Scene architecture was designed to keep
@@ -108,39 +115,84 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     }));
     attach_thetac_toolbar(&child, output, Some(0), state)?;
 
+    let a_content = || {
+        DataNodeContent::new(
+            NodeValues::U64(THETA_C_INPUT.iter().flatten().copied().collect()),
+            DataFormat::Hexadecimal,
+        )
+    };
+
+    let array_left_margin = 150.0;
+    let row_height = 237.0;
+    let row_gap = 75.0;
+    let fn_width = 90.0;
+    let fn_height = 70.0;
+    let fn_size = Size::new(fn_width, fn_height);
+
+    let mut row_top = 40.0;
+
     let a = parent
-        .add_node(Point::new(20.0, 75.0), Size::new(90.0, 70.0), "A")
+        .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())
+        .map_err(stringify)?;
+    let a_rect = parent.node_rect(a).map_err(stringify)?;
+    row_top += row_gap + row_height;
+
+    let theta_c = parent
+        .add_container_node(Point::new(20.0, row_top), fn_size, "ThetaC", child.clone())
+        .map_err(stringify)?;
+    parent.make_enterable(theta_c).map_err(stringify)?;
+
+    let a_dup = parent
+        .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())
         .map_err(stringify)?;
 
-    // `ThetaC` is drawn larger than its plain-box neighbours, so it visually reads as the one node here that is
-    // more than a box — the same "a container looks like an ordinary node, only a little more so" choice
-    // `add_container_node`'s own doc comment leaves to the caller, since the library itself draws a container
-    // exactly like a plain node otherwise.
-    let thetac = parent
-        .add_container_node(Point::new(150.0, 65.0), Size::new(160.0, 90.0), "ThetaC", child.clone())
+    let theta_d = parent
+        .add_node(Point::new(20.0, row_top + a_rect.size.height - fn_height), fn_size, "ThetaD")
         .map_err(stringify)?;
-    parent.make_enterable(thetac).map_err(stringify)?;
+    row_top += (row_gap / 2.0) + row_height;
 
-    let thetad = parent
-        .add_node(Point::new(350.0, 75.0), Size::new(130.0, 70.0), "ThetaD (planned)")
-        .map_err(stringify)?;
     let xor_loop = parent
-        .add_node(Point::new(520.0, 75.0), Size::new(140.0, 70.0), "XOR loop (planned)")
+        .add_node(Point::new(a_rect.origin.x + (a_rect.size.width / 2.0) - 45.0, row_top), fn_size, "XOR loop")
         .map_err(stringify)?;
-    let a_prime = parent
-        .add_node(Point::new(700.0, 75.0), Size::new(90.0, 70.0), "A'")
+    row_top += (row_gap / 2.0) + fn_height;
+
+    let theta_out = parent
+        .add_named_data_node(
+            Point::new(150.0, row_top),
+            "Theta Output",
+            DataNodeContent::new(
+                NodeValues::U64(INITIAL_5X5_BUFFER.iter().flatten().copied().collect()),
+                DataFormat::Hexadecimal,
+            ),
+        )
         .map_err(stringify)?;
 
-    parent.add_edge(a, thetac).map_err(stringify)?;
-    parent.add_edge(thetac, thetad).map_err(stringify)?;
-    parent.add_edge(thetad, xor_loop).map_err(stringify)?;
-    parent.add_edge(xor_loop, a_prime).map_err(stringify)?;
+    // Forced to `ThetaC`'s own North side: left to the automatic ray-cast, `A`'s own centre — pulled far to the
+    // right by its own wide 5x5 grid — would otherwise cross `ThetaC`'s East side first. See
+    // `svg_dom_graph::scene::ConnectorOptions::with_to_side`'s own doc comment.
+    parent
+        .add_edge_with(a, theta_c, ConnectorOptions::default().with_to_side(Some(Side::North)))
+        .map_err(stringify)?;
+    parent.add_edge(theta_c, theta_d).map_err(stringify)?;
+    // Forced to leave `ThetaD`'s own South side and enter `XOR loop`'s own West side — `XOR loop` sits well to the
+    // right of, and below, `ThetaD`, so the automatic ray-cast would otherwise cross a different pair of sides.
+    parent
+        .add_edge_with(
+            theta_d,
+            xor_loop,
+            ConnectorOptions::default()
+                .with_from_side(Some(Side::South))
+                .with_to_side(Some(Side::West)),
+        )
+        .map_err(stringify)?;
+    parent.add_edge(a_dup, xor_loop).map_err(stringify)?;
+    parent.add_edge(xor_loop, theta_out).map_err(stringify)?;
 
     parent.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     add_backdrop_clone(&document)?;
 
-    SCENE.with_borrow_mut(|slot| *slot = Some((parent, child, thetac)));
+    SCENE.with_borrow_mut(|slot| *slot = Some((parent, child, theta_c)));
 
     wire_theta_controls(document)
 }
@@ -295,9 +347,9 @@ fn step_thetac(state: &Rc<RefCell<ThetaCState>>, to: Option<usize>) {
 /// the library's own visibility toggling knows nothing about and never touches.
 ///
 /// A one-time clone is only correct because `#theta-diagram`'s own content never changes after this point in this
-/// particular demo — nothing here redraws `A`, `ThetaC`, `ThetaD`, the `XOR` loop, or `A'` once built. A demo whose
-/// parent diagram *does* change over time would need to keep this clone in sync, or take a fresh one on each
-/// change, instead.
+/// particular demo — nothing here redraws `A`, `ThetaC`, `ThetaD`, `XOR loop`, or `ThetaC Output` once built. A
+/// demo whose parent diagram *does* change over time would need to keep this clone in sync, or take a fresh one on
+/// each change, instead.
 ///
 /// `.nested-scene-backdrop`'s own `pointer-events: none` (see `style.css`) is what makes the clone a pure visual
 /// backdrop: every click, drag, and wheel event passes straight through it to the real, interactive

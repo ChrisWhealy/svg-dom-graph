@@ -498,9 +498,11 @@ impl SceneInner {
         if let Some(connector::BinaryOperatorRoute { anchor, side, .. }) = &to_override {
             self.reposition_port_marker(id, *anchor, *side, scratch)?;
         }
-        let connector_type = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?.connector_type;
-        let (vertices, radius) =
-            connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
+        let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
+        let (connector_type, from_side, to_side) = (handle.connector_type, handle.from_side, handle.to_side);
+        let (vertices, radius) = connector::route(
+            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
+        );
         self.write_edge_path(id, &vertices, radius, scratch)
     }
 
@@ -544,13 +546,18 @@ impl SceneInner {
         // `Some` only on the same-side branch — see `BinaryOperatorRoute::sibling_end`'s own doc comment.
         let same_side = side_a == side_b;
 
-        let connector_type_a = self.edge_handle(edge_a).ok_or(Error::UnknownEdge(edge_a))?.connector_type;
+        let edge_a_handle = self.edge_handle(edge_a).ok_or(Error::UnknownEdge(edge_a))?;
+        let (connector_type_a, from_side_a) = (edge_a_handle.connector_type, edge_a_handle.from_side);
         let (vertices_a, radius_a) = connector::route(
             connector_type_a,
             a_rect,
             self.node_edge_anchors(input_a)?,
+            from_side_a,
             to_rect,
             to_edge_anchors,
+            // `to_override` (below) replaces this connector's own `to`-side anchor outright — see `route`'s own
+            // doc comment — so whatever `to_side` this edge might otherwise have stored is moot here.
+            None,
             Some(connector::BinaryOperatorRoute {
                 anchor: anchor_a,
                 side: side_a,
@@ -560,13 +567,16 @@ impl SceneInner {
         self.write_edge_path(edge_a, &vertices_a, radius_a, scratch)?;
         self.reposition_port_marker(edge_a, anchor_a, side_a, scratch)?;
 
-        let connector_type_b = self.edge_handle(edge_b).ok_or(Error::UnknownEdge(edge_b))?.connector_type;
+        let edge_b_handle = self.edge_handle(edge_b).ok_or(Error::UnknownEdge(edge_b))?;
+        let (connector_type_b, from_side_b) = (edge_b_handle.connector_type, edge_b_handle.from_side);
         let (vertices_b, radius_b) = connector::route(
             connector_type_b,
             b_rect,
             self.node_edge_anchors(input_b)?,
+            from_side_b,
             to_rect,
             to_edge_anchors,
+            None,
             Some(connector::BinaryOperatorRoute {
                 anchor: anchor_b,
                 side: side_b,
@@ -603,8 +613,11 @@ impl SceneInner {
         let to_rect = self.node_rect(edge.to)?;
         let to_anchors = self.node_edge_anchors(edge.to)?;
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
-        let (vertices, radius) =
-            connector::route(connector_type, from_rect, from_anchors, to_rect, to_anchors, to_override);
+        let existing = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
+        let (from_side, to_side) = (existing.from_side, existing.to_side);
+        let (vertices, radius) = connector::route(
+            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
+        );
         elbow_path_into(&vertices, radius, scratch);
 
         let handle = self.edge_handle_mut(id).ok_or(Error::UnknownEdge(id))?;

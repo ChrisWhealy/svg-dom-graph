@@ -48,12 +48,14 @@ fn route_with_a_different_side_override_matches_plain_elbow_route_not_the_siblin
         ConnectorType::Elbow { corner_radius: 0.0 },
         from,
         None,
+        None,
         to,
+        None,
         None,
         Some(to_override),
     );
 
-    let (start, start_side) = elbow_anchor(from, centre(to), None);
+    let (start, start_side) = elbow_anchor(from, centre(to), None, None);
     let expected = elbow_route(start, start_side, Point::new(50.0, 0.0), Side::North);
     check_eq(got[..].to_vec(), expected[..].to_vec())
 }

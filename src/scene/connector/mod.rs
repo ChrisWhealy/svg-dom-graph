@@ -8,8 +8,8 @@ use crate::{
     colours::CONNECTOR_STROKE,
     error::Error,
     geometry::{
-        binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, route::Route,
-        route::straight_route, side::Side, snapped_anchor,
+        binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, forced_anchor,
+        route::Route, route::straight_route, side::Side, snapped_anchor,
     },
     model::{edge::EdgeId, node::NodeId},
 };
@@ -31,11 +31,17 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One endpoint's anchor point for a straight connector, honouring `anchors`.
+/// One endpoint's anchor point for a straight connector, honouring `anchors` and `forced_side`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None` keeps
-/// [`ConnectorType::Straight`]'s own default calculated as a continuous ray crossing — see [`boundary_point`].
-fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> Point {
+/// `forced_side: Some(side)` anchors on `side` regardless of `towards`, via [`forced_anchor`] — see
+/// [`Scene::add_edge_with`]'s own doc comment for when a caller needs this. `None` leaves the side to be chosen
+/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see
+/// [`snapped_anchor`]. `None` for both keeps [`ConnectorType::Straight`]'s own default, calculated as a continuous
+/// ray crossing — see [`boundary_point`].
+fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> Point {
+    if let Some(side) = forced_side {
+        return forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n));
+    }
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n).0,
         None => boundary_point(rect, towards),
@@ -43,11 +49,17 @@ fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One endpoint's anchor point and side for an elbowed connector, honouring `anchors`.
+/// One endpoint's anchor point and side for an elbowed connector, honouring `anchors` and `forced_side`.
 ///
-/// `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`]. `None` keeps
-/// [`ConnectorType::Elbow`]'s own default calculated as the crossed side's own midpoint — see [`edge_anchor`].
-fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>) -> (Point, Side) {
+/// `forced_side: Some(side)` anchors on `side` regardless of `towards`, via [`forced_anchor`] — see
+/// [`Scene::add_edge_with`]'s own doc comment for when a caller needs this. `None` leaves the side to be chosen
+/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see
+/// [`snapped_anchor`]. `None` for both keeps [`ConnectorType::Elbow`]'s own default, calculated as the crossed
+/// side's own midpoint — see [`edge_anchor`].
+fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> (Point, Side) {
+    if let Some(side) = forced_side {
+        return (forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n)), side);
+    }
     match anchors {
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n),
         None => edge_anchor(rect, towards),
@@ -85,18 +97,24 @@ pub(crate) struct BinaryOperatorRoute {
 /// A [`ConnectorType::Straight`] connector cannot have a corner radius, so its radius is always `0.0`.
 ///
 /// `from_anchors` / `to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
-/// endpoint's — one endpoint can use `None` while the other uses `Some`.
+/// endpoint's — one endpoint can use `None` while the other uses `Some`. `from_side`/`to_side` are this connector's
+/// own forced sides, from [`ConnectorOptions::from_side`](crate::scene::ConnectorOptions::from_side)/
+/// [`to_side`](crate::scene::ConnectorOptions::to_side) — independent of each other and of `from_anchors`/
+/// `to_anchors`, the same way `EdgeAnchors` already is.
 ///
-/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors` — see
-/// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for the one case
-/// that supplies it: a binary operator node's own two inputs, split apart and routed clear of each other when they
-/// land on the same side.
+/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors`/
+/// `to_side` — see [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for
+/// the one case that supplies it: a binary operator node's own two inputs, split apart and routed clear of each
+/// other when they land on the same side.
+#[allow(clippy::too_many_arguments)]
 pub(crate) fn route(
     connector_type: ConnectorType,
     from: Rect,
     from_anchors: Option<EdgeAnchors>,
+    from_side: Option<Side>,
     to: Rect,
     to_anchors: Option<EdgeAnchors>,
+    to_side: Option<Side>,
     to_override: Option<BinaryOperatorRoute>,
 ) -> (Route, f64) {
     let from_centre = centre(from);
@@ -104,12 +122,12 @@ pub(crate) fn route(
 
     match connector_type {
         ConnectorType::Straight => {
-            let start = straight_anchor(from, to_centre, from_anchors);
-            let end = to_override.map_or_else(|| straight_anchor(to, from_centre, to_anchors), |o| o.anchor);
+            let start = straight_anchor(from, to_centre, from_anchors, from_side);
+            let end = to_override.map_or_else(|| straight_anchor(to, from_centre, to_anchors, to_side), |o| o.anchor);
             (straight_route(start, end), 0.0)
         },
         ConnectorType::Elbow { corner_radius } => {
-            let (start, start_side) = elbow_anchor(from, to_centre, from_anchors);
+            let (start, start_side) = elbow_anchor(from, to_centre, from_anchors, from_side);
             let route = match to_override {
                 Some(BinaryOperatorRoute {
                     anchor,
@@ -122,7 +140,7 @@ pub(crate) fn route(
                     sibling_end: None,
                 }) => elbow_route(start, start_side, anchor, side),
                 None => {
-                    let (end, end_side) = elbow_anchor(to, from_centre, to_anchors);
+                    let (end, end_side) = elbow_anchor(to, from_centre, to_anchors, to_side);
                     elbow_route(start, start_side, end, end_side)
                 },
             };
@@ -181,8 +199,10 @@ impl Scene {
             options.connector_type,
             from_rect,
             from_anchors,
+            options.from_side,
             to_rect,
             to_anchors,
+            options.to_side,
             to_override,
         );
         // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability —
@@ -204,6 +224,8 @@ impl Scene {
             ConnectorHandle {
                 path,
                 connector_type: options.connector_type,
+                from_side: options.from_side,
+                to_side: options.to_side,
                 port_marker: None,
             },
         );

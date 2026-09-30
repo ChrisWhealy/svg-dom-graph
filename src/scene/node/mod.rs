@@ -19,6 +19,7 @@ use super::Scene;
 use crate::{error::Error, model::node::NodeId};
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
+use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. `None` and every
@@ -130,6 +131,28 @@ impl Scene {
         }
         inner.scratch = scratch;
         Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The current rendered rectangle of node `id` — its own top-left origin and size, in the `<svg>`'s own user
+    /// space, as this crate itself last drew it.
+    ///
+    /// For a plain or container node this is exactly the `top_left`/`size` its own constructor was given. For a
+    /// data or operator node it is the box this crate itself computed to fit its own content instead — a caller has
+    /// no way to know that size ahead of drawing (`draw_content_box` measures each cell's own real rendered text
+    /// width; see its own doc comment), so this is the only way to learn it afterward. Useful for laying out a node
+    /// relative to another one already drawn — for example, positioning a second node so its own centre lines up
+    /// with a first node's, when the first node's own rendered width was not known in advance.
+    ///
+    /// Reflects `id`'s own position as most recently written: after a drag moves it, this returns the moved
+    /// rectangle, not the one it was created with.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene — for example, a `NodeId` from a
+    /// different `Scene`.
+    pub fn node_rect(&self, id: NodeId) -> Result<Rect, Error> {
+        self.inner.borrow().node_rect(id)
     }
 }
 

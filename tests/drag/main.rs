@@ -11,6 +11,8 @@
 //! - [`connectors`] — `ConnectorType`: corner-radius validation, live updates, clamping, `Straight`/`Elbow` toggling.
 //! - [`edge_anchors`] — `EdgeAnchors`/`NodeOptions`: validation, per-edge snapping, live redraws via
 //!   `set_edge_anchors`.
+//! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
+//!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
 //!   clamped to its edge.
 //! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
@@ -30,7 +32,7 @@
 //!   keyboard, disabled-button no-ops, `on_step` reentering the same `Scene`, and the callback's own lifetime once
 //!   the toolbar is hidden.
 //!
-//! All twelve drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All thirteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -40,6 +42,7 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod node_rect;
 mod operator_node;
 mod relationships;
 mod scene_validation;

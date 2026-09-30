@@ -5,7 +5,7 @@ use crate::common::{check, connector_count, dispatch_pointer_event, make_svg, nt
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{ConnectorOptions, ConnectorType, Scene},
+    scene::{ConnectorOptions, ConnectorType, Scene, Side},
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -278,5 +278,66 @@ fn set_connector_type_with_an_unchanged_type_redraws_nothing() -> Result<(), Str
     check(
         path_d(&connector)?.as_str() == SENTINEL,
         "an unchanged ConnectorType redrew the connector anyway",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `ConnectorOptions::with_to_side` forces which side of the `to` node a connector lands on, overriding whichever
+/// side a ray from that node's own centre toward `from`'s centre would otherwise cross first.
+///
+/// `A` is wide and sits above-right of `B` — `A`: `(300, -10)`, size `(400, 40)`, centre `(500, 10)`. `B`: `(0,
+/// 100)`, size `(40, 20)`, centre `(20, 110)`. Left alone, the ray from `B`'s own centre toward `A`'s reaches `B`'s
+/// East side first (`half_w / dx` = 20/480 ≈ 0.042, less than `half_h / dy` = 10/100 = 0.1) — the same "a wide box
+/// skews the ray shallow" effect a much wider node left-aligned above a narrower one already produces (see
+/// `demo-app`'s own `theta.rs`, the nested-Scene demo this was written for). Forcing `Side::North` instead must
+/// actually land the connector on `B`'s own top edge, not its East side.
+#[wasm_bindgen_test]
+fn add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen() -> Result<(), String> {
+    let svg = make_svg("connector-forced-to-side", Size::new(800.0, 200.0), Size::new(800.0, 200.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(300.0, -10.0), Size::new(400.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(0.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+
+    scene
+        .add_edge_with(a, b, ConnectorOptions::default().with_to_side(Some(Side::North)))
+        .map_err(|e| e.to_string())?;
+
+    let connector = the_connector("connector-forced-to-side")?;
+    let d = path_d(&connector)?;
+    check(
+        d == "M 500 30 L 500 65 L 20 65 L 20 100",
+        &format!("expected a route entering B's own North side at (20, 100), got {d:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same forced-side override as
+/// `add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen`, for
+/// `ConnectorOptions::with_from_side` instead. Same wide/narrow pair, edge direction reversed so `B` (narrow) is
+/// now the `from` node whose own forced side is under test, and `A` (wide) is `to`.
+#[wasm_bindgen_test]
+fn add_edge_with_a_forced_from_side_overrides_the_side_that_would_otherwise_be_chosen() -> Result<(), String> {
+    let svg = make_svg("connector-forced-from-side", Size::new(800.0, 200.0), Size::new(800.0, 200.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(300.0, -10.0), Size::new(400.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(0.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+
+    scene
+        .add_edge_with(b, a, ConnectorOptions::default().with_from_side(Some(Side::North)))
+        .map_err(|e| e.to_string())?;
+
+    let connector = the_connector("connector-forced-from-side")?;
+    let d = path_d(&connector)?;
+    check(
+        d == "M 20 100 L 20 65 L 500 65 L 500 30",
+        &format!("expected a route leaving B's own North side at (20, 100), got {d:?}"),
     )
 }

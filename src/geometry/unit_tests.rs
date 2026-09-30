@@ -439,6 +439,71 @@ fn snapped_anchor_clamps_to_the_nearest_candidate_instead_of_the_corner() -> Res
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn forced_anchor_overrides_the_side_edge_anchor_would_otherwise_pick() -> Result<(), String> {
+    // Same rect and direction as `edge_anchor_straight_right_picks_the_east_side`: left alone, `edge_anchor` would
+    // pick East. Forcing North instead must actually change which side the point lands on.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let towards = Point::new(1000.0, 10.0);
+    check_eq(edge_anchor(rect, towards).1, Side::East)?;
+    check_eq(forced_anchor(rect, towards, Side::North, None), Point::new(20.0, 0.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn forced_anchor_with_no_fixing_points_is_always_the_forced_sides_own_midpoint() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(10.0, 10.0),
+        size: Size::new(40.0, 20.0),
+    };
+    // `towards` sits due south, yet every one of the four forced sides is honoured regardless.
+    let towards = Point::new(30.0, 1000.0);
+    check_eq(forced_anchor(rect, towards, Side::North, None), Point::new(30.0, 10.0))?;
+    check_eq(forced_anchor(rect, towards, Side::South, None), Point::new(30.0, 30.0))?;
+    check_eq(forced_anchor(rect, towards, Side::East, None), Point::new(50.0, 20.0))?;
+    check_eq(forced_anchor(rect, towards, Side::West, None), Point::new(10.0, 20.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn forced_anchor_with_fixing_points_matches_snapped_anchor_for_the_side_it_would_have_chosen_anyway()
+-> Result<(), String> {
+    // Same rect and direction as `snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint`,
+    // which already picks South on its own. Forcing that same side should reproduce the identical point.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    let towards = Point::new(35.0, 20.0);
+    check_eq(
+        forced_anchor(rect, towards, Side::South, Some(3)),
+        snapped_anchor(rect, towards, 3).0,
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn forced_anchor_falls_back_to_the_centre_coordinate_when_the_ray_runs_parallel_to_the_forced_side()
+-> Result<(), String> {
+    // `fixing_points: Some(_)`, unlike `None`, actually reads the crossing this test means to exercise — `None`
+    // always returns the plain midpoint regardless of it, which would leave the fallback this test checks
+    // untested.
+    let rect = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(40.0, 20.0),
+    };
+    // Due east: no vertical component at all, so a forced North/South side cannot be reached by projecting the
+    // ray onto it — direction along that axis is undefined, the same "zero distance" reasoning `edge_anchor`'s own
+    // degenerate case already documents. Falls back to `centre.x` (20), snapped to the nearer of 2 fixing points'
+    // own candidates (40/3, 80/3) — not the exact midpoint (20) `None` would have returned.
+    let towards = Point::new(1000.0, 10.0);
+    check_eq(forced_anchor(rect, towards, Side::North, Some(2)), Point::new(80.0 / 3.0, 0.0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn binary_operator_anchors_on_different_sides_each_keep_edge_anchors_own_midpoint() -> Result<(), String> {
     // Same rect and directions as `edge_anchor_straight_down_picks_the_south_side` and
     // `edge_anchor_straight_right_picks_the_east_side`: one operand due south, the other due east. Only one

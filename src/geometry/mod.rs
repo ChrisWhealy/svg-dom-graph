@@ -341,6 +341,52 @@ fn anchor_from_crossing(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `crossing` [`anchor_from_crossing`] needs for `rect`'s own explicitly forced `side`: the ray from `centre`
+/// toward `towards`, projected onto the infinite line `side` itself lies on — the same coordinate
+/// [`side_and_crossing`] would have returned, had it picked `side` itself, rather than whichever side its own
+/// ray-cast actually prefers.
+///
+/// Falls back to `centre`'s own coordinate on that axis when the ray runs parallel to `side` — an East/West side
+/// with `towards` at exactly `centre`'s own y, or a North/South side with `towards` at exactly `centre`'s own x.
+/// Direction along that axis is undefined at zero distance, the same degenerate case [`side_and_crossing`] and
+/// [`snapped_anchor`] both already fall back for.
+fn forced_crossing(centre: Point, towards: Point, rect: Rect, side: side::Side) -> f64 {
+    let dx = towards.x - centre.x;
+    let dy = towards.y - centre.y;
+
+    if is_horizontal(side) {
+        let fixed_x = if side == side::Side::East {
+            rect.origin.x + rect.size.width
+        } else {
+            rect.origin.x
+        };
+        if dx == 0.0 { centre.y } else { centre.y + dy * (fixed_x - centre.x) / dx }
+    } else {
+        let fixed_y = if side == side::Side::South {
+            rect.origin.y + rect.size.height
+        } else {
+            rect.origin.y
+        };
+        if dy == 0.0 { centre.x } else { centre.x + dx * (fixed_y - centre.y) / dy }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The anchor point on `rect`'s own `side`, forced by the caller rather than picked by [`edge_anchor`]/
+/// [`snapped_anchor`]'s own ray-cast — see [`Scene::add_edge_with`](crate::scene::Scene::add_edge_with)'s own doc
+/// comment for when a caller needs this instead of leaving the side to be chosen automatically.
+///
+/// `fixing_points: None` returns `side`'s own plain midpoint, ignoring `towards` entirely — the same point
+/// [`edge_anchor`] itself would return for whichever side its own ray-cast happened to prefer. `Some(n)` snaps to
+/// the nearest of `n` evenly spaced candidates on `side` instead, positioned via the ray toward `towards` — the
+/// same division [`snapped_anchor`] would use.
+pub(crate) fn forced_anchor(rect: Rect, towards: Point, side: side::Side, fixing_points: Option<u8>) -> Point {
+    let centre = centre(rect);
+    let crossing = forced_crossing(centre, towards, rect, side);
+    anchor_from_crossing(rect, centre, side, crossing, fixing_points)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Both of a two-input operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
 /// together in one call. `first` and `second` are the two operands' own centres, in the order the node's own
 /// two-input constructor — `Scene::add_binary_operator_node_with` or `Scene::add_arithmetic_operator_node_with` —
