@@ -1,14 +1,16 @@
-//! Shared by [`super::theta_c`] and [`super::theta_d`]: the live state their own selection toolbars carry across
-//! steps, and the "clone a fresh `<svg>` and give it a never-reused id" dance every step needs — see
-//! [`super::theta_c::rebuild_child`]'s own doc comment for why a step cannot redraw its own `<svg>` in place.
+//! Shared by [`super::theta_c`] and [`super::theta_d`] (state and all) and [`super::xor_loop`] (just the `<svg>`-
+//! cloning dance — see [`XorLoopState`](super::xor_loop::XorLoopState)'s own doc comment for why its own state
+//! shape is not this module's [`SteppedChildState`]): the live state a nested child's own selection toolbar
+//! carries across steps, and the "clone a fresh `<svg>` and give it a never-reused id" dance every step needs —
+//! see [`super::theta_c::rebuild_child`]'s own doc comment for why a step cannot redraw its own `<svg>` in place.
 
 use crate::util::required_element;
 use std::cell::Cell;
 use wasm_bindgen::JsCast;
 
 thread_local! {
-    // A fresh numeric suffix for every step's own nested child `<svg>` id, shared by both `ThetaC` and `ThetaD` —
-    // see [`next_child_svg_id`]'s own doc comment.
+    // A fresh numeric suffix for every step's own nested child `<svg>` id, shared by `ThetaC`, `ThetaD`, and
+    // `XOR loop` alike — see [`next_child_svg_id`]'s own doc comment.
     static NEXT_CHILD_SVG_SUFFIX: Cell<u32> = const { Cell::new(0) };
 }
 
@@ -28,9 +30,9 @@ pub(super) struct SteppedChildState {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A fresh, never-reused id for this step's own nested child `<svg>`, prefixed with `prefix` (`"theta-thetac-child"`
-/// or `"theta-thetad-child"`). Shares one counter across both `ThetaC` and `ThetaD`, so every id handed out is
-/// unique regardless of which nested child it backs.
+/// A fresh, never-reused id for this step's own nested child `<svg>`, prefixed with `prefix` (`"theta-thetac-child"`,
+/// `"theta-thetad-child"`, or `"theta-xorloop-child"`). Shares one counter across all three, so every id handed
+/// out is unique regardless of which nested child it backs.
 pub(super) fn next_child_svg_id(prefix: &str) -> String {
     NEXT_CHILD_SVG_SUFFIX.with(|counter| {
         let n = counter.get();
@@ -41,8 +43,10 @@ pub(super) fn next_child_svg_id(prefix: &str) -> String {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Clones `previous_id`'s own `<svg>` — shallow, attributes only, no content — gives the clone `next_id`, and
-/// inserts it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class="nested-scene"` from
-/// whichever element is currently in the DOM, rather than a second, hardcoded copy of them.
+/// inserts it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class` (`"nested-scene"`, plus
+/// whichever further class — `theta-thetad-child`, `theta-xorloop-child` — that particular nested child's own
+/// CSS sizing rule needs) from whichever element is currently in the DOM, rather than a second, hardcoded copy of
+/// them.
 ///
 /// # Errors
 ///
