@@ -3,6 +3,9 @@ name = "svg-dom-graph-demo"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
+description = "Browser demo gallery for the svg-dom-graph crate"
+repository = "https://github.com/ChrisWhealy/svg-dom-graph"
+license = "MIT"
 publish = false
 
 [lib]

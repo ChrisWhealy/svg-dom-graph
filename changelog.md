@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Allow connectors to anchor to specified node edges. Allow node dimensions to be measured (`56be91c`)
 - Allow a `Scene` to have a `SceneTitle` (`c49a549`)
-- Implement `ThetaD` in nested scenes demo (``)
+- Implement Theta subfunctions for nested scene demo (`230cf83`)
+- Add missing fields to all `Cargo.toml` files (``)
 
 # [Released]
 
@@ -23,7 +24,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement `replace_child_container` to replace a nested `Scene` (`0dfa13b`)
 - Add test for detatched child with its own descendants (`aa81604`)
 - Add test for failure to hide `new_child` (`090352a`)
-- Implement Theta subfunctions for nested scene demo (`230cf83`)
 
 ## Changed
 

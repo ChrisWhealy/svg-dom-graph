@@ -2,6 +2,9 @@
 name = "cdp-integration-test"
 version = "0.1.0"
 edition = "2024"
+description = "Headless-Chrome CDP integration tests for svg-dom-graph's accessibility tree output"
+repository = "https://github.com/ChrisWhealy/svg-dom-graph"
+license = "MIT"
 publish = false
 
 [lib]

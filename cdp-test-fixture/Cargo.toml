@@ -3,6 +3,9 @@ name = "cdp-test-fixture"
 version = "0.1.0"
 edition = "2024"
 rust-version = "1.85"
+description = "Wasm test fixture crate driven by svg-dom-graph's CDP integration tests"
+repository = "https://github.com/ChrisWhealy/svg-dom-graph"
+license = "MIT"
 publish = false
 
 [lib]

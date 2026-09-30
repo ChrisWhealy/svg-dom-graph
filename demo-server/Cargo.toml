@@ -2,6 +2,9 @@
 name = "demo-server"
 version = "0.1.0"
 edition = "2024"
+description = "Actix-based static server that builds and serves the svg-dom-graph demo gallery"
+repository = "https://github.com/ChrisWhealy/svg-dom-graph"
+license = "MIT"
 publish = false
 
 [dependencies]
