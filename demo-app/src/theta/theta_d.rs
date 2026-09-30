@@ -229,12 +229,8 @@ fn rebuild_child(to: Option<usize>, display: [u64; 5], state: Rc<RefCell<Stepped
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same `on_step` callback as `theta_c::step`, for the nested `ThetaD` child and [`rebuild_child`] instead.
 fn step(state: &Rc<RefCell<SteppedChildState>>, to: Option<usize>) {
-    let mut demo = state.borrow_mut();
-    match to {
-        None => demo.written = [false; 5],
-        Some(n) => demo.written[n] = true,
-    }
-    let display = crate::selection::display_outputs(demo.outputs, demo.written);
+    let demo = state.borrow();
+    let display = crate::selection::display_outputs(demo.outputs, to);
     drop(demo);
     let _ = rebuild_child(to, display, state.clone());
 }

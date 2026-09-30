@@ -99,13 +99,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     // Unstarted: no row has been processed yet — see `crate::selection::build_selection_demo`'s own doc comment
     // (point 5) for why the chain is still drawn, over five zero operands, rather than left out entirely.
     let outputs = crate::selection::theta_c_outputs();
-    let written = [false; 5];
-    let display = crate::selection::display_outputs(outputs, written);
+    let display = crate::selection::display_outputs(outputs, None);
     let (child, output) = theta_c::build_scene("theta-thetac-child", None, display)?;
 
     let state = Rc::new(RefCell::new(SteppedChildState {
         outputs,
-        written,
         child_svg_id: "theta-thetac-child".to_string(),
     }));
     theta_c::attach_toolbar(&child, output, None, state)?;
@@ -143,13 +141,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
 
     // Unstarted, the same "no row processed yet" convention as `ThetaC`'s own initial state above.
     let theta_d_outputs = theta_d::outputs(crate::selection::theta_c_outputs());
-    let theta_d_written = [false; 5];
-    let theta_d_display = crate::selection::display_outputs(theta_d_outputs, theta_d_written);
+    let theta_d_display = crate::selection::display_outputs(theta_d_outputs, None);
     let (theta_d_child, theta_d_output) = theta_d::build_scene("theta-thetad-child", None, theta_d_display)?;
 
     let theta_d_state = Rc::new(RefCell::new(SteppedChildState {
         outputs: theta_d_outputs,
-        written: theta_d_written,
         child_svg_id: "theta-thetad-child".to_string(),
     }));
     theta_d::attach_toolbar(&theta_d_child, theta_d_output, None, theta_d_state)?;
@@ -168,13 +164,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     // Unstarted, the same "no cell processed yet" convention as `ThetaC`'s/`ThetaD`'s own initial state above —
     // except stepped cell by cell, not row by row; see `xor_loop::build_scene`'s own doc comment for why.
     let xor_loop_outputs = xor_loop::outputs(THETA_C_INPUT, theta_d_outputs);
-    let xor_loop_written = [[false; 5]; 5];
-    let xor_loop_display = xor_loop::display_outputs(xor_loop_outputs, xor_loop_written);
+    let xor_loop_display = xor_loop::display_outputs(xor_loop_outputs, None);
     let (xor_loop_child, xor_loop_output) = xor_loop::build_scene("theta-xorloop-child", None, xor_loop_display)?;
 
     let xor_loop_state = Rc::new(RefCell::new(xor_loop::XorLoopState {
         outputs: xor_loop_outputs,
-        written: xor_loop_written,
         child_svg_id: "theta-xorloop-child".to_string(),
     }));
     xor_loop::attach_toolbar(&xor_loop_child, xor_loop_output, None, xor_loop_state)?;

@@ -18,11 +18,10 @@ thread_local! {
 /// nested view instead of standalone.
 pub(super) struct SteppedChildState {
     /// Row `i`'s own result — see `crate::selection::theta_c_outputs`'s own doc comment (for `ThetaC`) or
-    /// [`super::theta_d::outputs`]'s own (for `ThetaD`).
+    /// [`super::theta_d::outputs`]'s own (for `ThetaD`). Which rows currently show is derived fresh from these and
+    /// the walk's own current position on every step — see `crate::selection::display_outputs`'s own doc comment —
+    /// rather than tracked here as a second, separately mutated flag per row.
     pub(super) outputs: [u64; 5],
-    /// `written[i]` is `true` once row `i` has been stepped into going forward, and not since stepped away from
-    /// going backward — see `crate::selection::ThetaCDemo::written`'s own doc comment.
-    pub(super) written: [bool; 5],
     /// The id of whichever `<svg>` currently backs the nested child — see [`super::theta_c::rebuild_child`]'s/
     /// [`super::theta_d::rebuild_child`]'s own doc comment for why every step needs a fresh one.
     pub(super) child_svg_id: String,

@@ -21,7 +21,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct `ThetaD` functionality (``)
+- Correct `ThetaD` functionality (`5a06b32`)
+- Cell selection walker functions undo output when navigating to prev (``)
 
 # [Released]
 

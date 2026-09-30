@@ -314,18 +314,14 @@ pub(super) fn rebuild_child(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar)'s own `on_step` callback
-/// for the nested view — the nested counterpart to `crate::selection::step_theta_c`. Updates `state`'s own
-/// `written` flags for the walk's new position `to`, then rebuilds the nested child for it via [`rebuild_child`].
+/// for the nested view — the nested counterpart to `crate::selection::step_theta_c`. Rebuilds the nested child for
+/// the walk's new position `to`, via [`rebuild_child`].
 ///
 /// A [`rebuild_child`] failure here is ignored, the same "cannot fail in practice, and nowhere to report it to"
 /// reasoning `crate::selection::step_theta_c` already follows.
 fn step(state: &Rc<RefCell<SteppedChildState>>, to: Option<usize>) {
-    let mut demo = state.borrow_mut();
-    match to {
-        None => demo.written = [false; 5],
-        Some(n) => demo.written[n] = true,
-    }
-    let display = crate::selection::display_outputs(demo.outputs, demo.written);
+    let demo = state.borrow();
+    let display = crate::selection::display_outputs(demo.outputs, to);
     drop(demo);
     let _ = rebuild_child(to, display, state.clone());
 }

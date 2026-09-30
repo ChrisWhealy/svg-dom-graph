@@ -30,22 +30,19 @@ thread_local! {
 /// Live state this nested child's own selection toolbar carries across steps — the `XOR loop` counterpart to
 /// `support::SteppedChildState`, kept separate from it rather than generalising that struct to fit both.
 ///
-/// `SteppedChildState` is shaped `[u64; 5]`/`[bool; 5]` throughout — one value per row, since `theta_c`'s own `O`
-/// and `theta_d`'s own `D` both really are five-value arrays. `XOR loop`'s own output, `A'`, is a genuine
+/// `SteppedChildState` is shaped `[u64; 5]` throughout — one value per row, since `theta_c`'s own `O` and
+/// `theta_d`'s own `D` both really are five-value arrays. `XOR loop`'s own output, `A'`, is a genuine
 /// `[5; [5; u64]]` — the same shape as `A` itself — not five values but twenty-five, so it needs its own
-/// `[[u64; 5]; 5]`/`[[bool; 5]; 5]` shape throughout instead. Forcing that through `SteppedChildState`'s own fixed
-/// `[T; 5]` fields would mean a breaking change to two working, already-tested modules for the sake of a third
-/// that does not actually share their own shape — the same "a deliberate, separately-tested copy rather than a
-/// shared dependency" reasoning this crate already follows for `toolbar::layout` vs. `selection_toolbar::layout`.
+/// `[[u64; 5]; 5]` shape instead. Forcing that through `SteppedChildState`'s own fixed `[u64; 5]` field would mean
+/// a breaking change to two working, already-tested modules for the sake of a third that does not actually share
+/// their own shape — the same "a deliberate, separately-tested copy rather than a shared dependency" reasoning
+/// this crate already follows for `toolbar::layout` vs. `selection_toolbar::layout`.
 pub(super) struct XorLoopState {
-    /// `outputs[row][col] = A(row, col) ⊕ D(row)` — every cell's own real result, computed once, up front. See
-    /// [`outputs`]'s own doc comment.
+    /// `outputs[row][col] = A(row, col) ⊕ D(row)` — every cell's own real result, computed once, up front. Which
+    /// cells currently show is derived fresh from these and the walk's own current flat position on every step —
+    /// see [`display_outputs`]'s own doc comment — rather than tracked here as a second, separately mutated flag
+    /// per cell.
     pub(super) outputs: [[u64; 5]; 5],
-    /// `written[row][col]` is `true` once that cell has been stepped into going forward, and not since stepped
-    /// away from going backward, or since a `Restart` swept every cell back to unstarted in one go — the same
-    /// `written` contract `SteppedChildState::written`'s own doc comment gives, just indexed by `(row, col)`
-    /// instead of a flat `i`.
-    pub(super) written: [[bool; 5]; 5],
     /// The id of whichever `<svg>` currently backs this nested child — see [`rebuild_child`]'s own doc comment for
     /// why every step needs a fresh one.
     pub(super) child_svg_id: String,
@@ -82,18 +79,15 @@ pub(super) fn outputs(a: [[u64; 5]; 5], d: [u64; 5]) -> [[u64; 5]; 5] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `[[u64; 5]; 5]` counterpart to `crate::selection::display_outputs`: every value from `outputs` where
-/// `written` is `true`, `0` everywhere else. See [`XorLoopState::written`]'s own doc comment.
-pub(super) fn display_outputs(outputs: [[u64; 5]; 5], written: [[bool; 5]; 5]) -> [[u64; 5]; 5] {
-    let mut display = [[0u64; 5]; 5];
-    for row in 0..5 {
-        for col in 0..5 {
-            if written[row][col] {
-                display[row][col] = outputs[row][col];
-            }
-        }
-    }
-    display
+/// The `[[u64; 5]; 5]` counterpart to `crate::selection::display_outputs`: cell `(row, col)` of `outputs` shows
+/// through for `row * 5 + col <= to.unwrap()` — its own flat, row-major position at or before the walk's current
+/// one — `0` everywhere else. `to` is the *only* state this reads: no separately mutated "has this cell ever been
+/// written" flag, so "Previous" un-reveals a later cell exactly as it reveals an earlier one. `None` (unstarted,
+/// or walked/restarted all the way back) reveals nothing.
+pub(super) fn display_outputs(outputs: [[u64; 5]; 5], to: Option<usize>) -> [[u64; 5]; 5] {
+    std::array::from_fn(|row| {
+        std::array::from_fn(|col| if to.is_some_and(|n| row * 5 + col <= n) { outputs[row][col] } else { 0 })
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -318,14 +312,10 @@ pub(super) fn rebuild_child(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same `on_step` callback as `theta_c::step`, for the nested `XOR loop` child and [`rebuild_child`] instead —
-/// `to` is a flat cell index here, not a row, so `written` is updated at `(to / 5, to % 5)`.
+/// `to` is a flat cell index here, not a row.
 fn step(state: &Rc<RefCell<XorLoopState>>, to: Option<usize>) {
-    let mut demo = state.borrow_mut();
-    match to {
-        None => demo.written = [[false; 5]; 5],
-        Some(n) => demo.written[n / 5][n % 5] = true,
-    }
-    let display = display_outputs(demo.outputs, demo.written);
+    let demo = state.borrow();
+    let display = display_outputs(demo.outputs, to);
     drop(demo);
     let _ = rebuild_child(to, display, state.clone());
 }

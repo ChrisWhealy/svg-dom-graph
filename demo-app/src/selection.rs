@@ -12,6 +12,9 @@ use svg_dom_graph::{
 use wasm_bindgen::{JsCast, prelude::*};
 use web_sys::Element;
 
+#[cfg(test)]
+mod unit_tests;
+
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("selection.rs");
 
@@ -93,18 +96,16 @@ pub(crate) const THETA_C_INPUT: [[u64; 5]; 5] = [
 ];
 
 /// Live state the third example's own [`Scene::show_selection_toolbar`] callback shares across steps: every row's
-/// own already-computed `ThetaC` result, and which of them the walk has reached so far. There is no current row
-/// kept here — the [`SelectionToolbarOptions`] toolbar rebuilt on every step is itself the only record of that (see
-/// [`rebuild_theta_c_diagram`]'s own doc comment), and nothing here needs a `Scene`/`NodeId` of its own either.
+/// own already-computed `ThetaC` result. There is no current row kept here either — the
+/// [`SelectionToolbarOptions`] toolbar rebuilt on every step is itself the only record of that (see
+/// [`rebuild_theta_c_diagram`]'s own doc comment), which hands its own `to: Option<usize>` straight to
+/// [`display_outputs`] on every step — so which rows currently show is a pure function of `outputs` and that one
+/// position, recomputed fresh each time, not a second, separately mutated flag per row that could drift out of
+/// step with it. See [`display_outputs`]'s own doc comment.
 struct ThetaCDemo {
     /// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`], computed once, up front. Stepping
-    /// never recomputes these; it only changes which ones [`written`](Self::written) currently reveals.
+    /// never recomputes these; it only changes which prefix of them [`display_outputs`] currently reveals.
     outputs: [u64; 5],
-    /// `written[i]` is `true` once row `i` has been stepped into going forward, and not since stepped away from
-    /// going backward, or since a `Restart` swept every row back to unstarted in one go. [`rebuild_theta_c_diagram`]
-    /// shows [`outputs`](Self::outputs)`[i]` for a written row, and `0` — the output array's own initial value —
-    /// for one that is not. See [`build_selection_demo`]'s own doc comment (point 5).
-    written: [bool; 5],
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -136,12 +137,11 @@ struct ThetaCDemo {
 /// 5. The walk starts unstarted — before row `0` is ever processed, `A` has no row highlighted and `O` is entirely
 ///    blank. The chain itself is still drawn, over five zero operands, rather than left out entirely — see
 ///    [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene)'s own doc comment for why: an absent chain
-///    would read as "this does not exist yet," when what is actually true is "this has not run yet." Stepping
-///    "Previous" (or "Restart", from further along)
-///    resets every row it walks back past — not just the row
-///    arrived at — to `O`'s own initial value, demonstrating that a walked-past output is only ever valid because
-///    the walk itself produced it, not because it is somehow always available. See [`ThetaCDemo::written`]'s own
-///    doc comment.
+///    would read as "this does not exist yet," when what is actually true is "this has not run yet." `O` shows
+///    exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing for `None` — see
+///    [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own current position on
+///    every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one: there is no separate
+///    per-row memory of "has this ever been written" for the two directions to disagree about.
 ///
 /// Both the first two examples wrap: stepping "Next" past the last value returns to the first, and "Previous" from
 /// the first goes to the last — see [`wire_selection_controls`]'s own `step_one_d`/`step_two_d` helpers. The third
@@ -199,9 +199,8 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
 
     // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
     let outputs = theta_c_outputs();
-    let written = [false; 5];
-    let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs, written }));
-    rebuild_theta_c_diagram(None, display_outputs(outputs, written), theta_c_demo)
+    let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs }));
+    rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -322,16 +321,12 @@ pub(crate) fn theta_c_outputs() -> [u64; 5] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns an array `[u64; 5]` containing all values from `outputs[]` where `written[]` is `true`.
-/// See [`ThetaCDemo::written`]'s own doc comment.
-pub(crate) fn display_outputs(outputs: [u64; 5], written: [bool; 5]) -> [u64; 5] {
-    let mut display = [0u64; 5];
-    for i in 0..5 {
-        if written[i] {
-            display[i] = outputs[i];
-        }
-    }
-    display
+/// Row `i` of `outputs` shows through for `i <= to.unwrap()`, `0` everywhere else — the walk's own current
+/// position `to` is the *only* state this reads: no separately mutated "has row `i` ever been written" flag, so
+/// "Previous" un-reveals a later row exactly as it reveals an earlier one, with nothing left over from before to
+/// forget to clear. `None` (unstarted, or walked/restarted all the way back) reveals nothing.
+pub(crate) fn display_outputs(outputs: [u64; 5], to: Option<usize>) -> [u64; 5] {
+    std::array::from_fn(|i| if to.is_some_and(|n| i <= n) { outputs[i] } else { 0 })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -392,28 +387,22 @@ fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCel
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`Scene::show_selection_toolbar`]'s own `on_step` callback for the third example: updates `state`'s own
-/// `written` flags for the walk's new position `to`, then rebuilds the whole diagram for it via
-/// [`rebuild_theta_c_diagram`].
+/// [`Scene::show_selection_toolbar`]'s own `on_step` callback for the third example: rebuilds the whole diagram
+/// for the walk's new position `to`, via [`rebuild_theta_c_diagram`].
 ///
-/// `to.is_none()` — reached by "Previous" from row `0`, or by "Restart" from anywhere — resets every row's own
-/// `written` flag in one go, not just the row most recently left: both leave the walk at the same unstarted state,
-/// and clearing only the one row most recently left would leave an earlier row still reading as "written" after a
-/// `Restart` from further along. See [`ThetaCDemo::written`]'s own doc comment, and
-/// [`SelectionTransition`](svg_dom_graph::scene::SelectionTransition)'s own doc comment for why the toolbar itself
-/// cannot tell "Previous" and "Restart" apart here, and does not need to.
+/// `to` alone is enough to know what `O` should show — see [`display_outputs`]'s own doc comment — so there is no
+/// separate flag to update here first. [`SelectionTransition`](svg_dom_graph::scene::SelectionTransition)'s own
+/// doc comment explains why the toolbar itself cannot tell "Previous" and "Restart" apart (both land on
+/// `to.is_none()`), and, since `display_outputs` derives its result fresh from `to` alone either way, why this
+/// never needed to.
 ///
 /// A [`rebuild_theta_c_diagram`] failure here would mean `index.html` no longer matches this module, or the
 /// library itself failed — already ruled out by this same call having succeeded once already, to get this far. So
 /// it is ignored, rather than given a `Result` a button click has nowhere to return — the same "cannot fail in
 /// practice" reasoning [`apply_one_d_selection`] gives.
 fn step_theta_c(state: &Rc<RefCell<ThetaCDemo>>, to: Option<usize>) {
-    let mut demo = state.borrow_mut();
-    match to {
-        None => demo.written = [false; 5],
-        Some(n) => demo.written[n] = true,
-    }
-    let display = display_outputs(demo.outputs, demo.written);
+    let demo = state.borrow();
+    let display = display_outputs(demo.outputs, to);
     drop(demo);
     let _ = rebuild_theta_c_diagram(to, display, state.clone());
 }
