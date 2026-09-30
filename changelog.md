@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement `replace_child_container` to replace a nested `Scene` (`0dfa13b`)
 - Add test for detatched child with its own descendants (`aa81604`)
 - Add test for failure to hide `new_child` (`090352a`)
-- Implement Theta subfunctions for nested scene demo (``)
+- Implement Theta subfunctions for nested scene demo (`230cf83`)
 
 ## Changed
 

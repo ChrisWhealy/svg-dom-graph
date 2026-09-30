@@ -227,7 +227,10 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
     // comment.
     let output = scene
         .add_named_data_node(
-            Point::new(d_rect.origin.x + d_rect.size.width + H_GAP, xor_rect.origin.y + xor_rect.size.height + V_GAP),
+            Point::new(
+                d_rect.origin.x + d_rect.size.width + H_GAP,
+                xor_rect.origin.y + xor_rect.size.height + V_GAP,
+            ),
             "Theta Output",
             DataNodeContent::new(
                 NodeValues::U64(display.iter().flatten().copied().collect()),
