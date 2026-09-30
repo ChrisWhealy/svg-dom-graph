@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.22] - 2026-09-30
 
 ## Added
@@ -24,9 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct `ThetaD` functionality (`5a06b32`)
 - Cell selection walker functions undo output when navigating to prev (`aa30ad1`)
 - Doc only: Correct stale documentation (`40a587c`)
-- Correct CSS inconsistency (``)
-
-# [Released]
+- Correct CSS inconsistency (`69f14a7`)
 
 ## [0.2.21] - 2026-09-29
 
