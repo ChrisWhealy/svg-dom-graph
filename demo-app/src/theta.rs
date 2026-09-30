@@ -13,8 +13,8 @@ use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{
-        ConnectorOptions, DataFormat, DataNodeContent, NodeValues, Scene, Selection, SelectionToolbarOptions, Side,
-        ToolbarOptions,
+        ConnectorOptions, DataFormat, DataNodeContent, NodeValues, Scene, SceneTitleOptions, Selection,
+        SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 use wasm_bindgen::{JsCast, prelude::*};
@@ -99,21 +99,23 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
 
     let parent_svg = svg_dom::SvgRoot::attach("theta-diagram").map_err(stringify)?;
     let parent = Scene::new(parent_svg).map_err(stringify)?;
+    parent
+        .show_scene_title("Keccak Theta Function", SceneTitleOptions::default())
+        .map_err(stringify)?;
 
-    // The same starting state (row 0 already stepped, rows 1-4 still blank) the standalone Cell Selection demo
-    // opens on — see `crate::selection::ThetaCDemo::written`'s own doc comment.
+    // Unstarted: no row has been processed yet — see `crate::selection::build_selection_demo`'s own doc comment
+    // (point 5) for why the chain is still drawn, over five zero operands, rather than left out entirely.
     let outputs = crate::selection::theta_c_outputs();
-    let mut written = [false; 5];
-    written[0] = true;
+    let written = [false; 5];
     let display = crate::selection::display_outputs(outputs, written);
-    let (child, output) = crate::selection::build_theta_c_scene("theta-thetac-child", Some(0), display)?;
+    let (child, output) = crate::selection::build_theta_c_scene("theta-thetac-child", None, display)?;
 
     let state = Rc::new(RefCell::new(ThetaCState {
         outputs,
         written,
         child_svg_id: "theta-thetac-child".to_string(),
     }));
-    attach_thetac_toolbar(&child, output, Some(0), state)?;
+    attach_thetac_toolbar(&child, output, None, state)?;
 
     let a_content = || {
         DataNodeContent::new(
@@ -129,7 +131,7 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     let fn_height = 70.0;
     let fn_size = Size::new(fn_width, fn_height);
 
-    let mut row_top = 40.0;
+    let mut row_top = 50.0;
 
     let a = parent
         .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())

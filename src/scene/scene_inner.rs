@@ -2,6 +2,7 @@ pub(super) use super::node::EdgeAnchors;
 pub(crate) use super::{box_handles::BoxHandles, connector::ConnectorHandle};
 pub(super) use super::{
     navigation::{NavigationState, ParentLink},
+    scene_title::SceneTitle,
     selection_toolbar::SelectionToolbar,
     toolbar::Toolbar,
     view_input::{InputMode, ViewInput},
@@ -53,6 +54,8 @@ pub(super) struct SceneInner {
     /// The selection-stepping bar (Prev/Next/Restart), if one is currently shown. See
     /// [`selection_toolbar`](super::selection_toolbar).
     pub selection_toolbar: Option<SelectionToolbar>,
+    /// The scene's own heading-style title, if one is currently shown. See [`scene_title`](super::scene_title).
+    pub scene_title: Option<SceneTitle>,
     /// When dragging the background pans the content. See [`InputMode`].
     pub pan_mode: InputMode,
     /// When Ctrl or Cmd plus the wheel zooms the content. See [`InputMode`].

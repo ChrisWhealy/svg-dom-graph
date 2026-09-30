@@ -14,6 +14,7 @@ mod frame_request;
 mod navigation;
 pub(crate) mod node;
 mod scene_inner;
+mod scene_title;
 mod selection_toolbar;
 mod toolbar;
 mod view_input;
@@ -27,6 +28,7 @@ pub(crate) use box_handles::BoxHandles;
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
+pub use scene_title::SceneTitleOptions;
 pub use selection_toolbar::{SelectionToolbarOptions, SelectionTransition};
 pub use toolbar::ToolbarOptions;
 pub use view_input::InputMode;
@@ -166,6 +168,7 @@ impl Scene {
             view_dirty: false,
             toolbar: None,
             selection_toolbar: None,
+            scene_title: None,
             pan_mode: InputMode::default(),
             wheel_zoom_mode: InputMode::default(),
             view_input: None,

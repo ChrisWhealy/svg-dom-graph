@@ -345,6 +345,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         inner.layout_toolbar()?;
         inner.layout_selection_toolbar()?;
+        inner.layout_scene_title()?;
         inner.resize_view_input()
     }
 }

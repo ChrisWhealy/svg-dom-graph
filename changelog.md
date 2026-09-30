@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Allow connectors to anchor to specified node edges. Allow node dimensions to be measured (``)
+- Allow connectors to anchor to specified node edges. Allow node dimensions to be measured (`56be91c`)
+- Allow a `Scene` to have a `SceneTitle` (``)
 
 # [Released]
 

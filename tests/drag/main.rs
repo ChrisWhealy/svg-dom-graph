@@ -13,6 +13,8 @@
 //!   `set_edge_anchors`.
 //! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
 //!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
+//! - [`scene_title`] — `Scene::show_scene_title`/`hide_scene_title`: drawn attributes, default bold/underlined
+//!   styling, edge placement, replacing an existing title, and option validation.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
 //!   clamped to its edge.
 //! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
@@ -32,7 +34,7 @@
 //!   keyboard, disabled-button no-ops, `on_step` reentering the same `Scene`, and the callback's own lifetime once
 //!   the toolbar is hidden.
 //!
-//! All thirteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All fourteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -45,6 +47,7 @@ mod edge_anchors;
 mod node_rect;
 mod operator_node;
 mod relationships;
+mod scene_title;
 mod scene_validation;
 mod selection;
 mod selection_toolbar;

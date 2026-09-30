@@ -139,6 +139,12 @@ pub enum Error {
     /// Rejected before drawing anything or touching any selection toolbar already shown, so a rejected call leaves the
     /// scene unchanged.
     InvalidSelectionToolbarOptions(crate::scene::SelectionToolbarOptions),
+    /// `Scene::show_scene_title` was given a [`crate::scene::SceneTitleOptions`] with a `font_size` that is not a
+    /// finite value `> 0.0`, a `margin` that is not a finite value `>= 0.0`, or an `aria_level` of `0`.
+    ///
+    /// Rejected before drawing anything or touching any title already shown, so a rejected call leaves the scene
+    /// unchanged.
+    InvalidSceneTitleOptions(crate::scene::SceneTitleOptions),
     /// `Scene::enter` was called with a `NodeId` that names a `Label` or `Data` node, not a container node.
     NotAContainerNode(NodeId),
     /// `Scene::enter`or `Scene::exit` was called on a `Scene` that is not the one actually shown and receiving input.
@@ -243,6 +249,12 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "selection toolbar options {options:?} are invalid: button_height must be finite and > 0.0, and gap and margin must be finite and >= 0.0"
+                )
+            },
+            Error::InvalidSceneTitleOptions(options) => {
+                write!(
+                    f,
+                    "scene title options {options:?} are invalid: font_size must be finite and > 0.0, margin must be finite and >= 0.0, and aria_level must be >= 1"
                 )
             },
             Error::NotAContainerNode(id) => write!(f, "node {id:?} is not a container node"),
