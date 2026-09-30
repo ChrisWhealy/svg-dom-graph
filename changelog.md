@@ -17,7 +17,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Update README screen shot (``)
+- Update README screen shot (`ac94258`)
+
+## Fixed
+
+- Correct `ThetaD` functionality (``)
 
 # [Released]
 

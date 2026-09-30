@@ -2,7 +2,7 @@
 //! — see [`build_theta_demo`]'s own doc comment for what each node represents and what is, and is not, built yet.
 //!
 //! - [`theta_c`] — the nested `ThetaC` child: its own selection toolbar, and rebuilding it on every step.
-//! - [`theta_d`] — the nested `ThetaD` child: the `ROTR`/`XOR` step itself, its own selection toolbar, and
+//! - [`theta_d`] — the nested `ThetaD` child: the `ROTL`/`XOR` step itself, its own selection toolbar, and
 //!   rebuilding it on every step.
 //! - [`xor_loop`] — the nested `XOR loop` child: the final `A' = A ⊕ D` fold, its own selection toolbar (stepped
 //!   cell by cell, not row by row — see its own module doc comment for why), and rebuilding it on every step.
@@ -14,6 +14,9 @@ mod support;
 pub(crate) mod theta_c;
 mod theta_d;
 mod xor_loop;
+
+#[cfg(test)]
+mod unit_tests;
 
 use crate::{
     selection::{INITIAL_5X5_BUFFER, THETA_C_INPUT},
@@ -67,8 +70,9 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 /// # What is, and is not, built yet
 ///
 /// SHA3's real `Theta` function is `C(x) = A(x,0) ⊕ A(x,1) ⊕ A(x,2) ⊕ A(x,3) ⊕ A(x,4)` (`ThetaC`), `D(x) = C(x-1) ⊕
-/// rotl(C(x+1), 1)` (`ThetaD`; built here as `ROTR(next, 1) ⊕ prev`, not `rotl` — see [`theta_d`]'s own module doc
-/// comment for why), and finally `A'(x,y) = A(x,y) ⊕ D(x)` for every cell (`XOR loop`) — the real step needs both
+/// rotl(C(x+1), 1)` (`ThetaD`; built here exactly as that — `rotl` is `u64::rotate_left`, with no further
+/// byte-order adjustment once a lane is a plain `u64` — see `theta_d`'s own `row` function for the exact formula),
+/// and finally `A'(x,y) = A(x,y) ⊕ D(x)` for every cell (`XOR loop`) — the real step needs both
 /// `A` and `D` as its own two inputs, which is why `A`'s own clone sits alongside `ThetaD` feeding `XOR loop`
 /// directly, not only through `ThetaC`. `ThetaC`, `ThetaD`, and `XOR loop` are all real, working nested `Scene`s
 /// now. `Theta Output`, fed by `XOR loop`, is still a plain placeholder box, not a container node — there is

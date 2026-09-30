@@ -1,6 +1,6 @@
-//! The nested `ThetaD` child: SHA3's own `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` step (built here as `ROTR(next, 1) ⊕
-//! prev` — see [`row`]'s own doc comment for why, not `rotl`), its own selection toolbar, and rebuilding it — via
-//! `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s own output.
+//! The nested `ThetaD` child: SHA3's own `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` step, its own selection toolbar, and
+//! rebuilding it — via `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s
+//! own output.
 
 use super::support::{SteppedChildState, create_child_svg, next_child_svg_id};
 use crate::util::{required_element, stringify};
@@ -41,17 +41,15 @@ pub(super) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `D[n] = C[(n + 4) % 5] ⊕ rotr(C[(n + 1) % 5], 1)` — this demo's own `ThetaD` step, for the single row currently
-/// selected. Returns `(prev, rotated_next, d_n)`: `prev` and `rotated_next` are `d_n`'s own two real inputs, so
-/// [`build_scene`] can label the `prev`/`ROTR` nodes it draws with the exact same values used to compute `d_n`,
-/// rather than recomputing either separately.
-///
-/// This demo's own `ThetaD` uses `ROTR(next, 1)`, not SHA3's real `rotl(C(x+1), 1)` — see
-/// `crate::theta::build_theta_demo`'s own doc comment ("What is, and is not, built yet") for why.
+/// `D[n] = C[(n + 4) % 5] ⊕ rotl(C[(n + 1) % 5], 1)` — SHA3's real `ThetaD` step, for the single row currently
+/// selected. Once a Keccak lane is represented as a plain `u64`, `rotl` is exactly `u64::rotate_left` — no further
+/// byte-order adjustment applies on top of it. Returns `(prev, rotated_next, d_n)`: `prev` and `rotated_next` are
+/// `d_n`'s own two real inputs, so [`build_scene`] can label the `prev`/`ROTL` nodes it draws with the exact same
+/// values used to compute `d_n`, rather than recomputing either separately.
 fn row(c: [u64; 5], n: usize) -> (u64, u64, u64) {
     let prev = c[(n + 4) % 5];
     let next = c[(n + 1) % 5];
-    let rotated = next.rotate_right(1);
+    let rotated = next.rotate_left(1);
     (prev, rotated, prev ^ rotated)
 }
 
@@ -67,8 +65,8 @@ pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the nested `ThetaD` child for `n`: `C` — `ThetaC`'s own real output,
 /// [`crate::selection::theta_c_outputs`], as one `[5; u64]` array, cell `n` selected — sits at the top; `next`,
-/// `C[(n + 1) % 5]`, sits directly below it; `prev` (`C[(n + 4) % 5]`), a `ROTR` node rotating `next`, and an `XOR`
-/// node combining `prev` and that `ROTR` result into `D[n]` all share one further row below that, left to right, so
+/// `C[(n + 1) % 5]`, sits directly below it; `prev` (`C[(n + 4) % 5]`), a `ROTL` node rotating `next`, and an `XOR`
+/// node combining `prev` and that `ROTL` result into `D[n]` all share one further row below that, left to right, so
 /// both of `XOR`'s own inputs approach it from the west rather than `prev` dropping straight down onto it from
 /// directly above — see `MID_Y`'s own doc comment for why that matters. `D`, at the bottom, is the same shape as
 /// `C`, showing `display`'s own current values with cell `n` focused. `Some(row)` computes and highlights row
@@ -123,7 +121,7 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
     let (prev, rotated, d_n) = n.map_or((0, 0, 0), |n| row(c, n));
     let next = n.map_or(0, |n| c[(n + 1) % 5]);
 
-    // `prev` sits in `MID_Y`'s own row, level with `ROTR` and `XOR` — see `MID_Y`'s own doc comment for why.
+    // `prev` sits in `MID_Y`'s own row, level with `ROTL` and `XOR` — see `MID_Y`'s own doc comment for why.
     let prev_node = scene
         .add_named_data_node(Point::new(col1, PREV_NEXT_Y), "prev", hex(prev))
         .map_err(stringify)?;
@@ -139,16 +137,16 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
     scene.add_edge_with(input, prev_node, vertical()).map_err(stringify)?;
     scene.add_edge_with(input, next_node, vertical()).map_err(stringify)?;
 
-    let rotr_node = scene
+    let rotl_node = scene
         .add_unary_operator_node(
             Point::new(col2 + 85.0, MID_Y),
-            UnaryOperator::RotateRight(1),
+            UnaryOperator::RotateLeft(1),
             next_node,
             hex(rotated),
         )
         .map_err(stringify)?;
     let xor_node = scene
-        .add_binary_operator_node(Point::new(col1, MID_Y), BinaryOperator::Xor, (prev_node, rotr_node), hex(d_n))
+        .add_binary_operator_node(Point::new(col1, MID_Y), BinaryOperator::Xor, (prev_node, rotl_node), hex(d_n))
         .map_err(stringify)?;
 
     let output = scene
