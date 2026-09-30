@@ -364,7 +364,7 @@ figure {
    `demo-app/src/theta/xor_loop.rs`'s own `build_scene` if this box's real content shape changes again. */
 .theta-xorloop-child {
     height: auto;
-    aspect-ratio: 1400 / 750;
+    aspect-ratio: 1400 / 780;
 }
 
 /* The nested Scene's own close control, in place of an external "Exit" button: a small circular &times;
