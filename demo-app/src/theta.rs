@@ -152,7 +152,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     row_top += (row_gap / 2.0) + row_height;
 
     let xor_loop = parent
-        .add_node(Point::new(a_rect.origin.x + (a_rect.size.width / 2.0) - 45.0, row_top), fn_size, "XOR loop")
+        .add_node(
+            Point::new(a_rect.origin.x + (a_rect.size.width / 2.0) - 45.0, row_top),
+            fn_size,
+            "XOR loop",
+        )
         .map_err(stringify)?;
     row_top += (row_gap / 2.0) + fn_height;
 
