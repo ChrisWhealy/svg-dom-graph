@@ -13,7 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Allow connectors to anchor to specified node edges. Allow node dimensions to be measured (`56be91c`)
 - Allow a `Scene` to have a `SceneTitle` (`c49a549`)
 - Implement Theta subfunctions for nested scene demo (`230cf83`)
-- Add missing fields to all `Cargo.toml` files (``)
+- Add missing fields to all `Cargo.toml` files (`5ea0dc2`)
+
+## Changed
+
+- Update README screen shot (``)
 
 # [Released]
 
