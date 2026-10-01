@@ -13,6 +13,9 @@
 //!   `set_edge_anchors`.
 //! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
 //!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
+//! - [`move_node`] — `Scene::move_node`: moving a node and rerouting its edges exactly as a drag does, `UnknownNode`/
+//!   `InvalidNodeGeometry` rejection, and the motivating case — centring an operator node under a wider data node
+//!   using its own measured size, with already-auto-wired input edges rerouted to the new position.
 //! - [`scene_title`] — `Scene::show_scene_title`/`hide_scene_title`: drawn attributes, default bold/underlined
 //!   styling, edge placement, replacing an existing title, and option validation.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
@@ -34,7 +37,7 @@
 //!   keyboard, disabled-button no-ops, `on_step` reentering the same `Scene`, and the callback's own lifetime once
 //!   the toolbar is hidden.
 //!
-//! All fourteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
+//! All fifteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
 mod common;
 
@@ -44,6 +47,7 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod move_node;
 mod node_rect;
 mod operator_node;
 mod relationships;

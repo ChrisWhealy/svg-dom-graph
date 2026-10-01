@@ -19,7 +19,7 @@ use super::Scene;
 use crate::{error::Error, model::node::NodeId};
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
-use svg_dom::root::utils::Rect;
+use svg_dom::root::utils::{Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. `None` and every
@@ -153,6 +153,63 @@ impl Scene {
     /// different `Scene`.
     pub fn node_rect(&self, id: NodeId) -> Result<Rect, Error> {
         self.inner.borrow().node_rect(id)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Moves node `id` to `top_left`, keeping its own current size, and redraws every incident connector to match.
+    /// The same functionality is used here as [`Scene::make_draggable`](crate::scene::Scene::make_draggable) already
+    /// performs for every dragged frame. The differences however are these:
+    /// * the logic is driven programmatically instead of by a pointer gesture
+    /// * none of [`DragOptions`](crate::scene::DragOptions)'s bounds-clamping or collision handling is performed
+    /// 
+    /// The node is always moved to exactly the position given.
+    ///
+    /// This function pairs with [`Scene::node_rect`] where you first add a node at some placeholder position, then
+    /// read back its rendered size. Then you can compute where it actually belongs — for instance, centred under
+    /// some other node whose width is based on dynamic content and cannot therefore be known in advance.
+    ///
+    /// Any edge already wired to `id` at its own placeholder position (e.g. an operator node's own auto-wired inputs)
+    /// is redrawn against the new position too: a connector's own side is re-resolved from the node's current rect on
+    /// every redraw, not cached from whichever position was current when the edge was first drawn. This uses the same
+    /// ray-cast calculation as a live drag does on every frame.
+    ///
+    /// `id`'s own current position already equal to `top_left` is a no-op: nothing is redrawn.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    ///
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Also returned — despite `id`
+    /// naming a node whose size this call never changes — if that node's own current size is somehow not finite or not
+    /// strictly positive, the same defensive check every other entry point accepting node geometry in this crate
+    /// already applies; a node that was ever successfully added can't actually be in that state, but this does not rely
+    /// on that remaining true forever. Checked before touching the scene, so a rejected call leaves the node exactly as
+    /// it was.
+    ///
+    /// Also returns a wrapped [`Error::Svg`] if redrawing an incident connector fails partway through — the same "can
+    /// leave some incident connectors already redrawn and others not" property [`Scene::set_edge_anchors`]'s own doc
+    /// comment already describes, for the same reason.
+    pub fn move_node(&self, id: NodeId, top_left: Point) -> Result<(), Error> {
+        let size = self.inner.borrow().node_rect(id)?.size;
+        let rect = Rect { origin: top_left, size };
+        if !top_left.x.is_finite()
+            || !top_left.y.is_finite()
+            || !size.width.is_finite()
+            || !size.height.is_finite()
+            || size.width <= 0.0
+            || size.height <= 0.0
+        {
+            return Err(Error::InvalidNodeGeometry(rect));
+        }
+
+        let mut inner = self.inner.borrow_mut();
+        // Taken out for the call so `redraw_edge`/`redraw_binary_operator_inputs` can freely borrow the rest of
+        // `inner` on every iteration, then put back — see `SceneInner::scratch`'s own doc comment for why this,
+        // rather than a fresh `String` per call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let result = inner.move_node(id, top_left, &mut scratch);
+        inner.scratch = scratch;
+        result
     }
 }
 
