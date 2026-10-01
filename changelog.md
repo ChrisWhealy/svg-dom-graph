@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add a `move_node` function to `Scene` to reposition an existing node (``)
+- Add a `move_node` function to `Scene` to reposition an existing node (`a770df3`)
 
 # [Released]
 

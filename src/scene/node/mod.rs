@@ -161,7 +161,7 @@ impl Scene {
     /// performs for every dragged frame. The differences however are these:
     /// * the logic is driven programmatically instead of by a pointer gesture
     /// * none of [`DragOptions`](crate::scene::DragOptions)'s bounds-clamping or collision handling is performed
-    /// 
+    ///
     /// The node is always moved to exactly the position given.
     ///
     /// This function pairs with [`Scene::node_rect`] where you first add a node at some placeholder position, then
