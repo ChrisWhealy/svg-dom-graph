@@ -6,7 +6,7 @@
 
 use super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
-    NodeOptions, OUTER_PADDING, render_guard::RenderGuard, validate_edge_anchors,
+    NodeOptions, OUTER_PADDING, render_guard::RenderGuard, validate_data_content, validate_edge_anchors,
 };
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, SELECTION_BAND, SELECTION_FOCUS, TEXT_FILL},
@@ -136,6 +136,17 @@ fn cell_style(
 /// for why a connector must never land on an inset inner box. `name` is `None` for every plain (unnamed) data
 /// node, which renders exactly as before this parameter existed: no label row, no further outer box, the content
 /// box itself starting flush at local `(0, 0)`.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::EmptyNodeName`] if `name` is empty or holds only whitespace — see that variant's own doc
+/// comment for why a blank name is rejected outright, rather than merely drawing an oddly-worded label. Shared by
+/// every path that draws a named data node — construction and measurement alike.
+fn validate_node_name(name: &str) -> Result<(), Error> {
+    if name.trim().is_empty() {
+        return Err(Error::EmptyNodeName);
+    }
+    Ok(())
+}
+
 pub(super) fn draw_content_box(
     svg: &SvgRoot,
     scratch: &mut String,
@@ -484,6 +495,65 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The `Size` at which an unnamed data node showing `content` would render in *this* `Scene`. This is exactly what
+    /// [`add_data_node`](Self::add_data_node) followed by [`Scene::node_rect`] on the result would report, without
+    /// ever adding `content` to the graph to find out.
+    ///
+    /// To ensure that the same styling context is used, the node is drawn into this `Scene`'s own `SvgRoot`, then the
+    /// result is measured, and the node is removed again before returning.
+    ///
+    /// Nothing about this call is visible, selectable or reachable by assistive technology: no [`NodeId`] is returned
+    /// because nothing persists to address afterward, no graph node is created, no node handle is registered, and no
+    /// edge or accessibility/navigation state is touched.
+    ///
+    /// This is most useful for sizing content that cannot be known until runtime. Character count is not equivalent to
+    /// rendered width in general, so this always performs a real measurement rather than attempting a best guess.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptyNodeContent`] if `content` holds no values, or [`Error::InvalidGridLayout`] if its own
+    /// [`GridLayout`](crate::scene::GridLayout) wraps `0` — the identical validation
+    /// [`add_data_node`](Self::add_data_node) already applies, not a second copy of it.
+    pub fn measure_data_node(&self, content: &DataNodeContent) -> Result<Size, Error> {
+        self.measure_data_node_impl(None, content)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The named-node counterpart to [`measure_data_node`](Self::measure_data_node) — `name`'s own label row is
+    /// included in the measured size. See that method's own doc comment for everything else.
+    ///
+    /// # Errors
+    ///
+    /// As [`measure_data_node`](Self::measure_data_node), plus [`Error::EmptyNodeName`] if `name` is empty or
+    /// holds only whitespace — the same rejection [`add_named_data_node`](Self::add_named_data_node) already
+    /// applies.
+    pub fn measure_named_data_node(&self, name: &str, content: &DataNodeContent) -> Result<Size, Error> {
+        self.measure_data_node_impl(Some(name), content)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Shared implementation behind [`measure_data_node`](Self::measure_data_node) and
+    /// [`measure_named_data_node`](Self::measure_named_data_node) — the measurement counterpart to
+    /// [`add_data_node_with_impl`](Self::add_data_node_with_impl): the same drawing call, stopped before
+    /// `inner.attach`/`inner.graph.add_node`/`inner.insert_node_handle` ever run, with the drawn group removed
+    /// again instead.
+    fn measure_data_node_impl(&self, name: Option<&str>, content: &DataNodeContent) -> Result<Size, Error> {
+        if let Some(name) = name {
+            validate_node_name(name)?;
+        }
+        validate_data_content(content)?;
+
+        let mut inner = self.inner.borrow_mut();
+        // See `add_data_node_with_impl`'s own matching comment for why `scratch` is taken out for the call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let result = draw_content_box(&inner.svg, &mut scratch, Point::origin(), name, content, None);
+        inner.scratch = scratch;
+        let (handles, rect) = result?;
+        handles.group.remove();
+        Ok(rect.size)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shared implementation behind [`add_data_node_with`](Self::add_data_node_with) and
     /// [`add_named_data_node_with`](Self::add_named_data_node_with) — every check, and the rendered box itself
     /// (modulo `name`'s own outer wrapper), is identical between a plain and a named data node.
@@ -497,16 +567,10 @@ impl Scene {
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
         validate_edge_anchors(options.edge_anchors)?;
-        if name.is_some_and(|name| name.trim().is_empty()) {
-            return Err(Error::EmptyNodeName);
+        if let Some(name) = name {
+            validate_node_name(name)?;
         }
-
-        if content.len() == 0 {
-            return Err(Error::EmptyNodeContent);
-        }
-        if !content.layout().is_valid() {
-            return Err(Error::InvalidGridLayout(content.layout()));
-        }
+        validate_data_content(&content)?;
         if !top_left.x.is_finite() || !top_left.y.is_finite() {
             return Err(Error::InvalidNodeGeometry(Rect {
                 origin: top_left,

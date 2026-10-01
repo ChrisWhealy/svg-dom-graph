@@ -11,7 +11,7 @@
 use super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
     NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, render_guard::RenderGuard,
-    validate_edge_anchors,
+    validate_data_content, validate_edge_anchors,
 };
 use crate::{
     colours::{BOX_STROKE, CONNECTOR_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
@@ -41,15 +41,11 @@ fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error>
 }
 
 /// Returns [`Error::EmptyNodeContent`]/[`Error::InvalidGridLayout`] under the same conditions
-/// [`Scene::add_data_node_with`] already rejects `content` for, plus [`Error::OperatorResultNotSingleValue`] if
-/// `result` holds anything other than exactly one value — an operator always produces one value, never a grid.
+/// [`Scene::add_data_node_with`] already rejects `content` for — via the same shared `validate_data_content`, not
+/// a second copy of its checks — plus [`Error::OperatorResultNotSingleValue`] if `result` holds anything other
+/// than exactly one value — an operator always produces one value, never a grid.
 fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
-    if result.len() == 0 {
-        return Err(Error::EmptyNodeContent);
-    }
-    if !result.layout().is_valid() {
-        return Err(Error::InvalidGridLayout(result.layout()));
-    }
+    validate_data_content(result)?;
     if result.len() != 1 {
         return Err(Error::OperatorResultNotSingleValue(result.len()));
     }
@@ -221,6 +217,41 @@ fn draw_port_marker(svg: &SvgRoot, anchor: Point, side: Side, glyph: &str, aria_
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
+    /// The `Size` an operator node labelled `label`, showing `result`, would render at in *this* `Scene` — the
+    /// same box shape [`add_unary_operator_node`](Self::add_unary_operator_node)/
+    /// [`add_binary_operator_node`](Self::add_binary_operator_node)/
+    /// [`add_arithmetic_operator_node`](Self::add_arithmetic_operator_node) all draw.
+    ///
+    /// Takes no operand ids, unlike those, and deliberately does not: an operator node's own box size depends only
+    /// on its own label and `result`'s own formatted text, never on which nodes feed it, so nothing here needs
+    /// real, already-added operands to measure against. Named `measure_operator_box`, not `measure_operator_node`,
+    /// for exactly that reason — it does not construct an operator graph node, only the box.
+    ///
+    /// Draws into this `Scene`'s own `SvgRoot`, measures the result, and removes it again before returning —
+    /// nothing about this call is visible, selectable, or reachable by assistive technology, and no [`NodeId`] is
+    /// returned because nothing persists to address afterward. See
+    /// [`Scene::measure_data_node`](Self::measure_data_node)'s own doc comment for the full reasoning this shares.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::EmptyNodeContent`]/[`Error::InvalidGridLayout`] under the same conditions
+    /// [`add_binary_operator_node`](Self::add_binary_operator_node) already rejects `result` for, or
+    /// [`Error::OperatorResultNotSingleValue`] if `result` holds more than one value — the same constraint a real
+    /// operator node's own `result` is already held to, via the same shared `validate_operator_result`.
+    pub fn measure_operator_box(&self, label: &str, result: &DataNodeContent) -> Result<Size, Error> {
+        validate_operator_result(result)?;
+
+        let mut inner = self.inner.borrow_mut();
+        // See `add_unary_operator_node_with`'s own matching comment for why `scratch` is taken out for the call.
+        let mut scratch = std::mem::take(&mut inner.scratch);
+        let draw_result = draw_operator_box(&inner.svg, &mut scratch, Point::origin(), label, result, None);
+        inner.scratch = scratch;
+        let (handles, rect) = draw_result?;
+        handles.group.remove();
+        Ok(rect.size)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a unary operator node to the graph — labelled with `operator`, showing `result`'s own single value, and
     /// wired with an incoming edge from `input` — and returns its id.
     ///

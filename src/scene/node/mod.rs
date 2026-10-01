@@ -16,7 +16,7 @@ mod plain;
 mod render_guard;
 
 use super::Scene;
-use crate::{error::Error, model::node::NodeId};
+use crate::{error::Error, model::node::NodeId, scene::DataNodeContent};
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
 use svg_dom::root::utils::{Point, Rect};
@@ -29,6 +29,22 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
         Some(EdgeAnchors(0)) => Err(Error::InvalidEdgeAnchors(0)),
         _ => Ok(()),
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::EmptyNodeContent`] if `content` holds no values, or [`Error::InvalidGridLayout`] if its own
+/// grid layout wraps `0`. Shared by every path that draws a `DataNodeContent` grid — a data node's own
+/// construction, a `measure_data_node`/`measure_named_data_node` call, and an operator node's own `result` (via
+/// `validate_operator_result`) — so content validity can never drift between drawing a real node and merely
+/// measuring what one would look like.
+fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
+    if content.len() == 0 {
+        return Err(Error::EmptyNodeContent);
+    }
+    if !content.layout().is_valid() {
+        return Err(Error::InvalidGridLayout(content.layout()));
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
