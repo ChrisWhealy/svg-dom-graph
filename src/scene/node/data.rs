@@ -502,9 +502,12 @@ impl Scene {
     /// To ensure that the same styling context is used, the node is drawn into this `Scene`'s own `SvgRoot`, then the
     /// result is measured, and the node is removed again before returning.
     ///
-    /// Nothing about this call is visible, selectable or reachable by assistive technology: no [`NodeId`] is returned
-    /// because nothing persists to address afterward, no graph node is created, no node handle is registered, and no
-    /// edge or accessibility/navigation state is touched.
+    /// Structurally, nothing about this call persists: no [`NodeId`] is returned because nothing remains to address
+    /// afterward, no graph node is created, no node handle is registered, and no edge or accessibility/navigation
+    /// state is touched. The drawn content itself exists only for the instant between `draw_content_box` returning
+    /// and this function removing it again — in practice never visible, selectable, or reachable by assistive
+    /// technology, though that stronger claim about transient browser behaviour is not itself something a test here
+    /// establishes, only the structural absence above.
     ///
     /// This is most useful for sizing content that cannot be known until runtime. Character count is not equivalent to
     /// rendered width in general, so this always performs a real measurement rather than attempting a best guess.

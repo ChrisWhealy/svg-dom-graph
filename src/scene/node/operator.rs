@@ -228,9 +228,10 @@ impl Scene {
     /// for exactly that reason — it does not construct an operator graph node, only the box.
     ///
     /// Draws into this `Scene`'s own `SvgRoot`, measures the result, and removes it again before returning —
-    /// nothing about this call is visible, selectable, or reachable by assistive technology, and no [`NodeId`] is
-    /// returned because nothing persists to address afterward. See
-    /// [`Scene::measure_data_node`](Self::measure_data_node)'s own doc comment for the full reasoning this shares.
+    /// structurally, nothing about this call persists: no [`NodeId`] is returned because nothing remains to
+    /// address afterward. See [`Scene::measure_data_node`](Self::measure_data_node)'s own doc comment for the full
+    /// reasoning this shares, including why a stronger "never visible to assistive technology" claim is
+    /// deliberately not made here.
     ///
     /// # Errors
     ///
