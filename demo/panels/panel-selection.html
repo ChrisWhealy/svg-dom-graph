@@ -15,16 +15,20 @@
     <p class="controls">
         <span>Selected index: <output id="selection-1d-index">not started</output></span>
     </p>
+    <!-- width/height/viewBox below are placeholders only, just so this <svg> has a sensible size before its own
+         script runs. `selection::fit_canvas_to_toolbar` overwrites all three, from the array's own real rendered
+         size plus its toolbar, every time this panel builds — see that function's own doc comment. -->
     <div class="canvas">
-        <svg id="selection-1d-diagram" width="400" height="150" viewBox="0 0 400 150"
+        <svg id="selection-1d-diagram" width="400" height="120" viewBox="0 0 400 120"
             xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     <h3>Two-dimensional array</h3>
     <p class="controls">
         <span>Selected: <output id="selection-2d-index">not started</output></span>
     </p>
+    <!-- Same placeholder reasoning as the one-dimensional canvas above. -->
     <div class="canvas">
-        <svg id="selection-2d-diagram" width="400" height="220" viewBox="0 0 400 220"
+        <svg id="selection-2d-diagram" width="400" height="200" viewBox="0 0 400 200"
             xmlns="http://www.w3.org/2000/svg"></svg>
     </div>
     <h3>Operator chain over an array (SHA3's <code>ThetaC</code>) Function</h3>

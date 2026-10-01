@@ -83,3 +83,36 @@ pub(crate) fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
         size: Size::new(width, height),
     })
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Sizes `#id`'s own `<svg>` to `size`, at the same 1-user-unit-per-pixel scale every canvas in this crate already
+/// uses: `width`/`height` (the on-page pixel footprint) and `viewBox` (the internal coordinate system) are set
+/// together, to the same numbers, rather than letting either one imply a different scale than the other.
+///
+/// Written directly to the DOM via `web_sys`, not through `SvgRoot`/`Scene`: by the time a panel knows a diagram's
+/// own real content size — after drawing it, or after [`Scene::measure_named_data_node`](svg_dom_graph::scene::Scene::measure_named_data_node)
+/// measures it — `Scene::new` has already taken ownership of the `SvgRoot` that could resize it, and neither
+/// `Scene` nor `svg-dom-graph` hands that access back. This is the write-side counterpart to [`view_box_rect`]'s
+/// own read-side reasoning: `viewBox` is already something this crate reaches for directly on the DOM, because
+/// `SvgRoot` deliberately does not cache it either way.
+///
+/// Safe to call after a `Scene` is already showing content: `svg-dom-graph`'s own internal toolbar/zoom layout
+/// (`visible_area`) reads `viewBox` fresh from the DOM on every layout pass, not from any cache of its own, so a
+/// plain attribute write here is picked up immediately — nothing is left stale for a panel with no drag bounds to
+/// desync (a panel that *does* bound dragging to its own viewBox, via `DragOptions::bounds`/[`view_box_rect`],
+/// would need to recompute those bounds after calling this, since `view_box_rect` itself reads the same attribute
+/// fresh each time rather than caching it).
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#id`, or a DOM write fails.
+pub(crate) fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> Result<(), String> {
+    let svg = required_element(document, id)?;
+    let (width, height) = (size.width, size.height);
+    svg.set_attribute("width", &width.to_string())
+        .map_err(|e| format!("could not set #{id}'s own width: {e:?}"))?;
+    svg.set_attribute("height", &height.to_string())
+        .map_err(|e| format!("could not set #{id}'s own height: {e:?}"))?;
+    svg.set_attribute("viewBox", &format!("0 0 {width} {height}"))
+        .map_err(|e| format!("could not set #{id}'s own viewBox: {e:?}"))
+}

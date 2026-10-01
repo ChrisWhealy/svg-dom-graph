@@ -2,9 +2,9 @@
 //! examples, each stepping through an array's values via its own in-canvas [`Scene::show_selection_toolbar`] bar —
 //! no external HTML buttons. See [`build_selection_demo`]'s own doc comment for what each demonstrates.
 
-use crate::util::{required_element, stringify};
+use crate::util::{required_element, resize_svg, stringify};
 use std::{cell::RefCell, rc::Rc};
-use svg_dom::root::utils::Point;
+use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, SelectionToolbarOptions},
@@ -142,11 +142,14 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let one_d_svg = svg_dom::SvgRoot::attach("selection-1d-diagram").map_err(stringify)?;
     let one_d_scene = Scene::new(one_d_svg).map_err(stringify)?;
     let one_d_node = one_d_scene
-        .add_data_node(
+        .add_named_data_node(
             Point::new(20.0, 20.0),
+            "Some array",
             DataNodeContent::new(NodeValues::U8(one_d_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
+    let one_d_rect = one_d_scene.node_rect(one_d_node).map_err(stringify)?;
+    fit_canvas_to_toolbar(&document, "selection-1d-diagram", one_d_rect)?;
 
     // Ten values over four columns: a 3×4 shape with the last row short by two cells.
     // See this function's own doc comment (point 3) — a deliberately ragged grid, not the coincidentally-exact
@@ -155,12 +158,15 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let two_d_svg = svg_dom::SvgRoot::attach("selection-2d-diagram").map_err(stringify)?;
     let two_d_scene = Scene::new(two_d_svg).map_err(stringify)?;
     let two_d_node = two_d_scene
-        .add_data_node(
+        .add_named_data_node(
             Point::new(20.0, 20.0),
+            "Some other array",
             DataNodeContent::new(NodeValues::U8(two_d_values), DataFormat::Decimal)
                 .with_layout(GridLayout::Columns(SELECTION_TWO_D_COLS)),
         )
         .map_err(stringify)?;
+    let two_d_rect = two_d_scene.node_rect(two_d_node).map_err(stringify)?;
+    fit_canvas_to_toolbar(&document, "selection-2d-diagram", two_d_rect)?;
 
     // Keeps both Scenes' only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some((one_d_scene.clone(), two_d_scene.clone())));
@@ -172,6 +178,34 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let outputs = theta_c_outputs();
     let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs }));
     rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
+}
+
+/// The clear space left between an array's own bottom edge and the selection toolbar drawn below it — a chosen
+/// visual gap, not a measured one, the same way `V_GAP`-style constants elsewhere in this crate's own diagrams are.
+const TOOLBAR_GAP: f64 = 20.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Resizes `id`'s own `<svg>` — via [`resize_svg`] — to exactly fit `content_rect` plus a default
+/// [`SelectionToolbarOptions`] bar below it, with [`TOOLBAR_GAP`] clear between the two.
+///
+/// `content_rect` is `node_rect`'s own real, already-drawn size, not an estimate: unlike
+/// [`crate::theta::xor_loop`]'s own `measure_named_data_node` calls, which need a box's size *before* deciding
+/// where else to draw relative to it, this canvas's own size depends on nothing drawn after the array itself, so
+/// there is nothing to gain from measuring ahead of drawing it for real.
+///
+/// Doing this from Rust, rather than hand-editing `index.html`'s own `viewBox` to match, is exactly the point: a
+/// name added or removed from the array (changing its own rendered height) no longer needs a matching manual edit
+/// to the canvas's own size anywhere else — this recomputes it from whatever the array actually rendered at.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#id`, or a DOM write fails.
+fn fit_canvas_to_toolbar(document: &web_sys::Document, id: &str, content_rect: Rect) -> Result<(), String> {
+    let toolbar = SelectionToolbarOptions::default();
+    let width = 2.0 * content_rect.origin.x + content_rect.size.width;
+    let height =
+        content_rect.origin.y + content_rect.size.height + TOOLBAR_GAP + toolbar.margin + toolbar.button_height;
+    resize_svg(document, id, Size::new(width, height))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
