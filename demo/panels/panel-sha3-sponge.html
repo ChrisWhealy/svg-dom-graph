@@ -1,0 +1,29 @@
+<section class="section" id="panel-sha3-sponge">
+    <h2>SHA3 Sponge</h2>
+    <p>SHA3 is built on the "sponge" construction. A fixed-size internal state, split into a "Capacity" and a
+        "Rate", absorbs input data a block at a time, each block <code>XOR</code>ed into the Rate before the whole
+        state is permuted by <code>Keccak-f[1600]</code>. This is a drop-in replacement for the SHA2 family, built
+        on a different, provably secure foundation rather than SHA2's own Merkle&ndash;Damg&aring;rd design.
+    </p>
+    <p>This first diagram shows a single 64-byte input block passing through one call to
+        <code>Keccak-f[1600]</code>. "Keccak f(1600)" is drawn as a plain box for now, not yet a container node.
+        Drilling into a real nested <code>Scene</code> for the permutation itself is a later step, and so are
+        processing more than one input block and SHA3's Extendible Output Function (XOF) mode.
+    </p>
+    <p>Row 1's own "Capacity" and "Rate" start all-zero, the sponge's own real state before any input is absorbed.
+        "Input block" holds one real 64-byte input, not a placeholder. "Keccak f(1600)" does not yet compute
+        anything, so row 3's own "Capacity"/"Rate" are still fixed placeholders, not real outputs of row 1's own
+        values. "XOR" is the one real computation this diagram performs, once it runs: its own content is the true
+        elementwise XOR of "Rate" and "Input block", computed in plain Rust.
+    </p>
+    <p>Press "Next"/"Previous"/"Restart" below the diagram to walk the five stages of one
+        <code>Keccak-f[1600]</code> call, moving a focus ring from "Input block"/"Rate", to "XOR", to "Keccak
+        f(1600)", to the output "Capacity"/"Rate", and finally to "Output Hash". "XOR" shows all-zero lanes, the
+        same "not yet written" look row 3 already uses, until the walk actually reaches it — only then does it
+        show its own real result.
+    </p>
+    <div class="canvas">
+        <svg id="sha3-sponge-diagram" width="1920" height="950" viewBox="0 0 1920 950"
+            xmlns="http://www.w3.org/2000/svg"></svg>
+    </div>
+</section>

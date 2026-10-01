@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.24] - 2026-10-02
+
+## Added
+
+- Start demo implementation of the SHA3 Sponge function. Add `Scene::set_focus` to toggle node highlight (``)
+
 # [Released]
 
 ## [0.2.23] - 2026-10-01

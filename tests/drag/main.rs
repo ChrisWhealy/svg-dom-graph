@@ -19,6 +19,8 @@
 //! - [`measure`] — `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`: equality against
 //!   the real rendered size from the equivalent `add_*` + `node_rect`, for plain/grid/named data nodes and every
 //!   operator kind, plus no residual DOM, no accumulation over repeated calls, and matching error classes.
+//! - [`focus`] — `Scene::set_focus`: ringing a whole node's own outer box on a plain node, an operator node, and
+//!   a named data node alike, more than one focused node at once, and `UnknownNode` rejection.
 //! - [`scene_title`] — `Scene::show_scene_title`/`hide_scene_title`: drawn attributes, default bold/underlined
 //!   styling, edge placement, replacing an existing title, and option validation.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being
@@ -50,6 +52,7 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod focus;
 mod measure;
 mod move_node;
 mod node_rect;

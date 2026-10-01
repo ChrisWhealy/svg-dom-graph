@@ -4,7 +4,7 @@
 //! [`data`] a [`DataNodeContent`] grid, and [`operator`] a unary/binary/arithmetic operator node.
 //!
 //! This file keeps only what more than one of them shares: [`EdgeAnchors`] validation, shared style constants, and
-//! [`Scene::set_edge_anchors`], which applies to any node kind.
+//! [`Scene::set_edge_anchors`]/[`Scene::set_focus`], each of which applies to any node kind.
 
 mod construction_guard;
 mod container;
@@ -16,7 +16,12 @@ mod plain;
 mod render_guard;
 
 use super::Scene;
-use crate::{error::Error, model::node::NodeId, scene::DataNodeContent};
+use crate::{
+    colours::{BOX_STROKE, FOCUS_RING},
+    error::Error,
+    model::node::NodeId,
+    scene::DataNodeContent,
+};
 pub use edge_anchors::EdgeAnchors;
 pub use node_options::NodeOptions;
 use svg_dom::root::utils::{Point, Rect};
@@ -85,6 +90,15 @@ const OUTER_PADDING: f64 = 10.0;
 /// [`LABEL_FONT_SIZE`], the same [`CELL_HEIGHT`] approach applied at [`LABEL_FONT_SIZE`] rather than
 /// [`GRID_FONT_SIZE`]. Shared by [`operator`]'s own operator-name row and [`data`]'s own optional variable-name row.
 const LABEL_ROW_HEIGHT: f64 = LABEL_FONT_SIZE * 1.4 + 2.0 * CELL_PADDING;
+
+/// Every node kind's own outer box stroke width at rest — matches `plain`/`data`/`operator`'s own `draw_*`
+/// functions, each of which sets this directly rather than reading it from here. Kept here too only so
+/// [`Scene::set_focus`] has the exact value to restore, rather than a second, independently chosen one.
+const OUTER_BOX_STROKE_WIDTH: f64 = 1.5;
+
+/// [`Scene::set_focus`]'s own outer box stroke width once focused — thicker than [`OUTER_BOX_STROKE_WIDTH`], the
+/// same relationship [`super::selection_toolbar`]'s own focus ring already has to its own resting stroke.
+const FOCUS_RING_STROKE_WIDTH: f64 = 3.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
@@ -226,6 +240,41 @@ impl Scene {
         let result = inner.move_node(id, top_left, &mut scratch);
         inner.scratch = scratch;
         result
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Rings or un-rings node `id`'s own outer box as a whole, with the same focus-ring stroke this crate's own
+    /// toolbar buttons already use. Unlike [`Scene::set_selection`](crate::scene::Scene::set_selection), this
+    /// works on any node kind — a plain node, a container node, or a data node — since it never looks at a node's
+    /// own cells, only the one outer box every kind draws.
+    ///
+    /// A host driving its own multi-node walk — stepping through a diagram's own stages, say, rather than one
+    /// node's own values — uses this to mark whichever nodes the current stage puts in focus, and clears it from
+    /// whichever it moves away from. There is no single-node "current stage" this crate tracks on a host's behalf;
+    /// unlike [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)'s own managed
+    /// `Selection`, calling this twice with `focused: true` for two different nodes focuses both at once.
+    ///
+    /// `focused: false` always restores the plain default stroke, not whatever this node's own stroke was before
+    /// its last `focused: true` call. For a single-value data node, that default is also what
+    /// [`Scene::set_selection`](crate::scene::Scene::set_selection) itself restores a deselected cell to — the two
+    /// features agree on an unfocused/unselected node's own resting look, but neither coordinates with the other's
+    /// own writes to the same `<rect>`. A host that calls both on the same node is responsible for not fighting
+    /// itself over which one writes last.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    pub fn set_focus(&self, id: NodeId, focused: bool) -> Result<(), Error> {
+        let inner = self.inner.borrow();
+        let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
+        if focused {
+            handles.outer_rect.set_stroke(FOCUS_RING)?;
+            handles.outer_rect.set_stroke_width(FOCUS_RING_STROKE_WIDTH)?;
+        } else {
+            handles.outer_rect.set_stroke(BOX_STROKE)?;
+            handles.outer_rect.set_stroke_width(OUTER_BOX_STROKE_WIDTH)?;
+        }
+        Ok(())
     }
 }
 

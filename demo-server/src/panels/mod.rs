@@ -44,6 +44,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-operators-chained", "Chained operators"),
     ("panel-selection", "Cell selection"),
     ("panel-theta", "Nested Scenes (SHA3 Theta)"),
+    ("panel-sha3-sponge", "SHA3 Sponge"),
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

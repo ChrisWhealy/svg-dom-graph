@@ -38,6 +38,9 @@
 //!   whose `ThetaC` node is a genuine container node, owning the same `ThetaC` chain the Cell Selection demo
 //!   already draws as its own nested `Scene` — entered and exited via "Enter ThetaC"/"Exit". `ThetaD` and the
 //!   final `XOR` loop are still plain placeholder boxes; see that function's own doc comment for why.
+//! - `panel-sha3-sponge` / `#sha3-sponge-diagram` — [`sha3_sponge::build_sha3_sponge_demo`]: SHA3's own sponge
+//!   construction, top-level view only — "Keccak f(1600)" is a plain placeholder box, not yet a container node.
+//!   See that function's own doc comment for exactly what is, and is not, drawn yet.
 //!
 //! Each feature this crate gains should keep this pattern: land it in a module of its own, add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
@@ -55,6 +58,7 @@ mod operators_binary;
 mod operators_chained;
 mod operators_unary;
 mod selection;
+mod sha3_sponge;
 mod source_frame;
 mod theta;
 mod tree;
@@ -106,6 +110,7 @@ demo_gallery! {
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
     "panel-theta" => theta::build_theta_demo,
+    "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

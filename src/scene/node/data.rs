@@ -204,8 +204,10 @@ pub(super) fn draw_content_box(
 
     // `content_origin` is where the content box drawn below sits, local to `group` — `(0, 0)` exactly as before
     // this parameter existed, unless `name` wraps it in a further named outer box, in which case it is inset and
-    // centred under that outer box's own label row instead.
-    let (content_origin, size) = if let Some(name) = name {
+    // centred under that outer box's own label row instead. `named_outer_rect` is that wrapping box's own `<rect>`
+    // — `Some` only when `name` draws one — read back below once `rect_el` is in scope too, to decide
+    // `BoxHandles::outer_rect`: the named wrapper when there is one, `rect_el` itself otherwise.
+    let (content_origin, size, named_outer_rect) = if let Some(name) = name {
         let label_el = svg.text(origin, name)?;
         guard.track(label_el.clone());
         label_el.set_text_anchor(TextAnchor::Middle)?;
@@ -234,9 +236,13 @@ pub(super) fn draw_content_box(
         group.append(&label_el)?;
         guard.release();
 
-        (Point::new((box_width - content_size.width) / 2.0, LABEL_ROW_HEIGHT), box_size)
+        (
+            Point::new((box_width - content_size.width) / 2.0, LABEL_ROW_HEIGHT),
+            box_size,
+            Some(outer_el),
+        )
     } else {
-        (origin, content_size)
+        (origin, content_size, None)
     };
     let rect = Rect { origin: top_left, size };
 
@@ -247,6 +253,7 @@ pub(super) fn draw_content_box(
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
     guard.release();
+    let outer_rect = named_outer_rect.unwrap_or_else(|| rect_el.clone());
 
     // Streamed rendering pass — see this function's own doc comment. `text_scratch` is reused for every cell's own
     // formatted text.
@@ -380,6 +387,7 @@ pub(super) fn draw_content_box(
             edge_anchors,
             binary_operator_inputs: None,
             binary_operator_input_edges: None,
+            outer_rect,
             cell_rects,
             cell_stroke_width: if single_value { "1.5" } else { "1" },
             selection: Selection::None,

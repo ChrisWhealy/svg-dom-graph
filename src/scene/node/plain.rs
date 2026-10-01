@@ -103,6 +103,7 @@ pub(super) fn draw_box(
         edge_anchors,
         binary_operator_inputs: None,
         binary_operator_input_edges: None,
+        outer_rect: rect_el,
         cell_rects: Vec::new(),
         cell_stroke_width: "",
         selection: Selection::None,

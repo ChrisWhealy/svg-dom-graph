@@ -21,6 +21,13 @@ use svg_dom::SvgNode;
 pub(crate) struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
     pub(crate) group: SvgNode,
+    /// This box's own outer `<rect>` — the one element every node kind draws, named label or not, data grid or
+    /// not. For a named data node this is the wrapping box around the label row and the grid together, not the
+    /// grid's own inner background; for every other kind there is only the one rect, so it serves as both.
+    ///
+    /// `Scene::set_focus`'s only reader — a node has exactly one outer box to ring, regardless of how many
+    /// [`cell_rects`](Self::cell_rects) it holds within it.
+    pub(crate) outer_rect: SvgNode,
     /// Whether `Scene::make_draggable`/`Scene::make_draggable_with` has already been called for this node.
     ///
     /// `svg-dom`'s listener registration is append-only, so a second call would add a second, independent set of
