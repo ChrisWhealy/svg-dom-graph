@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.23] - 2026-10-01
 
 ## Added
@@ -17,9 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Allow demo scene `<svg>` to resize to fit their content plus a `SelectionToolbar` (``)
-
-# [Released]
+- Allow demo scene `<svg>` to resize to fit their content plus a `SelectionToolbar` (`43867fc`)
 
 ## [0.2.22] - 2026-09-30
 
