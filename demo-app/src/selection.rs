@@ -1,6 +1,6 @@
 //! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, and `#selection-thetac-diagram`: three
-//! examples, each with its own "Previous"/"Next" buttons stepping through an array's values. See
-//! [`build_selection_demo`]'s own doc comment for what each demonstrates.
+//! examples, each stepping through an array's values via its own in-canvas [`Scene::show_selection_toolbar`] bar —
+//! no external HTML buttons. See [`build_selection_demo`]'s own doc comment for what each demonstrates.
 
 use crate::util::{required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
@@ -9,8 +9,6 @@ use svg_dom_graph::{
     NodeId,
     scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, SelectionToolbarOptions},
 };
-use wasm_bindgen::{JsCast, prelude::*};
-use web_sys::Element;
 
 #[cfg(test)]
 mod unit_tests;
@@ -20,26 +18,13 @@ pub(crate) const SOURCE: &str = include_str!("selection.rs");
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own two, separate `Scene`s — one per
-    // array dimension.
+    // array dimension. Kept alive for the page's own lifetime: `show_selection_toolbar`'s own button listeners hold
+    // only a `Weak` reference back to the `Scene` they step — see its own doc comment ("Ownership").
     static SCENE: RefCell<Option<(Scene, Scene)>> = const { RefCell::new(None) };
 
     // The third example's own canvas has a `Scene` too, replaced by each step's own rebuild — see
     // [`rebuild_theta_c_diagram`]'s own doc comment for why it must be kept.
     static THETA_C_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
-}
-
-/// Live state `wire_selection_controls`' four button listeners share: each array's own `Scene`, node id, current
-/// flat index, and (for the two-dimensional array) column count.
-struct SelectionDemo {
-    one_d_scene: Scene,
-    one_d_node: NodeId,
-    one_d_len: usize,
-    one_d_index: usize,
-    two_d_scene: Scene,
-    two_d_node: NodeId,
-    two_d_cols: usize,
-    two_d_len: usize,
-    two_d_index: usize,
 }
 
 /// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_demo`])
@@ -109,10 +94,11 @@ struct ThetaCDemo {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the cell-selection demo: three examples stepping through an array's values. The first two use hand-wired
-/// HTML "Previous"/"Next" buttons; the third uses [`Scene::show_selection_toolbar`]'s own Prev/Next/Restart bar,
-/// drawn inside the canvas itself — see [`rebuild_theta_c_diagram`]'s own doc comment for why the third example
-/// needs a fresh toolbar, not just a fresh selection, on every step.
+/// Builds the cell-selection demo: three examples stepping through an array's values, each via its own in-canvas
+/// [`Scene::show_selection_toolbar`] bar — Prev, Next, Restart — rather than any external HTML button. The first
+/// two bind the toolbar directly to their own already-drawn array and update nothing else on a step but the
+/// selection and a status line; the third needs a fresh toolbar on every step instead, since its own diagram is
+/// redrawn from scratch each time — see [`rebuild_theta_c_diagram`]'s own doc comment for why.
 ///
 /// Demonstrates [`Selection`]:
 ///
@@ -130,33 +116,29 @@ struct ThetaCDemo {
 ///    `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)`, and writes it to output array `O(n)` — five
 ///    `u64` values folded through four [`BinaryOperator::Xor`] nodes, one operator chain per row. The selection
 ///    toolbar is bound to `O` itself: `O` holds exactly five values, one per row, so its own flat position *is*
-///    `n` — no separate cursor is needed. `n` is clamped to `0..=4`, not wrapped like the first two examples. `A`
-///    sits at the top of the canvas, above the chain it feeds; `O` sits directly below the chain's own final
-///    `XOR` node, so a plain edge from there reaches `O` with nothing else in the way — see
-///    [`rebuild_theta_c_diagram`]'s own doc comment.
-/// 5. The walk starts unstarted — before row `0` is ever processed, `A` has no row highlighted and `O` is entirely
-///    blank. The chain itself is still drawn, over five zero operands, rather than left out entirely — see
-///    [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene)'s own doc comment for why: an absent chain
-///    would read as "this does not exist yet," when what is actually true is "this has not run yet." `O` shows
-///    exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing for `None` — see
-///    [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own current position on
-///    every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one: there is no separate
-///    per-row memory of "has this ever been written" for the two directions to disagree about.
+///    `n` — no separate cursor is needed. `A` sits at the top of the canvas, above the chain it feeds; `O` sits
+///    directly below the chain's own final `XOR` node, so a plain edge from there reaches `O` with nothing else in
+///    the way — see [`rebuild_theta_c_diagram`]'s own doc comment.
+/// 5. All three walks start unstarted — before element `0` is ever processed, nothing is highlighted and (for the
+///    third) `O` is entirely blank. The third example's chain is still drawn, over five zero operands, rather than
+///    left out entirely — see [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene)'s own doc comment
+///    for why: an absent chain would read as "this does not exist yet," when what is actually true is "this has not
+///    run yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing
+///    for `None` — see [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own
+///    current position on every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one.
 ///
-/// Both the first two examples wrap: stepping "Next" past the last value returns to the first, and "Previous" from
-/// the first goes to the last — see [`wire_selection_controls`]'s own `step_one_d`/`step_two_d` helpers. The third
-/// does not: [`Scene::show_selection_toolbar`]'s own Next/Prev clamp at both ends instead.
+/// None of the three wrap: [`Scene::show_selection_toolbar`]'s own Next/Prev clamp at both ends instead — stepping
+/// "Next" past the last value, or "Previous" before the first, simply disables that button rather than cycling
+/// around.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, if `index.html` is missing any of the three canvases this function and
-/// [`wire_selection_controls`]/[`rebuild_theta_c_diagram`] need, or if either cannot wire up its own controls (see
-/// their own `# Errors` sections).
+/// Returns `Err` if any library call fails, or if `index.html` is missing any of the three canvases this function
+/// and [`rebuild_theta_c_diagram`] need (see its own `# Errors` section).
 pub(crate) fn build_selection_demo() -> Result<(), String> {
     let document = crate::util::document()?;
 
     let one_d_values: Vec<u8> = vec![10, 20, 30, 40, 50, 60];
-    let one_d_len = one_d_values.len();
     let one_d_svg = svg_dom::SvgRoot::attach("selection-1d-diagram").map_err(stringify)?;
     let one_d_scene = Scene::new(one_d_svg).map_err(stringify)?;
     let one_d_node = one_d_scene
@@ -170,7 +152,6 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     // See this function's own doc comment (point 3) — a deliberately ragged grid, not the coincidentally-exact
     // fit twelve values would be.
     let two_d_values: Vec<u8> = (1..=10).collect();
-    let two_d_len = two_d_values.len();
     let two_d_svg = svg_dom::SvgRoot::attach("selection-2d-diagram").map_err(stringify)?;
     let two_d_scene = Scene::new(two_d_svg).map_err(stringify)?;
     let two_d_node = two_d_scene
@@ -184,18 +165,8 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     // Keeps both Scenes' only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some((one_d_scene.clone(), two_d_scene.clone())));
 
-    let demo = SelectionDemo {
-        one_d_scene,
-        one_d_node,
-        one_d_len,
-        one_d_index: 0,
-        two_d_scene,
-        two_d_node,
-        two_d_cols: SELECTION_TWO_D_COLS,
-        two_d_len,
-        two_d_index: 0,
-    };
-    wire_selection_controls(document, Rc::new(RefCell::new(demo)))?;
+    show_one_d_toolbar(&document, &one_d_scene, one_d_node)?;
+    show_two_d_toolbar(&document, &two_d_scene, two_d_node)?;
 
     // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
     let outputs = theta_c_outputs();
@@ -204,112 +175,55 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Applies `demo`'s own current `one_d_index` as a [`Selection::Cell`], and shows it in `output`.
-///
-/// Errors from `set_selection` are ignored rather than propagated. `demo.one_d_index` is always kept in
-/// `0..demo.one_d_len` by `step_one_d` below, so this call cannot fail in practice. A live button handler should never
-/// panic or stop responding over a stray, already-impossible error.
-fn apply_one_d_selection(demo: &SelectionDemo, output: &Element) {
-    let _ = demo
-        .one_d_scene
-        .set_selection(demo.one_d_node, Selection::Cell(demo.one_d_index));
-    output.set_text_content(Some(&demo.one_d_index.to_string()));
+/// The text `#selection-1d-index` shows for flat position `to` — the plain index itself, or "not started" for the
+/// unstarted state ([`Scene::show_selection_toolbar`]'s own initial `Selection::None`, before `on_step` has ever
+/// run).
+fn one_d_status(to: Option<usize>) -> String {
+    to.map_or_else(|| "not started".to_string(), |i| i.to_string())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Applies `demo`'s own current `two_d_index` as a [`Selection::Row`] — the row it falls in, banded, and its own column
-/// within that row focused — and shows both in `output`. Same "cannot fail in practice" reasoning as
-/// [`apply_one_d_selection`].
-fn apply_two_d_selection(demo: &SelectionDemo, output: &Element) {
-    let row = demo.two_d_index / demo.two_d_cols;
-    let col = demo.two_d_index % demo.two_d_cols;
-    let _ = demo
-        .two_d_scene
-        .set_selection(demo.two_d_node, Selection::Row { row, col: Some(col) });
-    output.set_text_content(Some(&format!("row {row}, col {col}")));
+/// The two-dimensional counterpart to [`one_d_status`]: `to`'s own row and column within a grid of `cols` columns.
+fn two_d_status(to: Option<usize>, cols: usize) -> String {
+    to.map_or_else(|| "not started".to_string(), |i| format!("row {}, col {}", i / cols, i % cols))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Steps `state`'s own `one_d_index` by `delta` (`1` for "Next", `-1` for "Previous"), wrapping at both ends via
-/// [`isize::rem_euclid`], and reapplies the selection.
-fn step_one_d(state: &Rc<RefCell<SelectionDemo>>, output: &Element, delta: isize) {
-    let mut demo = state.borrow_mut();
-    #[allow(clippy::cast_possible_wrap)]
-    let len = demo.one_d_len as isize;
-    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
-    let next = (demo.one_d_index as isize + delta).rem_euclid(len) as usize;
-    demo.one_d_index = next;
-    apply_one_d_selection(&demo, output);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The two-dimensional counterpart to [`step_one_d`], stepping `state`'s own `two_d_index` instead.
-fn step_two_d(state: &Rc<RefCell<SelectionDemo>>, output: &Element, delta: isize) {
-    let mut demo = state.borrow_mut();
-    #[allow(clippy::cast_possible_wrap)]
-    let len = demo.two_d_len as isize;
-    #[allow(clippy::cast_possible_wrap, clippy::cast_sign_loss)]
-    let next = (demo.two_d_index as isize + delta).rem_euclid(len) as usize;
-    demo.two_d_index = next;
-    apply_two_d_selection(&demo, output);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires `#selection-1d-prev`/`#selection-1d-next` and `#selection-2d-prev`/`#selection-2d-next` to `state`.
-///
-/// Also applies the initial selection (index/row/col `0`) to each array immediately, so the panel shows a
-/// highlighted cell without needing a click first.
-///
-/// Every listener captures `state` (or a clone of one of its own fields) and is never dropped.
-/// `Closure::forget` leaks them deliberately, for the page's whole lifetime — the same span `SCENE`
-/// itself covers.
+/// Shows a selection toolbar on `scene`, bound to `node` — the one-dimensional example's own control. `on_step`
+/// only ever needs to update `#selection-1d-index`'s own text: the toolbar already owns `node`'s own [`Selection`]
+/// entirely (see [`Scene::show_selection_toolbar`]'s own doc comment, "The managed node's `Selection` is the only
+/// state"), so there is no separate index to keep in sync with it here.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing any of `#selection-1d-prev`, `#selection-1d-next`,
-/// `#selection-1d-index`, `#selection-2d-prev`, `#selection-2d-next`, or `#selection-2d-index`, or if a listener
-/// could not be attached to any of them.
-fn wire_selection_controls(document: web_sys::Document, state: Rc<RefCell<SelectionDemo>>) -> Result<(), String> {
-    let one_d_prev = required_element(&document, "selection-1d-prev")?;
-    let one_d_next = required_element(&document, "selection-1d-next")?;
-    let one_d_output = required_element(&document, "selection-1d-index")?;
-    let two_d_prev = required_element(&document, "selection-2d-prev")?;
-    let two_d_next = required_element(&document, "selection-2d-next")?;
-    let two_d_output = required_element(&document, "selection-2d-index")?;
+/// Returns `Err` if `index.html` is missing `#selection-1d-index`, or if showing the toolbar fails.
+fn show_one_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId) -> Result<(), String> {
+    let output = required_element(document, "selection-1d-index")?;
+    output.set_text_content(Some(&one_d_status(None)));
+    scene
+        .show_selection_toolbar(node, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+            output.set_text_content(Some(&one_d_status(transition.to)));
+        })
+        .map_err(stringify)
+}
 
-    apply_one_d_selection(&state.borrow(), &one_d_output);
-    apply_two_d_selection(&state.borrow(), &two_d_output);
-
-    let s = state.clone();
-    let out = one_d_output.clone();
-    let one_d_prev_closure = Closure::<dyn FnMut()>::new(move || step_one_d(&s, &out, -1));
-    one_d_prev
-        .add_event_listener_with_callback("click", one_d_prev_closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the 1D previous-button listener: {e:?}"))?;
-    one_d_prev_closure.forget();
-
-    let s = state.clone();
-    let one_d_next_closure = Closure::<dyn FnMut()>::new(move || step_one_d(&s, &one_d_output, 1));
-    one_d_next
-        .add_event_listener_with_callback("click", one_d_next_closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the 1D next-button listener: {e:?}"))?;
-    one_d_next_closure.forget();
-
-    let s = state.clone();
-    let out = two_d_output.clone();
-    let two_d_prev_closure = Closure::<dyn FnMut()>::new(move || step_two_d(&s, &out, -1));
-    two_d_prev
-        .add_event_listener_with_callback("click", two_d_prev_closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the 2D previous-button listener: {e:?}"))?;
-    two_d_prev_closure.forget();
-
-    let two_d_next_closure = Closure::<dyn FnMut()>::new(move || step_two_d(&state, &two_d_output, 1));
-    two_d_next
-        .add_event_listener_with_callback("click", two_d_next_closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the 2D next-button listener: {e:?}"))?;
-    two_d_next_closure.forget();
-
-    Ok(())
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The two-dimensional counterpart to [`show_one_d_toolbar`] — same reasoning, just [`two_d_status`]'s own
+/// "row `r`, col `c`" text in place of a plain index. The toolbar itself is what turns each step's own flat
+/// position into the right [`Selection::Row`] for this node's own two-dimensional shape, via
+/// `DataNodeContent::natural_selection`; nothing here constructs a `Selection` directly.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#selection-2d-index`, or if showing the toolbar fails.
+fn show_two_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId) -> Result<(), String> {
+    let output = required_element(document, "selection-2d-index")?;
+    output.set_text_content(Some(&two_d_status(None, SELECTION_TWO_D_COLS)));
+    scene
+        .show_selection_toolbar(node, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+            output.set_text_content(Some(&two_d_status(transition.to, SELECTION_TWO_D_COLS)));
+        })
+        .map_err(stringify)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -334,7 +248,7 @@ pub(crate) fn display_outputs(outputs: [u64; 5], to: Option<usize>) -> [u64; 5] 
 /// [`Scene::show_selection_toolbar`] — bound to the freshly drawn output array `O` — to drive the *next* step. See
 /// [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene) for what is drawn and why a fresh `Scene` is
 /// unavoidable here; this is the standalone Cell Selection demo's own wrapper around it, the counterpart to
-/// [`wire_selection_controls`] for the third example.
+/// [`show_one_d_toolbar`]/[`show_two_d_toolbar`] for the third example.
 ///
 /// `Scene::show_selection_toolbar` always resets its own managed node back to [`Selection::None`] as its first
 /// *committed* act (see its own doc comment) — exactly wrong here whenever `n` is `Some`, since the diagram was just
@@ -398,8 +312,7 @@ fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCel
 ///
 /// A [`rebuild_theta_c_diagram`] failure here would mean `index.html` no longer matches this module, or the
 /// library itself failed — already ruled out by this same call having succeeded once already, to get this far. So
-/// it is ignored, rather than given a `Result` a button click has nowhere to return — the same "cannot fail in
-/// practice" reasoning [`apply_one_d_selection`] gives.
+/// it is ignored, rather than given a `Result` a toolbar click has nowhere to return.
 fn step_theta_c(state: &Rc<RefCell<ThetaCDemo>>, to: Option<usize>) {
     let demo = state.borrow();
     let display = display_outputs(demo.outputs, to);

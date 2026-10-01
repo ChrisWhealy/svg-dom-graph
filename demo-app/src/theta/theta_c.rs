@@ -129,35 +129,37 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
     // Unstarted (`n` is `None`), there is no real row to name any operand after, and `add_named_data_node` itself
     // rejects an empty name outright, so this falls back to a plain, unnamed box instead: the closest this library
     // can get to "no label," short of a blank string it would refuse to draw at all.
+    let operand_label = |i: usize| match n {
+        Some(row) => format!("A[{row}, {i}]"),
+        None => "A[-, -]".to_string(),
+    };
     let place = |x: f64, y: f64, i: usize, value: u64| -> Result<NodeId, String> {
-        let txt = match n {
-            Some(row) => format!("A[{row}, {i}]"),
-            None => "A[-, -]".to_string(),
-        };
-
-        scene.add_named_data_node(Point::new(x, y), &txt, hex(value)).map_err(stringify)
+        scene
+            .add_named_data_node(Point::new(x, y), &operand_label(i), hex(value))
+            .map_err(stringify)
     };
 
     // The five elements of the current row sit in one horizontal row below the input array, in the same
     // left-to-right order as `row`'s own values there — so this canvas reads as "here is that row, unpacked."
     //
-    // Every operand is a named box (`A[row, i]`, or the placeholder `A[-, -]` unstarted) — `draw_data_node`'s own
-    // `box_width` computation pads the value cell an extra `OUTER_PADDING` on each side to make room for the label
-    // row above it, so a named box is wider than an unnamed one by exactly `2 * OUTER_PADDING` (20 units). A full
-    // `u64` hex value renders as `"XX XX XX XX XX XX XX XX"` (23 monospace characters), measured elsewhere in this
-    // codebase at ≈179 units wide; adding `2 * CELL_PADDING` (12) for the cell itself and `2 * OUTER_PADDING` (20)
-    // for the named outer box gives a named operand box of ≈211 units. Neither `A[row, i]` nor `A[-, -]` ever needs
-    // more room than that — six or seven characters at `LABEL_FONT_SIZE` comes nowhere close — so the value cell,
-    // not the label, always decides the box's own width. A 215-unit stride leaves a small, steady gap between
-    // boxes — the last one's own right edge still needs to clear `svg_id`'s own east-side toolbar (`show_toolbar`,
-    // below), which reserves roughly 90 further units off the right side of the viewBox — again a close estimate,
-    // not a measured figure, since no browser is available here to confirm it.
+    // Every operand is a named box (`A[row, i]`, or the placeholder `A[-, -]` unstarted). Every label is the same
+    // length (`A[row, i]`'s own `row`/`i` are always single digits, `0..=4`, and the placeholder is the same
+    // seven characters), and every value is a full `u64` hex cell, so measuring just the first operand's own box
+    // — `Scene::measure_named_data_node` — gives the real width every one of the five actually needs, not an
+    // estimate of it. `OPERAND_GAP` is the only reasoned number left in this stride: a small, steady visual gap
+    // between adjacent boxes, not a measured one.
     //
     // Each `XOR` stage cascades down and to the left of the operand row, combining the running total with the
     // next operand to its own right; every stage's own `x` sits strictly left of the operand it still has to
     // reach, and every operand's own connector drops straight down its own column before turning, so nothing
     // here ever crosses an earlier stage's box.
-    const OPERAND_X: [f64; 5] = [20.0, 235.0, 450.0, 665.0, 880.0];
+    const OPERAND_GAP: f64 = 4.0;
+    let operand_width = scene
+        .measure_named_data_node(&operand_label(0), &hex(row[0]))
+        .map_err(stringify)?
+        .width;
+    let operand_stride = operand_width + OPERAND_GAP;
+    let operand_x: [f64; 5] = std::array::from_fn(|i| 20.0 + i as f64 * operand_stride);
     // `A Bytes`'s own bottom edge sits at `TOP_Y + 236.6` (a named 5×5 grid's own fixed height) — `OPERAND_Y` was
     // once `TOP_Y + 255`, an ≈18-unit gap that turned out too tight once really rendered: measured text is never
     // exactly the estimate this file reasons from (see this function's own doc comment), so a gap this thin had no
@@ -168,8 +170,8 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
     // `t1` sits close enough below the operand row that the gap between them — the operand box's own bottom edge
     // (71.8 units tall, now that every operand is named — see `place`'s own comment) to `t1`'s own top — leaves
     // the same ≈58-unit clearance `OPERAND_Y`'s own comment gives for `A Bytes` → the operand row.
-    let op0 = place(OPERAND_X[0], OPERAND_Y, 0, row[0])?;
-    let op1 = place(OPERAND_X[1], OPERAND_Y, 1, row[1])?;
+    let op0 = place(operand_x[0], OPERAND_Y, 0, row[0])?;
+    let op1 = place(operand_x[1], OPERAND_Y, 1, row[1])?;
     let xor01 = row[0] ^ row[1];
     let t1 = scene
         .add_binary_operator_node(Point::new(120.0, TOP_Y + 405.0), BinaryOperator::Xor, (op0, op1), hex(xor01))
@@ -177,13 +179,13 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
 
     // Each later stage sits 112 units below the previous one: an operator node's own height (71.8 units, again
     // a fixed constant) plus a ≈40-unit gap between them, per request.
-    let op2 = place(OPERAND_X[2], OPERAND_Y, 2, row[2])?;
+    let op2 = place(operand_x[2], OPERAND_Y, 2, row[2])?;
     let xor012 = xor01 ^ row[2];
     let t2 = scene
         .add_binary_operator_node(Point::new(270.0, TOP_Y + 507.0), BinaryOperator::Xor, (t1, op2), hex(xor012))
         .map_err(stringify)?;
 
-    let op3 = place(OPERAND_X[3], OPERAND_Y, 3, row[3])?;
+    let op3 = place(operand_x[3], OPERAND_Y, 3, row[3])?;
     let xor0123 = xor012 ^ row[3];
     let t3 = scene
         .add_binary_operator_node(Point::new(445.0, TOP_Y + 609.0), BinaryOperator::Xor, (t2, op3), hex(xor0123))
@@ -193,11 +195,11 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
     // tracking column `n` the way earlier attempts here did. Nothing else occupies the space between it and
     // the output array below, so moving it was never necessary for the connector's own safety; it just moved
     // without a reason to.
-    let op4 = place(OPERAND_X[4], OPERAND_Y, 4, row[4])?;
+    let op4 = place(operand_x[4], OPERAND_Y, 4, row[4])?;
     let xor01234 = xor0123 ^ row[4];
     let result = scene
         .add_binary_operator_node(
-            Point::new(OPERAND_X[3], TOP_Y + 711.0),
+            Point::new(operand_x[3], TOP_Y + 711.0),
             BinaryOperator::Xor,
             (t3, op4),
             hex(xor01234),

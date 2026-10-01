@@ -137,12 +137,6 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
     // The horizontal counterpart, between `D`/`A` and between `A[row, col]`/`XOR` — narrower, since these sit
     // side by side rather than stacked, and have no label row of their own competing for the same space.
     const H_GAP: f64 = 40.0;
-    // A single-value/operator box's own estimated width — see `theta_c::build_scene`'s own doc comment for where
-    // this figure comes from. Used only to *centre* `A[row, col]`/`D[row]` under their own source arrays; a modest
-    // misestimate here still leaves their own centres close enough to `A`'s/`D`'s own that the vertical ray-cast
-    // into them resolves North regardless — see `theta_d::build_scene`'s own `MID_Y` doc comment for the formula
-    // that makes that true even when the two centres are not *exactly* aligned.
-    const CELL_BOX_WIDTH: f64 = 211.0;
 
     // `D`, not `A`, sits first — to `A`'s own west, both in one row, both the same height (each a five-row grid,
     // one column or five) so their tops and bottoms line up exactly.
@@ -184,16 +178,27 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
     // `D[row]` sits centred under `D`; `A[row, col]` sits centred under `A` — each its own column's own working
     // value, directly below the array it came from, rather than sharing a row with the other the way
     // `theta_d::build_scene`'s own `prev`/`next` do (there is no wide shared array feeding both here, so there is
-    // no shared row for them to naturally fall into).
+    // no shared row for them to naturally fall into). Centred using each box's own real measured width —
+    // `Scene::measure_named_data_node` — rather than an estimated constant: the whole reason that method exists
+    // is to make this exact "I don't know a node's own size until it's drawn, but need it to position this one"
+    // problem go away, in place of the add-then-estimate-then-correct cycle an earlier version of this file used.
     let working_y = d_rect.origin.y + d_rect.size.height.max(a_rect.size.height) + V_GAP;
-    let d_cell_x = d_rect.origin.x + (d_rect.size.width - CELL_BOX_WIDTH) / 2.0;
-    let a_cell_x = a_rect.origin.x + (a_rect.size.width - CELL_BOX_WIDTH) / 2.0;
+
+    let d_label = format!("D[{row}]");
+    let d_content = hex(d_value);
+    let d_size = scene.measure_named_data_node(&d_label, &d_content).map_err(stringify)?;
+    let d_cell_x = d_rect.origin.x + (d_rect.size.width - d_size.width) / 2.0;
+
+    let a_label = format!("A[{row}, {col}]");
+    let a_content = hex(a_value);
+    let a_size = scene.measure_named_data_node(&a_label, &a_content).map_err(stringify)?;
+    let a_cell_x = a_rect.origin.x + (a_rect.size.width - a_size.width) / 2.0;
 
     let d_cell = scene
-        .add_named_data_node(Point::new(d_cell_x, working_y), &format!("D[{row}]"), hex(d_value))
+        .add_named_data_node(Point::new(d_cell_x, working_y), &d_label, d_content)
         .map_err(stringify)?;
     let a_cell = scene
-        .add_named_data_node(Point::new(a_cell_x, working_y), &format!("A[{row}, {col}]"), hex(a_value))
+        .add_named_data_node(Point::new(a_cell_x, working_y), &a_label, a_content)
         .map_err(stringify)?;
 
     // Forced to `D`'s/`A`'s own South side and `D[row]`'s/`A[row, col]`'s own North sides: centring alone already
@@ -207,13 +212,21 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
     scene.add_edge_with(d_array, d_cell, vertical()).map_err(stringify)?;
     scene.add_edge_with(a, a_cell, vertical()).map_err(stringify)?;
 
-    // East of `A[row, col]`, in the same row: with no vertical gap between them, the ray-cast into `XOR` always
-    // resolves horizontal regardless of how far east — see `theta_d::build_scene`'s own `MID_Y` doc comment. Both
-    // `D[row]` and `A[row, col]` then enter `XOR` from the west, splitting across that one side.
-    let xor_x = a_cell_x - CELL_BOX_WIDTH - H_GAP;
+    // West of `A[row, col]`, in the same row: with no vertical gap between them, the ray-cast into `XOR` always
+    // resolves horizontal regardless of how far west — see `theta_d::build_scene`'s own `MID_Y` doc comment. Both
+    // `D[row]` and `A[row, col]` then enter `XOR` from the east, splitting across that one side. `xor_x` is
+    // measured, not estimated — see `d_cell_x`'s own comment above for why.
     let result = a_value ^ d_value;
+    let result_content = hex(result);
+    let xor_size = scene.measure_operator_box("XOR", &result_content).map_err(stringify)?;
+    let xor_x = a_cell_x - xor_size.width - H_GAP;
     let xor_node = scene
-        .add_binary_operator_node(Point::new(xor_x, working_y), BinaryOperator::Xor, (a_cell, d_cell), hex(result))
+        .add_binary_operator_node(
+            Point::new(xor_x, working_y),
+            BinaryOperator::Xor,
+            (a_cell, d_cell),
+            result_content,
+        )
         .map_err(stringify)?;
     let xor_rect = scene.node_rect(xor_node).map_err(stringify)?;
 

@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add a `move_node` function to `Scene` to reposition an existing node (`a770df3`)
 - Add `Scene` methods for measuring data-node and operator-box dimensions before construction (`20454fd`)
-- Extend test coverage for `Scene` measurement methods (``)
+- Extend test coverage for `Scene` measurement methods (`cd94320`)
+- Add `SelectionToolbar` to one- and two-dimensional cell selection demos (``)
 
 # [Released]
 
