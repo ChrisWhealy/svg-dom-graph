@@ -1,5 +1,5 @@
 //! `panel-theta` / `#theta-diagram`: SHA3's `Theta` function, as a parent `Scene` with three nested child `Scene`s
-//! — see [`build_theta_demo`]'s own doc comment for what each node represents and what is, and is not, built yet.
+//! — see [`build_scene`]'s own doc comment for what each node represents and what is, and is not, built yet.
 //!
 //! - [`theta_c`] — the nested `ThetaC` child: its own selection toolbar, and rebuilding it on every step.
 //! - [`theta_d`] — the nested `ThetaD` child: the `ROTL`/`XOR` step itself, its own selection toolbar, and
@@ -20,7 +20,7 @@ mod unit_tests;
 
 use crate::{
     selection::{INITIAL_5X5_BUFFER, THETA_C_INPUT},
-    util::{required_element, stringify},
+    util::{add_backdrop_clone, required_element, stringify},
 };
 use support::SteppedChildState;
 
@@ -36,6 +36,14 @@ use wasm_bindgen::{JsCast, prelude::*};
 /// `theta_d`, and `support` live in their own files precisely so this one stays that function alone.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
+thread_local! {
+    // Keeps this module's own top-level "parent" `Scene` alive across however many times `build_scene` is called
+    // — see that function's own doc comment ("Reuse across more than one host") for why this cannot simply rely
+    // on `theta_c`/`theta_d`/`xor_loop`'s own thread-locals the way a single standalone call already implicitly
+    // does.
+    static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the nested-Scene demo: SHA3's own `Theta` function, drawn top to bottom — `A` (the real 25-value input
 /// array), `ThetaC`, then `ThetaD` and a clone of `A` side by side in one row, both feeding `XOR loop`, which feeds
@@ -48,7 +56,8 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 ///
 /// `ThetaC`'s own nested `Scene` is [`theta_c::build_scene`] — the exact same function the standalone Cell
 /// Selection demo's own third example already draws with, called here against a second, initially hidden `<svg>`
-/// (`#theta-thetac-child`) instead of `#selection-thetac-diagram`.
+/// (`{svg_id}-thetac-child` — `#theta-diagram-thetac-child` for `panel-theta`'s own standalone call) instead of
+/// `#selection-thetac-diagram`.
 /// `ThetaD`'s own nested `Scene` is [`theta_d::build_scene`], and `XOR loop`'s own is [`xor_loop::build_scene`].
 /// Grafting any of them under its own container node with `add_container_node` is the whole of what makes this a
 /// nested-Scene demo: everything else — the boxes, the operator nodes, the toolbar each shows — is drawn by code
@@ -83,14 +92,44 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 /// further rounds SHA3 actually runs — is a genuinely larger feature than the further "one more step, nested the
 /// same way" cases this module's own history already covers; it is not sketched out here.
 ///
+/// # Reuse across more than one host
+///
+/// `svg_id` lets this whole function be grafted as a container node's own nested child elsewhere — see
+/// `sha3_sponge::keccak`'s own "Theta" node — not just drawn standalone as `panel-theta` itself.
+/// `theta_c`'s/`theta_d`'s/`xor_loop`'s own initial child ids are derived from `svg_id`, so a second call keeps
+/// its own three elements distinct from the first's; every id generated after that stays globally unique anyway,
+/// via `support::next_child_svg_id`'s own shared counter.
+///
+/// `theta_c`/`theta_d`/`xor_loop` each still track their own currently-entered child in one thread-local apiece,
+/// shared by every call to this function, regardless of which host built it. Two separate calls can each stay
+/// correctly focused and steppable on their own. But drilling into a nested child of *both* at once confuses
+/// whichever child's own close button was wired first, since the other's own thread-local write wins. Treat this
+/// as a known limitation, not a reason to avoid nesting this function at all.
+///
+/// `with_backdrop` controls whether this call adds its own [`add_backdrop_clone`] of `svg_id`. Pass `true` only
+/// when `svg_id` is the shallowest, outermost element in its own `.nested-scene-stage` — `panel-theta`'s own
+/// standalone use, where `#theta-diagram` has nothing shallower above it.
+///
+/// Pass `false` when nesting this function under a host that is itself already nested one or more levels deep —
+/// `sha3_sponge::keccak`'s own "Theta" node, under `sha3_sponge::build_scene`'s own already-backdropped
+/// `#sha3-sponge-diagram`. There, `svg_id` starts `visibility="hidden"` the instant its own container node is
+/// constructed, long before any of its own children are ever entered. A backdrop clone has no visibility
+/// toggling of its own — it always paints. So, called unconditionally, it would immediately cover whatever
+/// shallower sibling sits behind it in document order, every time this function rebuilds.
+///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing any element this function or [`wire_theta_controls`] needs, or if any
-/// library call fails.
-pub(crate) fn build_theta_demo() -> Result<(), String> {
+/// Returns `Err` if `index.html` is missing any element this function needs, or if any library call fails.
+pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, String> {
     let document = crate::util::document()?;
 
-    let parent_svg = svg_dom::SvgRoot::attach("theta-diagram").map_err(stringify)?;
+    // Derived from `svg_id` itself, not a literal, so a second call — nested elsewhere, under a different
+    // `svg_id` — targets its own three distinct elements instead of colliding with this one's.
+    let thetac_child_id = format!("{svg_id}-thetac-child");
+    let thetad_child_id = format!("{svg_id}-thetad-child");
+    let xorloop_child_id = format!("{svg_id}-xorloop-child");
+
+    let parent_svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let parent = Scene::new(parent_svg).map_err(stringify)?;
     parent
         .show_scene_title("Keccak Theta Function", SceneTitleOptions::default())
@@ -100,11 +139,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     // (point 5) for why the chain is still drawn, over five zero operands, rather than left out entirely.
     let outputs = crate::selection::theta_c_outputs();
     let display = crate::selection::display_outputs(outputs, None);
-    let (child, output) = theta_c::build_scene("theta-thetac-child", None, display)?;
+    let (child, output) = theta_c::build_scene(&thetac_child_id, None, display)?;
 
     let state = Rc::new(RefCell::new(SteppedChildState {
         outputs,
-        child_svg_id: "theta-thetac-child".to_string(),
+        child_svg_id: thetac_child_id,
     }));
     theta_c::attach_toolbar(&child, output, None, state)?;
 
@@ -142,11 +181,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     // Unstarted, the same "no row processed yet" convention as `ThetaC`'s own initial state above.
     let theta_d_outputs = theta_d::outputs(crate::selection::theta_c_outputs());
     let theta_d_display = crate::selection::display_outputs(theta_d_outputs, None);
-    let (theta_d_child, theta_d_output) = theta_d::build_scene("theta-thetad-child", None, theta_d_display)?;
+    let (theta_d_child, theta_d_output) = theta_d::build_scene(&thetad_child_id, None, theta_d_display)?;
 
     let theta_d_state = Rc::new(RefCell::new(SteppedChildState {
         outputs: theta_d_outputs,
-        child_svg_id: "theta-thetad-child".to_string(),
+        child_svg_id: thetad_child_id,
     }));
     theta_d::attach_toolbar(&theta_d_child, theta_d_output, None, theta_d_state)?;
 
@@ -165,11 +204,11 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
     // except stepped cell by cell, not row by row; see `xor_loop::build_scene`'s own doc comment for why.
     let xor_loop_outputs = xor_loop::outputs(THETA_C_INPUT, theta_d_outputs);
     let xor_loop_display = xor_loop::display_outputs(xor_loop_outputs, None);
-    let (xor_loop_child, xor_loop_output) = xor_loop::build_scene("theta-xorloop-child", None, xor_loop_display)?;
+    let (xor_loop_child, xor_loop_output) = xor_loop::build_scene(&xorloop_child_id, None, xor_loop_display)?;
 
     let xor_loop_state = Rc::new(RefCell::new(xor_loop::XorLoopState {
         outputs: xor_loop_outputs,
-        child_svg_id: "theta-xorloop-child".to_string(),
+        child_svg_id: xorloop_child_id,
     }));
     xor_loop::attach_toolbar(&xor_loop_child, xor_loop_output, None, xor_loop_state)?;
 
@@ -218,99 +257,49 @@ pub(crate) fn build_theta_demo() -> Result<(), String> {
 
     parent.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
-    add_backdrop_clone(&document)?;
+    if with_backdrop {
+        add_backdrop_clone(&document, svg_id)?;
+    }
 
     theta_c::init_scene(parent.clone(), child, theta_c);
     theta_d::init_scene(parent.clone(), theta_d_child, theta_d);
-    xor_loop::init_scene(parent, xor_loop_child, xor_loop_node);
+    xor_loop::init_scene(parent.clone(), xor_loop_child, xor_loop_node);
 
-    wire_theta_controls(document)
+    // Keeps this Scene's own strong handle alive for as long as this host needs it — see SCENE's own doc comment.
+    SCENE.with_borrow_mut(|slot| *slot = Some(parent.clone()));
+    Ok(parent)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Adds a one-time, click-through, decorative duplicate of `#theta-diagram`, sitting behind the nested Scene's
-/// own frame.
-///
-/// `Scene::enter` hides the real `#theta-diagram` entirely while `ThetaC` is shown — that is the library's own,
-/// deliberate "exactly one Scene visible at a time" invariant (see `svg_dom_graph::scene::navigation`'s own module
-/// doc comment), not a bug to work around, and this demo has no reason to want the real parent interactive while
-/// `ThetaC` has focus. But a modal window's own look wants the parent's content still visible in the margin
-/// around a smaller nested view — so this clones what is currently on screen, once, as a plain DOM duplicate that
-/// the library's own visibility toggling knows nothing about and never touches.
-///
-/// A one-time clone is only correct because `#theta-diagram`'s own content never changes after this point in this
-/// particular demo — nothing here redraws `A`, `ThetaC`, `ThetaD`, `XOR loop`, or `ThetaC Output` once built. A
-/// demo whose parent diagram *does* change over time would need to keep this clone in sync, or take a fresh one on
-/// each change, instead.
-///
-/// `.nested-scene-backdrop`'s own `pointer-events: none` (see `style.css`) is what makes the clone a pure visual
-/// backdrop: every click, drag, and wheel event passes straight through it to the real, interactive
-/// `#theta-diagram` underneath, exactly as if the clone were not there at all. `aria-hidden="true"` excludes the
-/// whole cloned subtree from the accessibility tree, and every `tabindex` inside it is stripped so a sighted
-/// keyboard user tabbing through the page cannot land on one of these non-functional duplicates either — a click
-/// or keypress on one would already do nothing even without that, since `cloneNode` never copies event listeners,
-/// but it would still *look* clickable without this. Its own `id` is stripped too, since `#theta-diagram` naming
-/// two elements at once would make `getElementById` calls elsewhere ambiguous.
-///
-/// An `inert` attribute was tried here first, and rejected: it does stop the clone's own descendants from being
-/// focused or announced to assistive technology, but it does **not** make the element transparent to pointer
-/// events the way `pointer-events: none` does — a click still lands on an inert element and stops there. With the
-/// backdrop sitting on top of the real parent in paint order, that silently swallowed every click, drag, and wheel
-/// event the parent's own pan/zoom/`make_enterable` listeners needed to see, breaking all three at once.
+/// `panel-theta`'s own entry point: [`build_scene`] against `#theta-diagram`, with its own close button wired.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#theta-diagram`, or if cloning, adjusting, or inserting the
-/// duplicate fails.
-fn add_backdrop_clone(document: &web_sys::Document) -> Result<(), String> {
-    let parent_element = required_element(document, "theta-diagram")?;
-    let backdrop = parent_element
-        .clone_node_with_deep(true)
-        .map_err(|e| format!("could not clone #theta-diagram for its backdrop: {e:?}"))?;
-    let backdrop: web_sys::Element = backdrop
-        .dyn_into()
-        .map_err(|_| "cloning #theta-diagram did not produce an Element".to_string())?;
+/// Returns `Err` if `index.html` is missing `#theta-diagram`/`#theta-close`, or if any library call fails.
+pub(crate) fn build_theta_demo() -> Result<(), String> {
+    build_scene("theta-diagram", true)?;
+    wire_theta_controls(crate::util::document()?)
+}
 
-    backdrop
-        .remove_attribute("id")
-        .map_err(|e| format!("could not strip the backdrop clone's own id: {e:?}"))?;
-    backdrop
-        .set_attribute("class", "nested-scene-backdrop")
-        .map_err(|e| format!("could not class the backdrop clone: {e:?}"))?;
-    backdrop
-        .set_attribute("aria-hidden", "true")
-        .map_err(|e| format!("could not hide the backdrop clone from assistive tech: {e:?}"))?;
-
-    let tabbable = backdrop
-        .query_selector_all("[tabindex]")
-        .map_err(|e| format!("could not search the backdrop clone for tabbable elements: {e:?}"))?;
-    for i in 0..tabbable.length() {
-        if let Some(node) = tabbable.item(i) {
-            if let Ok(element) = node.dyn_into::<web_sys::Element>() {
-                let _ = element.remove_attribute("tabindex");
-            }
-        }
-    }
-
-    // Placed as `#theta-diagram`'s own next sibling: after it (so it paints over the real parent, harmless — the
-    // two are pixel-identical at this point) and before `#theta-thetac-child` in document order (so the nested
-    // Scene's own frame still paints on top of the backdrop once shown).
-    parent_element
-        .after_with_node_1(&backdrop)
-        .map_err(|e| format!("could not insert the backdrop clone: {e:?}"))
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Exits whichever of this scene's own `ThetaC`/`ThetaD`/`XOR loop` is currently focused, if any, and reports
+/// whether one was. A host nesting [`build_scene`] elsewhere uses this for its own close button, the same way
+/// [`wire_theta_controls`] uses it for `panel-theta`'s own.
+pub(crate) fn exit_if_focused() -> bool {
+    theta_c::exit_if_focused() || theta_d::exit_if_focused() || xor_loop::exit_if_focused()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wires `#theta-close` — the nested view's own &times; close button, not an external "Exit" — to whichever of
-/// `theta_c`'s, `theta_d`'s, or `xor_loop`'s own nested child is currently entered. Entering any of them needs no
-/// wiring of its own here: clicking the node itself is
+/// `theta_c`'s, `theta_d`'s, or `xor_loop`'s own nested child is currently entered, via [`exit_if_focused`].
+/// Entering any of them needs no wiring of its own here: clicking the node itself is
 /// [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable)'s own doing, installed once in
-/// [`build_theta_demo`] when each is added.
+/// [`build_scene`] when each is added.
 ///
 /// `#theta-close` is only ever visible while one of them actually is — see `.nested-scene-close`'s own `:has()`
-/// rule in `style.css`, which matches all three — but the listener still checks each in turn via its own
-/// `exit_if_focused`, and ignores every `Result`, the same "nowhere to report an error to" reasoning every other
-/// button-click listener in this crate already follows.
+/// rule in `style.css`, which matches all three — but the listener still ignores [`exit_if_focused`]'s own
+/// `bool`, the same "nowhere to report an error to" reasoning every other button-click listener in this crate
+/// already follows.
 ///
 /// # Errors
 ///
@@ -319,13 +308,7 @@ fn wire_theta_controls(document: web_sys::Document) -> Result<(), String> {
     let close = required_element(&document, "theta-close")?;
 
     let close_closure = Closure::<dyn FnMut()>::new(move || {
-        if theta_c::exit_if_focused() {
-            return;
-        }
-        if theta_d::exit_if_focused() {
-            return;
-        }
-        xor_loop::exit_if_focused();
+        exit_if_focused();
     });
     close
         .add_event_listener_with_callback("click", close_closure.as_ref().unchecked_ref())

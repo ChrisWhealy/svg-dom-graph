@@ -282,20 +282,38 @@ figure {
     --nested-scene-radius: 20px;
 }
 
-/* A decorative duplicate of the base diagram (see `theta::add_backdrop_clone`'s own doc comment for why it exists
-   at all), positioned to exactly overlay the real one underneath it, edge to edge. Whichever nested Scene is
-   currently shown paints over the middle of this; the base diagram's own content stays visible in whatever margin
-   its own `.nested-scene` leaves around itself.
+/* A decorative duplicate of the base diagram (see `util::add_backdrop_clone`'s own doc comment for why it exists
+   at all, and for why only the outermost level of a multi-level nested-Scene hierarchy ever calls it), positioned
+   to exactly overlay the real one underneath it, edge to edge. Whichever nested Scene is currently shown paints
+   over the middle of this; the base diagram's own content stays visible in whatever margin its own `.nested-scene`
+   leaves around itself.
 
    `pointer-events: none` is load-bearing, not decorative: without it, this clone — sitting on top of the real,
    interactive diagram in paint order — would intercept every click, drag, and wheel event meant for it, since a
    pointer event always targets whatever is topmost at that point, regardless of which one looks interactive. With
    it, the browser skips this element during hit-testing entirely, so every one of those events reaches the real
-   `#theta-diagram` beneath exactly as if this clone were not there. */
+   `#theta-diagram` beneath exactly as if this clone were not there.
+
+   `visibility: hidden` by default, shown only while its own source `<svg>` — its own preceding sibling,
+   `add_backdrop_clone` always inserts it right after — itself currently has `visibility="hidden"`: exactly while
+   one of that source's own children is entered, which is the only time a backdrop is wanted at all. Without this,
+   the clone would sit on top of its own real, interactive source permanently, from the moment it is first
+   inserted — `pointer-events: none` keeps clicks reaching the real diagram underneath, but does nothing for
+   paint order, so the frozen clone would visually cover every later zoom/pan change the real diagram's own
+   toolbar makes, even while no nested child is entered at all and the base diagram is the one thing that should
+   be both interactive and visible. Safe to apply unconditionally here only because `add_backdrop_clone` is never
+   called for anything but the shallowest level of a `.nested-scene-stage` (see that function's own doc comment)
+   — a shallowest-level source's own `visibility` only ever means "one of my own children is entered," never "I
+   am myself an unentered container child," so there is no ambiguity left for this rule to get wrong. */
 .nested-scene-backdrop {
     position: absolute;
     inset: 0;
     pointer-events: none;
+    visibility: hidden;
+}
+
+svg[visibility="hidden"] + .nested-scene-backdrop {
+    visibility: visible;
 }
 
 /* A rounded, bordered, shadowed frame, inset from `.nested-scene-stage`'s own edges on all four sides — deliberately
@@ -332,7 +350,42 @@ figure {
     overflow: hidden;
 }
 
-/* `#theta-thetad-child`'s own content is shorter, relative to its own width, than `#theta-thetac-child`'s — a
+/* Every `.nested-scene` in a given `.nested-scene-stage` shares the same `--nested-scene-margin`, so a Scene
+   nested two or three levels deep (`sha3_sponge::keccak`'s own "Theta" node, itself nesting `ThetaC`/`ThetaD`/
+   `XOR loop`) would otherwise draw at exactly the same inset, and so the same apparent size, as the shallower
+   level it is nested inside — nothing on screen would read as "this is nested inside that," only as "the
+   content changed." These two classes override `--nested-scene-margin` to a larger value, one step further
+   inset per level of nesting below the shallowest, so each deeper frame reads as visibly smaller than its own
+   immediate parent's — a box within a box within a box, not three same-sized panes taking turns. Applied via an
+   extra class on the `<svg>` itself (alongside `nested-scene` and any `theta-thetad-child`/`theta-xorloop-child`
+   aspect-ratio override), not derived automatically: nothing in this stylesheet knows a given id's own nesting
+   depth, only what a host's own HTML declares it to be. */
+.nested-scene-depth-2 {
+    --nested-scene-margin: 90px;
+}
+.nested-scene-depth-3 {
+    --nested-scene-margin: 140px;
+}
+
+/* `.nested-scene-close`'s own position (below) reads `--nested-scene-margin` too, but it has no `nested-scene-
+   depth-*` class of its own to override it with directly — it is one single, shared button, not one per level.
+   Left alone, it would always use `.nested-scene-stage`'s own default (40px), correctly placed over the
+   shallowest level's own frame but stuck there for every deeper one too, no longer tracking a smaller, more
+   inset frame's own actual corner.
+
+   These two rules override `--nested-scene-margin` on the *stage* itself, scoped to exactly when a depth-2/3
+   frame is the one currently shown (`[visibility="visible"]`, the same attribute the library itself toggles).
+   The close button has no local override of its own, so it inherits whichever of these is active and repositions
+   to match. A `.nested-scene-depth-2`/`-3` element's own sizing is unaffected — its own direct class selector
+   already overrides `--nested-scene-margin` on itself, which wins over whatever the stage says regardless. */
+.nested-scene-stage:has(.nested-scene-depth-2[visibility="visible"]) {
+    --nested-scene-margin: 90px;
+}
+.nested-scene-stage:has(.nested-scene-depth-3[visibility="visible"]) {
+    --nested-scene-margin: 140px;
+}
+
+/* A nested `ThetaD` child's own content is shorter, relative to its own width, than `ThetaC`'s — a
    mostly-horizontal row of operator boxes under one input array, not ThetaC's own five-stage vertical cascade —
    so sharing `.nested-scene`'s own full-height box with it would force its own 1130×600 viewBox into a box shaped
    nothing like it, letterboxing it top and bottom (`preserveAspectRatio`'s default `xMidYMid meet` fitting the
@@ -340,27 +393,28 @@ figure {
    with one derived straight from this box's own (still shared, unchanged) width instead, so the box is already
    the same shape as the viewBox and `meet` has nothing left to pad.
 
-   A *class*, not `#theta-thetad-child`'s own id: every step clones the currently-shown nested child into a fresh
-   sibling with a fresh, never-reused id (`theta-thetad-child-0`, `-1`, ...) — see
-   `demo-app/src/theta/support.rs`'s own `create_child_svg` — so an id selector would only ever match the first,
-   pre-rebuild element, and every later one would silently fall back to `.nested-scene`'s own full height the
-   moment "Next" was pressed once. `clone_node_with_deep` does carry the `class` attribute over verbatim, though,
-   which is why `panel-theta.html` gives `#theta-thetad-child` this class alongside `nested-scene` up front — every
-   clone keeps it automatically, with no Rust-side change needed to add it again per step.
+   A *class*, not an id: every step clones the currently-shown nested child into a fresh sibling with a fresh,
+   never-reused id (`{prefix}-0`, `-1`, ...) — see `demo-app/src/util.rs`'s own `create_child_svg` — so an id
+   selector would only ever match the first, pre-rebuild element, and every later one would silently fall back to
+   `.nested-scene`'s own full height the moment "Next" was pressed once. `clone_node_with_deep` does carry the
+   `class` attribute over verbatim, though, which is why every host giving a `ThetaD` child this class alongside
+   `nested-scene` up front — `panel-theta.html`'s own `#theta-diagram-thetad-child`,
+   `panel-sha3-sponge.html`'s own `#sha3-sponge-keccak-theta-child-thetad-child` — gets every clone keeping it
+   automatically, with no Rust-side change needed to add it again per step.
 
-   This ratio is a plain mirror of `panel-theta.html`'s own `#theta-thetad-child` viewBox, not derived from it, so
-   the two need updating together — see `demo-app/src/theta/theta_d.rs`'s own `MID_Y` if this box's real content
-   shape changes again. */
+   This ratio is a plain mirror of a `ThetaD` child's own real viewBox, not derived from it, so the two need
+   updating together — see `demo-app/src/theta/theta_d.rs`'s own `MID_Y` if this box's real content shape changes
+   again. */
 .theta-thetad-child {
     height: auto;
     aspect-ratio: 1130 / 600;
 }
 
-/* Same reasoning as `.theta-thetad-child` just above, for `#theta-xorloop-child` instead: `D` and `A` now sit side
-   by side in one row, not stacked, so this box's own content is wider and shorter relative to its own width than
-   `.nested-scene`'s own full height allows for — and, being cloned on every step the same way `#theta-thetad-child`
-   is (`demo-app/src/theta/support.rs`'s own `create_child_svg`, shared by both), needs the same class-not-id fix
-   for the same reason. This ratio mirrors `panel-theta.html`'s own `#theta-xorloop-child` viewBox — see
+/* Same reasoning as `.theta-thetad-child` just above, for a nested `XOR loop` child instead: `D` and `A` now sit
+   side by side in one row, not stacked, so this box's own content is wider and shorter relative to its own width
+   than `.nested-scene`'s own full height allows for — and, being cloned on every step the same way `ThetaD`'s own
+   is (`demo-app/src/util.rs`'s own `create_child_svg`, shared by both), needs the same class-not-id fix for the
+   same reason. This ratio mirrors a nested `XOR loop` child's own real viewBox — see
    `demo-app/src/theta/xor_loop.rs`'s own `build_scene` if this box's real content shape changes again. */
 .theta-xorloop-child {
     height: auto;

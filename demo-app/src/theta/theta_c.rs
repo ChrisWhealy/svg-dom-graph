@@ -5,9 +5,9 @@
 //! (`crate::selection::rebuild_theta_c_diagram`), which draws exactly the same chain against
 //! `#selection-thetac-diagram` instead of a nested child `<svg>`.
 
-use super::support::{SteppedChildState, create_child_svg, next_child_svg_id};
+use super::support::SteppedChildState;
 use crate::selection::THETA_C_INPUT;
-use crate::util::{required_element, stringify};
+use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{

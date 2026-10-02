@@ -2,7 +2,9 @@
 //! view only — see [`build_scene`]'s own doc comment for exactly what this first step draws, and what it
 //! deliberately does not yet.
 
-use crate::util::{required_element, stringify};
+mod keccak;
+
+use crate::util::{add_backdrop_clone, required_element, stringify};
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -12,9 +14,10 @@ use svg_dom_graph::{
         SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
+use wasm_bindgen::{JsCast, prelude::*};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
-pub(crate) const SOURCE: &str = include_str!("sha3_sponge.rs");
+pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`. Every listener
@@ -221,7 +224,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     } else {
         vec![0; RATE_LANES]
     };
-    let xor_content = hex_narrow(xor_display_values);
+    let xor_content = hex_narrow(xor_display_values.clone());
     let xor_size = scene.measure_named_data_node("XOR", &xor_content).map_err(stringify)?;
     let xor_x = rate_in_rect.origin.x + (rate_in_rect.size.width - xor_size.width) / 2.0;
     let xor = scene
@@ -241,14 +244,29 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // realigning with row 1 leaves this box's own centre no longer off-centre from "Capacity", unlike from "Rate".
     let keccak_x = capacity_in_rect.origin.x + (capacity_in_rect.size.width - keccak_size.width) / 2.0;
     let keccak_y = xor_rect.origin.y + (xor_rect.size.height - keccak_size.height) / 2.0;
+
+    // The real combined 25-lane state flowing into `Keccak-f[1600]` — "Capacity" (always all-zero in this demo)
+    // plus whatever "XOR" currently shows, the same "not yet written" convention XOR itself follows (see this
+    // function's own doc comment, "Stepping through it"): all-zero before `stage` reaches it, the real elementwise
+    // XOR afterward. `keccak::build_initial_scene`'s own round 1 starts from exactly this.
+    let a_bytes_seed: [u64; 25] = std::array::from_fn(|lane| {
+        if lane < CAPACITY_LANES {
+            0
+        } else {
+            xor_display_values[lane - CAPACITY_LANES]
+        }
+    });
+    let keccak_child = keccak::build_initial_scene("sha3-sponge-keccak-child", a_bytes_seed)?;
     let keccak = scene
-        .add_node_with(
+        .add_container_node_with(
             Point::new(keccak_x, keccak_y),
             keccak_size,
             "Keccak f(1600)",
+            keccak_child.clone(),
             NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3))),
         )
         .map_err(stringify)?;
+    scene.make_enterable(keccak).map_err(stringify)?;
     let keccak_rect = scene.node_rect(keccak).map_err(stringify)?;
 
     let input_block = scene
@@ -370,6 +388,15 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     apply_stage(&scene, stage_nodes, stage);
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
+
+    // Backdrops `#sha3-sponge-diagram` itself, so entering "Keccak f(1600)" shows this diagram's own current
+    // content behind its frame, instead of the page's own plain background. Safe now that `.nested-scene-backdrop`
+    // only ever paints while its own source itself has `visibility="hidden"` (see that CSS rule's own doc
+    // comment) — the clone no longer sits on top of this diagram's own real, interactive view while nothing is
+    // nested, so its own zoom/pan buttons stay visibly correct between rebuilds.
+    add_backdrop_clone(&document, "sha3-sponge-diagram")?;
+    keccak::init_scene(scene.clone(), keccak_child, keccak);
+
     Ok((scene, step))
 }
 
@@ -419,11 +446,39 @@ fn rebuild(stage: Option<usize>) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo, unstarted — see [`build_scene`]'s own doc comment for what it draws.
+/// Builds the SHA3 Sponge demo, unstarted — see [`build_scene`]'s own doc comment for what it draws — and wires
+/// its own close button.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`, or if any library call fails.
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`/`#sha3-sponge-close`, or if any library call
+/// fails.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
-    rebuild(None)
+    rebuild(None)?;
+    wire_sha3_sponge_controls(crate::util::document()?)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Wires `#sha3-sponge-close` — the nested view's own &times; close button — to whichever of "Keccak f(1600)"'s
+/// own descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside
+/// [`rebuild`]: unlike the `<svg>` content `rebuild` redraws from scratch on every step, `#sha3-sponge-close` is
+/// a plain, static `index.html` element that would otherwise pick up one more duplicate listener per step.
+/// [`keccak::exit_if_focused`] always reads `keccak`'s own latest thread-local state at click time, regardless of
+/// how many rebuilds happened since this listener was attached.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if a listener could not be attached to it.
+fn wire_sha3_sponge_controls(document: web_sys::Document) -> Result<(), String> {
+    let close = required_element(&document, "sha3-sponge-close")?;
+
+    let close_closure = Closure::<dyn FnMut()>::new(move || {
+        keccak::exit_if_focused();
+    });
+    close
+        .add_event_listener_with_callback("click", close_closure.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the SHA3 Sponge close-button listener: {e:?}"))?;
+    close_closure.forget();
+
+    Ok(())
 }

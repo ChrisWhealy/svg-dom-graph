@@ -6,10 +6,9 @@
 //! individual *cells* of `A` — see [`build_scene`]'s own doc comment for why, and [`XorLoopState`]'s own doc
 //! comment for why it needs its own state shape rather than sharing `support::SteppedChildState`.
 
-use super::support::{create_child_svg, next_child_svg_id};
 use crate::{
     selection::THETA_C_INPUT,
-    util::{required_element, stringify},
+    util::{create_child_svg, next_child_svg_id, required_element, stringify},
 };
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;

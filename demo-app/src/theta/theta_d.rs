@@ -2,8 +2,8 @@
 //! rebuilding it — via `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s
 //! own output.
 
-use super::support::{SteppedChildState, create_child_svg, next_child_svg_id};
-use crate::util::{required_element, stringify};
+use super::support::SteppedChildState;
+use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
