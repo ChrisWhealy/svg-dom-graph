@@ -106,7 +106,7 @@ fn secondary_selection_is_independent_of_the_primary_one_and_ranks_between_focus
 
     // Moving the focus off cell 0 reveals its own secondary style underneath.
     scene
-        .set_selection(node, Selection::Row { row: 1, col: Some(5 - 5) })
+        .set_selection(node, Selection::Row { row: 1, col: Some(0) })
         .map_err(|e| e.to_string())?;
     check(
         attr(&cells[0], "fill") == SECONDARY_FILL,
@@ -152,8 +152,7 @@ fn secondary_selection_replaces_dedups_and_ignores_order() -> Result<(), String>
         group
             .query_selector(":scope > title")
             .map_err(|e| format!("{e:?}"))?
-            .map(|t| t.text_content())
-            .flatten()
+            .and_then(|t| t.text_content())
             .unwrap_or_default()
             == attr(&group, "aria-label"),
         "the tooltip tracks aria-label",
