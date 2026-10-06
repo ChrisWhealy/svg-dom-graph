@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Control SVG Viewbox size using Rust parameters not hard-coded in HTML (`7d4845c`)
 - Refactor Theta function to be child module of sha3_sponge (`cc68bb7`)
 - Each Keccak function receives its input state as an argument (`0324a5b`)
+- Use secondary selection in ThetaD for prev/next round (``)
 
 ## Fixed
 

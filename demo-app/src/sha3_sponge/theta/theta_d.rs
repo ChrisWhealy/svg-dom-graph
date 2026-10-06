@@ -120,6 +120,11 @@ pub(super) fn build_scene(
 
     if let Some(n) = n {
         scene.set_selection(input, Selection::Cell(n)).map_err(stringify)?;
+        // `prev` and `next` are the two cells of `C` this step reads besides `C[n]` itself — derived from the
+        // selection, so shown as secondary: `prev = C[(n + 4) % 5]` and `next = C[(n + 1) % 5]`.
+        scene
+            .set_secondary_selection(input, &[(n + 4) % 5, (n + 1) % 5])
+            .map_err(stringify)?;
     }
 
     // Unstarted (`n` is `None`): the chain still exists, over a zero `prev`/`next` — see this function's own doc
