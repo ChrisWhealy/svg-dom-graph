@@ -24,12 +24,12 @@ use svg_dom_graph::{
 /// How many named functions each round runs: `Theta`, `Rho`, `Pi`, `Chi`, `Iota`.
 const FUNCTIONS_PER_ROUND: usize = 5;
 
-/// `Theta`'s own nested child `<svg>`, inside this nested Keccak-f view — a fixed id, declared once in
-/// `index.html`, not derived from this scene's own `svg_id` the way [`theta::build_scene`]'s own doc comment
-/// ("Reuse across more than one host") otherwise recommends. This scene's own `svg_id` changes on every round
-/// step (a fresh cloned sibling, via [`rebuild_child`]), but `index.html` can only declare `Theta`'s own child
-/// once; [`theta::build_scene`] clearing and redrawing the same static element fresh on every round, exactly as
-/// it already does on every call, is what keeps this correct regardless of which round is currently showing.
+/// `Theta`'s own nested child `<svg>`, inside this nested Keccak-f view — a fixed id, created once by
+/// `sha3_sponge::create_stage_svgs`, not derived from this scene's own `svg_id` the way [`theta::build_scene`]'s own
+/// doc comment ("Reuse across more than one host") otherwise recommends. This scene's own `svg_id` changes on every
+/// step (a fresh cloned sibling, via [`rebuild_child`]), but only the one `<svg>` for `Theta`'s own child is ever
+/// created; [`theta::build_scene`] clearing and redrawing that same element fresh on every call is what keeps this
+/// correct regardless of which round is currently showing.
 const THETA_CHILD_SVG_ID: &str = "sha3-sponge-keccak-theta-child";
 
 /// Live state this nested walk's own selection toolbar carries across rounds.
@@ -40,7 +40,7 @@ struct KeccakState {
     seed: [u64; 25],
     /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id — passed to
     /// `next_child_svg_id` on every step, never `child_svg_id` itself, so ids stay `prefix-0`, `prefix-1`, ...
-    /// rather than growing a fresh suffix onto the previous one every round.
+    /// rather than growing a fresh suffix onto the previous one every step.
     base_svg_id: String,
     /// The id of whichever `<svg>` currently backs this nested child — see `theta::theta_c::rebuild_child`'s own
     /// doc comment for why every step needs a fresh one.
@@ -143,7 +143,7 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `svg_id`, or if any library call fails.
+/// Returns `Err` if `svg_id` is missing from the DOM, or if any library call fails.
 fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     let container = required_element(&document, svg_id)?;
@@ -189,9 +189,9 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     // can still make "Round Constants" taller than "A Bytes - round {round}"'s own 5 rows.
     let row_y = a_top_rect.origin.y + a_top_rect.size.height + V_GAP;
 
-    // Fixed, not derived from `svg_id`: `svg_id` itself changes on every round step (a fresh sibling `<svg>`,
-    // exactly like `theta::theta_c`'s own per-step clones), but `index.html` can only ever declare one static
-    // element for Theta's own child — see this constant's own doc comment.
+    // Fixed, not derived from `svg_id`: `svg_id` itself changes on every step (a fresh sibling `<svg>`, exactly like
+    // `theta::theta_c`'s own per-step clones), but only one `<svg>` is ever created for Theta's own child — see this
+    // constant's own doc comment.
     // `false`: this round's own `svg_id` is not the shallowest level in `#sha3-sponge-diagram`'s own
     // `.nested-scene-stage` — see `theta::build_scene`'s own doc comment ("Reuse across more than one host") for
     // why a backdrop here would wrongly cover whatever shallower sibling sits behind it.
@@ -287,7 +287,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     // "Round": see this function's own doc comment, "Stepping through it", for why this exists and why it sits
     // far off-canvas rather than anywhere a reader would actually see it.
     let step_values: Vec<u8> = (1..=(ROUND_COUNT * FUNCTIONS_PER_ROUND) as u8).collect();
-    let round_driver = scene
+    let step_driver = scene
         .add_named_data_node(
             Point::new(-10_000.0, -10_000.0),
             "Step",
@@ -322,26 +322,28 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     // The title and toolbar were positioned against the `<svg>`'s old size; the scene cannot observe a resize.
     scene.refresh_layout().map_err(stringify)?;
 
-    Ok((scene, round_driver))
+    Ok((scene, step_driver))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Shows a selection toolbar on `child`, bound to `round_driver`, driving this nested walk's *next* round — the
-/// counterpart to `theta::theta_c::attach_toolbar`. Reapplies `Selection::Cell(round)` afterward for the same
-/// reason that function's own doc comment gives: `show_selection_toolbar` always resets to unstarted first.
+/// Shows a selection toolbar on `child`, bound to `step_driver`, driving this nested walk's *next* position — the
+/// counterpart to `theta::theta_c::attach_toolbar`. A position is one function of one round, `0..120`: five functions
+/// in each of 24 rounds. `Prev`/`Next` move one position, and the stride buttons move a whole round of five.
+/// Reapplies `Selection::Cell(position)` afterward for the same reason that function's own doc comment gives:
+/// `show_selection_toolbar` always resets to unstarted first.
 ///
 /// # Errors
 ///
 /// Returns `Err` if showing the toolbar or reapplying the selection fails.
 fn attach_toolbar(
     child: &Scene,
-    round_driver: NodeId,
-    round: Option<usize>,
+    step_driver: NodeId,
+    position: Option<usize>,
     state: Rc<RefCell<KeccakState>>,
 ) -> Result<(), String> {
     child
         .show_selection_toolbar(
-            round_driver,
+            step_driver,
             // `Prev`/`Next` step one function; the stride buttons step a whole round of five.
             SelectionToolbarOptions::default().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
             move |_scene, _node, transition| {
@@ -349,14 +351,15 @@ fn attach_toolbar(
             },
         )
         .map_err(stringify)?;
-    if let Some(round) = round {
-        child.set_selection(round_driver, Selection::Cell(round)).map_err(stringify)?;
+    if let Some(position) = position {
+        child.set_selection(step_driver, Selection::Cell(position)).map_err(stringify)?;
     }
     Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Rebuilds the nested Keccak-f child for round `to`, and grafts it into [`SCENE`]'s own `parent` in place of
+/// Rebuilds the nested Keccak-f child for walk position `to` — a function of a round, `0..120`, not a round number —
+/// and grafts it into [`SCENE`]'s own `parent` in place of
 /// whichever child is currently shown — the nested counterpart to `theta::theta_c::rebuild_child`; see that
 /// function's own doc comment for why a fresh `Scene`, a fresh sibling `<svg>`, and a view carried over by hand
 /// are all needed here for exactly the same reasons.
@@ -371,18 +374,18 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
         let state = state.borrow();
         (state.seed, state.base_svg_id.clone(), state.child_svg_id.clone())
     };
-    // This walk is never "not started": it always has round `0`'s own input, so a step back from round `0` (or a
-    // restart) lands on round `0` itself, with its own selection, not on an unselected one.
+    // This walk is never "not started": it always has round `0`'s own input, so a step back from the first position
+    // (round `0`'s `Theta`), or a restart, lands on that position itself, selected, not on an unselected one.
     let next_id = next_child_svg_id(&base_svg_id);
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, round_driver) = build_scene(&next_id, seed, to.unwrap_or(0))?;
+    let (new_child, step_driver) = build_scene(&next_id, seed, to.unwrap_or(0))?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }
-    attach_toolbar(&new_child, round_driver, to, state.clone())?;
+    attach_toolbar(&new_child, step_driver, to, state.clone())?;
 
     SCENE.with_borrow_mut(|slot| -> Result<(), String> {
         let (parent, old_child, node) = slot.take().ok_or("the Keccak-f scene was not initialised")?;
@@ -399,20 +402,20 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds this nested Keccak-f child at round `0`, selected, against `svg_id`, and wires its own stepping
-/// toolbar. `seed` is round `1`'s own real input — the sponge's own combined state flowing into `Keccak-f\[1600\]`.
+/// Builds this nested Keccak-f child at its first position — round `0`'s `Theta` — selected, against `svg_id`, and wires its own stepping
+/// toolbar. `seed` is round `0`'s own real input — the sponge's own combined state flowing into `Keccak-f\[1600\]`.
 /// Called once, from `sha3_sponge::build_scene`, right when "Keccak f(1600)" is added as a container node.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `svg_id`, or if any library call fails.
+/// Returns `Err` if `svg_id` is missing from the DOM, or if any library call fails.
 pub(crate) fn build_initial_scene(svg_id: &str, seed: [u64; 25]) -> Result<Scene, String> {
-    let (child, round_driver) = build_scene(svg_id, seed, 0)?;
+    let (child, step_driver) = build_scene(svg_id, seed, 0)?;
     let state = Rc::new(RefCell::new(KeccakState {
         seed,
         base_svg_id: svg_id.to_string(),
         child_svg_id: svg_id.to_string(),
     }));
-    attach_toolbar(&child, round_driver, Some(0), state)?;
+    attach_toolbar(&child, step_driver, Some(0), state)?;
     Ok(child)
 }

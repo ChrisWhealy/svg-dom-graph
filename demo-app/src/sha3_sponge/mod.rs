@@ -178,7 +178,7 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 64-byte input block passing
+/// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 136-byte SHA3-256 rate block passing
 /// through a single call to `Keccak-f\[1600\]`. Nothing here drags.
 ///
 /// # What this draws
@@ -232,7 +232,8 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`, or if any library call fails.
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close` (the anchor `create_stage_svgs` creates this panel's
+/// `<svg>`s before), or if any library call fails.
 fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     create_stage_svgs(&document)?;
@@ -341,7 +342,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // The real combined 25-lane state flowing into `Keccak-f[1600]` — "Capacity" (always all-zero in this demo)
     // plus whatever "XOR" currently shows, the same "not yet written" convention XOR itself follows (see this
     // function's own doc comment, "Stepping through it"): all-zero before `stage` reaches it, the real elementwise
-    // XOR afterward. `keccak::build_initial_scene`'s own round 1 starts from exactly this.
+    // XOR afterward. `keccak::build_initial_scene`'s own round 0 starts from exactly this.
     let a_bytes_seed: [u64; 25] =
         std::array::from_fn(|lane| if lane < RATE_LANES { xor_display_values[lane] } else { 0 });
     let keccak_child = keccak::build_initial_scene("sha3-sponge-keccak-child", a_bytes_seed)?;
@@ -527,7 +528,8 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`, or if any library call fails.
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close` (the anchor `create_stage_svgs` creates this panel's
+/// `<svg>`s before), or if any library call fails.
 fn rebuild(stage: Option<usize>) -> Result<(), String> {
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
 
@@ -556,7 +558,7 @@ fn rebuild(stage: Option<usize>) -> Result<(), String> {
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`/`#sha3-sponge-close`, or if any library call
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if any library call
 /// fails.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
     rebuild(None)?;
