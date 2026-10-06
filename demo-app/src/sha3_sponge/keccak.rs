@@ -369,14 +369,12 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
     };
     // This walk is never "not started": it always has round `0`'s own input, so a step back from round `0` (or a
     // restart) lands on round `0` itself, with its own selection, not on an unselected one.
-    let to = Some(to.unwrap_or(0));
-    let position = to.unwrap_or(0);
     let next_id = next_child_svg_id(&base_svg_id);
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, round_driver) = build_scene(&next_id, seed, position)?;
+    let (new_child, round_driver) = build_scene(&next_id, seed, to.unwrap_or(0))?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }
