@@ -906,8 +906,9 @@ impl Scene {
     /// `values` must be the same width of integer, and the same number of values, as the node was drawn with. The
     /// grid then keeps exactly the size, shape and position it already has, and so does every connector attached to
     /// it. The node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn
-    /// with, so a [`DataFormat::Decimal`] value with more digits than any value shown when the node was drawn will
-    /// overflow its cell; [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] values never change width.
+    /// with, so a [`crate::model::content::DataFormat::Decimal`] value with more digits than any value shown when the
+    /// node was drawn will overflow its cell; [`crate::model::content::DataFormat::Hexadecimal`] and
+    /// [`crate::model::content::DataFormat::Binary`] values never change width.
     ///
     /// Only for a node with two or more values drawn via [`add_data_node`](Self::add_data_node)/
     /// [`add_named_data_node`](Self::add_named_data_node) and their `_with` variants. A single-value node, and an
