@@ -23,7 +23,7 @@ use crate::{
 use action::SelectionToolbarAction;
 use button::SelectionToolbarButton;
 use layout::layout;
-pub use options::SelectionToolbarOptions;
+pub use options::{SelectionStride, SelectionToolbarOptions};
 use std::{cell::RefCell, rc::Rc, rc::Weak};
 use svg_dom::{DominantBaseline, SvgNode, SvgRoot, TextAnchor, root::utils::Point};
 
@@ -35,6 +35,8 @@ const FOCUS_STROKE_WIDTH: f64 = 3.0;
 const DISABLED_OPACITY: &str = "0.4";
 /// Every button's own natural size — a fixed-width word, not square like the zoom toolbar's "+"/"−".
 const BUTTON_WIDTH: f64 = 64.0;
+/// A stride button's own width — wider, since its label (`Next Round`) is longer than `Restart`.
+const STRIDE_BUTTON_WIDTH: f64 = 104.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a `SelectionTransition` reports: a change to the managed node's own flat position, never which button
@@ -85,10 +87,18 @@ impl SelectionToolbar {
 /// Writes the position of `toolbar`'s own bar and every one of its buttons, for `area`.
 fn place(toolbar: &SelectionToolbar, area: svg_dom::root::utils::Rect, scratch: &mut String) -> Result<(), Error> {
     let options = toolbar.options;
-    // Exactly three buttons, always — see `SelectionToolbarAction::ALL` — so this is a fixed-size array, not a
-    // `Vec` collected from `toolbar.buttons`: every button shares the same size, so there's nothing in `toolbar`
-    // itself this genuinely needs to read, and `layout` only ever needs a `&[Size]` slice.
-    let sizes = [svg_dom::root::utils::Size::new(BUTTON_WIDTH, options.button_height); 3];
+    // One size per button, in the same order as `toolbar.buttons`: a stride button is wider than the other three.
+    let sizes: Vec<_> = toolbar
+        .buttons
+        .iter()
+        .map(|button| {
+            let width = match button.action {
+                SelectionToolbarAction::PrevStride | SelectionToolbarAction::NextStride => STRIDE_BUTTON_WIDTH,
+                _ => BUTTON_WIDTH,
+            };
+            svg_dom::root::utils::Size::new(width, options.button_height)
+        })
+        .collect();
     let laid_out = layout(options.edge, area, &sizes, options.gap, options.margin);
 
     toolbar.group.set_transform_fmt(
@@ -128,23 +138,29 @@ fn build_button(
     node: NodeId,
     action: SelectionToolbarAction,
     on_step: &OnStep,
-    height: f64,
+    options: SelectionToolbarOptions,
 ) -> Result<SelectionToolbarButton, Error> {
+    let (height, stride) = (options.button_height, options.stride);
+    let stride_label = stride.map_or("", |stride| stride.label);
     let group = svg.group()?;
     bar.append(&group)?;
     group.set_attr("role", "button")?;
     group.set_attr("tabindex", "0")?;
-    group.set_attr("aria-label", action.aria_label())?;
+    group.set_attr("aria-label", &action.aria_label(stride_label))?;
     group.set_attr("style", BUTTON_STYLE)?;
 
-    let rect = svg.rect(Point::origin(), svg_dom::root::utils::Size::new(BUTTON_WIDTH, height))?;
+    let width = match action {
+        SelectionToolbarAction::PrevStride | SelectionToolbarAction::NextStride => STRIDE_BUTTON_WIDTH,
+        _ => BUTTON_WIDTH,
+    };
+    let rect = svg.rect(Point::origin(), svg_dom::root::utils::Size::new(width, height))?;
     group.append(&rect)?;
     rect.set_fill(PLAIN_BOX_FILL)?;
     rect.set_stroke(BOX_STROKE)?;
     rect.set_stroke_width(BUTTON_STROKE_WIDTH)?;
     rect.set_attr("rx", "4")?;
 
-    let label = svg.text(Point::origin(), action.label())?;
+    let label = svg.text(Point::origin(), &action.label(stride_label))?;
     group.append(&label)?;
     label.set_text_anchor(TextAnchor::Middle)?;
     label.set_dominant_baseline(DominantBaseline::Middle)?;
@@ -174,14 +190,14 @@ fn build_button(
     // cycle through it either — see `Scene::show_selection_toolbar`'s own doc comment ("Ownership").
     let on_click_inner = inner.clone();
     let on_click_step = on_step.clone();
-    group.on_click(move |_| apply(&on_click_inner, node, action, &on_click_step))?;
+    group.on_click(move |_| apply(&on_click_inner, node, action, stride, &on_click_step))?;
 
     let on_key_inner = inner.clone();
     let on_key_step = on_step.clone();
     group.on_keydown(move |event| {
         if event.key() == "Enter" || event.key() == " " {
             event.prevent_default();
-            apply(&on_key_inner, node, action, &on_key_step);
+            apply(&on_key_inner, node, action, stride, &on_key_step);
         }
     })?;
 
@@ -205,7 +221,13 @@ fn build_button(
 ///
 /// A disabled button's own activation reaches here too — `action.next_position` returning `None` is exactly what
 /// stops it: neither `set_selection` nor `on_step` runs, and nothing about the node changes.
-fn apply(inner: &Weak<RefCell<SceneInner>>, node: NodeId, action: SelectionToolbarAction, on_step: &OnStep) {
+fn apply(
+    inner: &Weak<RefCell<SceneInner>>,
+    node: NodeId,
+    action: SelectionToolbarAction,
+    stride: Option<SelectionStride>,
+    on_step: &OnStep,
+) {
     let Some(inner_rc) = inner.upgrade() else { return };
     let scene = Scene { inner: inner_rc };
 
@@ -215,7 +237,9 @@ fn apply(inner: &Weak<RefCell<SceneInner>>, node: NodeId, action: SelectionToolb
         let NodeContent::Data(content) = &node_data.content else { return };
         let Some(handles) = borrowed.node_handle(node) else { return };
         let from = content.flat_index(&handles.selection);
-        let Some(to) = action.next_position(from, content.len()) else { return };
+        let Some(to) = action.next_position(from, content.len(), stride.map_or(1, |stride| stride.step)) else {
+            return;
+        };
         let new_selection = match to {
             Some(i) => content.natural_selection(i).unwrap_or(Selection::None),
             None => Selection::None,
@@ -251,9 +275,10 @@ impl SceneInner {
         let Some(handles) = self.node_handle(toolbar.node) else { return Ok(()) };
         let current = content.flat_index(&handles.selection);
         let len = content.len();
+        let stride_step = toolbar.options.stride.map_or(1, |stride| stride.step);
 
         for button in &toolbar.buttons {
-            let enabled = button.action.is_enabled(current, len);
+            let enabled = button.action.is_enabled(current, len, stride_step);
             if button.enabled.get() == Some(enabled) {
                 continue;
             }
@@ -300,6 +325,14 @@ impl Scene {
     /// Showing the toolbar resets `node` to [`Selection::None`] — "unstarted", before element `0` is ever processed
     /// — as its own first *committed* act, regardless of whatever `Selection` `node` already held. See "Failure
     /// guarantee" below for why "first committed act" is not the same as "first thing this call does."
+    ///
+    /// # An optional stride
+    ///
+    /// With [`SelectionToolbarOptions::stride`] set, the bar also holds `Prev <label>` and `Next <label>`, which move
+    /// [`SelectionStride::step`] cells at a time — for cells that fall into equal groups, such as the five functions
+    /// of each Keccak round. Both are clamped to the first and last cell, are disabled when they could not move, and
+    /// report an ordinary [`SelectionTransition`]. `Prev <label>` never goes back to the unstarted state. From
+    /// unstarted, `Next <label>` lands on the last cell of the first group.
     ///
     /// # Disabled buttons
     ///
@@ -371,9 +404,9 @@ impl Scene {
         let built = (|| {
             group.set_attr("role", "toolbar")?;
             group.set_attr("aria-label", "Selection controls")?;
-            let buttons = SelectionToolbarAction::ALL
+            let buttons = SelectionToolbarAction::buttons(options.stride.is_some())
                 .into_iter()
-                .map(|action| build_button(&inner.svg, &group, &weak, node, action, &on_step, options.button_height))
+                .map(|action| build_button(&inner.svg, &group, &weak, node, action, &on_step, options))
                 .collect::<Result<Vec<_>, _>>()?;
             Ok::<_, Error>(buttons)
         })();

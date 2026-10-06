@@ -15,33 +15,33 @@ use svg_dom_graph::{
 };
 use wasm_bindgen::JsCast;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Chi`'s own nested child `<svg>` — a fixed id, for the same reason as `rho::CHILD_SVG_ID`.
 pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-chi-child";
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The flat lane numbers `Chi` reads for lane `lane` (`x + 5y`): `(x, y)`, `(x + 1 mod 5, y)` and `(x + 2 mod 5, y)`.
 fn window(lane: usize) -> [usize; 3] {
     let (x, y) = (lane % 5, lane / 5);
     [x + 5 * y, (x + 1) % 5 + 5 * y, (x + 2) % 5 + 5 * y]
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Chi` for one lane: `w0 ^ (!w1 & w2)`.
 fn chi_lane(w0: u64, w1: u64, w2: u64) -> u64 {
     w0 ^ (!w1 & w2)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// SHA3's real `Chi`, over a whole 25-lane state.
-fn chi(input: [u64; 25]) -> [u64; 25] {
+pub(super) fn chi(input: [u64; 25]) -> [u64; 25] {
     std::array::from_fn(|lane| {
         let [i0, i1, i2] = window(lane);
         chi_lane(input[i0], input[i1], input[i2])
     })
 }
 
-/// The 25 lanes `Chi` produces from `Pi`'s own output — what `Iota` would take as its input.
-pub(super) fn output_lanes() -> [u64; 25] {
-    chi(super::pi::output_lanes())
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds `svg_id` from scratch for step `n` (`0..25`, one per lane), `None` meaning unstarted.
 ///
 /// Rows, top to bottom:
@@ -203,6 +203,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     Ok((scene, input_node))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Live state this nested child's own selection toolbar carries across steps.
 struct ChiState {
     /// `Chi`'s own real input, never mutated.
@@ -212,6 +213,7 @@ struct ChiState {
     child_svg_id: String,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 thread_local! {
     // The round `Scene`, this nested `Chi` child, and the container `NodeId` that owns it — the same trio as
     // `theta::theta_d`'s own `SCENE`.
@@ -256,6 +258,7 @@ fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<Ref
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the nested `Chi` child for step `to` and grafts it into [`SCENE`]'s own `parent` in place of the one
 /// currently shown — the same rebuild as `theta::theta_d::rebuild_child`.
 ///
@@ -294,8 +297,9 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), 
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Chi` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its input
-/// is [`pi::output_lanes`](super::pi::output_lanes). Called once per round, from `keccak::build_scene`, right before
+/// is `input`, the lanes `Pi` produced. Called once per round, from `keccak::build_scene`, right before
 /// "Chi" is added as a container node.
 ///
 /// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
@@ -304,7 +308,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), 
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing from the DOM, or if any library call fails.
-pub(super) fn build_initial_scene() -> Result<Scene, String> {
+pub(super) fn build_initial_scene(input: [u64; 25]) -> Result<Scene, String> {
     let document = crate::util::document()?;
     let stale = document
         .query_selector_all("[id^=\"sha3-sponge-chi-child-\"]")
@@ -322,7 +326,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
         svg_dom::root::utils::Size::new(1000.0, 1000.0),
     )?;
 
-    let input = super::pi::output_lanes();
     let (child, driver) = build_scene(CHILD_SVG_ID, input, None)?;
     let state = Rc::new(RefCell::new(ChiState {
         input,
@@ -332,28 +335,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
     Ok(child)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
-mod unit_tests {
-    use super::{chi, chi_lane, window};
-
-    #[test]
-    fn chi_reads_three_lanes_along_x_with_wraparound() {
-        assert_eq!(window(0), [0, 1, 2]);
-        assert_eq!(window(3), [3, 4, 0]);
-        assert_eq!(window(9), [9, 5, 6]);
-    }
-
-    #[test]
-    fn chi_matches_the_fips_202_formula() {
-        // `A'[x, y] = A[x, y] ^ ((A[(x + 1) mod 5, y] ^ 1) & A[(x + 2) mod 5, y])`, with `^ 1` a bitwise complement.
-        let input: [u64; 25] = std::array::from_fn(|i| 0x9E37_79B9_7F4A_7C15_u64.wrapping_mul(i as u64 + 1));
-        let out = chi(input);
-        for y in 0..5 {
-            for x in 0..5 {
-                let (a, b, c) = (input[x + 5 * y], input[(x + 1) % 5 + 5 * y], input[(x + 2) % 5 + 5 * y]);
-                assert_eq!(out[x + 5 * y], a ^ (!b & c));
-                assert_eq!(out[x + 5 * y], chi_lane(a, b, c));
-            }
-        }
-    }
-}
+mod unit_tests;

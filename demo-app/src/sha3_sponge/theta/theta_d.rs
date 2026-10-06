@@ -78,7 +78,12 @@ pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
-pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> Result<(Scene, NodeId), String> {
+pub(super) fn build_scene(
+    svg_id: &str,
+    a: [[u64; 5]; 5],
+    n: Option<usize>,
+    display: [u64; 5],
+) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     crate::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
@@ -89,7 +94,7 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
         .show_scene_title("Keccak Theta D", SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    let c = crate::selection::theta_c_outputs();
+    let c = crate::selection::theta_c_outputs(a);
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
@@ -210,13 +215,16 @@ pub(super) fn attach_toolbar(
 /// DOM, or if any library call fails.
 fn rebuild_child(to: Option<usize>, display: [u64; 5], state: Rc<RefCell<SteppedChildState>>) -> Result<(), String> {
     let document = crate::util::document()?;
-    let previous_id = state.borrow().child_svg_id.clone();
+    let (input, previous_id) = {
+        let state = state.borrow();
+        (state.input, state.child_svg_id.clone())
+    };
     let next_id = next_child_svg_id("theta-thetad-child");
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, output) = build_scene(&next_id, to, display)?;
+    let (new_child, output) = build_scene(&next_id, input, to, display)?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }

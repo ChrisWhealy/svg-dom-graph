@@ -1,10 +1,12 @@
 //! `sha3_sponge`'s own "Keccak f(1600)" node: a nested `Scene` stepping through all 24 real Keccak-f[1600] rounds.
 //!
 //! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one
-//! vertical pipeline, plus the real round constant [`Iota`](Self) would consume. `Theta` is a genuine nested
-//! `Scene`, reusing `crate::sha3_sponge::theta::build_scene` exactly as `panel-theta` does; `Rho`/`Pi`/`Chi`/`Iota` are plain
-//! placeholder boxes — see [`fake_round_output`]'s own doc comment for why the round's own output is one too.
+//! pipeline, plus the real round constant `Iota` consumes. Each is a genuine nested `Scene`, and each is handed the
+//! state it consumes: [`keccak_f::round_traces`](super::keccak_f::round_traces) runs the real permutation over the
+//! sponge's own input state and keeps the state after every function, so every number in a child scene is derived
+//! from the one immediately upstream of it, and "A Bytes Output" is the real result of the round.
 
+use super::keccak_f::{ROUND_CONSTANTS, ROUND_COUNT, round_traces, to_theta_grid};
 use crate::{
     sha3_sponge::{chi, iota, pi, rho, theta},
     util::{create_child_svg, next_child_svg_id, required_element, stringify},
@@ -15,12 +17,12 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
-        SelectionToolbarOptions, Side, ToolbarOptions,
+        SelectionStride, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 
-/// How many rounds `Keccak-f[1600]` actually runs.
-pub(crate) const ROUND_COUNT: usize = 24;
+/// How many named functions each round runs: `Theta`, `Rho`, `Pi`, `Chi`, `Iota`.
+const FUNCTIONS_PER_ROUND: usize = 5;
 
 /// `Theta`'s own nested child `<svg>`, inside this nested Keccak-f view — a fixed id, declared once in
 /// `index.html`, not derived from this scene's own `svg_id` the way [`theta::build_scene`]'s own doc comment
@@ -30,41 +32,11 @@ pub(crate) const ROUND_COUNT: usize = 24;
 /// it already does on every call, is what keeps this correct regardless of which round is currently showing.
 const THETA_CHILD_SVG_ID: &str = "sha3-sponge-keccak-theta-child";
 
-/// The real Keccak-f[1600] round constants, `RC[0..24]` — see keccak.team's own specification summary
-/// (<https://keccak.team/keccak_specs_summary.html>). Real reference data, unlike [`fake_round_output`]'s own
-/// formula: this is the one part of this nested scene that is not a placeholder.
-pub(super) const ROUND_CONSTANTS: [u64; ROUND_COUNT] = [
-    0x0000_0000_0000_0001,
-    0x0000_0000_0000_8082,
-    0x8000_0000_0000_808a,
-    0x8000_0000_8000_8000,
-    0x0000_0000_0000_808b,
-    0x0000_0000_8000_0001,
-    0x8000_0000_8000_8081,
-    0x8000_0000_0000_8009,
-    0x0000_0000_0000_008a,
-    0x0000_0000_0000_0088,
-    0x0000_0000_8000_8009,
-    0x0000_0000_8000_000a,
-    0x0000_0000_8000_808b,
-    0x8000_0000_0000_008b,
-    0x8000_0000_0000_8089,
-    0x8000_0000_0000_8003,
-    0x8000_0000_0000_8002,
-    0x8000_0000_0000_0080,
-    0x0000_0000_0000_800a,
-    0x8000_0000_8000_000a,
-    0x8000_0000_8000_8081,
-    0x8000_0000_0000_8080,
-    0x0000_0000_8000_0001,
-    0x8000_0000_8000_8008,
-];
-
 /// Live state this nested walk's own selection toolbar carries across rounds.
 struct KeccakState {
     /// Round `0`'s own real input — the sponge's own combined `Capacity`/`Rate` state, handed down from
     /// `sha3_sponge::build_scene` — never itself mutated; every round's own real input/output is derived afresh
-    /// from this via [`round_io`] on every step.
+    /// from this via [`round_traces`] on every step.
     seed: [u64; 25],
     /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id — passed to
     /// `next_child_svg_id` on every step, never `child_svg_id` itself, so ids stay `prefix-0`, `prefix-1`, ...
@@ -132,40 +104,12 @@ pub(crate) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `input`'s own clearly fake "round output" — `rotl` every lane by a round-dependent amount, then `XOR` the real
-/// [`ROUND_CONSTANTS`] of `round` into every lane. Real Keccak-f's own five sub-functions compute something far
-/// more structured than this — in particular `Chi`'s own real step is non-linear (`AND`/`NOT`, not `XOR`) — so
-/// this formula could never be mistaken for the real permutation. It exists only to give each round's own output
-/// array visibly different, round-dependent content, matching this demo's confirmed "placeholder output" scope.
-fn fake_round_output(input: [u64; 25], round: usize) -> [u64; 25] {
-    let shift = (round as u32 % 63) + 1;
-    std::array::from_fn(|lane| input[lane].rotate_left(shift) ^ ROUND_CONSTANTS[round])
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every round's own `(input, output)` pair, chained from `seed`: round `0`'s own input is `seed` itself, and
-/// every later round's own input is the previous round's own [`fake_round_output`] — see
-/// `sha3_sponge::keccak`'s own module doc comment, "the bottom A Bytes node is initialised and the data copied to
-/// the top A Bytes node" (point 7 of the original request), for why this chains rather than recomputing `seed`
-/// fresh every round.
-fn round_io(seed: [u64; 25]) -> [([u64; 25], [u64; 25]); ROUND_COUNT] {
-    let mut pairs = [([0u64; 25], [0u64; 25]); ROUND_COUNT];
-    let mut current = seed;
-    for (round, pair) in pairs.iter_mut().enumerate() {
-        let output = fake_round_output(current, round);
-        *pair = (current, output);
-        current = output;
-    }
-    pairs
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds `svg_id` from scratch for round `round` (`0..24`), `None` meaning round `0` with no round selected — which
 /// only draws without the round constant highlighted; [`build_initial_scene`]/[`rebuild_child`] never ask for it.
 ///
 /// # What this draws
 ///
-/// Row 1 holds "A Bytes - round `{round}`" — the real 25-lane state this round starts from, [`round_io`]'s own
+/// Row 1 holds "A Bytes - round `{round}`" — the real 25-lane state this round starts from, [`round_traces`]'s own
 /// `round`th input, derived from `seed`. Beside it, "Round Constants" holds all 24 real [`ROUND_CONSTANTS`] as a
 /// 4-column, 6-row grid — a single column reads just as well but takes far more vertical space. Neither is
 /// especially tall, so both fit row 1 together, keeping this round's own overall height down further still,
@@ -178,13 +122,13 @@ fn round_io(seed: [u64; 25]) -> [([u64; 25], [u64; 25]); ROUND_COUNT] {
 /// more row-heights on top — a nested Scene's own viewBox, however tall, still only ever displays within its own
 /// parent's fixed-size frame. `Theta` is a genuine container node, nesting [`theta::build_scene`] exactly as
 /// `panel-theta` draws it standalone — click it to drill in, the &times; in its own frame's corner to come back.
-/// `Rho`, `Pi`, `Chi`, and `Iota` are plain placeholder boxes: implementing SHA3's real rotate-by-offset,
-/// lane-permute, non-linear-combine, and constant-XOR steps is out of scope here — see [`fake_round_output`]'s
-/// own doc comment. A connector from "Round Constants" down into `Iota`'s own east side marks it as the one real
-/// value `Iota` actually consumes each round. `Iota`'s own output is not actually computed from it, though.
+/// `Rho`, `Pi`, `Chi` and `Iota` are container nodes too, each nesting a scene that steps through its own function
+/// over the state the one before it produced. A connector from "Round Constants" into `Iota`'s own east side marks the
+/// one real value `Iota` consumes each round.
 ///
-/// The bottom row is "A Bytes Output" — [`round_io`]'s own `round`th output, [`fake_round_output`]'s placeholder
-/// result, not a real permutation of row 1.
+/// The bottom row is "A Bytes Output" — [`round_traces`]'s own `round`th output: the real result of this round, and
+/// the next round's own "A Bytes" input. It stays all zeros until the walk reaches `Iota`, the round's own last
+/// function, since the round has produced no result before then.
 ///
 /// # Stepping through it
 ///
@@ -196,19 +140,25 @@ fn round_io(seed: [u64; 25]) -> [([u64; 25], [u64; 25]); ROUND_COUNT] {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `svg_id`, or if any library call fails.
-fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(Scene, NodeId), String> {
+fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
-    let r = round.unwrap_or(0);
+    // `position` counts every function of every round in order: five per round, so round `r` is `position / 5`, and
+    // the function in focus is the `position % 5`th of `Theta`/`Rho`/`Pi`/`Chi`/`Iota`.
+    let r = position / FUNCTIONS_PER_ROUND;
+    let focused_function = position % FUNCTIONS_PER_ROUND;
     scene
         .show_scene_title(format!("Keccak f(1600) Round {r}"), SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    let (a_in, a_out) = round_io(seed)[r];
+    // Every number below is derived from the one upstream of it: this round's own trace holds the state at the start
+    // of the round and after each of its five functions, and each nested scene is handed the one it consumes.
+    let trace = round_traces(seed)[r];
+    let (a_in, a_out) = (trace.input, trace.output);
     let hex25 = |values: [u64; 25]| DataNodeContent::new(NodeValues::U64(values.to_vec()), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
@@ -241,42 +191,40 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
     // `false`: this round's own `svg_id` is not the shallowest level in `#sha3-sponge-diagram`'s own
     // `.nested-scene-stage` — see `theta::build_scene`'s own doc comment ("Reuse across more than one host") for
     // why a backdrop here would wrongly cover whatever shallower sibling sits behind it.
-    let theta_child = theta::build_scene(THETA_CHILD_SVG_ID, false)?;
+    let theta_child = theta::build_scene(THETA_CHILD_SVG_ID, false, to_theta_grid(trace.input))?;
     THETA_CHILD.with_borrow_mut(|slot| *slot = Some(theta_child.clone()));
     let theta = scene
         .add_container_node(Point::new(row_x, row_y), fn_size, "Theta", theta_child)
         .map_err(stringify)?;
-    scene.make_enterable(theta).map_err(stringify)?;
 
-    let rho_child = rho::build_initial_scene()?;
+    let rho_child = rho::build_initial_scene(trace.theta)?;
     let rho = scene
         .add_container_node(Point::new(row_x + row_stride, row_y), fn_size, "Rho", rho_child.clone())
         .map_err(stringify)?;
-    scene.make_enterable(rho).map_err(stringify)?;
     rho::init_scene(scene.clone(), rho_child, rho);
-    let pi_child = pi::build_initial_scene()?;
+    let pi_child = pi::build_initial_scene(trace.rho)?;
     let pi = scene
         .add_container_node(Point::new(row_x + 2.0 * row_stride, row_y), fn_size, "Pi", pi_child.clone())
         .map_err(stringify)?;
-    scene.make_enterable(pi).map_err(stringify)?;
     pi::init_scene(scene.clone(), pi_child, pi);
-    let chi_child = chi::build_initial_scene()?;
+    let chi_child = chi::build_initial_scene(trace.pi)?;
     let chi = scene
         .add_container_node(Point::new(row_x + 3.0 * row_stride, row_y), fn_size, "Chi", chi_child.clone())
         .map_err(stringify)?;
-    scene.make_enterable(chi).map_err(stringify)?;
     chi::init_scene(scene.clone(), chi_child, chi);
-    let iota_child = iota::build_initial_scene(r)?;
+    let iota_child = iota::build_initial_scene(r, trace.chi)?;
     let iota = scene
         .add_container_node(Point::new(row_x + 4.0 * row_stride, row_y), fn_size, "Iota", iota_child.clone())
         .map_err(stringify)?;
-    scene.make_enterable(iota).map_err(stringify)?;
     iota::init_scene(scene.clone(), iota_child, iota);
     let iota_rect = scene.node_rect(iota).map_err(stringify)?;
 
     let a_out_y = iota_rect.origin.y + iota_rect.size.height + V_GAP;
+    // Until the round's own last function, `Iota`, is reached, the round has no result yet: the output stays
+    // initialised to zeros, the same "not yet written" look the sponge scene's own "XOR" uses.
+    let shown_output = if focused_function == FUNCTIONS_PER_ROUND - 1 { a_out } else { [0; 25] };
     let a_out = scene
-        .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(a_out))
+        .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(shown_output))
         .map_err(stringify)?;
 
     // "Round Constants" sits so that its midpoint is aligned with the beside "A Bytes - round {round}", in the same row, not below the function row —
@@ -325,14 +273,21 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
         )
         .map_err(stringify)?;
 
+    // Only the function the walk is currently on is clickable, and rung: entering one before the walk reaches it would
+    // show a view whose own input is not yet that function's real input. Every step rebuilds this whole `Scene`, so
+    // nothing needs undoing when the walk moves on, or back.
+    let current = [theta, rho, pi, chi, iota][focused_function];
+    scene.make_enterable(current).map_err(stringify)?;
+    scene.set_focus(current, true).map_err(stringify)?;
+
     // "Round": see this function's own doc comment, "Stepping through it", for why this exists and why it sits
     // far off-canvas rather than anywhere a reader would actually see it.
-    let round_values: Vec<u8> = (1..=ROUND_COUNT as u8).collect();
+    let step_values: Vec<u8> = (1..=(ROUND_COUNT * FUNCTIONS_PER_ROUND) as u8).collect();
     let round_driver = scene
         .add_named_data_node(
             Point::new(-10_000.0, -10_000.0),
-            "Round",
-            DataNodeContent::new(NodeValues::U8(round_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
+            "Step",
+            DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
 
@@ -383,7 +338,8 @@ fn attach_toolbar(
     child
         .show_selection_toolbar(
             round_driver,
-            SelectionToolbarOptions::default(),
+            // `Prev`/`Next` step one function; the stride buttons step a whole round of five.
+            SelectionToolbarOptions::default().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
             move |_scene, _node, transition| {
                 let _ = rebuild_child(transition.to, state.clone());
             },
@@ -414,12 +370,13 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
     // This walk is never "not started": it always has round `0`'s own input, so a step back from round `0` (or a
     // restart) lands on round `0` itself, with its own selection, not on an unselected one.
     let to = Some(to.unwrap_or(0));
+    let position = to.unwrap_or(0);
     let next_id = next_child_svg_id(&base_svg_id);
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, round_driver) = build_scene(&next_id, seed, to)?;
+    let (new_child, round_driver) = build_scene(&next_id, seed, position)?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }
@@ -448,7 +405,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 ///
 /// Returns `Err` if `index.html` is missing `svg_id`, or if any library call fails.
 pub(crate) fn build_initial_scene(svg_id: &str, seed: [u64; 25]) -> Result<Scene, String> {
-    let (child, round_driver) = build_scene(svg_id, seed, Some(0))?;
+    let (child, round_driver) = build_scene(svg_id, seed, 0)?;
     let state = Rc::new(RefCell::new(KeccakState {
         seed,
         base_svg_id: svg_id.to_string(),

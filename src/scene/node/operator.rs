@@ -178,6 +178,7 @@ fn draw_operator_box(
             binary_operator_input_edges: None,
             outer_rect: outer_el,
             cell_rects: vec![value_cell_el],
+            cell_texts: Vec::new(),
             cell_stroke_width: "1",
             selection: Selection::None,
             secondary: Vec::new(),

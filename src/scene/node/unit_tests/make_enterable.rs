@@ -144,3 +144,52 @@ fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> 
         "a retried make_enterable did not install role",
     )
 }
+
+/// `make_unenterable` stops a click and Enter from entering the nested `Scene`, removes the button affordances, is
+/// harmless when called again, and lets the node be made enterable once more.
+#[wasm_bindgen_test]
+fn make_unenterable_stops_activation_and_allows_making_it_enterable_again() -> Result<(), String> {
+    let parent = Scene::new(make_svg("make-unenterable-parent")).map_err(|e| e.to_string())?;
+    let child = Scene::new(make_svg("make-unenterable-child")).map_err(|e| e.to_string())?;
+    let node = parent
+        .add_container_node(Point::origin(), Size::new(60.0, 40.0), "A", child.clone())
+        .map_err(|e| e.to_string())?;
+    parent.make_enterable(node).map_err(|e| e.to_string())?;
+    parent.make_unenterable(node).map_err(|e| e.to_string())?;
+    parent.make_unenterable(node).map_err(|e| e.to_string())?;
+
+    let group = parent.inner.borrow().node_handle(node).unwrap().group.as_element().clone();
+    click(&group);
+    keydown(&group, "Enter");
+    check(!child.is_focused(), "a node made unenterable was still entered")?;
+    check(
+        group.get_attribute("role").is_none() && group.get_attribute("tabindex").is_none(),
+        "the button role and tab stop were left behind",
+    )?;
+    check(
+        group.get_attribute("style").is_none_or(|style| !style.contains("pointer")),
+        "the pointer cursor was left behind",
+    )?;
+
+    parent.make_enterable(node).map_err(|e| e.to_string())?;
+    click(&group);
+    check(child.is_focused(), "a node made enterable again was not entered")
+}
+
+/// `make_unenterable` rejects a non-container node and does nothing for one never made enterable.
+#[wasm_bindgen_test]
+fn make_unenterable_rejects_a_non_container_node_and_ignores_one_never_enterable() -> Result<(), String> {
+    let parent = Scene::new(make_svg("make-unenterable-validation")).map_err(|e| e.to_string())?;
+    let plain = parent
+        .add_node(Point::origin(), Size::new(40.0, 20.0), "Plain")
+        .map_err(|e| e.to_string())?;
+    check(
+        matches!(parent.make_unenterable(plain), Err(Error::NotAContainerNode(id)) if id == plain),
+        "a plain node was not rejected",
+    )?;
+    let child = Scene::new(make_svg("make-unenterable-validation-child")).map_err(|e| e.to_string())?;
+    let node = parent
+        .add_container_node(Point::new(100.0, 0.0), Size::new(60.0, 40.0), "A", child)
+        .map_err(|e| e.to_string())?;
+    parent.make_unenterable(node).map_err(|e| e.to_string())
+}

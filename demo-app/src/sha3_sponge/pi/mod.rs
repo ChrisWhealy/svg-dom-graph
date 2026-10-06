@@ -16,9 +16,11 @@ use svg_dom_graph::{
 };
 use wasm_bindgen::JsCast;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Pi`'s own nested child `<svg>` — a fixed id, for the same reason as `rho::CHILD_SVG_ID`.
 pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-pi-child";
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where `Pi` writes lane `lane` (flat `x + 5y`): to flat lane `x' + 5y'`, with `x' = y` and `y' = (2x + 3y) mod 5`.
 /// Returns `(x, y, y_prime, destination)`. FIPS 202 section 3.2.3 states `Pi` as `A'[x, y] = A[(x + 3y) mod 5, x]`,
 /// which is the same permutation read from the destination's side.
@@ -28,8 +30,9 @@ fn destination(lane: usize) -> (usize, usize, usize, usize) {
     (x, y, y_prime, y + 5 * y_prime)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// SHA3's real `Pi`: every lane moved to its own [`destination`].
-fn pi(input: [u64; 25]) -> [u64; 25] {
+pub(super) fn pi(input: [u64; 25]) -> [u64; 25] {
     let mut output = [0; 25];
     for (lane, value) in input.into_iter().enumerate() {
         output[destination(lane).3] = value;
@@ -37,11 +40,7 @@ fn pi(input: [u64; 25]) -> [u64; 25] {
     output
 }
 
-/// The 25 lanes `Pi` produces from `Rho`'s own output — what `Chi` would take as its input.
-pub(super) fn output_lanes() -> [u64; 25] {
-    pi(super::rho::output_lanes())
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds `svg_id` from scratch for step `n` (`0..25`, one per lane), `None` meaning unstarted.
 ///
 /// Row 1 is "Rho Output Bytes", `input`'s own 25 lanes, cell `n` selected. Below it, the selected lane (zero while
@@ -194,6 +193,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     Ok((scene, input_node))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Live state this nested child's own selection toolbar carries across steps.
 struct PiState {
     /// `Pi`'s own real input, never mutated.
@@ -286,8 +286,9 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<PiState>>) -> Result<(), S
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Pi` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its input
-/// is [`rho::output_lanes`](super::rho::output_lanes). Called once per round, from `keccak::build_scene`, right
+/// is `input`, the lanes `Rho` produced. Called once per round, from `keccak::build_scene`, right
 /// before "Pi" is added as a container node.
 ///
 /// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
@@ -296,7 +297,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<PiState>>) -> Result<(), S
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing from the DOM, or if any library call fails.
-pub(super) fn build_initial_scene() -> Result<Scene, String> {
+pub(super) fn build_initial_scene(input: [u64; 25]) -> Result<Scene, String> {
     let document = crate::util::document()?;
     let stale = document
         .query_selector_all("[id^=\"sha3-sponge-pi-child-\"]")
@@ -314,7 +315,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
         svg_dom::root::utils::Size::new(1000.0, 900.0),
     )?;
 
-    let input = super::rho::output_lanes();
     let (child, driver) = build_scene(CHILD_SVG_ID, input, None)?;
     let state = Rc::new(RefCell::new(PiState {
         input,
@@ -324,28 +324,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
     Ok(child)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
-mod unit_tests {
-    use super::{destination, pi};
-
-    #[test]
-    fn pi_matches_the_fips_202_destination_form() {
-        // FIPS 202 states `A'[x, y] = A[(x + 3y) mod 5, x]`; every lane must land where that reads it from.
-        let input: [u64; 25] = std::array::from_fn(|i| i as u64);
-        let out = pi(input);
-        for (xp, yp) in (0..5).flat_map(|y| (0..5).map(move |x| (x, y))) {
-            let (src_x, src_y) = ((xp + 3 * yp) % 5, xp);
-            assert_eq!(out[xp + 5 * yp], input[src_x + 5 * src_y], "A'[{xp}, {yp}]");
-        }
-    }
-
-    #[test]
-    fn pi_is_a_permutation_and_leaves_lane_zero_alone() {
-        let mut seen = [false; 25];
-        for lane in 0..25 {
-            seen[destination(lane).3] = true;
-        }
-        assert!(seen.iter().all(|s| *s));
-        assert_eq!(destination(0).3, 0);
-    }
-}
+mod unit_tests;

@@ -14,11 +14,13 @@ use svg_dom_graph::{
 };
 use wasm_bindgen::JsCast;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Rho`'s own nested child `<svg>` — a fixed id, created once by `sha3_sponge::create_stage_svgs`, for the same
 /// reason `keccak::THETA_CHILD_SVG_ID` is fixed: the round scene around it is rebuilt on every round step, but
 /// this one element is only ever declared once.
 pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-rho-child";
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `Rho` rotation offsets for lanes `1..25`, **reduced modulo 64**, indexed by flat lane number `x + 5y`.
 ///
 /// NIST FIPS 202, section 3.2.2 (Algorithm 2, and its Table 2) defines the offsets as the triangular numbers
@@ -34,6 +36,7 @@ const ROTATION_OFFSETS: [u8; 24] = [
     1, 62, 28, 27, 36, 44, 6, 55, 20, 3, 10, 43, 25, 39, 41, 45, 15, 21, 8, 18, 2, 61, 56, 14,
 ];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `Selection` addressing flat cell `n` of a grid `cols` columns wide — `Selection::Row` with a `col`, the one
 /// form [`DataNodeContent::natural_selection`] produces for a genuinely two-dimensional grid. A selection toolbar
 /// reads its node's own `Selection` back through `flat_index`, which treats `Selection::Cell` on such a grid as
@@ -45,21 +48,19 @@ pub(super) fn grid_cell(n: usize, cols: usize) -> Selection {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rotation offset for flat lane `lane` (`0..25`) — `0` for lane `0`.
 fn offset(lane: usize) -> u8 {
     if lane == 0 { 0 } else { ROTATION_OFFSETS[lane - 1] }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// SHA3's real `Rho`: every lane rotated left by its own [`offset`].
-fn rho(input: [u64; 25]) -> [u64; 25] {
+pub(super) fn rho(input: [u64; 25]) -> [u64; 25] {
     std::array::from_fn(|lane| input[lane].rotate_left(u32::from(offset(lane))))
 }
 
-/// The 25 lanes `Rho` produces from `Theta`'s own output — what `Pi` takes as its input.
-pub(super) fn output_lanes() -> [u64; 25] {
-    rho(super::theta::output_lanes())
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Live state this nested child's own selection toolbar carries across steps.
 struct RhoState {
     /// `Rho`'s own real input, never mutated.
@@ -297,7 +298,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Rho` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its
-/// input is [`theta::output_lanes`](super::theta::output_lanes), the lanes the nested `Theta` scene produces.
+/// input is `input`, the lanes `Theta` produced.
 /// Called once per round, from `keccak::build_scene`, right before "Rho" is added as a container node.
 ///
 /// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
@@ -306,7 +307,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), 
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing from the DOM, or if any library call fails.
-pub(super) fn build_initial_scene() -> Result<Scene, String> {
+pub(super) fn build_initial_scene(input: [u64; 25]) -> Result<Scene, String> {
     let document = crate::util::document()?;
     let stale = document
         .query_selector_all("[id^=\"sha3-sponge-rho-child-\"]")
@@ -324,7 +325,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
         svg_dom::root::utils::Size::new(1000.0, 800.0),
     )?;
 
-    let input = super::theta::output_lanes();
     let (child, driver) = build_scene(CHILD_SVG_ID, input, None)?;
     let state = Rc::new(RefCell::new(RhoState {
         input,
@@ -334,29 +334,6 @@ pub(super) fn build_initial_scene() -> Result<Scene, String> {
     Ok(child)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
-mod unit_tests {
-    use super::{ROTATION_OFFSETS, offset, rho};
-
-    #[test]
-    fn rotation_offsets_match_the_spec_s_own_derivation() {
-        // FIPS 202 Algorithm 2 derives the offsets: walk `(x, y) -> (y, 2x + 3y)` from `(1, 0)`, and step `t`'s
-        // offset is the triangular number `(t + 1)(t + 2) / 2`. Table 2 lists it unreduced; this table holds it
-        // mod 64.
-        let (mut x, mut y) = (1, 0);
-        for t in 0..24 {
-            assert_eq!(usize::from(offset(x + 5 * y)), (t + 1) * (t + 2) / 2 % 64, "step {t}");
-            (x, y) = (y, (2 * x + 3 * y) % 5);
-        }
-        assert_eq!(offset(0), 0);
-        assert_eq!(ROTATION_OFFSETS.len(), 24);
-    }
-
-    #[test]
-    fn rho_rotates_each_lane_by_its_own_offset() {
-        let out = rho([1; 25]);
-        assert_eq!(out[0], 1);
-        assert_eq!(out[2], 1 << 62);
-        assert_eq!(out[24], 1 << 14);
-    }
-}
+mod unit_tests;

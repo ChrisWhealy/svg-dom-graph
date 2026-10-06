@@ -26,11 +26,16 @@ use support::SteppedChildState;
 
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Size};
-use svg_dom_graph::scene::{
-    ConnectorOptions, DataFormat, DataNodeContent, NodeValues, Scene, SceneTitleOptions, Side, ToolbarOptions,
+use svg_dom_graph::{
+    Error, NodeId,
+    scene::{
+        ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
+        SelectionToolbarOptions, Side, ToolbarOptions,
+    },
 };
 use wasm_bindgen::{JsCast, prelude::*};
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 /// Only [`build_theta_demo`] itself is ever shown from it (see that doc comment's own "SOURCE" note); `theta_c`,
 /// `theta_d`, and `support` live in their own files precisely so this one stays that function alone.
@@ -120,7 +125,7 @@ thread_local! {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing any element this function needs, or if any library call fails.
-pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, String> {
+pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 5]) -> Result<Scene, String> {
     let document = crate::util::document()?;
 
     // Derived from `svg_id` itself, not a literal, so a second call — nested elsewhere, under a different
@@ -130,6 +135,9 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
     let xorloop_child_id = format!("{svg_id}-xorloop-child");
 
     crate::util::frame_nested_scene(&document, svg_id)?;
+    // Cleared first: a host that rebuilds this scene — each Keccak round does — would otherwise draw a second copy
+    // of every node, and of the stepping toolbar, on top of the first.
+    required_element(&document, svg_id)?.set_inner_html("");
     let parent_svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let parent = Scene::new(parent_svg).map_err(stringify)?;
     parent
@@ -138,19 +146,20 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 
     // Unstarted: no row has been processed yet — see `crate::selection::build_selection_demo`'s own doc comment
     // (point 5) for why the chain is still drawn, over five zero operands, rather than left out entirely.
-    let outputs = crate::selection::theta_c_outputs();
+    let outputs = crate::selection::theta_c_outputs(a_grid);
     let display = crate::selection::display_outputs(outputs, None);
-    let (child, output) = theta_c::build_scene(&thetac_child_id, None, display)?;
+    let (child, output) = theta_c::build_scene(&thetac_child_id, a_grid, None, display)?;
 
     let state = Rc::new(RefCell::new(SteppedChildState {
         outputs,
+        input: a_grid,
         child_svg_id: thetac_child_id.clone(),
     }));
     theta_c::attach_toolbar(&child, output, None, state)?;
 
     let a_content = || {
         DataNodeContent::new(
-            NodeValues::U64(THETA_C_INPUT.iter().flatten().copied().collect()),
+            NodeValues::U64(a_grid.iter().flatten().copied().collect()),
             DataFormat::Hexadecimal,
         )
     };
@@ -173,19 +182,19 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
     let theta_c = parent
         .add_container_node(Point::new(20.0, row_top), fn_size, "ThetaC", child.clone())
         .map_err(stringify)?;
-    parent.make_enterable(theta_c).map_err(stringify)?;
 
     let a_dup = parent
         .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())
         .map_err(stringify)?;
 
     // Unstarted, the same "no row processed yet" convention as `ThetaC`'s own initial state above.
-    let theta_d_outputs = theta_d::outputs(crate::selection::theta_c_outputs());
+    let theta_d_outputs = theta_d::outputs(crate::selection::theta_c_outputs(a_grid));
     let theta_d_display = crate::selection::display_outputs(theta_d_outputs, None);
-    let (theta_d_child, theta_d_output) = theta_d::build_scene(&thetad_child_id, None, theta_d_display)?;
+    let (theta_d_child, theta_d_output) = theta_d::build_scene(&thetad_child_id, a_grid, None, theta_d_display)?;
 
     let theta_d_state = Rc::new(RefCell::new(SteppedChildState {
         outputs: theta_d_outputs,
+        input: a_grid,
         child_svg_id: thetad_child_id.clone(),
     }));
     theta_d::attach_toolbar(&theta_d_child, theta_d_output, None, theta_d_state)?;
@@ -198,17 +207,17 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
             theta_d_child.clone(),
         )
         .map_err(stringify)?;
-    parent.make_enterable(theta_d).map_err(stringify)?;
     row_top += (row_gap / 2.0) + row_height;
 
     // Unstarted, the same "no cell processed yet" convention as `ThetaC`'s/`ThetaD`'s own initial state above —
     // except stepped cell by cell, not row by row; see `xor_loop::build_scene`'s own doc comment for why.
-    let xor_loop_outputs = xor_loop::outputs(THETA_C_INPUT, theta_d_outputs);
+    let xor_loop_outputs = xor_loop::outputs(a_grid, theta_d_outputs);
     let xor_loop_display = xor_loop::display_outputs(xor_loop_outputs, None);
-    let (xor_loop_child, xor_loop_output) = xor_loop::build_scene(&xorloop_child_id, None, xor_loop_display)?;
+    let (xor_loop_child, xor_loop_output) = xor_loop::build_scene(&xorloop_child_id, a_grid, None, xor_loop_display)?;
 
     let xor_loop_state = Rc::new(RefCell::new(xor_loop::XorLoopState {
         outputs: xor_loop_outputs,
+        input: a_grid,
         child_svg_id: xorloop_child_id.clone(),
     }));
     xor_loop::attach_toolbar(&xor_loop_child, xor_loop_output, None, xor_loop_state)?;
@@ -221,7 +230,6 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
             xor_loop_child.clone(),
         )
         .map_err(stringify)?;
-    parent.make_enterable(xor_loop_node).map_err(stringify)?;
     row_top += (row_gap / 2.0) + fn_height;
 
     let theta_out = parent
@@ -256,13 +264,47 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
     parent.add_edge(a_dup, xor_loop_node).map_err(stringify)?;
     parent.add_edge(xor_loop_node, theta_out).map_err(stringify)?;
 
+    // `Next`/`Prev` walk `ThetaC`, `ThetaD`, then `XOR loop`. Only the one the walk is on is clickable, and rung: its
+    // input is not assembled until the walk reaches it. "Step" has one cell per function, and sits far off-canvas
+    // purely to drive the toolbar — the same trick `keccak::build_scene`'s own "Step" uses.
+    let functions = [theta_c, theta_d, xor_loop_node];
+    let step_driver = parent
+        .add_named_data_node(
+            Point::new(-10_000.0, -10_000.0),
+            "Step",
+            DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
+        )
+        .map_err(stringify)?;
+    // "Theta Output" holds zeros until the walk reaches `XOR loop`, the last function, at which point it shows the real
+    // result — whether or not the user ever stepped inside any of the three. The nested scenes show the same values
+    // when entered, since all of them are computed from `a_grid`.
+    let theta_result: Vec<u64> = self::output(a_grid).iter().flatten().copied().collect();
+    focus_function(&parent, functions, 0)?;
+    show_theta_output(&parent, theta_out, &theta_result, 0)?;
+    parent
+        .show_selection_toolbar(
+            step_driver,
+            SelectionToolbarOptions::default(),
+            move |scene, driver, transition| {
+                // This walk is never "not started": a step back from the first function, or a restart, stays on it.
+                let position = transition.to.unwrap_or(0);
+                if transition.to.is_none() {
+                    let _ = scene.set_selection(driver, Selection::Cell(0));
+                }
+                let _ = focus_function(scene, functions, position);
+                let _ = show_theta_output(scene, theta_out, &theta_result, position);
+            },
+        )
+        .map_err(stringify)?;
+    parent.set_selection(step_driver, Selection::Cell(0)).map_err(stringify)?;
+
     let theta_out_rect = parent.node_rect(theta_out).map_err(stringify)?;
     crate::util::fit_nested_size(
         &parent,
         svg_id,
         (a_rect.origin.x + a_rect.size.width).max(theta_out_rect.origin.x + theta_out_rect.size.width),
         theta_out_rect.origin.y + theta_out_rect.size.height,
-        false,
+        true,
     )?;
 
     // Fitting `svg_id` just resized the stage whenever it is the stage's own base diagram (`panel-theta`), after each
@@ -287,12 +329,45 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The 25 lanes this scene's own `Theta` produces — what its nested `XOR loop` finally writes to "Theta Output",
-/// flattened row-major, exactly as that node shows them once the walk has finished. `Rho` takes these as its input.
-pub(crate) fn output_lanes() -> [u64; 25] {
-    let d = theta_d::outputs(crate::selection::theta_c_outputs());
-    let outputs = xor_loop::outputs(THETA_C_INPUT, d);
-    std::array::from_fn(|lane| outputs[lane / 5][lane % 5])
+/// The `A'[x][y]` this scene's own `Theta` produces from `a`: what its nested `XOR loop` finally writes to "Theta
+/// Output". `keccak_f::theta` computes the same thing over a flat state, and a unit test checks the two agree.
+pub(crate) fn output(a: [[u64; 5]; 5]) -> [[u64; 5]; 5] {
+    xor_loop::outputs(a, theta_d::outputs(crate::selection::theta_c_outputs(a)))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows `result` in "Theta Output" once the walk is on the last function, `XOR loop` (position `2`), and zeros
+/// before then.
+///
+/// # Errors
+///
+/// Returns `Err` if `output` is not a 25-value `u64` node of `scene`.
+fn show_theta_output(scene: &Scene, output: NodeId, result: &[u64], position: usize) -> Result<(), String> {
+    let values = if position >= 2 { result.to_vec() } else { vec![0; result.len()] };
+    scene.set_data_values(output, NodeValues::U64(values)).map_err(stringify)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Puts `functions[current]` in focus and makes it, alone, clickable: every other function loses both. Safe to call
+/// again for the same `current`, so the walk can step back and forth freely.
+///
+/// # Errors
+///
+/// Returns `Err` if any of `functions` is not a container node of `scene`.
+fn focus_function(scene: &Scene, functions: [NodeId; 3], current: usize) -> Result<(), String> {
+    for (i, node) in functions.into_iter().enumerate() {
+        scene.set_focus(node, i == current).map_err(stringify)?;
+        if i == current {
+            // Already enterable from an earlier visit is fine.
+            match scene.make_enterable(node) {
+                Ok(()) | Err(Error::AlreadyEnterable(_)) => {},
+                Err(e) => return Err(stringify(e)),
+            }
+        } else {
+            scene.make_unenterable(node).map_err(stringify)?;
+        }
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -304,7 +379,7 @@ pub(crate) fn output_lanes() -> [u64; 25] {
 pub(crate) fn build_theta_demo() -> Result<(), String> {
     let document = crate::util::document()?;
     create_stage_svgs(&document)?;
-    build_scene("theta-diagram", true)?;
+    build_scene("theta-diagram", true, THETA_C_INPUT)?;
     wire_theta_controls(document)
 }
 

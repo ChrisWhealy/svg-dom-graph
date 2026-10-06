@@ -2,7 +2,7 @@
 //! one lane: the round constant of the current round is XORed into lane `(0, 0)`. Every other lane is copied to the
 //! output as it is, so there is a single step to take — lane `0` — not one per lane.
 
-use super::{keccak::ROUND_CONSTANTS, rho::grid_cell};
+use super::{keccak_f::ROUND_CONSTANTS, rho::grid_cell};
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect};
@@ -25,7 +25,7 @@ fn constant_for(lane: usize, round: usize) -> u64 {
 }
 
 /// SHA3's real `Iota` for round `round`.
-fn iota(input: [u64; 25], round: usize) -> [u64; 25] {
+pub(super) fn iota(input: [u64; 25], round: usize) -> [u64; 25] {
     std::array::from_fn(|lane| input[lane] ^ constant_for(lane, round))
 }
 
@@ -195,6 +195,7 @@ fn attach_toolbar(
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the nested `Iota` child for step `to` and grafts it into [`SCENE`]'s own `parent` in place of the one
 /// currently shown — the same rebuild as `theta::theta_d::rebuild_child`.
 ///
@@ -233,8 +234,9 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<IotaState>>) -> Result<(),
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Iota` child for round `round`, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping
-/// toolbar. Its input is [`chi::output_lanes`](super::chi::output_lanes). Called once per round, from
+/// toolbar. Its input is `input`, the lanes `Chi` produced. Called once per round, from
 /// `keccak::build_scene`, right before "Iota" is added as a container node.
 ///
 /// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
@@ -243,7 +245,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<IotaState>>) -> Result<(),
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing from the DOM, or if any library call fails.
-pub(super) fn build_initial_scene(round: usize) -> Result<Scene, String> {
+pub(super) fn build_initial_scene(round: usize, input: [u64; 25]) -> Result<Scene, String> {
     let document = crate::util::document()?;
     let stale = document
         .query_selector_all("[id^=\"sha3-sponge-iota-child-\"]")
@@ -261,7 +263,6 @@ pub(super) fn build_initial_scene(round: usize) -> Result<Scene, String> {
         svg_dom::root::utils::Size::new(1000.0, 800.0),
     )?;
 
-    let input = super::chi::output_lanes();
     let (child, driver) = build_scene(CHILD_SVG_ID, input, round, None)?;
     let state = Rc::new(RefCell::new(IotaState {
         input,
@@ -272,19 +273,6 @@ pub(super) fn build_initial_scene(round: usize) -> Result<Scene, String> {
     Ok(child)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
-mod unit_tests {
-    use super::{ROUND_CONSTANTS, constant_for, iota};
-
-    #[test]
-    fn iota_changes_only_lane_zero_by_the_rounds_own_constant() {
-        let input: [u64; 25] = std::array::from_fn(|i| 0x0123_4567_89AB_CDEF_u64.wrapping_mul(i as u64 + 1));
-        for round in [0, 1, 23] {
-            let out = iota(input, round);
-            assert_eq!(out[0], input[0] ^ ROUND_CONSTANTS[round]);
-            assert_eq!(out[1..], input[1..]);
-        }
-        assert_eq!(constant_for(0, 2), ROUND_CONSTANTS[2]);
-        assert_eq!(constant_for(7, 2), 0);
-    }
-}
+mod unit_tests;

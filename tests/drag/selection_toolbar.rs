@@ -7,7 +7,10 @@ use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error, NodeId,
-    scene::{DataFormat, DataNodeContent, NodeValues, Scene, Selection, SelectionToolbarOptions, SelectionTransition},
+    scene::{
+        DataFormat, DataNodeContent, NodeValues, Scene, Selection, SelectionStride, SelectionToolbarOptions,
+        SelectionTransition,
+    },
 };
 use wasm_bindgen_test::*;
 
@@ -453,4 +456,115 @@ fn hiding_the_toolbar_drops_the_callback() -> Result<(), String> {
         weak_sentinel.upgrade().is_none(),
         "on_step (and its captured sentinel) outlived hide_selection_toolbar",
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// With a stride, the bar holds five buttons in order — `Prev Round`, `Prev`, `Next`, `Next Round`, `Restart` — each
+/// with its own accessible name; without one it still holds the original three.
+#[wasm_bindgen_test]
+fn a_stride_adds_two_buttons_in_the_expected_order_with_their_own_names() -> Result<(), String> {
+    let scene = new_scene("st-stride-buttons")?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8((0..20).collect()), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let mut options = SelectionToolbarOptions::default();
+    options.stride = Some(SelectionStride::new(5, "Round"));
+    scene.show_selection_toolbar(node, options, no_op).map_err(|e| e.to_string())?;
+
+    let names: Vec<String> = (0..5)
+        .map(|n| attr(&button("st-stride-buttons", n)?, "aria-label"))
+        .collect::<Result<_, _>>()?;
+    check(
+        names
+            == [
+                "Previous round",
+                "Previous selection",
+                "Next selection",
+                "Next round",
+                "Restart selection",
+            ],
+        &format!("{names:?}"),
+    )?;
+    let labels: Vec<String> = (0..5)
+        .map(|n| button("st-stride-buttons", n).map(|b| b.text_content().unwrap_or_default()))
+        .collect::<Result<_, _>>()?;
+    check(
+        labels == ["Prev Round", "Prev", "Next", "Next Round", "Restart"],
+        &format!("{labels:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `Next Round` and `Prev Round` move five cells at a time, report a transition for each, clamp at the ends, and are
+/// disabled when they could not move.
+#[wasm_bindgen_test]
+fn the_stride_buttons_move_a_whole_group_and_are_disabled_at_the_ends() -> Result<(), String> {
+    let scene = new_scene("st-stride-walk")?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8((0..12).collect()), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let seen: Rc<RefCell<Vec<SelectionTransition>>> = Rc::new(RefCell::new(Vec::new()));
+    let recorder = seen.clone();
+    let mut options = SelectionToolbarOptions::default();
+    options.stride = Some(SelectionStride::new(5, "Round"));
+    scene
+        .show_selection_toolbar(node, options, move |_, _, t| recorder.borrow_mut().push(t))
+        .map_err(|e| e.to_string())?;
+    let (prev_round, next, next_round) = (0, 2, 3);
+
+    check(
+        attr(&button("st-stride-walk", prev_round)?, "aria-disabled")? == "true",
+        "Prev Round starts disabled",
+    )?;
+    click(&button("st-stride-walk", next)?)?;
+    click(&button("st-stride-walk", next_round)?)?;
+    click(&button("st-stride-walk", next_round)?)?;
+    // 0 -> 5 -> 10, then the last group is short: 10 + 5 clamps to 11.
+    click(&button("st-stride-walk", next_round)?)?;
+    check(
+        attr(&button("st-stride-walk", next_round)?, "aria-disabled")? == "true",
+        "Next Round is disabled on the last cell",
+    )?;
+    click(&button("st-stride-walk", next_round)?)?;
+    let tos: Vec<_> = seen.borrow().iter().map(|t| t.to).collect();
+    check(
+        tos == [Some(0), Some(5), Some(10), Some(11)],
+        &format!("a disabled Next Round must not call on_step; saw {tos:?}"),
+    )?;
+
+    click(&button("st-stride-walk", prev_round)?)?;
+    click(&button("st-stride-walk", prev_round)?)?;
+    click(&button("st-stride-walk", prev_round)?)?;
+    let tos: Vec<_> = seen.borrow().iter().map(|t| t.to).collect();
+    // 11 -> 6 -> 1 -> 0 (clamped, never the unstarted state).
+    check(
+        tos[4..] == [Some(6), Some(1), Some(0)],
+        &format!("Prev Round walked {:?}", &tos[4..]),
+    )?;
+    check(
+        attr(&button("st-stride-walk", prev_round)?, "aria-disabled")? == "true",
+        "Prev Round is disabled at cell 0 and never goes back to unstarted",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A stride of `0` is rejected like any other invalid option.
+#[wasm_bindgen_test]
+fn a_zero_stride_is_rejected() -> Result<(), String> {
+    let scene = new_scene("st-stride-zero")?;
+    let node = add_four_values(&scene)?;
+    let mut options = SelectionToolbarOptions::default();
+    options.stride = Some(SelectionStride::new(0, "Round"));
+    let result = scene.show_selection_toolbar(node, options, no_op);
+    check(
+        matches!(result, Err(Error::InvalidSelectionToolbarOptions(_))),
+        &format!("{result:?}"),
+    )?;
+    check(!scene.has_selection_toolbar(), "nothing was installed")
 }

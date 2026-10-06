@@ -105,6 +105,7 @@ pub(super) fn draw_box(
         binary_operator_input_edges: None,
         outer_rect: rect_el,
         cell_rects: Vec::new(),
+        cell_texts: Vec::new(),
         cell_stroke_width: "",
         selection: Selection::None,
         secondary: Vec::new(),

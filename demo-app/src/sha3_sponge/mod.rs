@@ -5,11 +5,13 @@
 mod chi;
 mod iota;
 mod keccak;
+mod keccak_f;
 mod pi;
 mod rho;
 pub(crate) mod theta;
 
 use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
+use keccak_f::keccak_f;
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -51,14 +53,6 @@ const INPUT_BLOCK: [u64; RATE_LANES] = [
     0xa94e_bb2f_1bd3_f309,
     0xbb11_4511_e928_a5df,
 ];
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `count` clearly fake, deterministic `u64` lanes, starting at `base` and counting up by one. Nothing here is a
-/// real Keccak state — see [`build_scene`]'s own doc comment for why. `base` only keeps one array's own lanes
-/// visibly distinct from another's.
-fn placeholder_lanes(base: u64, count: usize) -> Vec<u64> {
-    (0..count as u64).map(|i| base + i).collect()
-}
 
 /// How many stages "Step"'s own selection toolbar walks — one flat position per stage [`apply_stage`] focuses.
 const STAGE_COUNT: usize = 5;
@@ -186,8 +180,8 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// state before any input is absorbed.
 ///
 /// Row 2 holds three boxes. "Keccak f(1600)" sits under "Capacity", centred vertically on "XOR" rather than
-/// sharing its own top edge, fed by a connector from "Capacity" above. It is a plain box for now, not a container
-/// node — there is no nested `Scene` behind it yet (see "What this does not draw yet" below). Its own three
+/// sharing its own top edge, fed by a connector from "Capacity" above. It is a container node holding the nested
+/// Keccak-f scene, clickable once the walk reaches it. Its own three
 /// [`EdgeAnchors`] per side put north and east on their shared centre, south's two connectors on the centre and
 /// one outer point — see "Row 3" below for why. "XOR" sits under "Rate", fed by connectors from "Rate" and from
 /// "Input block" (further right) — [`INPUT_BLOCK`] itself, the one real input this demo absorbs, not a
@@ -217,13 +211,16 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// and "Rate" together, "XOR" alone, "Keccak f(1600)" alone, row 3's own "Capacity" and "Rate" together, then
 /// "Output Hash" alone. Unstarted, nothing is focused.
 ///
-/// # What this does not draw yet
+/// # Step over or step into
 ///
-/// "Keccak f(1600)" is a plain box, not a container node: drilling into a real nested Keccak `Scene` is a later
-/// step. It does not yet compute anything, so row 3's own "Capacity"/"Rate" are only [`placeholder_lanes`], not
-/// real outputs of row 1's own values. "XOR" is the one real computation this diagram performs, since both of its
-/// own inputs — row 1's own all-zero "Rate" and the real [`INPUT_BLOCK`] — are already on the page. Processing
-/// more than one 64-byte block, and SHA3's XOF mode, are both out of scope here too.
+/// Every value is computed in plain Rust from the one before it, so stepping over "Keccak f(1600)" gives exactly
+/// what stepping into it would have ended on: row 3's own "Capacity" and "Rate" show `keccak_f` of the combined
+/// state once the walk reaches them, and "Output Hash" the first [`HASH_LANES`] lanes of that "Rate" once it
+/// reaches that. Before then each shows zeros, the same "not yet written" convention "XOR" follows. Processing more
+/// than one 64-byte block, and SHA3's XOF mode, are out of scope here.
+///
+/// "Capacity" comes first in this demo's own lane order, not last as in a real SHA3 variant: the split is a choice
+/// made for this demo, see [`CAPACITY_LANES`].
 ///
 /// # Errors
 ///
@@ -292,6 +289,26 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     } else {
         vec![0; RATE_LANES]
     };
+    // The real result of the whole absorb-and-permute, whether or not the walk — or the user — ever steps inside
+    // "Keccak f(1600)": the real XOR of "Rate" and "Input block" joins an all-zero "Capacity" as the combined state,
+    // and `keccak_f` runs all 24 rounds over it. Row 3 shows its lanes once the walk reaches them, so stepping over
+    // the nested scene still yields the correct output — exactly what stepping into it would have ended on.
+    let real_seed: [u64; 25] = std::array::from_fn(|lane| {
+        if lane < CAPACITY_LANES {
+            0
+        } else {
+            rate_in_values[lane - CAPACITY_LANES] ^ input_block_values[lane - CAPACITY_LANES]
+        }
+    });
+    let permuted = keccak_f(real_seed);
+    // Zeros until `stage` reaches `from` — the same "not yet written" convention as "XOR" above.
+    let from_stage = |from: usize, lanes: &[u64]| -> Vec<u64> {
+        if stage.is_some_and(|stage| stage >= from) {
+            lanes.to_vec()
+        } else {
+            vec![0; lanes.len()]
+        }
+    };
     let xor_content = hex_narrow(xor_display_values.clone());
     let xor_size = scene.measure_named_data_node("XOR", &xor_content).map_err(stringify)?;
     let xor_x = rate_in_rect.origin.x + (rate_in_rect.size.width - xor_size.width) / 2.0;
@@ -334,7 +351,12 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
             NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3))),
         )
         .map_err(stringify)?;
-    scene.make_enterable(keccak).map_err(stringify)?;
+    // Clickable only from stage `2`, when the walk reaches "Keccak f(1600)" and its input has been assembled. Before
+    // that, entering it would show a view whose own input is not yet the real result of the stages above it. Every
+    // step rebuilds this whole `Scene`, so enterability needs no undoing when the walk steps back.
+    if stage.is_some_and(|stage| stage >= 2) {
+        scene.make_enterable(keccak).map_err(stringify)?;
+    }
     let keccak_rect = scene.node_rect(keccak).map_err(stringify)?;
 
     let input_block = scene
@@ -368,7 +390,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(LEFT_X, row_3_y),
             "Capacity",
-            hex(placeholder_lanes(0x0400, CAPACITY_LANES)),
+            hex(from_stage(3, &permuted[..CAPACITY_LANES])),
         )
         .map_err(stringify)?;
     let capacity_out_rect = scene.node_rect(capacity_out).map_err(stringify)?;
@@ -378,7 +400,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(capacity_out_rect.origin.x + capacity_out_rect.size.width, row_3_y),
             "Rate",
-            hex_narrow(placeholder_lanes(0x0500, RATE_LANES)),
+            hex_narrow(from_stage(3, &permuted[CAPACITY_LANES..])),
         )
         .map_err(stringify)?;
     let rate_out_rect = scene.node_rect(rate_out).map_err(stringify)?;
@@ -387,7 +409,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(rate_out_rect.origin.x + rate_out_rect.size.width + H_GAP, row_3_y),
             "Output Hash",
-            hex_narrow(placeholder_lanes(0x0, HASH_LANES)),
+            hex_narrow(from_stage(4, &permuted[CAPACITY_LANES..CAPACITY_LANES + HASH_LANES])),
         )
         .map_err(stringify)?;
 

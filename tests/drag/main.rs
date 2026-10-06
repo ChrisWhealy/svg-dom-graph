@@ -34,6 +34,8 @@
 //!   column-plus-cell case, resetting via `Selection::None`, and validation.
 //! - [`secondary_selection`] — `Scene::set_secondary_selection`: derived cells drawn with a teal fill and dashed
 //!   outline, independence from `set_selection`, precedence against focus and band, `aria-label`, and validation.
+//! - [`set_data_values`] — `Scene::set_data_values`: replacing a multi-value data node's own values in place, with
+//!   the cells' text and accessible names following, and rejection of a different width, count, or node kind.
 //! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of
 //!   its own endpoints, fan-out to more than one destination, and surviving a later `Scene::set_selection`.
 //! - [`toolbar`] — `Scene::show_toolbar` and the zoom controls: placement against each edge, staying a fixed size
@@ -65,6 +67,7 @@ mod scene_validation;
 mod secondary_selection;
 mod selection;
 mod selection_toolbar;
+mod set_data_values;
 mod toolbar;
 
 wasm_bindgen_test::wasm_bindgen_test_configure!(run_in_browser);

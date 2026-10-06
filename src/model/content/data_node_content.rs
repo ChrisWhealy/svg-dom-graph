@@ -62,6 +62,19 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Replaces this content's own values with `values`, keeping its format, layout and byte order. Returns `false`,
+    /// changing nothing, unless `values` is the same width of integer and holds the same number of values — so the grid
+    /// keeps exactly the shape it was drawn with.
+    pub(crate) fn replace_values(&mut self, values: NodeValues) -> bool {
+        if std::mem::discriminant(&self.values) != std::mem::discriminant(&values) || self.values.len() != values.len()
+        {
+            return false;
+        }
+        self.values = values;
+        true
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many values this holds.
     pub(crate) fn len(&self) -> usize {
         self.values.len()

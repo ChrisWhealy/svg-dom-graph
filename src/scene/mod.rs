@@ -29,7 +29,7 @@ pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};
 pub use scene_title::SceneTitleOptions;
-pub use selection_toolbar::{SelectionToolbarOptions, SelectionTransition};
+pub use selection_toolbar::{SelectionStride, SelectionToolbarOptions, SelectionTransition};
 pub use toolbar::ToolbarOptions;
 pub use view_input::InputMode;
 

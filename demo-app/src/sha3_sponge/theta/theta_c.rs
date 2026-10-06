@@ -6,7 +6,6 @@
 //! `#selection-thetac-diagram` instead of a nested child `<svg>`.
 
 use super::support::SteppedChildState;
-use crate::selection::THETA_C_INPUT;
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
@@ -89,7 +88,12 @@ pub(super) fn exit_if_focused() -> bool {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
-pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> Result<(Scene, NodeId), String> {
+pub(crate) fn build_scene(
+    svg_id: &str,
+    a: [[u64; 5]; 5],
+    n: Option<usize>,
+    display: [u64; 5],
+) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     crate::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
@@ -108,11 +112,8 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
         .add_named_data_node(
             Point::new(20.0, TOP_Y),
             "A Bytes",
-            DataNodeContent::new(
-                NodeValues::U64(THETA_C_INPUT.iter().flatten().copied().collect()),
-                DataFormat::Hexadecimal,
-            )
-            .with_layout(GridLayout::Rows(5)),
+            DataNodeContent::new(NodeValues::U64(a.iter().flatten().copied().collect()), DataFormat::Hexadecimal)
+                .with_layout(GridLayout::Rows(5)),
         )
         .map_err(stringify)?;
     if let Some(n) = n {
@@ -123,7 +124,7 @@ pub(crate) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
 
     // Unstarted (`n` is `None`): the chain still exists, over five zero operands — see this function's own doc
     // comment for why that reads better than not drawing it at all.
-    let row = n.map_or([0u64; 5], |n| THETA_C_INPUT[n]);
+    let row = n.map_or([0u64; 5], |n| a[n]);
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
 
     // Labels operand `i` with the exact element of `A` it holds — `A[row, i]` — once a real row is selected.
@@ -298,13 +299,16 @@ pub(super) fn rebuild_child(
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
     let document = crate::util::document()?;
-    let previous_id = state.borrow().child_svg_id.clone();
+    let (input, previous_id) = {
+        let state = state.borrow();
+        (state.input, state.child_svg_id.clone())
+    };
     let next_id = next_child_svg_id("theta-thetac-child");
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, output) = build_scene(&next_id, to, display)?;
+    let (new_child, output) = build_scene(&next_id, input, to, display)?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }

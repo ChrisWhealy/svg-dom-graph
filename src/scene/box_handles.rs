@@ -71,6 +71,10 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_selection` is the only reader — nothing else needs to reach an individual cell again once it is
     /// drawn.
     pub(crate) cell_rects: Vec<SvgNode>,
+    /// Every data-node cell's own `<text>`, flat, in the same order as [`cell_rects`](Self::cell_rects) — what
+    /// `Scene::set_data_values` rewrites. Empty for a plain label node and for an operator node, whose own result is
+    /// not replaceable.
+    pub(crate) cell_texts: Vec<SvgNode>,
     /// Every entry in `cell_rects`' own stroke width, as drawn — `"1.5"` for a single-value node's own outer box,
     /// `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain
     /// label node, which has no `cell_rects` to begin with.

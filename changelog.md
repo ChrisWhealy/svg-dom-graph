@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.24] - 2026-10-02
+## [0.2.24] - 2026-10-06
 
 ## Added
 
@@ -17,12 +17,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement Keccak Pi function (`464d1ee`)
 - Add `Scene::set_secondary_selection` to marking cells derived from the current selection (`78c7945`)
 - Implement Keccak Chi function (`3aadd0f`)
-- Implement Keccak Iota function (``)
+- Implement Keccak Iota function (`d75b532`)
 
 ## Changed
 
 - Control SVG Viewbox size using Rust parameters not hard-coded in HTML (`7d4845c`)
-- Refactor Theta function to be child module of sha3_sponge (``)
+- Refactor Theta function to be child module of sha3_sponge (`cc68bb7`)
+- Each Keccak function receives its input state as an argument (``)
 
 # [Released]
 

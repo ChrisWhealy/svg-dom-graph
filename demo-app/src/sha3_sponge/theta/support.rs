@@ -13,6 +13,9 @@ pub(super) struct SteppedChildState {
     /// the walk's own current position on every step — see `crate::selection::display_outputs`'s own doc comment —
     /// rather than tracked here as a second, separately mutated flag per row.
     pub(super) outputs: [u64; 5],
+    /// The `A[x][y]` the whole `Theta` walk runs over — handed down from whoever built the `Theta` scene, never a
+    /// fixed demo value. Each rebuild redraws over this same input.
+    pub(super) input: [[u64; 5]; 5],
     /// The id of whichever `<svg>` currently backs the nested child — see [`super::theta_c::rebuild_child`]'s/
     /// [`super::theta_d::rebuild_child`]'s own doc comment for why every step needs a fresh one.
     pub(super) child_svg_id: String,

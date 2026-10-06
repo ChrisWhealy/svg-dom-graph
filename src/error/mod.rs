@@ -127,6 +127,11 @@ pub enum Error {
     ///
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
+    /// `Scene::set_data_values` was given values it cannot show in this node: not a multi-value data node, or a
+    /// different integer width, or a different number of values than the node was drawn with.
+    ///
+    /// Rejected before changing anything, so a rejected call leaves every cell exactly as it was.
+    IncompatibleNodeValues(NodeId),
     /// `Scene::show_toolbar` was given a [`crate::scene::ToolbarOptions`] with a non-finite length, a `button_height`
     /// that is not `> 0.0`, or a negative `gap` or `margin`.
     ///
@@ -236,6 +241,10 @@ impl fmt::Display for Error {
             Error::DuplicateOperands(id) => {
                 write!(f, "node {id:?} cannot be used as both operands of a two-input operator node")
             },
+            Error::IncompatibleNodeValues(id) => write!(
+                f,
+                "node {id:?} cannot show those values: it must be a multi-value data node, and they must be the same width and count"
+            ),
             Error::InvalidSelection(id, selection) => {
                 write!(f, "selection {selection:?} cannot be applied to node {id:?}")
             },

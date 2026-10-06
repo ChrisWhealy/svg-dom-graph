@@ -91,6 +91,8 @@ struct ThetaCDemo {
     /// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`], computed once, up front. Stepping
     /// never recomputes these; it only changes which prefix of them [`display_outputs`] currently reveals.
     outputs: [u64; 5],
+    /// The `A` this walk was started over — [`THETA_C_INPUT`] for this standalone demo.
+    input: [[u64; 5]; 5],
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -193,8 +195,9 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     show_two_d_toolbar(&document, &two_d_scene, two_d_node)?;
 
     // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
-    let outputs = theta_c_outputs();
-    let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs }));
+    let input = THETA_C_INPUT;
+    let outputs = theta_c_outputs(input);
+    let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs, input }));
     rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
 }
 
@@ -279,11 +282,11 @@ fn show_two_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`]. Shared by every caller that needs it:
+/// Row `i`'s own `ThetaC` result — a pure function of `a`. Shared by every caller that needs it:
 /// [`build_selection_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both standalone and
 /// nested starting from row `0` already stepped.
-pub(crate) fn theta_c_outputs() -> [u64; 5] {
-    THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
+pub(crate) fn theta_c_outputs(a: [[u64; 5]; 5]) -> [u64; 5] {
+    a.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -334,7 +337,9 @@ pub(crate) fn display_outputs(outputs: [u64; 5], to: Option<usize>) -> [u64; 5] 
 fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCell<ThetaCDemo>>) -> Result<(), String> {
     let view = THETA_C_SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
 
-    let (scene, output) = crate::sha3_sponge::theta::theta_c::build_scene("selection-thetac-diagram", n, display)?;
+    let input = state.borrow().input;
+    let (scene, output) =
+        crate::sha3_sponge::theta::theta_c::build_scene("selection-thetac-diagram", input, n, display)?;
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
     }

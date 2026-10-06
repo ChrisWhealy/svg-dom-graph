@@ -354,6 +354,45 @@ impl Scene {
         self.inner.borrow_mut().node_handle_mut(id).expect("checked above").enterable = true;
         Ok(())
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Undoes [`make_enterable`](Self::make_enterable): `id` stops responding to a click or to Enter/Space, loses
+    /// its pointer cursor, `role="button"` and tab stop, and can be made enterable again later.
+    ///
+    /// Lets a host decide, step by step, which container nodes may be entered — for example only the one a walk is
+    /// currently on. Does nothing, and is not an error, for a node that is not currently enterable. It does not exit
+    /// `id`'s nested `Scene` if that is already entered.
+    ///
+    /// Removes every `click` and `keydown` listener on `id`'s own `<g>`, since `svg-dom` can only remove listeners by
+    /// event type. A host that attached its own `click` or `keydown` listener to the same node would lose it too.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene, or
+    /// [`Error::NotAContainerNode`] if it names one that is not a container node.
+    pub fn make_unenterable(&self, id: NodeId) -> Result<(), Error> {
+        let group = {
+            let inner = self.inner.borrow();
+            let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
+            if handles.child.is_none() {
+                return Err(Error::NotAContainerNode(id));
+            }
+            if !handles.enterable {
+                return Ok(());
+            }
+            handles.group.clone()
+        };
+        group.remove_listeners("click");
+        group.remove_listeners("keydown");
+        // Best effort, like `make_enterable`'s own rollback: the listeners are already gone, so a failed attribute
+        // removal leaves a node that looks clickable but does nothing, and there is nowhere to report it to.
+        let _ = group.remove_attr("role");
+        let _ = group.remove_attr("tabindex");
+        let _ = group.remove_attr("style");
+
+        self.inner.borrow_mut().node_handle_mut(id).expect("checked above").enterable = false;
+        Ok(())
+    }
 }
 
 /// Restores attribute `name` on `group` to `previous` — removes it if `previous` is `None` (it was absent

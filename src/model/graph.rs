@@ -88,10 +88,10 @@ impl Graph {
         self.nodes.get(id.index)
     }
 
-    /// The mutable counterpart to [`node`](Self::node). Private: every external caller goes through a narrower,
+    /// The mutable counterpart to [`node`](Self::node). Crate-private. Most callers go through a narrower,
     /// purpose-specific method instead — [`set_node_rect`](Self::set_node_rect), or `add_edge`'s own incidence
-    /// bookkeeping above.
-    fn node_mut(&mut self, id: NodeId) -> Option<&mut Node> {
+    /// bookkeeping above — but `Scene::set_data_values` replaces a data node's own values in place.
+    pub(crate) fn node_mut(&mut self, id: NodeId) -> Option<&mut Node> {
         if id.graph != self.id {
             return None;
         }

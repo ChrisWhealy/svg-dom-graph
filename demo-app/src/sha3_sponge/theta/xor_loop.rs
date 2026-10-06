@@ -6,10 +6,7 @@
 //! individual *cells* of `A` — see [`build_scene`]'s own doc comment for why, and [`XorLoopState`]'s own doc
 //! comment for why it needs its own state shape rather than sharing `support::SteppedChildState`.
 
-use crate::{
-    selection::THETA_C_INPUT,
-    util::{create_child_svg, next_child_svg_id, required_element, stringify},
-};
+use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
@@ -42,6 +39,8 @@ pub(super) struct XorLoopState {
     /// see [`display_outputs`]'s own doc comment — rather than tracked here as a second, separately mutated flag
     /// per cell.
     pub(super) outputs: [[u64; 5]; 5],
+    /// The `A[x][y]` the whole `Theta` walk runs over — see `SteppedChildState::input`.
+    pub(super) input: [[u64; 5]; 5],
     /// The id of whichever `<svg>` currently backs this nested child — see [`rebuild_child`]'s own doc comment for
     /// why every step needs a fresh one.
     pub(super) child_svg_id: String,
@@ -115,7 +114,12 @@ pub(super) fn display_outputs(outputs: [[u64; 5]; 5], to: Option<usize>) -> [[u6
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
-pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]) -> Result<(Scene, NodeId), String> {
+pub(super) fn build_scene(
+    svg_id: &str,
+    a_input: [[u64; 5]; 5],
+    n: Option<usize>,
+    display: [[u64; 5]; 5],
+) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     crate::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
@@ -126,7 +130,7 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
         .show_scene_title("Keccak Theta XOR Loop", SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    let d = super::theta_d::outputs(crate::selection::theta_c_outputs());
+    let d = super::theta_d::outputs(crate::selection::theta_c_outputs(a_input));
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
@@ -154,7 +158,7 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
             Point::new(d_rect.origin.x + d_rect.size.width + H_GAP, TOP_Y),
             "A Bytes",
             DataNodeContent::new(
-                NodeValues::U64(THETA_C_INPUT.iter().flatten().copied().collect()),
+                NodeValues::U64(a_input.iter().flatten().copied().collect()),
                 DataFormat::Hexadecimal,
             )
             .with_layout(GridLayout::Rows(5)),
@@ -172,7 +176,7 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [[u64; 5]; 5]
 
     // Unstarted (`n` is `None`): the chain still exists, over `A[0, 0]`/`D[0]` — see this function's own doc
     // comment for why that reads better than not drawing it at all.
-    let a_value = n.map_or(THETA_C_INPUT[0][0], |n| THETA_C_INPUT[n / 5][n % 5]);
+    let a_value = n.map_or(a_input[0][0], |n| a_input[n / 5][n % 5]);
     let d_value = n.map_or(d[0], |n| d[n / 5]);
 
     // `D[row]` sits centred under `D`; `A[row, col]` sits centred under `A` — each its own column's own working
@@ -306,13 +310,16 @@ pub(super) fn rebuild_child(
     state: Rc<RefCell<XorLoopState>>,
 ) -> Result<(), String> {
     let document = crate::util::document()?;
-    let previous_id = state.borrow().child_svg_id.clone();
+    let (input, previous_id) = {
+        let state = state.borrow();
+        (state.input, state.child_svg_id.clone())
+    };
     let next_id = next_child_svg_id("theta-xorloop-child");
     create_child_svg(&document, &previous_id, &next_id)?;
 
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(|(_, child, _)| child.view()));
 
-    let (new_child, output) = build_scene(&next_id, to, display)?;
+    let (new_child, output) = build_scene(&next_id, input, to, display)?;
     if let Some(view) = view {
         new_child.set_view(view).map_err(stringify)?;
     }
