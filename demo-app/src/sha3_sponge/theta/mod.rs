@@ -287,6 +287,15 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The 25 lanes this scene's own `Theta` produces — what its nested `XOR loop` finally writes to "Theta Output",
+/// flattened row-major, exactly as that node shows them once the walk has finished. `Rho` takes these as its input.
+pub(crate) fn output_lanes() -> [u64; 25] {
+    let d = theta_d::outputs(crate::selection::theta_c_outputs());
+    let outputs = xor_loop::outputs(THETA_C_INPUT, d);
+    std::array::from_fn(|lane| outputs[lane / 5][lane % 5])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `panel-theta`'s own entry point: [`build_scene`] against `#theta-diagram`, with its own close button wired.
 ///
 /// # Errors
