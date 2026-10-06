@@ -46,6 +46,12 @@ thread_local! {
 /// Returns `Err` if any library call fails, or if [`wire_connector_controls`] cannot wire up its controls (see that
 /// function's own `# Errors` section).
 pub(crate) fn build_elbow_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "elbow-diagram-stage",
+        "elbow-diagram",
+        svg_dom::root::utils::Size::new(420.0, 300.0),
+    )?;
     let svg = SvgRoot::attach("elbow-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

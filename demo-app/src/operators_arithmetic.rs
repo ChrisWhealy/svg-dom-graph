@@ -42,6 +42,12 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-arithmetic-diagram`.
 pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "operators-arithmetic-diagram-stage",
+        "operators-arithmetic-diagram",
+        svg_dom::root::utils::Size::new(700.0, 880.0),
+    )?;
     let svg = SvgRoot::attach("operators-arithmetic-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

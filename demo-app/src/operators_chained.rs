@@ -50,6 +50,12 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-chained-diagram`.
 pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "operators-chained-diagram-stage",
+        "operators-chained-diagram",
+        svg_dom::root::utils::Size::new(950.0, 1100.0),
+    )?;
     let svg = SvgRoot::attach("operators-chained-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

@@ -129,6 +129,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
     let thetad_child_id = format!("{svg_id}-thetad-child");
     let xorloop_child_id = format!("{svg_id}-xorloop-child");
 
+    crate::util::frame_nested_scene(&document, svg_id)?;
     let parent_svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let parent = Scene::new(parent_svg).map_err(stringify)?;
     parent
@@ -143,7 +144,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 
     let state = Rc::new(RefCell::new(SteppedChildState {
         outputs,
-        child_svg_id: thetac_child_id,
+        child_svg_id: thetac_child_id.clone(),
     }));
     theta_c::attach_toolbar(&child, output, None, state)?;
 
@@ -185,7 +186,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 
     let theta_d_state = Rc::new(RefCell::new(SteppedChildState {
         outputs: theta_d_outputs,
-        child_svg_id: thetad_child_id,
+        child_svg_id: thetad_child_id.clone(),
     }));
     theta_d::attach_toolbar(&theta_d_child, theta_d_output, None, theta_d_state)?;
 
@@ -208,7 +209,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 
     let xor_loop_state = Rc::new(RefCell::new(xor_loop::XorLoopState {
         outputs: xor_loop_outputs,
-        child_svg_id: xorloop_child_id,
+        child_svg_id: xorloop_child_id.clone(),
     }));
     xor_loop::attach_toolbar(&xor_loop_child, xor_loop_output, None, xor_loop_state)?;
 
@@ -255,6 +256,21 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
     parent.add_edge(a_dup, xor_loop_node).map_err(stringify)?;
     parent.add_edge(xor_loop_node, theta_out).map_err(stringify)?;
 
+    let theta_out_rect = parent.node_rect(theta_out).map_err(stringify)?;
+    crate::util::fit_nested_size(
+        &parent,
+        svg_id,
+        (a_rect.origin.x + a_rect.size.width).max(theta_out_rect.origin.x + theta_out_rect.size.width),
+        theta_out_rect.origin.y + theta_out_rect.size.height,
+        false,
+    )?;
+
+    // Fitting `svg_id` just resized the stage whenever it is the stage's own base diagram (`panel-theta`), after each
+    // child was already framed against the old, larger stage. Frame them again so none overhangs the new one.
+    for child_id in [&thetac_child_id, &thetad_child_id, &xorloop_child_id] {
+        crate::util::frame_nested_scene(&document, child_id)?;
+    }
+
     parent.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     if with_backdrop {
@@ -277,8 +293,33 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool) -> Result<Scene, St
 ///
 /// Returns `Err` if `index.html` is missing `#theta-diagram`/`#theta-close`, or if any library call fails.
 pub(crate) fn build_theta_demo() -> Result<(), String> {
+    let document = crate::util::document()?;
+    create_stage_svgs(&document)?;
     build_scene("theta-diagram", true)?;
-    wire_theta_controls(crate::util::document()?)
+    wire_theta_controls(document)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates every `<svg>` `panel-theta`'s own `.nested-scene-stage` needs, if they do not already exist: the base
+/// diagram, then each nested child, shallowest first — document order is paint order. Each is inserted before
+/// `#theta-close`, which therefore stays on top. These sizes are the *initial* ones only: each scene fits its own
+/// `<svg>` to its content as it is built.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#theta-close`, or if creating any `<svg>` fails.
+fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
+    const ANCHOR: &str = "theta-close";
+    let levels: [(&str, Option<&str>, Size); 4] = [
+        ("theta-diagram", None, Size::new(1260.0, 1090.0)),
+        ("theta-diagram-thetac-child", Some("nested-scene"), Size::new(1180.0, 1010.0)),
+        ("theta-diagram-thetad-child", Some("nested-scene"), Size::new(1130.0, 600.0)),
+        ("theta-diagram-xorloop-child", Some("nested-scene"), Size::new(1400.0, 780.0)),
+    ];
+    for (id, class, size) in levels {
+        crate::util::ensure_svg(document, ANCHOR, id, class, size)?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

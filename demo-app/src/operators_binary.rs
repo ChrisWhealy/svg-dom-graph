@@ -39,6 +39,12 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-binary-diagram`.
 pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "operators-binary-diagram-stage",
+        "operators-binary-diagram",
+        svg_dom::root::utils::Size::new(700.0, 1120.0),
+    )?;
     let svg = SvgRoot::attach("operators-binary-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

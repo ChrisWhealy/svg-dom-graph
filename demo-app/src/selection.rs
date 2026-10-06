@@ -2,7 +2,7 @@
 //! examples, each stepping through an array's values via its own in-canvas [`Scene::show_selection_toolbar`] bar —
 //! no external HTML buttons. See [`build_selection_demo`]'s own doc comment for what each demonstrates.
 
-use crate::util::{required_element, resize_svg, stringify};
+use crate::util::{ensure_svg_in, required_element, resize_svg, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
@@ -137,8 +137,20 @@ struct ThetaCDemo {
 /// and [`rebuild_theta_c_diagram`] need (see its own `# Errors` section).
 pub(crate) fn build_selection_demo() -> Result<(), String> {
     let document = crate::util::document()?;
+    ensure_svg_in(
+        &document,
+        "selection-thetac-diagram-stage",
+        "selection-thetac-diagram",
+        Size::new(1180.0, 1010.0),
+    )?;
 
     let one_d_values: Vec<u8> = vec![10, 20, 30, 40, 50, 60];
+    crate::util::ensure_svg_in(
+        &document,
+        "selection-1d-diagram-stage",
+        "selection-1d-diagram",
+        Size::new(400.0, 120.0),
+    )?;
     let one_d_svg = svg_dom::SvgRoot::attach("selection-1d-diagram").map_err(stringify)?;
     let one_d_scene = Scene::new(one_d_svg).map_err(stringify)?;
     let one_d_node = one_d_scene
@@ -155,6 +167,12 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     // See this function's own doc comment (point 3) — a deliberately ragged grid, not the coincidentally-exact
     // fit twelve values would be.
     let two_d_values: Vec<u8> = (1..=10).collect();
+    crate::util::ensure_svg_in(
+        &document,
+        "selection-2d-diagram-stage",
+        "selection-2d-diagram",
+        Size::new(400.0, 200.0),
+    )?;
     let two_d_svg = svg_dom::SvgRoot::attach("selection-2d-diagram").map_err(stringify)?;
     let two_d_scene = Scene::new(two_d_svg).map_err(stringify)?;
     let two_d_node = two_d_scene

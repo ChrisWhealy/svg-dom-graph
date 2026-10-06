@@ -117,6 +117,12 @@ fn rebuild_edge_anchors_scene(
     fixing_points: u8,
     connector_type: ConnectorType,
 ) -> Result<EdgeAnchorsDemo, String> {
+    crate::util::ensure_svg_in(
+        document,
+        "edge-anchors-diagram-stage",
+        "edge-anchors-diagram",
+        svg_dom::root::utils::Size::new(400.0, 260.0),
+    )?;
     let container = required_element(document, "edge-anchors-diagram")?;
     container.set_inner_html("");
 

@@ -38,6 +38,12 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-unary-diagram`.
 pub(crate) fn build_unary_operator_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "operators-unary-diagram-stage",
+        "operators-unary-diagram",
+        svg_dom::root::utils::Size::new(700.0, 850.0),
+    )?;
     let svg = SvgRoot::attach("operators-unary-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

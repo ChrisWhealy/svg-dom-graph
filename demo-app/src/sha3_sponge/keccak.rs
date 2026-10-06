@@ -218,20 +218,6 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
         .map_err(stringify)?;
     let a_top_rect = scene.node_rect(a_top).map_err(stringify)?;
 
-    // "Round Constants" sits beside "A Bytes - round {round}", in the same row, not below the function row —
-    // row 1 has room for both, and this keeps the round's own overall height down further still.
-    let rc_x = a_top_rect.origin.x + a_top_rect.size.width + H_GAP;
-    let rc = scene
-        .add_named_data_node(
-            Point::new(rc_x, TOP_Y),
-            "Round Constants",
-            DataNodeContent::new(NodeValues::U64(ROUND_CONSTANTS.to_vec()), DataFormat::Hexadecimal)
-                .with_layout(GridLayout::Columns(4)),
-        )
-        .map_err(stringify)?;
-    scene.set_selection(rc, Selection::Cell(r)).map_err(stringify)?;
-    let rc_rect = scene.node_rect(rc).map_err(stringify)?;
-
     // Theta/Rho/Pi/Chi/Iota run left to right, not stacked top to bottom: a horizontal row keeps this round's own
     // overall height close to its row 1's own height, rather than adding five more row-heights on top —
     // important since a nested Scene's own viewBox, however tall, still only ever displays within its own
@@ -241,7 +227,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
     let row_x = a_top_rect.origin.x + (a_top_rect.size.width - row_width) / 2.0;
     // Below whichever of "A Bytes" or "Round Constants" extends further down — 24 real values, even as 4 columns,
     // can still make "Round Constants" taller than "A Bytes - round {round}"'s own 5 rows.
-    let row_y = (a_top_rect.origin.y + a_top_rect.size.height).max(rc_rect.origin.y + rc_rect.size.height) + V_GAP;
+    let row_y = a_top_rect.origin.y + a_top_rect.size.height + V_GAP;
 
     // Fixed, not derived from `svg_id`: `svg_id` itself changes on every round step (a fresh sibling `<svg>`,
     // exactly like `theta::theta_c`'s own per-step clones), but `index.html` can only ever declare one static
@@ -275,6 +261,26 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
         .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(a_out))
         .map_err(stringify)?;
 
+    // "Round Constants" sits so that its midpoint is aligned with the beside "A Bytes - round {round}", in the same row, not below the function row —
+    // row 1 has room for both, and this keeps the round's own overall height down further still.
+    let rc_x = a_top_rect.origin.x + a_top_rect.size.width + H_GAP;
+    let rc = scene
+        .add_named_data_node(
+            Point::new(rc_x, TOP_Y),
+            "Round Constants",
+            DataNodeContent::new(NodeValues::U64(ROUND_CONSTANTS.to_vec()), DataFormat::Hexadecimal)
+                .with_layout(GridLayout::Columns(2)),
+        )
+        .map_err(stringify)?;
+    scene.set_selection(rc, Selection::Cell(r)).map_err(stringify)?;
+    // The node's own height is only known once it exists, so centre its midpoint on `Iota`'s own afterward.
+    let rc_rect = scene.node_rect(rc).map_err(stringify)?;
+    let iota_mid_y = iota_rect.origin.y + iota_rect.size.height / 2.0;
+    scene
+        .move_node(rc, Point::new(rc_x, iota_mid_y - rc_rect.size.height / 2.0))
+        .map_err(stringify)?;
+    let rc_rect = scene.node_rect(rc).map_err(stringify)?;
+
     let vertical = || {
         ConnectorOptions::default()
             .with_from_side(Some(Side::South))
@@ -296,7 +302,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
             rc,
             iota,
             ConnectorOptions::default()
-                .with_from_side(Some(Side::South))
+                .with_from_side(Some(Side::West))
                 .with_to_side(Some(Side::East)),
         )
         .map_err(stringify)?;
@@ -318,6 +324,26 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
     // doc comment ("Reuse across more than one host") for why one here would wrongly cover
     // `#sha3-sponge-diagram` itself. Entering `Theta` from here shows `#sha3-sponge-diagram`'s own backdrop in
     // the margin instead, not this round's own content — a smaller visual polish this feature does without.
+
+    // Shrink this round's own `<svg>` to its content: the rightmost of "Round Constants" and the function row,
+    // the bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`] adds below it
+    // (laid out as in `selection::fit_canvas_to_toolbar`), each plus the left margin, and room for the East toolbar.
+    const TOOLBAR_ALLOWANCE: f64 = 60.0;
+    const STEP_TOOLBAR_GAP: f64 = 20.0;
+    let step_toolbar = SelectionToolbarOptions::default();
+    let a_out_rect = scene.node_rect(a_out).map_err(stringify)?;
+    let right = (rc_rect.origin.x + rc_rect.size.width).max(iota_rect.origin.x + iota_rect.size.width);
+    let bottom = a_out_rect.origin.y + a_out_rect.size.height;
+    crate::util::resize_svg(
+        &document,
+        svg_id,
+        Size::new(
+            right + LEFT_X + TOOLBAR_ALLOWANCE,
+            bottom + STEP_TOOLBAR_GAP + step_toolbar.margin + step_toolbar.button_height + LEFT_X,
+        ),
+    )?;
+    // The title and toolbar were positioned against the `<svg>`'s old size; the scene cannot observe a resize.
+    scene.refresh_layout().map_err(stringify)?;
 
     Ok((scene, round_driver))
 }

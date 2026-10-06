@@ -80,6 +80,7 @@ pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
 /// Returns `Err` if `index.html` is missing an `<svg id="{svg_id}">`, or if any library call fails.
 pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
+    crate::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -162,6 +163,15 @@ pub(super) fn build_scene(svg_id: &str, n: Option<usize>, display: [u64; 5]) -> 
         scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
     }
 
+    let right = [input, prev_node, next_node, rotl_node, xor_node, output]
+        .into_iter()
+        .map(|id| scene.node_rect(id).map(|r| r.origin.x + r.size.width))
+        .collect::<Result<Vec<_>, _>>()
+        .map_err(stringify)?
+        .into_iter()
+        .fold(0.0, f64::max);
+    let output_rect = scene.node_rect(output).map_err(stringify)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, true)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, output))
 }

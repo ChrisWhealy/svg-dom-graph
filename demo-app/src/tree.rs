@@ -35,6 +35,12 @@ thread_local! {
 ///
 /// The two child boxes are draggable. Their connectors stay attached to the root and redraw as each child moves.
 pub(crate) fn build_demo_tree() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "diagram-stage",
+        "diagram",
+        svg_dom::root::utils::Size::new(400.0, 260.0),
+    )?;
     let svg = SvgRoot::attach("diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

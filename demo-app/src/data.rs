@@ -42,6 +42,12 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#data-diagram`.
 pub(crate) fn build_data_demo() -> Result<(), String> {
+    crate::util::ensure_svg_in(
+        &crate::util::document()?,
+        "data-diagram-stage",
+        "data-diagram",
+        svg_dom::root::utils::Size::new(750.0, 700.0),
+    )?;
     let svg = SvgRoot::attach("data-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;

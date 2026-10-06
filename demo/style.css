@@ -221,7 +221,7 @@ figure {
 }
 
 /* Each demo section injects an <svg> into the matching <div>.
-   The <svg> sizes itself from its own width/height attributes.
+   Rust creates the <svg> and writes its width/height attributes — nothing in the HTML does.
    Rust sets those attributes via SvgRoot::create_in (see W/H in demo-app/src/lib.rs).
    That is the single source of truth, so the dimensions are deliberately not repeated here.
    .canvas is inline-block, so its border hugs the canvas.
@@ -280,6 +280,11 @@ figure {
        numbers. */
     --nested-scene-margin: 40px;
     --nested-scene-radius: 20px;
+    /* The least margin a frame may be squeezed to when its content needs more room than `--nested-scene-margin`'s
+       decorative inset leaves. Read by `util::frame_nested_scene`. */
+    --nested-scene-min-margin: 20px;
+    /* `--nested-scene-frame-w`/`-h`, the size of whichever frame is shown, are set on this stage by rules that
+       `util::frame_nested_scene` writes into `<style id="nested-scene-frame-rules">`. */
 }
 
 /* A decorative duplicate of the base diagram (see `util::add_backdrop_clone`'s own doc comment for why it exists
@@ -338,10 +343,17 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
    to. */
 .nested-scene {
     position: absolute;
-    top: var(--nested-scene-margin);
-    left: var(--nested-scene-margin);
-    width: calc(100% - 2 * var(--nested-scene-margin));
-    height: calc(100% - 2 * var(--nested-scene-margin));
+    /* Centred in the stage, at the size Rust gave it (`--frame-w`/`--frame-h`, from `util::frame_nested_scene`),
+       never larger than the stage less its minimum margin on every side. The decorative `--nested-scene-margin` inset
+       now only applies through the size Rust picks, when the content leaves room for it. An <svg> given an explicit `width`/`height` with
+       `inset: 0` and `margin: auto` is centred without a `transform`. The fallbacks are the old fill-the-stage
+       size, for an <svg> Rust never framed. */
+    inset: 0;
+    margin: auto;
+    width: var(--frame-w, calc(100% - 2 * var(--nested-scene-margin)));
+    height: var(--frame-h, calc(100% - 2 * var(--nested-scene-margin)));
+    max-width: calc(100% - 2 * var(--nested-scene-min-margin));
+    max-height: calc(100% - 2 * var(--nested-scene-min-margin));
     border: 4px solid #58a6ff;
     border-radius: var(--nested-scene-radius);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
@@ -357,8 +369,7 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
    content changed." These two classes override `--nested-scene-margin` to a larger value, one step further
    inset per level of nesting below the shallowest, so each deeper frame reads as visibly smaller than its own
    immediate parent's — a box within a box within a box, not three same-sized panes taking turns. Applied via an
-   extra class on the `<svg>` itself (alongside `nested-scene` and any `theta-thetad-child`/`theta-xorloop-child`
-   aspect-ratio override), not derived automatically: nothing in this stylesheet knows a given id's own nesting
+   extra class on the `<svg>` itself (alongside `nested-scene`), not derived automatically: nothing in this stylesheet knows a given id's own nesting
    depth, only what a host's own HTML declares it to be. */
 .nested-scene-depth-2 {
     --nested-scene-margin: 90px;
@@ -385,42 +396,6 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
     --nested-scene-margin: 140px;
 }
 
-/* A nested `ThetaD` child's own content is shorter, relative to its own width, than `ThetaC`'s — a
-   mostly-horizontal row of operator boxes under one input array, not ThetaC's own five-stage vertical cascade —
-   so sharing `.nested-scene`'s own full-height box with it would force its own 1130×600 viewBox into a box shaped
-   nothing like it, letterboxing it top and bottom (`preserveAspectRatio`'s default `xMidYMid meet` fitting the
-   whole viewBox into a box taller than it needs). `aspect-ratio` overrides `.nested-scene`'s own fixed `height`
-   with one derived straight from this box's own (still shared, unchanged) width instead, so the box is already
-   the same shape as the viewBox and `meet` has nothing left to pad.
-
-   A *class*, not an id: every step clones the currently-shown nested child into a fresh sibling with a fresh,
-   never-reused id (`{prefix}-0`, `-1`, ...) — see `demo-app/src/util.rs`'s own `create_child_svg` — so an id
-   selector would only ever match the first, pre-rebuild element, and every later one would silently fall back to
-   `.nested-scene`'s own full height the moment "Next" was pressed once. `clone_node_with_deep` does carry the
-   `class` attribute over verbatim, though, which is why every host giving a `ThetaD` child this class alongside
-   `nested-scene` up front — `panel-theta.html`'s own `#theta-diagram-thetad-child`,
-   `panel-sha3-sponge.html`'s own `#sha3-sponge-keccak-theta-child-thetad-child` — gets every clone keeping it
-   automatically, with no Rust-side change needed to add it again per step.
-
-   This ratio is a plain mirror of a `ThetaD` child's own real viewBox, not derived from it, so the two need
-   updating together — see `demo-app/src/theta/theta_d.rs`'s own `MID_Y` if this box's real content shape changes
-   again. */
-.theta-thetad-child {
-    height: auto;
-    aspect-ratio: 1130 / 600;
-}
-
-/* Same reasoning as `.theta-thetad-child` just above, for a nested `XOR loop` child instead: `D` and `A` now sit
-   side by side in one row, not stacked, so this box's own content is wider and shorter relative to its own width
-   than `.nested-scene`'s own full height allows for — and, being cloned on every step the same way `ThetaD`'s own
-   is (`demo-app/src/util.rs`'s own `create_child_svg`, shared by both), needs the same class-not-id fix for the
-   same reason. This ratio mirrors a nested `XOR loop` child's own real viewBox — see
-   `demo-app/src/theta/xor_loop.rs`'s own `build_scene` if this box's real content shape changes again. */
-.theta-xorloop-child {
-    height: auto;
-    aspect-ratio: 1400 / 780;
-}
-
 /* The nested Scene's own close control, in place of an external "Exit" button: a small circular &times;
    centred exactly on the single point of its own rounded frame's top-right corner that is simultaneously closest
    to the top and to the right — the topmost-rightmost point of the *curve* itself, not the frame's sharp
@@ -440,11 +415,15 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
 .nested-scene-close {
     --nested-scene-close-size: 34px;
     position: absolute;
+    /* The frame is centred in the stage, so its corner sits half of whatever the stage has left over — beyond the
+       frame's own size, already fitted to the stage by `util::frame_nested_scene` — from each edge. */
     top: calc(
-        var(--nested-scene-margin) - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
+        (100% - var(--nested-scene-frame-h, 100% - 2 * var(--nested-scene-min-margin))) / 2
+            - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
     );
     right: calc(
-        var(--nested-scene-margin) - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
+        (100% - var(--nested-scene-frame-w, 100% - 2 * var(--nested-scene-min-margin))) / 2
+            - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
     );
     visibility: hidden;
     width: var(--nested-scene-close-size);

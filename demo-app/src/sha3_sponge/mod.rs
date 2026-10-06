@@ -4,7 +4,7 @@
 
 mod keccak;
 
-use crate::util::{add_backdrop_clone, required_element, stringify};
+use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -108,6 +108,48 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates every `<svg>` this panel's own `.nested-scene-stage` needs, if they do not already exist: the base
+/// diagram, then each nested level, shallowest first — document order is paint order, and
+/// [`add_backdrop_clone`] relies on a nested child following its own parent. Each is inserted before
+/// `#sha3-sponge-close`, which therefore stays on top. These sizes are the *initial* ones only: each nested
+/// scene fits its own `<svg>` to its content as it is built, and a later call here never reverts that.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if creating any `<svg>` fails.
+fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
+    const ANCHOR: &str = "sha3-sponge-close";
+    let levels: [(&str, Option<&str>, Size); 6] = [
+        ("sha3-sponge-diagram", None, Size::new(1920.0, 950.0)),
+        ("sha3-sponge-keccak-child", Some("nested-scene"), Size::new(1980.0, 820.0)),
+        (
+            "sha3-sponge-keccak-theta-child",
+            Some("nested-scene nested-scene-depth-2"),
+            Size::new(1260.0, 1090.0),
+        ),
+        (
+            "sha3-sponge-keccak-theta-child-thetac-child",
+            Some("nested-scene nested-scene-depth-3"),
+            Size::new(1180.0, 1010.0),
+        ),
+        (
+            "sha3-sponge-keccak-theta-child-thetad-child",
+            Some("nested-scene nested-scene-depth-3"),
+            Size::new(1130.0, 600.0),
+        ),
+        (
+            "sha3-sponge-keccak-theta-child-xorloop-child",
+            Some("nested-scene nested-scene-depth-3"),
+            Size::new(1400.0, 780.0),
+        ),
+    ];
+    for (id, class, size) in levels {
+        ensure_svg(document, ANCHOR, id, class, size)?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 64-byte input block passing
 /// through a single call to `Keccak-f[1600]`. Nothing here drags.
 ///
@@ -163,6 +205,7 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-diagram`, or if any library call fails.
 fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
+    create_stage_svgs(&document)?;
     let container = required_element(&document, "sha3-sponge-diagram")?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach("sha3-sponge-diagram").map_err(stringify)?;

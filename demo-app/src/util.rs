@@ -28,6 +28,258 @@ pub(crate) fn next_child_svg_id(prefix: &str) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates `<svg id="{id}">` — sized `size`, with `viewBox` to match and `class` if given — as the previous sibling
+/// of `before_id`, unless an element called `id` already exists, in which case this does nothing at all.
+///
+/// Lets Rust, not `index.html`, own a diagram's own initial dimensions. Doing nothing when `id` already exists
+/// makes this safe to call on every rebuild — a size the diagram has since fitted to its own content is never
+/// reverted — and leaves a panel that still declares its own `<svg>` in HTML working unchanged.
+///
+/// Inserting before `before_id` (rather than appending) keeps DOM order, and so paint order, deterministic: call
+/// this for the shallowest `<svg>` first, and `before_id` can be an overlay — such as a close button — that must
+/// stay on top.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `before_id`, or if creating or inserting the element fails.
+pub(crate) fn ensure_svg(
+    document: &web_sys::Document,
+    before_id: &str,
+    id: &str,
+    class: Option<&str>,
+    size: Size,
+) -> Result<(), String> {
+    if document.get_element_by_id(id).is_some() {
+        return Ok(());
+    }
+    let anchor = required_element(document, before_id)?;
+    let svg = new_svg(document, id, class, size)?;
+    anchor
+        .before_with_node_1(&svg)
+        .map_err(|e| format!("could not insert <svg id={id:?}>: {e:?}"))?;
+    frame_nested_scene(document, id)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`ensure_svg`]'s counterpart for a panel with just one plain `<svg>`: appends `<svg id="{id}">` — sized `size` —
+/// to `parent_id`, unless an element called `id` already exists. The HTML then declares only the empty host element
+/// (a `.canvas`), so Rust is the one place a diagram's own dimensions are ever written down.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `parent_id`, or if creating or appending the element fails.
+pub(crate) fn ensure_svg_in(document: &web_sys::Document, parent_id: &str, id: &str, size: Size) -> Result<(), String> {
+    if document.get_element_by_id(id).is_some() {
+        return Ok(());
+    }
+    let parent = required_element(document, parent_id)?;
+    let svg = new_svg(document, id, None, size)?;
+    parent
+        .append_with_node_1(&svg)
+        .map_err(|e| format!("could not append <svg id={id:?}>: {e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A detached `<svg>`: `id`, `width`, `height`, and a matching `viewBox` set from `size`, plus `class` if given.
+fn new_svg(
+    document: &web_sys::Document,
+    id: &str,
+    class: Option<&str>,
+    size: Size,
+) -> Result<web_sys::Element, String> {
+    let svg = document
+        .create_element_ns(Some("http://www.w3.org/2000/svg"), "svg")
+        .map_err(|e| format!("could not create <svg id={id:?}>: {e:?}"))?;
+    let (width, height) = (size.width, size.height);
+    let attrs = [
+        ("id", id.to_string()),
+        ("width", width.to_string()),
+        ("height", height.to_string()),
+        ("viewBox", format!("0 0 {width} {height}")),
+    ];
+    for (name, value) in attrs.iter().chain(class.map(|c| ("class", c.to_string())).as_ref()) {
+        svg.set_attribute(name, value)
+            .map_err(|e| format!("could not set {name} on <svg id={id:?}>: {e:?}"))?;
+    }
+    Ok(svg)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Sizes `id`'s own nested-Scene frame, which `style.css` then draws centred in its stage at exactly that size.
+///
+/// Starts from the `<svg>`'s own `width`/`height` attributes — its natural size — and scales both down by the same
+/// factor if that would not fit the stage less `--nested-scene-min-margin` on every side. Scaling
+/// both keeps the frame the same shape as its `viewBox`, so nothing is letterboxed. The result is written as
+/// `--frame-w`/`--frame-h` on the `<svg>`.
+///
+/// It also records the same size for `.nested-scene-close`, which sits outside the `<svg>` and so cannot read
+/// those. A rule in the `<style id="nested-scene-frame-rules">` element sets `--nested-scene-frame-w`/`-h` on
+/// the stage, but only `:has()` this very `<svg>` is shown. Each `<svg>` is matched by a `data-frame-key` attribute
+/// it keeps across a step's own clones, which get fresh ids. Several siblings of different sizes can therefore
+/// coexist in one stage.
+///
+/// Does nothing for an `<svg>` without the `nested-scene` class. Call it after writing `width`/`height`;
+/// [`resize_svg`] and [`ensure_svg`] already do. A panel whose `<svg>` is still declared in HTML must call it
+/// itself, before anything is drawn.
+///
+/// # Errors
+///
+/// Returns `Err` if `id` is missing, has no numeric `width`/`height`, or a DOM write fails.
+pub(crate) fn frame_nested_scene(document: &web_sys::Document, id: &str) -> Result<(), String> {
+    let svg = required_element(document, id)?;
+    let class = svg.get_attribute("class").unwrap_or_default();
+    if !class.split_whitespace().any(|c| c == "nested-scene") {
+        return Ok(());
+    }
+    let number = |name: &str| -> Result<f64, String> {
+        svg.get_attribute(name)
+            .and_then(|v| v.trim_end_matches("px").parse().ok())
+            .ok_or_else(|| format!("#{id} has no numeric {name}"))
+    };
+    let (width, height) = (number("width")?, number("height")?);
+
+    // Read from the page's own CSS, not mirrored here. This is the least margin a frame may be squeezed to, not
+    // its decorative per-depth inset (`--nested-scene-margin`), which only applies when there is room for it.
+    let margin = web_sys::window()
+        .and_then(|w| w.get_computed_style(&svg).ok().flatten())
+        .and_then(|style| style.get_property_value("--nested-scene-min-margin").ok())
+        .and_then(|v| v.trim().trim_end_matches("px").parse::<f64>().ok())
+        .unwrap_or(0.0);
+    let stage = svg.parent_element().ok_or_else(|| format!("#{id} has no parent element"))?;
+    // A hidden panel has no layout yet, so its stage measures `0`: leave the frame at its natural size then.
+    let (avail_w, avail_h) = (
+        f64::from(stage.client_width()) - 2.0 * margin,
+        f64::from(stage.client_height()) - 2.0 * margin,
+    );
+    let scale = if avail_w > 0.0 && avail_h > 0.0 {
+        (avail_w / width).min(avail_h / height).min(1.0)
+    } else {
+        1.0
+    };
+    let (frame_w, frame_h) = (width * scale, height * scale);
+
+    set_style_vars(
+        &svg,
+        &[("--frame-w", format!("{frame_w}px")), ("--frame-h", format!("{frame_h}px"))],
+    )?;
+
+    let key = match svg.get_attribute("data-frame-key") {
+        Some(key) => key,
+        None => {
+            svg.set_attribute("data-frame-key", id)
+                .map_err(|e| format!("could not key #{id}'s own frame: {e:?}"))?;
+            id.to_string()
+        },
+    };
+    record_frame_rule(document, key, frame_w, frame_h)
+}
+
+thread_local! {
+    // Every nested `<svg>`'s own frame size, by `data-frame-key` — the source of `<style
+    // id="nested-scene-frame-rules">`'s own text. See [`frame_nested_scene`].
+    static FRAME_RULES: std::cell::RefCell<Vec<(String, f64, f64)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Adds or replaces `key`'s own entry in [`FRAME_RULES`] and rewrites the whole `<style
+/// id="nested-scene-frame-rules">` element from it, creating that element in `<head>` on first use.
+fn record_frame_rule(document: &web_sys::Document, key: String, width: f64, height: f64) -> Result<(), String> {
+    let css = FRAME_RULES.with_borrow_mut(|rules| {
+        match rules.iter_mut().find(|(k, ..)| *k == key) {
+            Some(rule) => *rule = (key, width, height),
+            None => rules.push((key, width, height)),
+        }
+        rules
+            .iter()
+            .map(|(k, w, h)| {
+                format!(
+                    ".nested-scene-stage:has(svg[data-frame-key=\"{k}\"][visibility=\"visible\"]) \
+                     {{ --nested-scene-frame-w: {w}px; --nested-scene-frame-h: {h}px; }}\n"
+                )
+            })
+            .collect::<String>()
+    });
+    let style = match document.get_element_by_id("nested-scene-frame-rules") {
+        Some(style) => style,
+        None => {
+            let style = document
+                .create_element("style")
+                .map_err(|e| format!("could not create the frame <style>: {e:?}"))?;
+            style
+                .set_attribute("id", "nested-scene-frame-rules")
+                .map_err(|e| format!("could not id the frame <style>: {e:?}"))?;
+            let head = document
+                .query_selector("head")
+                .map_err(|e| format!("could not find <head>: {e:?}"))?
+                .ok_or("the page has no <head>")?;
+            head.append_with_node_1(&style)
+                .map_err(|e| format!("could not add the frame <style>: {e:?}"))?;
+            style
+        },
+    };
+    style.set_text_content(Some(&css));
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Narrows `id`'s own `<svg>` to `content_right` — the rightmost edge of everything drawn — plus the left margin and
+/// room for the East toolbar, then re-lays out `scene`'s own title and toolbar against the new size (the scene
+/// cannot observe a resize itself).
+///
+/// `content_bottom` is the lowest edge of everything drawn. The height fits that edge, plus the same clear space
+/// `selection::fit_canvas_to_toolbar` leaves if `step_toolbar` says a stepping toolbar is added below it. A frame
+/// with no spare height scales down less when `frame_nested_scene` fits it to the stage, so its text stays closer
+/// to its parent's own size.
+///
+/// # Errors
+///
+/// Returns `Err` if `id` is missing, or a DOM write or layout pass fails.
+pub(crate) fn fit_nested_size(
+    scene: &svg_dom_graph::scene::Scene,
+    id: &str,
+    content_right: f64,
+    content_bottom: f64,
+    step_toolbar: bool,
+) -> Result<(), String> {
+    const MARGIN: f64 = 20.0;
+    const TOOLBAR_ALLOWANCE: f64 = 60.0;
+    const STEP_TOOLBAR_GAP: f64 = 20.0;
+    let document = document()?;
+    let toolbar_room = if step_toolbar {
+        let toolbar = svg_dom_graph::scene::SelectionToolbarOptions::default();
+        STEP_TOOLBAR_GAP + toolbar.margin + toolbar.button_height
+    } else {
+        0.0
+    };
+    let height = content_bottom + toolbar_room + MARGIN;
+    resize_svg(&document, id, Size::new(content_right + MARGIN + TOOLBAR_ALLOWANCE, height))?;
+    scene.refresh_layout().map_err(stringify)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Sets each `(name, value)` custom property in `element`'s own inline `style` attribute, replacing a previous
+/// value of the same name and keeping every other declaration. Written as plain text because this crate does not
+/// enable `web-sys`'s own `CssStyleDeclaration` feature.
+fn set_style_vars(element: &web_sys::Element, vars: &[(&str, String)]) -> Result<(), String> {
+    let existing = element.get_attribute("style").unwrap_or_default();
+    let mut declarations: Vec<String> = existing
+        .split(';')
+        .map(str::trim)
+        .filter(|d| {
+            !d.is_empty()
+                && !vars
+                    .iter()
+                    .any(|(name, _)| d.split(':').next().is_some_and(|n| n.trim() == *name))
+        })
+        .map(str::to_string)
+        .collect();
+    declarations.extend(vars.iter().map(|(name, value)| format!("{name}: {value}")));
+    element
+        .set_attribute("style", &declarations.join("; "))
+        .map_err(|e| format!("could not set an inline style: {e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Clones `previous_id`'s own `<svg>` — shallow, attributes only, no content — gives the clone `next_id`, and
 /// inserts it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class` (`"nested-scene"`, plus
 /// whichever further class — e.g. `theta-thetad-child`, `theta-xorloop-child` — that particular nested child's
@@ -250,5 +502,6 @@ pub(crate) fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> 
     svg.set_attribute("height", &height.to_string())
         .map_err(|e| format!("could not set #{id}'s own height: {e:?}"))?;
     svg.set_attribute("viewBox", &format!("0 0 {width} {height}"))
-        .map_err(|e| format!("could not set #{id}'s own viewBox: {e:?}"))
+        .map_err(|e| format!("could not set #{id}'s own viewBox: {e:?}"))?;
+    frame_nested_scene(document, id)
 }
