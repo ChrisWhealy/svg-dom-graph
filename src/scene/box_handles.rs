@@ -91,6 +91,10 @@ pub(crate) struct BoxHandles {
     /// selection is an immediate no-op, and even a genuinely different one only rewrites whichever cells actually
     /// changed category (focused/banded/default), not all `N` of them unconditionally.
     pub(crate) selection: Selection,
+    /// The flat indices `Scene::set_secondary_selection` last marked as derived, sorted and without duplicates — empty
+    /// until it is first called, and for every node kind with no cells. Independent of [`selection`](Self::selection):
+    /// `Scene::set_selection` never changes it, and it never changes `selection`.
+    pub(crate) secondary: Vec<usize>,
     /// This node's own live `aria-label` text, reused in place rather than rebuilt from scratch on every
     /// [`Scene::set_selection`](crate::scene::Scene::set_selection) call.
     ///
@@ -129,6 +133,30 @@ pub(crate) struct BoxHandles {
 }
 
 impl BoxHandles {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Rebuilds this node's own `aria-label` and tooltip from its base description plus whatever `selection` and
+    /// `secondary` currently say — `Scene::set_selection` and `Scene::set_secondary_selection` both end here.
+    ///
+    /// The secondary cells read as `", also highlighted: cells 3, 4"`, appended after the primary selection's own
+    /// description. Colour and dash alone convey nothing to assistive technology.
+    pub(crate) fn refresh_label(&mut self) -> Result<(), svg_dom::Error> {
+        use std::fmt::Write as _;
+        self.aria_label.truncate(self.base_label_len);
+        self.selection.describe_into(&mut self.aria_label);
+        if !self.secondary.is_empty() {
+            let _ = write!(
+                self.aria_label,
+                ", also highlighted: {} {}",
+                if self.secondary.len() == 1 { "cell" } else { "cells" },
+                self.secondary.iter().map(usize::to_string).collect::<Vec<_>>().join(", ")
+            );
+        }
+        self.group.set_attr("aria-label", &self.aria_label)?;
+        // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
+        // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
+        self.group.set_title(&self.aria_label)
+    }
+
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This node's own name right now, layering whatever `selection` currently highlights onto `ref_name`.
     ///

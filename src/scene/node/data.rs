@@ -9,7 +9,10 @@ use super::{
     NodeOptions, OUTER_PADDING, render_guard::RenderGuard, validate_data_content, validate_edge_anchors,
 };
 use crate::{
-    colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, SELECTION_BAND, SELECTION_FOCUS, TEXT_FILL},
+    colours::{
+        BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, SELECTION_BAND, SELECTION_FOCUS, SELECTION_SECONDARY,
+        SELECTION_SECONDARY_STROKE, TEXT_FILL,
+    },
     error::Error,
     model::{
         content::ResolvedBand,
@@ -48,26 +51,68 @@ const SELECTION_BAND_STROKE_WIDTH: &str = "2";
 /// Already formatted, for the same reason [`SELECTION_BAND_STROKE_WIDTH`] is.
 const SELECTION_FOCUS_STROKE_WIDTH: &str = "3.5";
 
+/// A secondary-selected cell's own stroke width, between a plain cell's own border and [`SELECTION_BAND_STROKE_WIDTH`].
+const SELECTION_SECONDARY_STROKE_WIDTH: &str = "2";
+
+/// The dash pattern a secondary-selected cell's own outline is drawn with. Every other cell is `"none"`, a solid line.
+const SELECTION_SECONDARY_DASH: &str = "5 3";
+
+/// Every attribute `Scene::set_selection`/`Scene::set_secondary_selection` ever write to a cell's own `<rect>`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct CellStyle {
+    fill: &'static str,
+    stroke_width: &'static str,
+    stroke: &'static str,
+    dash: &'static str,
+}
+
+impl CellStyle {
+    /// Writes this style onto `cell`.
+    fn apply(self, cell: &svg_dom::SvgNode) -> Result<(), svg_dom::Error> {
+        cell.set_fill(self.fill)?;
+        cell.set_attr("stroke-width", self.stroke_width)?;
+        cell.set_attr("stroke", self.stroke)?;
+        cell.set_attr("stroke-dasharray", self.dash)
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Cell `i`'s own fill colour and stroke width under a resolved `focus`/`band`, against `base_colour`/
-/// `base_stroke_width` for a cell neither names.
+/// Cell `i`'s own style under a resolved `focus`/`band` and a `secondary` flag, against `base_colour`/
+/// `base_stroke_width` for a cell none of them names.
 ///
-/// `Scene::set_selection` calls this twice — once for the old selection, once for the new one — for each cell it
-/// visits, and only writes to the DOM when the two results differ. It visits only the cells a changed old/new focus
-/// or band could plausibly affect, not every cell in the grid — see its own doc comment.
+/// Precedence: the focused cell, then a secondary one, then a banded one, then the default. So a cell that is both
+/// focused and secondary shows as focused. Each of the three is a flag, not an index list: the caller already knows
+/// whether its cell is a member, and this stays allocation-free.
+///
+/// `Scene::set_selection` and `Scene::set_secondary_selection` call this twice — once for the old state, once for
+/// the new one — for each cell they visit, and only write to the DOM when the two results differ. Each visits only
+/// the cells a changed old/new focus, band, or secondary set could plausibly affect, not every cell in the grid.
 fn cell_style(
-    i: usize,
-    focus: Option<usize>,
-    band: ResolvedBand,
+    focus: bool,
+    banded: bool,
+    secondary: bool,
     base_colour: &'static str,
     base_stroke_width: &'static str,
-) -> (&'static str, &'static str) {
-    if Some(i) == focus {
-        (SELECTION_FOCUS, SELECTION_FOCUS_STROKE_WIDTH)
-    } else if band.contains(i) {
-        (SELECTION_BAND, SELECTION_BAND_STROKE_WIDTH)
+) -> CellStyle {
+    let (fill, stroke_width, stroke, dash) = if focus {
+        (SELECTION_FOCUS, SELECTION_FOCUS_STROKE_WIDTH, BOX_STROKE, "none")
+    } else if secondary {
+        (
+            SELECTION_SECONDARY,
+            SELECTION_SECONDARY_STROKE_WIDTH,
+            SELECTION_SECONDARY_STROKE,
+            SELECTION_SECONDARY_DASH,
+        )
+    } else if banded {
+        (SELECTION_BAND, SELECTION_BAND_STROKE_WIDTH, BOX_STROKE, "none")
     } else {
-        (base_colour, base_stroke_width)
+        (base_colour, base_stroke_width, BOX_STROKE, "none")
+    };
+    CellStyle {
+        fill,
+        stroke_width,
+        stroke,
+        dash,
     }
 }
 
@@ -391,6 +436,7 @@ pub(super) fn draw_content_box(
             cell_rects,
             cell_stroke_width: if single_value { "1.5" } else { "1" },
             selection: Selection::None,
+            secondary: Vec::new(),
             aria_label: node_label,
             base_label_len,
             ref_name,
@@ -674,6 +720,7 @@ impl Scene {
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         let cell_stroke_width = handles.cell_stroke_width;
         let cell_rects = &handles.cell_rects;
+        let secondary = &handles.secondary;
         let len = cell_rects.len();
 
         // Every index whose own category (focused, banded, or default) could possibly differ between the old
@@ -687,14 +734,25 @@ impl Scene {
                 return;
             }
             let Some(cell) = cell_rects.get(i) else { return };
-            let old_style = cell_style(i, old_focus, old_band, base_colour, cell_stroke_width);
-            let new_style = cell_style(i, new_focus, new_band, base_colour, cell_stroke_width);
+            let is_secondary = secondary.binary_search(&i).is_ok();
+            let old_style = cell_style(
+                Some(i) == old_focus,
+                old_band.contains(i),
+                is_secondary,
+                base_colour,
+                cell_stroke_width,
+            );
+            let new_style = cell_style(
+                Some(i) == new_focus,
+                new_band.contains(i),
+                is_secondary,
+                base_colour,
+                cell_stroke_width,
+            );
             if new_style == old_style {
                 return;
             }
-            result = cell
-                .set_fill(new_style.0)
-                .and_then(|()| cell.set_attr("stroke-width", new_style.1));
+            result = new_style.apply(cell);
         };
         if let Some(i) = old_focus {
             restyle(i);
@@ -726,18 +784,112 @@ impl Scene {
         result?;
 
         handles.selection = selection;
-        handles.aria_label.truncate(handles.base_label_len);
-        selection.describe_into(&mut handles.aria_label);
-        handles.group.set_attr("aria-label", &handles.aria_label)?;
-        // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
-        // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
-        handles.group.set_title(&handles.aria_label)?;
+        handles.refresh_label()?;
 
         // The selection has already changed, so a failure to keep a selection toolbar's own button states in sync
         // with it is not reported as this call's own failure — same reasoning as `SceneInner::flush_view`'s own
         // `let _ = self.sync_toolbar_state();`. The next selection change puts it right.
         let _ = inner.sync_selection_toolbar_state();
 
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Marks the cells at flat indices `cells` of node `id` as *secondary*: derived from the current selection, and
+    /// part of the same step, without being the one cell (or row/column) [`set_selection`](Self::set_selection)
+    /// names.
+    ///
+    /// A walk often reads more than the cell it is standing on. SHA3's `Chi` step, standing on `A[x, y]`, also reads
+    /// `A[x + 1, y]` and `A[x + 2, y]`; `Pi` writes that same step's value to a cell elsewhere. `cells` names those
+    /// derived cells, on this node or on any other data node, so a reader can see everything one step touches.
+    ///
+    /// # Independent of `Selection`
+    ///
+    /// This never reads or changes `id`'s own [`Selection`], and [`set_selection`](Self::set_selection) never
+    /// changes the secondary cells. A selection toolbar's own stepping is therefore unaffected: it only ever reads
+    /// the primary `Selection`. The two are set separately — typically both on every step.
+    ///
+    /// # Rendering
+    ///
+    /// A secondary cell has its own teal fill and a dashed outline. Both, since colour alone is not a reliable
+    /// channel — the same reasoning [`set_selection`](Self::set_selection) follows for its own thicker borders.
+    /// Where a cell is also primary-selected, the primary highlight wins. Where it is also inside a selected row or
+    /// column, the secondary one wins.
+    ///
+    /// The node's own `aria-label` and tooltip gain `", also highlighted: cells 3, 4"`.
+    ///
+    /// # Replacement
+    ///
+    /// `cells` replaces whatever was secondary before. An empty slice clears it. Order and duplicates do not
+    /// matter. There is no limit on how many cells can be secondary beyond the node's own value count. An
+    /// identical set to the current one is an immediate no-op, and otherwise only the cells that enter or leave the
+    /// set are recoloured.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
+    ///
+    /// Returns [`Error::InvalidSelection`] — carrying the offending index as a [`Selection::Cell`] — if `id` names a
+    /// plain label or container node, or if any index in `cells` is out of range for `id`'s own value count.
+    /// Checked before recolouring any cell, so a rejected call leaves every cell exactly as it was.
+    ///
+    /// Also returns a wrapped [`Error::Svg`] if recolouring a cell fails partway through, with the same "can leave
+    /// some cells already recoloured" property [`set_selection`](Self::set_selection) documents.
+    pub fn set_secondary_selection(&self, id: NodeId, cells: &[usize]) -> Result<(), Error> {
+        let mut inner = self.inner.borrow_mut();
+
+        let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
+            NodeContent::Data(content) => content,
+            NodeContent::Label(_) | NodeContent::Container(_) => {
+                return Err(Error::InvalidSelection(id, Selection::None));
+            },
+        };
+        let len = content.len();
+        if let Some(&bad) = cells.iter().find(|&&i| i >= len) {
+            return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
+        }
+        let base_colour = content.type_colour();
+        let (band, focus) = {
+            let selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
+            // `selection` was accepted by an earlier call against this same content, so it always resolves.
+            content.resolve_selection(selection).unwrap_or((ResolvedBand::None, None))
+        };
+
+        let mut new_secondary = cells.to_vec();
+        new_secondary.sort_unstable();
+        new_secondary.dedup();
+
+        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        if handles.secondary == new_secondary {
+            return Ok(());
+        }
+        let cell_stroke_width = handles.cell_stroke_width;
+
+        // Only a cell that enters or leaves the set can change style, so walk the two sorted lists' own symmetric
+        // difference rather than every cell in the grid.
+        let old = &handles.secondary;
+        let mut changed = Vec::with_capacity(old.len() + new_secondary.len());
+        changed.extend(old.iter().filter(|i| new_secondary.binary_search(i).is_err()));
+        changed.extend(new_secondary.iter().filter(|i| old.binary_search(i).is_err()));
+
+        let mut result = Ok(());
+        for i in changed {
+            let Some(cell) = handles.cell_rects.get(i) else { continue };
+            let style_with = |secondary: bool| {
+                cell_style(Some(i) == focus, band.contains(i), secondary, base_colour, cell_stroke_width)
+            };
+            let new_style = style_with(new_secondary.binary_search(&i).is_ok());
+            if new_style != style_with(old.binary_search(&i).is_ok()) {
+                result = new_style.apply(cell);
+                if result.is_err() {
+                    break;
+                }
+            }
+        }
+        result?;
+
+        handles.secondary = new_secondary;
+        handles.refresh_label()?;
         Ok(())
     }
 }

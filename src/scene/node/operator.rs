@@ -180,6 +180,7 @@ fn draw_operator_box(
             cell_rects: vec![value_cell_el],
             cell_stroke_width: "1",
             selection: Selection::None,
+            secondary: Vec::new(),
             aria_label: node_label,
             base_label_len,
             ref_name: label.to_owned(),

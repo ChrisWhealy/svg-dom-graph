@@ -107,6 +107,7 @@ pub(super) fn draw_box(
         cell_rects: Vec::new(),
         cell_stroke_width: "",
         selection: Selection::None,
+        secondary: Vec::new(),
         aria_label: String::new(),
         base_label_len: 0,
         ref_name: label.to_owned(),

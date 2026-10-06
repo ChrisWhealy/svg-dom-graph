@@ -54,6 +54,16 @@ pub(crate) const SELECTION_BAND: &str = "#ffe066";
 /// `Row`/`Column`'s own optional cell, names. Marks "and specifically this element."
 pub(crate) const SELECTION_FOCUS: &str = "#ff6b4a";
 
+/// [`Scene`](crate::scene::Scene)`::set_secondary_selection`'s own fill colour — a teal, deliberately a different hue from
+/// both [`SELECTION_BAND`] (yellow) and [`SELECTION_FOCUS`] (orange-red), so a derived cell never reads as either.
+/// Marks "this cell is derived from the current selection, and is part of the same step."
+pub(crate) const SELECTION_SECONDARY: &str = "#7fd8be";
+
+/// A secondary-selected cell's own dashed outline colour — a darker teal than [`SELECTION_SECONDARY`] itself, so the
+/// outline stays visible against its own fill. The dash, not this colour, is what carries the meaning for a reader
+/// who cannot tell the hues apart.
+pub(crate) const SELECTION_SECONDARY_STROKE: &str = "#0a7d5a";
+
 /// [`NodeValues::type_colour`](crate::model::content::NodeValues::type_colour)'s own `u8` shade — pastel apricot.
 pub(crate) const TYPE_COLOUR_U8: &str = "#fdebd3";
 

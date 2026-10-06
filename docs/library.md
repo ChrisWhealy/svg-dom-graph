@@ -32,7 +32,11 @@
    For binary or arithmetic operators whose operands are non-commutative, the two operand connectors are labelled with "L" and "R".
 
 - `set_selection` highlights a cell, row, or column of a `DataNodeContent` grid, exposing the current selection through colour, stroke width, and its own `aria-label` — see `Selection`.
-  This updates the node's own accessible name; it does not create a live-region announcement.
+- `set_secondary_selection` marks further cells that a step derives from the current selection.
+   For example the other two lanes read by the Keccak `Chi` function.
+   They get are given a teal background colour and a dashed outline, and their own `aria-label` text.
+   These cells are independent of `Selection`, so the selection toolbar is unaffected.
+   This also updates the node's own accessible name; it does not create a live-region announcement.
 
 - `add_edge`/`add_edge_with` draw a directed, arrow-tipped connector between two nodes.
 

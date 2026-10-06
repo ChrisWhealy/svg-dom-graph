@@ -32,6 +32,8 @@
 //!   split, non-commutative port markers, and operator-to-operator chaining.
 //! - [`selection`] — `Scene::set_selection`: cell/row/column highlighting, including the two-tier row-plus-cell and
 //!   column-plus-cell case, resetting via `Selection::None`, and validation.
+//! - [`secondary_selection`] — `Scene::set_secondary_selection`: derived cells drawn with a teal fill and dashed
+//!   outline, independence from `set_selection`, precedence against focus and band, `aria-label`, and validation.
 //! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of
 //!   its own endpoints, fan-out to more than one destination, and surviving a later `Scene::set_selection`.
 //! - [`toolbar`] — `Scene::show_toolbar` and the zoom controls: placement against each edge, staying a fixed size
@@ -60,6 +62,7 @@ mod operator_node;
 mod relationships;
 mod scene_title;
 mod scene_validation;
+mod secondary_selection;
 mod selection;
 mod selection_toolbar;
 mod toolbar;
