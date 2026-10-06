@@ -873,3 +873,47 @@ fn add_named_data_node_accepts_a_name_padded_with_whitespace_verbatim() -> Resul
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `with_column_groups(8)` on a 16-column grid widens only the gap after the eighth column, leaves every row and the
+/// cell order alone, and makes the node exactly one group gap wider than the same grid without groups.
+#[wasm_bindgen_test]
+fn column_groups_widen_only_the_gap_between_groups() -> Result<(), String> {
+    let svg = make_svg("data-node-column-groups", Size::new(600.0, 300.0), Size::new(600.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let values: Vec<u8> = (0..40).collect();
+    let plain = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(values.clone()), DataFormat::Ascii)
+                .with_layout(GridLayout::Columns(16)),
+        )
+        .map_err(|e| e.to_string())?;
+    let grouped = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::U8(values), DataFormat::Ascii)
+                .with_layout(GridLayout::Columns(16))
+                .with_column_groups(8),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let rects = rect_children(&nth_group("data-node-column-groups", 1)?)?;
+    // Index 0 is the node's own outer box; every rect after it is one value's cell, in row-major order.
+    let cells: Vec<_> = rects.iter().skip(1).collect();
+    let cell_x = |i: usize| attr_f64(cells[i], "x");
+    let step = cell_x(1)? - cell_x(0)?;
+    for col in 1..16 {
+        let gap = cell_x(col)? - cell_x(col - 1)?;
+        let expected = if col == 8 { step + 8.0 } else { step };
+        check_close(gap, expected).map_err(|e| format!("the gap before column {col}: {e}"))?;
+    }
+    check(
+        cell_x(16)? == cell_x(0)?,
+        "the second row starts back at the first column's own x",
+    )?;
+
+    let plain_width = scene.node_rect(plain).map_err(|e| e.to_string())?.size.width;
+    let grouped_width = scene.node_rect(grouped).map_err(|e| e.to_string())?.size.width;
+    check_close(grouped_width - plain_width, 8.0)
+}

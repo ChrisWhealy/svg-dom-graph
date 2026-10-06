@@ -34,6 +34,10 @@ use svg_dom::{
 /// [`NodeValues`]: crate::model::content::NodeValues
 const CELL_GAP: f64 = 6.0;
 
+/// The extra gap added between two groups of columns — see `DataNodeContent::with_column_groups` — on top of
+/// [`CELL_GAP`]. Small enough that a group still reads as part of one grid.
+const GROUP_GAP: f64 = 8.0;
+
 /// `Scene::set_selection`'s own row/column-level stroke width, thicker than every cell's own default border (see
 /// [`BoxHandles::cell_stroke_width`]).
 ///
@@ -217,6 +221,10 @@ pub(super) fn draw_content_box(
     let len = content.len();
     let (grid_rows, grid_cols) = content.shape();
     let single_value = content.is_single_value();
+    // How many wider gaps separate one group of columns from the next: none without groups, and never one after the
+    // last group.
+    let column_group = content.column_group();
+    let group_gaps = |cols: usize| cols.saturating_sub(1).checked_div(column_group).unwrap_or(0);
 
     // Finds and formats the one value guaranteed to need the widest rendered cell — see
     // `DataNodeContent::widest_cell_string`'s own doc comment for how, without formatting every value just to
@@ -242,7 +250,10 @@ pub(super) fn draw_content_box(
     } else {
         #[allow(clippy::cast_precision_loss)]
         Size::new(
-            grid_cols as f64 * cell_size.width + (grid_cols as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
+            grid_cols as f64 * cell_size.width
+                + (grid_cols as f64 - 1.0) * CELL_GAP
+                + group_gaps(grid_cols) as f64 * GROUP_GAP
+                + 2.0 * OUTER_PADDING,
             grid_rows as f64 * cell_size.height + (grid_rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
         )
     };
@@ -341,7 +352,10 @@ pub(super) fn draw_content_box(
                 let (row, col) = (i / grid_cols, i % grid_cols);
                 #[allow(clippy::cast_precision_loss)]
                 let cell_origin = Point::new(
-                    content_origin.x + OUTER_PADDING + col as f64 * (cell_size.width + CELL_GAP),
+                    content_origin.x
+                        + OUTER_PADDING
+                        + col as f64 * (cell_size.width + CELL_GAP)
+                        + group_gaps(col + 1) as f64 * GROUP_GAP,
                     content_origin.y + OUTER_PADDING + row as f64 * (cell_size.height + CELL_GAP),
                 );
 

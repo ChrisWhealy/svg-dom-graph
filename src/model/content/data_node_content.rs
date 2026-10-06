@@ -13,6 +13,7 @@ pub struct DataNodeContent {
     format: DataFormat,
     layout: GridLayout,
     byte_order: ByteOrder,
+    column_group: usize,
 }
 
 impl DataNodeContent {
@@ -33,6 +34,7 @@ impl DataNodeContent {
             format,
             layout: GridLayout::default(),
             byte_order: ByteOrder::default(),
+            column_group: 0,
         }
     }
 
@@ -51,7 +53,27 @@ impl DataNodeContent {
         self
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with a slightly wider gap after every `columns` columns, so the grid reads as groups of `columns`
+    /// cells — a hex-dump style `16` bytes per row with a wider gap after the eighth, say, is `Columns(16)` plus
+    /// `with_column_groups(8)`.
+    ///
+    /// Only the horizontal spacing changes: the grid keeps the shape [`GridLayout`] gives it, cells still index in the
+    /// same row-major order, and a row or column selection still highlights the same cells. The gap is between
+    /// groups only, never after the last one. `0` — the default — draws no groups.
+    #[must_use]
+    pub fn with_column_groups(mut self, columns: usize) -> Self {
+        self.column_group = columns;
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How many columns make up one group — see [`with_column_groups`](Self::with_column_groups); `0` for none.
+    pub(crate) fn column_group(&self) -> usize {
+        self.column_group
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with `byte_order` overriding [`ByteOrder::BigEndian`]'s own default. See [`ByteOrder`]'s own doc
     /// comment for what each variant does. See this module's own doc comment ("Formatting") for when `LittleEndian` is
     /// the right choice.

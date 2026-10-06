@@ -65,12 +65,13 @@ const HASH_LANES: usize = 4;
 const MESSAGE: &[u8] = b"The quick brown fox jumps over the lazy dog";
 
 /// How many stages "Step"'s own selection toolbar walks — one flat position per stage [`apply_stage`] focuses.
-const STAGE_COUNT: usize = 5;
+const STAGE_COUNT: usize = 6;
 
 /// Every node [`apply_stage`] ever focuses, by name — one small record instead of five separate parameters
 /// repeated at every call site.
 #[derive(Clone, Copy)]
 struct StageNodes {
+    message: NodeId,
     rate_in: NodeId,
     input_block: NodeId,
     xor: NodeId,
@@ -87,8 +88,9 @@ struct StageNodes {
 /// Recomputing the full set from `to` alone, rather than tracking "what was focused last" separately, matches
 /// `crate::selection::display_outputs`'s own rule. "Previous" un-focuses a later stage exactly as readily as
 /// "Next" focuses one, with nothing left over from before to forget to clear.
-fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
+fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
     let StageNodes {
+        message,
         rate_in,
         input_block,
         xor,
@@ -97,7 +99,7 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
         rate_out,
         output_hash,
     } = nodes;
-    for node in [rate_in, input_block, xor, keccak, capacity_out, rate_out, output_hash] {
+    for node in [message, rate_in, input_block, xor, keccak, capacity_out, rate_out, output_hash] {
         let _ = scene.set_focus(node, false);
     }
     let focus = |ids: &[NodeId]| {
@@ -106,11 +108,12 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
         }
     };
     match to {
-        Some(0) => focus(&[input_block, rate_in]),
-        Some(1) => focus(&[xor]),
-        Some(2) => focus(&[keccak]),
-        Some(3) => focus(&[capacity_out, rate_out]),
-        Some(4) => focus(&[output_hash]),
+        0 => focus(&[message]),
+        1 => focus(&[input_block, rate_in]),
+        2 => focus(&[xor]),
+        3 => focus(&[keccak]),
+        4 => focus(&[capacity_out, rate_out]),
+        5 => focus(&[output_hash]),
         _ => {},
     }
 }
@@ -188,6 +191,9 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// gap — one combined state, drawn as two named halves. Both start all-zero, the real sponge construction's own
 /// state before any input is absorbed.
 ///
+/// "Message" sits in row 1, to the right, above "Input block": the text being hashed, drawn as characters. A
+/// connector carries it down into "Input block".
+///
 /// Row 2 holds three boxes. "Keccak f(1600)" sits under "Capacity", centred vertically on "XOR" rather than
 /// sharing its own top edge, fed by a connector from "Capacity" above. It is a container node holding the nested
 /// Keccak-f scene, clickable once the walk reaches it. Its own three
@@ -216,9 +222,14 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// hold that count. [`rebuild`] wires the bar itself; this function only draws "Step" and applies `stage`'s own
 /// focus, via [`apply_stage`].
 ///
-/// Each stage rings a different set of nodes, un-ringing whichever it moves away from. In order: "Input block"
-/// and "Rate" together, "XOR" alone, "Keccak f(1600)" alone, row 3's own "Capacity" and "Rate" together, then
-/// "Output Hash" alone. Unstarted, nothing is focused.
+/// Each stage rings a different set of nodes, un-ringing whichever it moves away from. In order: "Message" alone,
+/// "Input block" and "Rate" together, "XOR" alone, "Keccak f(1600)" alone, row 3's own "Capacity" and "Rate"
+/// together, then "Output Hash" alone. The walk is never "not started": it opens on "Message", and a step back from
+/// there, or a restart, stays on it.
+///
+/// "Message" holds [`MESSAGE`], one character per cell, and sits above "Input block", which is initialised to zeros.
+/// The first `Next` adds the text to "Input block", with SHA3's padding: the message bytes, then `06`, then zeros,
+/// ending in `80`.
 ///
 /// # Step over or step into
 ///
@@ -234,7 +245,7 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-close` (the anchor `create_stage_svgs` creates this panel's
 /// `<svg>`s before), or if any library call fails.
-fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
+fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
     let document = crate::util::document()?;
     create_stage_svgs(&document)?;
     let container = required_element(&document, "sha3-sponge-diagram")?;
@@ -296,7 +307,9 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // Keccak scenes show, is a piece of this one calculation.
     let run = sha3_256_run(MESSAGE);
     let input_block_values = run.block.to_vec();
-    let xor_display_values: Vec<u64> = if stage.is_some_and(|stage| stage >= 1) {
+    // "Input block" starts out initialised to zeros. Stage `1` adds the padded text to it.
+    let shown_block = if stage >= 1 { input_block_values.clone() } else { vec![0; RATE_LANES] };
+    let xor_display_values: Vec<u64> = if stage >= 2 {
         rate_in_values
             .iter()
             .zip(input_block_values.iter())
@@ -311,13 +324,8 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // the nested scene still yields the correct output — exactly what stepping into it would have ended on.
     let permuted = run.permuted;
     // Zeros until `stage` reaches `from` — the same "not yet written" convention as "XOR" above.
-    let from_stage = |from: usize, lanes: &[u64]| -> Vec<u64> {
-        if stage.is_some_and(|stage| stage >= from) {
-            lanes.to_vec()
-        } else {
-            vec![0; lanes.len()]
-        }
-    };
+    let from_stage =
+        |from: usize, lanes: &[u64]| -> Vec<u64> { if stage >= from { lanes.to_vec() } else { vec![0; lanes.len()] } };
     let xor_content = hex_rate(xor_display_values.clone());
     let xor_size = scene.measure_named_data_node("XOR", &xor_content).map_err(stringify)?;
     let xor_x = rate_in_rect.origin.x + (rate_in_rect.size.width - xor_size.width) / 2.0;
@@ -355,10 +363,10 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
             NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3))),
         )
         .map_err(stringify)?;
-    // Clickable only from stage `2`, when the walk reaches "Keccak f(1600)" and its input has been assembled. Before
+    // Clickable only from stage `3`, when the walk reaches "Keccak f(1600)" and its input has been assembled. Before
     // that, entering it would show a view whose own input is not yet the real result of the stages above it. Every
     // step rebuilds this whole `Scene`, so enterability needs no undoing when the walk steps back.
-    if stage.is_some_and(|stage| stage >= 2) {
+    if stage >= 3 {
         scene.make_enterable(keccak).map_err(stringify)?;
     }
     let keccak_rect = scene.node_rect(keccak).map_err(stringify)?;
@@ -367,7 +375,31 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(xor_rect.origin.x + xor_rect.size.width + H_GAP, row_2_y),
             "Input block",
-            hex_rate(input_block_values),
+            hex_rate(shown_block),
+        )
+        .map_err(stringify)?;
+    let input_block_rect = scene.node_rect(input_block).map_err(stringify)?;
+
+    // "Message": the text `MESSAGE` holds, one character per cell, 16 to a row with a wider gap after the eighth,
+    // sitting just above "Input block", whose padded bytes it becomes. Added at the top of row 1, then moved once its
+    // own height is known.
+    let message = scene
+        .add_named_data_node(
+            Point::new(input_block_rect.origin.x, TOP_Y),
+            "Plain Text Message",
+            DataNodeContent::new(NodeValues::U8(MESSAGE.to_vec()), DataFormat::Ascii)
+                .with_layout(GridLayout::Columns(16))
+                .with_column_groups(8),
+        )
+        .map_err(stringify)?;
+    let message_rect = scene.node_rect(message).map_err(stringify)?;
+    scene
+        .move_node(
+            message,
+            Point::new(
+                input_block_rect.origin.x,
+                (input_block_rect.origin.y - V_GAP - message_rect.size.height).max(TOP_Y),
+            ),
         )
         .map_err(stringify)?;
 
@@ -394,7 +426,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(LEFT_X, row_3_y),
             "Capacity",
-            hex_narrow(from_stage(3, &permuted[RATE_LANES..])),
+            hex_narrow(from_stage(4, &permuted[RATE_LANES..])),
         )
         .map_err(stringify)?;
     let capacity_out_rect = scene.node_rect(capacity_out).map_err(stringify)?;
@@ -404,7 +436,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(capacity_out_rect.origin.x + capacity_out_rect.size.width, row_3_y),
             "Rate",
-            hex_rate(from_stage(3, &permuted[..RATE_LANES])),
+            hex_rate(from_stage(4, &permuted[..RATE_LANES])),
         )
         .map_err(stringify)?;
     let rate_out_rect = scene.node_rect(rate_out).map_err(stringify)?;
@@ -413,7 +445,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(rate_out_rect.origin.x + rate_out_rect.size.width + H_GAP, row_3_y),
             "Output Hash",
-            hex_digest(from_stage(4, &permuted[..HASH_LANES])),
+            hex_digest(from_stage(5, &permuted[..HASH_LANES])),
         )
         .map_err(stringify)?;
 
@@ -425,6 +457,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
             .with_from_side(Some(Side::South))
             .with_to_side(Some(Side::North))
     };
+    scene.add_edge_with(message, input_block, vertical()).map_err(stringify)?;
     scene.add_edge_with(capacity_in, keccak, vertical()).map_err(stringify)?;
     scene.add_edge_with(rate_in, xor, vertical()).map_err(stringify)?;
     scene
@@ -471,6 +504,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
 
     let stage_nodes = StageNodes {
+        message,
         rate_in,
         input_block,
         xor,
@@ -486,7 +520,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // against the stage this makes.
     let mut right = 0.0_f64;
     let mut bottom = 0.0_f64;
-    for node in [input_block, output_hash, rate_out, capacity_out] {
+    for node in [message, input_block, output_hash, rate_out, capacity_out] {
         let rect = scene.node_rect(node).map_err(stringify)?;
         right = right.max(rect.origin.x + rect.size.width);
         bottom = bottom.max(rect.origin.y + rect.size.height);
@@ -530,7 +564,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-close` (the anchor `create_stage_svgs` creates this panel's
 /// `<svg>`s before), or if any library call fails.
-fn rebuild(stage: Option<usize>) -> Result<(), String> {
+fn rebuild(stage: usize) -> Result<(), String> {
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
 
     let (scene, step) = build_scene(stage)?;
@@ -540,12 +574,12 @@ fn rebuild(stage: Option<usize>) -> Result<(), String> {
 
     scene
         .show_selection_toolbar(step, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
-            let _ = rebuild(transition.to);
+            // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
+            // a restart, lands on it again.
+            let _ = rebuild(transition.to.unwrap_or(0));
         })
         .map_err(stringify)?;
-    if let Some(stage) = stage {
-        scene.set_selection(step, Selection::Cell(stage)).map_err(stringify)?;
-    }
+    scene.set_selection(step, Selection::Cell(stage)).map_err(stringify)?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
@@ -553,7 +587,7 @@ fn rebuild(stage: Option<usize>) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo, unstarted — see [`build_scene`]'s own doc comment for what it draws — and wires
+/// Builds the SHA3 Sponge demo at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for what it draws — and wires
 /// its own close button.
 ///
 /// # Errors
@@ -561,7 +595,7 @@ fn rebuild(stage: Option<usize>) -> Result<(), String> {
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if any library call
 /// fails.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
-    rebuild(None)?;
+    rebuild(0)?;
     wire_sha3_sponge_controls(crate::util::document()?)
 }
 

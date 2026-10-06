@@ -50,6 +50,8 @@
 //! - [`DataFormat::Binary`]: every byte as eight binary digits, space-separated. A further gap splits each byte's own
 //!   upper and lower nybble — e.g. `"1111 0000"` for one byte. This lets a reader spot a nybble at a glance, rather
 //!   than counting along an unbroken run of eight digits.
+//! - [`DataFormat::Ascii`]: every byte as a printable ASCII character. A space is shown as `␣` and anything else as a
+//!   `·` with no separator between a multi-byte value's own bytes, so every value has the same width.
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. Decimal has no natural byte boundary to
 //!   split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect under `Decimal`: the same number
 //!   reads the same regardless of which byte order produced it.
@@ -147,6 +149,22 @@ fn format_binary_into<const N: usize>(bytes: [u8; N], out: &mut String) {
             out.push(' ');
         }
         let _ = write!(out, "{:04b} {:04b}", b >> 4, b & 0x0F);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Ascii` characters into `out`
+/// — the [`format_hex_into`] counterpart for text. A printable ASCII byte (`0x21..=0x7E`) is itself, a space `␣`, and
+/// every other byte `·`.
+fn format_ascii_into<const N: usize>(bytes: [u8; N], out: &mut String) {
+    out.clear();
+    out.reserve(N);
+    for b in bytes {
+        out.push(match b {
+            0x21..=0x7E => char::from(b), // range of printable ASCII characters
+            b' ' => '\u{2423}',
+            _ => '\u{B7}',
+        });
     }
 }
 

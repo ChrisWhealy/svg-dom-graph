@@ -834,3 +834,39 @@ fn flat_index_of_an_out_of_range_cell_is_none() -> Result<(), String> {
         DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal).with_layout(GridLayout::Rows(1));
     check_eq(content.flat_index(&Selection::Cell(4)), None)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// DataFormat::Ascii
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn ascii_shows_a_printable_byte_as_itself_a_space_as_a_visible_mark_and_anything_else_as_a_dot() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(b"Hi !~\x00\x7F\xFF".to_vec()), DataFormat::Ascii);
+    check_eq(
+        cells(&content),
+        ["H", "i", "\u{2423}", "!", "~", "\u{B7}", "\u{B7}", "\u{B7}"]
+            .map(str::to_owned)
+            .to_vec(),
+    )
+}
+
+#[test]
+fn ascii_shows_a_wider_value_as_its_bytes_in_byte_order_with_no_separator() -> Result<(), String> {
+    let value = u32::from_be_bytes(*b"abcd");
+    let big = DataNodeContent::new(NodeValues::U32(vec![value]), DataFormat::Ascii);
+    check_eq(cells(&big), vec!["abcd".to_owned()])?;
+    let little =
+        DataNodeContent::new(NodeValues::U32(vec![value]), DataFormat::Ascii).with_byte_order(ByteOrder::LittleEndian);
+    check_eq(cells(&little), vec!["dcba".to_owned()])
+}
+
+#[test]
+fn ascii_widest_cell_has_the_same_width_as_every_other() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U16(vec![0x4142, 0x0020, 0x7A7A]), DataFormat::Ascii);
+    let mut widest = String::new();
+    content.widest_cell_string(&mut widest);
+    for cell in cells(&content) {
+        check_eq(cell.chars().count(), widest.chars().count())?;
+    }
+    Ok(())
+}

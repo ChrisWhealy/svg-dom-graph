@@ -32,9 +32,11 @@
         round 16's output, <code>Theta</code>'s input is that same state, <code>Rho</code>'s is <code>Theta</code>'s
         output, and so on. The last round's output is the Rate and Capacity at the bottom of this diagram.
     </p>
-    <p>Press "Next"/"Previous"/"Restart" below the diagram to walk the five stages: "Input block" and "Rate",
-        "XOR", "Keccak f(1600)", the output "Rate" and "Capacity", and finally "Output Hash". Each node shows zeros,
-        the same "not yet written" look, until the walk reaches it. "Keccak f(1600)" can only be entered once the
+    <p>The walk opens on "Message", the text being hashed, shown one character per cell; "Input block" starts out
+        as zeros. Press "Next"/"Previous"/"Restart" below the diagram to step through the six stages: "Message",
+        "Input block" and "Rate" (the first Next writes the padded text into "Input block"), "XOR", "Keccak f(1600)",
+        the output "Rate" and "Capacity", and finally "Output Hash". Each node shows zeros, the same "not yet written"
+        look, until the walk reaches it. "Keccak f(1600)" can only be entered once the
         walk is on it.
     </p>
     <div class="canvas nested-scene-stage">
