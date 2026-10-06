@@ -50,10 +50,10 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested-Scene demo: SHA3's own `Theta` function, drawn top to bottom — `A` (the real 25-value input
-/// array), `ThetaC`, then `ThetaD` and a clone of `A` side by side in one row, both feeding `XOR loop`, which feeds
-/// `Theta Output` — with `ThetaC`, `ThetaD`, and `XOR loop` all genuine container nodes, each owning its own nested
-/// `Scene`. Click any one to drill into it — see
+/// Builds the nested-Scene demo: SHA3's own `Theta` function over `a_grid`, drawn top to bottom — `A` (the 25-value
+/// input array), `ThetaC`, then `ThetaD` and a clone of `A` side by side in one row, both feeding `XOR loop`, which
+/// feeds `Theta Output` — with `ThetaC`, `ThetaD`, and `XOR loop` all genuine container nodes, each owning its own
+/// nested `Scene`. The function the walk is on is the only clickable one: click it to drill into it — see
 /// [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable) — and the &times; in its own rounded
 /// frame's corner to come back, the way a modal window's own close button would.
 ///
@@ -81,21 +81,33 @@ thread_local! {
 /// one in via `Scene::replace_container_child`, exiting back to `parent` first — that call's own precondition —
 /// and re-entering the fresh child immediately after, so stepping never visibly leaves the nested view.
 ///
-/// # What is, and is not, built yet
+/// # What is real
+///
+/// Everything here is real, over whatever `a_grid` it is given. Standalone, `panel-theta` passes a made-up
+/// [`THETA_C_INPUT`]. Nested in a Keccak round, `sha3_sponge::keccak` passes that round's own state, so `A` is the
+/// state entering `Theta` and `Theta Output` is the state `Rho` takes next. `a_grid[x][y]` is lane `x + 5y`: this
+/// scene works along `x`, so its "rows" are the state's columns, and it shows the state transposed relative to the
+/// scenes after it.
 ///
 /// SHA3's real `Theta` function is `C(x) = A(x,0) ⊕ A(x,1) ⊕ A(x,2) ⊕ A(x,3) ⊕ A(x,4)` (`ThetaC`), `D(x) = C(x-1) ⊕
 /// rotl(C(x+1), 1)` (`ThetaD`; built here exactly as that — `rotl` is `u64::rotate_left`, with no further
 /// byte-order adjustment once a lane is a plain `u64` — see `theta_d`'s own `row` function for the exact formula),
 /// and finally `A'(x,y) = A(x,y) ⊕ D(x)` for every cell (`XOR loop`) — the real step needs both
 /// `A` and `D` as its own two inputs, which is why `A`'s own clone sits alongside `ThetaD` feeding `XOR loop`
-/// directly, not only through `ThetaC`. `ThetaC`, `ThetaD`, and `XOR loop` are all real, working nested `Scene`s
-/// now. `Theta Output`, fed by `XOR loop`, is still a plain placeholder box, not a container node — there is
-/// nothing behind it yet to nest. `A` itself is drawn as the real `[5; [5; u64]]` array `ThetaC`'s/`XOR loop`'s own
-/// nested views already show in full — the same content, three times over.
+/// directly, not only through `ThetaC`. `A` itself is drawn as the real `[5; [5; u64]]` array `ThetaC`'s/`XOR
+/// loop`'s own nested views already show in full — the same content, three times over.
 ///
-/// Extending `Theta Output` into its own nested `Scene` — folding `A'` back into the state array across all 24
-/// further rounds SHA3 actually runs — is a genuinely larger feature than the further "one more step, nested the
-/// same way" cases this module's own history already covers; it is not sketched out here.
+/// `Theta Output` is a plain data node, not a container: there is nothing to nest behind it. Its values are `A'`, the
+/// whole result. They are computed up front by [`output`] and shown by `Scene::set_data_values` as the walk reaches
+/// `XOR loop`, the last function — zeros before then — so stepping over all three scenes without entering any still
+/// shows the correct result, exactly what stepping into them would have ended on.
+///
+/// # Stepping the walk
+///
+/// The scene has its own Next/Prev/Restart buttons, driving a three-cell "Step" node far off-canvas, one cell per
+/// function. The function the walk is on is rung and is the only one clickable
+/// ([`Scene::make_unenterable`](svg_dom_graph::scene::Scene::make_unenterable) removes the rest). Like the Keccak
+/// scene it is never "not started": it opens on `ThetaC`, and a step back from there stays on it.
 ///
 /// # Reuse across more than one host
 ///

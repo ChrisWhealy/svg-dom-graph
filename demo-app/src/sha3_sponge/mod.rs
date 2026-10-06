@@ -1,6 +1,23 @@
-//! `panel-sha3-sponge` / `#sha3-sponge-diagram`: SHA3's own sponge construction, one 64-byte input block, top-level
-//! view only — see [`build_scene`]'s own doc comment for exactly what this first step draws, and what it
-//! deliberately does not yet.
+//! `panel-sha3-sponge` / `#sha3-sponge-diagram`: SHA3-256 of one short message, drawn as a sponge — see
+//! [`build_scene`]'s own doc comment for what the top-level diagram shows.
+//!
+//! # What is real
+//!
+//! All of it. [`keccak_f::sha3_256_run`] hashes [`MESSAGE`] in plain Rust, and every value on screen is a piece of
+//! that one calculation: this diagram's "Input block", "XOR", and row 3; the Keccak scene's 24 rounds, each of whose
+//! "A Bytes" is the previous round's real output; and, inside each round, `Theta`, `Rho`, `Pi`, `Chi` and `Iota`,
+//! each handed the state the function before it produced. Stepping over a nested scene therefore gives exactly what
+//! stepping into it would have ended on. [`keccak_f`]'s own tests check it against FIPS 202's own formulas and the
+//! published SHA3-256 digests.
+//!
+//! # What is not covered
+//!
+//! A message of a block (136 bytes) or more, which needs more than one absorb; SHA3's other variants and its XOF
+//! modes; and the `Theta` scenes' own orientation, which indexes the state as `A[x][y]` and so shows it transposed
+//! relative to the rest — see [`keccak_f::to_theta_grid`].
+//!
+//! The standalone `panel-theta` and `panel-selection` demos are separate: they run over their own made-up input,
+//! since there is no sponge behind them.
 
 mod chi;
 mod iota;
@@ -34,7 +51,7 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-/// `SHA3-256`'s own parameters (FIPS 202, table 3). `Keccak-f[1600]`'s state is 25 lanes: the first
+/// `SHA3-256`'s own parameters (FIPS 202, table 3). `Keccak-f\[1600\]`'s state is 25 lanes: the first
 /// [`RATE_LANES`] hold the "Rate" — the part input is XORed into and the digest is read from — and the remaining
 /// [`CAPACITY_LANES`] the "Capacity", which input never touches. This diagram draws "Capacity" on the left, above
 /// "Keccak f(1600)", and "Rate" on the right, above "XOR", so each sits over the node it feeds; the state's own lane
@@ -162,7 +179,7 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 64-byte input block passing
-/// through a single call to `Keccak-f[1600]`. Nothing here drags.
+/// through a single call to `Keccak-f\[1600\]`. Nothing here drags.
 ///
 /// # What this draws
 ///
@@ -176,9 +193,9 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// Keccak-f scene, clickable once the walk reaches it. Its own three
 /// [`EdgeAnchors`] per side put north and east on their shared centre, south's two connectors on the centre and
 /// one outer point — see "Row 3" below for why. "XOR" sits under "Rate", fed by connectors from "Rate" and from
-/// "Input block" (further right) — [`INPUT_BLOCK`] itself, the one real input this demo absorbs, not a
-/// placeholder. A further connector carries "XOR"'s own result back into "Keccak f(1600)" — the absorbed rate
-/// joining "Capacity" as the combined state the real permutation would run over.
+/// "Input block" (further right) — the padded block of [`MESSAGE`], the one real input this demo absorbs. A further
+/// connector carries "XOR"'s own result back into "Keccak f(1600)" — the absorbed rate joining "Capacity" as the
+/// combined state the permutation runs over.
 ///
 /// "XOR" shows all-zero lanes, the same "not yet written" convention row 3 below already follows, until `stage`
 /// reaches it — see "Stepping through it" below. Only then does it show "Rate" and "Input block"'s own real,
@@ -206,13 +223,12 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// # Step over or step into
 ///
 /// Every value is computed in plain Rust from the one before it, so stepping over "Keccak f(1600)" gives exactly
-/// what stepping into it would have ended on: row 3's own "Capacity" and "Rate" show `keccak_f` of the combined
-/// state once the walk reaches them, and "Output Hash" the first [`HASH_LANES`] lanes of that "Rate" once it
-/// reaches that. Before then each shows zeros, the same "not yet written" convention "XOR" follows. Processing more
-/// than one 64-byte block, and SHA3's XOF mode, are out of scope here.
+/// what stepping into it would have ended on: row 3's own "Rate" and "Capacity" show the state `keccak_f` leaves once
+/// the walk reaches them, and "Output Hash" the first [`HASH_LANES`] lanes of that "Rate" — the SHA3-256 digest —
+/// once it reaches that. Before then each shows zeros, the same "not yet written" convention "XOR" follows.
 ///
-/// "Capacity" comes first in this demo's own lane order, not last as in a real SHA3 variant: the split is a choice
-/// made for this demo, see [`CAPACITY_LANES`].
+/// "Capacity" is drawn first, above "Keccak f(1600)", and "Rate" second, above "XOR", so each sits over the node it
+/// feeds. The state's own lane order is the other way round: see [`RATE_LANES`].
 ///
 /// # Errors
 ///
@@ -494,9 +510,9 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
 /// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar onto its own
 /// freshly drawn "Step" to drive the *next* step.
 ///
-/// A fresh rebuild is unavoidable here: `svg-dom-graph` has no way to change a node's own displayed value once
-/// drawn. "XOR" must switch from all-zero to its own real result partway through this walk — see
-/// [`build_scene`]'s own doc comment. [`apply_stage`] runs again inside [`build_scene`] itself on every rebuild,
+/// A fresh rebuild is the simplest way here: "XOR" and row 3 switch from all-zero to their own real results partway
+/// through this walk — see [`build_scene`]'s own doc comment — and the nested Keccak scenes are rebuilt from the
+/// state each stage supplies. [`apply_stage`] runs again inside [`build_scene`] itself on every rebuild,
 /// so each fresh diagram already shows `stage`'s own correct focus from the moment it is drawn.
 ///
 /// `show_selection_toolbar` always resets "Step" to [`Selection::None`] as its own first committed act,

@@ -36,12 +36,12 @@
 //!   own doc comment for what each demonstrates.
 //! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]: SHA3's `Theta` function as a parent `Scene`
 //!   whose `ThetaC`, `ThetaD`, and `XOR loop` nodes are all genuine container nodes, each owning its own nested
-//!   `Scene`, click-to-enter and &times;-to-exit. See [`theta::build_scene`]'s own doc comment for what is, and
-//!   is not, drawn yet.
+//!   `Scene`, click-to-enter and &times;-to-exit, stepped by its own Next/Prev buttons. All three are real; see
+//!   [`theta::build_scene`]'s own doc comment.
 //! - `panel-sha3-sponge` / `#sha3-sponge-diagram` — [`sha3_sponge::build_sha3_sponge_demo`]: SHA3's own sponge
-//!   construction. "Keccak f(1600)" is a genuine container node, nesting all 24 real rounds of the permutation
-//!   — see `sha3_sponge::keccak`'s own module doc comment for what each round draws, and what is still a
-//!   placeholder.
+//!   construction, computing SHA3-256 of one short message. "Keccak f(1600)" is a genuine container node, nesting
+//!   all 24 real rounds of the permutation, and each round nests its five real functions. Every value is derived
+//!   from the one upstream of it — see `sha3_sponge`'s own module doc comment.
 //!
 //! Each feature this crate gains should keep this pattern: land it in a module of its own, add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.

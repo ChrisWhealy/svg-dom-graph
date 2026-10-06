@@ -1,4 +1,4 @@
-//! SHA3's `Keccak-f[1600]` permutation as plain, pure Rust: each of its five step functions is an ordinary
+//! SHA3's `Keccak-f\[1600\]` permutation as plain, pure Rust: each of its five step functions is an ordinary
 //! transformation of an explicitly supplied 25-lane state, with no DOM and no demo data in sight.
 //!
 //! ```text
@@ -13,11 +13,11 @@
 use super::{chi::chi, iota::iota, pi::pi, rho::rho};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How many rounds `Keccak-f[1600]` actually runs.
+/// How many rounds `Keccak-f\[1600\]` actually runs.
 pub(crate) const ROUND_COUNT: usize = 24;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The real Keccak-f[1600] round constants, `RC[0..24]` — see keccak.team's own specification summary
+/// The real Keccak-f\[1600\] round constants, `RC[0..24]` — see keccak.team's own specification summary
 /// (<https://keccak.team/keccak_specs_summary.html>) and FIPS 202 section 3.2.5.
 pub(super) const ROUND_CONSTANTS: [u64; ROUND_COUNT] = [
     0x0000_0000_0000_0001,
@@ -91,7 +91,7 @@ pub(super) fn round_trace(input: [u64; 25], round: usize) -> RoundTrace {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One round of `Keccak-f[1600]`.
+/// One round of `Keccak-f\[1600\]`.
 #[cfg_attr(not(test), allow(dead_code))] // The demo walks rounds through `round_traces`; tests check the whole.
 pub(super) fn keccak_round(state: [u64; 25], round: usize) -> [u64; 25] {
     round_trace(state, round).output
@@ -110,7 +110,7 @@ pub(super) fn round_traces(seed: [u64; 25]) -> [RoundTrace; ROUND_COUNT] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The whole `Keccak-f[1600]` permutation: all 24 rounds.
+/// The whole `Keccak-f\[1600\]` permutation: all 24 rounds.
 pub(super) fn keccak_f(state: [u64; 25]) -> [u64; 25] {
     (0..ROUND_COUNT).fold(state, keccak_round)
 }
@@ -150,12 +150,12 @@ pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One complete `SHA3-256` of a short message, as the sponge diagram shows it: the padded block, the state after it is
-/// absorbed, and the state after `Keccak-f[1600]`.
+/// absorbed, and the state after `Keccak-f\[1600\]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct Sha3_256Run {
     /// The padded block — "Input block".
     pub(super) block: [u64; SHA3_256_RATE_LANES],
-    /// The state entering `Keccak-f[1600]`: the block XORed into the rate of an all-zero state — the Keccak scene's own
+    /// The state entering `Keccak-f\[1600\]`: the block XORed into the rate of an all-zero state — the Keccak scene's own
     /// round `0` input.
     pub(super) absorbed: [u64; 25],
     /// The state leaving it — the Keccak scene's own last round's output, and the sponge's own row 3.

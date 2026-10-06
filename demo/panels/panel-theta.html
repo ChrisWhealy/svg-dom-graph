@@ -17,11 +17,14 @@
         nodes: <code>ThetaC</code>'s own nested <code>Scene</code> is the exact same operator chain the
         <a href="#panel-selection">Cell selection</a> demo already draws — the same function, called again here,
         grafted under this diagram's own <code>A</code> node instead of drawn standalone. Click any one to drill into
-        it; a rounded, bordered frame marks it as a nested view, and the &times; in its corner closes it.
-        <code>Theta Output</code> is still a plain placeholder box: there is no nested <code>Scene</code> behind it
-        yet — folding <code>A'</code> back into the state array across all 24 further rounds SHA3 actually runs is a
-        larger feature than a single further nested step. This demo is deliberately incomplete — a start, not the
-        finished function.
+        it; a rounded, bordered frame marks it as a nested view, and the &times; in its corner closes it. The
+        Next/Prev buttons below the diagram move the focus from <code>ThetaC</code> to <code>ThetaD</code> to the
+        <code>XOR</code> loop, and only the function in focus can be clicked.
+    </p>
+    <p>All three functions are real, and so is <code>Theta Output</code>: it holds zeros until the walk reaches the
+        <code>XOR</code> loop, then <code>A'</code>, the complete result of <code>Theta</code> — whether or not you
+        stepped inside any of the three. The input <code>A</code> here is made-up data. Inside the
+        <a href="#panel-sha3-sponge">SHA3 Sponge</a> demo, the same scenes run over a real round's own state.
     </p>
     <div class="canvas nested-scene-stage">
         <button id="theta-close" class="nested-scene-close" type="button"

@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add `Scene::set_secondary_selection` to marking cells derived from the current selection (`78c7945`)
 - Implement Keccak Chi function (`3aadd0f`)
 - Implement Keccak Iota function (`d75b532`)
-- Add progressively longer test sequences for Keccak function (``)
+- Add progressively longer test sequences for Keccak function (`fb9393b`)
 
 ## Changed
 
@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Rate/Capacity lane size and use TQBFJOTLD message as input data (`3a9f0f1`)
+- Doc only: Update stale documentation (``)
 
 # [Released]
 

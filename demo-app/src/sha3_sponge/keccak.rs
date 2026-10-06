@@ -1,4 +1,4 @@
-//! `sha3_sponge`'s own "Keccak f(1600)" node: a nested `Scene` stepping through all 24 real Keccak-f[1600] rounds.
+//! `sha3_sponge`'s own "Keccak f(1600)" node: a nested `Scene` stepping through all 24 real Keccak-f\[1600\] rounds.
 //!
 //! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one
 //! pipeline, plus the real round constant `Iota` consumes. Each is a genuine nested `Scene`, and each is handed the
@@ -104,8 +104,8 @@ pub(crate) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds `svg_id` from scratch for round `round` (`0..24`), `None` meaning round `0` with no round selected — which
-/// only draws without the round constant highlighted; [`build_initial_scene`]/[`rebuild_child`] never ask for it.
+/// Builds `svg_id` from scratch for walk position `position` (`0..120`): five functions in each of 24 rounds, so the
+/// round is `position / 5` and the function in focus is the `position % 5`th of `Theta`, `Rho`, `Pi`, `Chi`, `Iota`.
 ///
 /// # What this draws
 ///
@@ -120,11 +120,12 @@ pub(crate) fn exit_if_focused() -> bool {
 /// Below row 1, five named boxes run left to right, not stacked top to bottom: `Theta`, `Rho`, `Pi`, `Chi`,
 /// `Iota`. A horizontal row keeps this round's own overall height close to row 1's own, instead of adding five
 /// more row-heights on top — a nested Scene's own viewBox, however tall, still only ever displays within its own
-/// parent's fixed-size frame. `Theta` is a genuine container node, nesting [`theta::build_scene`] exactly as
-/// `panel-theta` draws it standalone — click it to drill in, the &times; in its own frame's corner to come back.
-/// `Rho`, `Pi`, `Chi` and `Iota` are container nodes too, each nesting a scene that steps through its own function
-/// over the state the one before it produced. A connector from "Round Constants" into `Iota`'s own east side marks the
-/// one real value `Iota` consumes each round.
+/// parent's fixed-size frame. All five are genuine container nodes, each nesting a scene that works through its own
+/// real function over the state the one before it produced. `Theta` nests [`theta::build_scene`] — the scenes
+/// `panel-theta` draws standalone, run here over this round's own input — and drills one level further, into
+/// `ThetaC`, `ThetaD` and `XOR loop`. Click the function in focus to drill in, and the &times; in its own frame's
+/// corner to come back. Only the function in focus is clickable. A connector from "Round Constants" into `Iota`'s own
+/// east side marks the one value `Iota` consumes each round.
 ///
 /// The bottom row is "A Bytes Output" — [`round_traces`]'s own `round`th output: the real result of this round, and
 /// the next round's own "A Bytes" input. It stays all zeros until the walk reaches `Iota`, the round's own last
@@ -132,10 +133,13 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// # Stepping through it
 ///
-/// "Round" is a small, otherwise-meaningless [`ROUND_COUNT`]-value array placed far off-canvas, purely to drive a
+/// "Step" is a small, otherwise-meaningless array of one cell per function of every round, placed far off-canvas,
+/// purely to drive a
 /// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar — the same trick
 /// `sha3_sponge::build_scene`'s own "Step" uses, for the same reason: no node already in this diagram happens to
-/// have exactly [`ROUND_COUNT`] cells. [`rebuild_child`] wires the bar itself.
+/// have that many cells. `Prev`/`Next` move one function, rolling on into the next round after `Iota`, and `Prev
+/// Round`/`Next Round` move five at once. This walk is never "not started": it opens on round `0`'s `Theta`.
+/// [`rebuild_child`] wires the bar itself.
 ///
 /// # Errors
 ///
@@ -396,7 +400,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested Keccak-f child at round `0`, selected, against `svg_id`, and wires its own stepping
-/// toolbar. `seed` is round `1`'s own real input — the sponge's own combined state flowing into `Keccak-f[1600]`.
+/// toolbar. `seed` is round `1`'s own real input — the sponge's own combined state flowing into `Keccak-f\[1600\]`.
 /// Called once, from `sha3_sponge::build_scene`, right when "Keccak f(1600)" is added as a container node.
 ///
 /// # Errors

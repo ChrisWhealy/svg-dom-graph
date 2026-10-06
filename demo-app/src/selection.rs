@@ -88,7 +88,7 @@ pub(crate) const THETA_C_INPUT: [[u64; 5]; 5] = [
 /// position, recomputed fresh each time, not a second, separately mutated flag per row that could drift out of
 /// step with it. See [`display_outputs`]'s own doc comment.
 struct ThetaCDemo {
-    /// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`], computed once, up front. Stepping
+    /// Row `i`'s own `ThetaC` result — a pure function of `input`, computed once, up front. Stepping
     /// never recomputes these; it only changes which prefix of them [`display_outputs`] currently reveals.
     outputs: [u64; 5],
     /// The `A` this walk was started over — [`THETA_C_INPUT`] for this standalone demo.
@@ -116,7 +116,7 @@ struct ThetaCDemo {
 /// 4. The third example steps an operator chain across an array, rather than just highlighting one. For each row
 ///    `n` of [`THETA_C_INPUT`], SHA-3's own `ThetaC` step computes
 ///    `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)`, and writes it to output array `O(n)` — five
-///    `u64` values folded through four [`BinaryOperator::Xor`] nodes, one operator chain per row. The selection
+///    `u64` values folded through four [`BinaryOperator::Xor`](svg_dom_graph::scene::BinaryOperator::Xor) nodes, one operator chain per row. The selection
 ///    toolbar is bound to `O` itself: `O` holds exactly five values, one per row, so its own flat position *is*
 ///    `n` — no separate cursor is needed. `A` sits at the top of the canvas, above the chain it feeds; `O` sits
 ///    directly below the chain's own final `XOR` node, so a plain edge from there reaches `O` with nothing else in
@@ -210,7 +210,7 @@ const TOOLBAR_GAP: f64 = 20.0;
 /// [`SelectionToolbarOptions`] bar below it, with [`TOOLBAR_GAP`] clear between the two.
 ///
 /// `content_rect` is `node_rect`'s own real, already-drawn size, not an estimate: unlike
-/// [`crate::sha3_sponge::theta::xor_loop`]'s own `measure_named_data_node` calls, which need a box's size *before* deciding
+/// `xor_loop`'s own `measure_named_data_node` calls, which need a box's size *before* deciding
 /// where else to draw relative to it, this canvas's own size depends on nothing drawn after the array itself, so
 /// there is nothing to gain from measuring ahead of drawing it for real.
 ///

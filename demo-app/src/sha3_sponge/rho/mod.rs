@@ -1,6 +1,7 @@
 //! `sha3_sponge::keccak`'s own "Rho" node: a nested `Scene` stepping through SHA3's real `Rho` step, one lane at a
 //! time. Each step rotates one lane of `Rho`'s own input left by that lane's own entry in the rotation-offset
-//! table of NIST FIPS 202 (see [`ROTATION_OFFSETS`], which holds those offsets reduced modulo 64), and writes the result into the matching cell of `Rho`'s own output.
+//! table of NIST FIPS 202 (see [`ROTATION_OFFSETS`], which holds those offsets reduced modulo 64), and writes the
+//! result into the matching cell of `Rho`'s own output. Its input is the state `Theta` produced.
 
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
@@ -26,7 +27,7 @@ pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-rho-child";
 /// NIST FIPS 202, section 3.2.2 (Algorithm 2, and its Table 2) defines the offsets as the triangular numbers
 /// `(t + 1)(t + 2) / 2` for `t = 0..24`, assigned to lanes by walking `(x, y) -> (y, (2x + 3y) mod 5)` from `(1, 0)`.
 /// Table 2 lists those values unreduced — 1, 3, 6, ..., 300 — since a rotation is only ever taken modulo the lane
-/// width. For `Keccak-f[1600]` that width is `w = 64`, so each value here is the table's own value `mod 64`: the 153 in
+/// width. For `Keccak-f\[1600\]` that width is `w = 64`, so each value here is the table's own value `mod 64`: the 153 in
 /// Table 2 appears here as `25`, the 300 as `44`, and so on. Rotating a `u64` left by either gives the same result, but
 /// this is the amount `u64::rotate_left` actually needs.
 ///

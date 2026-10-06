@@ -51,7 +51,7 @@ pub(super) fn exit_if_focused() -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds `svg_id` from scratch, for `n`: a fresh five-operand, four-`XOR` chain, an input array, an output
 /// array, and a plain edge from the chain's own final `XOR` node into the output array. `Some(row)` computes the
-/// chain over `THETA_C_INPUT[row]` and bands that row in the input array; `None` — the unstarted state, before row
+/// chain over row `row` of the input `a` and bands that row in the input array; `None` — the unstarted state, before row
 /// `0` is ever processed — computes the same chain over five zero operands instead, and leaves the input array
 /// unbanded. The chain is always drawn, even unstarted: showing it with every value at zero, rather than not
 /// drawing it at all, is what keeps it reading as "not yet run" instead of "does not exist until iteration
