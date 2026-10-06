@@ -11,7 +11,7 @@ mod rho;
 pub(crate) mod theta;
 
 use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
-use keccak_f::{keccak_f, sha3_256_block};
+use keccak_f::sha3_256_run;
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -275,7 +275,10 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // Shows all-zero lanes until `stage` reaches it (see this function's own doc comment, "Stepping through it"),
     // the same "not yet written" convention row 3 below already follows — real values would otherwise appear
     // before the walk ever visits "XOR", reading as already computed when it is not.
-    let input_block_values = sha3_256_block(MESSAGE).to_vec();
+    // The whole hash, computed up front in plain Rust: every value this diagram shows, and every state the nested
+    // Keccak scenes show, is a piece of this one calculation.
+    let run = sha3_256_run(MESSAGE);
+    let input_block_values = run.block.to_vec();
     let xor_display_values: Vec<u64> = if stage.is_some_and(|stage| stage >= 1) {
         rate_in_values
             .iter()
@@ -289,14 +292,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // "Keccak f(1600)": the real XOR of "Rate" and "Input block" joins an all-zero "Capacity" as the combined state,
     // and `keccak_f` runs all 24 rounds over it. Row 3 shows its lanes once the walk reaches them, so stepping over
     // the nested scene still yields the correct output — exactly what stepping into it would have ended on.
-    let real_seed: [u64; 25] = std::array::from_fn(|lane| {
-        if lane < RATE_LANES {
-            rate_in_values[lane] ^ input_block_values[lane]
-        } else {
-            0
-        }
-    });
-    let permuted = keccak_f(real_seed);
+    let permuted = run.permuted;
     // Zeros until `stage` reaches `from` — the same "not yet written" convention as "XOR" above.
     let from_stage = |from: usize, lanes: &[u64]| -> Vec<u64> {
         if stage.is_some_and(|stage| stage >= from) {

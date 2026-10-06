@@ -149,5 +149,43 @@ pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One complete `SHA3-256` of a short message, as the sponge diagram shows it: the padded block, the state after it is
+/// absorbed, and the state after `Keccak-f[1600]`.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub(super) struct Sha3_256Run {
+    /// The padded block — "Input block".
+    pub(super) block: [u64; SHA3_256_RATE_LANES],
+    /// The state entering `Keccak-f[1600]`: the block XORed into the rate of an all-zero state — the Keccak scene's own
+    /// round `0` input.
+    pub(super) absorbed: [u64; 25],
+    /// The state leaving it — the Keccak scene's own last round's output, and the sponge's own row 3.
+    pub(super) permuted: [u64; 25],
+}
+
+impl Sha3_256Run {
+    /// The 32-byte digest: the first four lanes of `permuted`, little-endian.
+    #[cfg_attr(not(test), allow(dead_code))] // The diagram shows the lanes; tests compare the bytes with published digests.
+    pub(super) fn digest(&self) -> [u8; 32] {
+        let mut digest = [0u8; 32];
+        for (lane, bytes) in digest.chunks_mut(8).enumerate() {
+            bytes.copy_from_slice(&self.permuted[lane].to_le_bytes());
+        }
+        digest
+    }
+}
+
+/// Runs `SHA3-256` over a message shorter than one block.
+pub(super) fn sha3_256_run(message: &[u8]) -> Sha3_256Run {
+    let block = sha3_256_block(message);
+    let mut absorbed = [0u64; 25];
+    absorbed[..SHA3_256_RATE_LANES].copy_from_slice(&block);
+    Sha3_256Run {
+        block,
+        absorbed,
+        permuted: keccak_f(absorbed),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;
