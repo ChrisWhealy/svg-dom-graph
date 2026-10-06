@@ -233,3 +233,50 @@ fn the_keccak_scenes_rounds_start_at_the_sponges_absorbed_state_and_end_at_its_o
         assert_eq!(traces[ROUND_COUNT - 1].output, run.permuted);
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The padded block as bytes, the way the sponge absorbs it: each lane little-endian.
+fn block_bytes(message: &[u8]) -> Vec<u8> {
+    sha3_256_block(message).iter().flat_map(|lane| lane.to_le_bytes()).collect()
+}
+
+/// `pad10*1` with SHA3's `06` suffix: the padding byte follows the message, and the final byte of the 136-byte block
+/// has its top bit set. They are separate bytes for every message length but one, and these are the edge cases a
+/// rewrite of the padding is most likely to break.
+#[test]
+fn padding_puts_06_after_the_message_and_80_at_the_end_of_the_block() {
+    let bytes = block_bytes(b"");
+    assert_eq!((bytes[0], bytes[135]), (0x06, 0x80), "an empty message");
+    assert!(bytes[1..135].iter().all(|b| *b == 0), "everything between is zero");
+
+    let message = [0xAB; 100];
+    let bytes = block_bytes(&message);
+    assert_eq!(bytes[..100], message, "the message is copied unchanged");
+    assert_eq!((bytes[100], bytes[135]), (0x06, 0x80));
+    assert!(bytes[101..135].iter().all(|b| *b == 0));
+}
+
+#[test]
+fn a_message_one_byte_short_of_a_full_block_shares_the_last_byte_between_06_and_80() {
+    // 135 bytes: the `06` and the `80` land on the same, final byte, which is therefore `86`.
+    let message = [0x11; 135];
+    let bytes = block_bytes(&message);
+    assert_eq!(bytes[..135], message);
+    assert_eq!(bytes[135], 0x86);
+}
+
+#[test]
+fn a_message_two_bytes_short_of_a_full_block_ends_06_80() {
+    // 134 bytes: the last two bytes are `06` then `80`.
+    let message = [0x22; 134];
+    let bytes = block_bytes(&message);
+    assert_eq!(bytes[..134], message);
+    assert_eq!(bytes[134..], [0x06, 0x80]);
+}
+
+#[test]
+#[should_panic(expected = "needs more than one absorb")]
+fn a_message_of_a_full_block_is_rejected_rather_than_padded_wrongly() {
+    // A 136-byte message needs a whole second block of padding; this function pads only one.
+    let _ = sha3_256_block(&[0x33; 136]);
+}

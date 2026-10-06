@@ -19,13 +19,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement Keccak Chi function (`3aadd0f`)
 - Implement Keccak Iota function (`d75b532`)
 - Add progressively longer test sequences for Keccak function (`fb9393b`)
+- Add padding edge case tests for input block (``)
 
 ## Changed
 
 - Control SVG Viewbox size using Rust parameters not hard-coded in HTML (`7d4845c`)
 - Refactor Theta function to be child module of sha3_sponge (`cc68bb7`)
 - Each Keccak function receives its input state as an argument (`0324a5b`)
-- Use secondary selection in ThetaD for prev/next round (``)
+- Use secondary selection in ThetaD for prev/next round (`5da2ab7`)
 
 ## Fixed
 
