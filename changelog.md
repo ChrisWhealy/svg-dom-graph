@@ -27,12 +27,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Refactor Theta function to be child module of sha3_sponge (`cc68bb7`)
 - Each Keccak function receives its input state as an argument (`0324a5b`)
 - Use secondary selection in ThetaD for prev/next round (`5da2ab7`)
-- Rename keccak variables using `round` to `step` and update docs (``)
+- Rename keccak variables using `round` to `step` and update docs (`1aebe79`)
 
 ## Fixed
 
 - Rate/Capacity lane size and use TQBFJOTLD message as input data (`3a9f0f1`)
 - Doc only: Update stale documentation (`f834719`)
+- Doc only: Correct SHA3 description (``)
 
 # [Released]
 

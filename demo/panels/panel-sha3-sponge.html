@@ -1,9 +1,12 @@
 <section class="section" id="panel-sha3-sponge">
     <h2>SHA3 Sponge</h2>
-    <p>SHA3 is built on the "sponge" construction. A fixed-size internal state, split into a "Rate" and a
-        "Capacity", absorbs input data a block at a time, each block <code>XOR</code>ed into the Rate before the whole
-        state is permuted by <code>Keccak-f[1600]</code>. This is a drop-in replacement for the SHA2 family, built
-        on a different, provably secure foundation rather than SHA2's own Merkle&ndash;Damg&aring;rd design.
+    <p>SHA3 is built on the "sponge" construction.</p>
+    <p>A "sponge" function uses a fixed-size internal state, split into a "Rate" and a "Capacity", and it absorbs input
+        data one block at a time. Each block is <code>XOR</code>ed into the Rate before the whole state is permuted by
+        the <code>Keccak-f[1600]</code> function.</p>
+    <p>SHA3-256 can serve the same fixed-output cryptographic-hash role as SHA-256, but whose internal design is
+        fundamentally different from the Merkle&ndash;Damg&aring;rd construction used by the SHA2 family of algorithms.
+        As a result, SHA3-256 is often described as a "drop-in" replacement for the SHA2-256 algorithm.
     </p>
     <p>This diagram computes <strong>SHA3-256</strong> of one short message, in a single call to
         <code>Keccak-f[1600]</code>. The state is 25 lanes of 64 bits: a Rate of 17 lanes (1088 bits) and a Capacity
