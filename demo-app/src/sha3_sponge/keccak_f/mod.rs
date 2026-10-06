@@ -130,5 +130,24 @@ pub(super) fn from_theta_grid(grid: [[u64; 5]; 5]) -> [u64; 25] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `SHA3-256`'s own rate, in lanes: 1088 bits.
+pub(super) const SHA3_256_RATE_LANES: usize = 17;
+
+/// The one 136-byte block `SHA3-256` absorbs for `message`, as 17 little-endian lanes: the message, then the `0x06`
+/// domain-separation byte, then zeros, with the final byte's top bit set (FIPS 202's `pad10*1`). Only for a message
+/// short enough to fit one block — fewer than 136 bytes.
+pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
+    assert!(
+        message.len() < 8 * SHA3_256_RATE_LANES,
+        "a message of one block or more needs more than one absorb"
+    );
+    let mut block = [0u8; 8 * SHA3_256_RATE_LANES];
+    block[..message.len()].copy_from_slice(message);
+    block[message.len()] ^= 0x06;
+    block[8 * SHA3_256_RATE_LANES - 1] ^= 0x80;
+    std::array::from_fn(|lane| u64::from_le_bytes(block[8 * lane..8 * lane + 8].try_into().expect("8 bytes")))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

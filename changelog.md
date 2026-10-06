@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Refactor Theta function to be child module of sha3_sponge (`cc68bb7`)
 - Each Keccak function receives its input state as an argument (`0324a5b`)
 
+## Fixed
+
+- Rate/Capacity lane size and use TQBFJOTLD message as input data (``)
+
 # [Released]
 
 ## [0.2.23] - 2026-10-01

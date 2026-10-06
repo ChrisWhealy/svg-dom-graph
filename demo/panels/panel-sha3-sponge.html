@@ -1,37 +1,34 @@
 <section class="section" id="panel-sha3-sponge">
     <h2>SHA3 Sponge</h2>
-    <p>SHA3 is built on the "sponge" construction. A fixed-size internal state, split into a "Capacity" and a
-        "Rate", absorbs input data a block at a time, each block <code>XOR</code>ed into the Rate before the whole
+    <p>SHA3 is built on the "sponge" construction. A fixed-size internal state, split into a "Rate" and a
+        "Capacity", absorbs input data a block at a time, each block <code>XOR</code>ed into the Rate before the whole
         state is permuted by <code>Keccak-f[1600]</code>. This is a drop-in replacement for the SHA2 family, built
         on a different, provably secure foundation rather than SHA2's own Merkle&ndash;Damg&aring;rd design.
     </p>
-    <p>This first diagram shows a single 64-byte input block passing through one call to
-        <code>Keccak-f[1600]</code>. "Keccak f(1600)" is a genuine container node: click it to drill into all 24
-        real rounds of the permutation. Processing more than one input block and SHA3's Extendible Output
-        Function (XOF) mode are still out of scope.
+    <p>This diagram computes <strong>SHA3-256</strong> of one short message, in a single call to
+        <code>Keccak-f[1600]</code>. The state is 25 lanes of 64 bits: a Rate of 17 lanes (1088 bits) and a Capacity
+        of 8 lanes (512 bits), so the digest is 4 lanes (256 bits). "Input block" is the message after SHA3's
+        padding &mdash; the message bytes, then <code>06</code>, then zeros, ending in <code>80</code> &mdash; and
+        "Output Hash" is the first 32 bytes of the Rate afterwards, shown byte for byte, so it reads exactly as
+        <code>sha3sum</code> prints it. Only a message shorter than one block, and the fixed-length SHA3-256 output
+        rather than the XOF modes, are covered.
     </p>
-    <p>Each round shows five named sub-functions &mdash; <code>Theta</code>, <code>Rho</code>, <code>Pi</code>,
-        <code>Chi</code>, <code>Iota</code> &mdash; and the real round constant <code>Iota</code> would consume,
-        highlighted in "Round Constants". <code>Theta</code> is itself a genuine nested <code>Scene</code> &mdash;
-        the same one <a href="#panel-theta">Nested Scenes</a> already draws standalone &mdash; so it drills in
-        one level further.
+    <p>"Keccak f(1600)" is a genuine container node: once the walk reaches it, click it to drill into all 24 real
+        rounds of the permutation. Each round shows five named sub-functions &mdash; <code>Theta</code>,
+        <code>Rho</code>, <code>Pi</code>, <code>Chi</code>, <code>Iota</code> &mdash; each a nested
+        <code>Scene</code> in its own right, and the real round constant <code>Iota</code> consumes, highlighted in
+        "Round Constants". <code>Theta</code> drills in one level further, into the same scenes
+        <a href="#panel-theta">Nested Scenes</a> draws standalone.
     </p>
-    <p><code>Rho</code>, <code>Pi</code>, <code>Chi</code>, and <code>Iota</code> are plain placeholder boxes.
-        Each round's own output array is a clearly fake placeholder too, not a real permutation of its input.
-        Implementing SHA3's real rotate-by-offset, lane-permute, non-linear-combine, and constant-XOR steps is a
-        larger feature than this diagram covers.
+    <p>Every value is computed in plain Rust from the one before it, so a nested scene always shows the state
+        entering it, and stepping over a function gives the same result as stepping into it. Round 17's input is
+        round 16's output, <code>Theta</code>'s input is that same state, <code>Rho</code>'s is <code>Theta</code>'s
+        output, and so on. The last round's output is the Rate and Capacity at the bottom of this diagram.
     </p>
-    <p>Row 1's own "Capacity" and "Rate" start all-zero, the sponge's own real state before any input is absorbed.
-        "Input block" holds one real 64-byte input, not a placeholder. Row 3's own "Capacity"/"Rate" at this
-        top level are still fixed placeholders, not real outputs of row 1's own values or of what happens inside
-        "Keccak f(1600)". "XOR" is the one real computation this diagram performs, once it runs: its own content
-        is the true elementwise XOR of "Rate" and "Input block", computed in plain Rust.
-    </p>
-    <p>Press "Next"/"Previous"/"Restart" below the diagram to walk the five stages of one
-        <code>Keccak-f[1600]</code> call, moving a focus ring from "Input block"/"Rate", to "XOR", to "Keccak
-        f(1600)", to the output "Capacity"/"Rate", and finally to "Output Hash". "XOR" shows all-zero lanes, the
-        same "not yet written" look row 3 already uses, until the walk actually reaches it — only then does it
-        show its own real result.
+    <p>Press "Next"/"Previous"/"Restart" below the diagram to walk the five stages: "Input block" and "Rate",
+        "XOR", "Keccak f(1600)", the output "Rate" and "Capacity", and finally "Output Hash". Each node shows zeros,
+        the same "not yet written" look, until the walk reaches it. "Keccak f(1600)" can only be entered once the
+        walk is on it.
     </p>
     <div class="canvas nested-scene-stage">
         <button id="sha3-sponge-close" class="nested-scene-close" type="button"

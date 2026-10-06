@@ -1,17 +1,11 @@
-use super::{from_theta_grid, keccak_f, round_traces, theta, to_theta_grid};
+use super::{SHA3_256_RATE_LANES, from_theta_grid, keccak_f, round_traces, sha3_256_block, theta, to_theta_grid};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Absorbs one SHA3-256 block of `message` (shorter than the 136-byte rate) into a zero state, permutes it, and
-/// reads the first 32 bytes back — the whole of SHA3-256 for a short message.
+/// Absorbs `message`'s one SHA3-256 block into a zero state, permutes it, and reads the first 32 bytes back — the
+/// whole of SHA3-256 for a short message.
 fn sha3_256(message: &[u8]) -> String {
-    let mut block = [0u8; 136];
-    block[..message.len()].copy_from_slice(message);
-    block[message.len()] ^= 0x06;
-    block[135] ^= 0x80;
     let mut state = [0u64; 25];
-    for (lane, bytes) in block.chunks(8).enumerate() {
-        state[lane] ^= u64::from_le_bytes(bytes.try_into().unwrap());
-    }
+    state[..SHA3_256_RATE_LANES].copy_from_slice(&sha3_256_block(message));
     keccak_f(state)
         .iter()
         .flat_map(|lane| lane.to_le_bytes())
@@ -30,6 +24,10 @@ fn keccak_f_gives_the_published_sha3_256_digests() {
     assert_eq!(
         sha3_256(b"abc"),
         "3a985da74fe225b2045c172d6bd390bd855f086e3e9d525b46bfe24511431532"
+    );
+    assert_eq!(
+        sha3_256(b"The quick brown fox jumps over the lazy dog"),
+        "69070dda01975c8c120c3aada1b282394e7f032fa9cf32f4cb2259a0897dfc04"
     );
 }
 

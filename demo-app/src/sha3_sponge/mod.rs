@@ -11,7 +11,7 @@ mod rho;
 pub(crate) mod theta;
 
 use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
-use keccak_f::keccak_f;
+use keccak_f::{keccak_f, sha3_256_block};
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -34,25 +34,18 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-/// `Keccak-f[1600]`'s own state is 25 `u64` lanes. This demo splits them 17/8 between "Capacity" and "Rate" —
-/// a split chosen for this demo, not the real rate/capacity of any named SHA3 variant.
-const CAPACITY_LANES: usize = 17;
-/// "Rate" and "Input block" both hold this many lanes — see [`CAPACITY_LANES`]'s own doc comment.
-const RATE_LANES: usize = 8;
-/// "Output Hash"'s own lane count — a real hash length, deliberately not [`RATE_LANES`].
+/// `SHA3-256`'s own parameters (FIPS 202, table 3). `Keccak-f[1600]`'s state is 25 lanes: the first
+/// [`RATE_LANES`] hold the "Rate" — the part input is XORed into and the digest is read from — and the remaining
+/// [`CAPACITY_LANES`] the "Capacity", which input never touches. This diagram draws "Capacity" on the left, above
+/// "Keccak f(1600)", and "Rate" on the right, above "XOR", so each sits over the node it feeds; the state's own lane
+/// order is Rate first.
+const RATE_LANES: usize = keccak_f::SHA3_256_RATE_LANES;
+const CAPACITY_LANES: usize = 25 - RATE_LANES;
+/// "Output Hash"'s own lane count: a 256-bit digest.
 const HASH_LANES: usize = 4;
 
-/// "Input block"'s own [`RATE_LANES`] lanes, the one real input this demo absorbs.
-const INPUT_BLOCK: [u64; RATE_LANES] = [
-    0xea27_f99a_ae29_90e9,
-    0x725d_7fa6_a3fc_2f70,
-    0x6779_6880_0823_53e4,
-    0xe8c0_2848_00b1_9533,
-    0xfec1_294f_291c_1bc8,
-    0xadea_5a3b_0abf_3906,
-    0xa94e_bb2f_1bd3_f309,
-    0xbb11_4511_e928_a5df,
-];
+/// The one message this demo hashes. Short enough for a single absorb: one block of [`RATE_LANES`] lanes.
+const MESSAGE: &[u8] = b"The quick brown fox jumps over the lazy dog";
 
 /// How many stages "Step"'s own selection toolbar walks — one flat position per stage [`apply_stage`] focuses.
 const STAGE_COUNT: usize = 5;
@@ -70,7 +63,6 @@ struct StageNodes {
     output_hash: NodeId,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Focuses whichever of `nodes` stage `to` puts in focus, via
 /// [`Scene::set_focus`](svg_dom_graph::scene::Scene::set_focus), and un-focuses every other node this walk ever
 /// touches first. `None` — unstarted, or walked/restarted all the way back — focuses nothing.
@@ -237,10 +229,14 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
 
     let hex = |values: Vec<u64>| DataNodeContent::new(NodeValues::U64(values), DataFormat::Hexadecimal);
-    // "Rate", "XOR", and "Input block" all hold `RATE_LANES` lanes; `GridLayout::Automatic`'s own default for that
-    // count is 4 columns of 2, wider than this diagram needs. 2 columns of 4 instead, to keep the whole diagram
-    // narrower.
+    // "Rate", "XOR" and "Input block" all hold `RATE_LANES` lanes, in 3 columns; "Capacity" and "Output Hash" are
+    // narrower still, in 2.
+    let hex_rate = |values: Vec<u64>| hex(values).with_layout(GridLayout::Columns(3));
     let hex_narrow = |values: Vec<u64>| hex(values).with_layout(GridLayout::Columns(2));
+    // A digest is bytes, not a number: its first byte is a lane's *least* significant, so the node shows each lane
+    // little-endian. Read left to right, the four lanes are then the digest as `sha3sum` prints it.
+    let hex_digest =
+        |values: Vec<u64>| hex_narrow(values).with_byte_order(svg_dom_graph::scene::ByteOrder::LittleEndian);
 
     const LEFT_X: f64 = 20.0;
     const TOP_Y: f64 = 50.0;
@@ -252,7 +248,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // reading as one combined state split into two named halves rather than two separate values. The real sponge
     // construction starts from an all-zero state, before any input is absorbed, so both halves start that way too.
     let capacity_in = scene
-        .add_named_data_node(Point::new(LEFT_X, TOP_Y), "Capacity", hex(vec![0; CAPACITY_LANES]))
+        .add_named_data_node(Point::new(LEFT_X, TOP_Y), "Capacity", hex_narrow(vec![0; CAPACITY_LANES]))
         .map_err(stringify)?;
     let capacity_in_rect = scene.node_rect(capacity_in).map_err(stringify)?;
 
@@ -261,7 +257,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(capacity_in_rect.origin.x + capacity_in_rect.size.width, TOP_Y),
             "Rate",
-            hex_narrow(rate_in_values.clone()),
+            hex_rate(rate_in_values.clone()),
         )
         .map_err(stringify)?;
     let rate_in_rect = scene.node_rect(rate_in).map_err(stringify)?;
@@ -279,7 +275,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // Shows all-zero lanes until `stage` reaches it (see this function's own doc comment, "Stepping through it"),
     // the same "not yet written" convention row 3 below already follows — real values would otherwise appear
     // before the walk ever visits "XOR", reading as already computed when it is not.
-    let input_block_values = INPUT_BLOCK.to_vec();
+    let input_block_values = sha3_256_block(MESSAGE).to_vec();
     let xor_display_values: Vec<u64> = if stage.is_some_and(|stage| stage >= 1) {
         rate_in_values
             .iter()
@@ -294,10 +290,10 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // and `keccak_f` runs all 24 rounds over it. Row 3 shows its lanes once the walk reaches them, so stepping over
     // the nested scene still yields the correct output — exactly what stepping into it would have ended on.
     let real_seed: [u64; 25] = std::array::from_fn(|lane| {
-        if lane < CAPACITY_LANES {
-            0
+        if lane < RATE_LANES {
+            rate_in_values[lane] ^ input_block_values[lane]
         } else {
-            rate_in_values[lane - CAPACITY_LANES] ^ input_block_values[lane - CAPACITY_LANES]
+            0
         }
     });
     let permuted = keccak_f(real_seed);
@@ -309,7 +305,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
             vec![0; lanes.len()]
         }
     };
-    let xor_content = hex_narrow(xor_display_values.clone());
+    let xor_content = hex_rate(xor_display_values.clone());
     let xor_size = scene.measure_named_data_node("XOR", &xor_content).map_err(stringify)?;
     let xor_x = rate_in_rect.origin.x + (rate_in_rect.size.width - xor_size.width) / 2.0;
     let xor = scene
@@ -334,13 +330,8 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
     // plus whatever "XOR" currently shows, the same "not yet written" convention XOR itself follows (see this
     // function's own doc comment, "Stepping through it"): all-zero before `stage` reaches it, the real elementwise
     // XOR afterward. `keccak::build_initial_scene`'s own round 1 starts from exactly this.
-    let a_bytes_seed: [u64; 25] = std::array::from_fn(|lane| {
-        if lane < CAPACITY_LANES {
-            0
-        } else {
-            xor_display_values[lane - CAPACITY_LANES]
-        }
-    });
+    let a_bytes_seed: [u64; 25] =
+        std::array::from_fn(|lane| if lane < RATE_LANES { xor_display_values[lane] } else { 0 });
     let keccak_child = keccak::build_initial_scene("sha3-sponge-keccak-child", a_bytes_seed)?;
     let keccak = scene
         .add_container_node_with(
@@ -363,7 +354,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(xor_rect.origin.x + xor_rect.size.width + H_GAP, row_2_y),
             "Input block",
-            hex_narrow(input_block_values),
+            hex_rate(input_block_values),
         )
         .map_err(stringify)?;
 
@@ -390,7 +381,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(LEFT_X, row_3_y),
             "Capacity",
-            hex(from_stage(3, &permuted[..CAPACITY_LANES])),
+            hex_narrow(from_stage(3, &permuted[RATE_LANES..])),
         )
         .map_err(stringify)?;
     let capacity_out_rect = scene.node_rect(capacity_out).map_err(stringify)?;
@@ -400,7 +391,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(capacity_out_rect.origin.x + capacity_out_rect.size.width, row_3_y),
             "Rate",
-            hex_narrow(from_stage(3, &permuted[CAPACITY_LANES..])),
+            hex_rate(from_stage(3, &permuted[..RATE_LANES])),
         )
         .map_err(stringify)?;
     let rate_out_rect = scene.node_rect(rate_out).map_err(stringify)?;
@@ -409,7 +400,7 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(rate_out_rect.origin.x + rate_out_rect.size.width + H_GAP, row_3_y),
             "Output Hash",
-            hex_narrow(from_stage(4, &permuted[CAPACITY_LANES..CAPACITY_LANES + HASH_LANES])),
+            hex_digest(from_stage(4, &permuted[..HASH_LANES])),
         )
         .map_err(stringify)?;
 
@@ -476,6 +467,18 @@ fn build_scene(stage: Option<usize>) -> Result<(Scene, NodeId), String> {
         output_hash,
     };
     apply_stage(&scene, stage_nodes, stage);
+
+    // Fit this diagram's own `<svg>` to its content, plus room for its stepping toolbar: the 17-lane "Rate", "XOR",
+    // "Input block" and the rest are taller than a fixed size can anticipate. Nested scenes then size themselves
+    // against the stage this makes.
+    let mut right = 0.0_f64;
+    let mut bottom = 0.0_f64;
+    for node in [input_block, output_hash, rate_out, capacity_out] {
+        let rect = scene.node_rect(node).map_err(stringify)?;
+        right = right.max(rect.origin.x + rect.size.width);
+        bottom = bottom.max(rect.origin.y + rect.size.height);
+    }
+    crate::util::fit_nested_size(&scene, "sha3-sponge-diagram", right, bottom, true)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
