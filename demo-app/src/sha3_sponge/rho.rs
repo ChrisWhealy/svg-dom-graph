@@ -38,7 +38,7 @@ const ROTATION_OFFSETS: [u8; 24] = [
 /// form [`DataNodeContent::natural_selection`] produces for a genuinely two-dimensional grid. A selection toolbar
 /// reads its node's own `Selection` back through `flat_index`, which treats `Selection::Cell` on such a grid as
 /// "unstarted", so the toolbar's driver must use this form or its own next press restarts from cell `0`.
-fn grid_cell(n: usize, cols: usize) -> Selection {
+pub(super) fn grid_cell(n: usize, cols: usize) -> Selection {
     Selection::Row {
         row: n / cols,
         col: Some(n % cols),
@@ -53,6 +53,11 @@ fn offset(lane: usize) -> u8 {
 /// SHA3's real `Rho`: every lane rotated left by its own [`offset`].
 fn rho(input: [u64; 25]) -> [u64; 25] {
     std::array::from_fn(|lane| input[lane].rotate_left(u32::from(offset(lane))))
+}
+
+/// The 25 lanes `Rho` produces from `Theta`'s own output — what `Pi` takes as its input.
+pub(super) fn output_lanes() -> [u64; 25] {
+    rho(super::theta::output_lanes())
 }
 
 /// Live state this nested child's own selection toolbar carries across steps.
