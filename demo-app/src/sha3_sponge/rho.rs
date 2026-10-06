@@ -178,7 +178,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .map_err(stringify)?;
     centre_on(table_node, 0.75)?;
     if let Some(n) = n.filter(|n| *n > 0) {
-        scene.set_selection(table_node, grid_cell(n - 1, 6)).map_err(stringify)?;
+        scene.set_secondary_selection(table_node, &[n - 1]).map_err(stringify)?;
     }
     let table_rect = scene.node_rect(table_node).map_err(stringify)?;
 
@@ -206,7 +206,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .add_named_data_node(Point::new(LEFT_X, row_2_bottom + V_GAP), "Rho Output Bytes", hex25(written))
         .map_err(stringify)?;
     if let Some(n) = n {
-        scene.set_selection(output, grid_cell(n, 5)).map_err(stringify)?;
+        scene.set_secondary_selection(output, &[n]).map_err(stringify)?;
     }
 
     let sides = |from, to| ConnectorOptions::default().with_from_side(Some(from)).with_to_side(Some(to));

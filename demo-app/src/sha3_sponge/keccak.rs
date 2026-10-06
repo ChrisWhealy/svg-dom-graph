@@ -6,7 +6,7 @@
 //! placeholder boxes — see [`fake_round_output`]'s own doc comment for why the round's own output is one too.
 
 use crate::{
-    sha3_sponge::{pi, rho, theta},
+    sha3_sponge::{chi, pi, rho, theta},
     util::{create_child_svg, next_child_svg_id, required_element, stringify},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -102,7 +102,7 @@ pub(crate) fn init_scene(parent: Scene, child: Scene, node: NodeId) {
 /// then this Keccak-f child itself. Reports whether anything was exited — what `sha3_sponge`'s own close button
 /// needs to know before giving up.
 pub(crate) fn exit_if_focused() -> bool {
-    if theta::exit_if_focused() || rho::exit_if_focused() || pi::exit_if_focused() {
+    if theta::exit_if_focused() || rho::exit_if_focused() || pi::exit_if_focused() || chi::exit_if_focused() {
         return true;
     }
     let theta_itself_exited = THETA_CHILD.with_borrow(|slot| {
@@ -254,9 +254,12 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
         .map_err(stringify)?;
     scene.make_enterable(pi).map_err(stringify)?;
     pi::init_scene(scene.clone(), pi_child, pi);
+    let chi_child = chi::build_initial_scene()?;
     let chi = scene
-        .add_node(Point::new(row_x + 3.0 * row_stride, row_y), fn_size, "Chi")
+        .add_container_node(Point::new(row_x + 3.0 * row_stride, row_y), fn_size, "Chi", chi_child.clone())
         .map_err(stringify)?;
+    scene.make_enterable(chi).map_err(stringify)?;
+    chi::init_scene(scene.clone(), chi_child, chi);
     let iota = scene
         .add_node(Point::new(row_x + 4.0 * row_stride, row_y), fn_size, "Iota")
         .map_err(stringify)?;

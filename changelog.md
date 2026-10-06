@@ -14,7 +14,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - First pass at a nested scene for Keccak-f(1600) (`8f8d0d4`)
 - Add LICENSE files to all project crates (`aef44cf`)
 - Implement Keccak Rho function (`d45386d`)
-- Implement Keccak Pi function (``)
+- Implement Keccak Pi function (`464d1ee`)
+- Add `Scene::set_secondary_selection` to marking cells derived from the current selection (`78c7945`)
+- Implement Keccak Chi function (``)
 
 ## Changed
 
