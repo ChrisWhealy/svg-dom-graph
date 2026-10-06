@@ -12,11 +12,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Start demo implementation of the SHA3 Sponge function. Add `Scene::set_focus` to toggle node highlight (`02def7e`)
 - First pass at a nested scene for Keccak-f(1600) (`8f8d0d4`)
-- Add LICENSE files to all project crates (``)
+- Add LICENSE files to all project crates (`aef44cf`)
 
 ## Changed
 
 - Control SVG Viewbox size using Rust parameters not hard-coded in HTML (`7d4845c`)
+- Refactor Theta function to be child module of sha3_sponge (``)
 
 # [Released]
 

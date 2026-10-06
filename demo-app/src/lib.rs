@@ -61,10 +61,11 @@ mod operators_unary;
 mod selection;
 mod sha3_sponge;
 mod source_frame;
-mod theta;
 mod tree;
 mod util;
 
+// `theta` is `sha3_sponge`'s own child module; `panel-theta` is still its own gallery entry.
+use sha3_sponge::theta;
 use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

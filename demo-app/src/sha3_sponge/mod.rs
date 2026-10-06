@@ -3,6 +3,7 @@
 //! deliberately does not yet.
 
 mod keccak;
+pub(crate) mod theta;
 
 use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
 use std::cell::RefCell;

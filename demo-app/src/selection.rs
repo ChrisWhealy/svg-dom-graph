@@ -121,7 +121,7 @@ struct ThetaCDemo {
 ///    the way — see [`rebuild_theta_c_diagram`]'s own doc comment.
 /// 5. All three walks start unstarted — before element `0` is ever processed, nothing is highlighted and (for the
 ///    third) `O` is entirely blank. The third example's chain is still drawn, over five zero operands, rather than
-///    left out entirely — see [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene)'s own doc comment
+///    left out entirely — see [`theta::theta_c::build_scene`](crate::sha3_sponge::theta::theta_c::build_scene)'s own doc comment
 ///    for why: an absent chain would read as "this does not exist yet," when what is actually true is "this has not
 ///    run yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing
 ///    for `None` — see [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own
@@ -207,7 +207,7 @@ const TOOLBAR_GAP: f64 = 20.0;
 /// [`SelectionToolbarOptions`] bar below it, with [`TOOLBAR_GAP`] clear between the two.
 ///
 /// `content_rect` is `node_rect`'s own real, already-drawn size, not an estimate: unlike
-/// [`crate::theta::xor_loop`]'s own `measure_named_data_node` calls, which need a box's size *before* deciding
+/// [`crate::sha3_sponge::theta::xor_loop`]'s own `measure_named_data_node` calls, which need a box's size *before* deciding
 /// where else to draw relative to it, this canvas's own size depends on nothing drawn after the array itself, so
 /// there is nothing to gain from measuring ahead of drawing it for real.
 ///
@@ -280,7 +280,7 @@ fn show_two_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId)
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Row `i`'s own `ThetaC` result — a pure function of [`THETA_C_INPUT`]. Shared by every caller that needs it:
-/// [`build_selection_demo`]'s own initial state, and [`crate::theta`]'s own nested walk, both standalone and
+/// [`build_selection_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both standalone and
 /// nested starting from row `0` already stepped.
 pub(crate) fn theta_c_outputs() -> [u64; 5] {
     THETA_C_INPUT.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
@@ -298,7 +298,7 @@ pub(crate) fn display_outputs(outputs: [u64; 5], to: Option<usize>) -> [u64; 5] 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds `#selection-thetac-diagram` from scratch for `n`, and attaches a fresh
 /// [`Scene::show_selection_toolbar`] — bound to the freshly drawn output array `O` — to drive the *next* step. See
-/// [`theta::theta_c::build_scene`](crate::theta::theta_c::build_scene) for what is drawn and why a fresh `Scene` is
+/// [`theta::theta_c::build_scene`](crate::sha3_sponge::theta::theta_c::build_scene) for what is drawn and why a fresh `Scene` is
 /// unavoidable here; this is the standalone Cell Selection demo's own wrapper around it, the counterpart to
 /// [`show_one_d_toolbar`]/[`show_two_d_toolbar`] for the third example.
 ///
@@ -334,7 +334,7 @@ pub(crate) fn display_outputs(outputs: [u64; 5], to: Option<usize>) -> [u64; 5] 
 fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCell<ThetaCDemo>>) -> Result<(), String> {
     let view = THETA_C_SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
 
-    let (scene, output) = crate::theta::theta_c::build_scene("selection-thetac-diagram", n, display)?;
+    let (scene, output) = crate::sha3_sponge::theta::theta_c::build_scene("selection-thetac-diagram", n, display)?;
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
     }

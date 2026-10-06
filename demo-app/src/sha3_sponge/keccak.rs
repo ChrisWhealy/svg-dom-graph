@@ -2,11 +2,11 @@
 //!
 //! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one
 //! vertical pipeline, plus the real round constant [`Iota`](Self) would consume. `Theta` is a genuine nested
-//! `Scene`, reusing `crate::theta::build_scene` exactly as `panel-theta` does; `Rho`/`Pi`/`Chi`/`Iota` are plain
+//! `Scene`, reusing `crate::sha3_sponge::theta::build_scene` exactly as `panel-theta` does; `Rho`/`Pi`/`Chi`/`Iota` are plain
 //! placeholder boxes — see [`fake_round_output`]'s own doc comment for why the round's own output is one too.
 
 use crate::{
-    theta,
+    sha3_sponge::theta,
     util::{create_child_svg, next_child_svg_id, required_element, stringify},
 };
 use std::{cell::RefCell, rc::Rc};
