@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement Keccak Rho function (`d45386d`)
 - Implement Keccak Pi function (`464d1ee`)
 - Add `Scene::set_secondary_selection` to marking cells derived from the current selection (`78c7945`)
-- Implement Keccak Chi function (``)
+- Implement Keccak Chi function (`3aadd0f`)
+- Implement Keccak Iota function (``)
 
 ## Changed
 

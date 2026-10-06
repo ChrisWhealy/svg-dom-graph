@@ -38,7 +38,6 @@ fn chi(input: [u64; 25]) -> [u64; 25] {
 }
 
 /// The 25 lanes `Chi` produces from `Pi`'s own output — what `Iota` would take as its input.
-#[allow(dead_code)]
 pub(super) fn output_lanes() -> [u64; 25] {
     chi(super::pi::output_lanes())
 }

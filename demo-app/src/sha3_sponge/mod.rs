@@ -3,6 +3,7 @@
 //! deliberately does not yet.
 
 mod chi;
+mod iota;
 mod keccak;
 mod pi;
 mod rho;
@@ -123,9 +124,14 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: Option<usize>) {
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if creating any `<svg>` fails.
 fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
     const ANCHOR: &str = "sha3-sponge-close";
-    let levels: [(&str, Option<&str>, Size); 9] = [
+    let levels: [(&str, Option<&str>, Size); 10] = [
         ("sha3-sponge-diagram", None, Size::new(1920.0, 950.0)),
         ("sha3-sponge-keccak-child", Some("nested-scene"), Size::new(1980.0, 820.0)),
+        (
+            "sha3-sponge-keccak-iota-child",
+            Some("nested-scene nested-scene-depth-2"),
+            Size::new(1000.0, 800.0),
+        ),
         (
             "sha3-sponge-keccak-chi-child",
             Some("nested-scene nested-scene-depth-2"),

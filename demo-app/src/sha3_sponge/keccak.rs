@@ -6,7 +6,7 @@
 //! placeholder boxes — see [`fake_round_output`]'s own doc comment for why the round's own output is one too.
 
 use crate::{
-    sha3_sponge::{chi, pi, rho, theta},
+    sha3_sponge::{chi, iota, pi, rho, theta},
     util::{create_child_svg, next_child_svg_id, required_element, stringify},
 };
 use std::{cell::RefCell, rc::Rc};
@@ -33,7 +33,7 @@ const THETA_CHILD_SVG_ID: &str = "sha3-sponge-keccak-theta-child";
 /// The real Keccak-f[1600] round constants, `RC[0..24]` — see keccak.team's own specification summary
 /// (<https://keccak.team/keccak_specs_summary.html>). Real reference data, unlike [`fake_round_output`]'s own
 /// formula: this is the one part of this nested scene that is not a placeholder.
-const ROUND_CONSTANTS: [u64; ROUND_COUNT] = [
+pub(super) const ROUND_CONSTANTS: [u64; ROUND_COUNT] = [
     0x0000_0000_0000_0001,
     0x0000_0000_0000_8082,
     0x8000_0000_0000_808a,
@@ -102,7 +102,12 @@ pub(crate) fn init_scene(parent: Scene, child: Scene, node: NodeId) {
 /// then this Keccak-f child itself. Reports whether anything was exited — what `sha3_sponge`'s own close button
 /// needs to know before giving up.
 pub(crate) fn exit_if_focused() -> bool {
-    if theta::exit_if_focused() || rho::exit_if_focused() || pi::exit_if_focused() || chi::exit_if_focused() {
+    if theta::exit_if_focused()
+        || rho::exit_if_focused()
+        || pi::exit_if_focused()
+        || chi::exit_if_focused()
+        || iota::exit_if_focused()
+    {
         return true;
     }
     let theta_itself_exited = THETA_CHILD.with_borrow(|slot| {
@@ -155,7 +160,8 @@ fn round_io(seed: [u64; 25]) -> [([u64; 25], [u64; 25]); ROUND_COUNT] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds `svg_id` from scratch for round `round` (`0..24`), `None` meaning round `0`, unstarted.
+/// Builds `svg_id` from scratch for round `round` (`0..24`), `None` meaning round `0` with no round selected — which
+/// only draws without the round constant highlighted; [`build_initial_scene`]/[`rebuild_child`] never ask for it.
 ///
 /// # What this draws
 ///
@@ -260,9 +266,12 @@ fn build_scene(svg_id: &str, seed: [u64; 25], round: Option<usize>) -> Result<(S
         .map_err(stringify)?;
     scene.make_enterable(chi).map_err(stringify)?;
     chi::init_scene(scene.clone(), chi_child, chi);
+    let iota_child = iota::build_initial_scene(r)?;
     let iota = scene
-        .add_node(Point::new(row_x + 4.0 * row_stride, row_y), fn_size, "Iota")
+        .add_container_node(Point::new(row_x + 4.0 * row_stride, row_y), fn_size, "Iota", iota_child.clone())
         .map_err(stringify)?;
+    scene.make_enterable(iota).map_err(stringify)?;
+    iota::init_scene(scene.clone(), iota_child, iota);
     let iota_rect = scene.node_rect(iota).map_err(stringify)?;
 
     let a_out_y = iota_rect.origin.y + iota_rect.size.height + V_GAP;
@@ -402,6 +411,9 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
         let state = state.borrow();
         (state.seed, state.base_svg_id.clone(), state.child_svg_id.clone())
     };
+    // This walk is never "not started": it always has round `0`'s own input, so a step back from round `0` (or a
+    // restart) lands on round `0` itself, with its own selection, not on an unselected one.
+    let to = Some(to.unwrap_or(0));
     let next_id = next_child_svg_id(&base_svg_id);
     create_child_svg(&document, &previous_id, &next_id)?;
 
@@ -428,7 +440,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds this nested Keccak-f child, unstarted (round `1`), against `svg_id`, and wires its own stepping
+/// Builds this nested Keccak-f child at round `0`, selected, against `svg_id`, and wires its own stepping
 /// toolbar. `seed` is round `1`'s own real input — the sponge's own combined state flowing into `Keccak-f[1600]`.
 /// Called once, from `sha3_sponge::build_scene`, right when "Keccak f(1600)" is added as a container node.
 ///
@@ -436,12 +448,12 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 ///
 /// Returns `Err` if `index.html` is missing `svg_id`, or if any library call fails.
 pub(crate) fn build_initial_scene(svg_id: &str, seed: [u64; 25]) -> Result<Scene, String> {
-    let (child, round_driver) = build_scene(svg_id, seed, None)?;
+    let (child, round_driver) = build_scene(svg_id, seed, Some(0))?;
     let state = Rc::new(RefCell::new(KeccakState {
         seed,
         base_svg_id: svg_id.to_string(),
         child_svg_id: svg_id.to_string(),
     }));
-    attach_toolbar(&child, round_driver, None, state)?;
+    attach_toolbar(&child, round_driver, Some(0), state)?;
     Ok(child)
 }
