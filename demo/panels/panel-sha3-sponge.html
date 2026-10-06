@@ -16,6 +16,10 @@
         <code>sha3sum</code> prints it. Only a message shorter than one block, and the fixed-length SHA3-256 output
         rather than the XOF modes, are covered.
     </p>
+    <p>The diagram draws "Capacity" on the left and "Rate" on the right so that each sits over the component it
+        feeds. That is for data-flow layout only: in the Keccak state itself, the Rate occupies the first 17 lanes
+        and the Capacity the last 8, as the "A Bytes" arrays inside the Keccak scene show.
+    </p>
     <p>"Keccak f(1600)" is a genuine container node: once the walk reaches it, click it to drill into all 24 real
         rounds of the permutation. Each round shows five named sub-functions &mdash; <code>Theta</code>,
         <code>Rho</code>, <code>Pi</code>, <code>Chi</code>, <code>Iota</code> &mdash; each a nested

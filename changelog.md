@@ -33,7 +33,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Rate/Capacity lane size and use TQBFJOTLD message as input data (`3a9f0f1`)
 - Doc only: Update stale documentation (`f834719`)
-- Doc only: Correct SHA3 description (``)
+- Doc only: Correct SHA3 description (`262ed79`)
+- Doc only: Clarify Rate and Capacity layout in SHA3 Sponge scene (``)
 
 # [Released]
 
