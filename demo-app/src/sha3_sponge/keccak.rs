@@ -2,9 +2,9 @@
 //!
 //! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one pipeline,
 //! plus the real round constant `Iota` consumes. Each is a genuine nested `Scene`, and each is handed the state it
-//! consumes: [`keccak_f::round_traces`](super::keccak_f::round_traces) runs the real permutation over the sponge's own
-//! input state and keeps the state after every function, so every number in a child scene is derived from the one
-//! immediately upstream of it, and "A Bytes Output" is the real result of the round.
+//! consumes. [`keccak_f::round_traces`](super::keccak_f::round_traces) runs the real permutation over the sponge's own
+//! input state and keeps the state after every function. So every number in a child scene is derived from the one
+//! immediately upstream of it. "A Bytes Output" is the real result of the round.
 
 use super::keccak_f::{ROUND_CONSTANTS, ROUND_COUNT, round_traces, to_theta_grid};
 use crate::{
@@ -24,23 +24,23 @@ use svg_dom_graph::{
 /// How many named functions each round runs: `Theta`, `Rho`, `Pi`, `Chi`, `Iota`.
 const FUNCTIONS_PER_ROUND: usize = 5;
 
-/// `Theta`'s own nested child `<svg>`, inside this nested Keccak-f view — a fixed id, created once by
-/// `sha3_sponge::create_stage_svgs`, not derived from this scene's own `svg_id` the way [`theta::build_scene`]'s own
-/// doc comment ("Reuse across more than one host") otherwise recommends. This scene's own `svg_id` changes on every
-/// step (a fresh cloned sibling, via [`rebuild_child`]), but only the one `<svg>` for `Theta`'s own child is ever
-/// created; [`theta::build_scene`] clearing and redrawing that same element fresh on every call is what keeps this
-/// correct regardless of which round is currently showing.
+/// `Theta`'s own nested child `<svg>`, inside this nested Keccak-f view. It has a fixed id, created once by
+/// `sha3_sponge::create_stage_svgs`. The id is not derived from this scene's own `svg_id`, as [`theta::build_scene`]'s
+/// own doc comment ("Reuse across more than one host") otherwise recommends. This scene's own `svg_id` changes on every
+/// step (a fresh cloned sibling, via [`rebuild_child`]). Only the one `<svg>` for `Theta`'s own child is ever created,
+/// though. [`theta::build_scene`] clears and redraws that same element fresh on every call. That keeps this correct
+/// regardless of which round is currently showing.
 const THETA_CHILD_SVG_ID: &str = "sha3-sponge-keccak-theta-child";
 
 /// Live state this nested walk's own selection toolbar carries across rounds.
 struct KeccakState {
-    /// Round `0`'s own real input — the sponge's own combined `Capacity`/`Rate` state, handed down from
-    /// `sha3_sponge::build_scene` — never itself mutated; every round's own real input/output is derived afresh from
-    /// this via [`round_traces`] on every step.
+    /// Round `0`'s own real input is the sponge's own combined `Capacity`/`Rate` state, handed down from
+    /// `sha3_sponge::build_scene`. It is never itself mutated. Every round's own real input and output is derived
+    /// afresh from it via [`round_traces`] on every step.
     seed: [u64; 25],
-    /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id — passed to `next_child_svg_id`
-    /// on every step, never `child_svg_id` itself, so ids stay `prefix-0`, `prefix-1`, ... rather than growing a fresh
-    /// suffix onto the previous one every step.
+    /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id. It is passed to
+    /// `next_child_svg_id` on every step, never `child_svg_id` itself. So ids stay `prefix-0`, `prefix-1`, ... rather
+    /// than growing a fresh suffix onto the previous one every step.
     base_svg_id: String,
     /// The id of whichever `<svg>` currently backs this nested child — see `theta::theta_c::rebuild_child`'s own doc
     /// comment for why every step needs a fresh one.
@@ -51,12 +51,12 @@ thread_local! {
     // The top-level SHA3 Sponge `Scene`, this nested Keccak-f child `Scene`, and the container `NodeId` that owns it —
     // the same trio, for the same reasons, as `theta::theta_c`'s own `SCENE`.
     static SCENE: RefCell<Option<(Scene, Scene, NodeId)>> = const { RefCell::new(None) };
-    // This round's own "Theta" node: the `Scene` it wraps — the middle rung between this module's own `SCENE` (whether
-    // "Keccak f(1600)" itself is focused) and `theta::exit_if_focused` (whether one of `Theta`'s own further-nested
-    // `ThetaC`/`ThetaD`/`XOR loop` is). Without this, [`exit_if_focused`] would have no way to notice "Theta itself is
-    // focused" and pop back to this round's own view — only "one of `ThetaC`'s own children is focused" or "nothing
-    // nested at all is focused". Replaced fresh every round, in [`build_scene`], right alongside `Theta`'s own
-    // container node.
+    // This round's own "Theta" node: the `Scene` it wraps. It is the middle rung between this module's own `SCENE`
+    // (whether "Keccak f(1600)" itself is focused) and `theta::exit_if_focused` (whether one of `Theta`'s own
+    // further-nested `ThetaC`/`ThetaD`/`XOR loop` is). Without this, [`exit_if_focused`] could not notice "Theta itself
+    // is focused" and pop back to this round's own view. It could only notice "one of `ThetaC`'s own children is
+    // focused" or "nothing nested at all is focused". Replaced fresh every round, in [`build_scene`], right alongside
+    // `Theta`'s own container node.
     static THETA_CHILD: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
@@ -104,8 +104,9 @@ pub(crate) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds `svg_id` from scratch for walk position `position` (`0..120`): five functions in each of 24 rounds, so the
-/// round is `position / 5` and the function in focus is the `position % 5`th of `Theta`, `Rho`, `Pi`, `Chi`, `Iota`.
+/// Builds `svg_id` from scratch for walk position `position` (`0..120`). There are five functions in each of 24 rounds,
+/// so the round is `position / 5`. The function in focus is the `position % 5`th of `Theta`, `Rho`, `Pi`, `Chi`,
+/// `Iota`.
 ///
 /// # What this draws
 ///
@@ -118,7 +119,7 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// Below row 1, five named boxes run left to right, not stacked top to bottom: `Theta`, `Rho`, `Pi`, `Chi`, `Iota`. A
 /// horizontal row keeps this round's own overall height close to row 1's own, instead of adding five more row-heights
-/// on top — a nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size
+/// on top. A nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size
 /// frame. All five are genuine container nodes, each nesting a scene that works through its own real function over the
 /// state the one before it produced. `Theta` nests [`theta::build_scene`] — the scenes `panel-theta` draws standalone,
 /// run here over this round's own input — and drills one level further, into `ThetaC`, `ThetaD` and `XOR loop`. Click
@@ -132,9 +133,9 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// # Stepping through it
 ///
-/// "Step" is a small, otherwise-meaningless array of one cell per function of every round, placed far off-canvas,
-/// purely to drive a [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar — the
-/// same trick `sha3_sponge::build_scene`'s own "Step" uses, for the same reason: no node already in this diagram
+/// "Step" is a small, otherwise-meaningless array of one cell per function of every round. It is placed far off-canvas,
+/// purely to drive a [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar. This
+/// is the same trick `sha3_sponge::build_scene`'s own "Step" uses, for the same reason: no node already in this diagram
 /// happens to have that many cells. `Prev`/`Next` move one function, rolling on into the next round after `Iota`, and
 /// `Prev Round`/`Next Round` move five at once. This walk is never "not started": it opens on round `0`'s `Theta`.
 /// [`rebuild_child`] wires the bar itself.
@@ -157,8 +158,8 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .show_scene_title(format!("Keccak f(1600) Round {r}"), SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    // Every number below is derived from the one upstream of it: this round's own trace holds the state at the start of
-    // the round and after each of its five functions, and each nested scene is handed the one it consumes.
+    // Every number below is derived from the one upstream of it. This round's own trace holds the state at the start of
+    // the round and after each of its five functions. Each nested scene is handed the one it consumes.
     let trace = round_traces(seed)[r];
     let (a_in, a_out) = (trace.input, trace.output);
     let hex25 = |values: [u64; 25]| DataNodeContent::new(NodeValues::U64(values.to_vec()), DataFormat::Hexadecimal);
@@ -176,20 +177,21 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .map_err(stringify)?;
     let a_top_rect = scene.node_rect(a_top).map_err(stringify)?;
 
-    // Theta/Rho/Pi/Chi/Iota run left to right, not stacked top to bottom: a horizontal row keeps this round's own
-    // overall height close to its row 1's own height, rather than adding five more row-heights on top — important since
-    // a nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size frame.
+    // Theta/Rho/Pi/Chi/Iota run left to right, not stacked top to bottom. A horizontal row keeps this round's own
+    // overall height close to its row 1's own height, rather than adding five more row-heights on top. That matters
+    // because a nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size
+    // frame.
     let row_stride = fn_size.width + fn_gap;
     let row_width = 5.0 * fn_size.width + 4.0 * fn_gap;
     let row_x = a_top_rect.origin.x + (a_top_rect.size.width - row_width) / 2.0;
-    // Below whichever of "A Bytes" or "Round Constants" extends further down — 24 real values, even as 4 columns, can
-    // still make "Round Constants" taller than "A Bytes - round {round}"'s own 5 rows.
+    // Directly below "A Bytes - round {round}". "Round Constants" sits beside it, rather than above the function row,
+    // so it does not push the row down.
     let row_y = a_top_rect.origin.y + a_top_rect.size.height + V_GAP;
 
-    // Fixed, not derived from `svg_id`: `svg_id` itself changes on every step (a fresh sibling `<svg>`, exactly like
-    // `theta::theta_c`'s own per-step clones), but only one `<svg>` is ever created for Theta's own child — see this
+    // Fixed, not derived from `svg_id`. `svg_id` itself changes on every step (a fresh sibling `<svg>`, exactly like
+    // `theta::theta_c`'s own per-step clones). Only one `<svg>` is ever created for Theta's own child, though. See this
     // constant's own doc comment. `false`: this round's own `svg_id` is not the shallowest level in
-    // `#sha3-sponge-diagram`'s own `.nested-scene-stage` — see `theta::build_scene`'s own doc comment ("Reuse across
+    // `#sha3-sponge-diagram`'s own `.nested-scene-stage`. See `theta::build_scene`'s own doc comment ("Reuse across
     // more than one host") for why a backdrop here would wrongly cover whatever shallower sibling sits behind it.
     let theta_child = theta::build_scene(THETA_CHILD_SVG_ID, false, to_theta_grid(trace.input))?;
     THETA_CHILD.with_borrow_mut(|slot| *slot = Some(theta_child.clone()));
@@ -220,16 +222,15 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let iota_rect = scene.node_rect(iota).map_err(stringify)?;
 
     let a_out_y = iota_rect.origin.y + iota_rect.size.height + V_GAP;
-    // Until the round's own last function, `Iota`, is reached, the round has no result yet: the output stays
+    // Until the walk reaches `Iota`, the round's own last function, the round has no result yet. The output stays
     // initialised to zeros, the same "not yet written" look the sponge scene's own "XOR" uses.
     let shown_output = if focused_function == FUNCTIONS_PER_ROUND - 1 { a_out } else { [0; 25] };
     let a_out = scene
         .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(shown_output))
         .map_err(stringify)?;
 
-    // "Round Constants" sits so that its midpoint is aligned with the beside "A Bytes - round {round}", in the same
-    // row, not below the function row — row 1 has room for both, and this keeps the round's own overall height down
-    // further still.
+    // "Round Constants" sits to the right of "A Bytes - round {round}" and the function row, not below them. Its
+    // midpoint is level with `Iota`'s, which keeps the round's own overall height down.
     let rc_x = a_top_rect.origin.x + a_top_rect.size.width + H_GAP;
     let rc = scene
         .add_named_data_node(
@@ -274,7 +275,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         )
         .map_err(stringify)?;
 
-    // Only the function the walk is currently on is clickable, and rung: entering one before the walk reaches it would
+    // Only the function the walk is currently on is clickable, and rung. Entering one before the walk reaches it would
     // show a view whose own input is not yet that function's real input. Every step rebuilds this whole `Scene`, so
     // nothing needs undoing when the walk moves on, or back.
     let current = [theta, rho, pi, chi, iota][focused_function];
@@ -293,15 +294,16 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .map_err(stringify)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
-    // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself: `svg_id` is not the shallowest
-    // level in `#sha3-sponge-diagram`'s own `.nested-scene-stage` either — see that function's own doc comment ("Reuse
+    // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself. `svg_id` is not the shallowest
+    // level in `#sha3-sponge-diagram`'s own `.nested-scene-stage` either. See that function's own doc comment ("Reuse
     // across more than one host") for why one here would wrongly cover `#sha3-sponge-diagram` itself. Entering `Theta`
     // from here shows `#sha3-sponge-diagram`'s own backdrop in the margin instead, not this round's own content — a
     // smaller visual polish this feature does without.
 
-    // Shrink this round's own `<svg>` to its content: the rightmost of "Round Constants" and the function row, the
-    // bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`] adds below it (laid out
-    // as in `selection::fit_canvas_to_toolbar`), each plus the left margin, and room for the East toolbar.
+    // Shrink this round's own `<svg>` to its content. The width is the rightmost of "Round Constants" and the function
+    // row. The height is the bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`]
+    // adds below it (laid out as in `selection::fit_canvas_to_toolbar`). Each gets the left margin, and the width also
+    // gets room for the East toolbar.
     const TOOLBAR_ALLOWANCE: f64 = 60.0;
     const STEP_TOOLBAR_GAP: f64 = 20.0;
     let step_toolbar = SelectionToolbarOptions::default();
@@ -370,8 +372,8 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
         let state = state.borrow();
         (state.seed, state.base_svg_id.clone(), state.child_svg_id.clone())
     };
-    // This walk is never "not started": it always has round `0`'s own input, so a step back from the first position
-    // (round `0`'s `Theta`), or a restart, lands on that position itself, selected, not on an unselected one.
+    // This walk is never "not started": it always has round `0`'s own input. A step back from the first position (round
+    // `0`'s `Theta`), or a restart, therefore lands on that position itself, selected, not on an unselected one.
     let next_id = next_child_svg_id(&base_svg_id);
     create_child_svg(&document, &previous_id, &next_id)?;
 

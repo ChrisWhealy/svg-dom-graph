@@ -1,11 +1,11 @@
-//! `panel-theta` / `#theta-diagram`: SHA3's `Theta` function, as a parent `Scene` with three nested child `Scene`s —
-//! see [`build_scene`]'s own doc comment for what each node represents and what is, and is not, built yet.
+//! `panel-theta` / `#theta-diagram`: SHA3's `Theta` function, as a parent `Scene` with three nested child `Scene`s. See
+//! [`build_scene`]'s own doc comment for what each node represents.
 //!
 //! - [`theta_c`] — the nested `ThetaC` child: its own selection toolbar, and rebuilding it on every step.
 //! - [`theta_d`] — the nested `ThetaD` child: the `ROTL`/`XOR` step itself, its own selection toolbar, and rebuilding
 //!   it on every step.
-//! - [`xor_loop`] — the nested `XOR loop` child: the final `A' = A ⊕ D` fold, its own selection toolbar (stepped cell
-//!   by cell, not row by row — see its own module doc comment for why), and rebuilding it on every step.
+//! - [`xor_loop`] — the nested `XOR loop` child: the final `A' = A ⊕ D` fold, its own selection toolbar, and rebuilding
+//!   it on every step. The toolbar steps cell by cell, not row by row; see its own module doc comment for why.
 //! - [`support`] — shared by `theta_c`/`theta_d`: the live state their own selection toolbars carry across steps, and
 //!   cloning a fresh `<svg>` for every step. `xor_loop` reuses the cloning helpers but not the state shape — see
 //!   [`xor_loop::XorLoopState`]'s own doc comment for why.
@@ -37,34 +37,34 @@ use wasm_bindgen::{JsCast, prelude::*};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why. Only
-/// [`build_theta_demo`] itself is ever shown from it (see that doc comment's own "SOURCE" note); `theta_c`, `theta_d`,
+/// [`build_theta_demo`] itself is ever shown from it (see that doc comment's own "SOURCE" note). `theta_c`, `theta_d`
 /// and `support` live in their own files precisely so this one stays that function alone.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 thread_local! {
-    // Keeps this module's own top-level "parent" `Scene` alive across however many times `build_scene` is called — see
+    // Keeps this module's own top-level "parent" `Scene` alive across however many times `build_scene` is called. See
     // that function's own doc comment ("Reuse across more than one host") for why this cannot simply rely on
-    // `theta_c`/`theta_d`/`xor_loop`'s own thread-locals the way a single standalone call already implicitly does.
+    // `theta_c`/`theta_d`/`xor_loop`'s own thread-locals, the way a single standalone call implicitly does.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested-Scene demo: SHA3's own `Theta` function over `a_grid`, drawn top to bottom — `A` (the 25-value
-/// input array), `ThetaC`, then `ThetaD` and a clone of `A` side by side in one row, both feeding `XOR loop`, which
-/// feeds `Theta Output` — with `ThetaC`, `ThetaD`, and `XOR loop` all genuine container nodes, each owning its own
-/// nested `Scene`. The function the walk is on is the only clickable one: click it to drill into it — see
-/// [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable) — and the &times; in its own rounded frame's
-/// corner to come back, the way a modal window's own close button would.
+/// Builds the nested-Scene demo: SHA3's own `Theta` function over `a_grid`, drawn top to bottom. `A` (the 25-value
+/// input array) sits at the top, then `ThetaC`. Next come `ThetaD` and a clone of `A` side by side in one row, both
+/// feeding `XOR loop`, which feeds `Theta Output`. `ThetaC`, `ThetaD` and `XOR loop` are all genuine container nodes,
+/// each owning its own nested `Scene`. The function the walk is on is the only clickable one. Click it to drill into it
+/// (see [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable)), and the &times; in its own rounded
+/// frame's corner to come back, the way a modal window's own close button would.
 ///
 /// # What this demonstrates
 ///
-/// `ThetaC`'s own nested `Scene` is [`theta_c::build_scene`] — the exact same function the standalone Cell Selection
-/// demo's own third example already draws with, called here against a second, initially hidden `<svg>`
-/// (`{svg_id}-thetac-child` — `#theta-diagram-thetac-child` for `panel-theta`'s own standalone call) instead of
+/// `ThetaC`'s own nested `Scene` is [`theta_c::build_scene`]. That is the exact same function the standalone Cell
+/// Selection demo's own third example already draws with. It is called here against a second, initially hidden `<svg>`
+/// (`{svg_id}-thetac-child`, or `#theta-diagram-thetac-child` for `panel-theta`'s own standalone call) instead of
 /// `#selection-thetac-diagram`. `ThetaD`'s own nested `Scene` is [`theta_d::build_scene`], and `XOR loop`'s own is
 /// [`xor_loop::build_scene`]. Grafting any of them under its own container node with `add_container_node` is the whole
-/// of what makes this a nested-Scene demo: everything else — the boxes, the operator nodes, the toolbar each shows — is
-/// drawn by code that has no idea it is being nested at all. That is the point: nesting is a property of how a `Scene`
+/// of what makes this a nested-Scene demo. Everything else is drawn by code that has no idea it is being nested at all:
+/// the boxes, the operator nodes, and the toolbar each shows. That is the point: nesting is a property of how a `Scene`
 /// is *used*, not something a `Scene` has to be built differently to support.
 ///
 /// # Stepping the nested view
@@ -75,9 +75,9 @@ thread_local! {
 /// comment. `theta_c`'s/`theta_d`'s own bar steps through five rows; `xor_loop`'s own steps through all twenty-five
 /// cells instead — see [`xor_loop`]'s own module doc comment for why. None of
 /// `theta_c::build_scene`/`theta_d::build_scene`/`xor_loop::build_scene` has a way to redraw an already-drawn chain in
-/// place, so every step needs a genuinely fresh `Scene`: each one's own `rebuild_child` grafts the fresh one in via
-/// `Scene::replace_container_child`, exiting back to `parent` first — that call's own precondition — and re-entering
-/// the fresh child immediately after, so stepping never visibly leaves the nested view.
+/// place, so every step needs a genuinely fresh `Scene`. Each one's own `rebuild_child` grafts the fresh one in via
+/// `Scene::replace_container_child`. It exits back to `parent` first, which is that call's own precondition. It
+/// re-enters the fresh child immediately after, so stepping never visibly leaves the nested view.
 ///
 /// # What is real
 ///
@@ -98,9 +98,9 @@ thread_local! {
 ///    show in full — the same content, three times over.
 ///
 /// `Theta Output` is a plain data node, not a container: there is nothing to nest behind it. Its values are `A'`, the
-/// whole result. They are computed up front by [`output`] and shown by `Scene::set_data_values` as the walk reaches
-/// `XOR loop`, the last function — zeros before then — so stepping over all three scenes without entering any still
-/// shows the correct result, exactly what stepping into them would have ended on.
+/// whole result. They are computed up front by [`output`], and shown by `Scene::set_data_values` as the walk reaches
+/// `XOR loop`, the last function. Before then they show zeros. So stepping over all three scenes without entering any
+/// still shows the correct result, exactly what stepping into them would have ended on.
 ///
 /// # Stepping the walk
 ///
@@ -114,7 +114,7 @@ thread_local! {
 /// `svg_id` lets this whole function be grafted as a container node's own nested child elsewhere — see
 /// `sha3_sponge::keccak`'s own "Theta" node — not just drawn standalone as `panel-theta` itself.
 /// `theta_c`'s/`theta_d`'s/`xor_loop`'s own initial child ids are derived from `svg_id`, so a second call keeps its own
-/// three elements distinct from the first's; every id generated after that stays globally unique anyway, via
+/// three elements distinct from the first's. Every id generated after that stays globally unique anyway, via
 /// `support::next_child_svg_id`'s own shared counter.
 ///
 /// `theta_c`/`theta_d`/`xor_loop` each still track their own currently-entered child in one thread-local apiece, shared
@@ -140,14 +140,14 @@ thread_local! {
 pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 5]) -> Result<Scene, String> {
     let document = crate::util::document()?;
 
-    // Derived from `svg_id` itself, not a literal, so a second call — nested elsewhere, under a different `svg_id` —
+    // Derived from `svg_id` itself, not a literal. So a second call, nested elsewhere under a different `svg_id`,
     // targets its own three distinct elements instead of colliding with this one's.
     let thetac_child_id = format!("{svg_id}-thetac-child");
     let thetad_child_id = format!("{svg_id}-thetad-child");
     let xorloop_child_id = format!("{svg_id}-xorloop-child");
 
     crate::util::frame_nested_scene(&document, svg_id)?;
-    // Cleared first: a host that rebuilds this scene — each Keccak round does — would otherwise draw a second copy of
+    // Cleared first. A host that rebuilds this scene (each Keccak round does) would otherwise draw a second copy of
     // every node, and of the stepping toolbar, on top of the first.
     required_element(&document, svg_id)?.set_inner_html("");
     let parent_svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -221,8 +221,8 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
         .map_err(stringify)?;
     row_top += (row_gap / 2.0) + row_height;
 
-    // Unstarted, the same "no cell processed yet" convention as `ThetaC`'s/`ThetaD`'s own initial state above — except
-    // stepped cell by cell, not row by row; see `xor_loop::build_scene`'s own doc comment for why.
+    // Unstarted, the same "no cell processed yet" convention as `ThetaC`'s/`ThetaD`'s own initial state above. The
+    // difference is that it steps cell by cell, not row by row (see `xor_loop::build_scene`'s own doc comment for why).
     let xor_loop_outputs = xor_loop::outputs(a_grid, theta_d_outputs);
     let xor_loop_display = xor_loop::display_outputs(xor_loop_outputs, None);
     let (xor_loop_child, xor_loop_output) = xor_loop::build_scene(&xorloop_child_id, a_grid, None, xor_loop_display)?;
@@ -255,15 +255,15 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
         )
         .map_err(stringify)?;
 
-    // Forced to `ThetaC`'s own North side: left to the automatic ray-cast, `A`'s own centre — pulled far to the right
-    // by its own wide 5x5 grid — would otherwise cross `ThetaC`'s East side first. See
+    // Forced to `ThetaC`'s own North side. Left to the automatic ray-cast, `A`'s own centre, pulled far to the right by
+    // its own wide 5x5 grid, would otherwise cross `ThetaC`'s East side first. See
     // `svg_dom_graph::scene::ConnectorOptions::with_to_side`'s own doc comment.
     parent
         .add_edge_with(a, theta_c, ConnectorOptions::default().with_to_side(Some(Side::North)))
         .map_err(stringify)?;
     parent.add_edge(theta_c, theta_d).map_err(stringify)?;
-    // Forced to leave `ThetaD`'s own South side and enter `XOR loop`'s own West side — `XOR loop` sits well to the
-    // right of, and below, `ThetaD`, so the automatic ray-cast would otherwise cross a different pair of sides.
+    // Forced to leave `ThetaD`'s own South side and enter `XOR loop`'s own West side. `XOR loop` sits well to the right
+    // of, and below, `ThetaD`, so the automatic ray-cast would otherwise cross a different pair of sides.
     parent
         .add_edge_with(
             theta_d,
@@ -287,9 +287,9 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
             DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    // "Theta Output" holds zeros until the walk reaches `XOR loop`, the last function, at which point it shows the real
-    // result — whether or not the user ever stepped inside any of the three. The nested scenes show the same values
-    // when entered, since all of them are computed from `a_grid`.
+    // "Theta Output" holds zeros until the walk reaches `XOR loop`, the last function. At that point it shows the real
+    // result, whether or not the user ever stepped inside any of the three. The nested scenes show the same values when
+    // entered, since all of them are computed from `a_grid`.
     let theta_result: Vec<u64> = self::output(a_grid).iter().flatten().copied().collect();
     focus_function(&parent, functions, 0)?;
     show_theta_output(&parent, theta_out, &theta_result, 0)?;
@@ -433,9 +433,9 @@ pub(crate) fn exit_if_focused() -> bool {
 /// [`Scene::make_enterable`](svg_dom_graph::scene::Scene::make_enterable)'s own doing, installed once in
 /// [`build_scene`] when each is added.
 ///
-/// `#theta-close` is only ever visible while one of them actually is — see `.nested-scene-close`'s own `:has()` rule in
-/// `style.css`, which matches all three — but the listener still ignores [`exit_if_focused`]'s own `bool`, the same
-/// "nowhere to report an error to" reasoning every other button-click listener in this crate already follows.
+/// `#theta-close` is only ever visible while one of them actually is (see `.nested-scene-close`'s own `:has()` rule in
+/// `style.css`, which matches all three). The listener still ignores [`exit_if_focused`]'s own `bool`. That follows the
+/// same "nowhere to report an error to" reasoning every other button-click listener in this crate already follows.
 ///
 /// # Errors
 ///

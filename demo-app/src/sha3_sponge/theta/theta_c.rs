@@ -19,9 +19,9 @@ use svg_dom_graph::{
 
 thread_local! {
     // The parent Scene, the nested ThetaC child Scene, and the container NodeId that owns it — kept alive for the
-    // page's own lifetime. `enter`/`exit` are driven from this same trio: `parent.enter(node)` to descend,
-    // `child.exit()` to return, with no further state to track — `Scene::is_focused` already answers "which one is
-    // active right now" without this module keeping a duplicate copy of it. The child itself is replaced wholesale on
+    // page's own lifetime. `enter`/`exit` are driven from this same trio: `parent.enter(node)` to descend, and
+    // `child.exit()` to return. There is no further state to track. `Scene::is_focused` already answers "which one is
+    // active right now", without this module keeping a duplicate copy of it. The child itself is replaced wholesale on
     // every step — see [`rebuild_child`]'s own doc comment.
     static SCENE: RefCell<Option<(Scene, Scene, NodeId)>> = const { RefCell::new(None) };
 }
@@ -49,19 +49,20 @@ pub(super) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Rebuilds `svg_id` from scratch, for `n`: a fresh five-operand, four-`XOR` chain, an input array, an output array,
-/// and a plain edge from the chain's own final `XOR` node into the output array. `Some(row)` computes the chain over
-/// row `row` of the input `a` and bands that row in the input array; `None` — the unstarted state, before row `0` is
-/// ever processed — computes the same chain over five zero operands instead, and leaves the input array unbanded. The
-/// chain is always drawn, even unstarted: showing it with every value at zero, rather than not drawing it at all, is
-/// what keeps it reading as "not yet run" instead of "does not exist until iteration starts." Either way, the output
+/// Rebuilds `svg_id` from scratch, for `n`. The result is a fresh five-operand, four-`XOR` chain, an input array, an
+/// output array, and a plain edge from the chain's own final `XOR` node into the output array. `Some(row)` computes the
+/// chain over row `row` of the input `a`, and bands that row in the input array. `None` is the unstarted state, before
+/// row `0` is ever processed. It computes the same chain over five zero operands instead, and leaves the input array
+/// unbanded. The chain is always drawn, even unstarted. Showing it with every value at zero, rather than not drawing it
+/// at all, keeps it reading as "not yet run" instead of "does not exist until iteration starts." Either way, the output
 /// array always shows `display`'s own current values, with cell `row` focused for `Some(row)`.
 ///
 /// `svg-dom-graph` has no way to change a node's own displayed value once drawn — only its selection (see
-/// `Scene::set_selection`'s own doc comment). Since every value here — the row currently feeding the chain, the chain's
-/// own intermediate results, and however many output cells have so far been "written" — changes on every step, there is
-/// no existing node any of this could update in place. So, exactly like `edge_anchors::rebuild_edge_anchors_scene`,
-/// each step clears `svg_id`'s own children and draws everything again, fresh, from this row's own real values.
+/// `Scene::set_selection`'s own doc comment). Every value here changes on every step: the row currently feeding the
+/// chain, the chain's own intermediate results, and however many output cells have so far been "written". There is
+/// therefore no existing node any of this could update in place. So, exactly like
+/// `edge_anchors::rebuild_edge_anchors_scene`, each step clears `svg_id`'s own children and draws everything again,
+/// fresh, from this row's own real values.
 ///
 /// `O` is its own `[5; u64]` node, not folded into `A`'s own `[5; [5; u64]]` shape — each keeps the type its own values
 /// actually have. `A` sits at the very top of the canvas, above the chain it feeds. `O` sits right below the chain's
@@ -70,17 +71,17 @@ pub(super) fn exit_if_focused() -> bool {
 /// connector reaches.
 ///
 /// Each of the five operand boxes is named after the exact element of `A` it holds — `A[row, i]` — for `Some(row)`.
-/// Unstarted, there is no real row to name any of them after, so they are drawn unnamed instead — see the `place`
+/// Unstarted, there is no real row to name any of them after, so they are drawn unnamed instead. See the `place`
 /// closure's own comment, inside this function, for why that is the closest this library can get to leaving the label
 /// blank.
 ///
-/// Returns `O`'s own [`NodeId`] alongside the `Scene`, so a caller can attach its own selection toolbar to it — see
+/// Returns `O`'s own [`NodeId`] alongside the `Scene`, so a caller can attach its own selection toolbar to it. See
 /// [`attach_toolbar`]'s own doc comment for why that toolbar must be attached fresh on every rebuild rather than kept
 /// across them.
 ///
-/// Shared by this module's own [`rebuild_child`] (grafted into a nested child `<svg>` via
-/// `Scene::replace_container_child`) and the standalone Cell Selection demo's own
-/// `crate::selection::rebuild_theta_c_diagram` (attached to `#selection-thetac-diagram` directly) — both draw exactly
+/// Shared by this module's own [`rebuild_child`] and the standalone Cell Selection demo's own
+/// `crate::selection::rebuild_theta_c_diagram`. The first grafts it into a nested child `<svg>` via
+/// `Scene::replace_container_child`. The second attaches it to `#selection-thetac-diagram` directly. Both draw exactly
 /// the same chain from exactly the same code, over `svg_id` rather than a hardcoded element id.
 ///
 /// # Errors
@@ -102,9 +103,9 @@ pub(crate) fn build_scene(
         .show_scene_title("Keccak Theta C", SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    // The input array: `A`'s own 25 values, its own `[5; [5; u64]]` node, at the top of the canvas — `TOP_Y` (50, not
-    // `0`) leaves the scene title's own band (`margin` 12 plus its own ≈28-unit-tall text, an estimate as usual with no
-    // browser here to measure it) clear above it, rather than overlapping it.
+    // The input array: `A`'s own 25 values, its own `[5; [5; u64]]` node, at the top of the canvas. `TOP_Y` (50, not
+    // `0`) leaves the scene title's own band clear above it, rather than overlapping it. That band is `margin` 12 plus
+    // its own ≈28-unit-tall text, an estimate as usual with no browser here to measure it.
     const TOP_Y: f64 = 50.0;
     let array = scene
         .add_named_data_node(
@@ -127,8 +128,8 @@ pub(crate) fn build_scene(
 
     // Labels operand `i` with the exact element of `A` it holds — `A[row, i]` — once a real row is selected. Unstarted
     // (`n` is `None`), there is no real row to name any operand after, and `add_named_data_node` itself rejects an
-    // empty name outright, so this falls back to a plain, unnamed box instead: the closest this library can get to "no
-    // label," short of a blank string it would refuse to draw at all.
+    // empty name outright. So this falls back to a plain, unnamed box instead. That is the closest this library can get
+    // to "no label," short of a blank string it would refuse to draw at all.
     let operand_label = |i: usize| match n {
         Some(row) => format!("A[{row}, {i}]"),
         None => "A[-, -]".to_string(),
@@ -140,12 +141,12 @@ pub(crate) fn build_scene(
     };
 
     // The five elements of the current row sit in one horizontal row below the input array, in the same left-to-right
-    // order as `row`'s own values there — so this canvas reads as "here is that row, unpacked."
+    // order as `row`'s own values there. So this canvas reads as "here is that row, unpacked."
     //
     // Every operand is a named box (`A[row, i]`, or the placeholder `A[-, -]` unstarted). Every label is the same
     // length (`A[row, i]`'s own `row`/`i` are always single digits, `0..=4`, and the placeholder is the same seven
-    // characters), and every value is a full `u64` hex cell, so measuring just the first operand's own box —
-    // `Scene::measure_named_data_node` — gives the real width every one of the five actually needs, not an estimate of
+    // characters). Every value is a full `u64` hex cell. So measuring just the first operand's own box, via
+    // `Scene::measure_named_data_node`, gives the real width every one of the five actually needs, not an estimate of
     // it. `OPERAND_GAP` is the only reasoned number left in this stride: a small, steady visual gap between adjacent
     // boxes, not a measured one.
     //
@@ -167,9 +168,9 @@ pub(crate) fn build_scene(
     // already uses.
     const OPERAND_Y: f64 = TOP_Y + 295.0;
 
-    // `t1` sits close enough below the operand row that the gap between them — the operand box's own bottom edge (71.8
-    // units tall, now that every operand is named — see `place`'s own comment) to `t1`'s own top — leaves the same
-    // ≈58-unit clearance `OPERAND_Y`'s own comment gives for `A Bytes` → the operand row.
+    // `t1` sits close enough below the operand row to leave the same ≈58-unit clearance `OPERAND_Y`'s own comment gives
+    // for `A Bytes` → the operand row. The gap runs from the operand box's own bottom edge to `t1`'s own top. That
+    // operand box is 71.8 units tall, now that every operand is named (see `place`'s own comment).
     let op0 = place(operand_x[0], OPERAND_Y, 0, row[0])?;
     let op1 = place(operand_x[1], OPERAND_Y, 1, row[1])?;
     let xor01 = row[0] ^ row[1];
@@ -205,7 +206,7 @@ pub(crate) fn build_scene(
         )
         .map_err(stringify)?;
 
-    // The output array: `O`'s own five values, its own `[5; u64]` node — see this function's own doc comment for why it
+    // The output array: `O`'s own five values, its own `[5; u64]` node. See this function's own doc comment for why it
     // stays distinct from `A` rather than folding into `A`'s own shape. Five fixing points on every side, so the
     // connector below can snap to whichever of them best approximates column `n`, rather than landing wherever a
     // single, unconfigured anchor would pick.
@@ -268,17 +269,17 @@ pub(super) fn attach_toolbar(
 /// Rebuilds the nested `ThetaC` child for `to`, and grafts it into [`SCENE`]'s own `parent` in place of whichever child
 /// is currently shown — the nested counterpart to `crate::selection::rebuild_theta_c_diagram`. [`build_scene`] has no
 /// way to update an already-drawn chain in place (see its own doc comment), so each step needs a genuinely fresh
-/// `Scene`; grafting it in is exactly what `Scene::replace_container_child` is for.
+/// `Scene`. Grafting it in is exactly what `Scene::replace_container_child` is for.
 ///
-/// A fresh `Scene` needs a fresh `<svg>` of its own too: reusing the element the outgoing child already drew into would
-/// leave two `Scene`s — the one about to be replaced, and this step's own new one — both quietly backed by the
-/// identical DOM node while `replace_container_child` runs. [`create_child_svg`] avoids that by cloning a genuinely
-/// new, empty sibling for every step; the element the outgoing child used is removed once this step has fully
-/// succeeded, and the outgoing `Scene` itself is simply dropped along with it.
+/// A fresh `Scene` needs a fresh `<svg>` of its own too. Reusing the element the outgoing child already drew into would
+/// leave two `Scene`s both quietly backed by the identical DOM node while `replace_container_child` runs. They would be
+/// the one about to be replaced and this step's own new one. [`create_child_svg`] avoids that by cloning a genuinely
+/// new, empty sibling for every step. The element the outgoing child used is removed once this step has fully
+/// succeeded. The outgoing `Scene` itself is simply dropped along with it.
 ///
-/// Exits the nested view back to `parent` first, since `replace_container_child` requires `self` — here, `parent` — to
-/// be the tree's own currently focused `Scene`, then re-enters the freshly grafted child immediately afterward — so
-/// from the caller's own perspective, stepping never actually leaves the nested view at all.
+/// Exits the nested view back to `parent` first, since `replace_container_child` requires `self` (here, `parent`) to be
+/// the tree's own currently focused `Scene`. It then re-enters the freshly grafted child immediately afterward. So from
+/// the caller's own perspective, stepping never actually leaves the nested view at all.
 ///
 /// A fresh `Scene` would otherwise also reset zoom/pan back to `1.0`/`(0, 0)` — jarring, mid-walk, if the outgoing
 /// child's own view had been zoomed or panned in first. So the outgoing child's own

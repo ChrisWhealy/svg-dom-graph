@@ -101,8 +101,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     let and = not_w1 & w2;
     let result = w0 ^ and;
 
-    // A node's own size is only known once it exists, so each is added at the top of its row and then moved: the `x`
-    // for the node's own centre is a fraction of "Pi Output Bytes"'s own width, `y` its own top edge.
+    // A node's own size is only known once it exists, so each is added at the top of its row and then moved. The `x`
+    // for the node's own centre is a fraction of "Pi Output Bytes"'s own width, and `y` is its own top edge.
     let place = |id: NodeId, fraction: f64, y: f64| -> Result<Rect, String> {
         let size = scene.node_rect(id).map_err(stringify)?.size;
         let origin = Point::new(input_rect.origin.x + fraction * input_rect.size.width - size.width / 2.0, y);

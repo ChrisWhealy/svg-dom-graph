@@ -1,6 +1,5 @@
-//! The nested `ThetaD` child: SHA3's own `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` step, its own selection toolbar, and
-//! rebuilding it — via `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s own
-//! output.
+//! The nested `ThetaD` child: SHA3's own `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` step, and its own selection toolbar. It is
+//! rebuilt, via `Scene::replace_container_child`, every time that toolbar steps to a new row of `ThetaC`'s own output.
 
 use super::support::SteppedChildState;
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
@@ -43,8 +42,8 @@ pub(super) fn exit_if_focused() -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `D[n] = C[(n + 4) % 5] ⊕ rotl(C[(n + 1) % 5], 1)` — SHA3's real `ThetaD` step, for the single row currently
 /// selected. Once a Keccak lane is represented as a plain `u64`, `rotl` is exactly `u64::rotate_left` — no further
-/// byte-order adjustment applies on top of it. Returns `(prev, rotated_next, d_n)`: `prev` and `rotated_next` are
-/// `d_n`'s own two real inputs, so [`build_scene`] can label the `prev`/`ROTL` nodes it draws with the exact same
+/// byte-order adjustment applies on top of it. Returns `(prev, rotated_next, d_n)`. `prev` and `rotated_next` are
+/// `d_n`'s own two real inputs. So [`build_scene`] can label the `prev`/`ROTL` nodes it draws with the exact same
 /// values used to compute `d_n`, rather than recomputing either separately.
 fn row(c: [u64; 5], n: usize) -> (u64, u64, u64) {
     let prev = c[(n + 4) % 5];
@@ -69,8 +68,8 @@ pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
 /// rotating `next`, and an `XOR` node combining `prev` and that `ROTL` result into `D[n]`. Both of `XOR`'s own inputs
 /// therefore approach it from the west, instead of `prev` dropping straight down onto it from directly above. See
 /// `MID_Y`'s own doc comment for why that matters. `D`, at the bottom, is the same shape as `C`, showing `display`'s
-/// own current values with cell `n` focused. `Some(row)` computes and highlights row `row`; `None` — the unstarted
-/// state, before row `0` is ever processed — computes the same chain over `prev`/`next` both zero instead, and leaves
+/// own current values with cell `n` focused. `Some(row)` computes and highlights row `row`. `None` is the unstarted
+/// state, before row `0` is ever processed. It computes the same chain over `prev`/`next` both zero instead, and leaves
 /// `C` unselected. See [`theta_c::build_scene`](super::theta_c::build_scene)'s own doc comment for why the chain is
 /// always drawn, even unstarted, and why `display`'s own current values are passed in rather than computed here.
 ///
@@ -103,7 +102,7 @@ pub(super) fn build_scene(
     const OUTPUT_Y: f64 = MID_Y + 130.0;
 
     // 2 fixing points: `C` feeds both `prev` and `next`, so it needs room for two distinct outgoing connectors on the
-    // same side, rather than both landing on the same midpoint — see `EdgeAnchors`'s own doc comment.
+    // same side. Otherwise both would land on the same midpoint. See `EdgeAnchors`'s own doc comment.
     let input_options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(2)));
     let input = scene
         .add_named_data_node_with(
@@ -209,9 +208,9 @@ pub(super) fn attach_toolbar(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same rebuild as `theta_c::rebuild_child`, for the nested `ThetaD` child and [`SCENE`] instead — `ThetaC`'s own
-/// real output never changes, so only `to` (which row of it `ThetaD` currently looks at) and `display` (which rows of
-/// `ThetaD`'s own output have been written so far) vary from one step to the next.
+/// The same rebuild as `theta_c::rebuild_child`, for the nested `ThetaD` child and [`SCENE`] instead. `ThetaC`'s own
+/// real output never changes. So only `to` and `display` vary from one step to the next. `to` is which row of it
+/// `ThetaD` currently looks at, and `display` is which rows of `ThetaD`'s own output have been written so far.
 ///
 /// # Errors
 ///

@@ -1,14 +1,14 @@
-//! Pure-computation tests for `theta`'s own SHA3 math — kept separate from `theta_c`'s/`theta_d`'s own DOM-heavy
-//! `build_scene` functions, which need a browser (see `crate::highlight::unit_tests`'s own doc comment for the same
-//! "runs under plain `cargo test`, not `wasm-pack test`" reasoning).
+//! Pure-computation tests for `theta`'s own SHA3 math. They are kept separate from `theta_c`'s/`theta_d`'s own
+//! DOM-heavy `build_scene` functions, which need a browser. See `crate::highlight::unit_tests`'s own doc comment for
+//! the same "runs under plain `cargo test`, not `wasm-pack test`" reasoning.
 
 use super::{theta_d, xor_loop};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// SHA3's real `Theta` step is `D[x] = C[x-1] ⊕ rotl(C[x+1], 1)` — `rotl` a plain 64-bit left rotation, once a lane is
 /// represented as a `u64`, with no further byte-order adjustment on top of it. `theta_d::outputs` once used
-/// `rotate_right` instead of `rotate_left`, silently computing the wrong function while still "working" in every
-/// DOM-level sense (the graph still drew, the toolbar still stepped) — nothing short of checking the real arithmetic
+/// `rotate_right` instead of `rotate_left`. It silently computed the wrong function while still "working" in every
+/// DOM-level sense: the graph still drew, and the toolbar still stepped. Nothing short of checking the real arithmetic
 /// identity would have caught that. `c`'s own values are deliberately not all equal (and not all zero, where
 /// `rotate_left`/`rotate_right` agree trivially), so a rotation in the wrong direction actually changes the result
 /// here.

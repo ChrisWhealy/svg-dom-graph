@@ -1,12 +1,12 @@
-//! SHA3's `Keccak-f\[1600\]` permutation as plain, pure Rust: each of its five step functions is an ordinary
+//! SHA3's `Keccak-f\[1600\]` permutation as plain, pure Rust. Each of its five step functions is an ordinary
 //! transformation of an explicitly supplied 25-lane state, with no DOM and no demo data in sight.
 //!
 //! ```text
 //! theta(state) -> rho(state) -> pi(state) -> chi(state) -> iota(state, round)
 //! ```
 //!
-//! Every nested scene is given the state it displays from here, so every number a child scene shows is derived from the
-//! number immediately upstream of it: [`round_trace`] returns each intermediate state of one round, and [`keccak_f`]
+//! Every nested scene is given the state it displays from here. So every number a child scene shows is derived from the
+//! number immediately upstream of it. [`round_trace`] returns each intermediate state of one round, and [`keccak_f`]
 //! chains 24 of them. Lane `x + 5y` holds `A[x, y]`, as in FIPS 202, and the bytes of a lane are little-endian.
 
 use super::{chi::chi, iota::iota, pi::pi, rho::rho};
@@ -132,9 +132,9 @@ pub(super) fn from_theta_grid(grid: [[u64; 5]; 5]) -> [u64; 25] {
 /// `SHA3-256`'s own rate, in lanes: 1088 bits.
 pub(super) const SHA3_256_RATE_LANES: usize = 17;
 
-/// The one 136-byte block `SHA3-256` absorbs for `message`, as 17 little-endian lanes: the message, then the `0x06`
-/// domain-separation byte, then zeros, with the final byte's top bit set (FIPS 202's `pad10*1`). Only for a message
-/// short enough to fit one block — fewer than 136 bytes.
+/// The one 136-byte block `SHA3-256` absorbs for `message`, as 17 little-endian lanes. It holds the message, then the
+/// `0x06` domain-separation byte, then zeros, with the final byte's top bit set (FIPS 202's `pad10*1`). Only for a
+/// message short enough to fit one block — fewer than 136 bytes.
 pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
     assert!(
         message.len() < 8 * SHA3_256_RATE_LANES,

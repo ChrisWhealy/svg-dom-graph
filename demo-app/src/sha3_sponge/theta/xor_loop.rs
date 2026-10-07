@@ -1,9 +1,9 @@
-//! The nested `XOR loop` child: SHA3's own `A'(x,y) = A(x,y) ⊕ D(x)` step — the final fold of `Theta` back into the
-//! state array — its own selection toolbar, and rebuilding it — via `Scene::replace_container_child` — every time that
-//! toolbar steps to a new cell of `A`.
+//! The nested `XOR loop` child: SHA3's own `A'(x,y) = A(x,y) ⊕ D(x)` step, which is the final fold of `Theta` back into
+//! the state array. It has its own selection toolbar. It is rebuilt, via `Scene::replace_container_child`, every time
+//! that toolbar steps to a new cell of `A`.
 //!
 //! Unlike `theta_c`/`theta_d`, which each step through one of five *rows*, this one steps through all 25 individual
-//! *cells* of `A` — see [`build_scene`]'s own doc comment for why, and [`XorLoopState`]'s own doc comment for why it
+//! *cells* of `A`. See [`build_scene`]'s own doc comment for why. See [`XorLoopState`]'s own doc comment for why it
 //! needs its own state shape rather than sharing `support::SteppedChildState`.
 
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
@@ -30,13 +30,13 @@ thread_local! {
 /// own `D` both really are five-value arrays. `XOR loop`'s own output, `A'`, is a genuine `[5; [5; u64]]` — the same
 /// shape as `A` itself — not five values but twenty-five, so it needs its own `[[u64; 5]; 5]` shape instead. Forcing
 /// that through `SteppedChildState`'s own fixed `[u64; 5]` field would mean a breaking change to two working,
-/// already-tested modules for the sake of a third that does not actually share their own shape — the same "a
-/// deliberate, separately-tested copy rather than a shared dependency" reasoning this crate already follows for
-/// `toolbar::layout` vs. `selection_toolbar::layout`.
+/// already-tested modules. That would be for the sake of a third that does not actually share their own shape. This
+/// crate follows the same reasoning for `toolbar::layout` vs. `selection_toolbar::layout`: a deliberate,
+/// separately-tested copy rather than a shared dependency.
 pub(super) struct XorLoopState {
     /// `outputs[row][col] = A(row, col) ⊕ D(row)` — every cell's own real result, computed once, up front. Which cells
-    /// currently show is derived fresh from these and the walk's own current flat position on every step — see
-    /// [`display_outputs`]'s own doc comment — rather than tracked here as a second, separately mutated flag per cell.
+    /// currently show is derived fresh from these and the walk's own current flat position on every step (see
+    /// [`display_outputs`]'s own doc comment). It is not tracked here as a second, separately mutated flag per cell.
     pub(super) outputs: [[u64; 5]; 5],
     /// The `A[x][y]` the whole `Theta` walk runs over — see `SteppedChildState::input`.
     pub(super) input: [[u64; 5]; 5],
@@ -92,20 +92,20 @@ pub(super) fn display_outputs(outputs: [[u64; 5]; 5], to: Option<usize>) -> [[u6
 /// In row 1, `D` sits at `A`'s own west, at the same height. `D` is `ThetaD`'s own real output
 /// ([`super::theta_d::outputs`]), drawn as a `[5; 1]` column with row `row` focused. In row 2, `D[row]` sits centred
 /// below `D`, and `A[row, col]` sits centred below `A`. Each is its own single-value node, fed by an edge from the
-/// array above it. `XOR`, east of `A[row, col]` in that same row, combines them into `A'(row, col)` — both of its own
-/// inputs then approach it from the west, the same `theta_d::build_scene`'s own `MID_Y` reasoning applied here without
-/// a shared source array to put them in one row naturally. `A'`, at the bottom, is the same shape and layout as `A`
-/// itself, showing `display`'s own current values with cell `(row, col)` focused.
+/// array above it. `XOR`, east of `A[row, col]` in that same row, combines them into `A'(row, col)`. Both of its own
+/// inputs then approach it from the west. This is the same `theta_d::build_scene`'s own `MID_Y` reasoning, applied here
+/// without a shared source array to put them in one row naturally. `A'`, at the bottom, is the same shape and layout as
+/// `A` itself, showing `display`'s own current values with cell `(row, col)` focused.
 ///
-/// Steps cell by cell, not row by row like `theta_c`/`theta_d` do: `A'(row, col)` is a genuinely per-cell result —
-/// every column of a row is `⊕`'d with the *same* `D(row)`, but each still needs its own real `A(row, col)` — so there
-/// is no single "row's own result" this could reveal all at once the way `theta_c`'s `O`/`theta_d`'s `D` can. Binding
-/// the toolbar to `A'` itself, a genuine `[5; [5; u64]]` node, gets this for free:
+/// Steps cell by cell, not row by row like `theta_c`/`theta_d` do. `A'(row, col)` is a genuinely per-cell result. Every
+/// column of a row is `⊕`'d with the *same* `D(row)`, but each still needs its own real `A(row, col)`. So there is no
+/// single "row's own result" this could reveal all at once, the way `theta_c`'s `O` and `theta_d`'s `D` can. Binding
+/// the toolbar to `A'` itself, a genuine `[5; [5; u64]]` node, gets this for free.
 /// `DataNodeContent::flat_index`/`natural_selection` already walk a two-dimensional grid's own values row-major, one
-/// cell at a time, which is exactly the walk this step needs.
+/// cell at a time. That is exactly the walk this step needs.
 ///
-/// `Some(n)` computes the chain over `A[row, col]`/`D[row]` and focuses that cell in both `A` and `A'`, and row `row`
-/// in `D`; `None` — the unstarted state, before cell `0` is ever processed — computes the same chain over `A[0,
+/// `Some(n)` computes the chain over `A[row, col]`/`D[row]`, and focuses that cell in both `A` and `A'`, and row `row`
+/// in `D`. `None` is the unstarted state, before cell `0` is ever processed. It computes the same chain over `A[0,
 /// 0]`/`D[0]` instead, and leaves `A`/`D`/`A'` unselected. See `theta_c::build_scene`'s own doc comment for why the
 /// chain is always drawn, even unstarted, and why `display`'s own current values are passed in rather than computed
 /// here.
@@ -134,15 +134,15 @@ pub(super) fn build_scene(
 
     const LEFT_X: f64 = 20.0;
     const TOP_Y: f64 = 50.0;
-    // The gap every row transition in this diagram leaves — see `theta_d::build_scene`'s own `PREV_NEXT_Y` doc comment
+    // The gap every row transition in this diagram leaves. See `theta_d::build_scene`'s own `PREV_NEXT_Y` doc comment
     // for why a gap this size, not the tighter one an earlier version of that diagram used.
     const V_GAP: f64 = 58.0;
-    // The horizontal counterpart, between `D`/`A` and between `A[row, col]`/`XOR` — narrower, since these sit side by
-    // side rather than stacked, and have no label row of their own competing for the same space.
+    // The horizontal counterpart, between `D`/`A` and between `A[row, col]`/`XOR`. It is narrower, since these sit side
+    // by side rather than stacked, and have no label row of their own competing for the same space.
     const H_GAP: f64 = 40.0;
 
-    // `D`, not `A`, sits first — to `A`'s own west, both in one row, both the same height (each a five-row grid, one
-    // column or five) so their tops and bottoms line up exactly.
+    // `D`, not `A`, sits first, to `A`'s own west. Both are in one row, and both are the same height (each a five-row
+    // grid, one column or five), so their tops and bottoms line up exactly.
     let d_array = scene
         .add_named_data_node(
             Point::new(LEFT_X, TOP_Y),
@@ -178,13 +178,13 @@ pub(super) fn build_scene(
     let a_value = n.map_or(a_input[0][0], |n| a_input[n / 5][n % 5]);
     let d_value = n.map_or(d[0], |n| d[n / 5]);
 
-    // `D[row]` sits centred under `D`; `A[row, col]` sits centred under `A` — each its own column's own working value,
-    // directly below the array it came from, rather than sharing a row with the other the way `theta_d::build_scene`'s
-    // own `prev`/`next` do (there is no wide shared array feeding both here, so there is no shared row for them to
-    // naturally fall into). Centred using each box's own real measured width — `Scene::measure_named_data_node` —
-    // rather than an estimated constant: the whole reason that method exists is to make this exact "I don't know a
-    // node's own size until it's drawn, but need it to position this one" problem go away, in place of the
-    // add-then-estimate-then-correct cycle an earlier version of this file used.
+    // `D[row]` sits centred under `D`, and `A[row, col]` sits centred under `A`. Each is its own column's own working
+    // value, directly below the array it came from. They do not share a row, unlike `theta_d::build_scene`'s own
+    // `prev`/`next`. There is no wide shared array feeding both here, so there is no shared row for them to naturally
+    // fall into. Centred using each box's own real measured width (`Scene::measure_named_data_node`) rather than an
+    // estimated constant. That method exists to make this exact problem go away: "I don't know a node's own size until
+    // it's drawn, but need it to position this one." It replaces the add-then-estimate-then-correct cycle an earlier
+    // version of this file used.
     let working_y = d_rect.origin.y + d_rect.size.height.max(a_rect.size.height) + V_GAP;
 
     let d_label = format!("D[{row}]");
@@ -204,8 +204,8 @@ pub(super) fn build_scene(
         .add_named_data_node(Point::new(a_cell_x, working_y), &a_label, a_content)
         .map_err(stringify)?;
 
-    // Forced to `D`'s/`A`'s own South side and `D[row]`'s/`A[row, col]`'s own North sides: centring alone already makes
-    // the automatic ray-cast resolve the same way (see `d_cell_x`'s/`a_cell_x`'s own doc comment above), but forcing it
+    // Forced to `D`'s/`A`'s own South side and `D[row]`'s/`A[row, col]`'s own North sides. Centring alone already makes
+    // the automatic ray-cast resolve the same way (see `d_cell_x`'s/`a_cell_x`'s own doc comment above). Forcing it
     // explicitly matches this codebase's own convention of never relying on that implicitly.
     let vertical = || {
         ConnectorOptions::default()
@@ -215,8 +215,8 @@ pub(super) fn build_scene(
     scene.add_edge_with(d_array, d_cell, vertical()).map_err(stringify)?;
     scene.add_edge_with(a, a_cell, vertical()).map_err(stringify)?;
 
-    // West of `A[row, col]`, in the same row: with no vertical gap between them, the ray-cast into `XOR` always
-    // resolves horizontal regardless of how far west — see `theta_d::build_scene`'s own `MID_Y` doc comment. Both
+    // West of `A[row, col]`, in the same row. With no vertical gap between them, the ray-cast into `XOR` always
+    // resolves horizontal regardless of how far west (see `theta_d::build_scene`'s own `MID_Y` doc comment). Both
     // `D[row]` and `A[row, col]` then enter `XOR` from the east, splitting across that one side. `xor_x` is measured,
     // not estimated — see `d_cell_x`'s own comment above for why.
     let result = a_value ^ d_value;
@@ -269,9 +269,9 @@ pub(super) fn build_scene(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same toolbar as `theta_c::attach_toolbar`, for the nested `XOR loop` child instead — bound to `A'`, which holds
-/// 25 values, not 5, so the toolbar itself walks all 25 flat positions; see [`build_scene`]'s own doc comment for why
-/// that is exactly the walk this step needs.
+/// The same toolbar as `theta_c::attach_toolbar`, for the nested `XOR loop` child instead. It is bound to `A'`, which
+/// holds 25 values, not 5, so the toolbar itself walks all 25 flat positions. See [`build_scene`]'s own doc comment for
+/// why that is exactly the walk this step needs.
 ///
 /// # Errors
 ///

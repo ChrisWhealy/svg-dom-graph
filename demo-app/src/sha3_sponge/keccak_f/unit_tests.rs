@@ -43,8 +43,8 @@ fn theta_agrees_with_the_theta_scenes_own_calculation() {
 // 3. all 24 rounds, against the same, and against the zero state's published first lane;
 // 4. one complete `SHA3-256` digest, against published known-answer vectors — and the diagram's own run of it.
 //
-// The reference below deliberately shares nothing with the code it checks. It indexes `A[x][y]` as the spec does,
-// derives `Rho`'s offsets by walking the lanes (Algorithm 2) instead of reading the table, and derives the round
+// The reference below deliberately shares nothing with the code it checks. It indexes `A[x][y]` as the spec does. It
+// derives `Rho`'s offsets by walking the lanes (Algorithm 2) instead of reading the table. It derives the round
 // constants from the spec's own linear-feedback shift register (Algorithm 5) instead of the list.
 
 type Grid = [[u64; 5]; 5];
@@ -192,9 +192,9 @@ fn all_twenty_four_rounds_match_the_reference_and_every_traced_round_agrees() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Level 4: complete `SHA3-256` digests against published known answers — NIST's own example for the empty message and
-/// for `"abc"`, and the widely quoted digest of a longer sentence — through the same `sha3_256_run` the diagram draws
-/// from.
+/// Level 4: complete `SHA3-256` digests against published known answers. These are NIST's own example for the empty
+/// message and for `"abc"`, and the widely quoted digest of a longer sentence. They run through the same `sha3_256_run`
+/// the diagram draws from.
 #[test]
 fn sha3_256_digests_match_the_published_known_answers() {
     for (message, expected) in [
@@ -211,9 +211,9 @@ fn sha3_256_digests_match_the_published_known_answers() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The diagram's own data flow: the state the Keccak scene starts from is the sponge's own absorbed state, and the
-/// state its last round leaves is the sponge's own row 3. So a reader following the diagram down through the nested
-/// scenes is following the calculation that produced the digest.
+/// The diagram's own data flow. The state the Keccak scene starts from is the sponge's own absorbed state. The state
+/// its last round leaves is the sponge's own row 3. So a reader following the diagram down through the nested scenes is
+/// following the calculation that produced the digest.
 #[test]
 fn the_keccak_scenes_rounds_start_at_the_sponges_absorbed_state_and_end_at_its_output() {
     for message in [&b""[..], b"abc", b"The quick brown fox jumps over the lazy dog"] {
