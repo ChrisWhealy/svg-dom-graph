@@ -156,6 +156,9 @@ impl DataNodeContent {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `(rows, cols)` grid this content renders as — see [`grid_shape`].
     pub(crate) fn shape(&self) -> (usize, usize) {
+        if self.is_plain_text() {
+            return (1, 1);
+        }
         grid_shape(self.len(), self.layout)
     }
 

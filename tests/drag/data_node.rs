@@ -955,3 +955,19 @@ fn plain_text_rejects_non_printable_or_non_u8_content() -> Result<(), String> {
     }
     check(nth_group("data-node-plain-bad", 0).is_err(), "nothing was drawn")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `PlainText` has no grid, so grid settings are ignored and not validated. `Columns(0)` would be rejected for any
+/// other format.
+#[wasm_bindgen_test]
+fn plain_text_ignores_an_invalid_grid_layout() -> Result<(), String> {
+    let svg = make_svg("data-node-plain-layout", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(b"abc".to_vec()), DataFormat::PlainText)
+        .with_layout(GridLayout::Columns(0))
+        .with_column_groups(2);
+    scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+    check(rect_children(&nth_group("data-node-plain-layout", 0)?)?.len() == 1, "one box")
+}

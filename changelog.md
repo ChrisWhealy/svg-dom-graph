@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Edge case: Fallback monospace font used for `␣` may have different advance width (``)
+- Edge case: Fallback monospace font used for `␣` may have different advance width (`7f66797`)
+- Do not validate `.with_layout()` if supplied for `DataFormat::PlainText` as it is irrelevant (``)
 
 # [Released]
 
