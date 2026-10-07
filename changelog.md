@@ -16,6 +16,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Display the SHA3 demo in its own window and fix cloned `<svg>` bug (`845d6fa`)
 
+## Fixed
+
+- Fix clippy bug 
+
 # [Released]
 
 ## [0.2.25] - 2026-10-07

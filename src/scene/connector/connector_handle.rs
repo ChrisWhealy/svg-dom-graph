@@ -26,7 +26,7 @@ pub(crate) struct ConnectorHandle {
 
 impl ConnectorHandle {
     /// The `from` endpoint's forced side and pin, if a side is forced.
-    pub(crate) fn from_pin(&self) -> Option<Pin> {
+    pub(crate) fn source_pin(&self) -> Option<Pin> {
         self.from_side.map(|side| Pin {
             side,
             position: self.from_position,
@@ -34,7 +34,7 @@ impl ConnectorHandle {
     }
 
     /// The `to` endpoint's forced side and pin, if a side is forced.
-    pub(crate) fn to_pin(&self) -> Option<Pin> {
+    pub(crate) fn target_pin(&self) -> Option<Pin> {
         self.to_side.map(|side| Pin {
             side,
             position: self.to_position,

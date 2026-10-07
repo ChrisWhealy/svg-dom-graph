@@ -503,7 +503,7 @@ impl SceneInner {
             self.reposition_port_marker(id, *anchor, *side, scratch)?;
         }
         let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
-        let (connector_type, from_side, to_side) = (handle.connector_type, handle.from_pin(), handle.to_pin());
+        let (connector_type, from_side, to_side) = (handle.connector_type, handle.source_pin(), handle.target_pin());
         let (vertices, radius) = connector::route(
             connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
         );
@@ -550,7 +550,7 @@ impl SceneInner {
         let same_side = side_a == side_b;
 
         let edge_a_handle = self.edge_handle(edge_a).ok_or(Error::UnknownEdge(edge_a))?;
-        let (connector_type_a, from_side_a) = (edge_a_handle.connector_type, edge_a_handle.from_pin());
+        let (connector_type_a, from_side_a) = (edge_a_handle.connector_type, edge_a_handle.source_pin());
         let (vertices_a, radius_a) = connector::route(
             connector_type_a,
             a_rect,
@@ -571,7 +571,7 @@ impl SceneInner {
         self.reposition_port_marker(edge_a, anchor_a, side_a, scratch)?;
 
         let edge_b_handle = self.edge_handle(edge_b).ok_or(Error::UnknownEdge(edge_b))?;
-        let (connector_type_b, from_side_b) = (edge_b_handle.connector_type, edge_b_handle.from_pin());
+        let (connector_type_b, from_side_b) = (edge_b_handle.connector_type, edge_b_handle.source_pin());
         let (vertices_b, radius_b) = connector::route(
             connector_type_b,
             b_rect,
@@ -617,7 +617,7 @@ impl SceneInner {
         let to_anchors = self.node_edge_anchors(edge.to)?;
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
         let existing = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
-        let (from_side, to_side) = (existing.from_pin(), existing.to_pin());
+        let (from_side, to_side) = (existing.source_pin(), existing.target_pin());
         let (vertices, radius) = connector::route(
             connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
         );
