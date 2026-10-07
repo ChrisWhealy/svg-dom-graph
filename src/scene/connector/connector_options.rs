@@ -24,8 +24,9 @@ pub struct ConnectorOptions {
     /// The same forced choice as [`from_side`](Self::from_side), for this connector's own `to` endpoint instead.
     pub to_side: Option<Side>,
     /// Where along the forced [`from_side`](Self::from_side) this connector's own `from` endpoint sits, as a fraction
-    /// from `0.0` to `1.0`. `None` (the default) leaves the position to the node's own anchor rule. Ignored unless
-    /// `from_side` is `Some`. See [`with_from_position`](Self::with_from_position).
+    /// from `0.0` to `1.0`. `None` (the default) leaves the position to the node's own anchor rule. Has no routing
+    /// effect unless `from_side` is `Some`, but is validated either way. See
+    /// [`with_from_position`](Self::with_from_position).
     pub from_position: Option<f64>,
     /// The same choice as [`from_position`](Self::from_position), for this connector's own `to` endpoint instead.
     pub to_position: Option<f64>,
@@ -68,13 +69,15 @@ impl ConnectorOptions {
     /// the way along the forced [`from_side`](Self::from_side), from the west end of a North/South side or the north
     /// end of an East/West one. `0.0` is that end, `0.5` the midpoint and `1.0` the other end.
     ///
-    /// The point no longer depends on the other endpoint, or on the node's own [`EdgeAnchors`](crate::scene::EdgeAnchors).
-    /// A caller can use it to leave a node exactly below one of its own columns, say. It has no effect unless a side is
-    /// forced too. `None` restores the node's own anchor rule.
+    /// The point no longer depends on the other endpoint, or on the node's own
+    /// [`EdgeAnchors`](crate::scene::EdgeAnchors). A caller can use it to leave a node exactly below one of its own
+    /// columns, say. It has no routing effect unless a side is forced too, but it is validated either way. A malformed
+    /// value is then caught at once, not only once a caller later adds a side. `None` restores the node's own anchor
+    /// rule.
     ///
     /// Rejected by [`Scene::add_edge_with`](crate::scene::Scene::add_edge_with) with
     /// [`Error::InvalidConnectorPosition`](crate::error::Error::InvalidConnectorPosition) unless it is finite and in
-    /// `0.0..=1.0`.
+    /// `0.0..=1.0`, whether or not a side is forced.
     ///
     /// ```
     /// use svg_dom_graph::scene::{ConnectorOptions, Side};

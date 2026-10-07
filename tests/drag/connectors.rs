@@ -380,9 +380,8 @@ fn add_edge_with_rejects_an_invalid_position_before_drawing_anything() -> Result
         .add_node(Point::new(200.0, 100.0), Size::new(40.0, 20.0), "B")
         .map_err(|e| e.to_string())?;
     for bad in [-0.1, 1.1, f64::NAN] {
-        let options = ConnectorOptions::default()
-            .with_from_side(Some(Side::South))
-            .with_from_position(Some(bad));
+        // Validated even though no side is forced, so the mistake surfaces before a side is ever added.
+        let options = ConnectorOptions::default().with_from_position(Some(bad));
         check(
             matches!(scene.add_edge_with(a, b, options), Err(Error::InvalidConnectorPosition(_))),
             &format!("expected InvalidConnectorPosition for {bad}"),
