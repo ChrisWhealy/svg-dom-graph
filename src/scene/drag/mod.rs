@@ -1,22 +1,19 @@
 pub(crate) mod collision_policy;
 mod drag_options;
 mod drag_start;
+mod handlers;
 mod install_guard;
 mod pointer_coalescer;
 
 use super::{Scene, client_to_user_space};
-use crate::{
-    error::Error,
-    geometry::{clamp_to_bounds, invert_matrix},
-    model::node::NodeId,
-};
+use crate::{error::Error, model::node::NodeId};
 use collision_policy::CollisionPolicy;
 pub use drag_options::DragOptions;
 use drag_start::DragStart;
 use install_guard::InstallGuard;
 use pointer_coalescer::PointerCoalescer;
 use std::{cell::Cell, rc::Rc};
-use svg_dom::root::utils::{Point, Rect};
+use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `user-select: none` alone does not reliably suppress a click-drag text selection in every engine: Safari in
@@ -30,8 +27,25 @@ const GRAB_STYLE: &str = "touch-action: none; user-select: none; -webkit-user-se
 const GRABBING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One draggable node's own in-progress drag, shared by its four pointer handlers. `None` while no drag is active.
+type DragState = Rc<Cell<Option<DragStart>>>;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer event types [`Scene::make_draggable_with`] registers a listener for, in registration order.
 const DRAG_EVENT_TYPES: [&str; 4] = ["pointerdown", "pointermove", "pointerup", "pointercancel"];
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::InvalidCollisionPadding`] if `options.collision` is [`CollisionPolicy::PushClear`] with a `padding`
+/// that is not a finite value `>= 0.0`, or [`Error::InvalidDragBounds`] for bad `options.bounds`. Checked before anything
+/// else, so a rejected call leaves the scene untouched.
+fn validate_options(options: &DragOptions) -> Result<(), Error> {
+    if let CollisionPolicy::PushClear { padding } = options.collision {
+        if !(padding.is_finite() && padding >= 0.0) {
+            return Err(Error::InvalidCollisionPadding(padding));
+        }
+    }
+    validate_bounds(options.bounds)
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidDragBounds`] if `bounds` is `Some` with a non-finite origin or size, or a negative width or
@@ -110,200 +124,40 @@ impl Scene {
     /// underlying `addEventListener` DOM call itself failed. `id` is not marked draggable, and none of this method's
     /// own listeners are left dangling on it. A failed call can safely be retried.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
-        if let CollisionPolicy::PushClear { padding } = options.collision {
-            if !(padding.is_finite() && padding >= 0.0) {
-                return Err(Error::InvalidCollisionPadding(padding));
-            }
-        }
-        validate_bounds(options.bounds)?;
-
-        let group = {
-            let inner = self.inner.borrow();
-            let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
-            if handles.draggable {
-                return Err(Error::AlreadyDraggable(id));
-            }
-            handles.group.clone()
-        };
+        validate_options(&options)?;
+        let group = self.undragged_group(id)?;
         let guard = InstallGuard::new(group.clone());
 
-        let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
+        let drag_start: DragState = Rc::new(Cell::new(None));
         // Coalesces this node's own pointermove positions to at most one applied `move_node` per animation frame — see
         // `PointerCoalescer`'s own doc comment. Created once here, alongside `drag_start`, and reused across every drag
         // this node goes through for as long as it stays draggable, not just the next one.
         let coalescer = PointerCoalescer::new(Rc::downgrade(&self.inner), id)?;
+        let inner_weak = Rc::downgrade(&self.inner);
 
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        //   Both `group` and `inner` must be captured as weak clones to avoid creating an ownership cycle.
-        //
-        // `group` is the node on which this listener is registered. Using a strong capture would create a cycle
-        // (SvgNodeInner -> listener store -> closure -> SvgNode -> the same SvgNodeInner). That cycle leaks the node
-        // and defeats its automatic listener cleanup. See `WeakSvgNode`'s doc comment.
-        //
-        // `inner` needs the same treatment one level up. `SceneInner::node_handles` owns `group`, so a strong `inner`
-        // clone in this closure would create the cycle back through `SceneInner` itself (`SceneInner -> group ->
-        // listener store -> closure -> SceneInner`). That would leak the whole scene, plus everything it renders and
-        // every listener on every node in that scene. This would happen even after every external `Scene` handle has
-        // been dropped.
-        {
-            let group_weak = group.downgrade();
-            let inner_weak = Rc::downgrade(&self.inner);
-            let drag_start = drag_start.clone();
-
-            group.on_pointerdown(move |evt| {
-                // Ignores a pointerdown while a drag is already active. Otherwise a second pointer touching this
-                // element mid-drag would silently steal it. It would overwrite the first pointer's `DragStart` before
-                // that pointer's own pointerup/pointercancel ever fires. Also ignores anything but the primary button.
-                // `button() == 0` is left mouse, touch, or ordinary pen contact. 1 is middle mouse and 2 is right
-                // mouse, neither of which should start a drag.
-                if drag_start.get().is_some() || evt.button() != 0 {
-                    return;
-                }
-                // Stops the browser starting its own text-selection drag from this pointerdown — see `GRAB_STYLE`.
-                evt.prevent_default();
-                let Some(group) = group_weak.upgrade() else { return };
-                let Some(inner) = inner_weak.upgrade() else { return };
-                // A zoom or pan from the wheel, keyboard, or a button is written to the DOM one animation frame after
-                // it is made. Settle it first, so the screen matrix read below shows the view the scene really has, and
-                // not the one before it.
-                let _ = inner.borrow_mut().flush_view();
-                // Can't route the drag without a way to convert client pixels into this group's own coordinates.
-                let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
-                    return;
-                };
-                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-                let pointer = client_to_user_space(client, inverse_ctm);
-
-                let _ = group.as_element().set_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", GRABBING_STYLE);
-                let (rect, view) = {
-                    let inner = inner.borrow();
-                    let Ok(rect) = inner.node_rect(id) else { return };
-                    (rect, inner.view)
-                };
-                drag_start.set(Some(DragStart {
-                    pointer_id: evt.pointer_id(),
-                    pointer,
-                    box_origin: rect.origin,
-                    box_size: rect.size,
-                    inverse_ctm,
-                    view,
-                }));
-            })?;
-        }
-
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        {
-            let drag_start = drag_start.clone();
-            let bounds = options.bounds;
-            let coalescer = coalescer.clone();
-            let inner_weak = Rc::downgrade(&self.inner);
-
-            group.on_pointermove(move |evt| {
-                let Some(start) = drag_start.get() else { return };
-                // Ignores a different pointer's move — for example a second finger touching this element mid-drag —
-                // rather than letting it drive the drag this pointer's own pointerdown started.
-                if evt.pointer_id() != start.pointer_id {
-                    return;
-                }
-                // Same reason as the pointerdown handler's own call — see `GRAB_STYLE`.
-                evt.prevent_default();
-                let client = Point::new(evt.client_x() as f64, evt.client_y() as f64);
-                let pointer_now = client_to_user_space(client, start.inverse_ctm);
-
-                // Where the pointer is, in content coordinates, as the view was when the drag began.
-                let under_pointer = Point::new(start.box_origin.x + pointer_now.x, start.box_origin.y + pointer_now.y);
-                // The view can have changed since — by the wheel, the keyboard, a button, or the application. The same
-                // pointer position is then over a different point of content, so read it again under the view as it is
-                // now. This is `under_pointer` itself, unchanged, when nothing has moved.
-                let view_now = inner_weak.upgrade().map_or(start.view, |inner| inner.borrow().view);
-                let under_pointer = start.view.reinterpret(under_pointer, view_now);
-
-                // The node keeps hold of the same point of itself, `start.pointer` from its corner, under the pointer.
-                let new_origin = Point::new(under_pointer.x - start.pointer.x, under_pointer.y - start.pointer.y);
-
-                // Clamps before the move, not after: this keeps a bounded node from ever being rendered outside
-                // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters — a
-                // node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked to pick
-                // up again.
-                let new_origin = match bounds {
-                    Some(bounds) => clamp_to_bounds(new_origin, start.box_size, bounds),
-                    None => new_origin,
-                };
-
-                // Coalesced, not applied immediately: a pointer can deliver moves far faster than the browser paints —
-                // see `PointerCoalescer`'s own doc comment.
-                coalescer.push(new_origin);
-            })?;
-        }
-
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        //   Weak clone used for the same reason as the pointerdown handler above.
-        {
-            let group_weak = group.downgrade();
-            let inner_weak = Rc::downgrade(&self.inner);
-            let drag_start = drag_start.clone();
-            let collision = options.collision;
-            let bounds = options.bounds;
-            let coalescer = coalescer.clone();
-
-            group.on_pointerup(move |evt| {
-                let Some(group) = group_weak.upgrade() else { return };
-                // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's own
-                // pointer is still down — rather than ending a drag that pointer never started.
-                let Some(start) = drag_start.get() else { return };
-                if start.pointer_id != evt.pointer_id() {
-                    return;
-                }
-                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", GRAB_STYLE);
-                drag_start.set(None);
-
-                // Applies any position a still-pending coalesced frame has not applied yet, so neither the node's own
-                // final rendered position nor the collision-resolution rect read below is ever one frame stale.
-                coalescer.flush();
-
-                // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to do.
-                // `PushClear` pushes this node back to a clear position, along the line to where it started this drag,
-                // if the drop overlaps another node.
-                let CollisionPolicy::PushClear { padding } = collision else { return };
-                let Some(inner) = inner_weak.upgrade() else { return };
-                let Some(corrected_origin) = inner.borrow().resolve_overlap(id, start.box_origin, padding) else {
-                    return;
-                };
-                // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not just
-                // pointermove's, so this correction can never undo pointermove's own clamping.
-                let corrected_origin = match bounds {
-                    Some(bounds) => clamp_to_bounds(corrected_origin, start.box_size, bounds),
-                    None => corrected_origin,
-                };
-                coalescer.apply_now(corrected_origin);
-            })?;
-        }
-
-        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-        //   The browser can abort a pointer sequence without ever firing pointerup — for example a touch drag
-        //   interrupted by a system gesture. Without this handler, drag_start would stay set, so a later stray
-        //   pointermove (including one for an unrelated pointer_id) would move the box using a stale drag.
-        {
-            let group_weak = group.downgrade();
-            let drag_start = drag_start.clone();
-            let coalescer = coalescer.clone();
-
-            group.on_pointercancel(move |evt| {
-                let Some(group) = group_weak.upgrade() else { return };
-                // Same pointer_id check as pointerup, and for the same reason.
-                if !drag_start.get().is_some_and(|start| start.pointer_id == evt.pointer_id()) {
-                    return;
-                }
-                let _ = group.as_element().release_pointer_capture(evt.pointer_id());
-                let _ = group.set_attr("style", GRAB_STYLE);
-                drag_start.set(None);
-                // Discards any position pushed since the last applied frame, rather than applying it — the drag was
-                // interrupted, not completed. See `PointerCoalescer::cancel`'s own doc comment.
-                coalescer.cancel();
-            })?;
-        }
+        // Each handler holds only weak references — see `handlers`' own module doc comment for why.
+        group.on_pointerdown(handlers::pointerdown(
+            id,
+            group.downgrade(),
+            inner_weak.clone(),
+            drag_start.clone(),
+        ))?;
+        group.on_pointermove(handlers::pointermove(
+            options.bounds,
+            inner_weak.clone(),
+            drag_start.clone(),
+            coalescer.clone(),
+        ))?;
+        group.on_pointerup(handlers::pointerup(
+            id,
+            options.collision,
+            options.bounds,
+            group.downgrade(),
+            inner_weak,
+            drag_start.clone(),
+            coalescer.clone(),
+        ))?;
+        group.on_pointercancel(handlers::pointercancel(group.downgrade(), drag_start, coalescer))?;
 
         // Every listener has now registered successfully.
         //
@@ -321,6 +175,18 @@ impl Scene {
             .draggable = true;
 
         Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The `<g>` of node `id`, if it exists and is not yet draggable. Returns [`Error::UnknownNode`] for an unknown id and
+    /// [`Error::AlreadyDraggable`] for one that is already draggable.
+    fn undragged_group(&self, id: NodeId) -> Result<svg_dom::SvgNode, Error> {
+        let inner = self.inner.borrow();
+        let handles = inner.node_handle(id).ok_or(Error::UnknownNode(id))?;
+        if handles.draggable {
+            return Err(Error::AlreadyDraggable(id));
+        }
+        Ok(handles.group.clone())
     }
 }
 
