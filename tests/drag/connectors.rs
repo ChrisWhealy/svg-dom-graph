@@ -1,11 +1,13 @@
 //! `ConnectorType` behaviour: corner-radius validation, live updates via `set_connector_type`, clamping to available
 //! room, and switching between `Straight` and `Elbow`.
 
-use crate::common::{check, connector_count, dispatch_pointer_event, make_svg, nth_group, path_d, the_connector};
+use crate::common::{
+    check, connector_count, dispatch_pointer_event, make_svg, nth_connector, nth_group, path_d, the_connector,
+};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{ConnectorOptions, ConnectorType, Scene, Side},
+    scene::{ConnectorOptions, ConnectorType, EdgeAnchors, NodeOptions, Scene, Side},
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -379,13 +381,153 @@ fn add_edge_with_rejects_an_invalid_position_before_drawing_anything() -> Result
     let b = scene
         .add_node(Point::new(200.0, 100.0), Size::new(40.0, 20.0), "B")
         .map_err(|e| e.to_string())?;
-    for bad in [-0.1, 1.1, f64::NAN] {
+    for bad in [-0.1, 1.1, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
         // Validated even though no side is forced, so the mistake surfaces before a side is ever added.
         let options = ConnectorOptions::default().with_from_position(Some(bad));
         check(
             matches!(scene.add_edge_with(a, b, options), Err(Error::InvalidConnectorPosition(_))),
             &format!("expected InvalidConnectorPosition for {bad}"),
         )?;
+        let to_options = ConnectorOptions::default().with_to_position(Some(bad));
+        check(
+            matches!(scene.add_edge_with(a, b, to_options), Err(Error::InvalidConnectorPosition(_))),
+            &format!("expected InvalidConnectorPosition for a to_position of {bad}"),
+        )?;
     }
     check(connector_count("connector-bad-position")? == 0, "nothing was drawn")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Two nodes: `A` at `(0, 0)`, size `(100, 40)`, and `B` at `(300, 200)`, size `(40, 20)`. Returns the scene and both ids.
+fn pinned_pair(svg_id: &str) -> Result<(Scene, svg_dom_graph::NodeId, svg_dom_graph::NodeId), String> {
+    let svg = make_svg(svg_id, Size::new(800.0, 400.0), Size::new(800.0, 400.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(100.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(300.0, 200.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    Ok((scene, a, b))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `with_to_position` pins the `to` endpoint. Three quarters of the way along `B`'s 40-wide north side is `x = 330`.
+#[wasm_bindgen_test]
+fn add_edge_with_a_to_position_pins_the_to_endpoint_along_the_forced_side() -> Result<(), String> {
+    let (scene, a, b) = pinned_pair("connector-to-position")?;
+    let options = ConnectorOptions::default()
+        .with_to_side(Some(Side::North))
+        .with_to_position(Some(0.75));
+    scene.add_edge_with(a, b, options).map_err(|e| e.to_string())?;
+
+    let d = path_d(&the_connector("connector-to-position")?)?;
+    check(
+        d.ends_with("330 200"),
+        &format!("expected the route to end at (330, 200), got {d:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `0.0` and `1.0` are both valid, and pin to the two ends of the side. `A`'s south side runs from `x = 0` to `x = 100`.
+#[wasm_bindgen_test]
+fn a_position_of_zero_or_one_pins_to_the_ends_of_the_side() -> Result<(), String> {
+    for (id, position, expected) in [
+        ("connector-position-zero", 0.0, "M 0 40"),
+        ("connector-position-one", 1.0, "M 100 40"),
+    ] {
+        let (scene, a, b) = pinned_pair(id)?;
+        let options = ConnectorOptions::default()
+            .with_from_side(Some(Side::South))
+            .with_from_position(Some(position));
+        scene.add_edge_with(a, b, options).map_err(|e| e.to_string())?;
+        let d = path_d(&the_connector(id)?)?;
+        check(
+            d.starts_with(expected),
+            &format!("position {position}: expected {expected}, got {d:?}"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A pin also applies to a straight connector. It starts at `(25, 40)`, a quarter of the way along `A`'s south side, and
+/// ends at the middle of `B`'s forced north side, `(320, 200)`.
+#[wasm_bindgen_test]
+fn a_position_pin_applies_to_a_straight_connector() -> Result<(), String> {
+    let (scene, a, b) = pinned_pair("connector-position-straight")?;
+    let options = ConnectorOptions::default()
+        .with_connector_type(ConnectorType::Straight)
+        .with_from_side(Some(Side::South))
+        .with_from_position(Some(0.25))
+        .with_to_side(Some(Side::North));
+    scene.add_edge_with(a, b, options).map_err(|e| e.to_string())?;
+
+    let d = path_d(&the_connector("connector-position-straight")?)?;
+    check(d == "M 25 40 L 320 200", &format!("expected \"M 25 40 L 320 200\", got {d:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A pinned connector stays at the same fraction of the same side after its node moves. `A` moves from `(0, 0)` to
+/// `(200, 50)`, so a quarter of the way along its south side becomes `(225, 90)`.
+#[wasm_bindgen_test]
+fn a_pinned_connector_keeps_its_fraction_after_move_node() -> Result<(), String> {
+    let (scene, a, b) = pinned_pair("connector-position-move")?;
+    let options = ConnectorOptions::default()
+        .with_from_side(Some(Side::South))
+        .with_from_position(Some(0.25));
+    scene.add_edge_with(a, b, options).map_err(|e| e.to_string())?;
+    check(
+        path_d(&the_connector("connector-position-move")?)?.starts_with("M 25 40"),
+        "the pin starts at (25, 40)",
+    )?;
+
+    scene.move_node(a, Point::new(200.0, 50.0)).map_err(|e| e.to_string())?;
+    let d = path_d(&the_connector("connector-position-move")?)?;
+    check(
+        d.starts_with("M 225 90"),
+        &format!("expected the route to start at (225, 90), got {d:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A position pin overrides the node's own fixing points. `A` has three, at `x = 25`, `50` and `75` along its south
+/// side. Without a pin the connector snaps to one of those. A pin at `0.1` lands at `x = 10`, which is none of them.
+#[wasm_bindgen_test]
+fn a_position_pin_overrides_the_nodes_edge_anchors() -> Result<(), String> {
+    let svg = make_svg("connector-position-anchors", Size::new(800.0, 400.0), Size::new(800.0, 400.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node_with(
+            Point::new(0.0, 0.0),
+            Size::new(100.0, 40.0),
+            "A",
+            NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(3))),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(300.0, 200.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    let c = scene
+        .add_node(Point::new(300.0, 300.0), Size::new(40.0, 20.0), "C")
+        .map_err(|e| e.to_string())?;
+
+    let forced = ConnectorOptions::default().with_from_side(Some(Side::South));
+    scene.add_edge_with(a, b, forced).map_err(|e| e.to_string())?;
+    scene
+        .add_edge_with(a, c, forced.with_from_position(Some(0.1)))
+        .map_err(|e| e.to_string())?;
+
+    let unpinned = path_d(&nth_connector("connector-position-anchors", 0)?)?;
+    let pinned = path_d(&nth_connector("connector-position-anchors", 1)?)?;
+    check(
+        ["M 25 40", "M 50 40", "M 75 40"]
+            .iter()
+            .any(|start| unpinned.starts_with(start)),
+        &format!("the unpinned connector should snap to a fixing point, got {unpinned:?}"),
+    )?;
+    check(
+        pinned.starts_with("M 10 40"),
+        &format!("the pinned connector should start at (10, 40), got {pinned:?}"),
+    )
 }

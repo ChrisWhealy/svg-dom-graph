@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add `ConnectorOption::with_from_position`/`with_to_position` (`Option<f64>`) to allow precise connector positioning (`fe762e5`)
+- Add regressions tests for `from_position` and `to_position` (``)
 
 ## Changed
 
@@ -20,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Fix clippy bug (`001387f`)
 - Fix `cargo check` when running in CI due to running on older Rust version (`5a1a7ac`)
-- Add test and explanatory docs for validation performed by `validate_connector_options()` (``)
+- Add test and explanatory docs for validation performed by `validate_connector_options()` (`1c2d033`)
 
 # [Released]
 
