@@ -7,6 +7,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The ordinary case: `new_child` takes over `node`'s own slot, and the old child comes back visible, focused, and no
 /// longer nested — indistinguishable from a freshly constructed, standalone `Scene`.
 #[wasm_bindgen_test]
@@ -64,6 +65,7 @@ fn replace_container_child_swaps_the_child_and_returns_the_old_one_visible_and_f
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Checked first: replacing a child while `self` is not the tree's currently focused Scene fails, and touches nothing.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_when_self_is_not_focused() -> Result<(), String> {
@@ -83,6 +85,7 @@ fn replace_container_child_rejects_when_self_is_not_focused() -> Result<(), Stri
     check(!new_child.is_nested(), "the rejected call grafted new_child in anyway")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `node` must actually name a node in this scene.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_an_unknown_node() -> Result<(), String> {
@@ -100,6 +103,7 @@ fn replace_container_child_rejects_an_unknown_node() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `node` must name a container node — there is no existing child for `new_child` to replace otherwise.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_a_non_container_node() -> Result<(), String> {
@@ -116,6 +120,7 @@ fn replace_container_child_rejects_a_non_container_node() -> Result<(), String> 
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `new_child` cannot be `self`, or any of `self`'s own ancestors — both would close a cycle, the same reasoning
 /// `add_container_node`'s own `SelfNesting` rejection already documents.
 #[wasm_bindgen_test]
@@ -149,6 +154,7 @@ fn replace_container_child_rejects_self_and_ancestor_nesting() -> Result<(), Str
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `new_child` must not already have a live parent elsewhere — a nested `Scene` has exactly one owner at a time.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_an_already_nested_new_child() -> Result<(), String> {
@@ -171,6 +177,7 @@ fn replace_container_child_rejects_an_already_nested_new_child() -> Result<(), S
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Replacing a container node's child with itself is rejected, deliberately via `AlreadyNested` and not a dedicated
 /// check. The old child already counts as its own live parent (`self`) at the point this is checked, since it has not
 /// been detached yet.
@@ -189,6 +196,7 @@ fn replace_container_child_rejects_replacing_a_child_with_itself() -> Result<(),
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `new_child` must be the currently focused Scene of its own tree — here, one of its own descendants is focused
 /// instead.
 #[wasm_bindgen_test]
@@ -212,6 +220,7 @@ fn replace_container_child_rejects_a_new_child_with_a_focused_descendant() -> Re
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The detached old child gets a genuinely fresh, independent `NavigationState` — not merely unlinked from its former
 /// parent. Regrafting it elsewhere would not distinguish the two. `add_container_node`'s own `repoint_subtree` call
 /// repoints *any* child it is handed, fresh state or not. So that alone cannot prove `replace_container_child` itself
@@ -245,6 +254,7 @@ fn replace_container_child_gives_the_detached_child_a_fresh_independent_navigati
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The recursive half of the previous test. `detach_subtree` calls `repoint_subtree`, which walks the *whole* subtree,
 /// not just its own root. So a descendant of the detached child, not only the detached child itself, must end up
 /// sharing its fresh `NavigationState` too. `parent → old_child → grandchild`, with `old_child` (not `grandchild`)
@@ -297,6 +307,7 @@ fn replace_container_child_migrates_every_descendant_onto_the_detached_childs_ow
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `replace_container_child`'s own documented transactional guarantee, forced open. Every precondition has already
 /// passed by the time `hide_root(&new_child...)` runs, so that is the one DOM write left that can still fail. At that
 /// point neither scene's own model has been touched yet. A failure there has nothing to roll back, only something to

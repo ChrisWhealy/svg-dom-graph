@@ -10,6 +10,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A plain label node's own `ref_name` is its own visible text — the same string a later node's own description would
 /// call it by.
 #[wasm_bindgen_test]
@@ -27,6 +28,7 @@ fn a_plain_nodes_own_ref_name_is_its_own_label() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A named data node's own `ref_name` is the name it was given, not its own type or formatted value.
 #[wasm_bindgen_test]
 fn a_named_data_nodes_own_ref_name_is_its_own_name() -> Result<(), String> {
@@ -47,6 +49,7 @@ fn a_named_data_nodes_own_ref_name_is_its_own_name() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An unnamed data node has no name to fall back on. So its own `ref_name` falls back to its own type name instead.
 /// True for a single value and for a multi-value grid alike.
 #[wasm_bindgen_test]
@@ -83,6 +86,7 @@ fn an_unnamed_data_nodes_own_ref_name_falls_back_to_its_own_type_name() -> Resul
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A unary, binary, or arithmetic operator node's own `ref_name` is its own operator label — `"NOT"`, `"XOR"`, `"ROTR
 /// 1"`. That is what a later stage would call it by, not the type of its own result.
 #[wasm_bindgen_test]
@@ -142,6 +146,7 @@ fn an_operator_nodes_own_ref_name_is_its_own_operator_label() -> Result<(), Stri
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A 2-row, 3-column named data node, for exercising every `Selection` variant against `current_ref_name`.
 fn make_selectable_grid(scene: &Scene) -> crate::NodeId {
     scene
@@ -154,6 +159,7 @@ fn make_selectable_grid(scene: &Scene) -> crate::NodeId {
         .unwrap()
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With no selection, `current_ref_name` is just `ref_name` — the same name construction gave the node.
 #[wasm_bindgen_test]
 fn current_ref_name_with_no_selection_is_just_ref_name() -> Result<(), String> {
@@ -166,6 +172,7 @@ fn current_ref_name_with_no_selection_is_just_ref_name() -> Result<(), String> {
     check(got == "A", &format!("expected \"A\", got {got:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A selected flat cell appends its own index in parentheses — one index, the notation a 1-D array's own step uses.
 #[wasm_bindgen_test]
 fn current_ref_name_for_a_selected_cell_appends_its_flat_index() -> Result<(), String> {
@@ -179,6 +186,7 @@ fn current_ref_name_for_a_selected_cell_appends_its_flat_index() -> Result<(), S
     check(got == "A(4)", &format!("expected \"A(4)\", got {got:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A selected row with no focus names the whole row, not a specific element within it.
 #[wasm_bindgen_test]
 fn current_ref_name_for_a_selected_row_names_the_whole_row() -> Result<(), String> {
@@ -194,6 +202,7 @@ fn current_ref_name_for_a_selected_row_names_the_whole_row() -> Result<(), Strin
     check(got == "A(row 1)", &format!("expected \"A(row 1)\", got {got:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A row with its own focused column reads as `A(row, col)` matrix notation, not the flat-cell format.
 #[wasm_bindgen_test]
 fn current_ref_name_for_a_focused_cell_in_a_row_uses_matrix_notation() -> Result<(), String> {
@@ -209,6 +218,7 @@ fn current_ref_name_for_a_focused_cell_in_a_row_uses_matrix_notation() -> Result
     check(got == "A(1, 2)", &format!("expected \"A(1, 2)\", got {got:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A selected column with no focus names the whole column, not a specific element within it.
 #[wasm_bindgen_test]
 fn current_ref_name_for_a_selected_column_names_the_whole_column() -> Result<(), String> {
@@ -224,6 +234,7 @@ fn current_ref_name_for_a_selected_column_names_the_whole_column() -> Result<(),
     check(got == "A(column 2)", &format!("expected \"A(column 2)\", got {got:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A column with its own focused row also reads as `A(row, col)` matrix notation, matching the row/focus case.
 #[wasm_bindgen_test]
 fn current_ref_name_for_a_focused_cell_in_a_column_uses_matrix_notation() -> Result<(), String> {

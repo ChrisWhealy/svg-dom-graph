@@ -7,6 +7,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Grafting a focused, unowned child succeeds: the parent stays focused and visible, and the child becomes nested,
 /// unfocused, and hidden.
 #[wasm_bindgen_test]
@@ -37,6 +38,7 @@ fn add_container_node_grafts_a_focused_unowned_child() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `enter`/`exit` round-trip: `enter` moves focus and DOM visibility onto the child, `exit` moves both back.
 #[wasm_bindgen_test]
 fn enter_and_exit_round_trip_focus_and_visibility() -> Result<(), String> {
@@ -72,6 +74,7 @@ fn enter_and_exit_round_trip_focus_and_visibility() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `exit()` on a true root does nothing and reports `None` — there is no parent to exit to.
 #[wasm_bindgen_test]
 fn exit_on_a_root_scene_is_a_no_op() -> Result<(), String> {
@@ -81,6 +84,7 @@ fn exit_on_a_root_scene_is_a_no_op() -> Result<(), String> {
     check(root.is_focused(), "a root Scene stopped being focused after a no-op exit()")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `enter` rejects a `NodeId` that names an ordinary label node, not a container node.
 #[wasm_bindgen_test]
 fn enter_rejects_a_node_that_is_not_a_container() -> Result<(), String> {
@@ -96,6 +100,7 @@ fn enter_rejects_a_node_that_is_not_a_container() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Once a container node has been entered, the parent it was entered from is no longer the tree's focused Scene. So it
 /// can no longer be navigated from until control returns via `exit`.
 #[wasm_bindgen_test]
@@ -118,6 +123,7 @@ fn navigation_from_a_scene_that_is_not_focused_fails() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A container node that was never entered is not the tree's focused Scene either — only the root (or whichever Scene
 /// was last entered) is. So `exit()` on a freshly grafted, un-entered child also fails with `NotFocused`.
 #[wasm_bindgen_test]
@@ -134,6 +140,7 @@ fn exit_on_a_grafted_but_never_entered_child_fails_with_not_focused() -> Result<
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `add_container_node` rejects a child that is not currently the focused Scene of its own tree — here, one of its own
 /// descendants is focused instead. Grafting only ever happens by an inactive tree's own root.
 #[wasm_bindgen_test]
@@ -153,6 +160,7 @@ fn add_container_node_rejects_a_child_with_a_focused_descendant() -> Result<(), 
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `add_container_node` rejects a child that already has a live parent — a nested `Scene` has exactly one owner at a
 /// time.
 #[wasm_bindgen_test]
@@ -171,6 +179,7 @@ fn add_container_node_rejects_an_already_nested_child() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `add_container_node` rejects `self` as its own child, and rejects any of `self`'s own ancestors as a child. Both
 /// would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from.
 #[wasm_bindgen_test]
@@ -193,6 +202,7 @@ fn add_container_node_rejects_self_and_ancestor_nesting() -> Result<(), String> 
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scenario external review's third round asked for explicitly: a detached subtree (its own former parent dropped)
 /// becomes graftable again through ordinary navigation, with no special reset operation needed.
 ///

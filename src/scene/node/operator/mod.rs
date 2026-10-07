@@ -18,10 +18,14 @@ use crate::{
     error::Error,
     geometry::{binary_operator_anchors, centre, port_marker_position, side::Side},
     model::{
+        edge::EdgeId,
         graph::Graph,
         node::{NodeContent, NodeId},
     },
-    scene::{ArithmeticOperator, BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, UnaryOperator},
+    scene::{
+        ArithmeticOperator, BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, UnaryOperator,
+        scene_inner::SceneInner,
+    },
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -56,6 +60,69 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
 /// [`LABEL_FONT_SIZE`], so the marker reads as a secondary annotation rather than competing with the node's own label.
 /// It is still large enough to stay legible once offset clear of the connector's own arrowhead.
 const PORT_MARKER_FONT_SIZE: f64 = LABEL_FONT_SIZE * 0.9;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks everything about a new operator node that needs no scene: its edge anchors, its single-value `result`, and
+/// that `top_left` is finite. Checked before anything is drawn, so a rejected call leaves the scene untouched.
+fn validate_new_operator(top_left: Point, result: &DataNodeContent, options: NodeOptions) -> Result<(), Error> {
+    validate_edge_anchors(options.edge_anchors)?;
+    validate_operator_result(result)?;
+    if !top_left.x.is_finite() || !top_left.y.is_finite() {
+        return Err(Error::InvalidNodeGeometry(Rect {
+            origin: top_left,
+            size: Size::new(0.0, 0.0),
+        }));
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::OperatorTypeMismatch`] unless every operand and the `result` share one integer width. Each is
+/// compared against the first operand, in order, so the error names the first one that disagrees. Also returns
+/// [`Error::UnknownNode`]/[`Error::OperandNotData`] for an operand that is not a data node.
+fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeContent) -> Result<(), Error> {
+    let mut expected = None;
+    for &operand in operands {
+        let found = operand_content(graph, operand)?.type_name();
+        match expected {
+            None => expected = Some(found),
+            Some(expected) if expected != found => return Err(Error::OperatorTypeMismatch { expected, found }),
+            Some(_) => {},
+        }
+    }
+    match expected {
+        Some(expected) if expected != result.type_name() => Err(Error::OperatorTypeMismatch {
+            expected,
+            found: result.type_name(),
+        }),
+        _ => Ok(()),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws an operator box, attaches it, and adds it to the graph, returning its id and rectangle. `inputs` is the two
+/// operands of a two-input operator, recorded on the box's own handles, or `None` for a unary operator.
+///
+/// `scratch` is taken out of `inner` for the call, so the draw can borrow `inner.svg` alongside it. See
+/// `add_node_with`'s own matching comment.
+fn insert_operator_node(
+    inner: &mut SceneInner,
+    top_left: Point,
+    label: &str,
+    result: DataNodeContent,
+    options: NodeOptions,
+    inputs: Option<(NodeId, NodeId)>,
+) -> Result<(NodeId, Rect), Error> {
+    let mut scratch = std::mem::take(&mut inner.scratch);
+    let draw_result = draw_operator_box(&inner.svg, &mut scratch, top_left, label, &result, options.edge_anchors);
+    inner.scratch = scratch;
+    let (mut handles, rect) = draw_result?;
+    inner.attach(&handles.group)?;
+    handles.binary_operator_inputs = inputs;
+    let id = inner.graph.add_node(rect, result);
+    inner.insert_node_handle(id, handles);
+    Ok((id, rect))
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator node: a label row naming the operation, with `result`'s own single value in its own inset cell
@@ -379,36 +446,12 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        validate_edge_anchors(options.edge_anchors)?;
-        validate_operator_result(&result)?;
-        if !top_left.x.is_finite() || !top_left.y.is_finite() {
-            return Err(Error::InvalidNodeGeometry(Rect {
-                origin: top_left,
-                size: Size::new(0.0, 0.0),
-            }));
-        }
+        validate_new_operator(top_left, &result, options)?;
 
         let id = {
             let mut inner = self.inner.borrow_mut();
-            let operand_type = operand_content(&inner.graph, input)?.type_name();
-            if operand_type != result.type_name() {
-                return Err(Error::OperatorTypeMismatch {
-                    expected: operand_type,
-                    found: result.type_name(),
-                });
-            }
-
-            let label = operator.label();
-            // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
-            let mut scratch = std::mem::take(&mut inner.scratch);
-            let draw_result =
-                draw_operator_box(&inner.svg, &mut scratch, top_left, &label, &result, options.edge_anchors);
-            inner.scratch = scratch;
-            let (handles, rect) = draw_result?;
-            inner.attach(&handles.group)?;
-            let id = inner.graph.add_node(rect, result);
-            inner.insert_node_handle(id, handles);
-            id
+            check_operand_types(&inner.graph, &[input], &result)?;
+            insert_operator_node(&mut inner, top_left, &operator.label(), result, options, None)?.0
         };
 
         let mut guard = OperatorConstructionGuard::new(self.clone(), id);
@@ -568,87 +611,84 @@ impl Scene {
         options: NodeOptions,
         commutes: bool,
     ) -> Result<NodeId, Error> {
-        validate_edge_anchors(options.edge_anchors)?;
-        validate_operator_result(&result)?;
+        validate_new_operator(top_left, &result, options)?;
         if inputs.0 == inputs.1 {
             return Err(Error::DuplicateOperands(inputs.0));
-        }
-        if !top_left.x.is_finite() || !top_left.y.is_finite() {
-            return Err(Error::InvalidNodeGeometry(Rect {
-                origin: top_left,
-                size: Size::new(0.0, 0.0),
-            }));
         }
 
         let (id, rect) = {
             let mut inner = self.inner.borrow_mut();
-            let left_type = operand_content(&inner.graph, inputs.0)?.type_name();
-            let right_type = operand_content(&inner.graph, inputs.1)?.type_name();
-            if left_type != right_type {
-                return Err(Error::OperatorTypeMismatch {
-                    expected: left_type,
-                    found: right_type,
-                });
-            }
-            if left_type != result.type_name() {
-                return Err(Error::OperatorTypeMismatch {
-                    expected: left_type,
-                    found: result.type_name(),
-                });
-            }
-
-            // See `add_node_with`'s own matching comment for why `scratch` is taken out for the call.
-            let mut scratch = std::mem::take(&mut inner.scratch);
-            let draw_result =
-                draw_operator_box(&inner.svg, &mut scratch, top_left, label, &result, options.edge_anchors);
-            inner.scratch = scratch;
-            let (mut handles, rect) = draw_result?;
-            inner.attach(&handles.group)?;
-            handles.binary_operator_inputs = Some(inputs);
-            let id = inner.graph.add_node(rect, result);
-            inner.insert_node_handle(id, handles);
-            (id, rect)
+            check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
+            insert_operator_node(&mut inner, top_left, label, result, options, Some(inputs))?
         };
 
         let mut guard = OperatorConstructionGuard::new(self.clone(), id);
-        let edge_a = self.add_edge(inputs.0, id)?;
-        guard.track_edge(edge_a);
-        let edge_b = self.add_edge(inputs.1, id)?;
-        guard.track_edge(edge_b);
-
-        // Both auto-wired edges exist now, so this operator's own input-edge pair — otherwise unknowable until this
-        // point — can be cached once here. `SceneInner::redraw_binary_operator_inputs` reads it on every later drag,
-        // instead of searching either operand's own incident edges for it.
-        self.inner
-            .borrow_mut()
-            .node_handle_mut(id)
-            .ok_or(Error::UnknownNode(id))?
-            .binary_operator_input_edges = Some((edge_a, edge_b));
+        let edges = self.add_input_edges(&mut guard, id, inputs)?;
 
         // Non-commutative operators only — `SUB`/`DIV`/`MOD` — where `inputs.0`/`inputs.1` order changes the result.
         // See `draw_port_marker`'s own doc comment for why this stable indicator is needed and what it shows. Skipped
         // for a commutative operator, where operand order carries no meaning to mark.
         if !commutes {
-            let mut inner = self.inner.borrow_mut();
-            let fixing_points = options.edge_anchors.map(|EdgeAnchors(n)| n);
-            let a_centre = centre(inner.node_rect(inputs.0)?);
-            let b_centre = centre(inner.node_rect(inputs.1)?);
-            let [(anchor_a, side_a), (anchor_b, side_b)] =
-                binary_operator_anchors(rect, a_centre, b_centre, fixing_points);
-
-            let marker_a = draw_port_marker(&inner.svg, anchor_a, side_a, "L", "left operand")?;
-            inner.attach(&marker_a)?;
-            inner.edge_handle_mut(edge_a).ok_or(Error::UnknownEdge(edge_a))?.port_marker = Some(marker_a);
-
-            let marker_b = draw_port_marker(&inner.svg, anchor_b, side_b, "R", "right operand")?;
-            inner.attach(&marker_b)?;
-            inner.edge_handle_mut(edge_b).ok_or(Error::UnknownEdge(edge_b))?.port_marker = Some(marker_b);
+            self.add_port_markers(rect, inputs, edges, options.edge_anchors)?;
         }
 
         guard.disarm();
         Ok(id)
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Wires an incoming edge from each of `inputs` into operator node `id`, tracked on `guard` as each is added so a
+    /// failure partway rolls them all back. Both edges exist afterwards, so the operator's own input-edge pair —
+    /// otherwise unknowable until this point — is cached on its handles once here.
+    /// `SceneInner::redraw_binary_operator_inputs` reads it on every later drag, instead of searching either operand's
+    /// own incident edges for it.
+    fn add_input_edges(
+        &self,
+        guard: &mut OperatorConstructionGuard,
+        id: NodeId,
+        inputs: (NodeId, NodeId),
+    ) -> Result<(EdgeId, EdgeId), Error> {
+        let edge_a = self.add_edge(inputs.0, id)?;
+        guard.track_edge(edge_a);
+        let edge_b = self.add_edge(inputs.1, id)?;
+        guard.track_edge(edge_b);
+
+        self.inner
+            .borrow_mut()
+            .node_handle_mut(id)
+            .ok_or(Error::UnknownNode(id))?
+            .binary_operator_input_edges = Some((edge_a, edge_b));
+        Ok((edge_a, edge_b))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Draws an "L" marker at the first operand's anchor on `rect` and an "R" marker at the second's, and stores each on
+    /// its own edge so a later redraw repositions it. `rect` is the operator node's own rectangle, and `edges` its two
+    /// input edges in `inputs` order.
+    fn add_port_markers(
+        &self,
+        rect: Rect,
+        inputs: (NodeId, NodeId),
+        (edge_a, edge_b): (EdgeId, EdgeId),
+        edge_anchors: Option<EdgeAnchors>,
+    ) -> Result<(), Error> {
+        let mut inner = self.inner.borrow_mut();
+        let fixing_points = edge_anchors.map(|EdgeAnchors(n)| n);
+        let a_centre = centre(inner.node_rect(inputs.0)?);
+        let b_centre = centre(inner.node_rect(inputs.1)?);
+        let [(anchor_a, side_a), (anchor_b, side_b)] = binary_operator_anchors(rect, a_centre, b_centre, fixing_points);
+
+        let marker_a = draw_port_marker(&inner.svg, anchor_a, side_a, "L", "left operand")?;
+        inner.attach(&marker_a)?;
+        inner.edge_handle_mut(edge_a).ok_or(Error::UnknownEdge(edge_a))?.port_marker = Some(marker_a);
+
+        let marker_b = draw_port_marker(&inner.svg, anchor_b, side_b, "R", "right operand")?;
+        inner.attach(&marker_b)?;
+        inner.edge_handle_mut(edge_b).ok_or(Error::UnknownEdge(edge_b))?.port_marker = Some(marker_b);
+        Ok(())
+    }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

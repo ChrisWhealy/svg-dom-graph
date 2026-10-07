@@ -19,6 +19,7 @@ fn keydown(element: &web_sys::Element, key: &str) {
     element.dispatch_event(&event).unwrap();
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_enterable` rejects a node that is not a container — there is no nested `Scene` for a click on it to enter.
 #[wasm_bindgen_test]
 fn make_enterable_rejects_a_non_container_node() -> Result<(), String> {
@@ -33,6 +34,7 @@ fn make_enterable_rejects_a_non_container_node() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A second `make_enterable` call for the same node is rejected outright, the same reasoning `Error::AlreadyDraggable`
 /// already documents for `make_draggable`.
 #[wasm_bindgen_test]
@@ -50,6 +52,7 @@ fn make_enterable_rejects_a_second_call() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Clicking an enterable container node's own rendered group enters its nested `Scene`. That is the whole point of
 /// `make_enterable`: no external button, no host-written listener, just a click on the node itself.
 #[wasm_bindgen_test]
@@ -74,6 +77,7 @@ fn clicking_an_enterable_container_node_enters_it() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Enter/Space while an enterable container node has keyboard focus enters its nested `Scene` too, matching the same
 /// pointer-or-keyboard activation `toolbar::build_button`'s own buttons already offer.
 #[wasm_bindgen_test]
@@ -94,6 +98,7 @@ fn keydown_on_an_enterable_container_node_enters_it() -> Result<(), String> {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The external review that caught this found that a failed attribute write or listener registration inside
 /// `make_enterable` must leave the node exactly as it was. It must not leave a container node advertising
 /// `role="button"` with no working click handler behind it. It must not leave a caller's own pre-existing `style`
@@ -144,6 +149,7 @@ fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> 
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_unenterable` stops a click and Enter from entering the nested `Scene`, removes the button affordances, is
 /// harmless when called again, and lets the node be made enterable once more.
 #[wasm_bindgen_test]
@@ -175,6 +181,7 @@ fn make_unenterable_stops_activation_and_allows_making_it_enterable_again() -> R
     check(child.is_focused(), "a node made enterable again was not entered")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_unenterable` rejects a non-container node and does nothing for one never made enterable.
 #[wasm_bindgen_test]
 fn make_unenterable_rejects_a_non_container_node_and_ignores_one_never_enterable() -> Result<(), String> {

@@ -8,6 +8,7 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dropping an armed `RenderGuard` removes both `group` and every element tracked via `track` from the document.
 /// `draw_box`/`draw_content_box` can be left in exactly that partial state. This happens when a later fallible step
 /// fails, and the `?` operator drops the guard on the way out.
@@ -31,6 +32,7 @@ fn dropping_an_armed_guard_removes_the_group_and_every_loose_element() -> Result
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The counterpart to the test above: a disarmed guard leaves `group` and every tracked element attached. So a
 /// successful `draw_box`/`draw_content_box` call is not accidentally rolled back by its own cleanup on the way out.
 #[wasm_bindgen_test]
@@ -53,6 +55,7 @@ fn disarming_a_guard_leaves_the_group_and_every_loose_element_attached() -> Resu
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dropping an armed guard that tracked nothing beyond `group` itself is still safe. `group.remove()` is a harmless
 /// no-op on an already-empty group.
 #[wasm_bindgen_test]
@@ -68,6 +71,7 @@ fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Re
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `release` stops tracking the most recently tracked node, so an armed guard dropping afterward leaves it exactly
 /// where it was. The test node is not one of the elements `draw_content_box`'s own per-cell loop has already appended
 /// into `group`, whose own removal would remove it anyway. It proves the point directly instead: even a node never
@@ -93,6 +97,7 @@ fn release_stops_tracking_the_most_recently_tracked_node() -> Result<(), String>
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge`: its rendered path, its
 /// `edge_handles` entry, and its place in the graph. It then removes the node itself. That is the same partial state a
 /// failure drawing an operator's own auto-wired input edge would otherwise leave behind.
@@ -142,6 +147,7 @@ fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge(
     check(inner.graph.edge(edge).is_none(), "the graph still held the removed edge")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The counterpart to the test above: a disarmed `OperatorConstructionGuard` leaves the node and every tracked edge
 /// exactly as they were. So a fully successful operator creation is not accidentally rolled back by its own cleanup on
 /// the way out.
