@@ -1,20 +1,20 @@
 //! Highlighting a data node's cells: `Scene::set_selection` and `Scene::set_secondary_selection`.
 
-use super::style::cell_style;
+use super::style::{CellStyle, cell_style};
 use crate::{
     error::Error,
     model::{
         content::ResolvedBand,
         node::{NodeContent, NodeId},
     },
-    scene::{Scene, Selection},
+    scene::{DataNodeContent, Scene, Selection},
 };
 
 impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Highlights node `id`'s own cell(s) per `selection`, and recolours every affected cell immediately.
     ///
-    /// `id` must be a [`DataNodeContent`](crate::scene::DataNodeContent) node. It may be drawn via [`add_data_node`](Self::add_data_node)/
+    /// `id` must be a [`DataNodeContent`] node. It may be drawn via [`add_data_node`](Self::add_data_node)/
     /// [`add_data_node_with`](Self::add_data_node_with), or be an operator node's own single-value result (see
     /// [`add_unary_operator_node`](Self::add_unary_operator_node)/
     /// [`add_binary_operator_node`](Self::add_binary_operator_node)). A plain label node has no cells to highlight.
@@ -64,9 +64,7 @@ impl Scene {
             NodeContent::Data(content) => content,
             NodeContent::Label(_) | NodeContent::Container(_) => return Err(Error::InvalidSelection(id, selection)),
         };
-        let (new_band, new_focus) = content
-            .resolve_selection(selection)
-            .ok_or(Error::InvalidSelection(id, selection))?;
+        let new = Highlight::resolve(content, selection).ok_or(Error::InvalidSelection(id, selection))?;
         let base_colour = content.type_colour();
 
         let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
@@ -81,71 +79,26 @@ impl Scene {
         }
         // `old_selection` was itself accepted by an earlier, successful `set_selection` call against this same,
         // unchanged content (or is the default `Selection::None`, always valid), so it always resolves here too.
-        let (old_band, old_focus) = content.resolve_selection(old_selection).unwrap_or((ResolvedBand::None, None));
+        let old = Highlight::resolve(content, old_selection).unwrap_or_default();
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         let cell_stroke_width = handles.cell_stroke_width;
         let cell_rects = &handles.cell_rects;
         let secondary = &handles.secondary;
-        let len = cell_rects.len();
 
-        // Every index whose own category (focused, banded, or default) could possibly differ between the old selection
-        // and the new one, never the whole grid. Each is visited at most once. A cell outside this set is provably
-        // unchanged. It is neither an old/new focus, nor in the symmetric difference of the two bands. So `cell_style`
-        // resolves it to the same category either way. See `ResolvedBand::for_each_index`'s own doc comment.
         let mut result = Ok(());
-        let mut restyle = |i: usize| {
+        for_each_changed_cell(&old, &new, cell_rects.len(), |i| {
             if result.is_err() {
                 return;
             }
             let Some(cell) = cell_rects.get(i) else { return };
             let is_secondary = secondary.binary_search(&i).is_ok();
-            let old_style = cell_style(
-                Some(i) == old_focus,
-                old_band.contains(i),
-                is_secondary,
-                base_colour,
-                cell_stroke_width,
-            );
-            let new_style = cell_style(
-                Some(i) == new_focus,
-                new_band.contains(i),
-                is_secondary,
-                base_colour,
-                cell_stroke_width,
-            );
-            if new_style == old_style {
+            let new_style = new.style(i, is_secondary, base_colour, cell_stroke_width);
+            if new_style == old.style(i, is_secondary, base_colour, cell_stroke_width) {
                 return;
             }
             result = new_style.apply(cell);
-        };
-        if let Some(i) = old_focus {
-            restyle(i);
-        }
-        // Only if it differs from `old_focus` — otherwise this index was already visited above, and a second visit here
-        // would just repeat the same comparison.
-        if new_focus != old_focus {
-            if let Some(i) = new_focus {
-                restyle(i);
-            }
-        }
-        if old_band != new_band {
-            // True symmetric difference, not each band walked in full. A member of both bands (their intersection) is
-            // skipped in both traversals below, since its own category cannot have changed between them either. A focus
-            // index is skipped here too, since it was already visited, explicitly, above.
-            let already_visited = |i: usize| new_band.contains(i) || Some(i) == old_focus || Some(i) == new_focus;
-            old_band.for_each_index(len, |i| {
-                if !already_visited(i) {
-                    restyle(i);
-                }
-            });
-            let already_visited = |i: usize| old_band.contains(i) || Some(i) == old_focus || Some(i) == new_focus;
-            new_band.for_each_index(len, |i| {
-                if !already_visited(i) {
-                    restyle(i);
-                }
-            });
-        }
+        });
         result?;
 
         handles.selection = selection;
@@ -213,10 +166,10 @@ impl Scene {
             return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
         }
         let base_colour = content.type_colour();
-        let (band, focus) = {
+        let highlight = {
             let selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
             // `selection` was accepted by an earlier call against this same content, so it always resolves.
-            content.resolve_selection(selection).unwrap_or((ResolvedBand::None, None))
+            Highlight::resolve(content, selection).unwrap_or_default()
         };
 
         let mut new_secondary = cells.to_vec();
@@ -239,9 +192,7 @@ impl Scene {
         let mut result = Ok(());
         for i in changed {
             let Some(cell) = handles.cell_rects.get(i) else { continue };
-            let style_with = |secondary: bool| {
-                cell_style(Some(i) == focus, band.contains(i), secondary, base_colour, cell_stroke_width)
-            };
+            let style_with = |secondary: bool| highlight.style(i, secondary, base_colour, cell_stroke_width);
             let new_style = style_with(new_secondary.binary_search(&i).is_ok());
             if new_style != style_with(old.binary_search(&i).is_ok()) {
                 result = new_style.apply(cell);
@@ -257,3 +208,78 @@ impl Scene {
         Ok(())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A node's own primary selection, resolved against its content's real grid shape: the row or column band, and the one
+/// focused cell within it, if any. The two together decide every cell's own highlight.
+#[derive(Default)]
+struct Highlight {
+    band: ResolvedBand,
+    focus: Option<usize>,
+}
+
+impl Highlight {
+    /// Resolves `selection` against `content`. `None` if it names a row, column or cell the content does not have.
+    fn resolve(content: &DataNodeContent, selection: Selection) -> Option<Self> {
+        let (band, focus) = content.resolve_selection(selection)?;
+        Some(Self { band, focus })
+    }
+
+    /// Cell `i`'s style under this highlight, given whether it is also a secondary cell. See [`cell_style`] for the
+    /// precedence.
+    fn style(
+        &self,
+        i: usize,
+        secondary: bool,
+        base_colour: &'static str,
+        base_stroke_width: &'static str,
+    ) -> CellStyle {
+        cell_style(
+            Some(i) == self.focus,
+            self.band.contains(i),
+            secondary,
+            base_colour,
+            base_stroke_width,
+        )
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Calls `visit(i)` once for every cell index whose own category (focused, banded, or default) could differ between the
+/// `old` highlight and the `new` one, in a grid of `len` cells. Never the whole grid. A cell outside this set is
+/// provably unchanged: it is neither an old/new focus, nor in the symmetric difference of the two bands. So
+/// [`cell_style`] resolves it to the same category either way. See `ResolvedBand::for_each_index`'s own doc comment.
+///
+/// A live "previous"/"next" control stepping through an array only ever touches a handful of cells per step, however
+/// large the array. This is what keeps both the DOM writes and the computation deciding them that small.
+///
+/// The old and new focus come first, the new only if it differs. The two bands then contribute their true symmetric
+/// difference, not each walked in full. A member of both bands is skipped in both traversals, since its own category
+/// cannot have changed between them. A focus index is skipped there too, since it was visited explicitly already.
+fn for_each_changed_cell(old: &Highlight, new: &Highlight, len: usize, mut visit: impl FnMut(usize)) {
+    if let Some(i) = old.focus {
+        visit(i);
+    }
+    if new.focus != old.focus {
+        if let Some(i) = new.focus {
+            visit(i);
+        }
+    }
+    if old.band != new.band {
+        let is_focus = |i: usize| Some(i) == old.focus || Some(i) == new.focus;
+        old.band.for_each_index(len, |i| {
+            if !new.band.contains(i) && !is_focus(i) {
+                visit(i);
+            }
+        });
+        new.band.for_each_index(len, |i| {
+            if !old.band.contains(i) && !is_focus(i) {
+                visit(i);
+            }
+        });
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

@@ -75,9 +75,10 @@ impl Selection {
 /// [`for_each_index`](Self::for_each_index) itself (already `< len`) or from a focus index
 /// [`super::DataNodeContent::resolve_selection`] already validated. So neither method here ever needs to re-check a
 /// query against the content's own value count itself.
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 pub(crate) enum ResolvedBand {
     /// No band: [`contains`](Self::contains) is `false` for every index.
+    #[default]
     None,
     /// Every flat index `i` with `i / cols == row` belongs to this band.
     Row { row: usize, cols: usize },

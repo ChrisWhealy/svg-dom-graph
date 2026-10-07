@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Decompose `make_draggable_with ` function (`1fdc9a7`)
 - Decompose `make_draggable_with ` function (`87adbf4`)
 - Decompose `for_each_cell_string` function (`7db82b4`)
-- Decompose `draw_operator_box` function (``)
+- Decompose `draw_operator_box` function (`cffba21`)
+- Decompose `set_selection` function (``)
 
 # [Released]
 
