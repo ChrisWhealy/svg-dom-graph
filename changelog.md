@@ -18,7 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Decompose `for_each_cell_string` function (`7db82b4`)
 - Decompose `draw_operator_box` function (`cffba21`)
 - Decompose `set_selection` function (`615646a`)
-- Decompose `add_two_input_operator_node_with` function (``)
+- Decompose `add_two_input_operator_node_with` function (`77ddb5e`)
 
 # [Released]
 
