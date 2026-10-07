@@ -85,7 +85,7 @@ impl DataNodeContent {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces this content's own values with `values`, keeping its format, layout and byte order.
-    /// 
+    ///
     /// Returns `false`, changing nothing, unless `values` is the same integer width. So the grid keeps exactly the
     /// shape it was drawn with.
     pub(crate) fn replace_values(&mut self, values: NodeValues) -> bool {
