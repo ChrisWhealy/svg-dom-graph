@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.26] - 2026-10-07
 
 ## Added
@@ -23,8 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Fix clippy bug (`001387f`)
 - Fix `cargo check` when running in CI due to running on older Rust version (`5a1a7ac`)
 - Add test and explanatory docs for validation performed by `validate_connector_options()` (`1c2d033`)
-
-# [Released]
 
 ## [0.2.25] - 2026-10-07
 
