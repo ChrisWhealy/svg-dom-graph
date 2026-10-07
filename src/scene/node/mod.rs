@@ -37,12 +37,19 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::EmptyNodeContent`] if `content` holds no values, [`Error::InvalidPlainText`] if `PlainText` content
-/// is not printable ASCII, or [`Error::InvalidGridLayout`] if its own grid layout wraps `0`. `PlainText` content has no
-/// grid, so its layout is never checked. Shared by every path that draws a `DataNodeContent` grid: a data node's own
-/// construction, a `measure_data_node`/`measure_named_data_node` call, and an operator node's own `result` (via
-/// `validate_operator_result`). So content validity can never drift between drawing a real node and merely measuring
-/// what one would look like.
+/// Returns [`Error::EmptyNodeContent`] if:
+/// * `content` holds no values,
+/// * `PlainText` content is not printable ASCII, or
+/// * its own grid layout wraps `0`.
+///
+/// `PlainText` content has no grid, so specifying a layout has no effect and is never checked.
+///
+/// Shared by every path that draws a `DataNodeContent` grid:
+/// * a data node's own construction,
+/// * a `measure_data_node`, `measure_named_data_node` call, and
+/// * an operator node's own `result` (via `validate_operator_result`).
+///
+/// So content validity can never drift between drawing a real node and merely measuring what one would look like.
 fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     if content.len() == 0 {
         return Err(Error::EmptyNodeContent);
