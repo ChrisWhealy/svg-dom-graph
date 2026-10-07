@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Refactor tests in `tests/drag/data_node` (`7fc8d2b`)
 - Refactor `src/scene/node/data.rs` (`fcf9e06`)
 - Decompose `draw_content_box` function into smaller, reusable components (`53ebd4b`)
-- Decompose `make_draggable_with ` function (``)
+- Decompose `make_draggable_with ` function (`1fdc9a7`)
 
 # [Released]
 
