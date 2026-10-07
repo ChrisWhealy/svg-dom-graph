@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.27] - 2026-10-07
 
 ## Changed
@@ -19,8 +21,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Decompose `draw_operator_box` function (`cffba21`)
 - Decompose `set_selection` function (`615646a`)
 - Decompose `add_two_input_operator_node_with` function (`77ddb5e`)
-
-# [Released]
 
 ## [0.2.26] - 2026-10-07
 
