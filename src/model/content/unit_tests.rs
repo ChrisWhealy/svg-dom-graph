@@ -861,7 +861,7 @@ fn ascii_shows_a_wider_value_as_its_bytes_in_byte_order_with_no_separator() -> R
 }
 
 #[test]
-fn ascii_widest_cell_has_the_same_width_as_every_other() -> Result<(), String> {
+fn ascii_widest_cell_has_the_same_character_count_as_every_other() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U16(vec![0x4142, 0x0020, 0x7A7A]), DataFormat::Ascii);
     let mut widest = String::new();
     content.widest_cell_string(&mut widest);

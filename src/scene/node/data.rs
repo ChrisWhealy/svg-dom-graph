@@ -239,7 +239,17 @@ pub(super) fn draw_content_box(
     if content.is_plain_text() {
         measure_el.set_attr("style", "white-space: pre")?;
     }
-    let max_width = measure_el.bounding_box()?.size.width;
+    let mut max_width = measure_el.bounding_box()?.size.width;
+    // Edge case: Every `Ascii` cell has the same character count, but not necessarily the same rendered width. In the
+    // case that a fallback font is used, this may result in the substitute glyphs `␣` and `·` having different
+    // advance widths than those from the normal font. So measure a full-length run of each and let the widest win.
+    if content.is_ascii() {
+        let chars = widest.chars().count();
+        for substitute in ['\u{2423}', '\u{B7}'] {
+            measure_el.set_text(&substitute.to_string().repeat(chars));
+            max_width = max_width.max(measure_el.bounding_box()?.size.width);
+        }
+    }
     measure_el.remove();
     guard.release();
 

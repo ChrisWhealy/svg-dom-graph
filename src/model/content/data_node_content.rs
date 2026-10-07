@@ -110,6 +110,12 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`DataFormat::Ascii`] content.
+    pub(crate) fn is_ascii(&self) -> bool {
+        self.format == DataFormat::Ascii
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`DataFormat::PlainText`] content.
     pub(crate) fn is_plain_text(&self) -> bool {
         self.format == DataFormat::PlainText

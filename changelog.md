@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add `DataFormat::Ascii` in order to display an ASCII text block containing input message (`246d278`)
-- Add `DataFormat::PlainText` in order to display a text block (``)
+- Add `DataFormat::PlainText` in order to display a text block (`8a4f1bc`)
 
 ## Changed
 
@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Rewrite comment sentences having excessive length (> 60 words) (`7b4b815`)
 - Doc only: Rewrite comment sentences in SHA3 Sponge demo (`3b62c2f`)
 - Doc only: Rewrite remaining comment sentences not meeting style guide (`736614f`)
+
+## Fixed
+
+- Edge case: Fallback monospace font used for `␣` may have different advance width (``)
 
 # [Released]
 
