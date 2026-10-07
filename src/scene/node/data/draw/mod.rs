@@ -2,7 +2,7 @@
 
 use super::super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
-    OUTER_PADDING, render_guard::RenderGuard,
+    OUTER_PADDING, label_group, render_guard::RenderGuard,
 };
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
@@ -492,31 +492,6 @@ fn describe(name: Option<&str>, content: &DataNodeContent, single_value_text: &s
         Some(name) => format!("{name}: {value}"),
         None => value,
     }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Names `group` for assistive technology and for the browser's own mouse-hover tooltip, both from `label`.
-///
-/// `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
-/// `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over `img`
-/// deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values an assistive
-/// technology user could otherwise still reach.
-///
-/// A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling. So it belongs on
-/// `group`, the one element every rect and every text drawn shares as a parent. It does not belong on any individual
-/// cell's own rect. That rect is a sibling of that cell's text, not an ancestor of it, so the two would never share the
-/// tooltip. An earlier version attached a `<title>` to each rect/text individually, and still failed to show a tooltip
-/// over the rendered digits. Putting the title on `group` also avoids a `<title>` as one of a `<text>`'s own DOM
-/// children leaking its text into `text.textContent`, mixing it in with the actual rendered digits.
-///
-/// The title is set to the same text `aria-label` carries, so the tooltip reads exactly what a screen reader announces,
-/// not just the node's own type. `Scene::set_selection` keeps the two in sync afterward, rewriting this alongside
-/// `aria-label` on every selection change.
-fn label_group(group: &SvgNode, label: &str) -> Result<(), Error> {
-    group.set_attr("role", "group")?;
-    group.set_attr("aria-label", label)?;
-    group.set_title(label)?;
-    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

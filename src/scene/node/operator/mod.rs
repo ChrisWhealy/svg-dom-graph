@@ -10,7 +10,7 @@
 
 use super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
-    NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, render_guard::RenderGuard,
+    NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, label_group, render_guard::RenderGuard,
     validate_data_content, validate_edge_anchors,
 };
 use crate::{
@@ -86,68 +86,13 @@ fn draw_operator_box(
     let group = svg.group()?;
     // Always exactly 4: the label, the value text, and the outer/value-cell rects.
     let mut guard = RenderGuard::new(group.clone());
-    let type_colour = result.type_colour();
-    let origin = Point::origin();
 
-    let label_el = svg.text(origin, label)?;
-    guard.track(label_el.clone());
-    label_el.set_text_anchor(TextAnchor::Middle)?;
-    label_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    label_el.set_font_size(LABEL_FONT_SIZE)?;
-    label_el.set_fill(TEXT_FILL)?;
-    let label_width = label_el.bounding_box()?.size.width;
+    let (label_el, label_width) = measure_label(svg, &mut guard, label)?;
+    let (value_el, value_text, value_width) = measure_value(svg, &mut guard, scratch, result)?;
+    let layout = OperatorLayout::new(label_width, value_width);
 
-    if !result.single_cell_string_into(scratch) {
-        return Err(Error::Svg(svg_dom::Error::Dom(
-            "draw_operator_box: expected exactly one value".into(),
-        )));
-    }
-    // Cloned out now, before `scratch` is reused below for `x`/`y`/`transform` formatting — this is the same formatted
-    // text `value_el` shows, reused again for the node's own `aria-label`.
-    let value_text = scratch.clone();
-    let value_el = svg.text(origin, scratch.as_str())?;
-    guard.track(value_el.clone());
-    value_el.set_text_anchor(TextAnchor::Middle)?;
-    value_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    value_el.set_font_family(GRID_FONT_FAMILY)?;
-    value_el.set_font_size(GRID_FONT_SIZE)?;
-    value_el.set_fill(TEXT_FILL)?;
-    let value_width = value_el.bounding_box()?.size.width;
-
-    // The value cell's own width, plus `OUTER_PADDING` kept clear on either side of it, competes with the label's own
-    // width, plus `CELL_PADDING`, for the box's own final width. Whichever of the two needs more room wins. Either way
-    // the value cell itself never reaches the box's own left/right edges.
-    let value_cell_size = Size::new(value_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
-    let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
-    // `OUTER_PADDING` again below the value cell, so it never reaches the box's own bottom edge either. Above it, the
-    // label row's own height already keeps it clear of the box's own top edge.
-    let size = Size::new(box_width, LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING);
-    let rect = Rect { origin: top_left, size };
-
-    let outer_el = svg.rect(origin, size)?;
-    guard.track(outer_el.clone());
-    outer_el.set_fill(PLAIN_BOX_FILL)?;
-    outer_el.set_stroke(BOX_STROKE)?;
-    outer_el.set_stroke_width(1.5)?;
-    group.append(&outer_el)?;
-
-    let value_cell_origin = Point::new((box_width - value_cell_size.width) / 2.0, LABEL_ROW_HEIGHT);
-    let value_cell_el = svg.rect(value_cell_origin, value_cell_size)?;
-    guard.track(value_cell_el.clone());
-    value_cell_el.set_fill(type_colour)?;
-    value_cell_el.set_stroke(BOX_STROKE)?;
-    value_cell_el.set_stroke_width(1.0)?;
-    group.append(&value_cell_el)?;
-
-    label_el.set_attr_display(scratch, "x", box_width / 2.0)?;
-    label_el.set_attr_display(scratch, "y", LABEL_ROW_HEIGHT / 2.0)?;
-    group.append(&label_el)?;
-
-    // Horizontally centred the same as the value cell itself — `box_width / 2.0` either way, since the cell is itself
-    // centred in the box.
-    value_el.set_attr_display(scratch, "x", box_width / 2.0)?;
-    value_el.set_attr_display(scratch, "y", value_cell_origin.y + value_cell_size.height / 2.0)?;
-    group.append(&value_el)?;
+    let (outer_el, value_cell_el) = draw_boxes(svg, &group, &mut guard, &layout, result.type_colour())?;
+    place_texts(scratch, &group, &layout, &label_el, &value_el)?;
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
@@ -156,14 +101,8 @@ fn draw_operator_box(
     // type to neither assistive technology nor a colour-blind reader. The label names the operator and shows its own
     // real result value. `value_text` is the same formatted text `value_el` itself renders. So the result is available
     // as text even without visiting the value cell directly.
-    group.set_attr("role", "group")?;
     let node_label = format!("{label} result = {value_text}");
-    group.set_attr("aria-label", &node_label)?;
-    // Set to `node_label` — the same text `aria-label` carries — so the browser's own mouse-hover tooltip reads exactly
-    // what a screen reader announces, not just the result's own type. `Scene::set_selection` keeps the two in sync
-    // afterward too, since an operator's own result is itself a `DataNodeContent` node like any other — see that
-    // method's own doc comment.
-    group.set_title(&node_label)?;
+    label_group(&group, &node_label)?;
 
     guard.disarm();
     let base_label_len = node_label.len();
@@ -187,8 +126,135 @@ fn draw_operator_box(
             ref_name: label.to_owned(),
             child: None,
         },
-        rect,
+        Rect {
+            origin: top_left,
+            size: layout.size,
+        },
     ))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates the operator's label `<text>`, styled but not yet placed or appended, and measures its real rendered width.
+fn measure_label(svg: &SvgRoot, guard: &mut RenderGuard, label: &str) -> Result<(SvgNode, f64), Error> {
+    let label_el = svg.text(Point::origin(), label)?;
+    guard.track(label_el.clone());
+    label_el.set_text_anchor(TextAnchor::Middle)?;
+    label_el.set_dominant_baseline(DominantBaseline::Middle)?;
+    label_el.set_font_size(LABEL_FONT_SIZE)?;
+    label_el.set_fill(TEXT_FILL)?;
+    let width = label_el.bounding_box()?.size.width;
+    Ok((label_el, width))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates the `<text>` for `result`'s own single value, styled but not yet placed or appended, and measures its real
+/// rendered width. Also returns that value's formatted text, which the node's own `aria-label` reuses.
+///
+/// The text is formatted into `scratch`, then cloned out before the caller reuses `scratch` for `x`/`y`/`transform`
+/// formatting. It is the same formatted text the `<text>` shows.
+fn measure_value(
+    svg: &SvgRoot,
+    guard: &mut RenderGuard,
+    scratch: &mut String,
+    result: &DataNodeContent,
+) -> Result<(SvgNode, String, f64), Error> {
+    if !result.single_cell_string_into(scratch) {
+        return Err(Error::Svg(svg_dom::Error::Dom(
+            "draw_operator_box: expected exactly one value".into(),
+        )));
+    }
+    let value_text = scratch.clone();
+    let value_el = svg.text(Point::origin(), scratch.as_str())?;
+    guard.track(value_el.clone());
+    value_el.set_text_anchor(TextAnchor::Middle)?;
+    value_el.set_dominant_baseline(DominantBaseline::Middle)?;
+    value_el.set_font_family(GRID_FONT_FAMILY)?;
+    value_el.set_font_size(GRID_FONT_SIZE)?;
+    value_el.set_fill(TEXT_FILL)?;
+    let width = value_el.bounding_box()?.size.width;
+    Ok((value_el, value_text, width))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where everything sits in an operator box, local to its own group. Pure arithmetic from the two measured text widths.
+struct OperatorLayout {
+    /// The value cell's own box.
+    value_cell_size: Size,
+    /// The value cell's own top-left corner.
+    value_cell_origin: Point,
+    /// The whole box's own size.
+    size: Size,
+}
+
+impl OperatorLayout {
+    /// The value cell's own width, plus [`OUTER_PADDING`] kept clear on either side of it, competes with the label's
+    /// own width, plus [`CELL_PADDING`], for the box's own final width. Whichever of the two needs more room wins.
+    /// Either way the value cell itself never reaches the box's own left/right edges.
+    ///
+    /// [`OUTER_PADDING`] again below the value cell keeps it clear of the box's own bottom edge too. Above it, the label
+    /// row's own height already keeps it clear of the top edge.
+    fn new(label_width: f64, value_width: f64) -> Self {
+        let value_cell_size = Size::new(value_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
+        let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
+        Self {
+            value_cell_size,
+            value_cell_origin: Point::new((box_width - value_cell_size.width) / 2.0, LABEL_ROW_HEIGHT),
+            size: Size::new(box_width, LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING),
+        }
+    }
+
+    /// Where the label and the value text are horizontally centred. The value cell is itself centred in the box, so
+    /// it is the same x for both.
+    fn centre_x(&self) -> f64 {
+        self.size.width / 2.0
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the outer box and the inset value cell, in that order, and returns them. The value cell is filled with
+/// `type_colour`, which identifies the result's own type.
+fn draw_boxes(
+    svg: &SvgRoot,
+    group: &SvgNode,
+    guard: &mut RenderGuard,
+    layout: &OperatorLayout,
+    type_colour: &str,
+) -> Result<(SvgNode, SvgNode), Error> {
+    let outer_el = svg.rect(Point::origin(), layout.size)?;
+    guard.track(outer_el.clone());
+    outer_el.set_fill(PLAIN_BOX_FILL)?;
+    outer_el.set_stroke(BOX_STROKE)?;
+    outer_el.set_stroke_width(1.5)?;
+    group.append(&outer_el)?;
+
+    let value_cell_el = svg.rect(layout.value_cell_origin, layout.value_cell_size)?;
+    guard.track(value_cell_el.clone());
+    value_cell_el.set_fill(type_colour)?;
+    value_cell_el.set_stroke(BOX_STROKE)?;
+    value_cell_el.set_stroke_width(1.0)?;
+    group.append(&value_cell_el)?;
+
+    Ok((outer_el, value_cell_el))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Places the label in its row and the value text in its cell, then appends both. They are appended last, so they paint
+/// over the boxes.
+fn place_texts(
+    scratch: &mut String,
+    group: &SvgNode,
+    layout: &OperatorLayout,
+    label_el: &SvgNode,
+    value_el: &SvgNode,
+) -> Result<(), Error> {
+    label_el.set_attr_display(scratch, "x", layout.centre_x())?;
+    label_el.set_attr_display(scratch, "y", LABEL_ROW_HEIGHT / 2.0)?;
+    group.append(label_el)?;
+
+    value_el.set_attr_display(scratch, "x", layout.centre_x())?;
+    value_el.set_attr_display(scratch, "y", layout.value_cell_origin.y + layout.value_cell_size.height / 2.0)?;
+    group.append(value_el)?;
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -583,3 +649,6 @@ impl Scene {
         Ok(id)
     }
 }
+
+#[cfg(test)]
+mod unit_tests;

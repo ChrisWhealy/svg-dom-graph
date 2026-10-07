@@ -64,6 +64,31 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Names `group` for assistive technology and for the browser's own mouse-hover tooltip, both from `label`.
+///
+/// `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
+/// `aria-label` may go unexposed without an explicit `role="group"` alongside it. `group` was chosen over `img`
+/// deliberately: `img` presents its descendants as one atomic image, hiding the individual cell values an assistive
+/// technology user could otherwise still reach.
+///
+/// A `<title>` is only a native tooltip/accessible name for its own direct parent, not for a sibling. So it belongs on
+/// `group`, the one element every rect and every text drawn shares as a parent. It does not belong on any individual
+/// cell's own rect. That rect is a sibling of that cell's text, not an ancestor of it, so the two would never share the
+/// tooltip. An earlier version attached a `<title>` to each rect/text individually, and still failed to show a tooltip
+/// over the rendered digits. Putting the title on `group` also avoids a `<title>` as one of a `<text>`'s own DOM
+/// children leaking its text into `text.textContent`, mixing it in with the actual rendered digits.
+///
+/// The title is set to the same text `aria-label` carries, so the tooltip reads exactly what a screen reader announces,
+/// not just the node's own type. `Scene::set_selection` keeps the two in sync afterward, rewriting this alongside
+/// `aria-label` on every selection change.
+fn label_group(group: &svg_dom::SvgNode, label: &str) -> Result<(), crate::error::Error> {
+    group.set_attr("role", "group")?;
+    group.set_attr("aria-label", label)?;
+    group.set_title(label)?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Shared node-drawing style constants — each used by more than one of this module's own child modules, so none of
 //   them owns a single one exclusively. A constant only [`plain`], [`data`], or [`operator`] itself needs instead lives
 //   in that child module.
