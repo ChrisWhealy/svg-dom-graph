@@ -18,8 +18,8 @@ use wasm_bindgen::JsCast;
 /// `Iota`'s own nested child `<svg>` — a fixed id, for the same reason as `rho::CHILD_SVG_ID`.
 pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-iota-child";
 
-/// The constant `Iota` XORs into lane `lane` during round `round`: the round's own constant for lane `0`, and `0`
-/// for every other lane.
+/// The constant `Iota` XORs into lane `lane` during round `round`: the round's own constant for lane `0`, and `0` for
+/// every other lane.
 fn constant_for(lane: usize, round: usize) -> u64 {
     if lane == 0 { ROUND_CONSTANTS[round] } else { 0 }
 }
@@ -36,11 +36,11 @@ pub(super) fn iota(input: [u64; 25], round: usize) -> [u64; 25] {
 /// 1. "Chi Output Bytes", `input`'s own 25 lanes. Once started, lane `0` — the only one `Iota` reads — is selected.
 /// 2. Lane `0` and the round constant, a pair centred on one third and two thirds of row 1's own width.
 /// 3. An `XOR` operator taking both, centred beneath the pair.
-/// 4. "Iota Output Bytes". Taking the step writes all 25 lanes: lane `0` as the `XOR` result, marked as secondary,
-///    and every other lane copied as it is.
+/// 4. "Iota Output Bytes". Taking the step writes all 25 lanes: lane `0` as the `XOR` result, marked as secondary, and
+///    every other lane copied as it is.
 ///
-/// While unstarted, every value shown below row 1 is zero. The selection toolbar drives lane `0`'s own node, which
-/// has exactly one cell, so it offers one step.
+/// While unstarted, every value shown below row 1 is zero. The selection toolbar drives lane `0`'s own node, which has
+/// exactly one cell, so it offers one step.
 ///
 /// Returns that lane `0` node alongside the `Scene`: the node a caller's own selection toolbar drives.
 ///
@@ -141,8 +141,8 @@ struct IotaState {
     input: [u64; 25],
     /// The round whose constant this `Iota` XORs into lane `0`.
     round: usize,
-    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same
-    /// reason as `theta::theta_c::rebuild_child`.
+    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same reason
+    /// as `theta::theta_c::rebuild_child`.
     child_svg_id: String,
 }
 
@@ -172,8 +172,8 @@ pub(super) fn exit_if_focused() -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Shows a selection toolbar on `child`, bound to `driver`, lane `0`'s own one-cell node, so it offers the single step — the counterpart to
-/// `theta::theta_d::attach_toolbar`.
+/// Shows a selection toolbar on `child`, bound to `driver`, lane `0`'s own one-cell node, so it offers the single step
+/// — the counterpart to `theta::theta_d::attach_toolbar`.
 ///
 /// # Errors
 ///
@@ -201,8 +201,8 @@ fn attach_toolbar(
 ///
 /// # Errors
 ///
-/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
-/// DOM, or if any library call fails.
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
+/// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<IotaState>>) -> Result<(), String> {
     let document = crate::util::document()?;
     let (input, round, previous_id) = {
@@ -236,11 +236,11 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<IotaState>>) -> Result<(),
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Iota` child for round `round`, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping
-/// toolbar. Its input is `input`, the lanes `Chi` produced. Called once per round, from
-/// `keccak::build_scene`, right before "Iota" is added as a container node.
+/// toolbar. Its input is `input`, the lanes `Chi` produced. Called once per round, from `keccak::build_scene`, right
+/// before "Iota" is added as a container node.
 ///
-/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
-/// it if so, and removes any stepped clone a previous round left behind.
+/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates it
+/// if so, and removes any stepped clone a previous round left behind.
 ///
 /// # Errors
 ///

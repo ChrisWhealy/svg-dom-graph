@@ -125,7 +125,8 @@ pub(super) fn install(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Ends the pan `start` holds, writing its final position to the DOM first, if `pointer_id` is the pointer that began it.
+/// Ends the pan `start` holds, writing its final position to the DOM first, if `pointer_id` is the pointer that began
+/// it.
 ///
 /// Ignores any other pointer, such as a second finger lifting while the first is still panning.
 fn end_pan(start: &Cell<Option<PanStart>>, surface: &WeakSvgNode, flusher: &ViewFlusher, pointer_id: i32) {

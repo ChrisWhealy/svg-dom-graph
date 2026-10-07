@@ -1,7 +1,7 @@
-//! `panel-data` / `#data-diagram`: draggable nodes whose content is a [`DataNodeContent`] grid of values rather
-//! than a plain text label — one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`),
-//! the multi-value counts chosen to cover every combination the grid layout rule can produce. See
-//! [`build_data_demo`]'s own doc comment for exactly which.
+//! `panel-data` / `#data-diagram`: draggable nodes whose content is a [`DataNodeContent`] grid of values rather than a
+//! plain text label — one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`), the
+//! multi-value counts chosen to cover every combination the grid layout rule can produce. See [`build_data_demo`]'s own
+//! doc comment for exactly which.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
@@ -55,8 +55,8 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
     // Bounded to the diagram's own viewBox — see build_demo_tree's own comment for why.
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every row's single-value box shares this left-hand x; every row's multi-value box shares this one, to its
-    // right, regardless of how wide either box actually turns out to be.
+    // Every row's single-value box shares this left-hand x; every row's multi-value box shares this one, to its right,
+    // regardless of how wide either box actually turns out to be.
     const X_SINGLE: f64 = 20.0;
     const X_MULTI: f64 = 260.0;
 
@@ -80,9 +80,9 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         ),
     )?;
 
-    // u16: a single value, and 5 values — no power-of-two divisor, so this falls back to the closest-to-square
-    // shape (3 rows of 2, one slot blank). Decimal here, rather than hex/binary, to also show a format with no
-    // byte-group splitting.
+    // u16: a single value, and 5 values — no power-of-two divisor, so this falls back to the closest-to-square shape (3
+    // rows of 2, one slot blank). Decimal here, rather than hex/binary, to also show a format with no byte-group
+    // splitting.
     place(
         X_SINGLE,
         140.0,
@@ -94,8 +94,8 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         DataNodeContent::new(NodeValues::U16(vec![100, 250, 500, 1000, 65535]), DataFormat::Decimal),
     )?;
 
-    // u32: a single value, and 9 values — a perfect square with no power-of-two divisor, landing on an exact 3x3
-    // square via the same fallback rule.
+    // u32: a single value, and 9 values — a perfect square with no power-of-two divisor, landing on an exact 3x3 square
+    // via the same fallback rule.
     place(
         X_SINGLE,
         290.0,
@@ -113,8 +113,8 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         ),
     )?;
 
-    // u64: a single value, and 4 values — both a perfect square and evenly divisible by a power of two, so the
-    // two layout rules agree on the same 2x2 shape.
+    // u64: a single value, and 4 values — both a perfect square and evenly divisible by a power of two, so the two
+    // layout rules agree on the same 2x2 shape.
     place(
         X_SINGLE,
         440.0,
@@ -134,10 +134,10 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         ),
     )?;
 
-    // A single u64 under Binary: 64 digits, nybble-grouped and byte-separated. This cell renders far wider than
-    // it is tall — the extreme cell-aspect-ratio case GridLayout::Automatic's own doc comment describes. It is
-    // also the one GridLayout::MaxColumns exists to let a caller cap. A standalone row of its own, not paired
-    // with a multi-value box, since this single cell is already wide enough to need the room.
+    // A single u64 under Binary: 64 digits, nybble-grouped and byte-separated. This cell renders far wider than it is
+    // tall — the extreme cell-aspect-ratio case GridLayout::Automatic's own doc comment describes. It is also the one
+    // GridLayout::MaxColumns exists to let a caller cap. A standalone row of its own, not paired with a multi-value
+    // box, since this single cell is already wide enough to need the room.
     place(
         X_SINGLE,
         590.0,

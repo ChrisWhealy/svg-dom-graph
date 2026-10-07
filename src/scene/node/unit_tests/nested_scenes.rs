@@ -96,8 +96,8 @@ fn enter_rejects_a_node_that_is_not_a_container() -> Result<(), String> {
     )
 }
 
-/// Once a container node has been entered, the parent it was entered from is no longer the tree's focused Scene, so
-/// it can no longer be navigated from until control returns via `exit`.
+/// Once a container node has been entered, the parent it was entered from is no longer the tree's focused Scene, so it
+/// can no longer be navigated from until control returns via `exit`.
 #[wasm_bindgen_test]
 fn navigation_from_a_scene_that_is_not_focused_fails() -> Result<(), String> {
     let parent = Scene::new(make_svg("container-not-focused-parent")).map_err(|e| e.to_string())?;
@@ -118,8 +118,8 @@ fn navigation_from_a_scene_that_is_not_focused_fails() -> Result<(), String> {
     )
 }
 
-/// A container node that was never entered is not the tree's focused Scene either — only the root (or whichever
-/// Scene was last entered) is. So `exit()` on a freshly grafted, un-entered child also fails with `NotFocused`.
+/// A container node that was never entered is not the tree's focused Scene either — only the root (or whichever Scene
+/// was last entered) is. So `exit()` on a freshly grafted, un-entered child also fails with `NotFocused`.
 #[wasm_bindgen_test]
 fn exit_on_a_grafted_but_never_entered_child_fails_with_not_focused() -> Result<(), String> {
     let parent = Scene::new(make_svg("container-ungrafted-exit-parent")).map_err(|e| e.to_string())?;
@@ -134,8 +134,8 @@ fn exit_on_a_grafted_but_never_entered_child_fails_with_not_focused() -> Result<
     )
 }
 
-/// `add_container_node` rejects a child that is not currently the focused Scene of its own tree — here, one of its
-/// own descendants is focused instead. Grafting only ever happens by an inactive tree's own root.
+/// `add_container_node` rejects a child that is not currently the focused Scene of its own tree — here, one of its own
+/// descendants is focused instead. Grafting only ever happens by an inactive tree's own root.
 #[wasm_bindgen_test]
 fn add_container_node_rejects_a_child_with_a_focused_descendant() -> Result<(), String> {
     let parent = Scene::new(make_svg("container-child-not-focused-parent")).map_err(|e| e.to_string())?;
@@ -153,8 +153,8 @@ fn add_container_node_rejects_a_child_with_a_focused_descendant() -> Result<(), 
     )
 }
 
-/// `add_container_node` rejects a child that already has a live parent — a nested `Scene` has exactly one owner at
-/// a time.
+/// `add_container_node` rejects a child that already has a live parent — a nested `Scene` has exactly one owner at a
+/// time.
 #[wasm_bindgen_test]
 fn add_container_node_rejects_an_already_nested_child() -> Result<(), String> {
     let parent_a = Scene::new(make_svg("container-already-nested-a")).map_err(|e| e.to_string())?;
@@ -171,8 +171,8 @@ fn add_container_node_rejects_an_already_nested_child() -> Result<(), String> {
     )
 }
 
-/// `add_container_node` rejects `self` as its own child, and rejects any of `self`'s own ancestors as a child —
-/// both would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from.
+/// `add_container_node` rejects `self` as its own child, and rejects any of `self`'s own ancestors as a child — both
+/// would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from.
 #[wasm_bindgen_test]
 fn add_container_node_rejects_self_and_ancestor_nesting() -> Result<(), String> {
     let a = Scene::new(make_svg("container-self-nesting-a")).map_err(|e| e.to_string())?;
@@ -193,12 +193,11 @@ fn add_container_node_rejects_self_and_ancestor_nesting() -> Result<(), String> 
     )
 }
 
-/// The scenario external review's third round asked for explicitly: a detached subtree (its own former parent
-/// dropped) becomes graftable again through ordinary navigation, with no special reset operation needed.
+/// The scenario external review's third round asked for explicitly: a detached subtree (its own former parent dropped)
+/// becomes graftable again through ordinary navigation, with no special reset operation needed.
 ///
-/// `A → B → C`, `C` focused; drop `A`; `B` becomes the effective root, `C` stays focused; grafting `B` under `D`
-/// fails (`C`, a live descendant, is still focused, not `B`); `C.exit()` focuses `B`; grafting `B` under `D` now
-/// succeeds.
+/// `A → B → C`, `C` focused; drop `A`; `B` becomes the effective root, `C` stays focused; grafting `B` under `D` fails
+/// (`C`, a live descendant, is still focused, not `B`); `C.exit()` focuses `B`; grafting `B` under `D` now succeeds.
 #[wasm_bindgen_test]
 fn a_detached_subtree_can_be_regrafted_once_its_own_root_is_focused_again() -> Result<(), String> {
     let a = Scene::new(make_svg("container-regraft-a")).map_err(|e| e.to_string())?;

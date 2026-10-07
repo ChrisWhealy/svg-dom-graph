@@ -1,10 +1,10 @@
 //! Dropping a node onto another node pushes it back to the expected clear position, via real, CDP-driven mouse input.
 //!
-//! Drags the fixture's `mover` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(3)`) onto `blocker` (`#diagram > g.svg-dom-graph-content > g:nth-of-type(2)`, not
-//! draggable, fixed in place), then checks that `mover`'s final position is the one the documented overlap-resolution
-//! rule predicted: pushed back along a straight line from its own pre-drag centre through `blocker`'s centre, stopping
-//! just outside `blocker`'s boundary (inflated by half of `mover`'s own size, so `mover`'s rectangle — not just its
-//! centre — clears the overlap) plus a small padding gap.
+//! Drags the fixture's `mover` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(3)`) onto `blocker` (`#diagram
+//! > g.svg-dom-graph-content > g:nth-of-type(2)`, not draggable, fixed in place), then checks that `mover`'s final
+//! position is the one the documented overlap-resolution rule predicted: pushed back along a straight line from its own
+//! pre-drag centre through `blocker`'s centre, stopping just outside `blocker`'s boundary (inflated by half of
+//! `mover`'s own size, so `mover`'s rectangle — not just its centre — clears the overlap) plus a small padding gap.
 //!
 //! # Expected position, worked by hand
 //!
@@ -43,8 +43,8 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
         .get_midpoint()
         .map_err(|e| format!("could not get blocker's midpoint: {e}"))?;
 
-    // Drags mover's centre directly onto blocker's centre — a real, multi-step drag, not a single instantaneous
-    // jump, so it exercises the same pointermove sequence a real user's mouse would produce.
+    // Drags mover's centre directly onto blocker's centre — a real, multi-step drag, not a single instantaneous jump,
+    // so it exercises the same pointermove sequence a real user's mouse would produce.
     let steps = 4;
     let mut waypoints = Vec::with_capacity(steps + 1);
     for i in 0..=steps {
@@ -56,8 +56,8 @@ fn dropping_mover_onto_blocker_lands_at_the_expected_clear_position() -> Result<
     }
     drag(&tab, &waypoints)?;
 
-    // Give the page a moment to process the dispatched events, including the corrective move_node call
-    // resolve_overlap triggers on pointerup, before reading the result back.
+    // Give the page a moment to process the dispatched events, including the corrective move_node call resolve_overlap
+    // triggers on pointerup, before reading the result back.
     std::thread::sleep(Duration::from_millis(100));
 
     let mover_group = tab

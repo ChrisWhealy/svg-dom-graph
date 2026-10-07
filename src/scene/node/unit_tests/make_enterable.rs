@@ -19,8 +19,7 @@ fn keydown(element: &web_sys::Element, key: &str) {
     element.dispatch_event(&event).unwrap();
 }
 
-/// `make_enterable` rejects a node that is not a container — there is no nested `Scene` for a click on it to
-/// enter.
+/// `make_enterable` rejects a node that is not a container — there is no nested `Scene` for a click on it to enter.
 #[wasm_bindgen_test]
 fn make_enterable_rejects_a_non_container_node() -> Result<(), String> {
     let scene = Scene::new(make_svg("make-enterable-not-a-container")).map_err(|e| e.to_string())?;
@@ -34,8 +33,8 @@ fn make_enterable_rejects_a_non_container_node() -> Result<(), String> {
     )
 }
 
-/// A second `make_enterable` call for the same node is rejected outright, the same reasoning
-/// `Error::AlreadyDraggable` already documents for `make_draggable`.
+/// A second `make_enterable` call for the same node is rejected outright, the same reasoning `Error::AlreadyDraggable`
+/// already documents for `make_draggable`.
 #[wasm_bindgen_test]
 fn make_enterable_rejects_a_second_call() -> Result<(), String> {
     let parent = Scene::new(make_svg("make-enterable-twice-parent")).map_err(|e| e.to_string())?;
@@ -75,8 +74,8 @@ fn clicking_an_enterable_container_node_enters_it() -> Result<(), String> {
     )
 }
 
-/// Enter/Space while an enterable container node has keyboard focus enters its nested `Scene` too, matching the
-/// same pointer-or-keyboard activation `toolbar::build_button`'s own buttons already offer.
+/// Enter/Space while an enterable container node has keyboard focus enters its nested `Scene` too, matching the same
+/// pointer-or-keyboard activation `toolbar::build_button`'s own buttons already offer.
 #[wasm_bindgen_test]
 fn keydown_on_an_enterable_container_node_enters_it() -> Result<(), String> {
     let parent = Scene::new(make_svg("make-enterable-keydown-parent")).map_err(|e| e.to_string())?;
@@ -95,11 +94,11 @@ fn keydown_on_an_enterable_container_node_enters_it() -> Result<(), String> {
     )
 }
 
-/// The external review that caught this: a failed attribute write or listener registration inside
-/// `make_enterable` must leave the node exactly as it was — not a container node advertising `role="button"` with
-/// no working click handler behind it, and not a caller's own pre-existing `style` clobbered and never restored.
-/// Forces the `tabindex` write to fail, after `role` has already been written successfully, so a correct rollback
-/// has real work to do beyond just removing listeners that were never reached.
+/// The external review that caught this: a failed attribute write or listener registration inside `make_enterable` must
+/// leave the node exactly as it was — not a container node advertising `role="button"` with no working click handler
+/// behind it, and not a caller's own pre-existing `style` clobbered and never restored. Forces the `tabindex` write to
+/// fail, after `role` has already been written successfully, so a correct rollback has real work to do beyond just
+/// removing listeners that were never reached.
 #[wasm_bindgen_test]
 fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> Result<(), String> {
     let parent = Scene::new(make_svg("make-enterable-rollback-parent")).map_err(|e| e.to_string())?;
@@ -136,8 +135,8 @@ fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> 
         "the node's own pre-existing style was not restored after a failed make_enterable",
     )?;
 
-    // A retry, with the injector gone, must still succeed — the failed attempt left nothing behind for a fresh
-    // one to conflict with.
+    // A retry, with the injector gone, must still succeed — the failed attempt left nothing behind for a fresh one to
+    // conflict with.
     parent.make_enterable(node).map_err(|e| e.to_string())?;
     check(
         group.get_attribute("role").as_deref() == Some("button"),

@@ -23,13 +23,13 @@
 //!    that the clamped node stays real-hit-testable — see `bounds.rs`.
 //! 8. `named_value` — not draggable, a named single-value data node (`"B: u64 = AB CD EF 01 23 45 67 89"`), with a
 //!    [`Scene::show_selection_toolbar`] bound to it. Used by `accessibility_tree.rs` to query the real,
-//!    browser-computed accessibility tree via CDP's own `Accessibility` domain, not just the rendered DOM
-//!    `wasm-pack test`'s own suite already checks — both `named_value`'s own role/name, and the selection
-//!    toolbar's role, name, each button's own name, and disabled state.
+//!    browser-computed accessibility tree via CDP's own `Accessibility` domain, not just the rendered DOM `wasm-pack
+//!    test`'s own suite already checks — both `named_value`'s own role/name, and the selection toolbar's role, name,
+//!    each button's own name, and disabled state.
 //!
-//! Panning and wheel zoom are switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the whole
-//! scene and Ctrl plus the wheel zooms it. The
-//! background is clear of every node and connector at, for example, `(450, 200)` and `(150, 90)`.
+//! Panning and wheel zoom are switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the
+//! whole scene and Ctrl plus the wheel zooms it. The background is clear of every node and connector at, for example,
+//! `(450, 200)` and `(150, 90)`.
 //!
 //! Connectors, in add order (`#diagram > g.svg-dom-graph-content > path:nth-of-type(N)`):
 //!
@@ -114,17 +114,17 @@ fn build() -> Result<(), Error> {
     let bounded = scene.add_node(Point::new(400.0, 20.0), box_size, "bounded")?;
     scene.make_draggable_with(bounded, DragOptions::default().with_bounds(Some(view_box)))?;
 
-    // Not draggable — this one exists purely for `accessibility_tree.rs` to query, never for hit-testing or
-    // dragging. Same value `tests/drag/data_node.rs`'s own
-    // `a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real_value` test already checks at
-    // the DOM level, so the two tests cover the same content at two different layers.
+    // Not draggable — this one exists purely for `accessibility_tree.rs` to query, never for hit-testing or dragging.
+    // Same value `tests/drag/data_node.rs`'s own
+    // `a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real_value` test already checks at the
+    // DOM level, so the two tests cover the same content at two different layers.
     //
-    // Placed well outside the diagram's own `(0, 0, 500, 400)` viewBox, rather than merely far from every other
-    // node within it. `Scene::make_draggable`'s own `PushClear` collision resolution checks every node's rect for
-    // overlap on drop, this one included, regardless of on-screen position within the viewBox. A spot far outside
-    // it can never overlap another node's landing rect, whatever that test's own drag distance turns out to be.
-    // This node plays no visual role, so being off-canvas costs nothing. `Accessibility.getPartialAXTree` reads
-    // the accessibility tree, not the painted picture, so clipping outside the viewBox does not affect it either.
+    // Placed well outside the diagram's own `(0, 0, 500, 400)` viewBox, rather than merely far from every other node
+    // within it. `Scene::make_draggable`'s own `PushClear` collision resolution checks every node's rect for overlap on
+    // drop, this one included, regardless of on-screen position within the viewBox. A spot far outside it can never
+    // overlap another node's landing rect, whatever that test's own drag distance turns out to be. This node plays no
+    // visual role, so being off-canvas costs nothing. `Accessibility.getPartialAXTree` reads the accessibility tree,
+    // not the painted picture, so clipping outside the viewBox does not affect it either.
     let named_value = scene.add_named_data_node(
         Point::new(2000.0, 2000.0),
         "B",
@@ -133,10 +133,10 @@ fn build() -> Result<(), Error> {
 
     // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it — the
     // ordinary case for a freshly built data node, and the one `accessibility_tree.rs` uses to prove Chrome's own
-    // computed accessibility tree actually exposes the toolbar's role, name, and each button's own name and
-    // disabled state, not just what the rendered DOM attributes claim. `named_value` holds exactly one value, so
-    // this starts with Next enabled and Prev/Restart disabled — a real, deterministic disabled state with no
-    // interaction needed to reach it.
+    // computed accessibility tree actually exposes the toolbar's role, name, and each button's own name and disabled
+    // state, not just what the rendered DOM attributes claim. `named_value` holds exactly one value, so this starts
+    // with Next enabled and Prev/Restart disabled — a real, deterministic disabled state with no interaction needed to
+    // reach it.
     scene.show_selection_toolbar(named_value, SelectionToolbarOptions::default(), |_, _, _| {})?;
 
     // Panning on, with no toolbar. Dragging empty background then pans the content, so `pan.rs` can drive it with real

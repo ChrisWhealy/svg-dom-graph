@@ -1,6 +1,6 @@
 //! `panel-operators-unary` / `#operators-unary-diagram`: one operand node feeding an operator node, for every
-//! [`UnaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by
-//! the library itself — see [`build_unary_operator_demo`]'s own doc comment.
+//! [`UnaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by the
+//! library itself — see [`build_unary_operator_demo`]'s own doc comment.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
@@ -21,10 +21,10 @@ thread_local! {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the demo scene: one operand node feeding an operator node, for every [`UnaryOperator`] this crate names.
 ///
-/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"` — the raw value's own outer box, wrapping
-/// its value cell, the same way an operator node's own outer box wraps its result. Naming the operand this way,
-/// rather than leaving it a plain [`Scene::add_data_node`] box, gives the reader an unambiguous handle for the
-/// value the operator acts on.
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"` — the raw value's own outer box, wrapping its
+/// value cell, the same way an operator node's own outer box wraps its result. Naming the operand this way, rather than
+/// leaving it a plain [`Scene::add_data_node`] box, gives the reader an unambiguous handle for the value the operator
+/// acts on.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`!`, `<<`, `>>`, `rotate_left`,
 /// `rotate_right`, `reverse_bits`, `swap_bytes`). `svg_dom_graph` itself never evaluates an operator — see
@@ -49,8 +49,8 @@ pub(crate) fn build_unary_operator_demo() -> Result<(), String> {
     let scene = Scene::new(svg).map_err(stringify)?;
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every row's operand shares this left-hand x; every row's operator node shares this one, a fixed distance to
-    // its right.
+    // Every row's operand shares this left-hand x; every row's operator node shares this one, a fixed distance to its
+    // right.
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 
@@ -145,8 +145,8 @@ pub(crate) fn build_unary_operator_demo() -> Result<(), String> {
         .map_err(stringify)?;
     scene.make_draggable_with(ror_node, drag_options).map_err(stringify)?;
 
-    // Reverse bits — u8, binary, so the end-to-end bit reversal reads digit by digit, the same reason NOT above
-    // uses binary too.
+    // Reverse bits — u8, binary, so the end-to-end bit reversal reads digit by digit, the same reason NOT above uses
+    // binary too.
     let rbit_input: u8 = 0b1100_0010;
     let rbit_operand = place_operand(
         X_OPERAND,

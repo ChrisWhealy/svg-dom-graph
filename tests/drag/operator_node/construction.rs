@@ -33,9 +33,8 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A unary operator node renders a label row naming the operator, and its single result value in its own inset
-/// cell, coloured by the result's own type — one outer rect plus one value-cell rect, one label text plus one
-/// value text.
+/// A unary operator node renders a label row naming the operator, and its single result value in its own inset cell,
+/// coloured by the result's own type — one outer rect plus one value-cell rect, one label text plus one value text.
 #[wasm_bindgen_test]
 fn a_unary_operator_node_renders_its_label_and_value_rows() -> Result<(), String> {
     let svg = make_svg("operator-unary", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -84,10 +83,9 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its
-/// own real formatted result value as text, rather than just the result's own type. Its `<title>` — the browser's
-/// own mouse-hover tooltip — carries that exact same text, so hovering shows the same thing a screen reader
-/// announces.
+/// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its own
+/// real formatted result value as text, rather than just the result's own type. Its `<title>` — the browser's own
+/// mouse-hover tooltip — carries that exact same text, so hovering shows the same thing a screen reader announces.
 #[wasm_bindgen_test]
 fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value() -> Result<(), String> {
     let svg = make_svg("operator-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -115,8 +113,8 @@ fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A binary operator node auto-wires an edge from each of its two operands — no separate `add_edge` call is
-/// needed, or even possible to get wrong.
+/// A binary operator node auto-wires an edge from each of its two operands — no separate `add_edge` call is needed, or
+/// even possible to get wrong.
 #[wasm_bindgen_test]
 fn a_binary_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
     let svg = make_svg("operator-binary", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -148,10 +146,10 @@ fn a_binary_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The value cell drawn inside an operator node's own box never touches that box's own left, right, or bottom
-/// edge. A connector's own anchor point is always somewhere on the outer box's own perimeter — never on some
-/// inner sub-region — so an inset value cell keeps every such anchor visually attached to the "named operation"
-/// box, rather than looking like it terminates at the result cell instead.
+/// The value cell drawn inside an operator node's own box never touches that box's own left, right, or bottom edge. A
+/// connector's own anchor point is always somewhere on the outer box's own perimeter — never on some inner sub-region —
+/// so an inset value cell keeps every such anchor visually attached to the "named operation" box, rather than looking
+/// like it terminates at the result cell instead.
 #[wasm_bindgen_test]
 fn operator_node_value_cell_is_inset_from_every_outer_edge() -> Result<(), String> {
     let svg = make_svg("operator-value-cell-inset", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -208,8 +206,8 @@ fn operator_node_value_cell_is_inset_from_every_outer_edge() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An arithmetic operator node renders and auto-wires exactly like a [`BinaryOperator`] one — same box shape, same
-/// two auto-wired input edges — via the two-input operator construction the two share.
+/// An arithmetic operator node renders and auto-wires exactly like a [`BinaryOperator`] one — same box shape, same two
+/// auto-wired input edges — via the two-input operator construction the two share.
 #[wasm_bindgen_test]
 fn an_arithmetic_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
     let svg = make_svg("operator-arithmetic", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -256,8 +254,8 @@ fn an_arithmetic_operator_node_auto_wires_both_input_edges() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Both operands to an arithmetic operator node must share one [`NodeValues`] width, exactly like a
-/// [`BinaryOperator`] node's — validated by the same shared construction path.
+/// Both operands to an arithmetic operator node must share one [`NodeValues`] width, exactly like a [`BinaryOperator`]
+/// node's — validated by the same shared construction path.
 #[wasm_bindgen_test]
 fn add_arithmetic_operator_node_rejects_mismatched_operand_widths() -> Result<(), String> {
     let svg = make_svg(
@@ -289,8 +287,8 @@ fn add_arithmetic_operator_node_rejects_mismatched_operand_widths() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Both operands to a binary operator node must share one [`NodeValues`] width. A `u8` and a `u16` operand are
-/// rejected before anything is drawn or wired.
+/// Both operands to a binary operator node must share one [`NodeValues`] width. A `u8` and a `u16` operand are rejected
+/// before anything is drawn or wired.
 #[wasm_bindgen_test]
 fn add_binary_operator_node_rejects_mismatched_operand_widths() -> Result<(), String> {
     let svg = make_svg("operator-type-mismatch", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -317,8 +315,8 @@ fn add_binary_operator_node_rejects_mismatched_operand_widths() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second
-/// "other side" to route a connector to, and the router could never tell its two auto-wired edges apart anyway.
+/// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second "other
+/// side" to route a connector to, and the router could never tell its two auto-wired edges apart anyway.
 #[wasm_bindgen_test]
 fn add_binary_operator_node_rejects_duplicate_operands() -> Result<(), String> {
     let svg = make_svg("operator-duplicate-operands", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -339,8 +337,8 @@ fn add_binary_operator_node_rejects_duplicate_operands() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An operator's operand must itself be a [`DataNodeContent`] node — a plain label node has no value width an
-/// operator could act on.
+/// An operator's operand must itself be a [`DataNodeContent`] node — a plain label node has no value width an operator
+/// could act on.
 #[wasm_bindgen_test]
 fn add_unary_operator_node_rejects_a_label_node_as_its_operand() -> Result<(), String> {
     let svg = make_svg("operator-operand-not-data", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

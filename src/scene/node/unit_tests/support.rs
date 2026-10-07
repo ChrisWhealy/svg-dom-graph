@@ -23,10 +23,10 @@ pub(super) fn visibility(svg: &SvgRoot) -> Option<String> {
 }
 
 /// Makes `Element.setAttribute` throw for the named attributes while it is alive, and restores the original when
-/// dropped. A small, self-contained copy of `tests/drag/toolbar/failure_injection.rs`'s own `FailingWrites`: that
-/// one lives in the external integration-test crate, out of reach from this crate's own internal `#[cfg(test)]`
-/// suite. Shared here by [`super::make_enterable`] and [`super::replace_container_child`], the two scenario modules
-/// that each need a DOM write to fail on purpose.
+/// dropped. A small, self-contained copy of `tests/drag/toolbar/failure_injection.rs`'s own `FailingWrites`: that one
+/// lives in the external integration-test crate, out of reach from this crate's own internal `#[cfg(test)]` suite.
+/// Shared here by [`super::make_enterable`] and [`super::replace_container_child`], the two scenario modules that each
+/// need a DOM write to fail on purpose.
 pub(super) struct FailingWrites;
 
 impl FailingWrites {

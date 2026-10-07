@@ -9,9 +9,9 @@ use svg_dom_graph::{
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
-/// `(stroke, stroke-width)` of `container_id`'s own `n`th node's outer `<rect>` — the first `rect` in document
-/// order under that node's own `<g>`, which is always the outer box itself (see `BoxHandles::outer_rect`'s own
-/// doc comment for why that holds for every node kind this crate draws).
+/// `(stroke, stroke-width)` of `container_id`'s own `n`th node's outer `<rect>` — the first `rect` in document order
+/// under that node's own `<g>`, which is always the outer box itself (see `BoxHandles::outer_rect`'s own doc comment
+/// for why that holds for every node kind this crate draws).
 fn outer_stroke(container_id: &str, n: u32) -> Result<(String, String), String> {
     let group = nth_group(container_id, n)?;
     let rect = group
@@ -24,8 +24,8 @@ fn outer_stroke(container_id: &str, n: u32) -> Result<(String, String), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Focusing a plain node rings its own outer box, and un-focusing restores the plain default — proving this
-/// works where `Scene::set_selection` flatly cannot: a plain node has no cell to select at all.
+/// Focusing a plain node rings its own outer box, and un-focusing restores the plain default — proving this works where
+/// `Scene::set_selection` flatly cannot: a plain node has no cell to select at all.
 #[wasm_bindgen_test]
 fn focusing_a_plain_node_rings_its_own_outer_box() -> Result<(), String> {
     let svg = make_svg("focus-plain", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
@@ -58,8 +58,8 @@ fn focusing_a_plain_node_rings_its_own_outer_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Focusing an operator node rings its own outer box — the label/value-cell wrapper, not the value cell itself,
-/// which `cell_rects` already owns for `Scene::set_selection`'s own unrelated purposes.
+/// Focusing an operator node rings its own outer box — the label/value-cell wrapper, not the value cell itself, which
+/// `cell_rects` already owns for `Scene::set_selection`'s own unrelated purposes.
 #[wasm_bindgen_test]
 fn focusing_an_operator_node_rings_its_own_outer_box() -> Result<(), String> {
     let svg = make_svg("focus-operator", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -87,8 +87,8 @@ fn focusing_an_operator_node_rings_its_own_outer_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Focusing a named data node rings the named outer wrapper — not the inner content rect `Scene::set_selection`
-/// itself recolours for a single-value node's own focus/band highlighting.
+/// Focusing a named data node rings the named outer wrapper — not the inner content rect `Scene::set_selection` itself
+/// recolours for a single-value node's own focus/band highlighting.
 #[wasm_bindgen_test]
 fn focusing_a_named_data_node_rings_the_named_wrapper_not_the_content_cell() -> Result<(), String> {
     let svg = make_svg("focus-named", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
@@ -111,8 +111,8 @@ fn focusing_a_named_data_node_rings_the_named_wrapper_not_the_content_cell() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Any number of nodes can be focused at once — unlike `Scene::show_selection_toolbar`'s own managed `Selection`,
-/// there is no single "current" focus this crate tracks, so focusing a second node never un-focuses a first.
+/// Any number of nodes can be focused at once — unlike `Scene::show_selection_toolbar`'s own managed `Selection`, there
+/// is no single "current" focus this crate tracks, so focusing a second node never un-focuses a first.
 #[wasm_bindgen_test]
 fn more_than_one_node_can_be_focused_at_once() -> Result<(), String> {
     let svg = make_svg("focus-multi", Size::new(400.0, 300.0), Size::new(400.0, 300.0));

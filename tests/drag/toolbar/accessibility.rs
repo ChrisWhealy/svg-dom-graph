@@ -1,5 +1,5 @@
-//! Accessibility. A keyboard user can zoom from the toolbar, so they must also be able to move the view afterwards,
-//! and see where focus is.
+//! Accessibility. A keyboard user can zoom from the toolbar, so they must also be able to move the view afterwards, and
+//! see where focus is.
 
 use super::support::*;
 use crate::common::{attr_f64, check, check_close, dispatch_pointer_event};
@@ -87,8 +87,8 @@ fn activating_an_aria_disabled_button_does_nothing() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With panning on, the scene adds a keyboard focus target of its own: a role, a name that says how far it is zoomed, and
-/// a description of its keys. All of that is on that element, and none of it on the application's `<svg>`.
+/// With panning on, the scene adds a keyboard focus target of its own: a role, a name that says how far it is zoomed,
+/// and a description of its keys. All of that is on that element, and none of it on the application's `<svg>`.
 #[wasm_bindgen_test]
 async fn the_scene_adds_a_named_keyboard_target_that_reports_its_zoom() -> Result<(), String> {
     let scene = new_scene("a11y-root")?;
@@ -129,9 +129,9 @@ async fn the_scene_adds_a_named_keyboard_target_that_reports_its_zoom() -> Resul
     )
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Arrow keys move the view like scrolling: pressing right moves the view right, so the content moves left. One press is
-/// 40 units, and Shift makes it five times further. This is the keyboard way back to content that zooming pushed out of
-/// view.
+/// Arrow keys move the view like scrolling: pressing right moves the view right, so the content moves left. One press
+/// is 40 units, and Shift makes it five times further. This is the keyboard way back to content that zooming pushed out
+/// of view.
 #[wasm_bindgen_test]
 fn arrow_keys_pan_the_view_and_shift_pans_further() -> Result<(), String> {
     let scene = new_scene("a11y-arrows")?;
@@ -301,8 +301,9 @@ fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mo
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The keyboard target is the scene's own, so once no gesture needs it the whole element goes, along with its role, name,
-/// description, tab stop, and key listener. Nothing of the application's `<svg>` was involved, so nothing on it changes.
+/// The keyboard target is the scene's own, so once no gesture needs it the whole element goes, along with its role,
+/// name, description, tab stop, and key listener. Nothing of the application's `<svg>` was involved, so nothing on it
+/// changes.
 #[wasm_bindgen_test]
 fn hiding_the_toolbar_removes_the_keyboard_target_and_leaves_the_svg_alone() -> Result<(), String> {
     let scene = new_scene("a11y-teardown")?;
@@ -331,8 +332,8 @@ fn hiding_the_toolbar_removes_the_keyboard_target_and_leaves_the_svg_alone() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A key sent to the application's `<svg>` itself is not the scene's: only the focus target takes keys, so an application
-/// that handles keys on its own `<svg>` is not competing with anything.
+/// A key sent to the application's `<svg>` itself is not the scene's: only the focus target takes keys, so an
+/// application that handles keys on its own `<svg>` is not competing with anything.
 #[wasm_bindgen_test]
 fn a_key_sent_to_the_svg_itself_does_nothing() -> Result<(), String> {
     let scene = new_scene("a11y-svg-key")?;
@@ -351,8 +352,8 @@ fn a_key_sent_to_the_svg_itself_does_nothing() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The target draws nothing until it has keyboard focus. Then it outlines the visible area, so it is obvious where focus
-/// is, and blur takes the outline away again.
+/// The target draws nothing until it has keyboard focus. Then it outlines the visible area, so it is obvious where
+/// focus is, and blur takes the outline away again.
 #[wasm_bindgen_test]
 fn the_keyboard_target_outlines_the_scene_only_while_it_has_focus() -> Result<(), String> {
     let scene = new_scene("a11y-outline")?;
@@ -411,8 +412,9 @@ fn the_keyboard_target_never_gets_in_the_way_of_the_pan_surface() -> Result<(), 
     check_close(scene.zoom_scale(), 1.0)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Zoom changes must not cause disruptive announcements. Nothing here is a live region, and the state attributes are only
-/// rewritten when they actually change, so a run of zoom steps that changes no button's state touches none of them.
+/// Zoom changes must not cause disruptive announcements. Nothing here is a live region, and the state attributes are
+/// only rewritten when they actually change, so a run of zoom steps that changes no button's state touches none of
+/// them.
 #[wasm_bindgen_test]
 fn zooming_adds_no_live_region_and_rewrites_no_unchanged_button_state() -> Result<(), String> {
     let scene = new_scene("a11y-quiet")?;

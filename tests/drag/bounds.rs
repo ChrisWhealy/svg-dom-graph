@@ -11,8 +11,8 @@ use svg_dom_graph::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a bounded node far past the top-left corner clamps its rect to `bounds`'s own near edge, `(0, 0)`,
-/// rather than letting it go negative.
+/// Dragging a bounded node far past the top-left corner clamps its rect to `bounds`'s own near edge, `(0, 0)`, rather
+/// than letting it go negative.
 #[wasm_bindgen_test]
 fn dragging_past_the_near_edge_clamps_to_bounds_origin() -> Result<(), String> {
     let svg = make_svg("bounds-near-edge", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -41,8 +41,8 @@ fn dragging_past_the_near_edge_clamps_to_bounds_origin() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a bounded node far past the bottom-right corner clamps its rect so its own bottom-right corner stays
-/// on `bounds`'s own far edge: `x = 400 - 90 = 310`, `y = 260 - 50 = 210`.
+/// Dragging a bounded node far past the bottom-right corner clamps its rect so its own bottom-right corner stays on
+/// `bounds`'s own far edge: `x = 400 - 90 = 310`, `y = 260 - 50 = 210`.
 #[wasm_bindgen_test]
 fn dragging_past_the_far_edge_clamps_to_bounds_own_far_corner() -> Result<(), String> {
     let svg = make_svg("bounds-far-edge", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -94,10 +94,10 @@ fn dragging_without_bounds_stays_unconstrained() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// After a bounded drag clamps a node to the edge and drops it there, the same node's pointer listeners are still
-/// live and still respond to a fresh drag — the exact case this feature exists to protect. Without `bounds`, a
-/// node dropped outside the view box renders clipped, and a real browser could never hit-test it again to start
-/// this second drag at all.
+/// After a bounded drag clamps a node to the edge and drops it there, the same node's pointer listeners are still live
+/// and still respond to a fresh drag — the exact case this feature exists to protect. Without `bounds`, a node dropped
+/// outside the view box renders clipped, and a real browser could never hit-test it again to start this second drag at
+/// all.
 #[wasm_bindgen_test]
 fn a_node_clamped_to_the_edge_can_still_be_dragged_again() -> Result<(), String> {
     let svg = make_svg("bounds-redrag", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -138,8 +138,8 @@ fn a_node_clamped_to_the_edge_can_still_be_dragged_again() -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::make_draggable_with` rejects a `DragOptions::bounds` with a non-finite origin, before installing
-/// anything — a rejected call leaves `id` not draggable at all, not draggable-but-unbounded.
+/// `Scene::make_draggable_with` rejects a `DragOptions::bounds` with a non-finite origin, before installing anything —
+/// a rejected call leaves `id` not draggable at all, not draggable-but-unbounded.
 #[wasm_bindgen_test]
 fn make_draggable_with_rejects_a_non_finite_bounds_origin() -> Result<(), String> {
     let svg = make_svg("bounds-nan-origin", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -187,8 +187,8 @@ fn make_draggable_with_rejects_a_negative_bounds_size() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A rejected `bounds` leaves `id` exactly as it was: not marked draggable at all, not silently installed
-/// without the bound. A later, valid `make_draggable_with` call for the same node still succeeds.
+/// A rejected `bounds` leaves `id` exactly as it was: not marked draggable at all, not silently installed without the
+/// bound. A later, valid `make_draggable_with` call for the same node still succeeds.
 #[wasm_bindgen_test]
 fn a_rejected_bounds_leaves_the_node_not_draggable() -> Result<(), String> {
     let svg = make_svg("bounds-rejected-then-valid", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -211,8 +211,8 @@ fn a_rejected_bounds_leaves_the_node_not_draggable() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A zero-width or zero-height `bounds` is legal, not rejected — `clamp_to_bounds` already gives it a
-/// deterministic result: every drag pins to that zero-width axis's own fixed coordinate.
+/// A zero-width or zero-height `bounds` is legal, not rejected — `clamp_to_bounds` already gives it a deterministic
+/// result: every drag pins to that zero-width axis's own fixed coordinate.
 #[wasm_bindgen_test]
 fn make_draggable_with_accepts_a_zero_width_bounds() -> Result<(), String> {
     let svg = make_svg("bounds-zero-width", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -246,15 +246,15 @@ fn make_draggable_with_accepts_a_zero_width_bounds() -> Result<(), String> {
 ///
 /// # Expected result, worked by hand
 ///
-/// `blocker` is `(30, 100)`, size `(80, 40)` — centre `(70, 120)`.
-/// `A` starts at `(0, 100)`, size `(90, 50)` — pre-drag centre `(45, 125)`, already on `blocker`'s own west side.
+/// `blocker` is `(30, 100)`, size `(80, 40)` — centre `(70, 120)`. `A` starts at `(0, 100)`, size `(90, 50)` — pre-drag
+/// centre `(45, 125)`, already on `blocker`'s own west side.
 ///
-/// Dragging `A`'s centre from `(45, 125)` to `(55, 125)` — a small, deliberate 10-unit move — lands `A`'s new rect
-/// at `(10, 100)`, overlapping `blocker`. `CollisionPolicy::PushClear`'s default 6-unit padding then pushes `A`
-/// back along the line from `blocker`'s centre through `A`'s own *pre-drag* centre — continuing further west, not
-/// back toward where it was just dropped. That push alone would land `A`'s corrected origin at roughly
-/// `(-65.9, 113.2)` — far past `bounds`'s own `x = 0` edge. With `bounds` in effect, the corrected origin clamps
-/// to `x = 0`, leaving `y` (`113.18`, well inside `bounds`) untouched.
+/// Dragging `A`'s centre from `(45, 125)` to `(55, 125)` — a small, deliberate 10-unit move — lands `A`'s new rect at
+/// `(10, 100)`, overlapping `blocker`. `CollisionPolicy::PushClear`'s default 6-unit padding then pushes `A` back along
+/// the line from `blocker`'s centre through `A`'s own *pre-drag* centre — continuing further west, not back toward
+/// where it was just dropped. That push alone would land `A`'s corrected origin at roughly `(-65.9, 113.2)` — far past
+/// `bounds`'s own `x = 0` edge. With `bounds` in effect, the corrected origin clamps to `x = 0`, leaving `y` (`113.18`,
+/// well inside `bounds`) untouched.
 #[wasm_bindgen_test]
 fn collision_pushback_near_an_edge_stays_within_bounds() -> Result<(), String> {
     let svg = make_svg("bounds-collision-pushback", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -286,13 +286,13 @@ fn collision_pushback_near_an_edge_stays_within_bounds() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A data node whose own rendered width exceeds `bounds`'s own width pins to `bounds`'s near edge on that axis.
-/// This matches an oversized ordinary node exactly. `clamp_to_bounds` only ever looks at a node's `Rect`, never
-/// at what kind of content produced it.
+/// A data node whose own rendered width exceeds `bounds`'s own width pins to `bounds`'s near edge on that axis. This
+/// matches an oversized ordinary node exactly. `clamp_to_bounds` only ever looks at a node's `Rect`, never at what kind
+/// of content produced it.
 ///
-/// Four `u64` binary values, forced into 4 columns, render far wider than the deliberately narrow 100-unit
-/// `bounds` used here. Each cell alone (32 space-separated binary digits) is wider than that on any reasonable
-/// font. So this holds regardless of exact glyph metrics.
+/// Four `u64` binary values, forced into 4 columns, render far wider than the deliberately narrow 100-unit `bounds`
+/// used here. Each cell alone (32 space-separated binary digits) is wider than that on any reasonable font. So this
+/// holds regardless of exact glyph metrics.
 #[wasm_bindgen_test]
 fn dragging_a_data_node_wider_than_bounds_pins_to_the_near_edge() -> Result<(), String> {
     let svg = make_svg("bounds-large-data-node", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -321,10 +321,10 @@ fn dragging_a_data_node_wider_than_bounds_pins_to_the_near_edge() -> Result<(), 
     let options = DragOptions::default().with_bounds(Some(bounds));
     scene.make_draggable_with(node, options).map_err(|e| e.to_string())?;
 
-    // A modest rightward/downward move — well inside an ordinarily sized node's own clamp range. Y is not
-    // oversized, so it lands wherever an ordinary drag would (50 + 20 = 70). X pins to 0 regardless of this
-    // rightward push. `clamp_to_bounds`'s own clamp range collapses to the single point `bounds.origin.x` once
-    // the node's own width exceeds `bounds`'s width. So no drag direction can move it off that edge.
+    // A modest rightward/downward move — well inside an ordinarily sized node's own clamp range. Y is not oversized, so
+    // it lands wherever an ordinary drag would (50 + 20 = 70). X pins to 0 regardless of this rightward push.
+    // `clamp_to_bounds`'s own clamp range collapses to the single point `bounds.origin.x` once the node's own width
+    // exceeds `bounds`'s width. So no drag direction can move it off that edge.
     dispatch_pointer_event(&group, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group, "pointermove", 130, 120, 1)?;
     dispatch_pointer_event(&group, "pointerup", 130, 120, 1)?;

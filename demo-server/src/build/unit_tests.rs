@@ -32,10 +32,10 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// prepare_stage — the end-to-end staging check: everything build_demo does except the wasm rebuild, run against
-// the real project. This is what actually proves catalogue validation, template assembly, and asset copying stay
-// wired together correctly as one pipeline, not just that each phase's own unit tests (in panels::unit_tests and
-// validate::unit_tests) pass in isolation.
+//   prepare_stage — the end-to-end staging check: everything build_demo does except the wasm rebuild, run against the
+//   real project. This is what actually proves catalogue validation, template assembly, and asset copying stay wired
+//   together correctly as one pipeline, not just that each phase's own unit tests (in panels::unit_tests and
+//   validate::unit_tests) pass in isolation.
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -65,8 +65,8 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
 fn prepare_stage_creates_a_stage_dir_that_does_not_already_exist() -> Result<(), String> {
     let root = workspace_root()?;
     let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
-    // A fresh, not-yet-created subdirectory — proves `prepare_stage` creates it, rather than merely tolerating one
-    // that already exists.
+    // A fresh, not-yet-created subdirectory — proves `prepare_stage` creates it, rather than merely tolerating one that
+    // already exists.
     let stage = StagePaths::new(&stage_root.path().join("nested").join("target"));
 
     prepare_stage(&root, &stage).map_err(|e| format!("prepare_stage failed: {e}"))?;
@@ -184,8 +184,8 @@ fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Resu
     let before_style =
         fs::read_to_string(stage.stage_dir.join("style.css")).map_err(|e| format!("read staged style.css: {e:?}"))?;
 
-    // Edit the fragment too, so a bug that promotes index.html before checking style.css would actually be
-    // visible below: the staged index.html would change even though the whole call is expected to fail.
+    // Edit the fragment too, so a bug that promotes index.html before checking style.css would actually be visible
+    // below: the staged index.html would change even though the whole call is expected to fail.
     const MARKER: &str = "<!-- prepare-stage-style-failure-marker -->";
     let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
     let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;

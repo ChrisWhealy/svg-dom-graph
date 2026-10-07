@@ -22,8 +22,8 @@ fn is_straight_two_point_path(d: &str) -> bool {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Scene::add_node_with` rejects `Some(EdgeAnchors(0))` before drawing anything or touching the graph's model — a
-/// rejected call leaves the scene with no rendered `<g>` at all, and a later, valid call still lands as the
-/// scene's first (and only) node.
+/// rejected call leaves the scene with no rendered `<g>` at all, and a later, valid call still lands as the scene's
+/// first (and only) node.
 #[wasm_bindgen_test]
 fn add_node_with_rejects_edge_anchors_zero_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg(
@@ -55,8 +55,8 @@ fn add_node_with_rejects_edge_anchors_zero_before_touching_the_scene() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::set_edge_anchors` rejects `Some(EdgeAnchors(0))` before touching the node, so a rejected call leaves
-/// every incident connector rendered exactly as it was.
+/// `Scene::set_edge_anchors` rejects `Some(EdgeAnchors(0))` before touching the node, so a rejected call leaves every
+/// incident connector rendered exactly as it was.
 #[wasm_bindgen_test]
 fn set_edge_anchors_rejects_edge_anchors_zero_and_leaves_the_connector_unchanged() -> Result<(), String> {
     let svg = make_svg("edge-anchors-set-invalid", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -111,10 +111,10 @@ fn set_edge_anchors_rejects_an_unknown_node() -> Result<(), String> {
 /// For an elbow connector specifically, `Some(EdgeAnchors(1))` renders identically to `None`: one fixing point is
 /// always the crossed side's own midpoint, exactly the default rule `edge_anchor` already applies.
 ///
-/// This does *not* generalise to a straight connector, whose default (`boundary_point`) is the continuous
-/// ray/boundary crossing rather than a side's midpoint — `EdgeAnchors(1)` still snaps a straight connector onto
-/// that midpoint, which usually differs from where the unsnapped ray would have landed. This test uses
-/// `add_edge`, whose default connector is an elbow, specifically to exercise the elbow case.
+/// This does *not* generalise to a straight connector, whose default (`boundary_point`) is the continuous ray/boundary
+/// crossing rather than a side's midpoint — `EdgeAnchors(1)` still snaps a straight connector onto that midpoint, which
+/// usually differs from where the unsnapped ray would have landed. This test uses `add_edge`, whose default connector
+/// is an elbow, specifically to exercise the elbow case.
 #[wasm_bindgen_test]
 fn edge_anchors_one_matches_default_elbow_midpoint() -> Result<(), String> {
     let default_svg = make_svg("edge-anchors-one-default", Size::new(300.0, 300.0), Size::new(300.0, 300.0));
@@ -147,25 +147,24 @@ fn edge_anchors_one_matches_default_elbow_midpoint() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::set_edge_anchors` snaps every incident connector to its own nearest candidate, and redraws each one
-/// live. This proves sibling edges sharing one node can land on distinct fixing points, and that a
-/// reconfiguration reaches every incident edge, not just the first.
+/// `Scene::set_edge_anchors` snaps every incident connector to its own nearest candidate, and redraws each one live.
+/// This proves sibling edges sharing one node can land on distinct fixing points, and that a reconfiguration reaches
+/// every incident edge, not just the first.
 ///
 /// # Expected anchors, worked by hand
 ///
-/// `C` is `(100, 0)`, size `(80, 40)` — centre `(140, 20)`, half-extents `(40, 20)`.
-/// `P` is `(0, 120)`, size `(80, 40)` — centre `(40, 140)`.
-/// `Q` is `(200, 120)`, size `(80, 40)` — centre `(240, 140)`.
+/// `C` is `(100, 0)`, size `(80, 40)` — centre `(140, 20)`, half-extents `(40, 20)`. `P` is `(0, 120)`, size `(80, 40)`
+/// — centre `(40, 140)`. `Q` is `(200, 120)`, size `(80, 40)` — centre `(240, 140)`.
 ///
-/// Before any `EdgeAnchors` are configured, both edges leave `C` through its south side, at that side's own
-/// midpoint: `(140, 40)`, for `C -> P` and `C -> Q` alike. They share this one point because the default rule
-/// ignores exactly where each ray happens to cross.
+/// Before any `EdgeAnchors` are configured, both edges leave `C` through its south side, at that side's own midpoint:
+/// `(140, 40)`, for `C -> P` and `C -> Q` alike. They share this one point because the default rule ignores exactly
+/// where each ray happens to cross.
 ///
 /// From `C` toward `P`: `dx = -100`, `dy = 120`. The ray crosses `C`'s south side at `x = 123.33`. With
 /// `EdgeAnchors(3)`, `C`'s south side offers three candidates at `x = 120, 140, 160`. `123.33` snaps to `120`.
 ///
-/// From `C` toward `Q`: `dx = 100`, `dy = 120` — the same magnitudes, mirrored. The ray crosses at `x = 156.67`,
-/// which snaps to `160`.
+/// From `C` toward `Q`: `dx = 100`, `dy = 120` — the same magnitudes, mirrored. The ray crosses at `x = 156.67`, which
+/// snaps to `160`.
 #[wasm_bindgen_test]
 fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() -> Result<(), String> {
     let svg = make_svg("edge-anchors-live", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -214,27 +213,26 @@ fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() ->
 /// (`None`) is the continuous ray/boundary crossing, not a side's midpoint. This is the distinct `straight_anchor`
 /// branch of `connector::route`, so it needs its own coverage rather than relying on the elbow tests above.
 ///
-/// Also proves the round trip back to `None`: `None` is not "zero anchors", it is *this connector type's own
-/// default anchoring rule*, and `set_edge_anchors` must restore exactly that rule, not just leave the last
-/// snapped point behind. `Some(EdgeAnchors(3))` and a later `None` on the same node must therefore land at
-/// different points, and the second call must reproduce the original, unconfigured coordinates exactly.
+/// Also proves the round trip back to `None`: `None` is not "zero anchors", it is *this connector type's own default
+/// anchoring rule*, and `set_edge_anchors` must restore exactly that rule, not just leave the last snapped point
+/// behind. `Some(EdgeAnchors(3))` and a later `None` on the same node must therefore land at different points, and the
+/// second call must reproduce the original, unconfigured coordinates exactly.
 ///
 /// # Expected anchors, worked by hand
 ///
-/// `A` is `(0, 0)`, size `(40, 20)` — centre `(20, 10)`, half-extents `(20, 10)`.
-/// `B` is `(60, 100)`, size `(40, 20)` — centre `(80, 110)`.
+/// `A` is `(0, 0)`, size `(40, 20)` — centre `(20, 10)`, half-extents `(20, 10)`. `B` is `(60, 100)`, size `(40, 20)` —
+/// centre `(80, 110)`.
 ///
 /// From `A` toward `B`: `dx = 60`, `dy = 100`. `half_h / |dy| = 0.1` is smaller than `half_w / |dx| = 0.333`, so the
 /// ray leaves through `A`'s south side, at `y = 20`, crossing at `x = 20 + 60 * 0.1 = 26`.
 ///
 /// With `None` (the default), the connector starts at that exact crossing: `(26, 20)`. With `EdgeAnchors(3)`, `A`'s
-/// south side offers three candidates at `x = 10, 20, 30`; `26` snaps to the nearest, `30`. So `(26, 20)` for
-/// `None` and `(30, 20)` for `EdgeAnchors(3)` are genuinely different points, not the same one reached two ways.
-/// Setting `None` again must snap straight back to `(26, 20)`.
+/// south side offers three candidates at `x = 10, 20, 30`; `26` snaps to the nearest, `30`. So `(26, 20)` for `None`
+/// and `(30, 20)` for `EdgeAnchors(3)` are genuinely different points, not the same one reached two ways. Setting
+/// `None` again must snap straight back to `(26, 20)`.
 ///
-/// `B` keeps `None` throughout, so its own end of the connector — `(74, 100)`, by the same ray/boundary
-/// arithmetic — never moves. This isolates the change to the endpoint whose `EdgeAnchors` was actually
-/// reconfigured.
+/// `B` keeps `None` throughout, so its own end of the connector — `(74, 100)`, by the same ray/boundary arithmetic —
+/// never moves. This isolates the change to the endpoint whose `EdgeAnchors` was actually reconfigured.
 #[wasm_bindgen_test]
 fn set_edge_anchors_round_trips_a_straight_connector_through_none_and_back() -> Result<(), String> {
     let svg = make_svg("edge-anchors-straight", Size::new(400.0, 300.0), Size::new(400.0, 300.0));

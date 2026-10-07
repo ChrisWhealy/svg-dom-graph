@@ -1,6 +1,6 @@
-//! Plain label nodes — a box with a single centred text label, no typed content. See [`super::data`] for a node
-//! whose content is a [`DataNodeContent`] grid instead, and [`super::operator`] for one labelled with the
-//! operation that produced its own value.
+//! Plain label nodes — a box with a single centred text label, no typed content. See [`super::data`] for a node whose
+//! content is a [`DataNodeContent`] grid instead, and [`super::operator`] for one labelled with the operation that
+//! produced its own value.
 
 use super::{EdgeAnchors, LABEL_FONT_SIZE, NodeOptions, render_guard::RenderGuard, validate_edge_anchors};
 use crate::{
@@ -88,11 +88,11 @@ pub(super) fn draw_box(
     group.append(&rect_el)?;
     group.append(&label_el)?;
 
-    // Not `set_translate`. Its fixed one-decimal-place precision would quantise the rendered position away from
-    // the model's own `rect.origin`, by up to 0.05 user-space units. That is harmless to the eye. But it is a
-    // real mismatch for code that re-derives a position from the rendered DOM, rather than from the model.
-    // Several of this crate's own browser tests do exactly that. `set_transform_fmt` writes `Display`'s full
-    // precision instead, at the cost of a (typically) longer attribute string.
+    // Not `set_translate`. Its fixed one-decimal-place precision would quantise the rendered position away from the
+    // model's own `rect.origin`, by up to 0.05 user-space units. That is harmless to the eye. But it is a real mismatch
+    // for code that re-derives a position from the rendered DOM, rather than from the model. Several of this crate's
+    // own browser tests do exactly that. `set_transform_fmt` writes `Display`'s full precision instead, at the cost of
+    // a (typically) longer attribute string.
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
     guard.disarm();
@@ -164,9 +164,9 @@ impl Scene {
 
         let label = label.into();
         let mut inner = self.inner.borrow_mut();
-        // Taken out for the call so `draw_box` can format into it without also needing `&inner.svg` to borrow
-        // `inner` in two conflicting ways at once — see `SceneInner::scratch`'s own doc comment for why this,
-        // rather than a fresh `String` per call.
+        // Taken out for the call so `draw_box` can format into it without also needing `&inner.svg` to borrow `inner`
+        // in two conflicting ways at once — see `SceneInner::scratch`'s own doc comment for why this, rather than a
+        // fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
         let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors);
         inner.scratch = scratch;

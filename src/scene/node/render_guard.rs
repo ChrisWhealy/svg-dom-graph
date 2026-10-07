@@ -4,8 +4,8 @@ use svg_dom::SvgNode;
 /// The most simultaneous loose nodes any real caller in this crate can ever have (where "loose" means tracked but not
 /// yet resolved — see [`RenderGuard::track`]/[`RenderGuard::release`]).
 ///
-/// [`draw_operator_box`](super::operator::draw_operator_box) is the largest: its own label, value, outer, and
-/// value-row elements are all tracked before any of them is released.
+/// [`draw_operator_box`](super::operator::draw_operator_box) is the largest: its own label, value, outer, and value-row
+/// elements are all tracked before any of them is released.
 ///
 /// Every other caller in this module tracks at most two at once.
 const MAX_LOOSE: usize = 4;
@@ -52,9 +52,9 @@ impl RenderGuard {
     ///
     /// # Panics
     ///
-    /// Panics if more than [`MAX_LOOSE`] nodes are tracked at once, without an intervening [`release`](Self::release)
-    /// — every real caller in this crate stays within that bound (see its own doc comment), so this can only fire from
-    /// a bug in this module itself, not from anything external.
+    /// Panics if more than [`MAX_LOOSE`] nodes are tracked at once, without an intervening [`release`](Self::release) —
+    /// every real caller in this crate stays within that bound (see its own doc comment), so this can only fire from a
+    /// bug in this module itself, not from anything external.
     pub(super) fn track(&mut self, node: SvgNode) {
         let slot = self
             .loose
@@ -72,9 +72,9 @@ impl RenderGuard {
     /// ([`draw_content_box`](super::data::draw_content_box)'s per-cell loop is the motivating case) call this right
     /// after each node's own fate is settled, so `loose` never grows past the small number of nodes momentarily in
     /// flight at once, regardless of how many a whole node's own construction creates in total. This relies on the
-    /// caller's own strict create-then-resolve discipline: this always drops whichever node [`track`](Self::track)
-    /// most recently added, not a specific one named by the caller, so tracking a second node before resolving the
-    /// first would silently stop tracking the wrong one.
+    /// caller's own strict create-then-resolve discipline: this always drops whichever node [`track`](Self::track) most
+    /// recently added, not a specific one named by the caller, so tracking a second node before resolving the first
+    /// would silently stop tracking the wrong one.
     pub(super) fn release(&mut self) {
         if let Some(i) = self.len.checked_sub(1) {
             self.loose[i] = None;

@@ -21,9 +21,9 @@ use svg_dom::SvgNode;
 pub(crate) struct BoxHandles {
     /// Event listeners attach here, so a click on any child starts a drag.
     pub(crate) group: SvgNode,
-    /// This box's own outer `<rect>` — the one element every node kind draws, named label or not, data grid or
-    /// not. For a named data node this is the wrapping box around the label row and the grid together, not the
-    /// grid's own inner background; for every other kind there is only the one rect, so it serves as both.
+    /// This box's own outer `<rect>` — the one element every node kind draws, named label or not, data grid or not. For
+    /// a named data node this is the wrapping box around the label row and the grid together, not the grid's own inner
+    /// background; for every other kind there is only the one rect, so it serves as both.
     ///
     /// `Scene::set_focus`'s only reader — a node has exactly one outer box to ring, regardless of how many
     /// [`cell_rects`](Self::cell_rects) it holds within it.
@@ -36,8 +36,8 @@ pub(crate) struct BoxHandles {
     /// Whether `Scene::make_enterable` has already been called for this node.
     ///
     /// Same reasoning as [`draggable`](Self::draggable), for the same underlying cause: `svg-dom`'s listener
-    /// registration is append-only, so a second call would add a second, independent click/keydown listener rather
-    /// than replacing the first — see [`crate::Error::AlreadyEnterable`].
+    /// registration is append-only, so a second call would add a second, independent click/keydown listener rather than
+    /// replacing the first — see [`crate::Error::AlreadyEnterable`].
     pub(crate) enterable: bool,
     /// How many evenly spaced connector fixing points this node's own sides offer — see [`EdgeAnchors`].
     ///
@@ -46,20 +46,20 @@ pub(crate) struct BoxHandles {
     pub(crate) edge_anchors: Option<EdgeAnchors>,
     /// `Some((inputs.0, inputs.1))` for a two-input operator node — a `BinaryOperator` or `ArithmeticOperator` one —
     /// its own two operand ids, in the order its own constructor received them. Not "left"/"right": the anti-crossing
-    /// router freely reassigns which operand's connector lands on which visual side, so this order is a stable
-    /// operand *identity*, never a stable position — see `node::operator::draw_port_marker`'s own doc comment for the
+    /// router freely reassigns which operand's connector lands on which visual side, so this order is a stable operand
+    /// *identity*, never a stable position — see `node::operator::draw_port_marker`'s own doc comment for the
     /// non-commutative "L"/"R" marker that makes that identity visible to a reader too. `None` for every other node,
     /// unary operator nodes included, since only a two-input node's inputs can ever collide on the same side.
     ///
     /// `SceneInner::binary_operator_to_override` reads this on every redraw, so the two connectors split apart whenever
     /// they land on the same side, live — not just once, at creation.
     pub(crate) binary_operator_inputs: Option<(NodeId, NodeId)>,
-    /// `Some((edge for inputs.0, edge for inputs.1))` for a two-input operator node — the ids of the two edges its
-    /// own constructor auto-wired from `binary_operator_inputs.0`/`.1`, in the same order. `None` for every other
-    /// node, exactly matching `binary_operator_inputs`.
+    /// `Some((edge for inputs.0, edge for inputs.1))` for a two-input operator node — the ids of the two edges its own
+    /// constructor auto-wired from `binary_operator_inputs.0`/`.1`, in the same order. `None` for every other node,
+    /// exactly matching `binary_operator_inputs`.
     ///
-    /// `SceneInner::redraw_binary_operator_inputs` reads this to redraw both edges together in one pass, rather
-    /// than searching either operand's own incident edges for the one that also points at this operator.
+    /// `SceneInner::redraw_binary_operator_inputs` reads this to redraw both edges together in one pass, rather than
+    /// searching either operand's own incident edges for the one that also points at this operator.
     pub(crate) binary_operator_input_edges: Option<(EdgeId, EdgeId)>,
     /// Every [`crate::scene::DataNodeContent`] cell's own `<rect>`, flat, in the same order
     /// [`crate::scene::DataNodeContent::cells`]/`shape` already use.
@@ -75,18 +75,17 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_data_values` rewrites. Empty for a plain label node and for an operator node, whose own result is
     /// not replaceable.
     pub(crate) cell_texts: Vec<SvgNode>,
-    /// Every entry in `cell_rects`' own stroke width, as drawn — `"1.5"` for a single-value node's own outer box,
-    /// `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain
-    /// label node, which has no `cell_rects` to begin with.
+    /// Every entry in `cell_rects`' own stroke width, as drawn — `"1.5"` for a single-value node's own outer box, `"1"`
+    /// for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label node,
+    /// which has no `cell_rects` to begin with.
     ///
-    /// Already formatted, rather than a plain `f64`: every stroke width this crate ever draws is one of a small
-    /// fixed set (this default, or [`Scene::set_selection`](crate::scene::Scene::set_selection)'s own band/focus
-    /// widths), so there is no reason to format one from scratch on a hot path — see `svg-dom`'s own
-    /// `SvgNode::set_stroke_width` doc comment for why that convenience setter allocates a `String` on every call.
+    /// Already formatted, rather than a plain `f64`: every stroke width this crate ever draws is one of a small fixed
+    /// set (this default, or [`Scene::set_selection`](crate::scene::Scene::set_selection)'s own band/focus widths), so
+    /// there is no reason to format one from scratch on a hot path — see `svg-dom`'s own `SvgNode::set_stroke_width`
+    /// doc comment for why that convenience setter allocates a `String` on every call.
     ///
-    /// `Scene::set_selection` restores this on every cell it does not band or focus. That way a selection's own
-    /// thicker stroke never lingers once a cell is deselected — see that method's own doc comment for why it uses
-    /// one.
+    /// `Scene::set_selection` restores this on every cell it does not band or focus. That way a selection's own thicker
+    /// stroke never lingers once a cell is deselected — see that method's own doc comment for why it uses one.
     pub(crate) cell_stroke_width: &'static str,
     /// The current [`Selection`] `Scene::set_selection` last recoloured this node's own cells to, defaulting to
     /// [`Selection::None`] at creation.
@@ -106,33 +105,32 @@ pub(crate) struct BoxHandles {
     /// appended. Empty for a plain label node, whose own visible text already serves as its accessible name.
     ///
     /// `Scene::set_selection` truncates this back to [`base_label_len`](Self::base_label_len), then appends the new
-    /// selection's own [`Selection::describe_into`](crate::scene::Selection::describe_into) onto what remains —
-    /// after the first call grows its capacity, a later selection change needs no further allocation.
+    /// selection's own [`Selection::describe_into`](crate::scene::Selection::describe_into) onto what remains — after
+    /// the first call grows its capacity, a later selection change needs no further allocation.
     pub(crate) aria_label: String,
-    /// `aria_label`'s own length at creation, before any selection was ever appended — the point
-    /// `Scene::set_selection` truncates back to before appending a new selection's own description.
+    /// `aria_label`'s own length at creation, before any selection was ever appended — the point `Scene::set_selection`
+    /// truncates back to before appending a new selection's own description.
     pub(crate) base_label_len: usize,
-    /// A short, stable name for this node, so a later node's own description can refer to it by name. A plain
-    /// label node uses its own visible text; a named data node uses its own given `name`. An operator node uses
-    /// its own label — `"NOT"`, `"XOR"`, `"ROTR 1"`, and so on; an unnamed data node falls back to its own type
-    /// name instead.
+    /// A short, stable name for this node, so a later node's own description can refer to it by name. A plain label
+    /// node uses its own visible text; a named data node uses its own given `name`. An operator node uses its own label
+    /// — `"NOT"`, `"XOR"`, `"ROTR 1"`, and so on; an unnamed data node falls back to its own type name instead.
     ///
     /// Set once at construction, this name is never rewritten afterward — unlike `aria_label`, which
-    /// `Scene::set_selection` rewrites on every selection change. A node's own name stays fixed for its whole
-    /// lifetime; `Scene`'s own public API offers no way to rename one once drawn.
+    /// `Scene::set_selection` rewrites on every selection change. A node's own name stays fixed for its whole lifetime;
+    /// `Scene`'s own public API offers no way to rename one once drawn.
     ///
-    /// `current_ref_name` reads this to build a node's own name right now. `SceneInner::append_relationship` reads
-    /// it too, seeding a plain label node's first relationship clause.
+    /// `current_ref_name` reads this to build a node's own name right now. `SceneInner::append_relationship` reads it
+    /// too, seeding a plain label node's first relationship clause.
     pub(crate) ref_name: String,
     /// The nested `Scene` this node owns, if it is a container node — `Some` only for a node whose
     /// [`NodeContent`](crate::model::node::NodeContent) is `Container`. `None` for every other node kind.
     ///
     /// Kept here, not in `NodeContent::Container` itself, because a `Scene`/`SceneInner` is DOM/wasm state and the
-    /// graph model is deliberately kept free of that — see `NodeContent`'s own doc comment. This is exactly the
-    /// same reasoning `cell_rects`/`selection` above already follow for a data node's own DOM-side state.
+    /// graph model is deliberately kept free of that — see `NodeContent`'s own doc comment. This is exactly the same
+    /// reasoning `cell_rects`/`selection` above already follow for a data node's own DOM-side state.
     ///
-    /// `Scene::enter` reads this to find which `Scene` to show. `Scene::add_container_node`/
-    /// `add_container_node_with` are the only place this is ever set.
+    /// `Scene::enter` reads this to find which `Scene` to show. `Scene::add_container_node`/ `add_container_node_with`
+    /// are the only place this is ever set.
     pub(super) child: Option<Rc<RefCell<SceneInner>>>,
 }
 
@@ -164,10 +162,10 @@ impl BoxHandles {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This node's own name right now, layering whatever `selection` currently highlights onto `ref_name`.
     ///
-    /// `ref_name` alone names a node's whole self — "A" for an array `Scene::set_selection` re-bands each step,
-    /// never rebuilt. This method adds back the element selection currently picks out, so a later description can
-    /// call it "A(0)" on one step, "A(1)" on the next. `ref_name` itself never changes — it stays exactly as fixed
-    /// at construction.
+    /// `ref_name` alone names a node's whole self — "A" for an array `Scene::set_selection` re-bands each step, never
+    /// rebuilt. This method adds back the element selection currently picks out, so a later description can call it
+    /// "A(0)" on one step, "A(1)" on the next. `ref_name` itself never changes — it stays exactly as fixed at
+    /// construction.
     ///
     /// `Selection::None` returns `ref_name` unchanged. `Cell(i)` reads as `"{ref_name}({i})"` — one flat index, the
     /// same notation a 1-D array's own step already uses. A `Row`/`Column` with its own focus index reads as

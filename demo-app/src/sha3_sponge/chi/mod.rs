@@ -1,6 +1,6 @@
 //! `sha3_sponge::keccak`'s own "Chi" node: a nested `Scene` stepping through SHA3's real `Chi` step, one lane at a
-//! time. `Chi` is the only non-linear step: lane `(x, y)` becomes `A[x, y] ^ (!A[x + 1, y] & A[x + 2, y])`, with
-//! `x` taken modulo 5. Each step shows that expression for one lane of `Pi`'s own output, then writes the result.
+//! time. `Chi` is the only non-linear step: lane `(x, y)` becomes `A[x, y] ^ (!A[x + 1, y] & A[x + 2, y])`, with `x`
+//! taken modulo 5. Each step shows that expression for one lane of `Pi`'s own output, then writes the result.
 
 use super::rho::grid_cell;
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
@@ -46,13 +46,13 @@ pub(super) fn chi(input: [u64; 25]) -> [u64; 25] {
 ///
 /// Rows, top to bottom:
 /// 1. "Pi Output Bytes", `input`'s own 25 lanes, cell `n` selected.
-/// 2. `W0`, `W1` and `W2`: the lanes at `(x, y)`, `(x + 1 mod 5, y)` and `(x + 2 mod 5, y)`, centred on a quarter,
-///    a half and three quarters of row 1's own width.
+/// 2. `W0`, `W1` and `W2`: the lanes at `(x, y)`, `(x + 1 mod 5, y)` and `(x + 2 mod 5, y)`, centred on a quarter, a
+///    half and three quarters of row 1's own width.
 /// 3. A `NOT` operator, taking `W1` and centred beneath it.
-/// 4. The `NOT` result as a data node, centred beneath `W1` too, and an `AND` operator to its right, centred
-///    beneath `W2` and taking the `NOT` result and `W2`. Both are vertically centred on the same line.
-/// 5. An `XOR` operator, taking `W0` and the `AND` result, which sits in its own data node beneath the `AND`
-///    operator. The `XOR` operator is centred beneath `W0`.
+/// 4. The `NOT` result as a data node, centred beneath `W1` too, and an `AND` operator to its right, centred beneath
+///    `W2` and taking the `NOT` result and `W2`. Both are vertically centred on the same line.
+/// 5. An `XOR` operator, taking `W0` and the `AND` result, which sits in its own data node beneath the `AND` operator.
+///    The `XOR` operator is centred beneath `W0`.
 /// 6. "Chi Output Bytes", whose lanes `0..=n` have been written so far.
 ///
 /// While unstarted, every lane shown is zero.
@@ -101,8 +101,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     let and = not_w1 & w2;
     let result = w0 ^ and;
 
-    // A node's own size is only known once it exists, so each is added at the top of its row and then moved: the
-    // `x` for the node's own centre is a fraction of "Pi Output Bytes"'s own width, `y` its own top edge.
+    // A node's own size is only known once it exists, so each is added at the top of its row and then moved: the `x`
+    // for the node's own centre is a fraction of "Pi Output Bytes"'s own width, `y` its own top edge.
     let place = |id: NodeId, fraction: f64, y: f64| -> Result<Rect, String> {
         let size = scene.node_rect(id).map_err(stringify)?.size;
         let origin = Point::new(input_rect.origin.x + fraction * input_rect.size.width - size.width / 2.0, y);
@@ -208,8 +208,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
 struct ChiState {
     /// `Chi`'s own real input, never mutated.
     input: [u64; 25],
-    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same
-    /// reason as `theta::theta_c::rebuild_child`.
+    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same reason
+    /// as `theta::theta_c::rebuild_child`.
     child_svg_id: String,
 }
 
@@ -264,8 +264,8 @@ fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<Ref
 ///
 /// # Errors
 ///
-/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
-/// DOM, or if any library call fails.
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
+/// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), String> {
     let document = crate::util::document()?;
     let (input, previous_id) = {
@@ -299,11 +299,11 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds this nested `Chi` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its input
-/// is `input`, the lanes `Pi` produced. Called once per round, from `keccak::build_scene`, right before
-/// "Chi" is added as a container node.
+/// is `input`, the lanes `Pi` produced. Called once per round, from `keccak::build_scene`, right before "Chi" is added
+/// as a container node.
 ///
-/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
-/// it if so, and removes any stepped clone a previous round left behind.
+/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates it
+/// if so, and removes any stepped clone a previous round left behind.
 ///
 /// # Errors
 ///

@@ -20,8 +20,8 @@ pub enum CollisionPolicy {
     /// The dropped node is pushed back along the line between its pre-drag position and the centre of the about-to-be
     /// overlapped node, plus a padding distance.
     ///
-    /// This can be useful if it is not appropriate for a node to be dropped at the `on_pointerup` location after a
-    /// drag operation.
+    /// This can be useful if it is not appropriate for a node to be dropped at the `on_pointerup` location after a drag
+    /// operation.
     ///
     /// ***IMPORTANT***
     ///
@@ -30,8 +30,8 @@ pub enum CollisionPolicy {
     /// other node in the proximity of the one for which the overlap has been avoided.
     ///
     /// [`crate::scene::Scene::add_node`] also does not itself reject an overlapping starting position, so it is not
-    /// possible to offer a "nodes never overlap" guarantee. All we can say is that the likelihood of overlap
-    /// is reduced.
+    /// possible to offer a "nodes never overlap" guarantee. All we can say is that the likelihood of overlap is
+    /// reduced.
     PushClear {
         /// Extra clearance kept between the dropped node and whatever it overlapped, in this scene's user-space units,
         /// so the two end up with a visible gap rather than touching edges.

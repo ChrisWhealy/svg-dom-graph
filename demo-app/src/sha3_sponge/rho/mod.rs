@@ -1,7 +1,7 @@
 //! `sha3_sponge::keccak`'s own "Rho" node: a nested `Scene` stepping through SHA3's real `Rho` step, one lane at a
-//! time. Each step rotates one lane of `Rho`'s own input left by that lane's own entry in the rotation-offset
-//! table of NIST FIPS 202 (see [`ROTATION_OFFSETS`], which holds those offsets reduced modulo 64), and writes the
-//! result into the matching cell of `Rho`'s own output. Its input is the state `Theta` produced.
+//! time. Each step rotates one lane of `Rho`'s own input left by that lane's own entry in the rotation-offset table of
+//! NIST FIPS 202 (see [`ROTATION_OFFSETS`], which holds those offsets reduced modulo 64), and writes the result into
+//! the matching cell of `Rho`'s own output. Its input is the state `Theta` produced.
 
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
@@ -16,20 +16,20 @@ use svg_dom_graph::{
 use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Rho`'s own nested child `<svg>` — a fixed id, created once by `sha3_sponge::create_stage_svgs`, for the same
-/// reason `keccak::THETA_CHILD_SVG_ID` is fixed: the round scene around it is rebuilt on every round step, but
-/// this one element is only ever declared once.
+/// `Rho`'s own nested child `<svg>` — a fixed id, created once by `sha3_sponge::create_stage_svgs`, for the same reason
+/// `keccak::THETA_CHILD_SVG_ID` is fixed: the round scene around it is rebuilt on every round step, but this one
+/// element is only ever declared once.
 pub(super) const CHILD_SVG_ID: &str = "sha3-sponge-keccak-rho-child";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `Rho` rotation offsets for lanes `1..25`, **reduced modulo 64**, indexed by flat lane number `x + 5y`.
 ///
-/// NIST FIPS 202, section 3.2.2 (Algorithm 2, and its Table 2) defines the offsets as the triangular numbers
-/// `(t + 1)(t + 2) / 2` for `t = 0..24`, assigned to lanes by walking `(x, y) -> (y, (2x + 3y) mod 5)` from `(1, 0)`.
-/// Table 2 lists those values unreduced — 1, 3, 6, ..., 300 — since a rotation is only ever taken modulo the lane
-/// width. For `Keccak-f\[1600\]` that width is `w = 64`, so each value here is the table's own value `mod 64`: the 153 in
-/// Table 2 appears here as `25`, the 300 as `44`, and so on. Rotating a `u64` left by either gives the same result, but
-/// this is the amount `u64::rotate_left` actually needs.
+/// NIST FIPS 202, section 3.2.2 (Algorithm 2, and its Table 2) defines the offsets as the triangular numbers `(t + 1)(t
+/// + 2) / 2` for `t = 0..24`, assigned to lanes by walking `(x, y) -> (y, (2x + 3y) mod 5)` from `(1, 0)`. Table 2
+///   lists those values unreduced — 1, 3, 6, ..., 300 — since a rotation is only ever taken modulo the lane width. For
+///   `Keccak-f\[1600\]` that width is `w = 64`, so each value here is the table's own value `mod 64`: the 153 in Table
+///   2 appears here as `25`, the 300 as `44`, and so on. Rotating a `u64` left by either gives the same result, but
+///   this is the amount `u64::rotate_left` actually needs.
 ///
 /// Lane `0` always rotates by `0`, so it has no entry: this is the 24-value table `Rho` actually needs. The values are
 /// stored by lane, not in the order the walk visits them. A unit test checks every entry against that derivation.
@@ -38,10 +38,10 @@ const ROTATION_OFFSETS: [u8; 24] = [
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `Selection` addressing flat cell `n` of a grid `cols` columns wide — `Selection::Row` with a `col`, the one
-/// form [`DataNodeContent::natural_selection`] produces for a genuinely two-dimensional grid. A selection toolbar
-/// reads its node's own `Selection` back through `flat_index`, which treats `Selection::Cell` on such a grid as
-/// "unstarted", so the toolbar's driver must use this form or its own next press restarts from cell `0`.
+/// The `Selection` addressing flat cell `n` of a grid `cols` columns wide — `Selection::Row` with a `col`, the one form
+/// [`DataNodeContent::natural_selection`] produces for a genuinely two-dimensional grid. A selection toolbar reads its
+/// node's own `Selection` back through `flat_index`, which treats `Selection::Cell` on such a grid as "unstarted", so
+/// the toolbar's driver must use this form or its own next press restarts from cell `0`.
 pub(super) fn grid_cell(n: usize, cols: usize) -> Selection {
     Selection::Row {
         row: n / cols,
@@ -66,8 +66,8 @@ pub(super) fn rho(input: [u64; 25]) -> [u64; 25] {
 struct RhoState {
     /// `Rho`'s own real input, never mutated.
     input: [u64; 25],
-    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same
-    /// reason as `theta::theta_c::rebuild_child`.
+    /// The id of whichever `<svg>` currently backs the nested child — every step needs a fresh one, for the same reason
+    /// as `theta::theta_c::rebuild_child`.
     child_svg_id: String,
 }
 
@@ -99,13 +99,13 @@ pub(super) fn exit_if_focused() -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds `svg_id` from scratch for step `n` (`0..25`, one per lane), `None` meaning unstarted.
 ///
-/// Row 1 is "Theta Output Bytes", `input`'s own 25 lanes, cell `n` selected. Row 2 holds the selected lane on its
-/// own, a `ROTL` operator rotating it, and the 24-value rotation table ([`ROTATION_OFFSETS`], reduced modulo
-/// 64, and labelled as such) — the table's own cell for lane `n` selected — feeding the operator its amount. Row 3 is "Rho Output Bytes", the same shape as row 1, with lanes
-/// `0..=n` filled in so far and the rest still zero.
+/// Row 1 is "Theta Output Bytes", `input`'s own 25 lanes, cell `n` selected. Row 2 holds the selected lane on its own,
+/// a `ROTL` operator rotating it, and the 24-value rotation table ([`ROTATION_OFFSETS`], reduced modulo 64, and
+/// labelled as such) — the table's own cell for lane `n` selected — feeding the operator its amount. Row 3 is "Rho
+/// Output Bytes", the same shape as row 1, with lanes `0..=n` filled in so far and the rest still zero.
 ///
-/// The operator is `ROTL`, not a shift: a shift would discard bits, so the output could never be real `Rho`.
-/// Swap in `UnaryOperator::ShiftRight` to see that.
+/// The operator is `ROTL`, not a shift: a shift would discard bits, so the output could never be real `Rho`. Swap in
+/// `UnaryOperator::ShiftRight` to see that.
 ///
 /// Returns "Theta Output Bytes" alongside the `Scene`: the node a caller's own selection toolbar drives.
 ///
@@ -264,8 +264,8 @@ fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<Ref
 ///
 /// # Errors
 ///
-/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
-/// DOM, or if any library call fails.
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
+/// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), String> {
     let document = crate::util::document()?;
     let (input, previous_id) = {
@@ -298,12 +298,12 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds this nested `Rho` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its
-/// input is `input`, the lanes `Theta` produced.
-/// Called once per round, from `keccak::build_scene`, right before "Rho" is added as a container node.
+/// Builds this nested `Rho` child, unstarted, against [`CHILD_SVG_ID`], and wires its own stepping toolbar. Its input
+/// is `input`, the lanes `Theta` produced. Called once per round, from `keccak::build_scene`, right before "Rho" is
+/// added as a container node.
 ///
-/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates
-/// it if so, and removes any stepped clone a previous round left behind.
+/// Stepping removes the `<svg>` it started from, so [`CHILD_SVG_ID`] may be gone by the next round. This recreates it
+/// if so, and removes any stepped clone a previous round left behind.
 ///
 /// # Errors
 ///

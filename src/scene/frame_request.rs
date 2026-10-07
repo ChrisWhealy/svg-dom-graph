@@ -1,12 +1,13 @@
 //! A pending animation frame that cannot outlive the callback behind it.
 //!
-//! `requestAnimationFrame` hands the browser a JavaScript function, and here that function is a `wasm_bindgen::Closure`.
-//! A `Closure` invalidates its JavaScript function the moment it is dropped. If a frame is still pending at that moment,
-//! the browser goes on to call the function anyway, and it throws "closure invoked recursively or after being dropped".
+//! `requestAnimationFrame` hands the browser a JavaScript function, and here that function is a
+//! `wasm_bindgen::Closure`. A `Closure` invalidates its JavaScript function the moment it is dropped. If a frame is
+//! still pending at that moment, the browser goes on to call the function anyway, and it throws "closure invoked
+//! recursively or after being dropped".
 //!
-//! That is easy to arrange. Whatever owns the closure is dropped whenever the listeners holding it are — when a toolbar is
-//! hidden, a mode is changed, or a `Scene` goes — and a wheel event or a pointer move may have scheduled a frame only
-//! moments before.
+//! That is easy to arrange. Whatever owns the closure is dropped whenever the listeners holding it are — when a toolbar
+//! is hidden, a mode is changed, or a `Scene` goes — and a wheel event or a pointer move may have scheduled a frame
+//! only moments before.
 //!
 //! So the closure and the pending request live together here, and dropping the request cancels the frame first. Once it
 //! is gone, the browser has nothing left to call.
@@ -20,8 +21,8 @@ use wasm_bindgen::{JsCast, closure::Closure};
 
 /// One callback, and at most one animation frame requested for it at a time.
 ///
-/// Dropping it cancels any frame still pending. Hold it in an `Rc` and clone that to share it. The callback runs when the
-/// browser reaches the frame, and never once the last `Rc` has gone.
+/// Dropping it cancels any frame still pending. Hold it in an `Rc` and clone that to share it. The callback runs when
+/// the browser reaches the frame, and never once the last `Rc` has gone.
 pub(crate) struct FrameRequest {
     window: web_sys::Window,
     /// The id of the frame requested and not yet run, if any.

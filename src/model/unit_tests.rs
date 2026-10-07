@@ -123,8 +123,8 @@ fn remove_edge_leaves_a_shared_nodes_other_edges_untouched() -> Result<(), Strin
     let left_edge = graph.add_edge(root, left);
     let right_edge = graph.add_edge(root, right);
 
-    // `remove_edge` only ever unwinds the most recently added edge — see its own doc comment — so remove
-    // `right_edge`, not `left_edge`, and confirm `left_edge` survives untouched on their shared node.
+    // `remove_edge` only ever unwinds the most recently added edge — see its own doc comment — so remove `right_edge`,
+    // not `left_edge`, and confirm `left_edge` survives untouched on their shared node.
     graph.remove_edge(right_edge);
 
     check_eq(graph.incident_edges(root), &[left_edge] as &[EdgeId])
@@ -145,8 +145,8 @@ fn remove_edge_does_nothing_for_an_unknown_id() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `remove_edge` is a narrow rollback primitive: only the most recently added edge is ever a valid target — see its
-/// own doc comment. A debug build panics rather than silently corrupting `incident` on the wrong node.
+/// `remove_edge` is a narrow rollback primitive: only the most recently added edge is ever a valid target — see its own
+/// doc comment. A debug build panics rather than silently corrupting `incident` on the wrong node.
 #[test]
 #[should_panic(expected = "is not the most recently added edge")]
 fn remove_edge_panics_in_debug_when_not_given_the_most_recently_added_edge() {
@@ -181,8 +181,8 @@ fn remove_node_forgets_it_and_its_own_incidence() -> Result<(), String> {
     let edge = graph.add_edge(a, b);
     graph.remove_edge(edge);
 
-    // `remove_node` only ever unwinds the most recently added node — see its own doc comment — so remove `b`, the
-    // later of the two, not `a`.
+    // `remove_node` only ever unwinds the most recently added node — see its own doc comment — so remove `b`, the later
+    // of the two, not `a`.
     graph.remove_node(b);
 
     if graph.node(b).is_some() {
@@ -253,8 +253,8 @@ fn foreign_node_id_at_the_same_sequence_position_does_not_resolve_locally() -> R
     let mut graph_b = Graph::new();
     let b0 = graph_b.add_node(test_rect(50.0, 50.0), "b0");
 
-    // If ids were only distinguished by sequence number, a0 and b0 would be indistinguishable: both are their
-    // graph's first node. graph_b must still refuse a0, and must still resolve its own b0 correctly.
+    // If ids were only distinguished by sequence number, a0 and b0 would be indistinguishable: both are their graph's
+    // first node. graph_b must still refuse a0, and must still resolve its own b0 correctly.
     if graph_b.node(a0).is_some() {
         return Err(
             "a NodeId from graph_a resolved to a node in graph_b, despite sharing b0's sequence position".into(),
@@ -290,9 +290,9 @@ fn foreign_edge_id_at_the_same_sequence_position_does_not_resolve_locally() -> R
 fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
     let mut graph = Graph::new();
 
-    // Built at runtime and borrowed from a local `String`: this could never satisfy `&'static str`, which is
-    // exactly the constraint `add_node` used to impose on every caller, including one reading a label from data
-    // fetched at runtime.
+    // Built at runtime and borrowed from a local `String`: this could never satisfy `&'static str`, which is exactly
+    // the constraint `add_node` used to impose on every caller, including one reading a label from data fetched at
+    // runtime.
     let owned_label = format!("node-{}", 42);
     let id = graph.add_node(test_rect(0.0, 0.0), owned_label.as_str());
 

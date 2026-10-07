@@ -1,9 +1,10 @@
 //! `hub`'s two connectors render at the expected, distinct `EdgeAnchors(3)` fixing points, both as first drawn and
 //! after a real, CDP-driven drag moves `branch_a` far enough to re-snap onto a different one.
 //!
-//! Uses the fixture's `hub`-to-`branch_a` and `hub`-to-`branch_b` connectors (`#diagram > g.svg-dom-graph-content > path:nth-of-type(3)` and
-//! `#diagram > g.svg-dom-graph-content > path:nth-of-type(4)`). See `cdp-test-fixture/src/lib.rs`'s own module doc comment for this pair's place
-//! among the fixture's six nodes and four connectors.
+//! Uses the fixture's `hub`-to-`branch_a` and `hub`-to-`branch_b` connectors (`#diagram > g.svg-dom-graph-content >
+//! path:nth-of-type(3)` and `#diagram > g.svg-dom-graph-content > path:nth-of-type(4)`). See
+//! `cdp-test-fixture/src/lib.rs`'s own module doc comment for this pair's place among the fixture's six nodes and four
+//! connectors.
 //!
 //! # Expected paths, worked by hand
 //!
@@ -29,8 +30,8 @@
 //! after dragging `branch_a` by `(100, 0)`. Its new centre is `(200, 360)`. From `hub` toward this new centre: `dx =
 //! -50`, `dy = 120`, crossing the south side at `x ≈ 241.67`, which now snaps to the middle candidate, `250` — a
 //! different fixing point from the original `230`. `branch_a`'s own anchor also moves, to `(200, 340)`. The new route
-//! is `(250, 260) -> (250, 300) -> (200, 300) -> (200, 340)`. `branch_b` did not move, so its own connector's path
-//! is unchanged.
+//! is `(250, 260) -> (250, 300) -> (200, 300) -> (200, 340)`. `branch_b` did not move, so its own connector's path is
+//! unchanged.
 
 use crate::common::{drag, new_tab};
 use std::time::Duration;

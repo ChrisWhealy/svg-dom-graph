@@ -7,8 +7,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-/// The ordinary case: `new_child` takes over `node`'s own slot, and the old child comes back visible, focused, and
-/// no longer nested — indistinguishable from a freshly constructed, standalone `Scene`.
+/// The ordinary case: `new_child` takes over `node`'s own slot, and the old child comes back visible, focused, and no
+/// longer nested — indistinguishable from a freshly constructed, standalone `Scene`.
 #[wasm_bindgen_test]
 fn replace_container_child_swaps_the_child_and_returns_the_old_one_visible_and_focused() -> Result<(), String> {
     let parent = Scene::new(make_svg("replace-swap-parent")).map_err(|e| e.to_string())?;
@@ -28,8 +28,8 @@ fn replace_container_child_swaps_the_child_and_returns_the_old_one_visible_and_f
         visibility(&returned.inner.borrow().svg).as_deref() != Some("hidden"),
         "the returned old child's own <svg> was still hidden",
     )?;
-    // The returned handle and `old_child` share the same underlying Scene: mutating through one is visible
-    // through the other.
+    // The returned handle and `old_child` share the same underlying Scene: mutating through one is visible through the
+    // other.
     check(
         old_child.is_focused(),
         "old_child itself did not report the same focus state as the returned handle",
@@ -64,8 +64,7 @@ fn replace_container_child_swaps_the_child_and_returns_the_old_one_visible_and_f
     )
 }
 
-/// Checked first: replacing a child while `self` is not the tree's currently focused Scene fails, and touches
-/// nothing.
+/// Checked first: replacing a child while `self` is not the tree's currently focused Scene fails, and touches nothing.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_when_self_is_not_focused() -> Result<(), String> {
     let parent = Scene::new(make_svg("replace-not-focused-parent")).map_err(|e| e.to_string())?;
@@ -173,8 +172,8 @@ fn replace_container_child_rejects_an_already_nested_new_child() -> Result<(), S
 }
 
 /// Replacing a container node's child with itself is rejected — deliberately via `AlreadyNested`, not a dedicated
-/// check: the old child already counts as its own live parent (`self`) at the point this is checked, since it has
-/// not been detached yet.
+/// check: the old child already counts as its own live parent (`self`) at the point this is checked, since it has not
+/// been detached yet.
 #[wasm_bindgen_test]
 fn replace_container_child_rejects_replacing_a_child_with_itself() -> Result<(), String> {
     let parent = Scene::new(make_svg("replace-with-itself-parent")).map_err(|e| e.to_string())?;
@@ -213,13 +212,12 @@ fn replace_container_child_rejects_a_new_child_with_a_focused_descendant() -> Re
     )
 }
 
-/// The detached old child gets a genuinely fresh, independent `NavigationState` — not merely unlinked from its
-/// former parent. Regrafting it elsewhere would not distinguish the two: `add_container_node`'s own
-/// `repoint_subtree` call repoints *any* child it is handed, fresh state or not, so that alone cannot prove
-/// `replace_container_child` itself already gave it one. The real test is before any regraft: if the detached
-/// child still secretly shared its former parent's `NavigationState`, moving that parent's own focus elsewhere
-/// would move the detached child's own reported focus too, since they would still be reading the same shared
-/// `focused` pointer.
+/// The detached old child gets a genuinely fresh, independent `NavigationState` — not merely unlinked from its former
+/// parent. Regrafting it elsewhere would not distinguish the two: `add_container_node`'s own `repoint_subtree` call
+/// repoints *any* child it is handed, fresh state or not, so that alone cannot prove `replace_container_child` itself
+/// already gave it one. The real test is before any regraft: if the detached child still secretly shared its former
+/// parent's `NavigationState`, moving that parent's own focus elsewhere would move the detached child's own reported
+/// focus too, since they would still be reading the same shared `focused` pointer.
 #[wasm_bindgen_test]
 fn replace_container_child_gives_the_detached_child_a_fresh_independent_navigation_state() -> Result<(), String> {
     let parent = Scene::new(make_svg("replace-fresh-nav-parent")).map_err(|e| e.to_string())?;
@@ -247,12 +245,12 @@ fn replace_container_child_gives_the_detached_child_a_fresh_independent_navigati
     )
 }
 
-/// The recursive half of the previous test: `detach_subtree` calls `repoint_subtree`, which walks the *whole*
-/// subtree, not just its own root — so a descendant of the detached child, not only the detached child itself,
-/// must end up sharing its fresh `NavigationState` too. `parent → old_child → grandchild`, with `old_child` (not
-/// `grandchild`) focused within its own tree before the replacement. After detaching `old_child`: it is focused
-/// and `grandchild` is not; entering `grandchild` from `old_child` succeeds and focuses it, without disturbing
-/// `parent`'s own, now entirely separate, tree; and exiting `grandchild` returns focus to `old_child`.
+/// The recursive half of the previous test: `detach_subtree` calls `repoint_subtree`, which walks the *whole* subtree,
+/// not just its own root — so a descendant of the detached child, not only the detached child itself, must end up
+/// sharing its fresh `NavigationState` too. `parent → old_child → grandchild`, with `old_child` (not `grandchild`)
+/// focused within its own tree before the replacement. After detaching `old_child`: it is focused and `grandchild` is
+/// not; entering `grandchild` from `old_child` succeeds and focuses it, without disturbing `parent`'s own, now entirely
+/// separate, tree; and exiting `grandchild` returns focus to `old_child`.
 #[wasm_bindgen_test]
 fn replace_container_child_migrates_every_descendant_onto_the_detached_childs_own_navigation_state()
 -> Result<(), String> {
@@ -300,11 +298,11 @@ fn replace_container_child_migrates_every_descendant_onto_the_detached_childs_ow
 }
 
 /// `replace_container_child`'s own documented transactional guarantee, forced open: every precondition has already
-/// passed by the time `hide_root(&new_child...)` runs, so that is the one DOM write left that can still fail — and
-/// at that point neither scene's own model has been touched yet, so a failure there has nothing to roll back, only
-/// something to not do. Forces exactly that write to fail, then proves both scenes are left exactly as they were:
-/// the original child stays attached, focused-through-`parent`, and hidden; `new_child` stays independent, focused,
-/// and visible; and `parent.enter(node)` still shows the original child.
+/// passed by the time `hide_root(&new_child...)` runs, so that is the one DOM write left that can still fail — and at
+/// that point neither scene's own model has been touched yet, so a failure there has nothing to roll back, only
+/// something to not do. Forces exactly that write to fail, then proves both scenes are left exactly as they were: the
+/// original child stays attached, focused-through-`parent`, and hidden; `new_child` stays independent, focused, and
+/// visible; and `parent.enter(node)` still shows the original child.
 #[wasm_bindgen_test]
 fn a_failed_hide_of_new_childs_root_leaves_both_scenes_exactly_as_they_were() -> Result<(), String> {
     let parent = Scene::new(make_svg("replace-failed-hide-parent")).map_err(|e| e.to_string())?;

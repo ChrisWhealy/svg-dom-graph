@@ -101,8 +101,8 @@ fn child_x_positions(visible_count: u8) -> Vec<f64> {
 /// Clears `#edge-anchors-diagram` and rebuilds it from scratch: `Parent`, `max(1, fixing_points)` draggable children
 /// spread by [`child_x_positions`], and `connector_type` connectors between `Parent` and each child.
 ///
-/// Every node's own [`EdgeAnchors`] is `None` if `fixing_points` is `0`, or
-/// `Some(EdgeAnchors(fixing_points))` otherwise.
+/// Every node's own [`EdgeAnchors`] is `None` if `fixing_points` is `0`, or `Some(EdgeAnchors(fixing_points))`
+/// otherwise.
 ///
 /// `Scene` has no node-move API, so a fixing-point count with a different child spread needs a fresh `Scene` built over
 /// fresh positions, not an adjustment to the one already rendered. Clearing `#edge-anchors-diagram` first discards the
@@ -163,8 +163,7 @@ fn rebuild_edge_anchors_scene(
 /// The slider's own handler rebuilds the whole scene via [`rebuild_edge_anchors_scene`] on every move, replacing
 /// `state`'s contents. The radio buttons' shared handler applies the current connector type to every edge `state`
 /// currently knows about, without rebuilding. Both installed closures capture `state` and are never dropped —
-/// `Closure::forget` leaks them deliberately, for the page's whole lifetime, the same span `SCENE`
-/// itself covers.
+/// `Closure::forget` leaks them deliberately, for the page's whole lifetime, the same span `SCENE` itself covers.
 ///
 /// # Errors
 ///
@@ -220,8 +219,8 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
             ConnectorType::Elbow { corner_radius: 0.0 }
         };
 
-        // Same reasoning as the slider handler above: these calls cannot fail in practice. Errors are still
-        // ignored rather than unwrapped, so a live page never panics from a stray input event.
+        // Same reasoning as the slider handler above: these calls cannot fail in practice. Errors are still ignored
+        // rather than unwrapped, so a live page never panics from a stray input event.
         for &edge in &demo.edges {
             let _ = demo.scene.set_connector_type(edge, connector_type);
         }

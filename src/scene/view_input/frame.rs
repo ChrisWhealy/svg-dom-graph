@@ -54,8 +54,8 @@ impl ViewFlusher {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Writes the current view now and cancels any frame still pending, so a gesture that has just ended leaves the
-    /// DOM exactly at its final position rather than one frame behind.
+    /// Writes the current view now and cancels any frame still pending, so a gesture that has just ended leaves the DOM
+    /// exactly at its final position rather than one frame behind.
     pub(super) fn flush_now(&self) {
         self.frame.cancel();
         flush(&self.inner);

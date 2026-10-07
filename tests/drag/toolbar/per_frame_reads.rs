@@ -1,7 +1,6 @@
-//! The per-frame path. A `MutationObserver` shows what a pan or zoom frame *writes*, but not what it *reads*.
-//! Reading an attribute from the DOM crosses the WASM and JavaScript boundary and allocates a `String` for the
-//! answer, so a frame that reads to decide there is nothing to write is still paying for it — on every animation
-//! frame of a pan.
+//! The per-frame path. A `MutationObserver` shows what a pan or zoom frame *writes*, but not what it *reads*. Reading
+//! an attribute from the DOM crosses the WASM and JavaScript boundary and allocates a `String` for the answer, so a
+//! frame that reads to decide there is nothing to write is still paying for it — on every animation frame of a pan.
 
 use super::support::*;
 use crate::common::{check, dispatch_pointer_event};
@@ -104,8 +103,8 @@ async fn a_pan_or_wheel_frame_reads_no_attributes_from_the_dom() -> Result<(), S
         &format!("a wheel frame read {} attribute(s) from the DOM", reads.count()),
     )?;
 
-    // Zoom steps from the buttons, the keyboard, and the API. Each works out the centre of the visible area, which must not
-    // mean reading the `viewBox` back from the DOM.
+    // Zoom steps from the buttons, the keyboard, and the API. Each works out the centre of the visible area, which must
+    // not mean reading the `viewBox` back from the DOM.
     scene.zoom_in().map_err(|e| e.to_string())?;
     scene.zoom_out().map_err(|e| e.to_string())?;
     key(&target, "+", false, false, false)?;

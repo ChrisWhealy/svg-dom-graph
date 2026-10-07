@@ -35,8 +35,8 @@ fn theta_agrees_with_the_theta_scenes_own_calculation() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Acceptance tests, at four levels. Each higher level is checked against something the lower ones are not made
-// from, so the diagram's own data flow and the real SHA3 calculation cannot drift apart unnoticed:
+//   Acceptance tests, at four levels. Each higher level is checked against something the lower ones are not made from,
+//   so the diagram's own data flow and the real SHA3 calculation cannot drift apart unnoticed:
 //
 // 1. every step function, against a second implementation written straight from FIPS 202's own formulas;
 // 2. one complete round, against the same;
@@ -63,8 +63,8 @@ fn reference_theta(a: Grid) -> Grid {
     std::array::from_fn(|x| std::array::from_fn(|y| a[x][y] ^ d[x]))
 }
 
-/// FIPS 202 Algorithm 2: starting at `(1, 0)`, lane `t` is rotated by `(t + 1)(t + 2) / 2`, then the walk moves to
-/// `(y, (2x + 3y) mod 5)`.
+/// FIPS 202 Algorithm 2: starting at `(1, 0)`, lane `t` is rotated by `(t + 1)(t + 2) / 2`, then the walk moves to `(y,
+/// (2x + 3y) mod 5)`.
 fn reference_rho(mut a: Grid) -> Grid {
     let (mut x, mut y) = (1, 0);
     for t in 0..24u32 {
@@ -192,9 +192,9 @@ fn all_twenty_four_rounds_match_the_reference_and_every_traced_round_agrees() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Level 4: complete `SHA3-256` digests against published known answers — NIST's own example for the empty message
-/// and for `"abc"`, and the widely quoted digest of a longer sentence — through the same `sha3_256_run` the diagram
-/// draws from.
+/// Level 4: complete `SHA3-256` digests against published known answers — NIST's own example for the empty message and
+/// for `"abc"`, and the widely quoted digest of a longer sentence — through the same `sha3_256_run` the diagram draws
+/// from.
 #[test]
 fn sha3_256_digests_match_the_published_known_answers() {
     for (message, expected) in [

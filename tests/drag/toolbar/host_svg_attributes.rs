@@ -1,6 +1,5 @@
-//! The application's own `<svg>`. It may carry accessibility attributes of its own — a role, a name, a
-//! description, a `tabindex` — and the scene must never take them over, even while its keyboard control is
-//! switched on.
+//! The application's own `<svg>`. It may carry accessibility attributes of its own — a role, a name, a description, a
+//! `tabindex` — and the scene must never take them over, even while its keyboard control is switched on.
 
 use super::support::*;
 use crate::common::{check, dispatch_pointer_event};
@@ -9,8 +8,8 @@ use wasm_bindgen_test::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The application's `<svg>` supplies its own role, name, description, and `tabindex`. Showing the toolbar, zooming,
-/// panning, changing every input mode, and hiding the toolbar must leave every one of them exactly as it was — not just at
-/// the end, but throughout, so no moment exists when the application's own name has been replaced.
+/// panning, changing every input mode, and hiding the toolbar must leave every one of them exactly as it was — not just
+/// at the end, but throughout, so no moment exists when the application's own name has been replaced.
 #[wasm_bindgen_test]
 fn the_applications_own_svg_attributes_are_never_touched() -> Result<(), String> {
     let scene = scene_in_svg("own-attrs", 400, 300, "0 0 400 300", None)?;

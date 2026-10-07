@@ -28,8 +28,9 @@ pub(super) struct DragStart {
     /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. It reflects the scene's view *as it was at pointerdown* — see [`view`](Self::view) — and the dragged
-    /// group's own translation at that moment, which is why it is never re-read: that translation changes on every move.
+    /// pointermove. It reflects the scene's view *as it was at pointerdown* — see [`view`](Self::view) — and the
+    /// dragged group's own translation at that moment, which is why it is never re-read: that translation changes on
+    /// every move.
     ///
     /// The view can change during a drag, so this matrix alone is not enough to place the pointer once it has.
     pub(super) inverse_ctm: Matrix2D,

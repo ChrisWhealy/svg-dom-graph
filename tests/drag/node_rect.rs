@@ -1,6 +1,6 @@
-//! `Scene::node_rect`: a node's own current rendered rectangle, in the `<svg>`'s own user space — the same value
-//! this crate itself already tracks internally, exposed so a caller can lay out a node relative to another one
-//! whose own rendered size (a data node's, in particular) is not knowable ahead of drawing it.
+//! `Scene::node_rect`: a node's own current rendered rectangle, in the `<svg>`'s own user space — the same value this
+//! crate itself already tracks internally, exposed so a caller can lay out a node relative to another one whose own
+//! rendered size (a data node's, in particular) is not knowable ahead of drawing it.
 
 use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
@@ -11,8 +11,8 @@ use svg_dom_graph::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A plain node's own `node_rect` is exactly the `top_left`/`size` its own constructor was given — nothing this
-/// crate itself computes for it.
+/// A plain node's own `node_rect` is exactly the `top_left`/`size` its own constructor was given — nothing this crate
+/// itself computes for it.
 #[wasm_bindgen_test]
 fn node_rect_of_a_plain_node_is_exactly_what_it_was_constructed_with() -> Result<(), String> {
     let svg = make_svg("node-rect-plain", Size::new(300.0, 200.0), Size::new(300.0, 200.0));
@@ -31,8 +31,8 @@ fn node_rect_of_a_plain_node_is_exactly_what_it_was_constructed_with() -> Result
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A data node's own `node_rect` matches the box this crate itself computed to fit its own content — exactly the
-/// `width`/`height` its rendered outer `<rect>` was actually given, not a guess or an estimate. This is the whole
-/// point of `node_rect`: a data node's own real size is not knowable ahead of drawing it.
+/// `width`/`height` its rendered outer `<rect>` was actually given, not a guess or an estimate. This is the whole point
+/// of `node_rect`: a data node's own real size is not knowable ahead of drawing it.
 #[wasm_bindgen_test]
 fn node_rect_of_a_data_node_matches_its_own_rendered_outer_box() -> Result<(), String> {
     let svg = make_svg("node-rect-data", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

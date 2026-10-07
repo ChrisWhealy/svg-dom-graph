@@ -27,8 +27,8 @@ fn css_sized_svg(id: &str, width: u32, height: u32) -> Result<svg_dom::SvgRoot, 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With no `viewBox` and no size attributes, the layout uses the rendered size rather than the cached `0 x 0`. A
-/// 300 x 200 north bar of default width 134 sits at x = (300 - 134) / 2 = 83, and the pan surface covers the whole box.
+/// With no `viewBox` and no size attributes, the layout uses the rendered size rather than the cached `0 x 0`. A 300 x
+/// 200 north bar of default width 134 sits at x = (300 - 134) / 2 = 83, and the pan surface covers the whole box.
 #[wasm_bindgen_test]
 fn a_css_sized_svg_with_no_view_box_is_laid_out_against_its_rendered_size() -> Result<(), String> {
     let svg = css_sized_svg("rl-css-sized", 300, 200)?;

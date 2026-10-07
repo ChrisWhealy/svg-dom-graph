@@ -1,8 +1,8 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single-operand bitwise operation an [`crate::scene::Scene::add_unary_operator_node`] node represents.
 ///
-/// This crate never evaluates the operation itself — see this module's parent doc comment. Each variant exists
-/// purely to drive the rendered node's own label; a caller supplies the already-computed result separately.
+/// This crate never evaluates the operation itself — see this module's parent doc comment. Each variant exists purely
+/// to drive the rendered node's own label; a caller supplies the already-computed result separately.
 ///
 /// Covers every same-width bitwise transform a single unsigned operand supports: complement, shift, rotate, bit
 /// reversal, and byte-order reversal. Deliberately excludes a bit-counting operation such as population count or
@@ -37,8 +37,8 @@ pub enum UnaryOperator {
 }
 
 impl UnaryOperator {
-    /// A short label naming this operation, for the operator node's own rendered glyph row — e.g. `"NOT"`,
-    /// `"SHL 3"`, `"ROTR 1"`, `"RBIT"`, `"BSWAP"`.
+    /// A short label naming this operation, for the operator node's own rendered glyph row — e.g. `"NOT"`, `"SHL 3"`,
+    /// `"ROTR 1"`, `"RBIT"`, `"BSWAP"`.
     pub(crate) fn label(self) -> String {
         match self {
             Self::Not => "NOT".to_owned(),

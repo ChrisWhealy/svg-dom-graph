@@ -1,7 +1,6 @@
-//! Changing the view in the middle of a pointer gesture. The view can change at any moment — the wheel, the
-//! keyboard, a toolbar button, or the application calling `zoom_in` — and a node drag or a pan that is already
-//! under way must go on tracking the pointer correctly. Both would otherwise rest on a picture of the view taken
-//! when the gesture began.
+//! Changing the view in the middle of a pointer gesture. The view can change at any moment — the wheel, the keyboard, a
+//! toolbar button, or the application calling `zoom_in` — and a node drag or a pan that is already under way must go on
+//! tracking the pointer correctly. Both would otherwise rest on a picture of the view taken when the gesture began.
 
 use super::support::*;
 use crate::common::{check_close, dispatch_pointer_event, group_translate, nth_group};
@@ -10,8 +9,8 @@ use wasm_bindgen_test::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Drag a node, zoom with the wheel at the pointer, then keep dragging. A wheel at the pointer holds the grabbed point
-/// still, so the second move of 25 pixels at 1.25x is 20 units of content, not 25: the node ends at 100 + 25 + 20 = 145.
-/// Using the matrix from the start of the drag would give 150.
+/// still, so the second move of 25 pixels at 1.25x is 20 units of content, not 25: the node ends at 100 + 25 + 20 =
+/// 145. Using the matrix from the start of the drag would give 150.
 #[wasm_bindgen_test]
 async fn a_node_drag_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> Result<(), String> {
     let _scene = draggable_node_scene("mid-drag-wheel")?;
@@ -64,9 +63,9 @@ async fn a_node_drag_carries_on_correctly_after_the_application_zooms_in_the_mid
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A wheel zoom is written to the DOM one frame late. If a drag begins inside that frame, the node's screen matrix, read
-/// from the DOM, still shows the old zoom while the view already has the new one. The drag must not be built on that
-/// stale matrix: at 1.25x, 25 pixels is 20 units.
+/// A wheel zoom is written to the DOM one frame late. If a drag begins inside that frame, the node's screen matrix,
+/// read from the DOM, still shows the old zoom while the view already has the new one. The drag must not be built on
+/// that stale matrix: at 1.25x, 25 pixels is 20 units.
 #[wasm_bindgen_test]
 async fn a_drag_that_starts_before_a_pending_zoom_has_been_drawn_uses_the_new_zoom() -> Result<(), String> {
     let _scene = draggable_node_scene("mid-drag-pending")?;
@@ -109,8 +108,8 @@ async fn a_pan_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> Result
     dispatch_pointer_event(&surface, "pointerup", x0 + 60, y0 + 10, 1)?;
     next_frame().await?;
 
-    // After the first move the translation is (30, 0). Zooming by 1.25 about the pointer at (px, py) gives
-    // p - 1.25 * (p - t). The second move then adds (30, 10).
+    // After the first move the translation is (30, 0). Zooming by 1.25 about the pointer at (px, py) gives p - 1.25 *
+    // (p - t). The second move then adds (30, 10).
     let (px, py) = ((x0 + 30) as f64 - left, y0 as f64 - top);
     let expected = (px - 1.25 * (px - 30.0) + 30.0, py - 1.25 * (py - 0.0) + 10.0);
 
@@ -146,8 +145,8 @@ async fn a_pan_carries_on_correctly_after_the_application_zooms_in_the_middle() 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Zoom in the middle of a pan, from the keyboard, and reset in the middle of a node drag. Whatever changes the view, the
-/// gesture composes with it.
+/// Zoom in the middle of a pan, from the keyboard, and reset in the middle of a node drag. Whatever changes the view,
+/// the gesture composes with it.
 #[wasm_bindgen_test]
 async fn the_keyboard_and_a_toolbar_button_also_compose_with_a_gesture_in_progress() -> Result<(), String> {
     // A pan, with the keyboard zooming in the middle: `+` zooms about the centre (200, 150).
@@ -167,8 +166,8 @@ async fn the_keyboard_and_a_toolbar_button_also_compose_with_a_gesture_in_progre
     check_close(scale, 1.25)?;
     check_close(tx, 200.0 - 1.25 * (200.0 - 30.0) + 20.0)?;
 
-    // A node drag, with the "100%" button pressed in the middle: the view goes back to the identity, so the pointer is over
-    // a different point of content. The node must follow the pointer to it, still held at the same offset.
+    // A node drag, with the "100%" button pressed in the middle: the view goes back to the identity, so the pointer is
+    // over a different point of content. The node must follow the pointer to it, still held at the same offset.
     let scene = draggable_node_scene("mid-drag-button")?;
     scene.zoom_in().map_err(|e| e.to_string())?;
     next_frame().await?;
@@ -190,7 +189,8 @@ async fn the_keyboard_and_a_toolbar_button_also_compose_with_a_gesture_in_progre
     dispatch_pointer_event(&group, "pointerup", gx + 50, gy, 1)?;
     next_frame().await?;
 
-    // At the identity, content and the `<svg>`'s user space are the same, so the pointer is at (gx + 50 - left, gy - top).
+    // At the identity, content and the `<svg>`'s user space are the same, so the pointer is at (gx + 50 - left, gy -
+    // top).
     let (x, y) = group_translate(&group)?;
     check_close(x, (gx as f64 + 50.0 - left) - offset.0)?;
     check_close(y, (gy as f64 - top) - offset.1)

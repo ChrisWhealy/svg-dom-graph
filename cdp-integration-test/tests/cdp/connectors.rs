@@ -1,9 +1,10 @@
 //! An elbowed connector's real rendered `<path>` matches its hand-worked route, both as first drawn and after a real,
 //! CDP-driven drag moves one of its endpoints.
 //!
-//! Uses the fixture's two `solo`-to-`blocker` connectors. The first (`#diagram > g.svg-dom-graph-content > path:nth-of-type(1)`) has sharp
-//! corners. The second (`#diagram > g.svg-dom-graph-content > path:nth-of-type(2)`) has `corner_radius: 8.0`. See `cdp-test-fixture/src/lib.rs`'s
-//! own module doc comment for why this pair, out of the fixture's three nodes, is the one that actually bends.
+//! Uses the fixture's two `solo`-to-`blocker` connectors. The first (`#diagram > g.svg-dom-graph-content >
+//! path:nth-of-type(1)`) has sharp corners. The second (`#diagram > g.svg-dom-graph-content > path:nth-of-type(2)`) has
+//! `corner_radius: 8.0`. See `cdp-test-fixture/src/lib.rs`'s own module doc comment for why this pair, out of the
+//! fixture's three nodes, is the one that actually bends.
 //!
 //! # Expected path, worked by hand
 //!

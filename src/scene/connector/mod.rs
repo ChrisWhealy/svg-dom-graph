@@ -35,9 +35,9 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 ///
 /// `forced_side: Some(side)` anchors on `side` regardless of `towards`, via [`forced_anchor`] — see
 /// [`Scene::add_edge_with`]'s own doc comment for when a caller needs this. `None` leaves the side to be chosen
-/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see
-/// [`snapped_anchor`]. `None` for both keeps [`ConnectorType::Straight`]'s own default, calculated as a continuous
-/// ray crossing — see [`boundary_point`].
+/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
+/// `None` for both keeps [`ConnectorType::Straight`]'s own default, calculated as a continuous ray crossing — see
+/// [`boundary_point`].
 fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> Point {
     if let Some(side) = forced_side {
         return forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n));
@@ -53,9 +53,9 @@ fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, for
 ///
 /// `forced_side: Some(side)` anchors on `side` regardless of `towards`, via [`forced_anchor`] — see
 /// [`Scene::add_edge_with`]'s own doc comment for when a caller needs this. `None` leaves the side to be chosen
-/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see
-/// [`snapped_anchor`]. `None` for both keeps [`ConnectorType::Elbow`]'s own default, calculated as the crossed
-/// side's own midpoint — see [`edge_anchor`].
+/// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
+/// `None` for both keeps [`ConnectorType::Elbow`]'s own default, calculated as the crossed side's own midpoint — see
+/// [`edge_anchor`].
 fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> (Point, Side) {
     if let Some(side) = forced_side {
         return (forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n)), side);
@@ -70,21 +70,21 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced
 /// Everything [`route`] needs to give a binary operator node's own same-side input its non-crossing route — see
 /// [`crate::geometry::binary_operator_elbow_route`]'s own doc comment for the scheme this exists to feed.
 ///
-/// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) is the only place
-/// that builds one.
+/// [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) is the only place that
+/// builds one.
 pub(crate) struct BinaryOperatorRoute {
     /// This edge's own already-split anchor point on the operator — see [`crate::geometry::binary_operator_anchors`]
     pub(crate) anchor: Point,
     /// The side of the operator `anchor` sits on.
     pub(crate) side: Side,
-    /// The sibling edge's own already-split anchor point on the operator — `Some` only when the sibling input
-    /// lands on this same `side`, the one case [`binary_operator_elbow_route`]'s own sibling-aware routing applies.
+    /// The sibling edge's own already-split anchor point on the operator — `Some` only when the sibling input lands on
+    /// this same `side`, the one case [`binary_operator_elbow_route`]'s own sibling-aware routing applies.
     ///
     /// `None` when the two inputs land on different sides of the operator. [`binary_operator_anchors`]'s own doc
     /// comment already documents that a different-side input behaves exactly like an ordinary edge would — `route`
-    /// honours that here by falling back to plain [`elbow_route`] rather than calling
-    /// [`binary_operator_elbow_route`] with an unrelated sibling coordinate from a genuinely different side, which
-    /// that function's own drift comparison assumes never happens.
+    /// honours that here by falling back to plain [`elbow_route`] rather than calling [`binary_operator_elbow_route`]
+    /// with an unrelated sibling coordinate from a genuinely different side, which that function's own drift comparison
+    /// assumes never happens.
     ///
     /// [`binary_operator_anchors`]: crate::geometry::binary_operator_anchors
     pub(crate) sibling_end: Option<Point>,
@@ -97,15 +97,15 @@ pub(crate) struct BinaryOperatorRoute {
 /// A [`ConnectorType::Straight`] connector cannot have a corner radius, so its radius is always `0.0`.
 ///
 /// `from_anchors` / `to_anchors` are each that node's own [`EdgeAnchors`] configuration, independent of the other
-/// endpoint's — one endpoint can use `None` while the other uses `Some`. `from_side`/`to_side` are this connector's
-/// own forced sides, from [`ConnectorOptions::from_side`](crate::scene::ConnectorOptions::from_side)/
+/// endpoint's — one endpoint can use `None` while the other uses `Some`. `from_side`/`to_side` are this connector's own
+/// forced sides, from [`ConnectorOptions::from_side`](crate::scene::ConnectorOptions::from_side)/
 /// [`to_side`](crate::scene::ConnectorOptions::to_side) — independent of each other and of `from_anchors`/
 /// `to_anchors`, the same way `EdgeAnchors` already is.
 ///
-/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors`/
-/// `to_side` — see [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for
-/// the one case that supplies it: a binary operator node's own two inputs, split apart and routed clear of each
-/// other when they land on the same side.
+/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors`/ `to_side`
+/// — see [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for the one case
+/// that supplies it: a binary operator node's own two inputs, split apart and routed clear of each other when they land
+/// on the same side.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn route(
     connector_type: ConnectorType,
@@ -205,8 +205,8 @@ impl Scene {
             options.to_side,
             to_override,
         );
-        // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability —
-        // see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per new edge.
+        // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability — see
+        // `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per new edge.
         let mut d = std::mem::take(&mut inner.scratch);
         elbow_path_into(&vertices, radius, &mut d);
         let path_result = inner.svg.path(&d);
@@ -230,8 +230,8 @@ impl Scene {
             },
         );
 
-        // Every edge, not just an operator's own auto-wired input, gets both endpoints' own descriptions extended
-        // this way. So a `<path>` is never the only place that conveys which node feeds which — see
+        // Every edge, not just an operator's own auto-wired input, gets both endpoints' own descriptions extended this
+        // way. So a `<path>` is never the only place that conveys which node feeds which — see
         // `SceneInner::append_relationship`'s own doc comment.
         let from_name = inner.node_handle(from).ok_or(Error::UnknownNode(from))?.current_ref_name();
         let to_name = inner.node_handle(to).ok_or(Error::UnknownNode(to))?.current_ref_name();
@@ -274,8 +274,8 @@ impl Scene {
             return Ok(());
         }
 
-        // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back —
-        // see `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per call.
+        // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back — see
+        // `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
         let result = inner.redraw_edge_with_type(id, connector_type, &mut scratch);
         inner.scratch = scratch;

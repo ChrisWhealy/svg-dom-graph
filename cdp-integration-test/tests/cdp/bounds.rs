@@ -1,9 +1,9 @@
 //! A real, CDP-driven mouse drag past the visible view box clamps to the edge — and the clamped node stays
 //! real-hit-testable, not clipped and unclickable.
 //!
-//! Uses the fixture's `bounded` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(7)`), whose `DragOptions::bounds` matches the diagram's
-//! own viewBox, `(0, 0, 500, 400)` — see `cdp-test-fixture/src/lib.rs`'s own module doc comment for why it sits in the
-//! top-right corner, far from every other node.
+//! Uses the fixture's `bounded` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(7)`), whose
+//! `DragOptions::bounds` matches the diagram's own viewBox, `(0, 0, 500, 400)` — see `cdp-test-fixture/src/lib.rs`'s
+//! own module doc comment for why it sits in the top-right corner, far from every other node.
 //!
 //! `wasm-bindgen-test`'s browser suite already proves the clamp math itself (`tests/drag/bounds.rs`, run via `wasm-pack
 //! test`), including that a clamped node's own listeners still respond to a synthetic pointer sequence dispatched
@@ -20,16 +20,16 @@
 //! Both drags deliberately land clear of every other fixture node — `CollisionPolicy::PushClear`'s own corrective push
 //! is proved separately, against a controlled setup, by `tests/drag/bounds.rs`'s own
 //! `collision_pushback_near_an_edge_stays_within_bounds`. Landing near a node here (the bottom-right corner sits right
-//! next to `branch_b`) would let that same push run unexamined, and silently change what this test is
-//! actually demonstrating.
+//! next to `branch_b`) would let that same push run unexamined, and silently change what this test is actually
+//! demonstrating.
 
 use crate::common::{drag, group_translate, new_tab};
 use std::time::Duration;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `bounded`'s current world-space origin: its own `<g>`'s `transform`, not its `<rect>`'s local coordinates. Those are
-/// drawn once, at `(0, 0)`, and never rewritten as the node moves. See `svg_dom_graph::scene::node::draw_box`'s own
-/// doc comment.
+/// drawn once, at `(0, 0)`, and never rewritten as the node moves. See `svg_dom_graph::scene::node::draw_box`'s own doc
+/// comment.
 fn rect_origin(tab: &headless_chrome::Tab) -> Result<(f64, f64), String> {
     let group = tab
         .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(7)")
@@ -49,11 +49,10 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
         .get_midpoint()
         .map_err(|e| format!("could not get bounded's midpoint: {e}"))?;
 
-    // A real drag, well past the view box's own right edge (500) and above its own top edge (0) — `bounded`
-    // starts at (400, 20), size (80, 40), so a (300, -60) move overshoots the right edge by a wide margin and the
-    // top edge comfortably. Kept well inside `launch_browser`'s own generously sized window, rather than an even
-    // larger delta that risks landing at some unrelated point past the window's actual edge instead of the view
-    // box's.
+    // A real drag, well past the view box's own right edge (500) and above its own top edge (0) — `bounded` starts at
+    // (400, 20), size (80, 40), so a (300, -60) move overshoots the right edge by a wide margin and the top edge
+    // comfortably. Kept well inside `launch_browser`'s own generously sized window, rather than an even larger delta
+    // that risks landing at some unrelated point past the window's actual edge instead of the view box's.
     drag(
         &tab,
         &[
@@ -73,10 +72,10 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
         ));
     }
 
-    // The crux of this test: re-find the element and ask for its own midpoint again, fresh, from wherever it is
-    // now. If the first drag had left it outside the view box's own clipped rendering area, a real browser could
-    // never resolve this to a paintable point at all — this call is standing in for a user's own mouse cursor
-    // finding something to click.
+    // The crux of this test: re-find the element and ask for its own midpoint again, fresh, from wherever it is now. If
+    // the first drag had left it outside the view box's own clipped rendering area, a real browser could never resolve
+    // this to a paintable point at all — this call is standing in for a user's own mouse cursor finding something to
+    // click.
     let clamped_rect = tab
         .find_element("#diagram > g.svg-dom-graph-content > g:nth-of-type(7) rect")
         .map_err(|e| format!("could not re-find bounded's <rect> after the first drag: {e}"))?;
@@ -84,9 +83,9 @@ fn a_node_dragged_past_the_view_box_clamps_and_stays_real_clickable() -> Result<
         .get_midpoint()
         .map_err(|e| format!("could not get bounded's midpoint after it was clamped to the edge: {e}"))?;
 
-    // Drags it back toward the centre of the view box, landing clear of every other fixture node (see this
-    // module's own doc comment for why that matters here) — comfortably clear of both edges too, so this second
-    // drag is not itself reclamped, and its own success is unambiguous.
+    // Drags it back toward the centre of the view box, landing clear of every other fixture node (see this module's own
+    // doc comment for why that matters here) — comfortably clear of both edges too, so this second drag is not itself
+    // reclamped, and its own success is unambiguous.
     let (dx, dy) = (-250.0, 150.0);
     drag(
         &tab,

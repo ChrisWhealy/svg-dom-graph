@@ -45,8 +45,8 @@ impl DataNodeContent {
     ///
     /// `layout`'s own `Columns`/`Rows`/`MaxColumns` value is accepted here even if `0`. This is the same
     /// deferred-validation convention `new`'s own doc comment describes. It is rejected instead by
-    /// [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with),
-    /// with [`Error::InvalidGridLayout`](crate::error::Error::InvalidGridLayout).
+    /// [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with), with
+    /// [`Error::InvalidGridLayout`](crate::error::Error::InvalidGridLayout).
     #[must_use]
     pub fn with_layout(mut self, layout: GridLayout) -> Self {
         self.layout = layout;
@@ -59,8 +59,8 @@ impl DataNodeContent {
     /// `with_column_groups(8)`.
     ///
     /// Only the horizontal spacing changes: the grid keeps the shape [`GridLayout`] gives it, cells still index in the
-    /// same row-major order, and a row or column selection still highlights the same cells. The gap is between
-    /// groups only, never after the last one. `0` — the default — draws no groups.
+    /// same row-major order, and a row or column selection still highlights the same cells. The gap is between groups
+    /// only, never after the last one. `0` — the default — draws no groups.
     #[must_use]
     pub fn with_column_groups(mut self, columns: usize) -> Self {
         self.column_group = columns;
@@ -128,31 +128,30 @@ impl DataNodeContent {
     /// Calls `f(index, formatted)` once for every value, in order, formatted per this content's own `format`/
     /// `byte_order` — one cell per value, not yet arranged into a grid (see [`shape`](Self::shape) for that).
     ///
-    /// `draw_content_box` streams a data node's own cells through this one at a time, however many values it
-    /// holds, rather than collecting every formatted value into a `Vec<String>` — and the `Vec<SvgNode>` `<text>`
-    /// per element it would otherwise take to render them — up front. See
-    /// [`NodeValues::for_each_cell_string`]'s own doc comment for the reused-buffer shape this passes straight
-    /// through.
+    /// `draw_content_box` streams a data node's own cells through this one at a time, however many values it holds,
+    /// rather than collecting every formatted value into a `Vec<String>` — and the `Vec<SvgNode>` `<text>` per element
+    /// it would otherwise take to render them — up front. See [`NodeValues::for_each_cell_string`]'s own doc comment
+    /// for the reused-buffer shape this passes straight through.
     pub(crate) fn for_each_cell_string(&self, scratch: &mut String, f: impl FnMut(usize, &str)) {
         self.values.for_each_cell_string(self.format, self.byte_order, scratch, f);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Formats this content's own single value into caller-owned `out` — `false`, leaving `out` untouched, if it
-    /// holds no values at all.
+    /// Formats this content's own single value into caller-owned `out` — `false`, leaving `out` untouched, if it holds
+    /// no values at all.
     ///
-    /// For `draw_operator_box`'s own already-validated single-value result — an operator always produces exactly
-    /// one value, never a grid, so this never needs [`for_each_cell_string`](Self::for_each_cell_string)'s
-    /// per-value iteration just to reach the one string it would ever visit, nor allocate a fresh `String`:
-    /// `draw_operator_box` passes its own construction-scratch buffer as `out`.
+    /// For `draw_operator_box`'s own already-validated single-value result — an operator always produces exactly one
+    /// value, never a grid, so this never needs [`for_each_cell_string`](Self::for_each_cell_string)'s per-value
+    /// iteration just to reach the one string it would ever visit, nor allocate a fresh `String`: `draw_operator_box`
+    /// passes its own construction-scratch buffer as `out`.
     pub(crate) fn single_cell_string_into(&self, out: &mut String) -> bool {
         self.values.single_cell_string_into(self.format, self.byte_order, out)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Formats into `out` whichever one value is guaranteed to render this content's own widest cell, under one
-    /// monospace font, without formatting every value first — see [`NodeValues::widest_cell_string`]'s own doc
-    /// comment for how that value is chosen. Leaves `out` empty if this content holds no values at all.
+    /// monospace font, without formatting every value first — see [`NodeValues::widest_cell_string`]'s own doc comment
+    /// for how that value is chosen. Leaves `out` empty if this content holds no values at all.
     pub(crate) fn widest_cell_string(&self, out: &mut String) {
         self.values.widest_cell_string(self.format, self.byte_order, out);
     }
@@ -184,11 +183,10 @@ impl DataNodeContent {
     /// over-specified [`GridLayout::Rows`]/[`GridLayout::Columns`]) can legitimately leave the grid's own last row or
     /// column short, or entirely empty, whenever this content's own value count does not divide evenly.
     ///
-    /// Seven values arranged as a 3×3 grid, for example, leaves flat indices `7`/`8` with no real value at all.
-    /// `focus` is therefore checked against this content's own actual `len`, not just against the grid's own
-    /// row/column *shape* — `band`'s own arithmetic membership test never needs the same check, since
-    /// `Scene::set_selection` only ever queries it with a flat index already known to be real. See [`ResolvedBand`]'s
-    /// own doc comment for why.
+    /// Seven values arranged as a 3×3 grid, for example, leaves flat indices `7`/`8` with no real value at all. `focus`
+    /// is therefore checked against this content's own actual `len`, not just against the grid's own row/column *shape*
+    /// — `band`'s own arithmetic membership test never needs the same check, since `Scene::set_selection` only ever
+    /// queries it with a flat index already known to be real. See [`ResolvedBand`]'s own doc comment for why.
     pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(ResolvedBand, Option<usize>)> {
         let len = self.len();
         let (rows, cols) = self.shape();
@@ -220,13 +218,13 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The walk at position (`flat_index`) shown by a data-node selection toolbar's [`Selection`]:
-    /// [`Selection::Cell`] for a one-dimensional grid (a single row or a single column — see [`Selection`]'s own doc
-    /// comment for why that case only ever needs `Cell`), [`Selection::Row`] with a `col` for any other shape.
+    /// The walk at position (`flat_index`) shown by a data-node selection toolbar's [`Selection`]: [`Selection::Cell`]
+    /// for a one-dimensional grid (a single row or a single column — see [`Selection`]'s own doc comment for why that
+    /// case only ever needs `Cell`), [`Selection::Row`] with a `col` for any other shape.
     ///
     /// Returns `None` if `flat_index` is out of range for this content's own actual value count.
-    /// [`flat_index`](Self::flat_index) is the inverse of this, over the selections it can produce — see its own
-    /// doc comment for why "over the selections it can produce" rather than "over `Selection`'s whole domain."
+    /// [`flat_index`](Self::flat_index) is the inverse of this, over the selections it can produce — see its own doc
+    /// comment for why "over the selections it can produce" rather than "over `Selection`'s whole domain."
     #[must_use]
     pub fn natural_selection(&self, flat_index: usize) -> Option<Selection> {
         if flat_index >= self.len() {
@@ -243,15 +241,15 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The inverse of [`natural_selection`](Self::natural_selection): the flat index `selection` names, if
-    /// `selection` is exactly the shape `natural_selection` would produce for this content's own current grid shape.
+    /// The inverse of [`natural_selection`](Self::natural_selection): the flat index `selection` names, if `selection`
+    /// is exactly the shape `natural_selection` would produce for this content's own current grid shape.
     ///
     /// Returns `None` for any other `Selection` — a [`Selection::Column`], a [`Selection::Row`] with no `col`, a
-    /// [`Selection::Cell`] on a genuinely two-dimensional shape, or an index out of range. Not only when `selection`
-    /// is invalid, but also whenever it is a `Selection` this content's own current shape would never have produced
+    /// [`Selection::Cell`] on a genuinely two-dimensional shape, or an index out of range. Not only when `selection` is
+    /// invalid, but also whenever it is a `Selection` this content's own current shape would never have produced
     /// through [`natural_selection`](Self::natural_selection) itself — this is deliberately narrower than "any
-    /// selection that resolves to a real cell." A data-node selection toolbar built on top of this treats that
-    /// `None` exactly like its own unstarted state — see
+    /// selection that resolves to a real cell." A data-node selection toolbar built on top of this treats that `None`
+    /// exactly like its own unstarted state — see
     /// [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)'s own doc comment.
     #[must_use]
     pub fn flat_index(&self, selection: &Selection) -> Option<usize> {

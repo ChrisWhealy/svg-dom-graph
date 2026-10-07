@@ -1,12 +1,12 @@
-//! `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`: the size a data or operator node
-//! would render at in *this* `Scene`, without ever adding it — see the design proposal's own "Acceptance tests"
-//! for the full list this file implements against.
+//! `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`: the size a data or operator node would
+//! render at in *this* `Scene`, without ever adding it — see the design proposal's own "Acceptance tests" for the full
+//! list this file implements against.
 //!
-//! The central property under test throughout is *exact* equality: `measure_*` must report precisely what
-//! `node_rect` on the equivalent `add_*` call would report — not merely "close enough," and not merely "some
-//! nonzero size." Both values come from the same browser text measurement, the same `draw_*` implementation, and
-//! the same arithmetic; a difference of even a thousandth of a pixel would mean the two code paths have silently
-//! diverged, which `check_close`'s own tolerance would hide.
+//! The central property under test throughout is *exact* equality: `measure_*` must report precisely what `node_rect`
+//! on the equivalent `add_*` call would report — not merely "close enough," and not merely "some nonzero size." Both
+//! values come from the same browser text measurement, the same `draw_*` implementation, and the same arithmetic; a
+//! difference of even a thousandth of a pixel would mean the two code paths have silently diverged, which
+//! `check_close`'s own tolerance would hide.
 
 use crate::common::{check, make_svg};
 use svg_dom::root::utils::{Point, Size};
@@ -170,10 +170,10 @@ fn measure_operator_box_matches_an_arithmetic_operator_node() -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Acceptance test 5/6: measurement leaves the `Scene`'s own rendered, persistent content unchanged — the count
-/// of *every* element anywhere under the `<svg>` root, not just its own direct children, is identical before and
-/// after a `measure_*` call, proving the throwaway group was actually removed from wherever in the tree it was
-/// drawn, not merely hidden or left nested inside the content layer.
+/// Acceptance test 5/6: measurement leaves the `Scene`'s own rendered, persistent content unchanged — the count of
+/// *every* element anywhere under the `<svg>` root, not just its own direct children, is identical before and after a
+/// `measure_*` call, proving the throwaway group was actually removed from wherever in the tree it was drawn, not
+/// merely hidden or left nested inside the content layer.
 #[wasm_bindgen_test]
 fn measurement_leaves_the_scenes_own_rendered_content_unchanged() -> Result<(), String> {
     let svg = make_svg("measure-no-residue", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -239,8 +239,8 @@ fn measure_data_node_rejects_empty_content_like_add_data_node_does() -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Acceptance test 7 (data node, invalid grid layout): the same error class from `measure_data_node` as
-/// `add_data_node` already produces for a `GridLayout` that wraps `0`.
+/// Acceptance test 7 (data node, invalid grid layout): the same error class from `measure_data_node` as `add_data_node`
+/// already produces for a `GridLayout` that wraps `0`.
 #[wasm_bindgen_test]
 fn measure_data_node_rejects_an_invalid_grid_layout_like_add_data_node_does() -> Result<(), String> {
     let svg = make_svg("measure-data-bad-layout", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -321,8 +321,8 @@ fn measure_operator_box_rejects_a_multi_value_result_like_add_binary_operator_no
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Acceptance test 7 (operator node, invalid grid layout): the same error class from `measure_operator_box` as a
-/// real operator node's own `result` validation already produces for a `GridLayout` that wraps `0`.
+/// Acceptance test 7 (operator node, invalid grid layout): the same error class from `measure_operator_box` as a real
+/// operator node's own `result` validation already produces for a `GridLayout` that wraps `0`.
 #[wasm_bindgen_test]
 fn measure_operator_box_rejects_an_invalid_grid_layout_like_add_binary_operator_node_does() -> Result<(), String> {
     let svg = make_svg("measure-op-bad-layout", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -357,8 +357,8 @@ fn measure_operator_box_rejects_an_invalid_grid_layout_like_add_binary_operator_
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Acceptance test 9 (weak form — see the design proposal's own caveat): two `Scene`s, each with no special CSS
-/// applied, measure the same content to the same size, independently — nothing about measuring in one `Scene`
-/// leaks into or depends on shared global state.
+/// applied, measure the same content to the same size, independently — nothing about measuring in one `Scene` leaks
+/// into or depends on shared global state.
 #[wasm_bindgen_test]
 fn two_scenes_measure_the_same_content_independently_and_consistently() -> Result<(), String> {
     let svg_a = make_svg("measure-two-scenes-a", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

@@ -1,5 +1,5 @@
-//! Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and the panel fragments
-//! in `demo/panels/`.
+//! Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and the panel fragments in
+//! `demo/panels/`.
 //!
 //! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`, minus its category dividers: `svg-dom`'s gallery groups
 //! roughly eighty panels under menu headings like "Basic Shapes" and "Filters", which this gallery's much smaller panel
@@ -17,8 +17,8 @@
 //! # Adding a new demo
 //!
 //! Add its id and menu label to [`MANIFEST`], create the matching `demo/panels/{id}.html` fragment (containing an
-//! element with `id="{id}"`, since [`assemble`] checks the two match), and add the matching `demo_gallery!` entry
-//! in `demo-app/src/lib.rs`.
+//! element with `id="{id}"`, since [`assemble`] checks the two match), and add the matching `demo_gallery!` entry in
+//! `demo-app/src/lib.rs`.
 
 use std::{
     collections::HashSet,
@@ -290,8 +290,8 @@ fn check_catalogue_consistency(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The assembled output must not contain any `{{...}}` token once both placeholders have been substituted — a leftover
-/// one means a typo'd or unexpected placeholder that none of the checks above already caught. Mirrors `svg-dom`'s
-/// own `check_no_leftover_placeholders`.
+/// one means a typo'd or unexpected placeholder that none of the checks above already caught. Mirrors `svg-dom`'s own
+/// `check_no_leftover_placeholders`.
 fn check_no_leftover_placeholders(assembled: &str) -> Result<(), AssembleError> {
     if let Some(start) = assembled.find("{{") {
         let end = (start + 40).min(assembled.len());

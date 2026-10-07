@@ -1,5 +1,5 @@
-//! `ConnectorType` behaviour: corner-radius validation, live updates via `set_connector_type`, clamping to
-//! available room, and switching between `Straight` and `Elbow`.
+//! `ConnectorType` behaviour: corner-radius validation, live updates via `set_connector_type`, clamping to available
+//! room, and switching between `Straight` and `Elbow`.
 
 use crate::common::{check, connector_count, dispatch_pointer_event, make_svg, nth_group, path_d, the_connector};
 use svg_dom::root::utils::{Point, Size};
@@ -10,8 +10,8 @@ use svg_dom_graph::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::set_connector_type` rejects a non-finite or negative `ConnectorType::Elbow` corner radius, before
-/// touching the connector, so a rejected call never corrupts the previously-rendered path.
+/// `Scene::set_connector_type` rejects a non-finite or negative `ConnectorType::Elbow` corner radius, before touching
+/// the connector, so a rejected call never corrupts the previously-rendered path.
 #[wasm_bindgen_test]
 fn set_connector_type_rejects_a_non_finite_or_negative_radius() -> Result<(), String> {
     let svg = make_svg("corner-radius-invalid", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -71,27 +71,26 @@ fn set_connector_type_rejects_an_unknown_edge() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A corner radius too large for the current geometry renders clamped to the available room, with no error. Once a
-/// drag gives the connector more room, the very same stored radius renders at its full, unclamped value — proving
-/// the clamp recomputes from the current geometry on every redraw, rather than permanently shrinking the setting.
+/// A corner radius too large for the current geometry renders clamped to the available room, with no error. Once a drag
+/// gives the connector more room, the very same stored radius renders at its full, unclamped value — proving the clamp
+/// recomputes from the current geometry on every redraw, rather than permanently shrinking the setting.
 ///
 /// # Expected paths, worked by hand
 ///
-/// `A` is fixed at `(0, 0)`, size `(80, 40)` — centre `(40, 20)`, half-extents `(40, 20)`.
-/// `B` starts at `(140, 90)`, same size — centre `(180, 110)`.
+/// `A` is fixed at `(0, 0)`, size `(80, 40)` — centre `(40, 20)`, half-extents `(40, 20)`. `B` starts at `(140, 90)`,
+/// same size — centre `(180, 110)`.
 ///
-/// From `A` toward `B`: `dx = 140`, `dy = 90`. `20 / 90 ≈ 0.222` is smaller than `40 / 140 ≈ 0.286`, so `A` anchors
-/// on its south side: `(40, 40)`. The same comparison, from `B` toward `A`, anchors `B` on its north side:
-/// `(180, 90)`.
+/// From `A` toward `B`: `dx = 140`, `dy = 90`. `20 / 90 ≈ 0.222` is smaller than `40 / 140 ≈ 0.286`, so `A` anchors on
+/// its south side: `(40, 40)`. The same comparison, from `B` toward `A`, anchors `B` on its north side: `(180, 90)`.
 ///
-/// Both anchors leave vertically and do not share an x coordinate, so the route jogs across their midpoint:
-/// `mid_y = (40 + 90) / 2 = 65`. Each of the two vertical segments is only `25` units long, so a requested radius of
-/// `30.0` shrinks to `12.5` at both corners.
+/// Both anchors leave vertically and do not share an x coordinate, so the route jogs across their midpoint: `mid_y =
+/// (40 + 90) / 2 = 65`. Each of the two vertical segments is only `25` units long, so a requested radius of `30.0`
+/// shrinks to `12.5` at both corners.
 ///
 /// Dragging `B` down by `100` moves it to `(140, 190)` — centre `(180, 210)`. `A`'s own anchor is unchanged, since
-/// neither `A` nor the direction toward it moved. `B`'s new anchor is `(180, 190)`. The new `mid_y = (40 + 190) / 2
-/// = 115`, so both vertical segments are now `75` units long — comfortably past `2 * 30.0` — so the full requested
-/// `30.0` now applies at both corners.
+/// neither `A` nor the direction toward it moved. `B`'s new anchor is `(180, 190)`. The new `mid_y = (40 + 190) / 2 =
+/// 115`, so both vertical segments are now `75` units long — comfortably past `2 * 30.0` — so the full requested `30.0`
+/// now applies at both corners.
 #[wasm_bindgen_test]
 fn set_connector_type_clamps_to_available_room_and_restores_when_room_returns() -> Result<(), String> {
     let svg = make_svg("corner-radius-clamp", Size::new(400.0, 400.0), Size::new(400.0, 400.0));
@@ -139,8 +138,9 @@ fn set_connector_type_clamps_to_available_room_and_restores_when_room_returns() 
 /// `Scene::set_connector_type`'s own equivalent test (`set_connector_type_rejects_a_non_finite_or_negative_radius`)
 /// already proves this validation rule against an existing edge. `add_edge_with` is the other public entry point that
 /// accepts a `ConnectorType`. It shares the same `validate_connector_type` call internally, but that internal sharing
-/// is not itself part of this crate's public contract. A direct test here guarantees `add_edge_with`'s own transactional
-/// behaviour — a rejected call draws no connector at all — independently of how its validation happens to be implemented.
+/// is not itself part of this crate's public contract. A direct test here guarantees `add_edge_with`'s own
+/// transactional behaviour — a rejected call draws no connector at all — independently of how its validation happens to
+/// be implemented.
 #[wasm_bindgen_test]
 fn add_edge_with_rejects_a_non_finite_or_negative_radius() -> Result<(), String> {
     let svg = make_svg("add-edge-with-invalid-radius", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -170,8 +170,8 @@ fn add_edge_with_rejects_a_non_finite_or_negative_radius() -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `ConnectorType::Straight` draws the crate's original, pre-elbow connector style: a straight line between the
-/// two boxes' own ray/boundary crossings, not an elbowed route.
+/// `ConnectorType::Straight` draws the crate's original, pre-elbow connector style: a straight line between the two
+/// boxes' own ray/boundary crossings, not an elbowed route.
 ///
 /// `A` is `(0, 0)`, size `(40, 20)` — centre `(20, 10)`. `B` is `(40, 100)`, same size — centre `(60, 110)`. This is
 /// the same pair `straight_vertices_between_diagonal_boxes_lands_on_each_rays_own_crossing` uses in
@@ -203,8 +203,8 @@ fn add_edge_with_straight_connector_type_draws_the_original_boundary_to_boundary
 /// `Scene::set_connector_type` can switch a live connector between `Straight` and `Elbow`, and back, redrawing it
 /// correctly each time — not just adjusting an elbow's own radius.
 ///
-/// Same `A`/`B` pair as `add_edge_with_straight_connector_type_draws_the_original_boundary_to_boundary_line`. The
-/// sharp elbow route between them, `(20, 20) -> (20, 60) -> (60, 60) -> (60, 100)`, is worked out the same way
+/// Same `A`/`B` pair as `add_edge_with_straight_connector_type_draws_the_original_boundary_to_boundary_line`. The sharp
+/// elbow route between them, `(20, 20) -> (20, 60) -> (60, 60) -> (60, 100)`, is worked out the same way
 /// `elbow_vertices_between_stacked_boxes_is_one_straight_vertical_segment`'s neighbouring tests in
 /// `src/geometry/unit_tests.rs` work out theirs.
 #[wasm_bindgen_test]
@@ -247,8 +247,8 @@ fn set_connector_type_toggles_a_connector_between_straight_and_elbow() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `set_connector_type`'s own no-op fast path: a `ConnectorType` identical to the edge's own current one must
-/// redraw nothing at all, not merely leave the rendered path unchanged.
+/// `set_connector_type`'s own no-op fast path: a `ConnectorType` identical to the edge's own current one must redraw
+/// nothing at all, not merely leave the rendered path unchanged.
 ///
 /// Proved here by planting a sentinel `d` directly on the connector's `<path>` via the raw DOM, bypassing `Scene`
 /// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path — its surviving an
@@ -282,15 +282,15 @@ fn set_connector_type_with_an_unchanged_type_redraws_nothing() -> Result<(), Str
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `ConnectorOptions::with_to_side` forces which side of the `to` node a connector lands on, overriding whichever
-/// side a ray from that node's own centre toward `from`'s centre would otherwise cross first.
+/// `ConnectorOptions::with_to_side` forces which side of the `to` node a connector lands on, overriding whichever side
+/// a ray from that node's own centre toward `from`'s centre would otherwise cross first.
 ///
-/// `A` is wide and sits above-right of `B` — `A`: `(300, -10)`, size `(400, 40)`, centre `(500, 10)`. `B`: `(0,
-/// 100)`, size `(40, 20)`, centre `(20, 110)`. Left alone, the ray from `B`'s own centre toward `A`'s reaches `B`'s
-/// East side first (`half_w / dx` = 20/480 ≈ 0.042, less than `half_h / dy` = 10/100 = 0.1) — the same "a wide box
-/// skews the ray shallow" effect a much wider node left-aligned above a narrower one already produces (see
-/// `demo-app`'s own `theta.rs`, the nested-Scene demo this was written for). Forcing `Side::North` instead must
-/// actually land the connector on `B`'s own top edge, not its East side.
+/// `A` is wide and sits above-right of `B` — `A`: `(300, -10)`, size `(400, 40)`, centre `(500, 10)`. `B`: `(0, 100)`,
+/// size `(40, 20)`, centre `(20, 110)`. Left alone, the ray from `B`'s own centre toward `A`'s reaches `B`'s East side
+/// first (`half_w / dx` = 20/480 ≈ 0.042, less than `half_h / dy` = 10/100 = 0.1) — the same "a wide box skews the ray
+/// shallow" effect a much wider node left-aligned above a narrower one already produces (see `demo-app`'s own
+/// `theta.rs`, the nested-Scene demo this was written for). Forcing `Side::North` instead must actually land the
+/// connector on `B`'s own top edge, not its East side.
 #[wasm_bindgen_test]
 fn add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen() -> Result<(), String> {
     let svg = make_svg("connector-forced-to-side", Size::new(800.0, 200.0), Size::new(800.0, 200.0));
@@ -315,9 +315,8 @@ fn add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_cho
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same forced-side override as
-/// `add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen`, for
-/// `ConnectorOptions::with_from_side` instead. Same wide/narrow pair, edge direction reversed so `B` (narrow) is
+/// The same forced-side override as `add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen`,
+/// for `ConnectorOptions::with_from_side` instead. Same wide/narrow pair, edge direction reversed so `B` (narrow) is
 /// now the `from` node whose own forced side is under test, and `A` (wide) is `to`.
 #[wasm_bindgen_test]
 fn add_edge_with_a_forced_from_side_overrides_the_side_that_would_otherwise_be_chosen() -> Result<(), String> {

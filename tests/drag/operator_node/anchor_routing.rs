@@ -70,8 +70,8 @@ fn dragging_an_operator_node_moves_it_and_reroutes_its_input_connector() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two operands both above a binary operator node land on two distinct points on its own north side, not the one
-/// shared midpoint a single operand there would use.
+/// Two operands both above a binary operator node land on two distinct points on its own north side, not the one shared
+/// midpoint a single operand there would use.
 #[wasm_bindgen_test]
 fn two_operands_above_a_binary_operator_node_split_to_distinct_points() -> Result<(), String> {
     let svg = make_svg("operator-anchor-split", Size::new(500.0, 400.0), Size::new(500.0, 400.0));
@@ -110,11 +110,11 @@ fn two_operands_above_a_binary_operator_node_split_to_distinct_points() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a binary operator node itself — not either of its own operands — reroutes both of its own auto-wired
-/// input connectors, and the same-side split the two operands above it share stays intact at the new position.
+/// Dragging a binary operator node itself — not either of its own operands — reroutes both of its own auto-wired input
+/// connectors, and the same-side split the two operands above it share stays intact at the new position.
 ///
-/// `SceneInner::move_node` handles this case specially: `id` (the dragged node) is itself the binary operator, so
-/// both its own input edges are redrawn together via `redraw_binary_operator_inputs`, rather than via two separate
+/// `SceneInner::move_node` handles this case specially: `id` (the dragged node) is itself the binary operator, so both
+/// its own input edges are redrawn together via `redraw_binary_operator_inputs`, rather than via two separate
 /// `incident_edges` iterations that would each independently recompute the shared pair geometry.
 #[wasm_bindgen_test]
 fn dragging_a_binary_operator_node_reroutes_and_keeps_the_split_on_both_its_input_connectors() -> Result<(), String> {
@@ -158,8 +158,8 @@ fn dragging_a_binary_operator_node_reroutes_and_keeps_the_split_on_both_its_inpu
     )?;
 
     // Both operands are still above the operator's new position — the same-side split
-    // `two_operands_above_a_binary_operator_node_split_to_distinct_points` proves at creation must survive moving
-    // the operator itself, not just moving an operand.
+    // `two_operands_above_a_binary_operator_node_split_to_distinct_points` proves at creation must survive moving the
+    // operator itself, not just moving an operand.
     let end_a = crate::common::last_point_of_path(&path_a_after)?;
     let end_b = crate::common::last_point_of_path(&path_b_after)?;
     check_close(end_a.1, end_b.1)?;
@@ -170,8 +170,8 @@ fn dragging_a_binary_operator_node_reroutes_and_keeps_the_split_on_both_its_inpu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two operands on *different* sides of a binary operator node each still keep today's plain midpoint — this
-/// feature only ever changes anything when both inputs actually collide on the same side.
+/// Two operands on *different* sides of a binary operator node each still keep today's plain midpoint — this feature
+/// only ever changes anything when both inputs actually collide on the same side.
 #[wasm_bindgen_test]
 fn operands_on_different_sides_of_a_binary_operator_node_keep_the_plain_midpoint() -> Result<(), String> {
     let svg = make_svg("operator-anchor-no-split", Size::new(500.0, 400.0), Size::new(500.0, 400.0));
@@ -218,8 +218,8 @@ fn operands_on_different_sides_of_a_binary_operator_node_keep_the_plain_midpoint
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging one operand from a side of its own onto its sibling's side re-splits both connectors live, not just
-/// once at creation.
+/// Dragging one operand from a side of its own onto its sibling's side re-splits both connectors live, not just once at
+/// creation.
 #[wasm_bindgen_test]
 fn dragging_an_operand_onto_its_siblings_side_re_splits_both_connectors_live() -> Result<(), String> {
     let svg = make_svg("operator-anchor-live-split", Size::new(500.0, 400.0), Size::new(500.0, 400.0));
@@ -275,9 +275,9 @@ fn dragging_an_operand_onto_its_siblings_side_re_splits_both_connectors_live() -
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every `M`/`L` point a path's own `d` attribute visits, in order — the corner-rounding arcs this file never
-/// exercises (every test here uses `ConnectorOptions::default`'s own sharp `corner_radius: 0.0`) would need their
-/// own parsing, which this deliberately does not attempt.
+/// Every `M`/`L` point a path's own `d` attribute visits, in order — the corner-rounding arcs this file never exercises
+/// (every test here uses `ConnectorOptions::default`'s own sharp `corner_radius: 0.0`) would need their own parsing,
+/// which this deliberately does not attempt.
 fn all_points(d: &str) -> Result<Vec<(f64, f64)>, String> {
     let mut numbers = Vec::new();
     for token in d.split_whitespace() {
@@ -294,8 +294,8 @@ fn all_points(d: &str) -> Result<Vec<(f64, f64)>, String> {
 }
 
 /// `true` if axis-aligned segments `a1`-`a2` and `b1`-`b2` touch anywhere. Every route this crate ever produces is
-/// Manhattan (each segment purely horizontal or purely vertical), so plain bounding-box overlap is a complete,
-/// exact intersection test here — see the matching helper in `src/geometry/unit_tests.rs`.
+/// Manhattan (each segment purely horizontal or purely vertical), so plain bounding-box overlap is a complete, exact
+/// intersection test here — see the matching helper in `src/geometry/unit_tests.rs`.
 fn segments_touch(a1: (f64, f64), a2: (f64, f64), b1: (f64, f64), b2: (f64, f64)) -> bool {
     let (a_min_x, a_max_x) = (a1.0.min(a2.0), a1.0.max(a2.0));
     let (a_min_y, a_max_y) = (a1.1.min(a2.1), a1.1.max(a2.1));
@@ -318,8 +318,8 @@ fn check_routes_do_not_cross(a: &[(f64, f64)], b: &[(f64, f64)]) -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging the *near* operand of a same-side binary operator pair down past the *far* operand's own anchor row —
-/// the concrete repro for this report — must not leave the two connectors crossing.
+/// Dragging the *near* operand of a same-side binary operator pair down past the *far* operand's own anchor row — the
+/// concrete repro for this report — must not leave the two connectors crossing.
 #[wasm_bindgen_test]
 fn dragging_the_near_operand_past_the_far_operands_row_does_not_cross_the_connectors() -> Result<(), String> {
     let svg = make_svg("operator-anchor-no-cross", Size::new(600.0, 500.0), Size::new(600.0, 500.0));
@@ -381,8 +381,8 @@ fn dragging_the_near_operand_past_the_far_operands_row_does_not_cross_the_connec
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The real, rendered centre of the `index`th `<g>` under `container_id` — `group_translate`'s own origin plus
-/// half of its outer `<rect>`'s own measured size.
+/// The real, rendered centre of the `index`th `<g>` under `container_id` — `group_translate`'s own origin plus half of
+/// its outer `<rect>`'s own measured size.
 fn group_centre(container_id: &str, index: u32) -> Result<(f64, f64), String> {
     let group = nth_group(container_id, index)?;
     let (x, y) = group_translate(&group)?;
@@ -408,9 +408,9 @@ fn drag_group_centre_to(container_id: &str, index: u32, target: (f64, f64)) -> R
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two distinct operands on the exact same ray from a binary operator's own centre — different nodes, but an
-/// identical crossing position on its shared side — must still land on two distinct anchor points, not one on top
-/// of the other. Comparing the crossings alone cannot tell them apart; the fix is a stable first/second identity.
+/// Two distinct operands on the exact same ray from a binary operator's own centre — different nodes, but an identical
+/// crossing position on its shared side — must still land on two distinct anchor points, not one on top of the other.
+/// Comparing the crossings alone cannot tell them apart; the fix is a stable first/second identity.
 #[wasm_bindgen_test]
 fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(), String> {
     let svg = make_svg("operator-equal-crossing", Size::new(700.0, 500.0), Size::new(700.0, 500.0));
@@ -434,10 +434,9 @@ fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(
         .add_binary_operator_node(Point::new(500.0, 260.0), BinaryOperator::Or, (near, far), result)
         .map_err(|e| e.to_string())?;
 
-    // Drag both operands onto the exact same ray from the operator's own centre — direction (-100, -1), at t = 1
-    // and t = 2 — so their crossing positions on the operator's own west side are identical (the crossing formula
-    // is `centre + dy * half_w / dx`, which depends only on the ray's own direction, not how far along it a point
-    // sits).
+    // Drag both operands onto the exact same ray from the operator's own centre — direction (-100, -1), at t = 1 and t
+    // = 2 — so their crossing positions on the operator's own west side are identical (the crossing formula is `centre
+    // + dy * half_w / dx`, which depends only on the ray's own direction, not how far along it a point sits).
     let (op_cx, op_cy) = group_centre("operator-equal-crossing", 2)?;
     drag_group_centre_to("operator-equal-crossing", 0, (op_cx - 100.0, op_cy - 1.0))?;
     drag_group_centre_to("operator-equal-crossing", 1, (op_cx - 200.0, op_cy - 2.0))?;
@@ -451,8 +450,8 @@ fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(
         1,
     )?)?)?;
 
-    // Both land on the operator's own west edge (same x) — but at two distinct y positions, not one on top of
-    // the other.
+    // Both land on the operator's own west edge (same x) — but at two distinct y positions, not one on top of the
+    // other.
     check_close(end_near.0, end_far.0)?;
     check(
         (end_near.1 - end_far.1).abs() > 1.0,
@@ -464,10 +463,10 @@ fn two_distinct_operands_with_an_identical_crossing_do_not_overlap() -> Result<(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Same shape as `two_operands_above_a_binary_operator_node_split_to_distinct_points`, but the operator node has
-/// `EdgeAnchors(5)` configured. The split must land on the outer two of the node's own *five* configured
-/// candidates, not the unconfigured default's fixed outer-two-of-three — otherwise `EdgeAnchors` would be silently
-/// ignored for a binary operator's own two automatically-wired operand edges, even though it is honoured for every
-/// other edge into the same node.
+/// `EdgeAnchors(5)` configured. The split must land on the outer two of the node's own *five* configured candidates,
+/// not the unconfigured default's fixed outer-two-of-three — otherwise `EdgeAnchors` would be silently ignored for a
+/// binary operator's own two automatically-wired operand edges, even though it is honoured for every other edge into
+/// the same node.
 #[wasm_bindgen_test]
 fn two_operands_above_a_binary_operator_node_split_to_its_configured_fixing_points() -> Result<(), String> {
     let svg = make_svg(
@@ -518,18 +517,18 @@ fn two_operands_above_a_binary_operator_node_split_to_its_configured_fixing_poin
 
     check_close(end_a.1, op_y)?;
     check_close(end_b.1, op_y)?;
-    // Outer two of five candidates on a side divided into six equal segments: 1/6 and 5/6 of the side's width —
-    // not 1/4 and 3/4, which is what the unconfigured default's outer-two-of-three split would give.
+    // Outer two of five candidates on a side divided into six equal segments: 1/6 and 5/6 of the side's width — not 1/4
+    // and 3/4, which is what the unconfigured default's outer-two-of-three split would give.
     check_close(end_a.0, op_x + op_width / 6.0)?;
     check_close(end_b.0, op_x + op_width * 5.0 / 6.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Same shape again, but with `EdgeAnchors(1)` configured. A single candidate has no second position to split to,
-/// so both operands land on the same point — the side's own plain midpoint, exactly like `EdgeAnchors(1)` on any
-/// other node. This is `EdgeAnchors`' own documented "not reserved, nothing stops two connectors sharing a point"
-/// contract playing out for a binary operator's own two operands, not a bug: see `binary_operator_anchor`'s own
-/// doc comment for why `None` (not `Some(1)`) is what still gets the outer-two-of-three split.
+/// Same shape again, but with `EdgeAnchors(1)` configured. A single candidate has no second position to split to, so
+/// both operands land on the same point — the side's own plain midpoint, exactly like `EdgeAnchors(1)` on any other
+/// node. This is `EdgeAnchors`' own documented "not reserved, nothing stops two connectors sharing a point" contract
+/// playing out for a binary operator's own two operands, not a bug: see `binary_operator_anchor`'s own doc comment for
+/// why `None` (not `Some(1)`) is what still gets the outer-two-of-three split.
 #[wasm_bindgen_test]
 fn two_operands_above_a_binary_operator_node_with_one_configured_fixing_point_share_it() -> Result<(), String> {
     let svg = make_svg(
@@ -585,8 +584,8 @@ fn two_operands_above_a_binary_operator_node_with_one_configured_fixing_point_sh
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Same shape again, but with `EdgeAnchors(2)` configured — the minimal case where the two operands actually do
-/// split apart: both of the node's own two candidates are used, with no middle one to skip.
+/// Same shape again, but with `EdgeAnchors(2)` configured — the minimal case where the two operands actually do split
+/// apart: both of the node's own two candidates are used, with no middle one to skip.
 #[wasm_bindgen_test]
 fn two_operands_above_a_binary_operator_node_with_two_configured_fixing_points_use_both() -> Result<(), String> {
     let svg = make_svg(

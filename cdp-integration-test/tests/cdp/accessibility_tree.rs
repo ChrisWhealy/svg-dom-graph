@@ -1,9 +1,8 @@
 //! `Accessibility.getPartialAXTree`/`getChildAXNodes` regression coverage — what the browser's own computed
 //! accessibility tree actually exposes, not just what `wasm-pack test`'s DOM-attribute checks can see.
-//! `tests/drag/data_node.rs` already proves the right `role`/`aria-label` attributes land on the rendered DOM.
-//! This proves Chrome's own accessibility-tree computation actually turns them into an exposed `role`/`name`. It
-//! also proves the descendant value text survives alongside it, rather than being swallowed into one atomic
-//! image.
+//! `tests/drag/data_node.rs` already proves the right `role`/`aria-label` attributes land on the rendered DOM. This
+//! proves Chrome's own accessibility-tree computation actually turns them into an exposed `role`/`name`. It also proves
+//! the descendant value text survives alongside it, rather than being swallowed into one atomic image.
 
 use crate::common::new_tab;
 use headless_chrome::{
@@ -19,14 +18,13 @@ fn ax_string(value: &Option<Accessibility::AXValue>) -> Option<String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Whether any of `root`'s own descendants, walked breadth-first via repeated `Accessibility.getChildAXNodes`
-/// calls, has a name containing `needle`.
+/// Whether any of `root`'s own descendants, walked breadth-first via repeated `Accessibility.getChildAXNodes` calls,
+/// has a name containing `needle`.
 ///
-/// Chrome does not map `root`'s own DOM children onto AX nodes 1:1. A `<text>` element with no `<tspan>` still
-/// becomes two AX levels: a wrapping `"generic"` node, then a `"StaticText"` leaf carrying the actual rendered
-/// string as its own name. A fixed-depth check would silently break if a future Chrome version wraps text
-/// differently. This walks however deep the real tree goes instead, bounded only to rule out a malformed
-/// response looping forever.
+/// Chrome does not map `root`'s own DOM children onto AX nodes 1:1. A `<text>` element with no `<tspan>` still becomes
+/// two AX levels: a wrapping `"generic"` node, then a `"StaticText"` leaf carrying the actual rendered string as its
+/// own name. A fixed-depth check would silently break if a future Chrome version wraps text differently. This walks
+/// however deep the real tree goes instead, bounded only to rule out a malformed response looping forever.
 fn descendant_name_contains(tab: &Tab, root: &AXNodeId, needle: &str) -> Result<bool, String> {
     let mut frontier = vec![root.clone()];
     for _ in 0..8 {
@@ -51,15 +49,15 @@ fn descendant_name_contains(tab: &Tab, root: &AXNodeId, needle: &str) -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fixture's `named_value` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(8)`) is a named, single-value `u64` data node. Its
-/// own `aria-label` reads `"B: u64 = AB CD EF 01 23 45 67 89"`. This test proves that exact `role`/`name` pair
-/// reaches Chrome's own computed accessibility tree. It also proves the rendered value text still reaches it
-/// somewhere in the node's own descendant subtree.
+/// The fixture's `named_value` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(8)`) is a named, single-value
+/// `u64` data node. Its own `aria-label` reads `"B: u64 = AB CD EF 01 23 45 67 89"`. This test proves that exact
+/// `role`/`name` pair reaches Chrome's own computed accessibility tree. It also proves the rendered value text still
+/// reaches it somewhere in the node's own descendant subtree.
 ///
 /// The second half is the point — `draw_content_box` chose `role="group"` over `role="img"` specifically so a
-/// descendant value stays independently reachable. Otherwise it would be collapsed into one atomic image instead
-/// — see that function's own doc comment. A DOM-level check (`get_attribute("role")`) cannot tell the two apart;
-/// only the browser's own accessibility-tree computation can.
+/// descendant value stays independently reachable. Otherwise it would be collapsed into one atomic image instead — see
+/// that function's own doc comment. A DOM-level check (`get_attribute("role")`) cannot tell the two apart; only the
+/// browser's own accessibility-tree computation can.
 #[test]
 fn a_named_data_nodes_own_accessibility_tree_exposes_role_name_and_descendant_text() -> Result<(), String> {
     let tab = new_tab()?;
@@ -72,8 +70,8 @@ fn a_named_data_nodes_own_accessibility_tree_exposes_role_name_and_descendant_te
 
     // `fetch_relatives: true` also pulls in every ancestor up to the page root. Any one of those can carry an
     // `ignoredReasons` entry this crate's own CDP dependency does not know every variant of. In practice,
-    // `"uninteresting"` fails the whole response's own deserialization, not just that one node. `false` here
-    // avoids that; `descendant_name_contains` below walks descendants through a separate, narrower call instead.
+    // `"uninteresting"` fails the whole response's own deserialization, not just that one node. `false` here avoids
+    // that; `descendant_name_contains` below walks descendants through a separate, narrower call instead.
     let own = tab
         .call_method(Accessibility::GetPartialAXTree {
             node_id: None,
@@ -109,10 +107,10 @@ fn a_named_data_nodes_own_accessibility_tree_exposes_role_name_and_descendant_te
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Whether `node`'s own `AXProperty` list carries `disabled: true` — the computed accessibility-tree counterpart to
-/// the rendered DOM's own `aria-disabled="true"`, which `tests/drag/selection_toolbar.rs` already checks at the
-/// attribute level. Only the browser's own accessibility-tree computation can say whether that attribute actually
-/// reaches a real AX property, under this exact name, with this exact boolean value.
+/// Whether `node`'s own `AXProperty` list carries `disabled: true` — the computed accessibility-tree counterpart to the
+/// rendered DOM's own `aria-disabled="true"`, which `tests/drag/selection_toolbar.rs` already checks at the attribute
+/// level. Only the browser's own accessibility-tree computation can say whether that attribute actually reaches a real
+/// AX property, under this exact name, with this exact boolean value.
 fn ax_disabled(node: &Accessibility::AXNode) -> bool {
     node.properties.iter().flatten().any(|property| {
         matches!(property.name, Accessibility::AXPropertyName::Disabled)
@@ -123,8 +121,7 @@ fn ax_disabled(node: &Accessibility::AXNode) -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every descendant of `root` whose own AX role is `"button"`, walked breadth-first via repeated
 /// `Accessibility.getChildAXNodes` calls — see [`descendant_name_contains`]'s own doc comment for why this walks
-/// however deep the real tree goes, rather than assuming the toolbar's own three buttons are its direct AX
-/// children.
+/// however deep the real tree goes, rather than assuming the toolbar's own three buttons are its direct AX children.
 fn descendant_buttons(tab: &Tab, root: &AXNodeId) -> Result<Vec<Accessibility::AXNode>, String> {
     let mut frontier = vec![root.clone()];
     let mut buttons = Vec::new();
@@ -150,18 +147,18 @@ fn descendant_buttons(tab: &Tab, root: &AXNodeId) -> Result<Vec<Accessibility::A
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fixture's selection toolbar (bound to `named_value`, shown with no prior `Scene::set_selection` call — see
-/// the fixture's own doc comment) proves Chrome's own computed accessibility tree exposes: the bar itself as
-/// `toolbar "Selection controls"`; each of its three buttons under its own accessible name, not the bare
-/// "Prev"/"Next"/"Restart" label text a sighted reader sees; and — the point `tests/drag/selection_toolbar.rs`'s
-/// own DOM-attribute checks cannot reach — that `aria-disabled="true"` on Previous/Restart, and its absence on
-/// Next, actually becomes a real `disabled` AX property with the right boolean value, not just an attribute that
-/// happens to be present in the rendered markup.
+/// The fixture's selection toolbar (bound to `named_value`, shown with no prior `Scene::set_selection` call — see the
+/// fixture's own doc comment) proves Chrome's own computed accessibility tree exposes: the bar itself as `toolbar
+/// "Selection controls"`; each of its three buttons under its own accessible name, not the bare "Prev"/"Next"/"Restart"
+/// label text a sighted reader sees; and — the point `tests/drag/selection_toolbar.rs`'s own DOM-attribute checks
+/// cannot reach — that `aria-disabled="true"` on Previous/Restart, and its absence on Next, actually becomes a real
+/// `disabled` AX property with the right boolean value, not just an attribute that happens to be present in the
+/// rendered markup.
 ///
-/// `named_value` holds exactly one value, so `Next` is enabled and `Previous`/`Restart` are disabled from the
-/// moment the toolbar is shown — this is `named_value`'s own default, unstarted state, reached with no
-/// interaction at all. See `show_selection_toolbar`'s own doc comment ("Disabled buttons") for why an empty/single-
-/// value node's own buttons start, and stay, in exactly this shape.
+/// `named_value` holds exactly one value, so `Next` is enabled and `Previous`/`Restart` are disabled from the moment
+/// the toolbar is shown — this is `named_value`'s own default, unstarted state, reached with no interaction at all. See
+/// `show_selection_toolbar`'s own doc comment ("Disabled buttons") for why an empty/single- value node's own buttons
+/// start, and stay, in exactly this shape.
 #[test]
 fn the_selection_toolbars_own_accessibility_tree_exposes_its_role_name_buttons_and_disabled_state() -> Result<(), String>
 {

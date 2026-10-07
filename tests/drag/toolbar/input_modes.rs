@@ -1,5 +1,5 @@
-//! Pan and wheel zoom are independent of the toolbar. Each has its own `InputMode`: `WithToolbar` (the default,
-//! which follows the toolbar), `On`, or `Off`.
+//! Pan and wheel zoom are independent of the toolbar. Each has its own `InputMode`: `WithToolbar` (the default, which
+//! follows the toolbar), `On`, or `Off`.
 
 use super::support::*;
 use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, group_translate, nth_group};
@@ -33,7 +33,8 @@ fn background_drag_pans(id: &str) -> Result<bool, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The default follows the toolbar exactly as before: off with no toolbar, on while one is shown, off again once hidden.
+/// The default follows the toolbar exactly as before: off with no toolbar, on while one is shown, off again once
+/// hidden.
 #[wasm_bindgen_test]
 fn by_default_both_gestures_follow_the_toolbar() -> Result<(), String> {
     let scene = new_scene("im-default")?;
@@ -370,8 +371,8 @@ fn pressing_a_toolbar_button_does_not_start_a_pan() -> Result<(), String> {
 /// Showing and hiding the toolbar repeatedly must never leave a handler behind. Every listener lives on the surface,
 /// which is removed with the gestures, except the wheel listener on the content layer.
 ///
-/// A leaked wheel listener cannot zoom, since it only holds a weak reference to a surface that no longer exists. What it
-/// can still do is cancel the event, so the test that catches a leak is the last one: with everything torn down, a
+/// A leaked wheel listener cannot zoom, since it only holds a weak reference to a surface that no longer exists. What
+/// it can still do is cancel the event, so the test that catches a leak is the last one: with everything torn down, a
 /// modified wheel over a node must no longer be cancelled by anything.
 #[wasm_bindgen_test]
 fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() -> Result<(), String> {

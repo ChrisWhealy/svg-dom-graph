@@ -52,8 +52,8 @@ fn grid_shape_of_five_values_is_three_rows_of_two_columns() -> Result<(), String
 
 #[test]
 fn grid_shape_of_six_values_prefers_two_rows_of_three_over_three_rows_of_two() -> Result<(), String> {
-    // 2 is a power of two, strictly between 1 and 6, dividing it evenly, and gives a squarer grid (2x3, diff 1)
-    // than the sqrt-based fallback would (3x2 is the same shape transposed, so this is really about which one
+    // 2 is a power of two, strictly between 1 and 6, dividing it evenly, and gives a squarer grid (2x3, diff 1) than
+    // the sqrt-based fallback would (3x2 is the same shape transposed, so this is really about which one
     // best_power_of_two_rows picks as "rows" — see that function's own doc comment on ties).
     check_eq(grid_shape(6, GridLayout::Automatic), (2, 3))
 }
@@ -66,15 +66,15 @@ fn grid_shape_of_seven_values_is_three_rows_of_three_columns() -> Result<(), Str
 
 #[test]
 fn grid_shape_of_eight_values_prefers_two_rows_of_four_over_a_square_with_a_gap() -> Result<(), String> {
-    // The revised feature request's own example: 2 rows of 4 (an exact fit), not the 3x3 square the plain
-    // "closest to square" rule would have picked (which would leave one slot blank).
+    // The revised feature request's own example: 2 rows of 4 (an exact fit), not the 3x3 square the plain "closest to
+    // square" rule would have picked (which would leave one slot blank).
     check_eq(grid_shape(8, GridLayout::Automatic), (2, 4))
 }
 
 #[test]
 fn grid_shape_of_twenty_five_values_is_a_five_by_five_square() -> Result<(), String> {
-    // 25 is odd (5^2): no power of two divides it, so this falls back to ceil(sqrt(n)), which happens to be an
-    // exact square anyway.
+    // 25 is odd (5^2): no power of two divides it, so this falls back to ceil(sqrt(n)), which happens to be an exact
+    // square anyway.
     check_eq(grid_shape(25, GridLayout::Automatic), (5, 5))
 }
 
@@ -113,8 +113,8 @@ fn rows_fixes_the_row_count_regardless_of_squareness() -> Result<(), String> {
 
 #[test]
 fn max_columns_caps_the_column_count_below_automatics_own_choice() -> Result<(), String> {
-    // Automatic renders 20 values as 4 rows of 5 (see grid_shape_of_twenty_values_prefers_four_rows_of_five above)
-    // — MaxColumns(3) caps that at 3 columns regardless, giving 7 rows of 3 (21 slots, one blank).
+    // Automatic renders 20 values as 4 rows of 5 (see grid_shape_of_twenty_values_prefers_four_rows_of_five above) —
+    // MaxColumns(3) caps that at 3 columns regardless, giving 7 rows of 3 (21 slots, one blank).
     check_eq(grid_shape(20, GridLayout::MaxColumns(3)), (7, 3))
 }
 
@@ -152,8 +152,8 @@ fn a_zero_columns_rows_or_max_columns_is_invalid() -> Result<(), String> {
 
 #[test]
 fn best_power_of_two_rows_breaks_a_tie_toward_fewer_wider_rows() -> Result<(), String> {
-    // 8's two equally square candidates are rows=2 (2x4, diff 2) and rows=4 (4x2, diff 2) — the smaller, wider
-    // one wins.
+    // 8's two equally square candidates are rows=2 (2x4, diff 2) and rows=4 (4x2, diff 2) — the smaller, wider one
+    // wins.
     check_eq(best_power_of_two_rows(8), Some(2))
 }
 
@@ -300,14 +300,14 @@ fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// DataNodeContent::widest_cell_string — the one value guaranteed to render the widest cell, found and formatted
-// without formatting every value first
+//   DataNodeContent::widest_cell_string — the one value guaranteed to render the widest cell, found and formatted
+//   without formatting every value first
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn widest_cell_string_picks_the_largest_value_under_decimal() -> Result<(), String> {
-    // Digit count grows with magnitude for an unsigned decimal value, so the numerically largest value — not
-    // whichever happens to come first — is always the one with the most digits to render.
+    // Digit count grows with magnitude for an unsigned decimal value, so the numerically largest value — not whichever
+    // happens to come first — is always the one with the most digits to render.
     let content = DataNodeContent::new(NodeValues::U32(vec![1, 4_294_967_295, 42]), DataFormat::Decimal);
     let mut out = String::new();
     content.widest_cell_string(&mut out);
@@ -569,8 +569,8 @@ fn resolve_selection_of_a_row_with_no_focus_still_succeeds_on_an_incomplete_grid
 
 #[test]
 fn resolve_selection_of_an_entirely_blank_row_under_an_over_specified_layout_still_resolves() -> Result<(), String> {
-    // `GridLayout::Rows(10)` with only 3 values legitimately creates a (10, 1) shape — rows 3 through 9 have no
-    // cell in them at all, not merely a short last row.
+    // `GridLayout::Rows(10)` with only 3 values legitimately creates a (10, 1) shape — rows 3 through 9 have no cell in
+    // them at all, not merely a short last row.
     let content =
         DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(10));
     check_eq(
@@ -612,8 +612,8 @@ fn resolved_band_column_contains_exactly_that_columns_own_flat_indices() -> Resu
 
 #[test]
 fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_cell() -> Result<(), String> {
-    // `contains` alone cannot tell a nominal row/column position from a real one — `Scene::set_selection` never
-    // queries it with anything but a real flat index, so it never needs to.
+    // `contains` alone cannot tell a nominal row/column position from a real one — `Scene::set_selection` never queries
+    // it with anything but a real flat index, so it never needs to.
     check_eq(ResolvedBand::Row { row: 2, cols: 3 }.contains(8), true)
 }
 
@@ -621,8 +621,8 @@ fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_c
 // Selection::describe_into
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/// `Selection::describe_into`'s own output, as an owned `String` — this file's own tests only ever check the
-/// finished text, never the buffer-reuse behaviour `describe_into` exists for.
+/// `Selection::describe_into`'s own output, as an owned `String` — this file's own tests only ever check the finished
+/// text, never the buffer-reuse behaviour `describe_into` exists for.
 fn describe(selection: Selection) -> String {
     let mut out = String::new();
     selection.describe_into(&mut out);
@@ -670,8 +670,8 @@ fn describe_of_a_column_with_a_cell_names_both() -> Result<(), String> {
 
 #[test]
 fn describe_into_appends_rather_than_replacing_existing_content() -> Result<(), String> {
-    // `Scene::set_selection` relies on this: it truncates its reused buffer back to the node's own base label,
-    // then calls `describe_into` to append onto whatever remains — never to replace the whole buffer.
+    // `Scene::set_selection` relies on this: it truncates its reused buffer back to the node's own base label, then
+    // calls `describe_into` to append onto whatever remains — never to replace the whole buffer.
     let mut out = String::from("base label");
     Selection::Cell(3).describe_into(&mut out);
     check_eq(out, "base label, cell 3 selected".to_owned())
@@ -748,8 +748,8 @@ fn only_add_and_multiply_commute_among_arithmetic_operators() -> Result<(), Stri
 
 #[test]
 fn natural_selection_of_a_one_dimensional_content_is_always_a_cell() -> Result<(), String> {
-    // Forced to a single row: a one-dimensional shape, regardless of what `Automatic` would otherwise pick for 4
-    // values (a 2x2 square).
+    // Forced to a single row: a one-dimensional shape, regardless of what `Automatic` would otherwise pick for 4 values
+    // (a 2x2 square).
     let content =
         DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal).with_layout(GridLayout::Rows(1));
     check_eq(content.natural_selection(0), Some(Selection::Cell(0)))?;

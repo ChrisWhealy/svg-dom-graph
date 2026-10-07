@@ -7,10 +7,10 @@
 //!
 //! # A dedicated element, not the application's `<svg>`
 //!
-//! The focus target is a transparent `<rect>` that the scene creates and removes, and that is the only thing given a role,
-//! a name, a description, or a `tabindex`. The application's own `<svg>` is never touched. So whatever role, name, or
-//! `tabindex` the application gave it — often a description of the whole graph — is left exactly as it was, and is there
-//! again when the keyboard control goes.
+//! The focus target is a transparent `<rect>` that the scene creates and removes, and that is the only thing given a
+//! role, a name, a description, or a `tabindex`. The application's own `<svg>` is never touched. So whatever role,
+//! name, or `tabindex` the application gave it — often a description of the whole graph — is left exactly as it was,
+//! and is there again when the keyboard control goes.
 //!
 //! It also keeps the `application` role, which asks a screen reader to pass keys through instead of keeping them for
 //! reading, confined to one small control. The nodes inside the `<svg>` keep their ordinary accessible descriptions and
@@ -125,8 +125,8 @@ pub(super) fn install(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn on_key(inner: &Weak<RefCell<SceneInner>>, pan: bool, zoom: bool, event: &KeyboardEvent) {
     // Only this element receives the event, since it has no children and nothing else in the `<svg>` is its ancestor. A
-    // key pressed on a toolbar button, for one, never reaches it.
-    // Leave browser and assistive-technology shortcuts alone, such as Ctrl and Cmd plus plus or minus for page zoom.
+    // key pressed on a toolbar button, for one, never reaches it. Leave browser and assistive-technology shortcuts
+    // alone, such as Ctrl and Cmd plus plus or minus for page zoom.
     if event.ctrl_key() || event.meta_key() || event.alt_key() {
         return;
     }

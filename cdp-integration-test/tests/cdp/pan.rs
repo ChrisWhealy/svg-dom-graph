@@ -5,8 +5,8 @@
 //! gesture *wherever the pointer then travels*. Only real, CDP-driven input goes through the browser's own hit-testing
 //! and pointer capture.
 //!
-//! The fixture has panning switched on with no toolbar. Its background is clear of every node and connector at
-//! `(450, 200)` and `(150, 90)`. `solo` is the node at `(20, 20)`, `80 x 40`.
+//! The fixture has panning switched on with no toolbar. Its background is clear of every node and connector at `(450,
+//! 200)` and `(150, 90)`. `solo` is the node at `(20, 20)`, `80 x 40`.
 
 use crate::common::{ctrl_wheel, group_translate, mouse_event, new_tab};
 use headless_chrome::{Tab, protocol::cdp::Input};
@@ -305,9 +305,9 @@ fn a_pan_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), String> {
 /// with several tabs in play the `Input.dispatchMouseEvent` call for the wheel times out ("The event waited for never
 /// came") or loses its connection. Nothing in the scene is at fault: the same scenarios pass alone, in either order.
 ///
-/// What it adds over the synthetic tests in `tests/drag/toolbar.rs` is a genuine wheel event in the middle of a genuine,
-/// pointer-captured drag or pan. The composition itself — that the gesture carries on tracking the pointer after the view
-/// changes — is proved there, without needing a real device.
+/// What it adds over the synthetic tests in `tests/drag/toolbar.rs` is a genuine wheel event in the middle of a
+/// genuine, pointer-captured drag or pan. The composition itself — that the gesture carries on tracking the pointer
+/// after the view changes — is proved there, without needing a real device.
 #[test]
 #[ignore = "a real mouse wheel is only delivered to the active tab, so this cannot share the browser with the other tests; run alone with --ignored"]
 fn a_gesture_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), String> {

@@ -93,9 +93,9 @@ fn release_stops_tracking_the_most_recently_tracked_node() -> Result<(), String>
     )
 }
 
-/// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge` — its rendered path,
-/// its `edge_handles` entry, and its place in the graph — then the node itself, the same partial state a failure
-/// drawing an operator's own auto-wired input edge would otherwise leave behind.
+/// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge` — its rendered path, its
+/// `edge_handles` entry, and its place in the graph — then the node itself, the same partial state a failure drawing an
+/// operator's own auto-wired input edge would otherwise leave behind.
 #[wasm_bindgen_test]
 fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge() -> Result<(), String> {
     let svg = make_svg("construction-guard-rollback");
@@ -142,9 +142,9 @@ fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge(
     check(inner.graph.edge(edge).is_none(), "the graph still held the removed edge")
 }
 
-/// The counterpart to the test above: a disarmed `OperatorConstructionGuard` leaves the node and every tracked
-/// edge exactly as they were. So a fully successful operator creation is not accidentally rolled back by its own
-/// cleanup on the way out.
+/// The counterpart to the test above: a disarmed `OperatorConstructionGuard` leaves the node and every tracked edge
+/// exactly as they were. So a fully successful operator creation is not accidentally rolled back by its own cleanup on
+/// the way out.
 #[wasm_bindgen_test]
 fn disarming_a_construction_guard_leaves_the_node_and_every_tracked_edge_in_place() -> Result<(), String> {
     let svg = make_svg("construction-guard-disarm");

@@ -1,5 +1,5 @@
-//! Showing, hiding, and placing the button bar, and its buttons by click and by keyboard: existence, sibling
-//! ordering, edge placement, activation, disabled state at the zoom limits, and option validation.
+//! Showing, hiding, and placing the button bar, and its buttons by click and by keyboard: existence, sibling ordering,
+//! edge placement, activation, disabled state at the zoom limits, and option validation.
 
 use super::support::*;
 use crate::common::{check, check_close, group_translate};
@@ -125,8 +125,8 @@ fn zooming_changes_the_content_layer_but_never_the_toolbar() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Zooming keeps the centre of the visible area fixed: at scale 1.25 about (200, 150), the translation is
-/// (200 - 200 * 1.25, 150 - 150 * 1.25) = (-50, -37.5).
+/// Zooming keeps the centre of the visible area fixed: at scale 1.25 about (200, 150), the translation is (200 - 200 *
+/// 1.25, 150 - 150 * 1.25) = (-50, -37.5).
 #[wasm_bindgen_test]
 fn zoom_in_keeps_the_centre_of_the_visible_area_fixed() -> Result<(), String> {
     let scene = new_scene("tb-pivot")?;
@@ -177,9 +177,9 @@ fn view_reads_back_the_current_scale_and_translation() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `set_view` writes exactly the given scale and translation — no "zoom about the visible area's own centre"
-/// adjustment the way `zoom_in`/`zoom_out` make, since a caller restoring a value `view()` read from elsewhere
-/// already has the exact numbers it wants.
+/// `set_view` writes exactly the given scale and translation — no "zoom about the visible area's own centre" adjustment
+/// the way `zoom_in`/`zoom_out` make, since a caller restoring a value `view()` read from elsewhere already has the
+/// exact numbers it wants.
 #[wasm_bindgen_test]
 fn set_view_writes_the_exact_given_scale_and_translation() -> Result<(), String> {
     let scene = new_scene("tb-view-write")?;

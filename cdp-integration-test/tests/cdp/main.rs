@@ -20,8 +20,8 @@
 //! - [`pan`] — dragging empty background pans the whole scene, and a real, captured pointer keeps a pan a pan (and a
 //!   node drag a node drag) even when it crosses over the other kind of target. Pointer capture is held during either
 //!   and released afterwards.
-//! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach
-//!   Chrome's own computed accessibility tree, and its own descendant value text stays exposed alongside them.
+//! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach Chrome's
+//!   own computed accessibility tree, and its own descendant value text stays exposed alongside them.
 //!
 //! All eight drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.

@@ -28,14 +28,14 @@ thread_local! {
 /// operators' own "L"/"R" port markers: `A` is always the left-hand operand, `B` the right-hand one.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`+`, `-`, `*`, `/`, `%`).
-/// `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_arithmetic_operator_node`]'s own doc
-/// comment for why — so this function's job is exactly the one a real caller would have: compute the real value,
-/// then hand it to the library alongside the operator that produced it.
+/// `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_arithmetic_operator_node`]'s own doc comment
+/// for why — so this function's job is exactly the one a real caller would have: compute the real value, then hand it
+/// to the library alongside the operator that produced it.
 ///
-/// Each row uses a different operand width, so between them all four this crate supports — `u8`, `u16`, `u32`,
-/// `u64` — appear at least once. `Subtract` never underflows (the first operand is always `>=` the second), and
-/// neither `Divide` nor `Modulus` ever divides by zero — both are the caller's own responsibility, never checked by
-/// the library, since an operator node's own displayed value is always whatever the caller already computed. See
+/// Each row uses a different operand width, so between them all four this crate supports — `u8`, `u16`, `u32`, `u64` —
+/// appear at least once. `Subtract` never underflows (the first operand is always `>=` the second), and neither
+/// `Divide` nor `Modulus` ever divides by zero — both are the caller's own responsibility, never checked by the
+/// library, since an operator node's own displayed value is always whatever the caller already computed. See
 /// [`ArithmeticOperator`]'s own doc comment.
 ///
 /// # Errors
@@ -53,8 +53,8 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let scene = Scene::new(svg).map_err(stringify)?;
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every row's operand(s) share this left-hand x; every row's operator node shares this one, a fixed distance
-    // to its right.
+    // Every row's operand(s) share this left-hand x; every row's operator node shares this one, a fixed distance to its
+    // right.
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 
@@ -115,8 +115,8 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
         .map_err(stringify)?;
     scene.make_draggable_with(sub_node, drag_options).map_err(stringify)?;
 
-    // MUL — u32, two operands stacked, same layout as ADD/SUB above. Both factors are kept well below `u32::MAX`'s
-    // own square root headroom, so the product cannot overflow.
+    // MUL — u32, two operands stacked, same layout as ADD/SUB above. Both factors are kept well below `u32::MAX`'s own
+    // square root headroom, so the product cannot overflow.
     let mul_a: u32 = 50_000;
     let mul_b: u32 = 70_000;
     let mul_a_node = place_operand(

@@ -1,19 +1,19 @@
-//! Scene-tree navigation: which nested `Scene` is currently focused, and how a container node's own child gets
-//! grafted into — or falls out of — its parent's tree.
+//! Scene-tree navigation: which nested `Scene` is currently focused, and how a container node's own child gets grafted
+//! into — or falls out of — its parent's tree.
 //!
-//! "Focused" is not inferred from DOM visibility; it is tracked explicitly, in one [`NavigationState`] shared by
-//! every `Scene` in a tree via `SceneInner::navigation`. Without that, a caller holding an outer `Scene` handle
-//! after navigating deeper could call [`Scene::enter`]/[`Scene::exit`] on it anyway, and nothing would stop two
-//! Scenes ending up visible at once. [`Scene::enter`]/[`Scene::exit`] both check that `self` is the tree's
-//! currently focused `Scene` before doing anything else, and update this same shared state once the visibility
-//! swap that follows has actually succeeded.
+//! "Focused" is not inferred from DOM visibility; it is tracked explicitly, in one [`NavigationState`] shared by every
+//! `Scene` in a tree via `SceneInner::navigation`. Without that, a caller holding an outer `Scene` handle after
+//! navigating deeper could call [`Scene::enter`]/[`Scene::exit`] on it anyway, and nothing would stop two Scenes ending
+//! up visible at once. [`Scene::enter`]/[`Scene::exit`] both check that `self` is the tree's currently focused `Scene`
+//! before doing anything else, and update this same shared state once the visibility swap that follows has actually
+//! succeeded.
 //!
 //! [`hide_root`]/[`show_root`] hide the whole `<svg>` root, not just its content layer — the toolbar bar is a DOM
 //! sibling of the content layer (see [`super::toolbar`]'s own module doc comment), so hiding only the content layer
-//! would leave a hidden Scene's own toolbar still visible. They use the `visibility` CSS property rather than
-//! `display: none`, so a Scene built while hidden still measures correctly: `shrink_label_to_fit`'s `getBBox()` and
-//! `SceneInner::visible_area`'s `getBoundingClientRect()` fallback both read zero for anything built inside a
-//! `display: none` subtree in most browsers, but not a `visibility: hidden` one.
+//! would leave a hidden Scene's own toolbar still visible. They use the `visibility` CSS property rather than `display:
+//! none`, so a Scene built while hidden still measures correctly: `shrink_label_to_fit`'s `getBBox()` and
+//! `SceneInner::visible_area`'s `getBoundingClientRect()` fallback both read zero for anything built inside a `display:
+//! none` subtree in most browsers, but not a `visibility: hidden` one.
 
 use super::{Scene, SceneInner};
 use crate::{error::Error, model::node::NodeId};
@@ -24,16 +24,16 @@ use std::{
 use svg_dom::{SvgNode, SvgRoot};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The (parent `Scene`, container `NodeId`) pair that owns a nested `Scene` as its child. `SceneInner::parent`'s
-/// own value once a `Scene` has been grafted in by [`Scene::add_container_node`]/`add_container_node_with`.
+/// The (parent `Scene`, container `NodeId`) pair that owns a nested `Scene` as its child. `SceneInner::parent`'s own
+/// value once a `Scene` has been grafted in by [`Scene::add_container_node`]/`add_container_node_with`.
 ///
 /// `scene` is `Weak`, mirroring every other back-reference in this crate to a `Scene` one does not own — see
 /// `toolbar::build_button`'s own doc comment. A strong reference here, alongside the strong `BoxHandles::child` the
 /// parent already holds, would leak the whole subtree: neither side could ever be the one to drop last.
 ///
 /// Once `scene` no longer upgrades (the parent's last strong handle is gone), this child is simply detached: not an
-/// error, not a state anything here has to clean up. [`Scene::parent`]/[`Scene::is_nested`] read straight through
-/// to a dead `Weak` and report `None`/`false` accordingly; [`Scene::exit`] treats it exactly like a true root.
+/// error, not a state anything here has to clean up. [`Scene::parent`]/[`Scene::is_nested`] read straight through to a
+/// dead `Weak` and report `None`/`false` accordingly; [`Scene::exit`] treats it exactly like a true root.
 #[derive(Clone)]
 pub(super) struct ParentLink {
     pub(super) scene: Weak<RefCell<SceneInner>>,
@@ -54,18 +54,18 @@ pub(super) struct NavigationState {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Sets `svg`'s own root `<svg>` element's `visibility`, hidden or visible.
 ///
-/// The whole root, deliberately — not [`SceneInner::content`](super::SceneInner), whose own layer the toolbar bar
-/// is a sibling of, never a child of (see this module's own doc comment).
+/// The whole root, deliberately — not [`SceneInner::content`](super::SceneInner), whose own layer the toolbar bar is a
+/// sibling of, never a child of (see this module's own doc comment).
 ///
-/// Writes `visibility` as a plain SVG presentation attribute (`setAttribute`), not through `style`. That is
-/// deliberate, but it has a consequence a host must respect: a presentation attribute is the *lowest*-priority
-/// source of a CSS property there is. Any `visibility` declaration that also applies to this same `<svg>` root —
-/// an inline `style` attribute, or a stylesheet rule, whether written directly on it or inherited — wins over
-/// whatever this function writes, permanently, regardless of how many times [`enter`](Scene::enter)/
-/// [`exit`](Scene::exit) run afterward. **A host embedding a nested `Scene`'s own `<svg>` must not set
-/// `visibility` on it, or on anything it inherits that property from, by any CSS means at all** — sizing,
-/// positioning (including `position`/`top`/`left` to keep a hidden root from reserving page layout it doesn't
-/// need), and every other property remain entirely the host's own choice; only `visibility` itself is reserved.
+/// Writes `visibility` as a plain SVG presentation attribute (`setAttribute`), not through `style`. That is deliberate,
+/// but it has a consequence a host must respect: a presentation attribute is the *lowest*-priority source of a CSS
+/// property there is. Any `visibility` declaration that also applies to this same `<svg>` root — an inline `style`
+/// attribute, or a stylesheet rule, whether written directly on it or inherited — wins over whatever this function
+/// writes, permanently, regardless of how many times [`enter`](Scene::enter)/ [`exit`](Scene::exit) run afterward. **A
+/// host embedding a nested `Scene`'s own `<svg>` must not set `visibility` on it, or on anything it inherits that
+/// property from, by any CSS means at all** — sizing, positioning (including `position`/`top`/`left` to keep a hidden
+/// root from reserving page layout it doesn't need), and every other property remain entirely the host's own choice;
+/// only `visibility` itself is reserved.
 fn set_root_visibility(svg: &SvgRoot, hidden: bool) -> Result<(), Error> {
     svg.root
         .set_attribute("visibility", if hidden { "hidden" } else { "visible" })
@@ -83,14 +83,14 @@ pub(super) fn show_root(svg: &SvgRoot) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Whether `candidate` is `of` itself, or already an ancestor of it — walking `of`'s own `parent` chain through
-/// live [`ParentLink`]s only. A dead link (an ancestor whose own last strong handle has been dropped) ends the
-/// walk there: nothing beyond it is still part of the tree `of` belongs to.
+/// Whether `candidate` is `of` itself, or already an ancestor of it — walking `of`'s own `parent` chain through live
+/// [`ParentLink`]s only. A dead link (an ancestor whose own last strong handle has been dropped) ends the walk there:
+/// nothing beyond it is still part of the tree `of` belongs to.
 ///
-/// [`Scene::add_container_node`]/`add_container_node_with` call this with `candidate` set to the offered child and
-/// `of` set to `self`, to reject grafting a node onto its own descendant. Allowing that would close a cycle through
-/// the strong `BoxHandles::child`/`Rc` chain each successful `add_container_node` call adds one more link to —
-/// exactly the leak the strong-down/weak-up ownership split exists to prevent.
+/// [`Scene::add_container_node`]/`add_container_node_with` call this with `candidate` set to the offered child and `of`
+/// set to `self`, to reject grafting a node onto its own descendant. Allowing that would close a cycle through the
+/// strong `BoxHandles::child`/`Rc` chain each successful `add_container_node` call adds one more link to — exactly the
+/// leak the strong-down/weak-up ownership split exists to prevent.
 pub(super) fn is_ancestor_or_self(candidate: &Rc<RefCell<SceneInner>>, of: &Rc<RefCell<SceneInner>>) -> bool {
     if Rc::ptr_eq(candidate, of) {
         return true;
@@ -107,17 +107,17 @@ pub(super) fn is_ancestor_or_self(candidate: &Rc<RefCell<SceneInner>>, of: &Rc<R
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Repoints every `SceneInner` in `root`'s own subtree — `root` itself, then recursively through every container
-/// node's own `BoxHandles::child` — to share `navigation` instead of whatever it held before.
+/// Repoints every `SceneInner` in `root`'s own subtree — `root` itself, then recursively through every container node's
+/// own `BoxHandles::child` — to share `navigation` instead of whatever it held before.
 ///
-/// [`Scene::add_container_node`]/`add_container_node_with` call this once, last, after every fallible step has
-/// already succeeded — see their own doc comments for why the ordering matters.
+/// [`Scene::add_container_node`]/`add_container_node_with` call this once, last, after every fallible step has already
+/// succeeded — see their own doc comments for why the ordering matters.
 ///
 /// Safe to call on a tree of any depth without ever holding two overlapping borrows of the same `SceneInner`: each
-/// level's own container children are cloned out of one immutable borrow, which then ends, before this recurses
-/// into any of them. Borrowing a parent and, while still borrowed, reaching through it to mutate a child would
-/// compile — `RefCell`'s borrow checking is a runtime property, not one `rustc` enforces — and then panic the
-/// first time a real tree nested more than one level deep.
+/// level's own container children are cloned out of one immutable borrow, which then ends, before this recurses into
+/// any of them. Borrowing a parent and, while still borrowed, reaching through it to mutate a child would compile —
+/// `RefCell`'s borrow checking is a runtime property, not one `rustc` enforces — and then panic the first time a real
+/// tree nested more than one level deep.
 pub(super) fn repoint_subtree(root: &Rc<RefCell<SceneInner>>, navigation: &Rc<RefCell<NavigationState>>) {
     let children: Vec<Rc<RefCell<SceneInner>>> = root
         .borrow()
@@ -132,16 +132,15 @@ pub(super) fn repoint_subtree(root: &Rc<RefCell<SceneInner>>, navigation: &Rc<Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The mirror image of the graft half of [`Scene::add_container_node_with`]/[`Scene::replace_container_child`]:
-/// gives `scene`'s own subtree a fresh, independent [`NavigationState`] — focused on `scene` itself, the same
-/// two-stage bootstrap [`Scene::new`](super::Scene::new) uses for a brand-new tree — and clears `scene`'s own
-/// `parent` link.
+/// The mirror image of the graft half of [`Scene::add_container_node_with`]/[`Scene::replace_container_child`]: gives
+/// `scene`'s own subtree a fresh, independent [`NavigationState`] — focused on `scene` itself, the same two-stage
+/// bootstrap [`Scene::new`](super::Scene::new) uses for a brand-new tree — and clears `scene`'s own `parent` link.
 ///
-/// Merely clearing `parent` is not enough on its own: `scene`'s whole subtree would still share the *former*
-/// parent's `NavigationState`, so a later `enter`/`exit`/`is_focused` call anywhere in it would still be answered
-/// by a navigation state that has nothing to do with this now-independent tree anymore. [`repoint_subtree`] already
-/// exists for exactly this "make an entire subtree share one navigation state" job — this just points it at a
-/// freshly allocated one instead of the parent's.
+/// Merely clearing `parent` is not enough on its own: `scene`'s whole subtree would still share the *former* parent's
+/// `NavigationState`, so a later `enter`/`exit`/`is_focused` call anywhere in it would still be answered by a
+/// navigation state that has nothing to do with this now-independent tree anymore. [`repoint_subtree`] already exists
+/// for exactly this "make an entire subtree share one navigation state" job — this just points it at a freshly
+/// allocated one instead of the parent's.
 ///
 /// [`Scene::replace_container_child`] is this crate's one caller: `scene` is the old child it just detached.
 pub(super) fn detach_subtree(scene: &Rc<RefCell<SceneInner>>) {
@@ -153,31 +152,31 @@ pub(super) fn detach_subtree(scene: &Rc<RefCell<SceneInner>>) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
-    /// Enters `node`'s own nested child `Scene`: hides `self`'s whole `<svg>` root, shows the child's, and returns
-    /// a handle to it.
+    /// Enters `node`'s own nested child `Scene`: hides `self`'s whole `<svg>` root, shows the child's, and returns a
+    /// handle to it.
     ///
     /// **Both writes are a plain SVG `visibility` attribute, not `style` — see
-    /// [`add_container_node`](Self::add_container_node)'s own doc comment for why that matters and what it means
-    /// for the host: a CSS `visibility` rule reaching either `<svg>` root, however it gets there, silently defeats
-    /// this call's own hiding/showing from then on, even though `self`/the child's own `is_focused()` still update
+    /// [`add_container_node`](Self::add_container_node)'s own doc comment for why that matters and what it means for
+    /// the host: a CSS `visibility` rule reaching either `<svg>` root, however it gets there, silently defeats this
+    /// call's own hiding/showing from then on, even though `self`/the child's own `is_focused()` still update
     /// correctly.**
     ///
     /// # Errors
     ///
-    /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so
-    /// a rejected call touches nothing.
+    /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so a
+    /// rejected call touches nothing.
     ///
-    /// Returns [`Error::UnknownNode`] if `node` does not name a node in this scene, or [`Error::NotAContainerNode`]
-    /// if it names one that is not a container node. Also checked before anything is hidden or shown.
+    /// Returns [`Error::UnknownNode`] if `node` does not name a node in this scene, or [`Error::NotAContainerNode`] if
+    /// it names one that is not a container node. Also checked before anything is hidden or shown.
     ///
-    /// Returns a wrapped [`Error::Svg`] if hiding `self` or showing the child fails. If showing the child fails
-    /// after `self` was already hidden, this attempts to show `self` again before returning. That second write is
-    /// exactly the same kind of DOM operation as the first, so in practice it succeeds even though the first one
-    /// just failed — but it is not *guaranteed* to: if it fails too, its own error is discarded (there is already
-    /// one error on its way out, and only one can be returned), and `self` can be left hidden, with the child not
-    /// shown either. Only when both writes succeed is anything actually restored. The tree's focused `Scene` is
-    /// only ever updated once both DOM writes have already succeeded, so a failure here never re-points `focused`
-    /// at a `Scene` the DOM does not agree is the one actually visible.
+    /// Returns a wrapped [`Error::Svg`] if hiding `self` or showing the child fails. If showing the child fails after
+    /// `self` was already hidden, this attempts to show `self` again before returning. That second write is exactly the
+    /// same kind of DOM operation as the first, so in practice it succeeds even though the first one just failed — but
+    /// it is not *guaranteed* to: if it fails too, its own error is discarded (there is already one error on its way
+    /// out, and only one can be returned), and `self` can be left hidden, with the child not shown either. Only when
+    /// both writes succeed is anything actually restored. The tree's focused `Scene` is only ever updated once both DOM
+    /// writes have already succeeded, so a failure here never re-points `focused` at a `Scene` the DOM does not agree
+    /// is the one actually visible.
     pub fn enter(&self, node: NodeId) -> Result<Scene, Error> {
         if !self.is_focused() {
             return Err(Error::NotFocused);
@@ -204,20 +203,20 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Exits to the parent `Scene`, if any: hides `self`'s whole `<svg>` root and shows the parent's.
     ///
-    /// Does nothing — returns `Ok(None)` — if `self` is the root of its own tree, or has become detached from one
-    /// (its own parent's last strong handle has been dropped). Both read the same way here: there is no live parent
-    /// to exit to.
+    /// Does nothing — returns `Ok(None)` — if `self` is the root of its own tree, or has become detached from one (its
+    /// own parent's last strong handle has been dropped). Both read the same way here: there is no live parent to exit
+    /// to.
     ///
-    /// Hides/shows both `<svg>` roots the same way [`enter`](Self::enter) does — see that method's own warning
-    /// about a CSS `visibility` rule silently overriding it.
+    /// Hides/shows both `<svg>` roots the same way [`enter`](Self::enter) does — see that method's own warning about a
+    /// CSS `visibility` rule silently overriding it.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so
-    /// a rejected call touches nothing.
+    /// Returns [`Error::NotFocused`] if `self` is not the scene tree's currently focused `Scene`. Checked first, so a
+    /// rejected call touches nothing.
     ///
-    /// Returns a wrapped [`Error::Svg`] under the same rollback behaviour [`enter`](Self::enter) documents —
-    /// attempted, in the same way, but not guaranteed if that attempt itself also fails.
+    /// Returns a wrapped [`Error::Svg`] under the same rollback behaviour [`enter`](Self::enter) documents — attempted,
+    /// in the same way, but not guaranteed if that attempt itself also fails.
     pub fn exit(&self) -> Result<Option<Scene>, Error> {
         if !self.is_focused() {
             return Err(Error::NotFocused);
@@ -241,23 +240,22 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `(Scene, NodeId)` that owns this `Scene` as a container node's child, if any.
     ///
-    /// `None` for a true root, and also for a `Scene` that has become detached from its own tree — its former
-    /// parent's last strong handle has been dropped. Both read the same way: there is no live parent to report.
+    /// `None` for a true root, and also for a `Scene` that has become detached from its own tree — its former parent's
+    /// last strong handle has been dropped. Both read the same way: there is no live parent to report.
     pub fn parent(&self) -> Option<(Scene, NodeId)> {
         let link = self.inner.borrow().parent.clone()?;
         let scene_rc = link.scene.upgrade()?;
         Some((Scene { inner: scene_rc }, link.node))
     }
 
-    /// Whether this `Scene` is any container node's child. Derived from [`parent`](Self::parent), rather than
-    /// tracked separately, so it can never disagree with it: `false` for a true root, and also once a nested
-    /// `Scene`'s own former parent has been dropped.
+    /// Whether this `Scene` is any container node's child. Derived from [`parent`](Self::parent), rather than tracked
+    /// separately, so it can never disagree with it: `false` for a true root, and also once a nested `Scene`'s own
+    /// former parent has been dropped.
     pub fn is_nested(&self) -> bool {
         self.parent().is_some()
     }
 
-    /// Whether this `Scene` is the scene tree's currently focused one — the one actually shown and receiving
-    /// input.
+    /// Whether this `Scene` is the scene tree's currently focused one — the one actually shown and receiving input.
     pub fn is_focused(&self) -> bool {
         let inner = self.inner.borrow();
         let navigation = inner.navigation.borrow();
@@ -268,38 +266,36 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Makes container node `id` itself clickable: a pointer click, or Enter/Space while it has keyboard focus,
-    /// calls [`enter(id)`](Self::enter) — the caller never has to wire that up by hand.
+    /// Makes container node `id` itself clickable: a pointer click, or Enter/Space while it has keyboard focus, calls
+    /// [`enter(id)`](Self::enter) — the caller never has to wire that up by hand.
     ///
     /// Deliberately separate from [`add_container_node`](Self::add_container_node)/
     /// [`add_container_node_with`](Self::add_container_node_with): a container node stays exactly as passive as any
-    /// other node, with no built-in way to activate it, unless a caller asks for this. `enter`/`exit` are
-    /// navigation primitives, not input handlers — see [`Error::NotFocused`]'s own doc comment — and this is the
-    /// one place that deliberately bridges the two, opt in.
+    /// other node, with no built-in way to activate it, unless a caller asks for this. `enter`/`exit` are navigation
+    /// primitives, not input handlers — see [`Error::NotFocused`]'s own doc comment — and this is the one place that
+    /// deliberately bridges the two, opt in.
     ///
     /// Gives `id`'s own `<g>` `role="button"`, `tabindex="0"`, and a pointer cursor — the same activation pattern
-    /// `toolbar::build_button` already uses for its own buttons. An activation attempt that fails
-    /// — `self` is not focused, or `id`'s own child has since become otherwise unenterable — is silently ignored:
-    /// there is nowhere for a click listener to report an error to, the same reasoning that button's own click
-    /// handler already follows.
+    /// `toolbar::build_button` already uses for its own buttons. An activation attempt that fails — `self` is not
+    /// focused, or `id`'s own child has since become otherwise unenterable — is silently ignored: there is nowhere for
+    /// a click listener to report an error to, the same reasoning that button's own click handler already follows.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene, or
-    /// [`Error::NotAContainerNode`] if it names one that is not a container node. Checked before attaching
-    /// anything.
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene, or [`Error::NotAContainerNode`] if it
+    /// names one that is not a container node. Checked before attaching anything.
     ///
-    /// Returns [`Error::AlreadyEnterable`] if `id` is already enterable — calling this a second time for the same
-    /// node does not replace the first installation, so this is rejected outright rather than silently doubling up
-    /// its listeners, the same reasoning [`Error::AlreadyDraggable`] already documents for
+    /// Returns [`Error::AlreadyEnterable`] if `id` is already enterable — calling this a second time for the same node
+    /// does not replace the first installation, so this is rejected outright rather than silently doubling up its
+    /// listeners, the same reasoning [`Error::AlreadyDraggable`] already documents for
     /// [`make_draggable`](Self::make_draggable)/[`make_draggable_with`](Self::make_draggable_with).
     ///
-    /// If `set_attr` or either listener registration this method makes fails partway through — expected to be
-    /// extremely rare, since it means the underlying `addEventListener`/`setAttribute` DOM call itself failed —
-    /// `id` is left exactly as it was before the call: not marked enterable, with none of this method's own
-    /// listeners left attached, and with `role`/`tabindex`/`style` restored to whatever they held before this
-    /// call — removed again if any of the three was absent, rather than left at whichever of "button"/"0"/
-    /// `"cursor: pointer;"` this method's own attempt got as far as writing.
+    /// If `set_attr` or either listener registration this method makes fails partway through — expected to be extremely
+    /// rare, since it means the underlying `addEventListener`/`setAttribute` DOM call itself failed — `id` is left
+    /// exactly as it was before the call: not marked enterable, with none of this method's own listeners left attached,
+    /// and with `role`/`tabindex`/`style` restored to whatever they held before this call — removed again if any of the
+    /// three was absent, rather than left at whichever of "button"/"0"/ `"cursor: pointer;"` this method's own attempt
+    /// got as far as writing.
     pub fn make_enterable(&self, id: NodeId) -> Result<(), Error> {
         let group = {
             let inner = self.inner.borrow();
@@ -313,8 +309,8 @@ impl Scene {
             handles.group.clone()
         };
 
-        // Captured before any write, so a failure partway through can restore exactly what was there —
-        // `None` means the attribute was absent, undone by removing it again, never by writing back `""`.
+        // Captured before any write, so a failure partway through can restore exactly what was there — `None` means the
+        // attribute was absent, undone by removing it again, never by writing back `""`.
         let previous_role = group.attr("role");
         let previous_tabindex = group.attr("tabindex");
         let previous_style = group.attr("style");
@@ -356,8 +352,8 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Undoes [`make_enterable`](Self::make_enterable): `id` stops responding to a click or to Enter/Space, loses
-    /// its pointer cursor, `role="button"` and tab stop, and can be made enterable again later.
+    /// Undoes [`make_enterable`](Self::make_enterable): `id` stops responding to a click or to Enter/Space, loses its
+    /// pointer cursor, `role="button"` and tab stop, and can be made enterable again later.
     ///
     /// Lets a host decide, step by step, which container nodes may be entered — for example only the one a walk is
     /// currently on. Does nothing, and is not an error, for a node that is not currently enterable. It does not exit
@@ -368,8 +364,8 @@ impl Scene {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene, or
-    /// [`Error::NotAContainerNode`] if it names one that is not a container node.
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene, or [`Error::NotAContainerNode`] if it
+    /// names one that is not a container node.
     pub fn make_unenterable(&self, id: NodeId) -> Result<(), Error> {
         let group = {
             let inner = self.inner.borrow();
@@ -395,12 +391,12 @@ impl Scene {
     }
 }
 
-/// Restores attribute `name` on `group` to `previous` — removes it if `previous` is `None` (it was absent
-/// before this call), otherwise writes it back exactly. [`Scene::make_enterable`]'s own way of unwinding its
-/// attribute writes on failure.
+/// Restores attribute `name` on `group` to `previous` — removes it if `previous` is `None` (it was absent before this
+/// call), otherwise writes it back exactly. [`Scene::make_enterable`]'s own way of unwinding its attribute writes on
+/// failure.
 ///
-/// Errors are ignored: there is nowhere left to report a second failure to once the first one — the reason this
-/// is unwinding at all — is already on its way out, the same reasoning [`enter`](Scene::enter)'s own rollback of
+/// Errors are ignored: there is nowhere left to report a second failure to once the first one — the reason this is
+/// unwinding at all — is already on its way out, the same reasoning [`enter`](Scene::enter)'s own rollback of
 /// `hide_root` already follows for `show_root`.
 fn restore_attr(group: &SvgNode, name: &str, previous: Option<&str>) {
     let _ = match previous {

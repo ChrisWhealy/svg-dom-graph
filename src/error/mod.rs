@@ -25,8 +25,8 @@ pub enum Error {
     ///
     /// Having both endpoints connect to the same node is not supported yet.
     ///
-    /// Rejecting the call now keeps room to add real loop-edge routing later, as an additive relaxation of this
-    /// same method.
+    /// Rejecting the call now keeps room to add real loop-edge routing later, as an additive relaxation of this same
+    /// method.
     ///
     /// Silently returning an `EdgeId` for a connector nobody can see would be worse.
     SelfLoopUnsupported(NodeId),
@@ -36,13 +36,13 @@ pub enum Error {
     /// second, independent set of pointer listeners and drag-state alongside it, both responding to the same events.
     /// Rejecting the second call keeps that from happening silently.
     AlreadyDraggable(NodeId),
-    /// `Scene::make_draggable_with` was given a `CollisionPolicy::PushClear` padding that is not a finite value
-    /// `>= 0.0`.
+    /// `Scene::make_draggable_with` was given a `CollisionPolicy::PushClear` padding that is not a finite value `>=
+    /// 0.0`.
     ///
     /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending it, and
     /// a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into the resulting
-    /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as
-    /// they were.
+    /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as they
+    /// were.
     InvalidCollisionPadding(f64),
     /// `Scene::make_draggable_with` was given an invalid `DragOptions::bounds` value. The origin and size must be
     /// constructed from finite, non-negative values.
@@ -85,10 +85,10 @@ pub enum Error {
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
-    /// A later node's own description names this one by `name` — see `BoxHandles::ref_name`'s own doc comment. An
-    /// empty or blank name would still draw, but its own accessible name would then read as `": u8 = 12"` rather than
-    /// naming anything. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the
-    /// scene unchanged.
+    /// A later node's own description names this one by `name` — see `BoxHandles::ref_name`'s own doc comment. An empty
+    /// or blank name would still draw, but its own accessible name would then read as `": u8 = 12"` rather than naming
+    /// anything. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene
+    /// unchanged.
     EmptyNodeName,
     /// `Scene::add_data_node`/`Scene::add_data_node_with` was given a [`crate::scene::DataNodeContent`] whose
     /// [`crate::scene::GridLayout`] wraps `0` — `Columns(0)`, `Rows(0)`, or `MaxColumns(0)`.
@@ -96,16 +96,15 @@ pub enum Error {
     /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing anything or
     /// touching the graph's model, so a rejected call leaves the scene unchanged.
     InvalidGridLayout(crate::scene::GridLayout),
-    /// An operator node's operand names a node whose content is a plain label, not a
-    /// [`crate::scene::DataNodeContent`].
+    /// An operator node's operand names a node whose content is a plain label, not a [`crate::scene::DataNodeContent`].
     ///
-    /// Only typed data has a width an operator could plausibly act on. Rejected before drawing anything or touching
-    /// the graph's model, so a rejected call leaves the scene unchanged.
+    /// Only typed data has a width an operator could plausibly act on. Rejected before drawing anything or touching the
+    /// graph's model, so a rejected call leaves the scene unchanged.
     OperandNotData(NodeId),
     /// An operator node's own operand(s) and result did not all share one [`crate::scene::NodeValues`] width.
     ///
-    /// Both of the operands to a two-input operator, and the supplied result must all share the same width
-    /// — see `Scene::add_binary_operator_node_with`'s / `Scene::add_arithmetic_operator_node_with`'s own doc comments.
+    /// Both of the operands to a two-input operator, and the supplied result must all share the same width — see
+    /// `Scene::add_binary_operator_node_with`'s / `Scene::add_arithmetic_operator_node_with`'s own doc comments.
     /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     OperatorTypeMismatch { expected: &'static str, found: &'static str },
     /// An operator node's own `result` held other than exactly one value.
@@ -122,8 +121,8 @@ pub enum Error {
     DuplicateOperands(NodeId),
     /// `Scene::set_selection` was given a [`crate::scene::Selection`] that cannot be applied to node `id`.
     ///
-    /// Either `id` names a plain label node, which has no cells to select, or `selection` names a cell/row/column
-    /// index out of range for `id`'s own actual value count or grid shape.
+    /// Either `id` names a plain label node, which has no cells to select, or `selection` names a cell/row/column index
+    /// out of range for `id`'s own actual value count or grid shape.
     ///
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
@@ -160,15 +159,15 @@ pub enum Error {
     /// `Scene::add_container_node` or `add_container_node_with` was given a `child` that is not currently the focused
     /// `Scene` of its own tree.
     ///
-    /// A subtree may only be grafted into another scene tree by its own root, while that root is still focused —
-    /// never by one of its own hidden descendants. Rejected before drawing anything or touching either scene's own
-    /// model, so a rejected call leaves both scenes exactly as they were.
+    /// A subtree may only be grafted into another scene tree by its own root, while that root is still focused — never
+    /// by one of its own hidden descendants. Rejected before drawing anything or touching either scene's own model, so
+    /// a rejected call leaves both scenes exactly as they were.
     ChildNotFocused,
     /// `Scene::add_container_node` or `add_container_node_with` was given a `child` `Scene` that already has a live
     /// parent — one whose own `Scene` has not yet been dropped.
     ///
-    /// A nested `Scene` has exactly one owner at a time. A `child` whose previous parent has since been dropped is
-    /// not rejected this way: it is simply detached, and may be attached again. Rejected before drawing anything or
+    /// A nested `Scene` has exactly one owner at a time. A `child` whose previous parent has since been dropped is not
+    /// rejected this way: it is simply detached, and may be attached again. Rejected before drawing anything or
     /// touching either scene's own model, so a rejected call leaves both scenes exactly as they were.
     AlreadyNested,
     /// `Scene::make_enterable` was called more than once for the same node.
@@ -176,8 +175,8 @@ pub enum Error {
     /// Same reasoning as [`Error::AlreadyDraggable`]: `svg-dom`'s listener registration is append-only, so a second
     /// call would add a second, independent click/keydown listener rather than replacing the first.
     AlreadyEnterable(NodeId),
-    /// `Scene::add_container_node`/`add_container_node_with` was given a `child` that is `self`, or that is already
-    /// an ancestor of `self` in the scene tree.
+    /// `Scene::add_container_node`/`add_container_node_with` was given a `child` that is `self`, or that is already an
+    /// ancestor of `self` in the scene tree.
     ///
     /// Either would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from. No node has
     /// been added yet when this is checked, so — unlike [`Error::AlreadyDraggable`]'s/[`Error::SelfLoopUnsupported`]'s
@@ -186,12 +185,12 @@ pub enum Error {
     /// drawing anything or touching either scene's own model, so a rejected call leaves both scenes exactly as they
     /// were.
     SelfNesting,
-    /// `Scene::set_view` was given a [`crate::scene::ViewTransform`] whose `scale` is not within `0.25..=4.0`, or
-    /// whose `tx`/`ty` is not finite.
+    /// `Scene::set_view` was given a [`crate::scene::ViewTransform`] whose `scale` is not within `0.25..=4.0`, or whose
+    /// `tx`/`ty` is not finite.
     ///
-    /// The same range `Scene::zoom_in`/`Scene::zoom_out` already clamp to, so a restored view can never put a
-    /// `Scene`'s own zoom buttons at odds with what `Scene::zoom_scale` reports. Rejected before writing anything,
-    /// so a rejected call leaves the current view exactly as it was.
+    /// The same range `Scene::zoom_in`/`Scene::zoom_out` already clamp to, so a restored view can never put a `Scene`'s
+    /// own zoom buttons at odds with what `Scene::zoom_scale` reports. Rejected before writing anything, so a rejected
+    /// call leaves the current view exactly as it was.
     InvalidView(crate::scene::ViewTransform),
 }
 

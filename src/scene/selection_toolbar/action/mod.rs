@@ -12,8 +12,8 @@ pub(crate) enum SelectionToolbarAction {
 }
 
 impl SelectionToolbarAction {
-    /// The buttons a selection toolbar holds, in display order: with a stride, `PrevStride` and `NextStride` go on either
-    /// side of `Prev`/`Next`'s own pair; without one, just `Prev`, `Next` and `Restart`.
+    /// The buttons a selection toolbar holds, in display order: with a stride, `PrevStride` and `NextStride` go on
+    /// either side of `Prev`/`Next`'s own pair; without one, just `Prev`, `Next` and `Restart`.
     pub(super) fn buttons(has_stride: bool) -> Vec<Self> {
         if has_stride {
             vec![Self::PrevStride, Self::Prev, Self::Next, Self::NextStride, Self::Restart]
@@ -33,8 +33,8 @@ impl SelectionToolbarAction {
         }
     }
 
-    /// The button's accessible name — spelled out, since "Prev" is not a word assistive technology should have to
-    /// guess the meaning of.
+    /// The button's accessible name — spelled out, since "Prev" is not a word assistive technology should have to guess
+    /// the meaning of.
     pub(super) fn aria_label(self, stride_label: &str) -> String {
         match self {
             Self::Prev => "Previous selection".to_owned(),
@@ -50,14 +50,14 @@ impl SelectionToolbarAction {
     /// activating it right now would change nothing, which is also this button's own disabled/enabled test (see
     /// [`is_enabled`](Self::is_enabled)).
     ///
-    /// `current` is `None` for the unstarted state — before element `0` has ever been processed, or after `Prev`
-    /// or `Restart` has walked back to it — never a separate cursor kept alongside the node's own `Selection`; see
+    /// `current` is `None` for the unstarted state — before element `0` has ever been processed, or after `Prev` or
+    /// `Restart` has walked back to it — never a separate cursor kept alongside the node's own `Selection`; see
     /// [`crate::scene::Scene::show_selection_toolbar`]'s own doc comment for why there is only ever this one value.
     ///
-    /// - [`Prev`](Self::Prev)/[`Restart`](Self::Restart) never move past the unstarted state — there is nothing
-    ///   before it to walk back to, so both are disabled once `current` is already `None`.
-    /// - [`Next`](Self::Next) never moves past the last element, and is disabled outright for an empty node
-    ///   (`len == 0`), which also holds `current` at `None` forever.
+    /// - [`Prev`](Self::Prev)/[`Restart`](Self::Restart) never move past the unstarted state — there is nothing before
+    ///   it to walk back to, so both are disabled once `current` is already `None`.
+    /// - [`Next`](Self::Next) never moves past the last element, and is disabled outright for an empty node (`len ==
+    ///   0`), which also holds `current` at `None` forever.
     pub(super) fn next_position(self, current: Option<usize>, len: usize, stride: usize) -> Option<Option<usize>> {
         match self {
             Self::Next => match current {
@@ -86,8 +86,8 @@ impl SelectionToolbarAction {
         }
     }
 
-    /// Whether activating this action right now would change anything — see
-    /// [`next_position`](Self::next_position), whose `None` this is exactly the test for.
+    /// Whether activating this action right now would change anything — see [`next_position`](Self::next_position),
+    /// whose `None` this is exactly the test for.
     pub(super) fn is_enabled(self, current: Option<usize>, len: usize, stride: usize) -> bool {
         self.next_position(current, len, stride).is_some()
     }

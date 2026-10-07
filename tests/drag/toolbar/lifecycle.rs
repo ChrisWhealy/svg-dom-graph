@@ -1,6 +1,6 @@
-//! Lifecycle. Showing the toolbar builds the buttons, the pan surface, and the pointer, wheel, and keyboard
-//! handling. Hiding it takes them away. Do that repeatedly, and any handler that was not taken away is now stacked
-//! on the new one: one input would then do its job twice.
+//! Lifecycle. Showing the toolbar builds the buttons, the pan surface, and the pointer, wheel, and keyboard handling.
+//! Hiding it takes them away. Do that repeatedly, and any handler that was not taken away is now stacked on the new
+//! one: one input would then do its job twice.
 
 use super::support::*;
 use crate::common::{check, check_close, dispatch_pointer_event};
@@ -49,8 +49,8 @@ async fn every_input_does_exactly_one_thing(scene: &Scene, id: &str) -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The sequence itself: show, hide, show, hide, show. After it, the toolbar and its gestures behave exactly as they would
-/// have after a single show.
+/// The sequence itself: show, hide, show, hide, show. After it, the toolbar and its gestures behave exactly as they
+/// would have after a single show.
 #[wasm_bindgen_test]
 async fn show_hide_show_hide_show_then_every_input_does_exactly_one_thing() -> Result<(), String> {
     let scene = new_scene("lifecycle-sequence")?;
@@ -110,9 +110,10 @@ async fn many_mode_changes_still_leave_every_input_doing_exactly_one_thing() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Once every `Scene` handle is dropped, no input route does anything at all: not a button, not the wheel, not a key, not a
-/// drag. If a listener were kept alive by a reference cycle, the scene it points at would still be alive and would still
-/// answer, moving the view. Nothing here has a handle left to read the zoom from, so the rendered DOM is what is checked.
+/// Once every `Scene` handle is dropped, no input route does anything at all: not a button, not the wheel, not a key,
+/// not a drag. If a listener were kept alive by a reference cycle, the scene it points at would still be alive and
+/// would still answer, moving the view. Nothing here has a handle left to read the zoom from, so the rendered DOM is
+/// what is checked.
 #[wasm_bindgen_test]
 fn a_dropped_scene_answers_no_input_of_any_kind() -> Result<(), String> {
     let scene = new_scene("lifecycle-dropped")?;

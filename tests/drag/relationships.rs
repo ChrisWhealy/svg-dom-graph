@@ -15,8 +15,8 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A plain label node starts with no `aria-label` at all — its own visible text already serves as its accessible
-/// name. `add_edge` gives both endpoints of a new edge one, seeded with their own name, so neither loses it.
+/// A plain label node starts with no `aria-label` at all — its own visible text already serves as its accessible name.
+/// `add_edge` gives both endpoints of a new edge one, seeded with their own name, so neither loses it.
 #[wasm_bindgen_test]
 fn add_edge_gives_both_endpoints_a_relationship_clause() -> Result<(), String> {
     let svg = make_svg("relationships-plain", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -50,8 +50,8 @@ fn add_edge_gives_both_endpoints_a_relationship_clause() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A source feeding more than one destination gets one "Output to" clause per edge, in the order each edge was
-/// added. These never merge into one shared clause.
+/// A source feeding more than one destination gets one "Output to" clause per edge, in the order each edge was added.
+/// These never merge into one shared clause.
 #[wasm_bindgen_test]
 fn a_source_feeding_two_destinations_gets_two_separate_output_clauses() -> Result<(), String> {
     let svg = make_svg("relationships-fan-out", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -76,8 +76,8 @@ fn a_source_feeding_two_destinations_gets_two_separate_output_clauses() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A binary operator node's own two auto-wired input edges append one "Input from" clause per operand, in the
-/// same order the operator constructor received them. These never merge into one shared "Inputs: A, B" clause.
+/// A binary operator node's own two auto-wired input edges append one "Input from" clause per operand, in the same
+/// order the operator constructor received them. These never merge into one shared "Inputs: A, B" clause.
 #[wasm_bindgen_test]
 fn a_binary_operators_own_two_auto_wired_inputs_each_append_their_own_clause() -> Result<(), String> {
     let svg = make_svg("relationships-operator", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -109,9 +109,9 @@ fn a_binary_operators_own_two_auto_wired_inputs_each_append_their_own_clause() -
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A relationship clause survives a later `Scene::set_selection` on the same node. `set_selection` truncates back
-/// to `base_label_len`, which a relationship clause already advanced past — so it truncates away only a stale
-/// selection description, never a relationship clause added since.
+/// A relationship clause survives a later `Scene::set_selection` on the same node. `set_selection` truncates back to
+/// `base_label_len`, which a relationship clause already advanced past — so it truncates away only a stale selection
+/// description, never a relationship clause added since.
 #[wasm_bindgen_test]
 fn set_selection_after_an_edge_keeps_the_relationship_clause() -> Result<(), String> {
     let svg = make_svg("relationships-selection", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

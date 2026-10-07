@@ -1,12 +1,13 @@
-//! Failure. A view change is a transaction: it is applied, or it is not, and `zoom_scale()` never disagrees with
-//! what is drawn. The DOM writes involved almost never fail for real, so these tests make them fail on purpose.
+//! Failure. A view change is a transaction: it is applied, or it is not, and `zoom_scale()` never disagrees with what
+//! is drawn. The DOM writes involved almost never fail for real, so these tests make them fail on purpose.
 
 use super::support::*;
 use crate::common::{check, check_close};
 use svg_dom_graph::scene::ToolbarOptions;
 use wasm_bindgen_test::*;
 
-/// Makes `Element.setAttribute` throw for the named attributes while it is alive, and puts the original back when dropped.
+/// Makes `Element.setAttribute` throw for the named attributes while it is alive, and puts the original back when
+/// dropped.
 struct FailingWrites;
 
 impl FailingWrites {
@@ -57,8 +58,9 @@ fn the_write_failure_injector_fails_only_the_named_attribute() -> Result<(), Str
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A zoom whose `transform` cannot be written is not applied at all: it reports the error, `zoom_scale()` is what it was,
-/// and nothing is drawn. Once writes work again, the next zoom is one step from where the view really is — not two.
+/// A zoom whose `transform` cannot be written is not applied at all: it reports the error, `zoom_scale()` is what it
+/// was, and nothing is drawn. Once writes work again, the next zoom is one step from where the view really is — not
+/// two.
 #[wasm_bindgen_test]
 fn a_zoom_whose_write_fails_is_not_applied() -> Result<(), String> {
     let scene = new_scene("tx-zoom-fails")?;
@@ -100,8 +102,8 @@ fn a_reset_whose_write_fails_keeps_the_zoom_that_is_drawn() -> Result<(), String
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A view already waiting for its frame is the view a failed change falls back to, still waiting. It is not lost, and not
-/// applied twice: once writes work again, the next zoom starts from it.
+/// A view already waiting for its frame is the view a failed change falls back to, still waiting. It is not lost, and
+/// not applied twice: once writes work again, the next zoom starts from it.
 #[wasm_bindgen_test]
 async fn a_failed_zoom_falls_back_to_a_view_still_waiting_for_its_frame() -> Result<(), String> {
     let scene = new_scene("tx-pending-fails")?;
@@ -184,8 +186,9 @@ fn a_failure_writing_only_a_buttons_state_does_not_undo_or_fail_the_zoom() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A wheel or pan change is drawn by a frame, and a frame has nobody to report an error to. If its write fails, the view is
-/// not lost: it stays waiting, so the next thing that draws the view draws it, and the scene and the drawing agree again.
+/// A wheel or pan change is drawn by a frame, and a frame has nobody to report an error to. If its write fails, the
+/// view is not lost: it stays waiting, so the next thing that draws the view draws it, and the scene and the drawing
+/// agree again.
 #[wasm_bindgen_test]
 async fn a_frame_whose_write_fails_leaves_the_view_waiting_and_the_next_write_catches_up() -> Result<(), String> {
     let scene = new_scene("tx-frame-fails")?;

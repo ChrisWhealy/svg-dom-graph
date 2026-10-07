@@ -1,6 +1,6 @@
-//! `Scene::show_scene_title`/`hide_scene_title`/`has_scene_title`: a heading-style title for the whole scene,
-//! fixed to one edge of its own visible area — drawn attributes, edge placement, replacing an existing title, and
-//! option validation.
+//! `Scene::show_scene_title`/`hide_scene_title`/`has_scene_title`: a heading-style title for the whole scene, fixed to
+//! one edge of its own visible area — drawn attributes, edge placement, replacing an existing title, and option
+//! validation.
 
 use crate::common::{attr_f64, check, check_close, make_svg};
 use svg_dom::root::utils::Size;
@@ -77,8 +77,8 @@ fn show_scene_title_with_default_options_draws_a_bold_underlined_heading() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `bold`/`underline` set to `false` omit their own attribute entirely, rather than writing e.g.
-/// `font-weight="normal"` — there is nothing to override the browser's own default with.
+/// `bold`/`underline` set to `false` omit their own attribute entirely, rather than writing e.g. `font-weight="normal"`
+/// — there is nothing to override the browser's own default with.
 #[wasm_bindgen_test]
 fn show_scene_title_without_bold_or_underline_omits_those_attributes() -> Result<(), String> {
     let svg = make_svg("title-plain", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -96,8 +96,8 @@ fn show_scene_title_without_bold_or_underline_omits_those_attributes() -> Result
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A North or South title is centred horizontally on the `<svg>`'s own visible area — exactly at its own midpoint,
-/// regardless of the title's own rendered width, since `text-anchor="middle"` positioning cancels it out. A West
-/// or East title is centred vertically the same way.
+/// regardless of the title's own rendered width, since `text-anchor="middle"` positioning cancels it out. A West or
+/// East title is centred vertically the same way.
 #[wasm_bindgen_test]
 fn each_edge_centres_the_title_along_the_visible_areas_own_opposite_axis() -> Result<(), String> {
     let svg = make_svg("title-edges", Size::new(400.0, 300.0), Size::new(400.0, 300.0));

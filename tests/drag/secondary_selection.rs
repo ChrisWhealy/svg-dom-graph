@@ -1,5 +1,5 @@
-//! `Scene::set_secondary_selection`: marking the cells a step derives from its own current selection — independent
-//! of `Scene::set_selection`, drawn with both a teal fill and a dashed outline, and described in the node's own
+//! `Scene::set_secondary_selection`: marking the cells a step derives from its own current selection — independent of
+//! `Scene::set_selection`, drawn with both a teal fill and a dashed outline, and described in the node's own
 //! `aria-label`.
 
 use crate::common::{check, make_svg};
@@ -49,8 +49,8 @@ fn attr(cell: &web_sys::Element, name: &str) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A secondary cell gets its own fill, a dashed outline, and a thicker stroke than the default; clearing restores
-/// every one of them.
+/// A secondary cell gets its own fill, a dashed outline, and a thicker stroke than the default; clearing restores every
+/// one of them.
 #[wasm_bindgen_test]
 fn secondary_cells_get_their_own_fill_and_a_dashed_outline_and_clearing_restores_them() -> Result<(), String> {
     let (scene, node, cells, _) = grid("secondary-basic")?;
@@ -88,8 +88,8 @@ fn secondary_cells_get_their_own_fill_and_a_dashed_outline_and_clearing_restores
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `set_selection` neither clears nor is cleared by the secondary cells, and the toolbar-visible primary `Selection`
-/// is untouched by secondary updates. Precedence: focus, then secondary, then band.
+/// `set_selection` neither clears nor is cleared by the secondary cells, and the toolbar-visible primary `Selection` is
+/// untouched by secondary updates. Precedence: focus, then secondary, then band.
 #[wasm_bindgen_test]
 fn secondary_selection_is_independent_of_the_primary_one_and_ranks_between_focus_and_band() -> Result<(), String> {
     let (scene, node, cells, _) = grid("secondary-precedence")?;

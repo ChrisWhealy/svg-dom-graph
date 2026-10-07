@@ -16,8 +16,8 @@ struct CoalescerState {
     id: NodeId,
     /// The most recently pushed position not yet applied. `None` once applied (or never pushed).
     pending: Cell<Option<Point>>,
-    /// Reused across every applied position, in and across frames — the same reasoning every other `move_node`
-    /// caller in this crate reuses one scratch buffer for, rather than allocating a fresh `String` per call.
+    /// Reused across every applied position, in and across frames — the same reasoning every other `move_node` caller
+    /// in this crate reuses one scratch buffer for, rather than allocating a fresh `String` per call.
     scratch: RefCell<String>,
 }
 
@@ -46,8 +46,8 @@ impl CoalescerState {
 /// Keeping a strong reference would keep the whole scene alive for as long as this coalescer itself is.
 ///
 /// The animation-frame callback is a [`FrameRequest`], built once in [`new`](Self::new) rather than freshly per
-/// [`push`](Self::push) call, and re-armed each time a new frame needs scheduling. That avoids building a new closure and
-/// its capture environment at up to display refresh rate for the whole duration of a drag.
+/// [`push`](Self::push) call, and re-armed each time a new frame needs scheduling. That avoids building a new closure
+/// and its capture environment at up to display refresh rate for the whole duration of a drag.
 ///
 /// A [`FrameRequest`] cancels its pending frame when it is dropped. That matters when the last clone of this coalescer
 /// goes — as it does when the scene is dropped, since the listeners that hold the clones go with it — while a frame is
@@ -55,8 +55,8 @@ impl CoalescerState {
 /// "closure invoked recursively or after being dropped". So no callback is ever left for the browser to call, and a
 /// position pushed but not yet applied at that moment is simply not applied.
 ///
-/// Every clone of a `PointerCoalescer` shares the same underlying [`CoalescerState`] and frame request. Cloning is how one
-/// coalescer, created once per [`Scene::make_draggable_with`](super::Scene::make_draggable_with) call, is shared
+/// Every clone of a `PointerCoalescer` shares the same underlying [`CoalescerState`] and frame request. Cloning is how
+/// one coalescer, created once per [`Scene::make_draggable_with`](super::Scene::make_draggable_with) call, is shared
 /// across that node's own pointermove, pointerup, and pointercancel listener closures.
 #[derive(Clone)]
 pub(super) struct PointerCoalescer {
@@ -70,9 +70,9 @@ impl PointerCoalescer {
     ///
     /// # Errors
     ///
-    /// Returns [`Error::Svg`] (wrapping [`svg_dom::Error::Dom`]) if no `window` is available. Expected never to
-    /// happen in this crate's only supported environment, a real browser tab, but checked rather than assumed —
-    /// see `svg-dom`'s own `AnimationLoop::start` for the same check.
+    /// Returns [`Error::Svg`] (wrapping [`svg_dom::Error::Dom`]) if no `window` is available. Expected never to happen
+    /// in this crate's only supported environment, a real browser tab, but checked rather than assumed — see
+    /// `svg-dom`'s own `AnimationLoop::start` for the same check.
     pub(super) fn new(inner: Weak<RefCell<SceneInner>>, id: NodeId) -> Result<Self, Error> {
         let state = Rc::new(CoalescerState {
             inner,
@@ -95,13 +95,13 @@ impl PointerCoalescer {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Records `origin` as the position to apply next and, unless a frame is already scheduled, schedules one.
     ///
-    /// A `pointermove` that arrives while a frame is still pending only overwrites the pending position — it
-    /// neither blocks nor schedules a second frame. So a whole burst of same-frame events collapses to exactly one
-    /// `move_node` call, always using whichever position was most recent once that one frame actually runs.
+    /// A `pointermove` that arrives while a frame is still pending only overwrites the pending position — it neither
+    /// blocks nor schedules a second frame. So a whole burst of same-frame events collapses to exactly one `move_node`
+    /// call, always using whichever position was most recent once that one frame actually runs.
     pub(super) fn push(&self, origin: Point) {
         self.state.pending.set(Some(origin));
-        // Does nothing if a frame is already scheduled: that frame will pick up this newer position when it runs. If the
-        // browser refuses the request, `pending` is left set, so the next `push` tries again.
+        // Does nothing if a frame is already scheduled: that frame will pick up this newer position when it runs. If
+        // the browser refuses the request, `pending` is left set, so the next `push` tries again.
         self.frame.request();
     }
 
@@ -109,8 +109,8 @@ impl PointerCoalescer {
     /// Applies `origin` immediately, synchronously, using this coalescer's own reused scratch buffer.
     ///
     /// For a caller that already has an authoritative position of its own to apply right now — `pointerup`'s own
-    /// collision-resolution correction is the one caller in this crate — rather than allocating a second buffer to
-    /// live for the drag's own whole lifetime beside this one.
+    /// collision-resolution correction is the one caller in this crate — rather than allocating a second buffer to live
+    /// for the drag's own whole lifetime beside this one.
     ///
     /// Does not touch any pending coalesced position or scheduled frame — call [`cancel`](Self::cancel) or
     /// [`flush`](Self::flush) first if a stale one could otherwise still fire afterward and overwrite this.
@@ -119,9 +119,9 @@ impl PointerCoalescer {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Applies a pending position immediately, synchronously, cancelling any still-scheduled frame — for
-    /// `pointerup`, so neither the node's own final rendered position nor a collision-resolution rect read
-    /// straight afterward is ever one frame stale.
+    /// Applies a pending position immediately, synchronously, cancelling any still-scheduled frame — for `pointerup`,
+    /// so neither the node's own final rendered position nor a collision-resolution rect read straight afterward is
+    /// ever one frame stale.
     ///
     /// Does nothing if nothing is pending, the common case: most drags end on a frame that has already run.
     pub(super) fn flush(&self) {
@@ -132,12 +132,12 @@ impl PointerCoalescer {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Discards a pending position and cancels any still-scheduled frame, without applying it — for
-    /// `pointercancel`, where the drag itself is being abandoned, not completed.
+    /// Discards a pending position and cancels any still-scheduled frame, without applying it — for `pointercancel`,
+    /// where the drag itself is being abandoned, not completed.
     ///
     /// Unlike [`flush`](Self::flush), a position pushed since the last applied frame is lost here, not applied.
-    /// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the
-    /// gesture, so the position it fires at is not one this crate treats as the user's intended drop point.
+    /// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture, so
+    /// the position it fires at is not one this crate treats as the user's intended drop point.
     pub(super) fn cancel(&self) {
         self.cancel_scheduled();
         self.state.pending.set(None);

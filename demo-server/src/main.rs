@@ -11,8 +11,8 @@
 //!
 //! The following steps are performed:
 //!
-//! 1. `demo-server`'s own panel manifest and `demo-app`'s `demo_gallery!` list must agree with each other
-//!    (see [`validate`])
+//! 1. `demo-server`'s own panel manifest and `demo-app`'s `demo_gallery!` list must agree with each other (see
+//!    [`validate`])
 //! 1. Rebuilds `index.html` from `demo/index.template.html` and the various `demo/panels/*.html` files (see [`panels`])
 //! 1. Rebuilds the `svg-dom-graph-demo` crate's wasm package using `wasm-pack build demo-app --target web`
 //! 1. Serves the result at <http://127.0.0.1:8000/>
@@ -77,18 +77,18 @@ async fn main() -> std::io::Result<()> {
         .ok_or_else(|| std::io::Error::other("demo-server must live inside the project"))?
         .to_path_buf();
 
-    // Respects a `CARGO_TARGET_DIR` environment variable override, rather than assuming the target directory
-    // always sits directly under the project root. This is not the full resolution `cargo build` itself performs
-    // — it does not consult `build.target-dir` from `.cargo/config.toml` or user-level Cargo configuration — so an
-    // unusual Cargo configuration using one of those instead of the environment variable is not picked up here.
+    // Respects a `CARGO_TARGET_DIR` environment variable override, rather than assuming the target directory always
+    // sits directly under the project root. This is not the full resolution `cargo build` itself performs — it does not
+    // consult `build.target-dir` from `.cargo/config.toml` or user-level Cargo configuration — so an unusual Cargo
+    // configuration using one of those instead of the environment variable is not picked up here.
     let target_dir = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target"));
     let stage = StagePaths::new(&target_dir);
 
     // Unlike CARGO_TARGET_DIR above (where any absence just means "use the default layout"), a *present but
-    // unparseable* PORT is a configuration mistake worth reporting rather than silently falling back to
-    // DEFAULT_PORT — `PORT=abc cargo demo` should fail loudly, not quietly start on 8000.
+    // unparseable* PORT is a configuration mistake worth reporting rather than silently falling back to DEFAULT_PORT —
+    // `PORT=abc cargo demo` should fail loudly, not quietly start on 8000.
     let port: u16 = match std::env::var("PORT") {
         Ok(value) => value
             .parse()
@@ -115,9 +115,9 @@ async fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    // Every build phase — staging index.html, rebuilding the wasm package — runs here, in order, before the server
-    // ever starts; a failure at either phase is fatal, so `main` reports it and exits rather than starting Actix in
-    // front of an incomplete or stale demo.
+    // Every build phase — staging index.html, rebuilding the wasm package — runs here, in order, before the server ever
+    // starts; a failure at either phase is fatal, so `main` reports it and exits rather than starting Actix in front of
+    // an incomplete or stale demo.
     if let Err(err) = build::build_demo(&root, &stage) {
         eprintln!("aborting: {err}");
         process::exit(1);
@@ -135,21 +135,20 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             // Re-runs prepare_stage — re-assembling index.html and re-copying style.css — so an edit to either is
-            // visible on the very next browser refresh. Only when the request is actually for the page itself
-            // (`/` or `/index.html`): every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified
-            // static asset neither of those could ever change, so skipping the refresh there avoids a needless
-            // filesystem stat/write on every one of those requests, not just the page load that triggers them.
-            // build_demo's wasm rebuild is deliberately not repeated here at all, for either kind of request:
-            // wasm-pack is far too slow to run per request and editing Rust source already requires restarting
-            // cargo demo regardless.
+            // visible on the very next browser refresh. Only when the request is actually for the page itself (`/` or
+            // `/index.html`): every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified static asset
+            // neither of those could ever change, so skipping the refresh there avoids a needless filesystem stat/write
+            // on every one of those requests, not just the page load that triggers them. build_demo's wasm rebuild is
+            // deliberately not repeated here at all, for either kind of request: wasm-pack is far too slow to run per
+            // request and editing Rust source already requires restarting cargo demo regardless.
             //
             // A refresh failure (e.g. index.html was left mid-edit, or style.css went missing) is only logged, not
-            // fatal: the previously staged index.html and style.css are both left in place and keep being served,
-            // the same file-not-found-yet tolerance an editor's own autosave already needs — prepare_stage's own
-            // doc comment explains why it stages both files into temporary files and only promotes them once both
-            // have been prepared successfully, rather than writing either straight onto its live destination. That
-            // guarantee assumes only one refresh ever runs at a time, which is exactly what `.workers(1)` below
-            // exists to guarantee — see its own comment for why.
+            // fatal: the previously staged index.html and style.css are both left in place and keep being served, the
+            // same file-not-found-yet tolerance an editor's own autosave already needs — prepare_stage's own doc
+            // comment explains why it stages both files into temporary files and only promotes them once both have been
+            // prepared successfully, rather than writing either straight onto its live destination. That guarantee
+            // assumes only one refresh ever runs at a time, which is exactly what `.workers(1)` below exists to
+            // guarantee — see its own comment for why.
             .wrap_fn(move |req, srv| {
                 if matches!(req.path(), "/" | "/index.html")
                     && let Err(err) = build::prepare_stage(&root, &stage)
@@ -160,14 +159,13 @@ async fn main() -> std::io::Result<()> {
             })
             .service(Files::new("/", stage_dir.clone()).index_file("index.html"))
     })
-    // A single worker, deliberately: prepare_stage's own temporary file (index.html.tmp) is a fixed, shared path
-    // within stage_dir, not one made unique per request. Two workers refreshing it for two near-simultaneous
-    // requests to `/` or `/index.html` could otherwise interleave their own assemble-then-rename sequences over
-    // that same path — one worker's rename landing on the other's still-being-written temporary file, or the two
-    // renames racing each other. A single worker makes every request, including that refresh, run strictly one at
-    // a time, which removes the race outright rather than merely making it unlikely. This demo server has no
-    // throughput requirement multiple workers would ever be serving — see this module's own doc comment for what
-    // it actually needs to handle.
+    // A single worker, deliberately: prepare_stage's own temporary file (index.html.tmp) is a fixed, shared path within
+    // stage_dir, not one made unique per request. Two workers refreshing it for two near-simultaneous requests to `/`
+    // or `/index.html` could otherwise interleave their own assemble-then-rename sequences over that same path — one
+    // worker's rename landing on the other's still-being-written temporary file, or the two renames racing each other.
+    // A single worker makes every request, including that refresh, run strictly one at a time, which removes the race
+    // outright rather than merely making it unlikely. This demo server has no throughput requirement multiple workers
+    // would ever be serving — see this module's own doc comment for what it actually needs to handle.
     .workers(1)
     .bind(addr)?
     .run()

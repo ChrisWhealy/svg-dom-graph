@@ -1,7 +1,7 @@
-//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid, not a
-//! plain text label. Covers rendering, colour-coded value cells, auto-sizing, and `GridLayout` overrides. Also
-//! covers empty-content and bad-layout rejection, dragging every cell (not just the box), and ordinary connector
-//! routing to/from one.
+//! `Scene::add_data_node`/`add_data_node_with`: a node whose visible content is a [`DataNodeContent`] grid, not a plain
+//! text label. Covers rendering, colour-coded value cells, auto-sizing, and `GridLayout` overrides. Also covers
+//! empty-content and bad-layout rejection, dragging every cell (not just the box), and ordinary connector routing
+//! to/from one.
 
 use crate::common::{
     attr_f64, check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group, the_connector,
@@ -41,9 +41,9 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A single value gets no inner cell box — the outer box itself is filled with the value's own type colour — and
-/// its text reads exactly the byte-group hex text the feature request's own example describes: no `0x` prefix,
-/// uppercase, single-space byte separation.
+/// A single value gets no inner cell box — the outer box itself is filled with the value's own type colour — and its
+/// text reads exactly the byte-group hex text the feature request's own example describes: no `0x` prefix, uppercase,
+/// single-space byte separation.
 #[wasm_bindgen_test]
 fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell() -> Result<(), String> {
     let svg = make_svg("data-node-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -84,9 +84,9 @@ fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Two or more values each get their own type-coloured inner cell box, inside the node's own unchanged, light
-/// blue outer box — the second example from the feature request (two values stack into two rows of one column),
-/// now rendered as two distinct coloured cells rather than two plain text lines.
+/// Two or more values each get their own type-coloured inner cell box, inside the node's own unchanged, light blue
+/// outer box — the second example from the feature request (two values stack into two rows of one column), now rendered
+/// as two distinct coloured cells rather than two plain text lines.
 #[wasm_bindgen_test]
 fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Result<(), String> {
     let svg = make_svg("data-node-two", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -128,8 +128,8 @@ fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Res
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `u64` under [`DataFormat::Binary`] is the extreme cell-aspect-ratio case: 64 digits, nybble-grouped and
-/// byte-separated, render far wider than the cell is tall. `GridLayout`/`Automatic`'s own doc comment names this
-/// exact case as the reason `GridLayout::MaxColumns` exists.
+/// byte-separated, render far wider than the cell is tall. `GridLayout`/`Automatic`'s own doc comment names this exact
+/// case as the reason `GridLayout::MaxColumns` exists.
 #[wasm_bindgen_test]
 fn add_data_node_with_a_u64_binary_value_renders_an_extremely_wide_cell() -> Result<(), String> {
     let svg = make_svg("data-node-u64-binary", Size::new(1200.0, 260.0), Size::new(1200.0, 260.0));
@@ -158,11 +158,10 @@ fn add_data_node_with_a_u64_binary_value_renders_an_extremely_wide_cell() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `draw_content_box` measures only the widest cell's own rendered text, by character count, to size every cell
-/// alike — see that function's own doc comment. Every `Hexadecimal`/`Binary` value of one integer type already
-/// renders the same character count regardless of magnitude, so `Decimal` values of genuinely different digit
-/// counts are the one scenario that actually exercises "pick the *right* cell to measure," not merely "measuring
-/// is skipped for the rest."
+/// `draw_content_box` measures only the widest cell's own rendered text, by character count, to size every cell alike —
+/// see that function's own doc comment. Every `Hexadecimal`/`Binary` value of one integer type already renders the same
+/// character count regardless of magnitude, so `Decimal` values of genuinely different digit counts are the one
+/// scenario that actually exercises "pick the *right* cell to measure," not merely "measuring is skipped for the rest."
 #[wasm_bindgen_test]
 fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_uniform_cell_width() -> Result<(), String> {
     let svg = make_svg("data-node-decimal-widths", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -184,15 +183,14 @@ fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_unifor
         &format!("unexpected second value text: {:?}", texts[1].text_content()),
     )?;
 
-    // Both cells share one uniform width — the one-digit value's own cell is not narrower than the ten-digit
-    // value's.
+    // Both cells share one uniform width — the one-digit value's own cell is not narrower than the ten-digit value's.
     let rects = rect_children(&group)?;
     let narrow_width = attr_f64(&rects[1], "width")?;
     let wide_width = attr_f64(&rects[2], "width")?;
     check_close(narrow_width, wide_width)?;
 
-    // That shared width is wide enough for the ten-digit value, not just the one-digit value — proving the
-    // longer string, not the shorter one, was the one actually measured.
+    // That shared width is wide enough for the ten-digit value, not just the one-digit value — proving the longer
+    // string, not the shorter one, was the one actually measured.
     let height = attr_f64(&rects[1], "height")?;
     check(
         wide_width > height * 2.0,
@@ -202,9 +200,9 @@ fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_unifor
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Five values under [`GridLayout::Automatic`] render a `3 x 2` grid (see
-/// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`) with the last row
-/// only half full — a non-complete final row, rather than the exact multiple of columns every other rendering
-/// test here happens to use.
+/// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`) with the last row only
+/// half full — a non-complete final row, rather than the exact multiple of columns every other rendering test here
+/// happens to use.
 #[wasm_bindgen_test]
 fn add_data_node_with_five_values_leaves_the_last_row_incomplete() -> Result<(), String> {
     let svg = make_svg("data-node-five-values", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -257,17 +255,16 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A data node's type colour is not the only place its type is recorded. The node's own `<g>` carries a
-/// `<title>`: a native browser tooltip when the mouse pointer hovers over any child — the rect or the digits,
-/// not just one of them. `<title>` carries the exact same text as `aria-label` below, so the tooltip a sighted
-/// mouse user sees always matches what a screen reader announces.
-/// It also carries `role="group"` and an `aria-label` summarising it. The explicit role matters: a bare `<g>`
-/// has no implicit role, so `aria-label` alone may go unexposed. A caller who cannot distinguish colours can
-/// still recover the type this way. Assistive technology cannot perceive fill colour at all either.
+/// A data node's type colour is not the only place its type is recorded. The node's own `<g>` carries a `<title>`: a
+/// native browser tooltip when the mouse pointer hovers over any child — the rect or the digits, not just one of them.
+/// `<title>` carries the exact same text as `aria-label` below, so the tooltip a sighted mouse user sees always matches
+/// what a screen reader announces. It also carries `role="group"` and an `aria-label` summarising it. The explicit role
+/// matters: a bare `<g>` has no implicit role, so `aria-label` alone may go unexposed. A caller who cannot distinguish
+/// colours can still recover the type this way. Assistive technology cannot perceive fill colour at all either.
 ///
-/// Neither is visible in the rendered digits themselves. Just as importantly, neither corrupts them. `<title>`
-/// sits on the group, not as a child of the `<text>` element. So `text_content()` on the digits stays exactly the
-/// formatted value, with nothing appended.
+/// Neither is visible in the rendered digits themselves. Just as importantly, neither corrupts them. `<title>` sits on
+/// the group, not as a child of the `<text>` element. So `text_content()` on the digits stays exactly the formatted
+/// value, with nothing appended.
 #[wasm_bindgen_test]
 fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(), String> {
     let svg = make_svg("data-node-a11y-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -300,9 +297,9 @@ fn a_single_value_data_node_names_its_type_as_text_not_only_colour() -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The multi-value counterpart of the test above. One `<title>` on the group still applies wherever the mouse
-/// pointer hovers, over any cell's rect or digits alike, and still carries the same text as `aria-label`. The
-/// group's own `aria-label` — and so `<title>` too — reports how many values the node holds.
+/// The multi-value counterpart of the test above. One `<title>` on the group still applies wherever the mouse pointer
+/// hovers, over any cell's rect or digits alike, and still carries the same text as `aria-label`. The group's own
+/// `aria-label` — and so `<title>` too — reports how many values the node holds.
 #[wasm_bindgen_test]
 fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
     let svg = make_svg("data-node-a11y-multi", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -326,10 +323,9 @@ fn a_multi_value_data_node_names_its_type_on_the_group() -> Result<(), String> {
         &format!("unexpected <title> on the node's own <g>: {:?}", title_of(&group)?),
     )?;
 
-    // Neither inner cell rect nor either digit run carries its own separate <title>. One shared title on the
-    // group is enough. Putting one on each rect instead would not even work: a rect is a sibling of its own
-    // text, not an ancestor of it. So the tooltip still would not appear when hovering over the digits
-    // themselves.
+    // Neither inner cell rect nor either digit run carries its own separate <title>. One shared title on the group is
+    // enough. Putting one on each rect instead would not even work: a rect is a sibling of its own text, not an
+    // ancestor of it. So the tooltip still would not appear when hovering over the digits themselves.
     let rects = rect_children(&group)?;
     for (i, cell_rect) in rects[1..].iter().enumerate() {
         check(
@@ -410,10 +406,9 @@ fn add_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(),
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `DataNodeContent::with_layout(GridLayout::MaxColumns(n))` overrides `GridLayout::Automatic`'s own cell-count-only
-/// choice. 8 values render as 2 rows of 4 under `Automatic` — see
-/// `grid_shape_of_eight_values_prefers_two_rows_of_four` in `model::content::unit_tests`. `MaxColumns(2)` caps
-/// that at 2 columns, giving 4 rows of 2 instead. This is checked by counting each inner cell's own distinct
-/// `x`/`y` — the row/column count, not any specific pixel value.
+/// choice. 8 values render as 2 rows of 4 under `Automatic` — see `grid_shape_of_eight_values_prefers_two_rows_of_four`
+/// in `model::content::unit_tests`. `MaxColumns(2)` caps that at 2 columns, giving 4 rows of 2 instead. This is checked
+/// by counting each inner cell's own distinct `x`/`y` — the row/column count, not any specific pixel value.
 #[wasm_bindgen_test]
 fn with_layout_max_columns_overrides_automatics_own_shape() -> Result<(), String> {
     let svg = make_svg("data-node-max-columns", Size::new(400.0, 400.0), Size::new(400.0, 400.0));
@@ -456,8 +451,8 @@ fn with_layout_max_columns_overrides_automatics_own_shape() -> Result<(), String
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::add_data_node`/`add_data_node_with` rejects a `GridLayout` wrapping `0`, before drawing anything or
-/// touching the graph's model. This mirrors `add_data_node_rejects_empty_content_before_touching_the_scene` above.
+/// `Scene::add_data_node`/`add_data_node_with` rejects a `GridLayout` wrapping `0`, before drawing anything or touching
+/// the graph's model. This mirrors `add_data_node_rejects_empty_content_before_touching_the_scene` above.
 #[wasm_bindgen_test]
 fn add_data_node_rejects_a_zero_grid_layout_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg("data-node-bad-layout", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -478,13 +473,13 @@ fn add_data_node_rejects_a_zero_grid_layout_before_touching_the_scene() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a data node moves the whole box — every value's own text and inner cell rect included. This works
-/// by moving just the node's own `<g>` `transform`, not by rewriting every cell's own coordinates.
+/// Dragging a data node moves the whole box — every value's own text and inner cell rect included. This works by moving
+/// just the node's own `<g>` `transform`, not by rewriting every cell's own coordinates.
 ///
-/// Every cell is drawn once, at creation, in local coordinates relative to `(0, 0)`. See `draw_content_box`'s own
-/// doc comment. So a data node with hundreds of cells moves exactly as cheaply as one with a handful. A pointer
-/// move only ever rewrites the group's one `transform`. This checks both halves of that: the group's translate
-/// changes by the drag delta, and every cell's own local `x`/`y` stays exactly as it was.
+/// Every cell is drawn once, at creation, in local coordinates relative to `(0, 0)`. See `draw_content_box`'s own doc
+/// comment. So a data node with hundreds of cells moves exactly as cheaply as one with a handful. A pointer move only
+/// ever rewrites the group's one `transform`. This checks both halves of that: the group's translate changes by the
+/// drag delta, and every cell's own local `x`/`y` stays exactly as it was.
 #[wasm_bindgen_test]
 fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), String> {
     let svg = make_svg("data-node-drag", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -542,8 +537,8 @@ fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A connector routes to/from a data node exactly as it would an ordinary label node: the same
-/// `boundary_point`/elbow routing logic, since it only ever looks at a node's `Rect`, never its content.
+/// A connector routes to/from a data node exactly as it would an ordinary label node: the same `boundary_point`/elbow
+/// routing logic, since it only ever looks at a node's `Rect`, never its content.
 #[wasm_bindgen_test]
 fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String> {
     let svg = make_svg("data-node-connector", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -587,20 +582,20 @@ fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `EdgeAnchors` configures a data node's own connector fixing points exactly as it would an ordinary node's.
-/// Snapping only ever looks at the node's `Rect`, never its content.
+/// `EdgeAnchors` configures a data node's own connector fixing points exactly as it would an ordinary node's. Snapping
+/// only ever looks at the node's `Rect`, never its content.
 ///
 /// # Expected anchor, worked by hand
 ///
-/// `B` (the data node) holds a single value, so its own box is measured after creation, not assumed.
-/// Unconfigured, `edge_anchor` always returns the exact midpoint of whichever side is chosen, regardless of the
-/// other endpoint's exact position — see `a_connector_routes_to_a_data_node_like_any_other_node` above, and
-/// `edge_anchor`'s own doc comment.
+/// `B` (the data node) holds a single value, so its own box is measured after creation, not assumed. Unconfigured,
+/// `edge_anchor` always returns the exact midpoint of whichever side is chosen, regardless of the other endpoint's
+/// exact position — see `a_connector_routes_to_a_data_node_like_any_other_node` above, and `edge_anchor`'s own doc
+/// comment.
 ///
-/// `A` is placed far enough above and to the left of `B` that `snapped_anchor` still picks `B`'s west side.
-/// But the unsnapped ray crosses deep inside its topmost quarter. With `EdgeAnchors(3)`, that side is divided
-/// into 4 equal segments. So the connector snaps to the first of the 3 candidates: `B`'s own
-/// `(bx, by + bh / 4)`. A plain, unconfigured node would have used the midpoint `(bx, by + bh / 2)` instead.
+/// `A` is placed far enough above and to the left of `B` that `snapped_anchor` still picks `B`'s west side. But the
+/// unsnapped ray crosses deep inside its topmost quarter. With `EdgeAnchors(3)`, that side is divided into 4 equal
+/// segments. So the connector snaps to the first of the 3 candidates: `B`'s own `(bx, by + bh / 4)`. A plain,
+/// unconfigured node would have used the midpoint `(bx, by + bh / 2)` instead.
 #[wasm_bindgen_test]
 fn a_data_node_with_custom_edge_anchors_snaps_like_any_other_node() -> Result<(), String> {
     let svg = make_svg("data-node-edge-anchors", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
@@ -620,10 +615,10 @@ fn a_data_node_with_custom_edge_anchors_snaps_like_any_other_node() -> Result<()
     let (half_w, half_h) = (bw / 2.0, bh / 2.0);
     let b_centre = Point::new(bx + half_w, by + half_h);
 
-    // `snapped_anchor`'s own crossing formula is `centre.y + dy * (half_w / dx.abs())`. Choosing
-    // `dy = -0.9 * (half_h / half_w) * dx.abs()` makes the `dx` term cancel out algebraically. That leaves the
-    // crossing point fixed at `0.9 * half_h` above B's own centre, deep inside the topmost quarter of its west
-    // side. This holds for any `dx` at all, as long as `dx` stays large enough to keep the west side selected.
+    // `snapped_anchor`'s own crossing formula is `centre.y + dy * (half_w / dx.abs())`. Choosing `dy = -0.9 * (half_h /
+    // half_w) * dx.abs()` makes the `dx` term cancel out algebraically. That leaves the crossing point fixed at `0.9 *
+    // half_h` above B's own centre, deep inside the topmost quarter of its west side. This holds for any `dx` at all,
+    // as long as `dx` stays large enough to keep the west side selected.
     let dx: f64 = -300.0;
     let dy = -0.9 * (half_h / half_w) * dx.abs();
     let a_centre = Point::new(b_centre.x + dx, b_centre.y + dy);
@@ -642,10 +637,10 @@ fn a_data_node_with_custom_edge_anchors_snaps_like_any_other_node() -> Result<()
 // Named data nodes
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
-/// `Scene::add_named_data_node` wraps a single-value node's own box in a further outer box of its own, labelled
-/// with the given name — the same "outer box labelled with a name, inset value box beneath it" shape an operator
-/// node already draws for its own result. The inner value box stays inset from every outer edge, exactly as an
-/// operator's own value cell does.
+/// `Scene::add_named_data_node` wraps a single-value node's own box in a further outer box of its own, labelled with
+/// the given name — the same "outer box labelled with a name, inset value box beneath it" shape an operator node
+/// already draws for its own result. The inner value box stays inset from every outer edge, exactly as an operator's
+/// own value cell does.
 #[wasm_bindgen_test]
 fn a_named_single_value_data_node_wraps_it_in_a_further_labelled_outer_box() -> Result<(), String> {
     let svg = make_svg("data-node-named-single", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -717,9 +712,9 @@ fn a_named_single_value_data_node_wraps_it_in_a_further_labelled_outer_box() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A named single-value node's own `aria-label` reads `"{name}: {type} = {value}"` — the node's own name, its
-/// type, and its real formatted value, all as text, not just the type a plain (unnamed) node's own label gives.
-/// Its `<title>` — the browser's own mouse-hover tooltip — carries that exact same text.
+/// A named single-value node's own `aria-label` reads `"{name}: {type} = {value}"` — the node's own name, its type, and
+/// its real formatted value, all as text, not just the type a plain (unnamed) node's own label gives. Its `<title>` —
+/// the browser's own mouse-hover tooltip — carries that exact same text.
 #[wasm_bindgen_test]
 fn a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real_value() -> Result<(), String> {
     let svg = make_svg("data-node-named-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -774,8 +769,8 @@ fn a_named_multi_value_data_node_wraps_the_grid_in_a_further_labelled_outer_box(
 }
 
 /// An incoming connector anchors to a named data node's own *outer* named box, never to the inner value box `name`
-/// wraps — the same guarantee an operator node's own result cell already gets, for the same reason: a connector
-/// landing on the inner box would look like it terminates at the value, not at the named quantity as a whole.
+/// wraps — the same guarantee an operator node's own result cell already gets, for the same reason: a connector landing
+/// on the inner box would look like it terminates at the value, not at the named quantity as a whole.
 #[wasm_bindgen_test]
 fn a_named_data_nodes_own_connector_anchors_to_the_outer_named_box() -> Result<(), String> {
     let svg = make_svg("data-node-named-anchor", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -813,8 +808,8 @@ fn a_named_data_nodes_own_connector_anchors_to_the_outer_named_box() -> Result<(
     )
 }
 
-/// `add_named_data_node` validates `content` exactly as `add_data_node` does — the shared implementation behind
-/// both — before drawing anything or touching the graph.
+/// `add_named_data_node` validates `content` exactly as `add_data_node` does — the shared implementation behind both —
+/// before drawing anything or touching the graph.
 #[wasm_bindgen_test]
 fn add_named_data_node_rejects_empty_content_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg("data-node-named-empty", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -833,8 +828,8 @@ fn add_named_data_node_rejects_empty_content_before_touching_the_scene() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `add_named_data_node` rejects an empty `name`, and one holding only whitespace, before drawing anything or
-/// touching the graph — an accessible name of `": u8 = 12"` names nothing.
+/// `add_named_data_node` rejects an empty `name`, and one holding only whitespace, before drawing anything or touching
+/// the graph — an accessible name of `": u8 = 12"` names nothing.
 #[wasm_bindgen_test]
 fn add_named_data_node_rejects_an_empty_or_whitespace_only_name_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg("data-node-named-blank", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -855,8 +850,8 @@ fn add_named_data_node_rejects_an_empty_or_whitespace_only_name_before_touching_
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A `name` that is not blank, only padded with surrounding whitespace, is accepted — and used exactly as given,
-/// not silently trimmed.
+/// A `name` that is not blank, only padded with surrounding whitespace, is accepted — and used exactly as given, not
+/// silently trimmed.
 #[wasm_bindgen_test]
 fn add_named_data_node_accepts_a_name_padded_with_whitespace_verbatim() -> Result<(), String> {
     let svg = make_svg("data-node-named-padded", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

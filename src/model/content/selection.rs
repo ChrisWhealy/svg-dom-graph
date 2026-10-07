@@ -1,14 +1,14 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Which of a [`super::DataNodeContent`]'s own cells [`Scene::set_selection`](crate::scene::Scene::set_selection)
-/// should highlight. Addressed either as one flat index, or, for a multi-row/column grid, as a whole row/column
-/// plus an optional further cell within it.
+/// should highlight. Addressed either as one flat index, or, for a multi-row/column grid, as a whole row/column plus an
+/// optional further cell within it.
 ///
-/// A one-dimensional grid (a single row or a single column) only ever needs [`Cell`](Self::Cell) — there is no
-/// separate "row" to highlight distinctly from the one element within it.
+/// A one-dimensional grid (a single row or a single column) only ever needs [`Cell`](Self::Cell) — there is no separate
+/// "row" to highlight distinctly from the one element within it.
 ///
-/// A two-dimensional grid can additionally highlight a whole [`Row`](Self::Row)/[`Column`](Self::Column) — the "we
-/// are now processing this row/column" step of a data-flow walk. It can also highlight a further cell within it —
-/// the "and specifically this element" step — rendered in a stronger colour that overrides the row/column's own.
+/// A two-dimensional grid can additionally highlight a whole [`Row`](Self::Row)/[`Column`](Self::Column) — the "we are
+/// now processing this row/column" step of a data-flow walk. It can also highlight a further cell within it — the "and
+/// specifically this element" step — rendered in a stronger colour that overrides the row/column's own.
 ///
 /// `#[non_exhaustive]`: a plausible future addition — highlighting more than one row, say — should stay additive.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
@@ -17,8 +17,8 @@ pub enum Selection {
     /// No selection: every cell renders in its own default `NodeValues::type_colour`.
     #[default]
     None,
-    /// Highlights the value at 0-based flat index `0`, addressing the whole content as one flat sequence regardless
-    /// of how [`GridLayout`](super::GridLayout) arranges it into rows and columns.
+    /// Highlights the value at 0-based flat index `0`, addressing the whole content as one flat sequence regardless of
+    /// how [`GridLayout`](super::GridLayout) arranges it into rows and columns.
     ///
     /// Renders in the same, stronger colour a [`Row`](Self::Row)/[`Column`](Self::Column)'s own optional cell gets —
     /// both name "this is the one specific element," not "this is the active group."
@@ -26,14 +26,13 @@ pub enum Selection {
     /// Highlights every cell in 0-based row `row`, and additionally the cell at column `col` within that row, in a
     /// stronger colour, if `col` is `Some`.
     Row { row: usize, col: Option<usize> },
-    /// Highlights every cell in 0-based column `col`, and additionally the cell at row `row` within that column, in
-    /// a stronger colour, if `row` is `Some`.
+    /// Highlights every cell in 0-based column `col`, and additionally the cell at row `row` within that column, in a
+    /// stronger colour, if `row` is `Some`.
     Column { col: usize, row: Option<usize> },
 }
 
 impl Selection {
-    /// Appends a short, human-readable description of this selection to `out`, suitable for a node's own
-    /// `aria-label`.
+    /// Appends a short, human-readable description of this selection to `out`, suitable for a node's own `aria-label`.
     ///
     /// Writes nothing for [`Selection::None`], so the label reads exactly as it did before any selection was made.
     /// `Scene::set_selection` calls this into its own reused label buffer, first truncated back to the node's base
@@ -44,8 +43,8 @@ impl Selection {
     /// [`super::NodeValues::type_colour`]'s own `<title>`/`aria-label` pairing already follows.
     pub(crate) fn describe_into(self, out: &mut String) {
         use std::fmt::Write as _;
-        // `String`'s own `Write` impl only ever fails on allocation, which panics rather than returning `Err` —
-        // the same reasoning `crate::geometry::elbow_path_into`'s own `write!` calls rely on.
+        // `String`'s own `Write` impl only ever fails on allocation, which panics rather than returning `Err` — the
+        // same reasoning `crate::geometry::elbow_path_into`'s own `write!` calls rely on.
         let _ = match self {
             Self::None => return,
             Self::Cell(i) => write!(out, ", cell {i} selected"),
@@ -68,14 +67,14 @@ impl Selection {
 /// `Scene::set_selection` uses alongside that walk: to check whether an index it reaches while walking one band is
 /// already covered by the other, so it is not visited twice — not, itself, how a band's own members are found.
 ///
-/// [`contains`](Self::contains)/[`for_each_index`](Self::for_each_index) both trust their own caller to only ever
-/// query a flat index — or, for `for_each_index`, a `len` bound — that names a real cell.
+/// [`contains`](Self::contains)/[`for_each_index`](Self::for_each_index) both trust their own caller to only ever query
+/// a flat index — or, for `for_each_index`, a `len` bound — that names a real cell.
 /// [`super::DataNodeContent::resolve_selection`] is the only place that builds a `ResolvedBand`.
 ///
 /// `Scene::set_selection` is the only reader, and every index it ever queries either comes from
 /// [`for_each_index`](Self::for_each_index) itself (already `< len`) or from a focus index
-/// [`super::DataNodeContent::resolve_selection`] already validated. So neither method here ever needs to re-check
-/// a query against the content's own value count itself.
+/// [`super::DataNodeContent::resolve_selection`] already validated. So neither method here ever needs to re-check a
+/// query against the content's own value count itself.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ResolvedBand {
     /// No band: [`contains`](Self::contains) is `false` for every index.
@@ -100,8 +99,8 @@ impl ResolvedBand {
     /// Calls `f(i)` once for every flat index `i < len` this band contains, in ascending order — this band's own
     /// members, not a `0..len` scan tested one at a time via [`contains`](Self::contains).
     ///
-    /// `len` clamps to the content's own actual value count, for the same reason [`contains`](Self::contains)'s own
-    /// doc comment gives: a short last row/column can leave a nominal member past the real data.
+    /// `len` clamps to the content's own actual value count, for the same reason [`contains`](Self::contains)'s own doc
+    /// comment gives: a short last row/column can leave a nominal member past the real data.
     ///
     /// `Scene::set_selection` uses this to touch only the cells a changed band could plausibly have changed the
     /// category of — `O(row width)`/`O(column height)`, not `O(len)` — rather than testing every cell in the grid.

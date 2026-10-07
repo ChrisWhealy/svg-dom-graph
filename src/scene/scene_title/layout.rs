@@ -1,10 +1,9 @@
 //! Where a scene title sits within a scene's visible area, as pure arithmetic.
 //!
-//! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`. The arrangement — one box
-//! against an edge of an area, centred along it, inset by a margin — is the same shape
-//! [`super::super::toolbar::layout`]'s own bar placement uses; this is a deliberate, separately-tested copy rather
-//! than a shared dependency between the two, the same reasoning `selection_toolbar::layout`'s own module doc
-//! comment already gives for its own copy.
+//! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`. The arrangement — one box against
+//! an edge of an area, centred along it, inset by a margin — is the same shape [`super::super::toolbar::layout`]'s own
+//! bar placement uses; this is a deliberate, separately-tested copy rather than a shared dependency between the two,
+//! the same reasoning `selection_toolbar::layout`'s own module doc comment already gives for its own copy.
 
 use super::Side;
 use svg_dom::root::utils::{Point, Rect, Size};

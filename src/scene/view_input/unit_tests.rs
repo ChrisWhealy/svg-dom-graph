@@ -10,8 +10,8 @@ fn the_label_reports_the_zoom_as_a_rounded_percentage() -> Result<(), String> {
     check(label(4.0) == "Graph view, zoom 400%", &label(4.0))
 }
 
-/// The label is rebuilt on every flushed frame of a pan or zoom. Writing into a reused buffer must therefore replace its
-/// content and never reallocate once it is big enough.
+/// The label is rebuilt on every flushed frame of a pan or zoom. Writing into a reused buffer must therefore replace
+/// its content and never reallocate once it is big enough.
 #[test]
 fn writing_the_label_replaces_the_buffer_and_never_reallocates_it() -> Result<(), String> {
     let mut buffer = String::with_capacity(64);
@@ -25,8 +25,8 @@ fn writing_the_label_replaces_the_buffer_and_never_reallocates_it() -> Result<()
     check(buffer.capacity() == capacity, "the buffer's capacity changed")
 }
 
-/// A pan never changes the zoom, so it never changes the percentage, and the label is then left alone. The percentage is
-/// what is compared, so it must agree with what the label says, and must change exactly when the label's text would.
+/// A pan never changes the zoom, so it never changes the percentage, and the label is then left alone. The percentage
+/// is what is compared, so it must agree with what the label says, and must change exactly when the label's text would.
 #[test]
 fn the_percentage_changes_exactly_when_the_labels_text_does() -> Result<(), String> {
     let scales = [0.25, 0.8, 1.0, 1.004, 1.0049, 1.25, 1.5625, 1.9531, 2.4414, 4.0];

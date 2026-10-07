@@ -55,8 +55,8 @@ impl ToolbarOptions {
         Self { edge, ..Self::default() }
     }
 
-    /// Whether every length is one [`Scene::show_toolbar`](crate::scene::Scene::show_toolbar) accepts: `button_height` a
-    /// finite value `> 0.0`, and `gap` and `margin` finite values `>= 0.0`.
+    /// Whether every length is one [`Scene::show_toolbar`](crate::scene::Scene::show_toolbar) accepts: `button_height`
+    /// a finite value `> 0.0`, and `gap` and `margin` finite values `>= 0.0`.
     ///
     /// Crate-private, since `show_toolbar` is the one place it is needed and it reports a failure as an error.
     pub(crate) fn is_valid(&self) -> bool {

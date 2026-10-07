@@ -1,7 +1,7 @@
 //! Shared fixture and query helpers for every scenario module in this test group.
 //!
-//! Every test uses a viewport and `viewBox` of `400 x 300`, 1:1, so client pixels and user-space units coincide,
-//! unless a helper's own doc comment says otherwise.
+//! Every test uses a viewport and `viewBox` of `400 x 300`, 1:1, so client pixels and user-space units coincide, unless
+//! a helper's own doc comment says otherwise.
 
 use crate::common::make_svg;
 use svg_dom::root::utils::{Point, Size};
@@ -23,7 +23,8 @@ pub(super) fn required(selector: &str) -> Result<web_sys::Element, String> {
     query(selector)?.ok_or_else(|| format!("nothing matches {selector}"))
 }
 
-/// The scene's keyboard focus target: a `<rect>` of its own with the `application` role, never the application's `<svg>`.
+/// The scene's keyboard focus target: a `<rect>` of its own with the `application` role, never the application's
+/// `<svg>`.
 pub(super) fn focus_target(id: &str) -> Result<web_sys::Element, String> {
     required(&format!("#{id} > rect[role=\"application\"]"))
 }
@@ -115,7 +116,8 @@ pub(super) fn wheel(
     Ok(event.default_prevented())
 }
 
-/// A bubbling, cancelable `keydown`, optionally with Shift, Ctrl, or Meta held. Reports whether a listener cancelled it.
+/// A bubbling, cancelable `keydown`, optionally with Shift, Ctrl, or Meta held. Reports whether a listener cancelled
+/// it.
 pub(super) fn key(element: &web_sys::Element, key: &str, shift: bool, ctrl: bool, meta: bool) -> Result<bool, String> {
     let init = web_sys::KeyboardEventInit::new();
     init.set_key(key);

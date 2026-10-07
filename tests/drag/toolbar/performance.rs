@@ -1,5 +1,5 @@
-//! Performance. Zoom and pan should cost the same however big the graph is: one group's `transform`, written at
-//! most once per animation frame, with nothing beneath it touched.
+//! Performance. Zoom and pan should cost the same however big the graph is: one group's `transform`, written at most
+//! once per animation frame, with nothing beneath it touched.
 
 use super::support::*;
 use crate::common::{check, dispatch_pointer_event, nth_connector, nth_group, path_d};
@@ -129,8 +129,8 @@ async fn zooming_and_panning_change_only_the_content_layers_own_transform() -> R
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The cost of a burst is one write, not one per event. Twenty wheel events and a run of pan moves, all inside one frame,
-/// are a single mutation of the content layer's `transform`.
+/// The cost of a burst is one write, not one per event. Twenty wheel events and a run of pan moves, all inside one
+/// frame, are a single mutation of the content layer's `transform`.
 #[wasm_bindgen_test]
 async fn a_burst_of_wheel_and_pan_events_is_one_transform_write() -> Result<(), String> {
     let scene = new_scene("perf-one-write")?;

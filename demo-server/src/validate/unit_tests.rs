@@ -28,8 +28,8 @@ fn extract_gallery_panel_ids_finds_every_entry() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn extract_gallery_panel_ids_ignores_a_mention_in_a_doc_comment() -> Result<(), String> {
-    // A doc comment mentioning `demo_gallery!` by name, not immediately followed by `{`, must not be mistaken for
-    // the real invocation.
+    // A doc comment mentioning `demo_gallery!` by name, not immediately followed by `{`, must not be mistaken for the
+    // real invocation.
     let src = r#"
         /// See demo_gallery! below for the real list, e.g. "panel-fake" => module::fake.
         demo_gallery! {

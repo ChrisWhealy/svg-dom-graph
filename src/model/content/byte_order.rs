@@ -1,10 +1,10 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The byte order `DataNodeContent::cells` splits each value into, for [`super::DataFormat::Hexadecimal`]/
-/// [`super::DataFormat::Binary`]. See this module's own doc comment ("Formatting") for why `BigEndian` is the default, and
-/// when a caller wants `LittleEndian` instead.
+/// [`super::DataFormat::Binary`]. See this module's own doc comment ("Formatting") for why `BigEndian` is the default,
+/// and when a caller wants `LittleEndian` instead.
 ///
-/// Has no visible effect under [`super::DataFormat::Decimal`]. A plain decimal number reads the same regardless of which byte
-/// order produced it.
+/// Has no visible effect under [`super::DataFormat::Decimal`]. A plain decimal number reads the same regardless of
+/// which byte order produced it.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub enum ByteOrder {

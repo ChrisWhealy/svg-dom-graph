@@ -3,8 +3,8 @@
 
 // Shared fixture and assertion helpers for the browser integration tests.
 //
-// Tests are isolated by using a unique element id per test — there are no teardown hooks, but the elements are
-// harmless since the browser page is discarded after the test run.
+// Tests are isolated by using a unique element id per test — there are no teardown hooks, but the elements are harmless
+// since the browser page is discarded after the test run.
 use svg_dom::{SvgRoot, root::utils::Size};
 use wasm_bindgen::JsCast;
 
@@ -20,10 +20,8 @@ fn body() -> web_sys::Element {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Creates a fresh container `<div>`, then an `SvgRoot` inside it with its own element id set to `id`.
 ///
-/// `viewport` is the `<svg>`'s own rendered width/height, in CSS pixels.
-/// `view_box` is its `viewBox`.
-/// The two need not match — a mismatch is exactly what lets a test prove pointer-coordinate conversion under
-/// scaling.
+/// `viewport` is the `<svg>`'s own rendered width/height, in CSS pixels. `view_box` is its `viewBox`. The two need not
+/// match — a mismatch is exactly what lets a test prove pointer-coordinate conversion under scaling.
 pub fn make_svg(id: &str, viewport: Size, view_box: Size) -> SvgRoot {
     let container_id = format!("{id}-container");
     let el = document().create_element("div").unwrap();
@@ -39,9 +37,9 @@ pub fn make_svg(id: &str, viewport: Size, view_box: Size) -> SvgRoot {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dispatches a synthetic pointer event with `client_x`/`client_y`/`pointer_id` set, directly to `element`.
 ///
-/// Dispatched straight at `element` (not a descendant), so this does not rely on event bubbling.
-/// `button` is the primary button (`0`): left mouse, touch, or ordinary pen contact.
-/// See [`dispatch_pointer_event_with_button`] to dispatch with a different button.
+/// Dispatched straight at `element` (not a descendant), so this does not rely on event bubbling. `button` is the
+/// primary button (`0`): left mouse, touch, or ordinary pen contact. See [`dispatch_pointer_event_with_button`] to
+/// dispatch with a different button.
 pub fn dispatch_pointer_event(
     element: &web_sys::Element,
     event_type: &str,
@@ -180,8 +178,8 @@ pub fn marker_ids(container_id: &str) -> Result<Vec<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns how many non-commutative-operator "L"/"R" port marker `<text>` children `container` has — direct
-/// children, the same absolute-coordinate way a `<path>` connector is, never nested inside any node's own `<g>`.
+/// Returns how many non-commutative-operator "L"/"R" port marker `<text>` children `container` has — direct children,
+/// the same absolute-coordinate way a `<path>` connector is, never nested inside any node's own `<g>`.
 pub fn port_marker_count(container_id: &str) -> Result<u32, String> {
     let selector = format!("#{container_id} > g.svg-dom-graph-content > text[role=\"img\"]");
     let markers = document().query_selector_all(&selector).map_err(|e| format!("{e:?}"))?;
@@ -203,19 +201,19 @@ pub fn nth_port_marker(container_id: &str, n: u32) -> Result<web_sys::Element, S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Checks that port marker 0 stays bound to connector 0's own endpoint, and marker 1 to connector 1's own endpoint
-/// — never swapped, however the anti-crossing router currently assigns the near/far slots.
+/// Checks that port marker 0 stays bound to connector 0's own endpoint, and marker 1 to connector 1's own endpoint —
+/// never swapped, however the anti-crossing router currently assigns the near/far slots.
 ///
 /// Splits on whether the two connectors currently land on the operator's own same side:
 ///
-/// - Same side (one of `end_0`/`end_1`'s own x or y coordinates matches, since every anchor on a given side shares
-///   that side's own fixed coordinate): both markers go through the identical side-based offset formula, so
-///   marker 1 minus marker 0 must equal connector 1's own endpoint minus connector 0's, exactly. A plain
-///   nearest-connector distance comparison was tried here first and dropped: once the near/far split narrows
-///   enough that the marker's own perpendicular clearance rivals the spacing between the two connectors, "nearest"
-///   becomes a near-tie that flips on ordinary floating-point rounding differences between platforms.
-/// - Different sides: the two endpoints are never close together in that case, so a plain nearest-connector
-///   distance comparison is unambiguous.
+/// - Same side (one of `end_0`/`end_1`'s own x or y coordinates matches, since every anchor on a given side shares that
+///   side's own fixed coordinate): both markers go through the identical side-based offset formula, so marker 1 minus
+///   marker 0 must equal connector 1's own endpoint minus connector 0's, exactly. A plain nearest-connector distance
+///   comparison was tried here first and dropped: once the near/far split narrows enough that the marker's own
+///   perpendicular clearance rivals the spacing between the two connectors, "nearest" becomes a near-tie that flips on
+///   ordinary floating-point rounding differences between platforms.
+/// - Different sides: the two endpoints are never close together in that case, so a plain nearest-connector distance
+///   comparison is unambiguous.
 pub fn check_port_marker_identity(container_id: &str) -> Result<(), String> {
     let end_0 = last_point_of_path(&path_d(&nth_connector(container_id, 0)?)?)?;
     let end_1 = last_point_of_path(&path_d(&nth_connector(container_id, 1)?)?)?;
@@ -258,13 +256,13 @@ pub fn attr_f64(element: &web_sys::Element, attr: &str) -> Result<f64, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node
-/// box carries there, instead of on its individual children. See `svg_dom::SvgNode::set_translate`'s own doc
-/// comment for why. Every child — a label, or a data node's grid cells — is drawn once, in local coordinates
-/// relative to `(0, 0)`. Only this one transform ever changes as the node moves.
+/// Parses a node's own `<g>` `transform="translate(x, y)"` attribute. This is the world-space origin every node box
+/// carries there, instead of on its individual children. See `svg_dom::SvgNode::set_translate`'s own doc comment for
+/// why. Every child — a label, or a data node's grid cells — is drawn once, in local coordinates relative to `(0, 0)`.
+/// Only this one transform ever changes as the node moves.
 ///
-/// `(0.0, 0.0)` if `group` has no `transform` attribute at all. A node that was never moved still carries one,
-/// written once at creation. So this only matters for an element that was never a node's own group.
+/// `(0.0, 0.0)` if `group` has no `transform` attribute at all. A node that was never moved still carries one, written
+/// once at creation. So this only matters for an element that was never a node's own group.
 pub fn group_translate(group: &web_sys::Element) -> Result<(f64, f64), String> {
     let Some(value) = group.get_attribute("transform") else {
         return Ok((0.0, 0.0));

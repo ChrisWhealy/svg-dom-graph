@@ -17,9 +17,9 @@ use crate::scene::{ConnectorType, Side};
 pub struct ConnectorOptions {
     /// How this connector routes — see [`ConnectorType`].
     pub connector_type: ConnectorType,
-    /// Forces this connector's own `from` endpoint to leave that node on this side, rather than whichever side a
-    /// ray from its own centre toward the other endpoint would otherwise cross first. `None` (the default) leaves
-    /// that automatic choice in place. See [`with_from_side`](Self::with_from_side).
+    /// Forces this connector's own `from` endpoint to leave that node on this side, rather than whichever side a ray
+    /// from its own centre toward the other endpoint would otherwise cross first. `None` (the default) leaves that
+    /// automatic choice in place. See [`with_from_side`](Self::with_from_side).
     pub from_side: Option<Side>,
     /// The same forced choice as [`from_side`](Self::from_side), for this connector's own `to` endpoint instead.
     pub to_side: Option<Side>,
@@ -39,13 +39,13 @@ impl ConnectorOptions {
         self
     }
 
-    /// Returns `self` with `from_side` set to `side` — `Some(side)` forces the connector's own `from` endpoint to
-    /// leave that node on `side`; `None` restores the automatic choice.
+    /// Returns `self` with `from_side` set to `side` — `Some(side)` forces the connector's own `from` endpoint to leave
+    /// that node on `side`; `None` restores the automatic choice.
     ///
-    /// Forcing a side never fails, and never fails to draw: whatever route the elbow/straight geometry produces
-    /// between the two forced (or automatically chosen) endpoints is drawn as-is, however awkward the result looks
-    /// for a particular pair of node positions. Picking positions that make the forced route read sensibly is left
-    /// entirely to the caller, the same way choosing sensible node positions already is.
+    /// Forcing a side never fails, and never fails to draw: whatever route the elbow/straight geometry produces between
+    /// the two forced (or automatically chosen) endpoints is drawn as-is, however awkward the result looks for a
+    /// particular pair of node positions. Picking positions that make the forced route read sensibly is left entirely
+    /// to the caller, the same way choosing sensible node positions already is.
     ///
     /// ```
     /// use svg_dom_graph::scene::{ConnectorOptions, Side};
@@ -74,8 +74,8 @@ impl ConnectorOptions {
 }
 
 impl Default for ConnectorOptions {
-    /// An elbowed connector with a sharp, 90º corner ([`ConnectorType::Elbow`] with `corner_radius: 0.0`), with
-    /// both endpoints' own sides chosen automatically (`from_side`/`to_side` both `None`).
+    /// An elbowed connector with a sharp, 90º corner ([`ConnectorType::Elbow`] with `corner_radius: 0.0`), with both
+    /// endpoints' own sides chosen automatically (`from_side`/`to_side` both `None`).
     fn default() -> Self {
         Self {
             connector_type: ConnectorType::Elbow { corner_radius: 0.0 },

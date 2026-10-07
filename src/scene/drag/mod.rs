@@ -127,9 +127,9 @@ impl Scene {
         let guard = InstallGuard::new(group.clone());
 
         let drag_start: Rc<Cell<Option<DragStart>>> = Rc::new(Cell::new(None));
-        // Coalesces this node's own pointermove positions to at most one applied `move_node` per animation frame
-        // — see `PointerCoalescer`'s own doc comment. Created once here, alongside `drag_start`, and reused across
-        // every drag this node goes through for as long as it stays draggable, not just the next one.
+        // Coalesces this node's own pointermove positions to at most one applied `move_node` per animation frame — see
+        // `PointerCoalescer`'s own doc comment. Created once here, alongside `drag_start`, and reused across every drag
+        // this node goes through for as long as it stays draggable, not just the next one.
         let coalescer = PointerCoalescer::new(Rc::downgrade(&self.inner), id)?;
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -152,9 +152,9 @@ impl Scene {
             group.on_pointerdown(move |evt| {
                 // Ignores a pointerdown while a drag is already active, otherwise a second pointer touching this
                 // element mid-drag would silently steal it, overwriting the first pointer's `DragStart` before that
-                // pointer's own pointerup/pointercancel ever fires.
-                // Also ignores anything but the primary button — `button() == 0` is left mouse, touch, or ordinary pen
-                // contact; 1 is middle mouse and 2 is right mouse, neither of which should start a drag.
+                // pointer's own pointerup/pointercancel ever fires. Also ignores anything but the primary button —
+                // `button() == 0` is left mouse, touch, or ordinary pen contact; 1 is middle mouse and 2 is right
+                // mouse, neither of which should start a drag.
                 if drag_start.get().is_some() || evt.button() != 0 {
                     return;
                 }
@@ -162,9 +162,9 @@ impl Scene {
                 evt.prevent_default();
                 let Some(group) = group_weak.upgrade() else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
-                // A zoom or pan from the wheel, keyboard, or a button is written to the DOM one animation frame after it
-                // is made. Settle it first, so the screen matrix read below shows the view the scene really has, and not
-                // the one before it.
+                // A zoom or pan from the wheel, keyboard, or a button is written to the DOM one animation frame after
+                // it is made. Settle it first, so the screen matrix read below shows the view the scene really has, and
+                // not the one before it.
                 let _ = inner.borrow_mut().flush_view();
                 // Can't route the drag without a way to convert client pixels into this group's own coordinates.
                 let Some(inverse_ctm) = group.screen_ctm().and_then(invert_matrix) else {
@@ -200,8 +200,8 @@ impl Scene {
 
             group.on_pointermove(move |evt| {
                 let Some(start) = drag_start.get() else { return };
-                // Ignores a different pointer's move — for example a second finger touching this element mid-drag
-                // — rather than letting it drive the drag this pointer's own pointerdown started.
+                // Ignores a different pointer's move — for example a second finger touching this element mid-drag —
+                // rather than letting it drive the drag this pointer's own pointerdown started.
                 if evt.pointer_id() != start.pointer_id {
                     return;
                 }
@@ -222,16 +222,16 @@ impl Scene {
                 let new_origin = Point::new(under_pointer.x - start.pointer.x, under_pointer.y - start.pointer.y);
 
                 // Clamps before the move, not after: this keeps a bounded node from ever being rendered outside
-                // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters —
-                // a node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked
-                // to pick up again.
+                // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters — a
+                // node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked to pick
+                // up again.
                 let new_origin = match bounds {
                     Some(bounds) => clamp_to_bounds(new_origin, start.box_size, bounds),
                     None => new_origin,
                 };
 
-                // Coalesced, not applied immediately: a pointer can deliver moves far faster than the browser
-                // paints — see `PointerCoalescer`'s own doc comment.
+                // Coalesced, not applied immediately: a pointer can deliver moves far faster than the browser paints —
+                // see `PointerCoalescer`'s own doc comment.
                 coalescer.push(new_origin);
             })?;
         }
@@ -248,8 +248,8 @@ impl Scene {
 
             group.on_pointerup(move |evt| {
                 let Some(group) = group_weak.upgrade() else { return };
-                // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's
-                // own pointer is still down — rather than ending a drag that pointer never started.
+                // Ignores a different pointer's pointerup — for example a second finger lifting while this drag's own
+                // pointer is still down — rather than ending a drag that pointer never started.
                 let Some(start) = drag_start.get() else { return };
                 if start.pointer_id != evt.pointer_id() {
                     return;
@@ -258,21 +258,20 @@ impl Scene {
                 let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
 
-                // Applies any position a still-pending coalesced frame has not applied yet, so neither the node's
-                // own final rendered position nor the collision-resolution rect read below is ever one frame
-                // stale.
+                // Applies any position a still-pending coalesced frame has not applied yet, so neither the node's own
+                // final rendered position nor the collision-resolution rect read below is ever one frame stale.
                 coalescer.flush();
 
-                // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to
-                // do. `PushClear` pushes this node back to a clear position, along the line to where it started
-                // this drag, if the drop overlaps another node.
+                // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to do.
+                // `PushClear` pushes this node back to a clear position, along the line to where it started this drag,
+                // if the drop overlaps another node.
                 let CollisionPolicy::PushClear { padding } = collision else { return };
                 let Some(inner) = inner_weak.upgrade() else { return };
                 let Some(corrected_origin) = inner.borrow().resolve_overlap(id, start.box_origin, padding) else {
                     return;
                 };
-                // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not
-                // just pointermove's, so this correction can never undo pointermove's own clamping.
+                // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not just
+                // pointermove's, so this correction can never undo pointermove's own clamping.
                 let corrected_origin = match bounds {
                     Some(bounds) => clamp_to_bounds(corrected_origin, start.box_size, bounds),
                     None => corrected_origin,
@@ -299,8 +298,8 @@ impl Scene {
                 let _ = group.as_element().release_pointer_capture(evt.pointer_id());
                 let _ = group.set_attr("style", GRAB_STYLE);
                 drag_start.set(None);
-                // Discards any position pushed since the last applied frame, rather than applying it — the drag
-                // was interrupted, not completed. See `PointerCoalescer::cancel`'s own doc comment.
+                // Discards any position pushed since the last applied frame, rather than applying it — the drag was
+                // interrupted, not completed. See `PointerCoalescer::cancel`'s own doc comment.
                 coalescer.cancel();
             })?;
         }

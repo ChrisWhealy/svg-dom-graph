@@ -1,10 +1,10 @@
 //! `sha3_sponge`'s own "Keccak f(1600)" node: a nested `Scene` stepping through all 24 real Keccak-f\[1600\] rounds.
 //!
-//! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one
-//! pipeline, plus the real round constant `Iota` consumes. Each is a genuine nested `Scene`, and each is handed the
-//! state it consumes: [`keccak_f::round_traces`](super::keccak_f::round_traces) runs the real permutation over the
-//! sponge's own input state and keeps the state after every function, so every number in a child scene is derived
-//! from the one immediately upstream of it, and "A Bytes Output" is the real result of the round.
+//! Each round shows the same five named sub-functions — `Theta`, `Rho`, `Pi`, `Chi`, `Iota` — arranged as one pipeline,
+//! plus the real round constant `Iota` consumes. Each is a genuine nested `Scene`, and each is handed the state it
+//! consumes: [`keccak_f::round_traces`](super::keccak_f::round_traces) runs the real permutation over the sponge's own
+//! input state and keeps the state after every function, so every number in a child scene is derived from the one
+//! immediately upstream of it, and "A Bytes Output" is the real result of the round.
 
 use super::keccak_f::{ROUND_CONSTANTS, ROUND_COUNT, round_traces, to_theta_grid};
 use crate::{
@@ -35,44 +35,44 @@ const THETA_CHILD_SVG_ID: &str = "sha3-sponge-keccak-theta-child";
 /// Live state this nested walk's own selection toolbar carries across rounds.
 struct KeccakState {
     /// Round `0`'s own real input — the sponge's own combined `Capacity`/`Rate` state, handed down from
-    /// `sha3_sponge::build_scene` — never itself mutated; every round's own real input/output is derived afresh
-    /// from this via [`round_traces`] on every step.
+    /// `sha3_sponge::build_scene` — never itself mutated; every round's own real input/output is derived afresh from
+    /// this via [`round_traces`] on every step.
     seed: [u64; 25],
-    /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id — passed to
-    /// `next_child_svg_id` on every step, never `child_svg_id` itself, so ids stay `prefix-0`, `prefix-1`, ...
-    /// rather than growing a fresh suffix onto the previous one every step.
+    /// `sha3_sponge::build_scene`'s own fixed prefix for this nested child's `<svg>` id — passed to `next_child_svg_id`
+    /// on every step, never `child_svg_id` itself, so ids stay `prefix-0`, `prefix-1`, ... rather than growing a fresh
+    /// suffix onto the previous one every step.
     base_svg_id: String,
-    /// The id of whichever `<svg>` currently backs this nested child — see `theta::theta_c::rebuild_child`'s own
-    /// doc comment for why every step needs a fresh one.
+    /// The id of whichever `<svg>` currently backs this nested child — see `theta::theta_c::rebuild_child`'s own doc
+    /// comment for why every step needs a fresh one.
     child_svg_id: String,
 }
 
 thread_local! {
-    // The top-level SHA3 Sponge `Scene`, this nested Keccak-f child `Scene`, and the container `NodeId` that owns
-    // it — the same trio, for the same reasons, as `theta::theta_c`'s own `SCENE`.
+    // The top-level SHA3 Sponge `Scene`, this nested Keccak-f child `Scene`, and the container `NodeId` that owns it —
+    // the same trio, for the same reasons, as `theta::theta_c`'s own `SCENE`.
     static SCENE: RefCell<Option<(Scene, Scene, NodeId)>> = const { RefCell::new(None) };
-    // This round's own "Theta" node: the `Scene` it wraps — the middle rung between this module's own `SCENE`
-    // (whether "Keccak f(1600)" itself is focused) and `theta::exit_if_focused` (whether one of `Theta`'s own
-    // further-nested `ThetaC`/`ThetaD`/`XOR loop` is). Without this, [`exit_if_focused`] would have no way to
-    // notice "Theta itself is focused" and pop back to this round's own view — only "one of `ThetaC`'s own
-    // children is focused" or "nothing nested at all is focused". Replaced fresh every round, in [`build_scene`],
-    // right alongside `Theta`'s own container node.
+    // This round's own "Theta" node: the `Scene` it wraps — the middle rung between this module's own `SCENE` (whether
+    // "Keccak f(1600)" itself is focused) and `theta::exit_if_focused` (whether one of `Theta`'s own further-nested
+    // `ThetaC`/`ThetaD`/`XOR loop` is). Without this, [`exit_if_focused`] would have no way to notice "Theta itself is
+    // focused" and pop back to this round's own view — only "one of `ThetaC`'s own children is focused" or "nothing
+    // nested at all is focused". Replaced fresh every round, in [`build_scene`], right alongside `Theta`'s own
+    // container node.
     static THETA_CHILD: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Records `parent`/`child`/`node` as the nested Keccak-f child currently grafted in — the one [`exit_if_focused`]
-/// and [`rebuild_child`] act on from then on. Called once, from `sha3_sponge::build_scene`, right after `child`
-/// is grafted into `parent` under `node`.
+/// Records `parent`/`child`/`node` as the nested Keccak-f child currently grafted in — the one [`exit_if_focused`] and
+/// [`rebuild_child`] act on from then on. Called once, from `sha3_sponge::build_scene`, right after `child` is grafted
+/// into `parent` under `node`.
 pub(crate) fn init_scene(parent: Scene, child: Scene, node: NodeId) {
     SCENE.with_borrow_mut(|slot| *slot = Some((parent, child, node)));
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Exits whichever of this nested view's own children is currently focused, deepest first: `Theta`'s own further
-/// nested `ThetaC`/`ThetaD`/`XOR loop` (via [`theta::exit_if_focused`]), then `Theta` itself (via [`THETA_CHILD`]),
-/// then this Keccak-f child itself. Reports whether anything was exited — what `sha3_sponge`'s own close button
-/// needs to know before giving up.
+/// Exits whichever of this nested view's own children is currently focused, deepest first: `Theta`'s own further nested
+/// `ThetaC`/`ThetaD`/`XOR loop` (via [`theta::exit_if_focused`]), then `Theta` itself (via [`THETA_CHILD`]), then this
+/// Keccak-f child itself. Reports whether anything was exited — what `sha3_sponge`'s own close button needs to know
+/// before giving up.
 pub(crate) fn exit_if_focused() -> bool {
     if theta::exit_if_focused()
         || rho::exit_if_focused()
@@ -111,34 +111,32 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// Row 1 holds "A Bytes - round `{round}`" — the real 25-lane state this round starts from, [`round_traces`]'s own
 /// `round`th input, derived from `seed`. Beside it, "Round Constants" holds all 24 real [`ROUND_CONSTANTS`] as a
-/// 4-column, 6-row grid — a single column reads just as well but takes far more vertical space. Neither is
-/// especially tall, so both fit row 1 together, keeping this round's own overall height down further still,
-/// rather than stacking "Round Constants" under the function row below instead.
-/// `Selection::Cell` addresses flat index `round` regardless of the grid's own shape, so the cell highlighted
-/// stays correct either way.
+/// 4-column, 6-row grid — a single column reads just as well but takes far more vertical space. Neither is especially
+/// tall, so both fit row 1 together, keeping this round's own overall height down further still, rather than stacking
+/// "Round Constants" under the function row below instead. `Selection::Cell` addresses flat index `round` regardless of
+/// the grid's own shape, so the cell highlighted stays correct either way.
 ///
-/// Below row 1, five named boxes run left to right, not stacked top to bottom: `Theta`, `Rho`, `Pi`, `Chi`,
-/// `Iota`. A horizontal row keeps this round's own overall height close to row 1's own, instead of adding five
-/// more row-heights on top — a nested Scene's own viewBox, however tall, still only ever displays within its own
-/// parent's fixed-size frame. All five are genuine container nodes, each nesting a scene that works through its own
-/// real function over the state the one before it produced. `Theta` nests [`theta::build_scene`] — the scenes
-/// `panel-theta` draws standalone, run here over this round's own input — and drills one level further, into
-/// `ThetaC`, `ThetaD` and `XOR loop`. Click the function in focus to drill in, and the &times; in its own frame's
-/// corner to come back. Only the function in focus is clickable. A connector from "Round Constants" into `Iota`'s own
-/// east side marks the one value `Iota` consumes each round.
+/// Below row 1, five named boxes run left to right, not stacked top to bottom: `Theta`, `Rho`, `Pi`, `Chi`, `Iota`. A
+/// horizontal row keeps this round's own overall height close to row 1's own, instead of adding five more row-heights
+/// on top — a nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size
+/// frame. All five are genuine container nodes, each nesting a scene that works through its own real function over the
+/// state the one before it produced. `Theta` nests [`theta::build_scene`] — the scenes `panel-theta` draws standalone,
+/// run here over this round's own input — and drills one level further, into `ThetaC`, `ThetaD` and `XOR loop`. Click
+/// the function in focus to drill in, and the &times; in its own frame's corner to come back. Only the function in
+/// focus is clickable. A connector from "Round Constants" into `Iota`'s own east side marks the one value `Iota`
+/// consumes each round.
 ///
-/// The bottom row is "A Bytes Output" — [`round_traces`]'s own `round`th output: the real result of this round, and
-/// the next round's own "A Bytes" input. It stays all zeros until the walk reaches `Iota`, the round's own last
-/// function, since the round has produced no result before then.
+/// The bottom row is "A Bytes Output" — [`round_traces`]'s own `round`th output: the real result of this round, and the
+/// next round's own "A Bytes" input. It stays all zeros until the walk reaches `Iota`, the round's own last function,
+/// since the round has produced no result before then.
 ///
 /// # Stepping through it
 ///
 /// "Step" is a small, otherwise-meaningless array of one cell per function of every round, placed far off-canvas,
-/// purely to drive a
-/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar — the same trick
-/// `sha3_sponge::build_scene`'s own "Step" uses, for the same reason: no node already in this diagram happens to
-/// have that many cells. `Prev`/`Next` move one function, rolling on into the next round after `Iota`, and `Prev
-/// Round`/`Next Round` move five at once. This walk is never "not started": it opens on round `0`'s `Theta`.
+/// purely to drive a [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar — the
+/// same trick `sha3_sponge::build_scene`'s own "Step" uses, for the same reason: no node already in this diagram
+/// happens to have that many cells. `Prev`/`Next` move one function, rolling on into the next round after `Iota`, and
+/// `Prev Round`/`Next Round` move five at once. This walk is never "not started": it opens on round `0`'s `Theta`.
 /// [`rebuild_child`] wires the bar itself.
 ///
 /// # Errors
@@ -151,16 +149,16 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
-    // `position` counts every function of every round in order: five per round, so round `r` is `position / 5`, and
-    // the function in focus is the `position % 5`th of `Theta`/`Rho`/`Pi`/`Chi`/`Iota`.
+    // `position` counts every function of every round in order: five per round, so round `r` is `position / 5`, and the
+    // function in focus is the `position % 5`th of `Theta`/`Rho`/`Pi`/`Chi`/`Iota`.
     let r = position / FUNCTIONS_PER_ROUND;
     let focused_function = position % FUNCTIONS_PER_ROUND;
     scene
         .show_scene_title(format!("Keccak f(1600) Round {r}"), SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    // Every number below is derived from the one upstream of it: this round's own trace holds the state at the start
-    // of the round and after each of its five functions, and each nested scene is handed the one it consumes.
+    // Every number below is derived from the one upstream of it: this round's own trace holds the state at the start of
+    // the round and after each of its five functions, and each nested scene is handed the one it consumes.
     let trace = round_traces(seed)[r];
     let (a_in, a_out) = (trace.input, trace.output);
     let hex25 = |values: [u64; 25]| DataNodeContent::new(NodeValues::U64(values.to_vec()), DataFormat::Hexadecimal);
@@ -179,22 +177,20 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let a_top_rect = scene.node_rect(a_top).map_err(stringify)?;
 
     // Theta/Rho/Pi/Chi/Iota run left to right, not stacked top to bottom: a horizontal row keeps this round's own
-    // overall height close to its row 1's own height, rather than adding five more row-heights on top —
-    // important since a nested Scene's own viewBox, however tall, still only ever displays within its own
-    // parent's fixed-size frame.
+    // overall height close to its row 1's own height, rather than adding five more row-heights on top — important since
+    // a nested Scene's own viewBox, however tall, still only ever displays within its own parent's fixed-size frame.
     let row_stride = fn_size.width + fn_gap;
     let row_width = 5.0 * fn_size.width + 4.0 * fn_gap;
     let row_x = a_top_rect.origin.x + (a_top_rect.size.width - row_width) / 2.0;
-    // Below whichever of "A Bytes" or "Round Constants" extends further down — 24 real values, even as 4 columns,
-    // can still make "Round Constants" taller than "A Bytes - round {round}"'s own 5 rows.
+    // Below whichever of "A Bytes" or "Round Constants" extends further down — 24 real values, even as 4 columns, can
+    // still make "Round Constants" taller than "A Bytes - round {round}"'s own 5 rows.
     let row_y = a_top_rect.origin.y + a_top_rect.size.height + V_GAP;
 
     // Fixed, not derived from `svg_id`: `svg_id` itself changes on every step (a fresh sibling `<svg>`, exactly like
     // `theta::theta_c`'s own per-step clones), but only one `<svg>` is ever created for Theta's own child — see this
-    // constant's own doc comment.
-    // `false`: this round's own `svg_id` is not the shallowest level in `#sha3-sponge-diagram`'s own
-    // `.nested-scene-stage` — see `theta::build_scene`'s own doc comment ("Reuse across more than one host") for
-    // why a backdrop here would wrongly cover whatever shallower sibling sits behind it.
+    // constant's own doc comment. `false`: this round's own `svg_id` is not the shallowest level in
+    // `#sha3-sponge-diagram`'s own `.nested-scene-stage` — see `theta::build_scene`'s own doc comment ("Reuse across
+    // more than one host") for why a backdrop here would wrongly cover whatever shallower sibling sits behind it.
     let theta_child = theta::build_scene(THETA_CHILD_SVG_ID, false, to_theta_grid(trace.input))?;
     THETA_CHILD.with_borrow_mut(|slot| *slot = Some(theta_child.clone()));
     let theta = scene
@@ -231,8 +227,9 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(shown_output))
         .map_err(stringify)?;
 
-    // "Round Constants" sits so that its midpoint is aligned with the beside "A Bytes - round {round}", in the same row, not below the function row —
-    // row 1 has room for both, and this keeps the round's own overall height down further still.
+    // "Round Constants" sits so that its midpoint is aligned with the beside "A Bytes - round {round}", in the same
+    // row, not below the function row — row 1 has room for both, and this keeps the round's own overall height down
+    // further still.
     let rc_x = a_top_rect.origin.x + a_top_rect.size.width + H_GAP;
     let rc = scene
         .add_named_data_node(
@@ -284,8 +281,8 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     scene.make_enterable(current).map_err(stringify)?;
     scene.set_focus(current, true).map_err(stringify)?;
 
-    // "Round": see this function's own doc comment, "Stepping through it", for why this exists and why it sits
-    // far off-canvas rather than anywhere a reader would actually see it.
+    // "Round": see this function's own doc comment, "Stepping through it", for why this exists and why it sits far
+    // off-canvas rather than anywhere a reader would actually see it.
     let step_values: Vec<u8> = (1..=(ROUND_COUNT * FUNCTIONS_PER_ROUND) as u8).collect();
     let step_driver = scene
         .add_named_data_node(
@@ -296,15 +293,15 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .map_err(stringify)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
-    // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself: `svg_id` is not the
-    // shallowest level in `#sha3-sponge-diagram`'s own `.nested-scene-stage` either — see that function's own
-    // doc comment ("Reuse across more than one host") for why one here would wrongly cover
-    // `#sha3-sponge-diagram` itself. Entering `Theta` from here shows `#sha3-sponge-diagram`'s own backdrop in
-    // the margin instead, not this round's own content — a smaller visual polish this feature does without.
+    // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself: `svg_id` is not the shallowest
+    // level in `#sha3-sponge-diagram`'s own `.nested-scene-stage` either — see that function's own doc comment ("Reuse
+    // across more than one host") for why one here would wrongly cover `#sha3-sponge-diagram` itself. Entering `Theta`
+    // from here shows `#sha3-sponge-diagram`'s own backdrop in the margin instead, not this round's own content — a
+    // smaller visual polish this feature does without.
 
-    // Shrink this round's own `<svg>` to its content: the rightmost of "Round Constants" and the function row,
-    // the bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`] adds below it
-    // (laid out as in `selection::fit_canvas_to_toolbar`), each plus the left margin, and room for the East toolbar.
+    // Shrink this round's own `<svg>` to its content: the rightmost of "Round Constants" and the function row, the
+    // bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`] adds below it (laid out
+    // as in `selection::fit_canvas_to_toolbar`), each plus the left margin, and room for the East toolbar.
     const TOOLBAR_ALLOWANCE: f64 = 60.0;
     const STEP_TOOLBAR_GAP: f64 = 20.0;
     let step_toolbar = SelectionToolbarOptions::default();
@@ -328,8 +325,8 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows a selection toolbar on `child`, bound to `step_driver`, driving this nested walk's *next* position — the
 /// counterpart to `theta::theta_c::attach_toolbar`. A position is one function of one round, `0..120`: five functions
-/// in each of 24 rounds. `Prev`/`Next` move one position, and the stride buttons move a whole round of five.
-/// Reapplies `Selection::Cell(position)` afterward for the same reason that function's own doc comment gives:
+/// in each of 24 rounds. `Prev`/`Next` move one position, and the stride buttons move a whole round of five. Reapplies
+/// `Selection::Cell(position)` afterward for the same reason that function's own doc comment gives:
 /// `show_selection_toolbar` always resets to unstarted first.
 ///
 /// # Errors
@@ -359,15 +356,14 @@ fn attach_toolbar(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the nested Keccak-f child for walk position `to` — a function of a round, `0..120`, not a round number —
-/// and grafts it into [`SCENE`]'s own `parent` in place of
-/// whichever child is currently shown — the nested counterpart to `theta::theta_c::rebuild_child`; see that
-/// function's own doc comment for why a fresh `Scene`, a fresh sibling `<svg>`, and a view carried over by hand
-/// are all needed here for exactly the same reasons.
+/// and grafts it into [`SCENE`]'s own `parent` in place of whichever child is currently shown — the nested counterpart
+/// to `theta::theta_c::rebuild_child`; see that function's own doc comment for why a fresh `Scene`, a fresh sibling
+/// `<svg>`, and a view carried over by hand are all needed here for exactly the same reasons.
 ///
 /// # Errors
 ///
-/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
-/// DOM, or if any library call fails.
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
+/// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(), String> {
     let document = crate::util::document()?;
     let (seed, base_svg_id, previous_id) = {
@@ -402,9 +398,10 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds this nested Keccak-f child at its first position — round `0`'s `Theta` — selected, against `svg_id`, and wires its own stepping
-/// toolbar. `seed` is round `0`'s own real input — the sponge's own combined state flowing into `Keccak-f\[1600\]`.
-/// Called once, from `sha3_sponge::build_scene`, right when "Keccak f(1600)" is added as a container node.
+/// Builds this nested Keccak-f child at its first position — round `0`'s `Theta` — selected, against `svg_id`, and
+/// wires its own stepping toolbar. `seed` is round `0`'s own real input — the sponge's own combined state flowing into
+/// `Keccak-f\[1600\]`. Called once, from `sha3_sponge::build_scene`, right when "Keccak f(1600)" is added as a
+/// container node.
 ///
 /// # Errors
 ///

@@ -9,16 +9,15 @@ use wasm_bindgen::JsCast;
 use web_sys::HtmlInputElement;
 
 thread_local! {
-    // A fresh numeric suffix for every step's own nested child `<svg>` id, shared by every demo module that steps
-    // a nested child this way (`theta`'s own `theta_c`/`theta_d`/`xor_loop`, and `sha3_sponge::keccak`) — see
+    // A fresh numeric suffix for every step's own nested child `<svg>` id, shared by every demo module that steps a
+    // nested child this way (`theta`'s own `theta_c`/`theta_d`/`xor_loop`, and `sha3_sponge::keccak`) — see
     // [`next_child_svg_id`]'s own doc comment.
     static NEXT_CHILD_SVG_SUFFIX: Cell<u32> = const { Cell::new(0) };
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A fresh, never-reused id for this step's own nested child `<svg>`, prefixed with `prefix`. Shares one counter
-/// across every demo module that calls this, so every id handed out is unique regardless of which nested child
-/// it backs.
+/// A fresh, never-reused id for this step's own nested child `<svg>`, prefixed with `prefix`. Shares one counter across
+/// every demo module that calls this, so every id handed out is unique regardless of which nested child it backs.
 pub(crate) fn next_child_svg_id(prefix: &str) -> String {
     NEXT_CHILD_SVG_SUFFIX.with(|counter| {
         let n = counter.get();
@@ -28,16 +27,16 @@ pub(crate) fn next_child_svg_id(prefix: &str) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates `<svg id="{id}">` — sized `size`, with `viewBox` to match and `class` if given — as the previous sibling
-/// of `before_id`, unless an element called `id` already exists, in which case this does nothing at all.
+/// Creates `<svg id="{id}">` — sized `size`, with `viewBox` to match and `class` if given — as the previous sibling of
+/// `before_id`, unless an element called `id` already exists, in which case this does nothing at all.
 ///
-/// Lets Rust, not `index.html`, own a diagram's own initial dimensions. Doing nothing when `id` already exists
-/// makes this safe to call on every rebuild — a size the diagram has since fitted to its own content is never
-/// reverted — and leaves a panel that still declares its own `<svg>` in HTML working unchanged.
+/// Lets Rust, not `index.html`, own a diagram's own initial dimensions. Doing nothing when `id` already exists makes
+/// this safe to call on every rebuild — a size the diagram has since fitted to its own content is never reverted — and
+/// leaves a panel that still declares its own `<svg>` in HTML working unchanged.
 ///
-/// Inserting before `before_id` (rather than appending) keeps DOM order, and so paint order, deterministic: call
-/// this for the shallowest `<svg>` first, and `before_id` can be an overlay — such as a close button — that must
-/// stay on top.
+/// Inserting before `before_id` (rather than appending) keeps DOM order, and so paint order, deterministic: call this
+/// for the shallowest `<svg>` first, and `before_id` can be an overlay — such as a close button — that must stay on
+/// top.
 ///
 /// # Errors
 ///
@@ -61,9 +60,9 @@ pub(crate) fn ensure_svg(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`ensure_svg`]'s counterpart for a panel with just one plain `<svg>`: appends `<svg id="{id}">` — sized `size` —
-/// to `parent_id`, unless an element called `id` already exists. The HTML then declares only the empty host element
-/// (a `.canvas`), so Rust is the one place a diagram's own dimensions are ever written down.
+/// [`ensure_svg`]'s counterpart for a panel with just one plain `<svg>`: appends `<svg id="{id}">` — sized `size` — to
+/// `parent_id`, unless an element called `id` already exists. The HTML then declares only the empty host element (a
+/// `.canvas`), so Rust is the one place a diagram's own dimensions are ever written down.
 ///
 /// # Errors
 ///
@@ -108,19 +107,18 @@ fn new_svg(
 /// Sizes `id`'s own nested-Scene frame, which `style.css` then draws centred in its stage at exactly that size.
 ///
 /// Starts from the `<svg>`'s own `width`/`height` attributes — its natural size — and scales both down by the same
-/// factor if that would not fit the stage less `--nested-scene-min-margin` on every side. Scaling
-/// both keeps the frame the same shape as its `viewBox`, so nothing is letterboxed. The result is written as
-/// `--frame-w`/`--frame-h` on the `<svg>`.
+/// factor if that would not fit the stage less `--nested-scene-min-margin` on every side. Scaling both keeps the frame
+/// the same shape as its `viewBox`, so nothing is letterboxed. The result is written as `--frame-w`/`--frame-h` on the
+/// `<svg>`.
 ///
-/// It also records the same size for `.nested-scene-close`, which sits outside the `<svg>` and so cannot read
-/// those. A rule in the `<style id="nested-scene-frame-rules">` element sets `--nested-scene-frame-w`/`-h` on
-/// the stage, but only `:has()` this very `<svg>` is shown. Each `<svg>` is matched by a `data-frame-key` attribute
-/// it keeps across a step's own clones, which get fresh ids. Several siblings of different sizes can therefore
-/// coexist in one stage.
+/// It also records the same size for `.nested-scene-close`, which sits outside the `<svg>` and so cannot read those. A
+/// rule in the `<style id="nested-scene-frame-rules">` element sets `--nested-scene-frame-w`/`-h` on the stage, but
+/// only `:has()` this very `<svg>` is shown. Each `<svg>` is matched by a `data-frame-key` attribute it keeps across a
+/// step's own clones, which get fresh ids. Several siblings of different sizes can therefore coexist in one stage.
 ///
-/// Does nothing for an `<svg>` without the `nested-scene` class. Call it after writing `width`/`height`;
-/// [`resize_svg`] and [`ensure_svg`] already do. A panel whose `<svg>` is still declared in HTML must call it
-/// itself, before anything is drawn.
+/// Does nothing for an `<svg>` without the `nested-scene` class. Call it after writing `width`/`height`; [`resize_svg`]
+/// and [`ensure_svg`] already do. A panel whose `<svg>` is still declared in HTML must call it itself, before anything
+/// is drawn.
 ///
 /// # Errors
 ///
@@ -138,8 +136,8 @@ pub(crate) fn frame_nested_scene(document: &web_sys::Document, id: &str) -> Resu
     };
     let (width, height) = (number("width")?, number("height")?);
 
-    // Read from the page's own CSS, not mirrored here. This is the least margin a frame may be squeezed to, not
-    // its decorative per-depth inset (`--nested-scene-margin`), which only applies when there is room for it.
+    // Read from the page's own CSS, not mirrored here. This is the least margin a frame may be squeezed to, not its
+    // decorative per-depth inset (`--nested-scene-margin`), which only applies when there is room for it.
     let margin = web_sys::window()
         .and_then(|w| w.get_computed_style(&svg).ok().flatten())
         .and_then(|style| style.get_property_value("--nested-scene-min-margin").ok())
@@ -181,8 +179,8 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Adds or replaces `key`'s own entry in [`FRAME_RULES`] and rewrites the whole `<style
-/// id="nested-scene-frame-rules">` element from it, creating that element in `<head>` on first use.
+/// Adds or replaces `key`'s own entry in [`FRAME_RULES`] and rewrites the whole `<style id="nested-scene-frame-rules">`
+/// element from it, creating that element in `<head>` on first use.
 fn record_frame_rule(document: &web_sys::Document, key: String, width: f64, height: f64) -> Result<(), String> {
     let css = FRAME_RULES.with_borrow_mut(|rules| {
         match rules.iter_mut().find(|(k, ..)| *k == key) {
@@ -223,13 +221,13 @@ fn record_frame_rule(document: &web_sys::Document, key: String, width: f64, heig
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Narrows `id`'s own `<svg>` to `content_right` — the rightmost edge of everything drawn — plus the left margin and
-/// room for the East toolbar, then re-lays out `scene`'s own title and toolbar against the new size (the scene
-/// cannot observe a resize itself).
+/// room for the East toolbar, then re-lays out `scene`'s own title and toolbar against the new size (the scene cannot
+/// observe a resize itself).
 ///
 /// `content_bottom` is the lowest edge of everything drawn. The height fits that edge, plus the same clear space
-/// `selection::fit_canvas_to_toolbar` leaves if `step_toolbar` says a stepping toolbar is added below it. A frame
-/// with no spare height scales down less when `frame_nested_scene` fits it to the stage, so its text stays closer
-/// to its parent's own size.
+/// `selection::fit_canvas_to_toolbar` leaves if `step_toolbar` says a stepping toolbar is added below it. A frame with
+/// no spare height scales down less when `frame_nested_scene` fits it to the stage, so its text stays closer to its
+/// parent's own size.
 ///
 /// # Errors
 ///
@@ -257,9 +255,9 @@ pub(crate) fn fit_nested_size(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Sets each `(name, value)` custom property in `element`'s own inline `style` attribute, replacing a previous
-/// value of the same name and keeping every other declaration. Written as plain text because this crate does not
-/// enable `web-sys`'s own `CssStyleDeclaration` feature.
+/// Sets each `(name, value)` custom property in `element`'s own inline `style` attribute, replacing a previous value of
+/// the same name and keeping every other declaration. Written as plain text because this crate does not enable
+/// `web-sys`'s own `CssStyleDeclaration` feature.
 fn set_style_vars(element: &web_sys::Element, vars: &[(&str, String)]) -> Result<(), String> {
     let existing = element.get_attribute("style").unwrap_or_default();
     let mut declarations: Vec<String> = existing
@@ -280,16 +278,15 @@ fn set_style_vars(element: &web_sys::Element, vars: &[(&str, String)]) -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Clones `previous_id`'s own `<svg>` — shallow, attributes only, no content — gives the clone `next_id`, and
-/// inserts it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class` (`"nested-scene"`, plus
-/// whichever further class — e.g. `theta-thetad-child`, `theta-xorloop-child` — that particular nested child's
-/// own CSS sizing rule needs) from whichever element is currently in the DOM, rather than a second, hardcoded
-/// copy of them.
+/// Clones `previous_id`'s own `<svg>` — shallow, attributes only, no content — gives the clone `next_id`, and inserts
+/// it as `previous_id`'s own next sibling. Inherits size, `viewBox`, and `class` (`"nested-scene"`, plus whichever
+/// further class — e.g. `theta-thetad-child`, `theta-xorloop-child` — that particular nested child's own CSS sizing
+/// rule needs) from whichever element is currently in the DOM, rather than a second, hardcoded copy of them.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `previous_id` names no element currently in the DOM, or if cloning or inserting the fresh
-/// element fails.
+/// Returns `Err` if `previous_id` names no element currently in the DOM, or if cloning or inserting the fresh element
+/// fails.
 pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, next_id: &str) -> Result<(), String> {
     let previous = required_element(document, previous_id)?;
     let fresh = previous
@@ -307,50 +304,49 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Adds a click-through, decorative duplicate of `svg_id`'s own current content, sitting behind the nested
-/// Scene's own frame — shared by every demo that nests a `Scene` the way `theta`/`sha3_sponge::keccak` do.
+/// Adds a click-through, decorative duplicate of `svg_id`'s own current content, sitting behind the nested Scene's own
+/// frame — shared by every demo that nests a `Scene` the way `theta`/`sha3_sponge::keccak` do.
 ///
 /// `Scene::enter` hides the real `svg_id` entirely while a nested child is shown — that is the library's own,
-/// deliberate "exactly one Scene visible at a time" invariant (see `svg_dom_graph::scene::navigation`'s own module
-/// doc comment), not a bug to work around, and a demo nesting a `Scene` this way has no reason to want the real
-/// parent interactive while a child has focus. But a modal window's own look wants the parent's content still
-/// visible in the margin around a smaller nested view — so this clones what is currently on screen, as a plain
-/// DOM duplicate that the library's own visibility toggling knows nothing about and never touches.
+/// deliberate "exactly one Scene visible at a time" invariant (see `svg_dom_graph::scene::navigation`'s own module doc
+/// comment), not a bug to work around, and a demo nesting a `Scene` this way has no reason to want the real parent
+/// interactive while a child has focus. But a modal window's own look wants the parent's content still visible in the
+/// margin around a smaller nested view — so this clones what is currently on screen, as a plain DOM duplicate that the
+/// library's own visibility toggling knows nothing about and never touches.
 ///
-/// Safe to call more than once for the same `svg_id` — e.g. every time a demo whose own `build_scene` rebuilds
-/// from scratch on every step (`sha3_sponge::build_scene`, `sha3_sponge::keccak::build_scene`) calls this again
-/// for the same host. Each call first removes whichever backdrop clone *this function* previously left behind for
-/// `svg_id` (tagged via `data-backdrop-for`), before inserting a fresh one. Without that removal, every rebuild
-/// would leave its own clone permanently in the DOM — each one a plain, untoggled sibling with no `id` of its own
-/// for `svg_id`'s `set_inner_html("")` to ever clear — stacking up, and the most recently added one, painting
-/// last, would permanently obscure `svg_id`'s own real content from then on, regardless of its own `visibility`.
+/// Safe to call more than once for the same `svg_id` — e.g. every time a demo whose own `build_scene` rebuilds from
+/// scratch on every step (`sha3_sponge::build_scene`, `sha3_sponge::keccak::build_scene`) calls this again for the same
+/// host. Each call first removes whichever backdrop clone *this function* previously left behind for `svg_id` (tagged
+/// via `data-backdrop-for`), before inserting a fresh one. Without that removal, every rebuild would leave its own
+/// clone permanently in the DOM — each one a plain, untoggled sibling with no `id` of its own for `svg_id`'s
+/// `set_inner_html("")` to ever clear — stacking up, and the most recently added one, painting last, would permanently
+/// obscure `svg_id`'s own real content from then on, regardless of its own `visibility`.
 ///
-/// Correct even when the clone is of `svg_id`'s content *at a point after some of its own state has changed*,
-/// unlike a true one-time clone: taking a fresh clone on every rebuild keeps it in sync with whatever `svg_id`
-/// currently shows, rather than freezing it at its first-ever content the way a single clone, never retaken,
-/// would.
+/// Correct even when the clone is of `svg_id`'s content *at a point after some of its own state has changed*, unlike a
+/// true one-time clone: taking a fresh clone on every rebuild keeps it in sync with whatever `svg_id` currently shows,
+/// rather than freezing it at its first-ever content the way a single clone, never retaken, would.
 ///
 /// `.nested-scene-backdrop`'s own `pointer-events: none` (see `style.css`) is what makes the clone a pure visual
 /// backdrop: every click, drag, and wheel event passes straight through it to the real, interactive `svg_id`
-/// underneath, exactly as if the clone were not there at all. `aria-hidden="true"` excludes the whole cloned
-/// subtree from the accessibility tree, and every `tabindex` inside it is stripped so a sighted keyboard user
-/// tabbing through the page cannot land on one of these non-functional duplicates either — a click or keypress on
-/// one would already do nothing even without that, since `cloneNode` never copies event listeners, but it would
-/// still *look* clickable without this. Its own `id` is stripped too, since naming two elements the same id at
-/// once would make `getElementById` calls elsewhere ambiguous.
+/// underneath, exactly as if the clone were not there at all. `aria-hidden="true"` excludes the whole cloned subtree
+/// from the accessibility tree, and every `tabindex` inside it is stripped so a sighted keyboard user tabbing through
+/// the page cannot land on one of these non-functional duplicates either — a click or keypress on one would already do
+/// nothing even without that, since `cloneNode` never copies event listeners, but it would still *look* clickable
+/// without this. Its own `id` is stripped too, since naming two elements the same id at once would make
+/// `getElementById` calls elsewhere ambiguous.
 ///
-/// An `inert` attribute was tried here first, and rejected: it does stop the clone's own descendants from being
-/// focused or announced to assistive technology, but it does **not** make the element transparent to pointer
-/// events the way `pointer-events: none` does — a click still lands on an inert element and stops there. With the
-/// backdrop sitting on top of the real parent in paint order, that silently swallowed every click, drag, and wheel
-/// event the parent's own pan/zoom/`make_enterable` listeners needed to see, breaking all three at once.
+/// An `inert` attribute was tried here first, and rejected: it does stop the clone's own descendants from being focused
+/// or announced to assistive technology, but it does **not** make the element transparent to pointer events the way
+/// `pointer-events: none` does — a click still lands on an inert element and stops there. With the backdrop sitting on
+/// top of the real parent in paint order, that silently swallowed every click, drag, and wheel event the parent's own
+/// pan/zoom/`make_enterable` listeners needed to see, breaking all three at once.
 ///
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `svg_id`, or if cloning, adjusting, or inserting the duplicate fails.
 pub(crate) fn add_backdrop_clone(document: &web_sys::Document, svg_id: &str) -> Result<(), String> {
-    // Removes whichever backdrop clone a previous call of this function already left behind for `svg_id` — see
-    // this function's own doc comment for why a leftover one would otherwise go on obscuring real content forever.
+    // Removes whichever backdrop clone a previous call of this function already left behind for `svg_id` — see this
+    // function's own doc comment for why a leftover one would otherwise go on obscuring real content forever.
     if let Ok(Some(stale)) = document.query_selector(&format!("[data-backdrop-for={svg_id:?}]")) {
         stale.remove();
     }
@@ -388,8 +384,8 @@ pub(crate) fn add_backdrop_clone(document: &web_sys::Document, svg_id: &str) -> 
     }
 
     // Placed as `svg_id`'s own next sibling: after it (so it paints over the real parent, harmless — the two are
-    // pixel-identical at this point) and before whichever nested child `<svg>` comes next in document order (so
-    // the nested Scene's own frame still paints on top of the backdrop once shown).
+    // pixel-identical at this point) and before whichever nested child `<svg>` comes next in document order (so the
+    // nested Scene's own frame still paints on top of the backdrop once shown).
     parent_element
         .after_with_node_1(&backdrop)
         .map_err(|e| format!("could not insert the backdrop clone: {e:?}"))
@@ -477,19 +473,20 @@ pub(crate) fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
 /// uses: `width`/`height` (the on-page pixel footprint) and `viewBox` (the internal coordinate system) are set
 /// together, to the same numbers, rather than letting either one imply a different scale than the other.
 ///
-/// Written directly to the DOM via `web_sys`, not through `SvgRoot`/`Scene`: by the time a panel knows a diagram's
-/// own real content size — after drawing it, or after [`Scene::measure_named_data_node`](svg_dom_graph::scene::Scene::measure_named_data_node)
-/// measures it — `Scene::new` has already taken ownership of the `SvgRoot` that could resize it, and neither
-/// `Scene` nor `svg-dom-graph` hands that access back. This is the write-side counterpart to [`view_box_rect`]'s
-/// own read-side reasoning: `viewBox` is already something this crate reaches for directly on the DOM, because
-/// `SvgRoot` deliberately does not cache it either way.
+/// Written directly to the DOM via `web_sys`, not through `SvgRoot`/`Scene`: by the time a panel knows a diagram's own
+/// real content size — after drawing it, or after
+/// [`Scene::measure_named_data_node`](svg_dom_graph::scene::Scene::measure_named_data_node) measures it — `Scene::new`
+/// has already taken ownership of the `SvgRoot` that could resize it, and neither `Scene` nor `svg-dom-graph` hands
+/// that access back. This is the write-side counterpart to [`view_box_rect`]'s own read-side reasoning: `viewBox` is
+/// already something this crate reaches for directly on the DOM, because `SvgRoot` deliberately does not cache it
+/// either way.
 ///
 /// Safe to call after a `Scene` is already showing content: `svg-dom-graph`'s own internal toolbar/zoom layout
-/// (`visible_area`) reads `viewBox` fresh from the DOM on every layout pass, not from any cache of its own, so a
-/// plain attribute write here is picked up immediately — nothing is left stale for a panel with no drag bounds to
-/// desync (a panel that *does* bound dragging to its own viewBox, via `DragOptions::bounds`/[`view_box_rect`],
-/// would need to recompute those bounds after calling this, since `view_box_rect` itself reads the same attribute
-/// fresh each time rather than caching it).
+/// (`visible_area`) reads `viewBox` fresh from the DOM on every layout pass, not from any cache of its own, so a plain
+/// attribute write here is picked up immediately — nothing is left stale for a panel with no drag bounds to desync (a
+/// panel that *does* bound dragging to its own viewBox, via `DragOptions::bounds`/[`view_box_rect`], would need to
+/// recompute those bounds after calling this, since `view_box_rect` itself reads the same attribute fresh each time
+/// rather than caching it).
 ///
 /// # Errors
 ///

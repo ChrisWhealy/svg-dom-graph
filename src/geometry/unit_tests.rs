@@ -34,8 +34,7 @@ fn boundary_point_straight_down_lands_on_bottom_edge() -> Result<(), String> {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    // Centre is (20, 10).
-    // Straight down hits the bottom edge at its horizontal midpoint.
+    // Centre is (20, 10). Straight down hits the bottom edge at its horizontal midpoint.
     let got = boundary_point(rect, Point::new(20.0, 1000.0));
     check_eq(got, Point::new(20.0, 20.0))
 }
@@ -54,10 +53,9 @@ fn boundary_point_straight_right_lands_on_right_edge() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn boundary_point_diagonal_exits_through_the_nearer_axis() -> Result<(), String> {
-    // Centre is (20, 10).
-    // Direction (40, 100) is steep, so the vertical half-extent (10) is reached before the horizontal one (20).
-    // That gives scale = 10 / 100 = 0.1.
-    // The ray then exits through the bottom edge at x = 20 + 40 * 0.1 = 24, y = 20 — not through a corner.
+    // Centre is (20, 10). Direction (40, 100) is steep, so the vertical half-extent (10) is reached before the
+    // horizontal one (20). That gives scale = 10 / 100 = 0.1. The ray then exits through the bottom edge at x = 20 + 40
+    // * 0.1 = 24, y = 20 — not through a corner.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -80,8 +78,8 @@ fn boundary_point_at_own_centre_returns_the_centre() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn straight_route_joins_two_already_anchored_points() -> Result<(), String> {
-    // `boundary_point`'s own tests already cover the anchor math. This checks only that `straight_route` wraps
-    // two already-computed points, in order, and nothing more.
+    // `boundary_point`'s own tests already cover the anchor math. This checks only that `straight_route` wraps two
+    // already-computed points, in order, and nothing more.
     let start = Point::new(24.0, 20.0);
     let end = Point::new(56.0, 100.0);
     check_eq(straight_route(start, end), route(&[start, end]))
@@ -234,8 +232,8 @@ fn clamp_to_bounds_pulls_a_negative_origin_back_to_the_near_edge() -> Result<(),
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn clamp_to_bounds_pulls_a_far_origin_back_to_the_far_edge() -> Result<(), String> {
-    // The box's own bottom-right corner, not its origin, must stay within bounds: max x is 400 - 90 = 310, max y
-    // is 300 - 50 = 250.
+    // The box's own bottom-right corner, not its origin, must stay within bounds: max x is 400 - 90 = 310, max y is 300
+    // - 50 = 250.
     let bounds = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(400.0, 300.0),
@@ -262,8 +260,8 @@ fn clamp_to_bounds_respects_a_bounds_rect_not_at_the_origin() -> Result<(), Stri
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn clamp_to_bounds_pins_an_oversized_box_to_the_near_edge() -> Result<(), String> {
-    // The box is wider than bounds itself: 500 > 400. The clamp range on x would be [0, -100], which is empty, so
-    // x pins to bounds's own near edge, 0, instead.
+    // The box is wider than bounds itself: 500 > 400. The clamp range on x would be [0, -100], which is empty, so x
+    // pins to bounds's own near edge, 0, instead.
     let bounds = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(400.0, 300.0),
@@ -280,9 +278,9 @@ fn nearest_clear_centre_pushes_straight_back_along_a_horizontal_approach() -> Re
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    // Approaching from due west (dy = 0) at dx = -100 from blocker's centre: inflated half-width is
-    // 20 + moving_size.width / 2 = 25, and 25 / 100 = 0.25 lands the boundary point exactly on -5.0, no
-    // floating-point rounding.
+    // Approaching from due west (dy = 0) at dx = -100 from blocker's centre: inflated half-width is 20 +
+    // moving_size.width / 2 = 25, and 25 / 100 = 0.25 lands the boundary point exactly on -5.0, no floating-point
+    // rounding.
     let previous_centre = Point::new(-80.0, 10.0);
     let got = nearest_clear_centre(blocker, Size::new(10.0, 10.0), previous_centre, 6.0);
     // Boundary at x = -5 (blocker's own centre 20, minus inflated half-width 25), then 6 more units further west.
@@ -347,10 +345,9 @@ fn edge_anchor_straight_right_picks_the_east_side() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn edge_anchor_diagonal_returns_the_chosen_sides_own_midpoint_not_boundary_points_crossing() -> Result<(), String> {
-    // Same rect and direction as `boundary_point_diagonal_exits_through_the_nearer_axis`.
-    // `boundary_point` exits at (24, 20) — the exact ray crossing.
-    // `edge_anchor` picks the same side (south, since the vertical half-extent is reached first) but anchors at
-    // that side's own midpoint, (20, 20), not the ray's crossing point.
+    // Same rect and direction as `boundary_point_diagonal_exits_through_the_nearer_axis`. `boundary_point` exits at
+    // (24, 20) — the exact ray crossing. `edge_anchor` picks the same side (south, since the vertical half-extent is
+    // reached first) but anchors at that side's own midpoint, (20, 20), not the ray's crossing point.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -386,7 +383,8 @@ fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_straight_down() -> R
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_diagonal() -> Result<(), String> {
-    // Same rect and direction as `edge_anchor_diagonal_returns_the_chosen_sides_own_midpoint_not_boundary_points_crossing`.
+    // Same rect and direction as
+    // `edge_anchor_diagonal_returns_the_chosen_sides_own_midpoint_not_boundary_points_crossing`.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -398,9 +396,9 @@ fn snapped_anchor_with_one_fixing_point_matches_edge_anchor_diagonal() -> Result
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint() -> Result<(), String> {
-    // South side (width 40), divided into 4 equal segments by 3 fixing points: candidates at x = 10, 20, 30.
-    // The ray's own continuous crossing lands at x = 35 (worked out the same way `edge_anchor`'s own diagonal test
-    // works its crossing out), closer to the third candidate (30) than the midpoint (20).
+    // South side (width 40), divided into 4 equal segments by 3 fixing points: candidates at x = 10, 20, 30. The ray's
+    // own continuous crossing lands at x = 35 (worked out the same way `edge_anchor`'s own diagonal test works its
+    // crossing out), closer to the third candidate (30) than the midpoint (20).
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -440,8 +438,8 @@ fn snapped_anchor_clamps_to_the_nearest_candidate_instead_of_the_corner() -> Res
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn forced_anchor_overrides_the_side_edge_anchor_would_otherwise_pick() -> Result<(), String> {
-    // Same rect and direction as `edge_anchor_straight_right_picks_the_east_side`: left alone, `edge_anchor` would
-    // pick East. Forcing North instead must actually change which side the point lands on.
+    // Same rect and direction as `edge_anchor_straight_right_picks_the_east_side`: left alone, `edge_anchor` would pick
+    // East. Forcing North instead must actually change which side the point lands on.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -470,8 +468,9 @@ fn forced_anchor_with_no_fixing_points_is_always_the_forced_sides_own_midpoint()
 #[test]
 fn forced_anchor_with_fixing_points_matches_snapped_anchor_for_the_side_it_would_have_chosen_anyway()
 -> Result<(), String> {
-    // Same rect and direction as `snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint`,
-    // which already picks South on its own. Forcing that same side should reproduce the identical point.
+    // Same rect and direction as
+    // `snapped_anchor_with_three_fixing_points_lands_on_the_nearest_candidate_not_the_midpoint`, which already picks
+    // South on its own. Forcing that same side should reproduce the identical point.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -487,17 +486,16 @@ fn forced_anchor_with_fixing_points_matches_snapped_anchor_for_the_side_it_would
 #[test]
 fn forced_anchor_falls_back_to_the_centre_coordinate_when_the_ray_runs_parallel_to_the_forced_side()
 -> Result<(), String> {
-    // `fixing_points: Some(_)`, unlike `None`, actually reads the crossing this test means to exercise — `None`
-    // always returns the plain midpoint regardless of it, which would leave the fallback this test checks
-    // untested.
+    // `fixing_points: Some(_)`, unlike `None`, actually reads the crossing this test means to exercise — `None` always
+    // returns the plain midpoint regardless of it, which would leave the fallback this test checks untested.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
     };
-    // Due east: no vertical component at all, so a forced North/South side cannot be reached by projecting the
-    // ray onto it — direction along that axis is undefined, the same "zero distance" reasoning `edge_anchor`'s own
-    // degenerate case already documents. Falls back to `centre.x` (20), snapped to the nearer of 2 fixing points'
-    // own candidates (40/3, 80/3) — not the exact midpoint (20) `None` would have returned.
+    // Due east: no vertical component at all, so a forced North/South side cannot be reached by projecting the ray onto
+    // it — direction along that axis is undefined, the same "zero distance" reasoning `edge_anchor`'s own degenerate
+    // case already documents. Falls back to `centre.x` (20), snapped to the nearer of 2 fixing points' own candidates
+    // (40/3, 80/3) — not the exact midpoint (20) `None` would have returned.
     let towards = Point::new(1000.0, 10.0);
     check_eq(forced_anchor(rect, towards, Side::North, Some(2)), Point::new(80.0 / 3.0, 0.0))
 }
@@ -506,8 +504,8 @@ fn forced_anchor_falls_back_to_the_centre_coordinate_when_the_ray_runs_parallel_
 #[test]
 fn binary_operator_anchors_on_different_sides_each_keep_edge_anchors_own_midpoint() -> Result<(), String> {
     // Same rect and directions as `edge_anchor_straight_down_picks_the_south_side` and
-    // `edge_anchor_straight_right_picks_the_east_side`: one operand due south, the other due east. Only one
-    // connector ever lands on either side, so today's plain midpoint still applies to both.
+    // `edge_anchor_straight_right_picks_the_east_side`: one operand due south, the other due east. Only one connector
+    // ever lands on either side, so today's plain midpoint still applies to both.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -522,10 +520,10 @@ fn binary_operator_anchors_on_different_sides_each_keep_edge_anchors_own_midpoin
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn binary_operator_anchors_on_the_same_side_split_to_the_outer_two_of_three_candidates() -> Result<(), String> {
-    // Both operands approach from due south, one left of centre and one right. South side (width 40) divided into
-    // four equal segments by three candidates: x = 10, 20 (the plain midpoint), 30. Both operands share a side, so
-    // neither lands on the shared midpoint — the left operand takes the left outer candidate, the right operand
-    // takes the right one.
+    // Both operands approach from due south, one left of centre and one right. South side (width 40) divided into four
+    // equal segments by three candidates: x = 10, 20 (the plain midpoint), 30. Both operands share a side, so neither
+    // lands on the shared midpoint — the left operand takes the left outer candidate, the right operand takes the right
+    // one.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -550,8 +548,8 @@ fn binary_operator_anchors_on_the_same_side_split_to_the_outer_two_of_three_cand
 fn binary_operator_anchors_on_the_same_side_honour_a_configured_fixing_point_count() -> Result<(), String> {
     // Same shape as the unconfigured 3-candidate test above, but the operator node has `EdgeAnchors(5)`: south side
     // (width 40) divided into six equal segments by five candidates, at x = 6.667, 13.333, 20 (midpoint), 26.667,
-    // 33.333. The outer two of *five* are the first and last, not the outer two of three — so this must not land on
-    // x = 10/30, which is what the default 3-way split would give.
+    // 33.333. The outer two of *five* are the first and last, not the outer two of three — so this must not land on x =
+    // 10/30, which is what the default 3-way split would give.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(60.0, 20.0),
@@ -571,9 +569,9 @@ fn binary_operator_anchors_on_the_same_side_honour_a_configured_fixing_point_cou
 fn binary_operator_anchors_on_the_same_side_with_one_configured_fixing_point_collapse_both_operands_onto_it()
 -> Result<(), String> {
     // `EdgeAnchors(1)` has only one candidate — the side's own plain midpoint, per `EdgeAnchors`' own documented
-    // equivalence at `n == 1`. There is no second position to split to, so both operands land on it: the same
-    // outcome any other pair of connectors sharing a one-candidate node would get, per `EdgeAnchors`' own "not
-    // reserved" contract — not a special case this function invents for binary operators.
+    // equivalence at `n == 1`. There is no second position to split to, so both operands land on it: the same outcome
+    // any other pair of connectors sharing a one-candidate node would get, per `EdgeAnchors`' own "not reserved"
+    // contract — not a special case this function invents for binary operators.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(60.0, 20.0),
@@ -591,8 +589,8 @@ fn binary_operator_anchors_on_the_same_side_with_one_configured_fixing_point_col
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn binary_operator_anchors_on_the_same_side_with_two_configured_fixing_points_use_both() -> Result<(), String> {
-    // `EdgeAnchors(2)` has exactly two candidates — both of them are "the outer two", with no middle one to skip.
-    // South side (width 60) divided into three equal segments by two candidates, at x = 20, 40.
+    // `EdgeAnchors(2)` has exactly two candidates — both of them are "the outer two", with no middle one to skip. South
+    // side (width 60) divided into three equal segments by two candidates, at x = 20, 40.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(60.0, 20.0),
@@ -610,9 +608,9 @@ fn binary_operator_anchors_on_the_same_side_with_two_configured_fixing_points_us
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn binary_operator_anchors_on_different_sides_snap_to_a_configured_fixing_point() -> Result<(), String> {
-    // Same due-south/due-east shape as the unconfigured test above, but with `EdgeAnchors(3)` configured: each
-    // operand now snaps to the nearest of 3 candidates on its own side instead of that side's plain midpoint —
-    // exactly what `snapped_anchor` itself would return for an ordinary edge into this node.
+    // Same due-south/due-east shape as the unconfigured test above, but with `EdgeAnchors(3)` configured: each operand
+    // now snaps to the nearest of 3 candidates on its own side instead of that side's plain midpoint — exactly what
+    // `snapped_anchor` itself would return for an ordinary edge into this node.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -628,8 +626,8 @@ fn binary_operator_anchors_on_different_sides_snap_to_a_configured_fixing_point(
 #[test]
 fn binary_operator_anchors_break_an_exact_crossing_tie_in_favour_of_first() -> Result<(), String> {
     // Two distinct operands on the exact same ray from the rect's own centre (direction (1, 100), at different
-    // distances) resolve to the same side with an *identical* crossing position — comparing the crossings alone
-    // cannot order them, so which point is passed as `first` is the only thing that can.
+    // distances) resolve to the same side with an *identical* crossing position — comparing the crossings alone cannot
+    // order them, so which point is passed as `first` is the only thing that can.
     let rect = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -643,8 +641,8 @@ fn binary_operator_anchors_break_an_exact_crossing_tie_in_favour_of_first() -> R
     check_eq(far_point, Point::new(30.0, 20.0))?;
     check_eq(far_side, Side::South)?;
 
-    // Swapping the argument order flips which point plays `first`, so it now wins the near slot instead — not
-    // which point is geometrically nearer or farther, since the two crossings are exactly equal.
+    // Swapping the argument order flips which point plays `first`, so it now wins the near slot instead — not which
+    // point is geometrically nearer or farther, since the two crossings are exactly equal.
     let [(far_as_first_point, _), _] = binary_operator_anchors(rect, far, near, None);
     check_eq(far_as_first_point, Point::new(10.0, 20.0))
 }
@@ -703,8 +701,8 @@ fn port_marker_position_on_a_north_or_south_side_moves_right_clear_of_the_vertic
 /// overlapping run, not just a proper crossing point.
 ///
 /// Every route this crate ever produces is Manhattan (each segment purely horizontal or purely vertical), so a
-/// segment's own bounding box is itself — plain bounding-box overlap is a complete, exact intersection test here,
-/// not an approximation the way it would be for arbitrary line segments.
+/// segment's own bounding box is itself — plain bounding-box overlap is a complete, exact intersection test here, not
+/// an approximation the way it would be for arbitrary line segments.
 fn segments_touch(a1: Point, a2: Point, b1: Point, b2: Point) -> bool {
     let (a_min_x, a_max_x) = (a1.x.min(a2.x), a1.x.max(a2.x));
     let (a_min_y, a_max_y) = (a1.y.min(a2.y), a1.y.max(a2.y));
@@ -731,10 +729,10 @@ fn check_routes_do_not_cross(a: &[Point], b: &[Point]) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn binary_operator_elbow_route_with_neither_operand_drifted_matches_plain_elbow_route() -> Result<(), String> {
-    // Operator west side, height 200: near candidate (0, 50), far candidate (0, 150) — the same shape the AND/OR
-    // demo rows already use. Neither operand has drifted past the other's own target, so both connectors are
-    // exactly what plain `elbow_route` would already draw for any other pair of nodes — nothing about this scheme
-    // changes anything here.
+    // Operator west side, height 200: near candidate (0, 50), far candidate (0, 150) — the same shape the AND/OR demo
+    // rows already use. Neither operand has drifted past the other's own target, so both connectors are exactly what
+    // plain `elbow_route` would already draw for any other pair of nodes — nothing about this scheme changes anything
+    // here.
     let near_start = Point::new(-40.0, 60.0);
     let near_end = Point::new(0.0, 50.0);
     let far_start = Point::new(-60.0, 180.0);
@@ -754,9 +752,9 @@ fn binary_operator_elbow_route_with_neither_operand_drifted_matches_plain_elbow_
 fn binary_operator_elbow_route_with_the_near_operand_dragged_past_the_far_target_does_not_cross() -> Result<(), String>
 {
     // Same operator side and candidates as the test above. This time the *near* candidate's own operand has been
-    // dragged to y = 205 — past the far candidate's own target (y = 150), the exact "one input moved too far"
-    // scenario reported. The near connector reroutes to a single, vertical-first bend at its own start x, clearing
-    // the far connector's own approach without ever moving backward. The far connector is untouched.
+    // dragged to y = 205 — past the far candidate's own target (y = 150), the exact "one input moved too far" scenario
+    // reported. The near connector reroutes to a single, vertical-first bend at its own start x, clearing the far
+    // connector's own approach without ever moving backward. The far connector is untouched.
     let near_start = Point::new(-160.0, 205.0);
     let near_end = Point::new(0.0, 50.0);
     let far_start = Point::new(-300.0, 280.0);
@@ -775,9 +773,9 @@ fn binary_operator_elbow_route_with_the_near_operand_dragged_past_the_far_target
 #[test]
 fn binary_operator_elbow_route_never_revisits_its_own_source_box() -> Result<(), String> {
     // Exact geometry read back from the real "Boolean operators" demo's `XOR` row (`cargo demo`, then each source
-    // node's own rendered `<g>` transform/`<rect>`, and the resulting `<path>` `d` attributes) — the regression
-    // repro for this report. `ror` feeds `XOR`'s own near candidate; `a` feeds the far one. Neither operand has
-    // been dragged anywhere unusual — this is their ordinary, freshly built position.
+    // node's own rendered `<g>` transform/`<rect>`, and the resulting `<path>` `d` attributes) — the regression repro
+    // for this report. `ror` feeds `XOR`'s own near candidate; `a` feeds the far one. Neither operand has been dragged
+    // anywhere unusual — this is their ordinary, freshly built position.
     let ror_start = Point::new(452.015_625, 940.9);
     let ror_end = Point::new(500.0, 985.45); // XOR's own near candidate.
     let a_start = Point::new(212.015_625, 1045.1);
@@ -805,8 +803,8 @@ fn binary_operator_elbow_route_never_revisits_its_own_source_box() -> Result<(),
         ],
     )?;
 
-    // Every point of each route sits at or past its own box's own east edge (`start.x`) — never behind it, where
-    // the box itself is rendered.
+    // Every point of each route sits at or past its own box's own east edge (`start.x`) — never behind it, where the
+    // box itself is rendered.
     check(
         ror_route.iter().all(|p| p.x >= ror_start.x),
         &format!("expected every point of ror's own route to stay clear of its own box, got {ror_route:?}"),
@@ -859,9 +857,8 @@ fn elbow_route_between_stacked_boxes_is_one_straight_vertical_segment() -> Resul
 #[test]
 fn elbow_route_between_mismatched_aspect_boxes_bends_once() -> Result<(), String> {
     // A is taller than it is wide, so a 45-degree offset anchors it on its east side — see `edge_anchor`'s own
-    // aspect-aware rule.
-    // B is wider than it is tall, so the same offset anchors it on its north side instead.
-    // One horizontal exit and one vertical entry bend the route exactly once.
+    // aspect-aware rule. B is wider than it is tall, so the same offset anchors it on its north side instead. One
+    // horizontal exit and one vertical entry bend the route exactly once.
     let a = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(20.0, 40.0),
@@ -881,8 +878,8 @@ fn elbow_route_between_mismatched_aspect_boxes_bends_once() -> Result<(), String
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn elbow_route_between_same_aspect_boxes_offset_vertically_jogs_twice() -> Result<(), String> {
-    // Both boxes are the same size, so both ends anchor on the same axis (east/west here). Their anchors do not
-    // share a y coordinate, so the route jogs across the midpoint between them instead of bending only once.
+    // Both boxes are the same size, so both ends anchor on the same axis (east/west here). Their anchors do not share a
+    // y coordinate, so the route jogs across the midpoint between them instead of bending only once.
     let a = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(40.0, 20.0),
@@ -955,9 +952,8 @@ fn elbow_path_into_rounds_a_down_then_left_corner_with_a_clockwise_sweep() -> Re
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn elbow_path_into_shrinks_a_radius_that_would_overshoot_a_short_segment() -> Result<(), String> {
-    // Each segment here is only 4 units long.
-    // A requested radius of 10 shrinks to 2 — half of the shorter adjacent segment — instead of overshooting the
-    // far endpoint.
+    // Each segment here is only 4 units long. A requested radius of 10 shrinks to 2 — half of the shorter adjacent
+    // segment — instead of overshooting the far endpoint.
     let vertices = [Point::new(0.0, 0.0), Point::new(4.0, 0.0), Point::new(4.0, 4.0)];
     let mut d = String::new();
     elbow_path_into(&vertices, 10.0, &mut d);
@@ -966,10 +962,10 @@ fn elbow_path_into_shrinks_a_radius_that_would_overshoot_a_short_segment() -> Re
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `elbow_path_into` no longer computes a real `hypot`/normalised direction at a rounded corner — it trusts every
-/// segment to already be purely horizontal or purely vertical, per its own doc comment, and only asserts that in
-/// debug builds. This proves the assertion actually guards the assumption, rather than merely documenting it: a
-/// diagonal segment (neither `dx` nor `dy` zero) between two of the three vertices here must panic, not silently
-/// compute a wrong corner.
+/// segment to already be purely horizontal or purely vertical, per its own doc comment, and only asserts that in debug
+/// builds. This proves the assertion actually guards the assumption, rather than merely documenting it: a diagonal
+/// segment (neither `dx` nor `dy` zero) between two of the three vertices here must panic, not silently compute a wrong
+/// corner.
 #[test]
 #[should_panic(expected = "not axis-aligned")]
 fn elbow_path_into_panics_in_debug_on_a_non_axis_aligned_segment() {

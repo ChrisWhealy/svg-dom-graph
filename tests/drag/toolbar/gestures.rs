@@ -1,6 +1,6 @@
 //! Pan and wheel-zoom gesture mechanics: dragging a node under zoom, the pan surface itself, following/releasing/
-//! cancelling a pan, ctrl/cmd-plus-wheel, wheel direction and amount, coalescing a burst into one frame, and a
-//! toolbar button winning over a pending frame.
+//! cancelling a pan, ctrl/cmd-plus-wheel, wheel direction and amount, coalescing a burst into one frame, and a toolbar
+//! button winning over a pending frame.
 
 use super::support::*;
 use crate::common::{
@@ -127,8 +127,8 @@ fn dragging_the_background_pans_the_content_at_any_zoom() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every move applies to where the pan started, so the content follows the pointer, and finishing a pan changes
-/// nothing further.
+/// Every move applies to where the pan started, so the content follows the pointer, and finishing a pan changes nothing
+/// further.
 #[wasm_bindgen_test]
 async fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(), String> {
     let scene = new_scene("tb-pan-follow")?;
@@ -253,9 +253,9 @@ async fn ctrl_or_cmd_plus_wheel_zooms_about_the_pointer() -> Result<(), String> 
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     let surface = pan_surface("tb-wheel")?;
 
-    // Every test's `<svg>` shares one page, so client coordinates must be built from this one's own position.
-    // The client position is a whole number of pixels, but the `<svg>` itself can sit at a fractional offset. So the
-    // pivot the scene sees is the difference, not exactly (100, 100).
+    // Every test's `<svg>` shares one page, so client coordinates must be built from this one's own position. The
+    // client position is a whole number of pixels, but the `<svg>` itself can sit at a fractional offset. So the pivot
+    // the scene sees is the difference, not exactly (100, 100).
     let bounds = surface.get_bounding_client_rect();
     let (x, y) = (bounds.left().round() as i32 + 100, bounds.top().round() as i32 + 100);
     let (pivot_x, pivot_y) = (x as f64 - bounds.left(), y as f64 - bounds.top());
@@ -320,8 +320,8 @@ fn wheel_zoom_works_over_a_node() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wheel zoom belongs to the toolbar, like panning. Without one, a scene leaves the wheel alone entirely, and hiding the
-/// toolbar takes the wheel handling away with it.
+/// Wheel zoom belongs to the toolbar, like panning. Without one, a scene leaves the wheel alone entirely, and hiding
+/// the toolbar takes the wheel handling away with it.
 #[wasm_bindgen_test]
 fn wheel_zoom_needs_a_shown_toolbar() -> Result<(), String> {
     let scene = new_scene("tb-wheel-off")?;
@@ -445,8 +445,8 @@ async fn a_button_pressed_mid_burst_wins_over_the_pending_frame() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A pan is written to the DOM one frame late while it runs, but the moment the pointer is released the DOM is exact
-/// — nothing is left for a later frame to catch up on.
+/// A pan is written to the DOM one frame late while it runs, but the moment the pointer is released the DOM is exact —
+/// nothing is left for a later frame to catch up on.
 #[wasm_bindgen_test]
 fn releasing_a_pan_writes_its_final_position_immediately() -> Result<(), String> {
     let scene = new_scene("tb-pan-release")?;

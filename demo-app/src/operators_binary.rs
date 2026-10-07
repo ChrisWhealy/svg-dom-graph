@@ -1,6 +1,6 @@
 //! `panel-operators-binary` / `#operators-binary-diagram`: two operand nodes feeding an operator node, for every
-//! [`BinaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by
-//! the library itself — see [`build_binary_operator_demo`]'s own doc comment.
+//! [`BinaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by the
+//! library itself — see [`build_binary_operator_demo`]'s own doc comment.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
@@ -19,21 +19,20 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo scene: two operand nodes feeding an operator node, for every [`BinaryOperator`] this crate
-/// names.
+/// Builds the demo scene: two operand nodes feeding an operator node, for every [`BinaryOperator`] this crate names.
 ///
 /// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"` — the raw value's own outer box,
 /// wrapping its value cell, the same way an operator node's own outer box wraps its result — rather than a plain
 /// [`Scene::add_data_node`] box.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`&`, `|`, `^`, and their own
-/// complements). `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_binary_operator_node`]'s
-/// own doc comment for why — so this function's job is exactly the one a real caller would have: compute the real
-/// value, then hand it to the library alongside the operator that produced it.
+/// complements). `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_binary_operator_node`]'s own doc
+/// comment for why — so this function's job is exactly the one a real caller would have: compute the real value, then
+/// hand it to the library alongside the operator that produced it.
 ///
-/// See [`crate::operators_chained::build_chained_operator_demo`] for operator nodes feeding further operator
-/// nodes — an operator's own [`DataNodeContent`] result is a valid operand like any other data node's, which this
-/// page's six rows don't show on their own.
+/// See [`crate::operators_chained::build_chained_operator_demo`] for operator nodes feeding further operator nodes — an
+/// operator's own [`DataNodeContent`] result is a valid operand like any other data node's, which this page's six rows
+/// don't show on their own.
 ///
 /// # Errors
 ///
@@ -50,8 +49,8 @@ pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
     let scene = Scene::new(svg).map_err(stringify)?;
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every row's operand(s) share this left-hand x; every row's operator node shares this one, a fixed distance
-    // to its right.
+    // Every row's operand(s) share this left-hand x; every row's operator node shares this one, a fixed distance to its
+    // right.
     const X_OPERAND: f64 = 20.0;
     const X_OPERATOR: f64 = 260.0;
 

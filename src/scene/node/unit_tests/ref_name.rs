@@ -10,8 +10,8 @@ use wasm_bindgen_test::*;
 
 wasm_bindgen_test_configure!(run_in_browser);
 
-/// A plain label node's own `ref_name` is its own visible text — the same string a later node's own description
-/// would call it by.
+/// A plain label node's own `ref_name` is its own visible text — the same string a later node's own description would
+/// call it by.
 #[wasm_bindgen_test]
 fn a_plain_nodes_own_ref_name_is_its_own_label() -> Result<(), String> {
     let svg = make_svg("ref-name-plain");
@@ -47,8 +47,8 @@ fn a_named_data_nodes_own_ref_name_is_its_own_name() -> Result<(), String> {
     )
 }
 
-/// An unnamed data node has no name to fall back on. So its own `ref_name` falls back to its own type name
-/// instead. True for a single value and for a multi-value grid alike.
+/// An unnamed data node has no name to fall back on. So its own `ref_name` falls back to its own type name instead.
+/// True for a single value and for a multi-value grid alike.
 #[wasm_bindgen_test]
 fn an_unnamed_data_nodes_own_ref_name_falls_back_to_its_own_type_name() -> Result<(), String> {
     let svg = make_svg("ref-name-unnamed-data");
@@ -83,8 +83,8 @@ fn an_unnamed_data_nodes_own_ref_name_falls_back_to_its_own_type_name() -> Resul
     )
 }
 
-/// A unary, binary, or arithmetic operator node's own `ref_name` is its own operator label — `"NOT"`, `"XOR"`,
-/// `"ROTR 1"`. That is what a later stage would call it by, not the type of its own result.
+/// A unary, binary, or arithmetic operator node's own `ref_name` is its own operator label — `"NOT"`, `"XOR"`, `"ROTR
+/// 1"`. That is what a later stage would call it by, not the type of its own result.
 #[wasm_bindgen_test]
 fn an_operator_nodes_own_ref_name_is_its_own_operator_label() -> Result<(), String> {
     let svg = make_svg("ref-name-operator");

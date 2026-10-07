@@ -3,8 +3,8 @@
 /// [Scene::set_connector_type](crate::scene::Scene::set_connector_type) route a connector.
 ///
 /// `#[non_exhaustive]` is used here because this type is expected to grow: a Bezier-curved connector is a likely future
-/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant
-/// is unaffected.
+/// addition. Matching on this outside the crate requires a wildcard arm; constructing an existing variant is
+/// unaffected.
 ///
 /// ***A note on `Copy`***
 ///

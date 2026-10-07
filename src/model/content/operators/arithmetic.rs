@@ -34,8 +34,8 @@ pub enum ArithmeticOperator {
 }
 
 impl ArithmeticOperator {
-    /// A short label naming this operation, for the operator node's own rendered glyph row — `"ADD"`, `"SUB"`,
-    /// `"MUL"`, `"DIV"`, or `"MOD"`.
+    /// A short label naming this operation, for the operator node's own rendered glyph row — `"ADD"`, `"SUB"`, `"MUL"`,
+    /// `"DIV"`, or `"MOD"`.
     pub(crate) fn label(self) -> &'static str {
         match self {
             Self::Add => "ADD",
@@ -46,8 +46,8 @@ impl ArithmeticOperator {
         }
     }
 
-    /// Whether swapping the two operands leaves the result unchanged.
-    /// `true` for `Add` and `Multiply`, `false` for everything else
+    /// Whether swapping the two operands leaves the result unchanged. `true` for `Add` and `Multiply`, `false` for
+    /// everything else
     pub(crate) fn commutes(self) -> bool {
         matches!(self, Self::Add | Self::Multiply)
     }

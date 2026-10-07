@@ -1,5 +1,5 @@
-//! Non-zero `viewBox` origins, mismatched aspect ratios, and CSS scaling. The scene must work in the `<svg>`'s own
-//! user space — the coordinates its content is drawn in — wherever the browser places that space on screen.
+//! Non-zero `viewBox` origins, mismatched aspect ratios, and CSS scaling. The scene must work in the `<svg>`'s own user
+//! space — the coordinates its content is drawn in — wherever the browser places that space on screen.
 
 use super::support::*;
 use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, group_translate};
@@ -54,8 +54,8 @@ fn a_view_box_centred_on_the_origin_zooms_about_its_own_centre() -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A `viewBox` whose origin is positive on both axes: `100 50 400 300`, centre (300, 200). Zooming in by 1.25 about
-/// it gives a translation of (300 - 1.25 * 300, 200 - 1.25 * 200) = (-75, -50).
+/// A `viewBox` whose origin is positive on both axes: `100 50 400 300`, centre (300, 200). Zooming in by 1.25 about it
+/// gives a translation of (300 - 1.25 * 300, 200 - 1.25 * 200) = (-75, -50).
 #[wasm_bindgen_test]
 fn a_view_box_with_a_positive_origin_zooms_about_its_own_centre() -> Result<(), String> {
     let scene = scene_in_svg("vb-offset", 400, 300, "100 50 400 300", None)?;
@@ -104,8 +104,8 @@ async fn pointer_centred_zoom_holds_its_point_under_a_non_zero_origin_and_a_css_
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With the default `preserveAspectRatio` (`xMidYMid meet`), an `<svg>` wider than its `viewBox` shows *more* than the
-/// `viewBox`. Here `0 0 400 400` in a 400 x 200 box scales by 0.5 and is centred, so the visible user-space area is
-/// x from -200 to 600 and y from 0 to 400. The bar belongs on the real top edge of that, not the `viewBox`'s.
+/// `viewBox`. Here `0 0 400 400` in a 400 x 200 box scales by 0.5 and is centred, so the visible user-space area is x
+/// from -200 to 600 and y from 0 to 400. The bar belongs on the real top edge of that, not the `viewBox`'s.
 #[wasm_bindgen_test]
 fn with_meet_the_visible_area_is_wider_than_the_view_box() -> Result<(), String> {
     let scene = scene_in_svg("vb-meet", 400, 200, "0 0 400 400", None)?;

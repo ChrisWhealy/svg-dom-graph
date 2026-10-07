@@ -1,5 +1,5 @@
-//! The non-commutative `SUB`/`DIV`/`MOD` "L"/"R" port marker: which operators draw one, its accessible name, and
-//! that its own identity survives a near/far reassignment or a full operand-position exchange.
+//! The non-commutative `SUB`/`DIV`/`MOD` "L"/"R" port marker: which operators draw one, its accessible name, and that
+//! its own identity survives a near/far reassignment or a full operand-position exchange.
 
 use crate::common::{
     check, check_close, dispatch_pointer_event, group_translate, make_svg, nth_group, nth_port_marker,
@@ -12,8 +12,8 @@ use svg_dom_graph::scene::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A commutative binary operator — swapping the operands never changes the result — draws no "L"/"R" port marker
-/// at all: there is nothing ambiguous about operand order for a reader to be told apart.
+/// A commutative binary operator — swapping the operands never changes the result — draws no "L"/"R" port marker at
+/// all: there is nothing ambiguous about operand order for a reader to be told apart.
 #[wasm_bindgen_test]
 fn a_commutative_binary_operator_node_draws_no_port_markers() -> Result<(), String> {
     let svg = make_svg(
@@ -85,9 +85,9 @@ fn commutative_arithmetic_operators_draw_no_port_markers() -> Result<(), String>
     )
 }
 
-/// `Subtract`, `Divide`, and `Modulus` each draw exactly two port markers — one per input — labelled "L"/"R", with
-/// an `aria-label` naming which operand each one is, and `role="img"` so assistive technology announces that name
-/// rather than reading the bare glyph.
+/// `Subtract`, `Divide`, and `Modulus` each draw exactly two port markers — one per input — labelled "L"/"R", with an
+/// `aria-label` naming which operand each one is, and `role="img"` so assistive technology announces that name rather
+/// than reading the bare glyph.
 #[wasm_bindgen_test]
 fn non_commutative_arithmetic_operators_draw_labelled_port_markers() -> Result<(), String> {
     for operator in [
@@ -180,14 +180,14 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
         .add_arithmetic_operator_node(Point::new(220.0, 300.0), ArithmeticOperator::Subtract, (a, b), result)
         .map_err(|e| e.to_string())?;
 
-    // Marker 0 ("L") stays bound to `a` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to connector 1 —
-    // never swapped — both before the drag below (where `a` and `b` start on different operator sides) and after
-    // (where the drag forces them onto the same side, triggering a near/far reassignment). See
-    // `check_port_marker_identity`'s own doc comment for how it stays exact in both cases.
+    // Marker 0 ("L") stays bound to `a` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to connector 1 — never
+    // swapped — both before the drag below (where `a` and `b` start on different operator sides) and after (where the
+    // drag forces them onto the same side, triggering a near/far reassignment). See `check_port_marker_identity`'s own
+    // doc comment for how it stays exact in both cases.
     crate::common::check_port_marker_identity("operator-markers-live-identity")?;
 
-    // Drag `b` to join `a` above the operator, forcing the same-side split — and, for at least one of the two
-    // input rows, a near/far reassignment relative to before the drag.
+    // Drag `b` to join `a` above the operator, forcing the same-side split — and, for at least one of the two input
+    // rows, a near/far reassignment relative to before the drag.
     let b_group = nth_group("operator-markers-live-identity", 1)?;
     dispatch_pointer_event(&b_group, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&b_group, "pointermove", -50, -190, 1)?;
@@ -197,11 +197,11 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Physically exchanging `SUB`'s own two operand nodes' positions — not just dragging one across, but swapping
-/// which one sits where — must never disturb which port marker names which operand: `inputs.0`'s own edge keeps the
-/// "L" marker and `inputs.1`'s own edge keeps "R", wherever each one now physically sits. This is the concrete case
-/// the original report calls out: a diagram reader cannot tell `A - B` from `B - A` by position alone, so the
-/// marker's own identity must survive exactly this kind of exchange.
+/// Physically exchanging `SUB`'s own two operand nodes' positions — not just dragging one across, but swapping which
+/// one sits where — must never disturb which port marker names which operand: `inputs.0`'s own edge keeps the "L"
+/// marker and `inputs.1`'s own edge keeps "R", wherever each one now physically sits. This is the concrete case the
+/// original report calls out: a diagram reader cannot tell `A - B` from `B - A` by position alone, so the marker's own
+/// identity must survive exactly this kind of exchange.
 #[wasm_bindgen_test]
 fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_identity() -> Result<(), String> {
     let svg = make_svg(
@@ -232,13 +232,13 @@ fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_ide
         .add_arithmetic_operator_node(Point::new(220.0, 220.0), ArithmeticOperator::Subtract, (lhs, rhs), result)
         .map_err(|e| e.to_string())?;
 
-    // Marker 0 ("L") stays bound to `lhs` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to `rhs`'s
-    // (connector 1) — never swapped. See `check_port_marker_identity`'s own doc comment for how it stays exact
-    // through the exchange below.
+    // Marker 0 ("L") stays bound to `lhs` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to `rhs`'s (connector
+    // 1) — never swapped. See `check_port_marker_identity`'s own doc comment for how it stays exact through the
+    //    exchange below.
     crate::common::check_port_marker_identity("operator-markers-exchange-identity")?;
 
-    // Exchange the two operands' own physical positions outright: `lhs` moves to where `rhs` started, and `rhs`
-    // moves to where `lhs` started.
+    // Exchange the two operands' own physical positions outright: `lhs` moves to where `rhs` started, and `rhs` moves
+    // to where `lhs` started.
     let (lhs_x, lhs_y) = group_translate(&nth_group("operator-markers-exchange-identity", 0)?)?;
     let (rhs_x, rhs_y) = group_translate(&nth_group("operator-markers-exchange-identity", 1)?)?;
 

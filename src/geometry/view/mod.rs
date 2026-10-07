@@ -17,9 +17,9 @@ pub(crate) const ZOOM_STEP: f64 = 1.25;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The zoom factor for a wheel event's own `deltaY`, as [`ViewTransform::zoomed_about`] takes it.
 ///
-/// One typical mouse-wheel notch — 100 pixels — is exactly one [`ZOOM_STEP`]. Smaller deltas, such as a trackpad
-/// pinch (browsers report it as a stream of tiny ctrl+wheel events), zoom in proportion. Scrolling up (a negative
-/// `delta_y`) zooms in.
+/// One typical mouse-wheel notch — 100 pixels — is exactly one [`ZOOM_STEP`]. Smaller deltas, such as a trackpad pinch
+/// (browsers report it as a stream of tiny ctrl+wheel events), zoom in proportion. Scrolling up (a negative `delta_y`)
+/// zooms in.
 ///
 /// `delta_mode` is the event's own `deltaMode`: `0` for pixels, `1` for lines (which Firefox reports for a mouse
 /// wheel), and `2` for pages. A single event is limited to about four notches, so a runaway delta cannot jump the zoom
@@ -45,8 +45,8 @@ pub(crate) fn wheel_zoom_factor(delta_y: f64, delta_mode: u32) -> f64 {
 /// no translation.
 ///
 /// Read via [`Scene::view`](crate::scene::Scene::view) and restored via
-/// [`Scene::set_view`](crate::scene::Scene::set_view), so a host can carry one `Scene`'s own pan/zoom across to
-/// another — for example, one it has just rebuilt from scratch to show different content at the same position.
+/// [`Scene::set_view`](crate::scene::Scene::set_view), so a host can carry one `Scene`'s own pan/zoom across to another
+/// — for example, one it has just rebuilt from scratch to show different content at the same position.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ViewTransform {
     pub scale: f64,
@@ -96,8 +96,8 @@ impl ViewTransform {
     /// `p` is a content point that was worked out while this transform was the view, from a pointer position. If the
     /// view has since become `now`, the same pointer position is over a different content point: this returns it.
     ///
-    /// A pointer gesture that measured something at its start, and cannot rely on the view staying as it was, uses
-    /// this to stay true to where the pointer really is. It is `p` itself if `now` equals this transform.
+    /// A pointer gesture that measured something at its start, and cannot rely on the view staying as it was, uses this
+    /// to stay true to where the pointer really is. It is `p` itself if `now` equals this transform.
     pub(crate) fn reinterpret(self, p: Point, now: Self) -> Point {
         now.unapply(self.apply(p))
     }

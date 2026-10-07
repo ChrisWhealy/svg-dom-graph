@@ -3,21 +3,21 @@
 //!
 //! # What is real
 //!
-//! All of it. [`keccak_f::sha3_256_run`] hashes [`MESSAGE`] in plain Rust, and every value on screen is a piece of
-//! that one calculation: this diagram's "Input block", "XOR", and row 3; the Keccak scene's 24 rounds, each of whose
-//! "A Bytes" is the previous round's real output; and, inside each round, `Theta`, `Rho`, `Pi`, `Chi` and `Iota`,
-//! each handed the state the function before it produced. Stepping over a nested scene therefore gives exactly what
-//! stepping into it would have ended on. [`keccak_f`]'s own tests check it against FIPS 202's own formulas and the
-//! published SHA3-256 digests.
+//! All of it. [`keccak_f::sha3_256_run`] hashes [`MESSAGE`] in plain Rust, and every value on screen is a piece of that
+//! one calculation: this diagram's "Input block", "XOR", and row 3; the Keccak scene's 24 rounds, each of whose "A
+//! Bytes" is the previous round's real output; and, inside each round, `Theta`, `Rho`, `Pi`, `Chi` and `Iota`, each
+//! handed the state the function before it produced. Stepping over a nested scene therefore gives exactly what stepping
+//! into it would have ended on. [`keccak_f`]'s own tests check it against FIPS 202's own formulas and the published
+//! SHA3-256 digests.
 //!
 //! # What is not covered
 //!
-//! A message of a block (136 bytes) or more, which needs more than one absorb; SHA3's other variants and its XOF
-//! modes; and the `Theta` scenes' own orientation, which indexes the state as `A[x][y]` and so shows it transposed
-//! relative to the rest — see [`keccak_f::to_theta_grid`].
+//! A message of a block (136 bytes) or more, which needs more than one absorb; SHA3's other variants and its XOF modes;
+//! and the `Theta` scenes' own orientation, which indexes the state as `A[x][y]` and so shows it transposed relative to
+//! the rest — see [`keccak_f::to_theta_grid`].
 //!
-//! The standalone `panel-theta` and `panel-selection` demos are separate: they run over their own made-up input,
-//! since there is no sponge behind them.
+//! The standalone `panel-theta` and `panel-selection` demos are separate: they run over their own made-up input, since
+//! there is no sponge behind them.
 
 mod chi;
 mod iota;
@@ -46,16 +46,15 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`. Every listener
     // `Scene::show_toolbar`/`Scene::show_selection_toolbar` installs holds only a `Weak` reference back to it, so
-    // without a strong handle kept alive somewhere, the current `Scene` would drop the moment [`rebuild`] returns,
-    // and every button's own `Weak::upgrade` would silently fail forever after.
+    // without a strong handle kept alive somewhere, the current `Scene` would drop the moment [`rebuild`] returns, and
+    // every button's own `Weak::upgrade` would silently fail forever after.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-/// `SHA3-256`'s own parameters (FIPS 202, table 3). `Keccak-f\[1600\]`'s state is 25 lanes: the first
-/// [`RATE_LANES`] hold the "Rate" — the part input is XORed into and the digest is read from — and the remaining
-/// [`CAPACITY_LANES`] the "Capacity", which input never touches. This diagram draws "Capacity" on the left, above
-/// "Keccak f(1600)", and "Rate" on the right, above "XOR", so each sits over the node it feeds; the state's own lane
-/// order is Rate first.
+/// `SHA3-256`'s own parameters (FIPS 202, table 3). `Keccak-f\[1600\]`'s state is 25 lanes: the first [`RATE_LANES`]
+/// hold the "Rate" — the part input is XORed into and the digest is read from — and the remaining [`CAPACITY_LANES`]
+/// the "Capacity", which input never touches. This diagram draws "Capacity" on the left, above "Keccak f(1600)", and
+/// "Rate" on the right, above "XOR", so each sits over the node it feeds; the state's own lane order is Rate first.
 const RATE_LANES: usize = keccak_f::SHA3_256_RATE_LANES;
 const CAPACITY_LANES: usize = 25 - RATE_LANES;
 /// "Output Hash"'s own lane count: a 256-bit digest.
@@ -67,8 +66,8 @@ const MESSAGE: &[u8] = b"The quick brown fox jumps over the lazy dog";
 /// How many stages "Step"'s own selection toolbar walks — one flat position per stage [`apply_stage`] focuses.
 const STAGE_COUNT: usize = 6;
 
-/// Every node [`apply_stage`] ever focuses, by name — one small record instead of five separate parameters
-/// repeated at every call site.
+/// Every node [`apply_stage`] ever focuses, by name — one small record instead of five separate parameters repeated at
+/// every call site.
 #[derive(Clone, Copy)]
 struct StageNodes {
     message: NodeId,
@@ -82,12 +81,12 @@ struct StageNodes {
 }
 
 /// Focuses whichever of `nodes` stage `to` puts in focus, via
-/// [`Scene::set_focus`](svg_dom_graph::scene::Scene::set_focus), and un-focuses every other node this walk ever
-/// touches first. `None` — unstarted, or walked/restarted all the way back — focuses nothing.
+/// [`Scene::set_focus`](svg_dom_graph::scene::Scene::set_focus), and un-focuses every other node this walk ever touches
+/// first. `None` — unstarted, or walked/restarted all the way back — focuses nothing.
 ///
 /// Recomputing the full set from `to` alone, rather than tracking "what was focused last" separately, matches
-/// `crate::selection::display_outputs`'s own rule. "Previous" un-focuses a later stage exactly as readily as
-/// "Next" focuses one, with nothing left over from before to forget to clear.
+/// `crate::selection::display_outputs`'s own rule. "Previous" un-focuses a later stage exactly as readily as "Next"
+/// focuses one, with nothing left over from before to forget to clear.
 fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
     let StageNodes {
         message,
@@ -119,8 +118,8 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates every `<svg>` needed by this panel's `.nested-scene-stage`, if they do not already exist.  This is the base
-/// diagram, then each nested level, starting with the shallowest.  The document order is the paint order, and
+/// Creates every `<svg>` needed by this panel's `.nested-scene-stage`, if they do not already exist. This is the base
+/// diagram, then each nested level, starting with the shallowest. The document order is the paint order, and
 /// [`add_backdrop_clone`] relies on a nested child following its own parent. Each is inserted before
 /// `#sha3-sponge-close`, which therefore stays on top.
 ///
@@ -192,10 +191,10 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// "Rate" ([`RATE_LANES`] lanes). These two subdivisions are butted up against each other with no gap to indicate that
 /// they form a single combined state. Both subdivisions start in an initialised state.
 ///
-/// The "Plain Text Message" sits in row 1 above "Input block".  This is text being hashed, shown as printable
+/// The "Plain Text Message" sits in row 1 above "Input block". This is text being hashed, shown as printable
 /// characters. A connector carries this data down into "Input block".
 ///
-/// The "Keccak f(1600)" node on row 2 holds the nested Keccak-f scene.  This node only becomes clickable once the step
+/// The "Keccak f(1600)" node on row 2 holds the nested Keccak-f scene. This node only becomes clickable once the step
 /// walk reaches it.
 ///
 /// "XOR" shows all-zero lanes, the same "not yet written" convention row 3 below already follows, until `stage` reaches
@@ -259,9 +258,9 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
     const V_GAP: f64 = 50.0;
     let keccak_size = Size::new(160.0, 70.0);
 
-    // Row 1: the sponge's own starting state — "Capacity" and "Rate", butted up against each other with no gap,
-    // reading as one combined state split into two named halves rather than two separate values. The real sponge
-    // construction starts from an all-zero state, before any input is absorbed, so both halves start that way too.
+    // Row 1: the sponge's own starting state — "Capacity" and "Rate", butted up against each other with no gap, reading
+    // as one combined state split into two named halves rather than two separate values. The real sponge construction
+    // starts from an all-zero state, before any input is absorbed, so both halves start that way too.
     let capacity_in = scene
         .add_named_data_node(Point::new(LEFT_X, TOP_Y), "Capacity", hex_narrow(vec![0; CAPACITY_LANES]))
         .map_err(stringify)?;
@@ -282,16 +281,16 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         + capacity_in_rect.size.height.max(rate_in_rect.size.height)
         + V_GAP;
 
-    // "XOR" is a plain data node holding the real elementwise XOR of "Rate" and "Input block", not a genuine
-    // operator node: `Scene::add_binary_operator_node`'s own result must be exactly one value, which an
-    // `RATE_LANES`-lane array is not. Its own size is measured ahead of drawing it, both to centre it under
-    // "Rate" and to centre "Keccak f(1600)" on it below.
+    // "XOR" is a plain data node holding the real elementwise XOR of "Rate" and "Input block", not a genuine operator
+    // node: `Scene::add_binary_operator_node`'s own result must be exactly one value, which an `RATE_LANES`-lane array
+    // is not. Its own size is measured ahead of drawing it, both to centre it under "Rate" and to centre "Keccak
+    // f(1600)" on it below.
     //
-    // Shows all-zero lanes until `stage` reaches it (see this function's own doc comment, "Stepping through it"),
-    // the same "not yet written" convention row 3 below already follows — real values would otherwise appear
-    // before the walk ever visits "XOR", reading as already computed when it is not.
-    // The whole hash, computed up front in plain Rust: every value this diagram shows, and every state the nested
-    // Keccak scenes show, is a piece of this one calculation.
+    // Shows all-zero lanes until `stage` reaches it (see this function's own doc comment, "Stepping through it"), the
+    // same "not yet written" convention row 3 below already follows — real values would otherwise appear before the
+    // walk ever visits "XOR", reading as already computed when it is not. The whole hash, computed up front in plain
+    // Rust: every value this diagram shows, and every state the nested Keccak scenes show, is a piece of this one
+    // calculation.
     let run = sha3_256_run(MESSAGE);
     let input_block_values = run.block.to_vec();
     // "Input block" starts out initialised to zeros. Stage `1` adds the padded text to it.
@@ -307,8 +306,8 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
     };
     // The real result of the whole absorb-and-permute, whether or not the walk — or the user — ever steps inside
     // "Keccak f(1600)": the real XOR of "Rate" and "Input block" joins an all-zero "Capacity" as the combined state,
-    // and `keccak_f` runs all 24 rounds over it. Row 3 shows its lanes once the walk reaches them, so stepping over
-    // the nested scene still yields the correct output — exactly what stepping into it would have ended on.
+    // and `keccak_f` runs all 24 rounds over it. Row 3 shows its lanes once the walk reaches them, so stepping over the
+    // nested scene still yields the correct output — exactly what stepping into it would have ended on.
     let permuted = run.permuted;
     // Zeros until `stage` reaches `from` — the same "not yet written" convention as "XOR" above.
     let from_stage =
@@ -321,23 +320,23 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
     let xor_rect = scene.node_rect(xor).map_err(stringify)?;
 
-    // Centred under "Capacity" horizontally, and vertically centred on "XOR" — "XOR" is taller now that it is
-    // drawn 2 columns wide (see `hex_narrow`'s own doc comment), so a shared top edge no longer reads as level.
+    // Centred under "Capacity" horizontally, and vertically centred on "XOR" — "XOR" is taller now that it is drawn 2
+    // columns wide (see `hex_narrow`'s own doc comment), so a shared top edge no longer reads as level.
     //
-    // Three fixing points per side. The connector leaving north (from "Capacity") and the one leaving east (from
-    // "XOR") both land on the centre point, since this box's own centre lines up with each of theirs. "Rate" sits
-    // well east of this box's own centre, since row 3 shares row 1's own left edge — see `row_3_y`'s own comment
-    // below. The connector leaving south towards it still lands on the east fixing point, not the centre one.
+    // Three fixing points per side. The connector leaving north (from "Capacity") and the one leaving east (from "XOR")
+    // both land on the centre point, since this box's own centre lines up with each of theirs. "Rate" sits well east of
+    // this box's own centre, since row 3 shares row 1's own left edge — see `row_3_y`'s own comment below. The
+    // connector leaving south towards it still lands on the east fixing point, not the centre one.
     //
-    // The connector towards "Capacity", directly below, lands on the centre fixing point instead. Row 3
-    // realigning with row 1 leaves this box's own centre no longer off-centre from "Capacity", unlike from "Rate".
+    // The connector towards "Capacity", directly below, lands on the centre fixing point instead. Row 3 realigning with
+    // row 1 leaves this box's own centre no longer off-centre from "Capacity", unlike from "Rate".
     let keccak_x = capacity_in_rect.origin.x + (capacity_in_rect.size.width - keccak_size.width) / 2.0;
     let keccak_y = xor_rect.origin.y + (xor_rect.size.height - keccak_size.height) / 2.0;
 
-    // The real combined 25-lane state flowing into `Keccak-f[1600]` — "Capacity" (always all-zero in this demo)
-    // plus whatever "XOR" currently shows, the same "not yet written" convention XOR itself follows (see this
-    // function's own doc comment, "Stepping through it"): all-zero before `stage` reaches it, the real elementwise
-    // XOR afterward. `keccak::build_initial_scene`'s own round 0 starts from exactly this.
+    // The real combined 25-lane state flowing into `Keccak-f[1600]` — "Capacity" (always all-zero in this demo) plus
+    // whatever "XOR" currently shows, the same "not yet written" convention XOR itself follows (see this function's own
+    // doc comment, "Stepping through it"): all-zero before `stage` reaches it, the real elementwise XOR afterward.
+    // `keccak::build_initial_scene`'s own round 0 starts from exactly this.
     let a_bytes_seed: [u64; 25] =
         std::array::from_fn(|lane| if lane < RATE_LANES { xor_display_values[lane] } else { 0 });
     let keccak_child = keccak::build_initial_scene("sha3-sponge-keccak-child", a_bytes_seed)?;
@@ -351,8 +350,8 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         )
         .map_err(stringify)?;
     // Clickable only from stage `3`, when the walk reaches "Keccak f(1600)" and its input has been assembled. Before
-    // that, entering it would show a view whose own input is not yet the real result of the stages above it. Every
-    // step rebuilds this whole `Scene`, so enterability needs no undoing when the walk steps back.
+    // that, entering it would show a view whose own input is not yet the real result of the stages above it. Every step
+    // rebuilds this whole `Scene`, so enterability needs no undoing when the walk steps back.
     if stage >= 3 {
         scene.make_enterable(keccak).map_err(stringify)?;
     }
@@ -391,14 +390,14 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
 
     // Row 3: "Capacity"/"Rate" again, fed out of "Keccak f(1600)" above; "Output Hash" has its own row below. Each
-    // box's own bottom edge is computed independently now that "Keccak f(1600)" and "XOR" no longer share a
-    // common top — see `keccak_y`'s own comment above.
+    // box's own bottom edge is computed independently now that "Keccak f(1600)" and "XOR" no longer share a common top
+    // — see `keccak_y`'s own comment above.
     //
     // The elbow connector from "Keccak f(1600)" to "Rate" jogs horizontally halfway between "Keccak f(1600)"'s own
-    // bottom edge and row 3's own top edge — see `elbow_route`'s own `mid_y` rule. A plain `V_GAP` below the taller
-    // of "Keccak f(1600)"/"XOR" is not always enough on its own. If that halfway point still sits above "XOR"'s
-    // own bottom edge, the connector's own horizontal jog crosses straight through it. `ROW_3_CLEARANCE` is the
-    // least headroom to leave below "XOR" once that jog is accounted for.
+    // bottom edge and row 3's own top edge — see `elbow_route`'s own `mid_y` rule. A plain `V_GAP` below the taller of
+    // "Keccak f(1600)"/"XOR" is not always enough on its own. If that halfway point still sits above "XOR"'s own bottom
+    // edge, the connector's own horizontal jog crosses straight through it. `ROW_3_CLEARANCE` is the least headroom to
+    // leave below "XOR" once that jog is accounted for.
     const ROW_3_CLEARANCE: f64 = 15.0;
     let keccak_bottom = keccak_rect.origin.y + keccak_rect.size.height;
     let xor_bottom = xor_rect.origin.y + xor_rect.size.height;
@@ -406,9 +405,9 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .max(keccak_bottom + V_GAP)
         .max(2.0 * (xor_bottom + ROW_3_CLEARANCE) - keccak_bottom);
 
-    // "Capacity"/"Rate" are butted together as before, starting at the same `LEFT_X` as row 1's own pair, so the
-    // two stay vertically aligned. See `keccak`'s own construction above for how this shapes which of its own
-    // south fixing points each connector out of it lands on.
+    // "Capacity"/"Rate" are butted together as before, starting at the same `LEFT_X` as row 1's own pair, so the two
+    // stay vertically aligned. See `keccak`'s own construction above for how this shapes which of its own south fixing
+    // points each connector out of it lands on.
     let capacity_out = scene
         .add_named_data_node(
             Point::new(LEFT_X, row_3_y),
@@ -469,8 +468,8 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
                 .with_to_side(Some(Side::East)),
         )
         .map_err(stringify)?;
-    // "XOR"'s own result feeds back into "Keccak f(1600)", to its own west — the absorbed rate joining "Capacity"
-    // as the combined state the real permutation would run over.
+    // "XOR"'s own result feeds back into "Keccak f(1600)", to its own west — the absorbed rate joining "Capacity" as
+    // the combined state the real permutation would run over.
     scene
         .add_edge_with(
             xor,
@@ -521,11 +520,11 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
-    // Backdrops `#sha3-sponge-diagram` itself, so entering "Keccak f(1600)" shows this diagram's own current
-    // content behind its frame, instead of the page's own plain background. Safe now that `.nested-scene-backdrop`
-    // only ever paints while its own source itself has `visibility="hidden"` (see that CSS rule's own doc
-    // comment) — the clone no longer sits on top of this diagram's own real, interactive view while nothing is
-    // nested, so its own zoom/pan buttons stay visibly correct between rebuilds.
+    // Backdrops `#sha3-sponge-diagram` itself, so entering "Keccak f(1600)" shows this diagram's own current content
+    // behind its frame, instead of the page's own plain background. Safe now that `.nested-scene-backdrop` only ever
+    // paints while its own source itself has `visibility="hidden"` (see that CSS rule's own doc comment) — the clone no
+    // longer sits on top of this diagram's own real, interactive view while nothing is nested, so its own zoom/pan
+    // buttons stay visibly correct between rebuilds.
     add_backdrop_clone(&document, "sha3-sponge-diagram")?;
     keccak::init_scene(scene.clone(), keccak_child, keccak);
 
@@ -534,23 +533,23 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the whole diagram for walk position `stage`, via [`build_scene`], and wires a fresh
-/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar onto its own
-/// freshly drawn "Step" to drive the *next* step.
+/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar onto its own freshly
+/// drawn "Step" to drive the *next* step.
 ///
 /// A fresh rebuild is the simplest way here: "XOR" and row 3 switch from all-zero to their own real results partway
-/// through this walk — see [`build_scene`]'s own doc comment — and the nested Keccak scenes are rebuilt from the
-/// state each stage supplies. [`apply_stage`] runs again inside [`build_scene`] itself on every rebuild,
-/// so each fresh diagram already shows `stage`'s own correct focus from the moment it is drawn.
+/// through this walk — see [`build_scene`]'s own doc comment — and the nested Keccak scenes are rebuilt from the state
+/// each stage supplies. [`apply_stage`] runs again inside [`build_scene`] itself on every rebuild, so each fresh
+/// diagram already shows `stage`'s own correct focus from the moment it is drawn.
 ///
-/// `show_selection_toolbar` always resets "Step" to [`Selection::None`] as its own first committed act,
-/// regardless of `stage`. So `stage`'s own real position is reapplied immediately afterward — not for "Step"'s
-/// own look, which is never seen. It keeps the toolbar's *next* click advancing from the right position, rather
-/// than from unstarted every time.
+/// `show_selection_toolbar` always resets "Step" to [`Selection::None`] as its own first committed act, regardless of
+/// `stage`. So `stage`'s own real position is reapplied immediately afterward — not for "Step"'s own look, which is
+/// never seen. It keeps the toolbar's *next* click advancing from the right position, rather than from unstarted every
+/// time.
 ///
-/// A fresh `Scene` would otherwise also reset zoom/pan back to `1.0`/`(0, 0)` — jarring, mid-walk, if the
-/// previous step's own view had been zoomed or panned in first. So the outgoing `Scene`'s own
-/// [`Scene::view`](svg_dom_graph::scene::Scene::view) is read before it is replaced, and carried over onto the
-/// fresh one via [`Scene::set_view`](svg_dom_graph::scene::Scene::set_view).
+/// A fresh `Scene` would otherwise also reset zoom/pan back to `1.0`/`(0, 0)` — jarring, mid-walk, if the previous
+/// step's own view had been zoomed or panned in first. So the outgoing `Scene`'s own
+/// [`Scene::view`](svg_dom_graph::scene::Scene::view) is read before it is replaced, and carried over onto the fresh
+/// one via [`Scene::set_view`](svg_dom_graph::scene::Scene::set_view).
 ///
 /// # Errors
 ///
@@ -579,25 +578,24 @@ fn rebuild(stage: usize) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for what it draws — and wires
-/// its own close button.
+/// Builds the SHA3 Sponge demo at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for
+/// what it draws — and wires its own close button.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if any library call
-/// fails.
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if any library call fails.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
     rebuild(0)?;
     wire_sha3_sponge_controls(crate::util::document()?)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires `#sha3-sponge-close` — the nested view's own &times; close button — to whichever of "Keccak f(1600)"'s
-/// own descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside
+/// Wires `#sha3-sponge-close` — the nested view's own &times; close button — to whichever of "Keccak f(1600)"'s own
+/// descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside
 /// [`rebuild`]: unlike the `<svg>` content `rebuild` redraws from scratch on every step, `#sha3-sponge-close` is
 /// a plain, static `index.html` element that would otherwise pick up one more duplicate listener per step.
-/// [`keccak::exit_if_focused`] always reads `keccak`'s own latest thread-local state at click time, regardless of
-/// how many rebuilds happened since this listener was attached.
+/// [`keccak::exit_if_focused`] always reads `keccak`'s own latest thread-local state at click time, regardless of how
+/// many rebuilds happened since this listener was attached.
 ///
 /// # Errors
 ///

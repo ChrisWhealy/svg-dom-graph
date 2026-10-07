@@ -36,8 +36,8 @@ pub struct DragOptions {
     ///
     /// `Scene::make_draggable_with` rejects a `Some(bounds)` whose origin or size is not finite, or whose width or
     /// height is negative, with [Error::InvalidDragBounds](crate::error::Error::InvalidDragBounds) — see that method's
-    /// own `# Errors` section. A zero width or height is accepted: `clamp_to_bounds` already gives that a
-    /// deterministic result.
+    /// own `# Errors` section. A zero width or height is accepted: `clamp_to_bounds` already gives that a deterministic
+    /// result.
     pub bounds: Option<Rect>,
 }
 

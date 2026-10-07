@@ -50,8 +50,8 @@ pub enum BuildError {
     CreateStageDir { path: PathBuf, source: io::Error },
     /// The panel manifest and `demo_gallery!` have drifted apart — see [`validate::ValidationError`].
     Validate(validate::ValidationError),
-    /// `index.html` could not be assembled from `demo/index.template.html` and its panel fragments —
-    /// see [`panels::AssembleError`].
+    /// `index.html` could not be assembled from `demo/index.template.html` and its panel fragments — see
+    /// [`panels::AssembleError`].
     Assemble(panels::AssembleError),
     /// A staged temporary file could not be renamed into place over the previously staged file at `dest` — see
     /// [`prepare_stage`]'s own doc comment for why there is a temporary file at all.
@@ -137,19 +137,19 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
         source,
     })?;
 
-    // Check whether the panel manifest is out of sync with demo-app's demo_gallery! before it produces a broken
-    // or incomplete gallery, rather than after.
+    // Check whether the panel manifest is out of sync with demo-app's demo_gallery! before it produces a broken or
+    // incomplete gallery, rather than after.
     validate::validate(root)?;
 
     let source_demo_dir = root.join("demo");
 
-    // Stage everything into temporary files first. Nothing under stage.stage_dir's live filenames is touched
-    // until this point, so a failure preparing either file below leaves both previously staged files untouched.
+    // Stage everything into temporary files first. Nothing under stage.stage_dir's live filenames is touched until this
+    // point, so a failure preparing either file below leaves both previously staged files untouched.
     let tmp_index = stage.stage_dir.join("index.html.tmp");
     panels::assemble(&source_demo_dir, &tmp_index)?;
 
-    // style.css is not generated — it is a static asset index.html references by a plain relative path, so it
-    // needs to sit alongside the assembled file in the staging directory too.
+    // style.css is not generated — it is a static asset index.html references by a plain relative path, so it needs to
+    // sit alongside the assembled file in the staging directory too.
     let tmp_style = stage.stage_dir.join("style.css.tmp");
     copy_asset(&source_demo_dir.join("style.css"), &tmp_style)?;
 
@@ -185,9 +185,9 @@ fn build_wasm(root: &Path, out_dir: &Path) -> Result<(), BuildError> {
         out_dir.display()
     );
 
-    // demo-app is a separate workspace crate (svg-dom-graph-demo) consuming svg-dom-graph only through its public
-    // API — see that crate's own doc comment for why. `--out-dir` is given as an absolute path so it lands exactly
-    // at `out_dir` regardless of demo-app's own location, rather than relying on relative-path arithmetic from it.
+    // demo-app is a separate workspace crate (svg-dom-graph-demo) consuming svg-dom-graph only through its public API —
+    // see that crate's own doc comment for why. `--out-dir` is given as an absolute path so it lands exactly at
+    // `out_dir` regardless of demo-app's own location, rather than relying on relative-path arithmetic from it.
     let status = Command::new("wasm-pack")
         .current_dir(root)
         .arg("build")

@@ -1,5 +1,5 @@
-//! `panel-tree` / `#diagram`: a minimal directed tree with straight connectors. Shows ordinary dragging and
-//! connector reroute.
+//! `panel-tree` / `#diagram`: a minimal directed tree with straight connectors. Shows ordinary dragging and connector
+//! reroute.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;

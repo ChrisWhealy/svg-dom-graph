@@ -1,6 +1,6 @@
 //! The nested `ThetaD` child: SHA3's own `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)` step, its own selection toolbar, and
-//! rebuilding it — via `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s
-//! own output.
+//! rebuilding it — via `Scene::replace_container_child` — every time that toolbar steps to a new row of `ThetaC`'s own
+//! output.
 
 use super::support::SteppedChildState;
 use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
@@ -55,23 +55,22 @@ fn row(c: [u64; 5], n: usize) -> (u64, u64, u64) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `D[n]` for every `n`, via [`row`] — `ThetaD`'s own complete result, computed once up front the same way
-/// `crate::selection::theta_c_outputs` computes `ThetaC`'s. `build_theta_demo`/[`step`] use this to know every
-/// row's own real value regardless of how far the walk has actually stepped;
+/// `crate::selection::theta_c_outputs` computes `ThetaC`'s. `build_theta_demo`/[`step`] use this to know every row's
+/// own real value regardless of how far the walk has actually stepped;
 /// [`display_outputs`](crate::selection::display_outputs) is what reveals them progressively.
 pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
     std::array::from_fn(|n| row(c, n).2)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested `ThetaD` child for `n`: `C` — `ThetaC`'s own real output,
-/// [`crate::selection::theta_c_outputs`], as one `[5; u64]` array, cell `n` selected — sits at the top; `next`,
-/// `C[(n + 1) % 5]`, sits directly below it; `prev` (`C[(n + 4) % 5]`), a `ROTL` node rotating `next`, and an `XOR`
-/// node combining `prev` and that `ROTL` result into `D[n]` all share one further row below that, left to right, so
-/// both of `XOR`'s own inputs approach it from the west rather than `prev` dropping straight down onto it from
-/// directly above — see `MID_Y`'s own doc comment for why that matters. `D`, at the bottom, is the same shape as
-/// `C`, showing `display`'s own current values with cell `n` focused. `Some(row)` computes and highlights row
-/// `row`; `None` — the unstarted state, before row `0` is ever processed — computes the same chain over
-/// `prev`/`next` both zero instead, and leaves `C` unselected. See
+/// Builds the nested `ThetaD` child for `n`: `C` — `ThetaC`'s own real output, [`crate::selection::theta_c_outputs`],
+/// as one `[5; u64]` array, cell `n` selected — sits at the top; `next`, `C[(n + 1) % 5]`, sits directly below it;
+/// `prev` (`C[(n + 4) % 5]`), a `ROTL` node rotating `next`, and an `XOR` node combining `prev` and that `ROTL` result
+/// into `D[n]` all share one further row below that, left to right, so both of `XOR`'s own inputs approach it from the
+/// west rather than `prev` dropping straight down onto it from directly above — see `MID_Y`'s own doc comment for why
+/// that matters. `D`, at the bottom, is the same shape as `C`, showing `display`'s own current values with cell `n`
+/// focused. `Some(row)` computes and highlights row `row`; `None` — the unstarted state, before row `0` is ever
+/// processed — computes the same chain over `prev`/`next` both zero instead, and leaves `C` unselected. See
 /// [`theta_c::build_scene`](super::theta_c::build_scene)'s own doc comment for why the chain is always drawn, even
 /// unstarted, and why `display`'s own current values are passed in rather than computed here.
 ///
@@ -103,8 +102,8 @@ pub(super) fn build_scene(
     const MID_Y: f64 = PREV_NEXT_Y + 130.0;
     const OUTPUT_Y: f64 = MID_Y + 130.0;
 
-    // 2 fixing points: `C` feeds both `prev` and `next`, so it needs room for two distinct outgoing connectors on
-    // the same side, rather than both landing on the same midpoint — see `EdgeAnchors`'s own doc comment.
+    // 2 fixing points: `C` feeds both `prev` and `next`, so it needs room for two distinct outgoing connectors on the
+    // same side, rather than both landing on the same midpoint — see `EdgeAnchors`'s own doc comment.
     let input_options = NodeOptions::default().with_edge_anchors(Some(EdgeAnchors(2)));
     let input = scene
         .add_named_data_node_with(
@@ -210,14 +209,14 @@ pub(super) fn attach_toolbar(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same rebuild as `theta_c::rebuild_child`, for the nested `ThetaD` child and [`SCENE`] instead — `ThetaC`'s
-/// own real output never changes, so only `to` (which row of it `ThetaD` currently looks at) and `display` (which
-/// rows of `ThetaD`'s own output have been written so far) vary from one step to the next.
+/// The same rebuild as `theta_c::rebuild_child`, for the nested `ThetaD` child and [`SCENE`] instead — `ThetaC`'s own
+/// real output never changes, so only `to` (which row of it `ThetaD` currently looks at) and `display` (which rows of
+/// `ThetaD`'s own output have been written so far) vary from one step to the next.
 ///
 /// # Errors
 ///
-/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the
-/// DOM, or if any library call fails.
+/// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
+/// or if any library call fails.
 fn rebuild_child(to: Option<usize>, display: [u64; 5], state: Rc<RefCell<SteppedChildState>>) -> Result<(), String> {
     let document = crate::util::document()?;
     let (input, previous_id) = {

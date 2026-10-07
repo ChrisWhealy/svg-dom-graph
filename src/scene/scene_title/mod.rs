@@ -1,9 +1,9 @@
 //! A heading-style text label for the whole `Scene` — a title, not a graph node.
 //!
-//! Like [`super::toolbar`]'s own bar, the title is a sibling of the content layer under the `<svg>` root, never a
-//! child of it: zooming or panning the content never moves, scales, or otherwise disturbs it. It is optional —
-//! [`Scene::show_scene_title`] draws it, [`Scene::hide_scene_title`] removes it entirely — and, like every other
-//! nested `Scene`, a container node's own child carries its own independent title, unrelated to its parent's.
+//! Like [`super::toolbar`]'s own bar, the title is a sibling of the content layer under the `<svg>` root, never a child
+//! of it: zooming or panning the content never moves, scales, or otherwise disturbs it. It is optional —
+//! [`Scene::show_scene_title`] draws it, [`Scene::hide_scene_title`] removes it entirely — and, like every other nested
+//! `Scene`, a container node's own child carries its own independent title, unrelated to its parent's.
 
 mod layout;
 mod options;
@@ -37,8 +37,8 @@ impl SceneInner {
     /// Repositions the shown title for the `<svg>`'s visible area as it is now. Does nothing if none is shown.
     ///
     /// Reads the title's own real, rendered bounding box (`getBBox()`, via [`SvgNode::bounding_box`]) rather than
-    /// estimating from `font_size` and character count, so this stays correct for whatever font the browser
-    /// actually substitutes — the same reasoning `shrink_label_to_fit`'s own doc comment gives for a node's label.
+    /// estimating from `font_size` and character count, so this stays correct for whatever font the browser actually
+    /// substitutes — the same reasoning `shrink_label_to_fit`'s own doc comment gives for a node's label.
     ///
     /// # Errors
     ///
@@ -68,26 +68,26 @@ impl Scene {
     /// panel's own `<h2>` in the surrounding page, already plays. `options` controls its size, weight, underline,
     /// position, and `aria-level` — see [`SceneTitleOptions`]'s own doc comment for every field and its default.
     ///
-    /// Drawn with `text-anchor="middle"`/`dominant-baseline="middle"`, so `options.edge`/`options.margin` position
-    /// its own centre, the same convention [`show_toolbar`](Self::show_toolbar)'s own button labels already use.
+    /// Drawn with `text-anchor="middle"`/`dominant-baseline="middle"`, so `options.edge`/`options.margin` position its
+    /// own centre, the same convention [`show_toolbar`](Self::show_toolbar)'s own button labels already use.
     ///
     /// # Keeping the layout current
     ///
-    /// **The scene cannot observe its `<svg>` being resized.** The title is positioned against the `<svg>`'s
-    /// visible area as it is at the moment of this call, and stays there until told otherwise. Call
+    /// **The scene cannot observe its `<svg>` being resized.** The title is positioned against the `<svg>`'s visible
+    /// area as it is at the moment of this call, and stays there until told otherwise. Call
     /// [`refresh_layout`](Self::refresh_layout) whenever the visible area changes — see
-    /// [`show_toolbar`](Self::show_toolbar)'s own doc comment ("Keeping the layout current") for exactly when that
-    /// is, which applies here unchanged.
+    /// [`show_toolbar`](Self::show_toolbar)'s own doc comment ("Keeping the layout current") for exactly when that is,
+    /// which applies here unchanged.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidSceneTitleOptions`] if `options` holds a `font_size` that is not a finite value
-    /// `> 0.0`, a `margin` that is not a finite value `>= 0.0`, or an `aria_level` of `0`. Checked first, so a
-    /// rejected call leaves any existing title exactly as it was.
+    /// Returns [`Error::InvalidSceneTitleOptions`] if `options` holds a `font_size` that is not a finite value `> 0.0`,
+    /// a `margin` that is not a finite value `>= 0.0`, or an `aria_level` of `0`. Checked first, so a rejected call
+    /// leaves any existing title exactly as it was.
     ///
-    /// If drawing fails partway, nothing is left behind and no title is shown; any previous title stays exactly as
-    /// it was until this call has fully succeeded, the same "nothing changes until the new one is fully built"
-    /// guarantee [`show_toolbar`](Self::show_toolbar) already gives.
+    /// If drawing fails partway, nothing is left behind and no title is shown; any previous title stays exactly as it
+    /// was until this call has fully succeeded, the same "nothing changes until the new one is fully built" guarantee
+    /// [`show_toolbar`](Self::show_toolbar) already gives.
     pub fn show_scene_title(&self, text: impl Into<String>, options: SceneTitleOptions) -> Result<(), Error> {
         if !options.is_valid() {
             return Err(Error::InvalidSceneTitleOptions(options));
@@ -126,10 +126,10 @@ impl Scene {
             return Err(err);
         }
 
-        // Only now is the new title fully committed — built, installed, and laid out. Only now is it safe to
-        // remove whatever title this one replaced — the same ordering `show_selection_toolbar`'s own doc comment
-        // ("Ownership") already follows, so either failure branch above can still put `previous` back as the
-        // still-live, still-shown title.
+        // Only now is the new title fully committed — built, installed, and laid out. Only now is it safe to remove
+        // whatever title this one replaced — the same ordering `show_selection_toolbar`'s own doc comment ("Ownership")
+        // already follows, so either failure branch above can still put `previous` back as the still-live, still-shown
+        // title.
         if let Some(previous) = previous {
             previous.remove();
         }

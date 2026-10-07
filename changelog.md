@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Adjust SHA3 Sponge layout (``)
+- Adjust SHA3 Sponge layout (`8187952`)
+- Doc only: Ensure Rust doc comments flow up to, but not beyond column 120 (``)
 
 # [Released]
 

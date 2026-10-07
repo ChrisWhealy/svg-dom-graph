@@ -12,7 +12,7 @@ pub enum DataFormat {
     Binary,
     /// Every byte as one character: a printable ASCII byte as itself, a space as `␣` (so a blank cell is not mistaken
     /// for a missing one), and any other byte as `·`. A multi-byte value shows its bytes in `ByteOrder`, with no
-    /// separator. Meant for `u8` values that are text. See the `content` module's own doc comment for exactly what
-    /// each variant produces.
+    /// separator. Meant for `u8` values that are text. See the `content` module's own doc comment for exactly what each
+    /// variant produces.
     Ascii,
 }

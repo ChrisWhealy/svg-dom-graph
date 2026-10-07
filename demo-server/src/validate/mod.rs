@@ -1,7 +1,7 @@
 //! Cross-checks `demo-server`'s own panel manifest ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!` list,
 //! so the two id lists — declared in separate crates, in different forms (HTML-oriented here, function-oriented there),
-//! for reasons explained in each one's own doc comment — cannot silently drift apart. Mirrors `svg-dom`'s
-//! own `demo-server/src/validate/mod.rs`.
+//! for reasons explained in each one's own doc comment — cannot silently drift apart. Mirrors `svg-dom`'s own
+//! `demo-server/src/validate/mod.rs`.
 //!
 //! This reads `demo-app/src/lib.rs` as plain text and extracts every panel id from the `demo_gallery!` invocation,
 //! rather than depending on `demo-app` as a library: that crate builds to a wasm `cdylib` for the browser, not

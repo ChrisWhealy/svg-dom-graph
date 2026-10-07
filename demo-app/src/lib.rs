@@ -11,15 +11,14 @@
 //! - `panel-elbow` / `#elbow-diagram` — [`elbow::build_elbow_demo`]: two boxes, a straight/elbow toggle, and a
 //!   corner-radius slider. See that function's own doc comment for what it demonstrates.
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`edge_anchors::build_edge_anchors_demo`]: a parent with a
-//!   growing and shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that
-//!   function's own doc comment for what it demonstrates.
+//!   growing and shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own
+//!   doc comment for what it demonstrates.
 //! - `panel-data` / `#data-diagram` — [`data::build_data_demo`]: draggable nodes whose content is a
 //!   [`DataNodeContent`](svg_dom_graph::scene::DataNodeContent) grid of values rather than a plain text label — one
-//!   single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`), the multi-value counts
-//!   chosen to cover every combination the grid layout rule can produce. See that function's own doc comment for
-//!   exactly which.
-//! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one
-//!   operand node feeding an operator node, for every unary operator this crate names.
+//!   single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`), the multi-value counts chosen to
+//!   cover every combination the grid layout rule can produce. See that function's own doc comment for exactly which.
+//! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one operand
+//!   node feeding an operator node, for every unary operator this crate names.
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
 //!   operand nodes feeding an operator node, for every binary operator this crate names.
 //! - `panel-operators-arithmetic` / `#operators-arithmetic-diagram` —
@@ -27,21 +26,21 @@
 //!   every arithmetic operator this crate names.
 //! - `panel-operators-chained` / `#operators-chained-diagram` —
 //!   [`operators_chained::build_chained_operator_demo`]: operator nodes feeding further operator nodes, including
-//!   the operator-chaining example that motivated this whole family of panels. Every result any of the four
-//!   operator panels shows is computed here with plain Rust integer ops, never by the library itself — see each
-//!   function's own doc comment.
-//! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]:
-//!   a one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
-//!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's
-//!   own doc comment for what each demonstrates.
-//! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]: SHA3's `Theta` function as a parent `Scene`
-//!   whose `ThetaC`, `ThetaD`, and `XOR loop` nodes are all genuine container nodes, each owning its own nested
-//!   `Scene`, click-to-enter and &times;-to-exit, stepped by its own Next/Prev buttons. All three are real; see
+//!   the operator-chaining example that motivated this whole family of panels. Every result any of the four operator
+//!   panels shows is computed here with plain Rust integer ops, never by the library itself — see each function's own
+//!   doc comment.
+//! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]: a
+//!   one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
+//!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's own
+//!   doc comment for what each demonstrates.
+//! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]: SHA3's `Theta` function as a parent `Scene` whose
+//!   `ThetaC`, `ThetaD`, and `XOR loop` nodes are all genuine container nodes, each owning its own nested `Scene`,
+//!   click-to-enter and &times;-to-exit, stepped by its own Next/Prev buttons. All three are real; see
 //!   [`theta::build_scene`]'s own doc comment.
 //! - `panel-sha3-sponge` / `#sha3-sponge-diagram` — [`sha3_sponge::build_sha3_sponge_demo`]: SHA3's own sponge
-//!   construction, computing SHA3-256 of one short message. "Keccak f(1600)" is a genuine container node, nesting
-//!   all 24 real rounds of the permutation, and each round nests its five real functions. Every value is derived
-//!   from the one upstream of it — see `sha3_sponge`'s own module doc comment.
+//!   construction, computing SHA3-256 of one short message. "Keccak f(1600)" is a genuine container node, nesting all
+//!   24 real rounds of the permutation, and each round nests its five real functions. Every value is derived from the
+//!   one upstream of it — see `sha3_sponge`'s own module doc comment.
 //!
 //! Each feature this crate gains should keep this pattern: land it in a module of its own, add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry, not just a line in the changelog.
@@ -70,8 +69,8 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One demo's own entry in [`DEMO_PANELS`], generated by [`demo_gallery`] below so a panel's id, the function
-/// [`init_panel`] calls to build it, and the source shown in its collapsible source frame can never drift apart
-/// the way four independently hand-maintained lists could.
+/// [`init_panel`] calls to build it, and the source shown in its collapsible source frame can never drift apart the way
+/// four independently hand-maintained lists could.
 pub(crate) struct DemoPanel {
     /// Also the id of the `<section>` (see `demo/panels/*.html`) that [`init_panel`] builds into and
     /// [`source_frame::append_demo_source`] appends the source frame to.
@@ -80,8 +79,8 @@ pub(crate) struct DemoPanel {
     pub(crate) build: fn() -> Result<(), String>,
     /// `build`'s own function name, shown as the collapsible source frame's own heading.
     pub(crate) fn_name: &'static str,
-    /// `build`'s own module's full source, embedded at compile time — see `crate::source_frame`'s own doc comment
-    /// for why.
+    /// `build`'s own module's full source, embedded at compile time — see `crate::source_frame`'s own doc comment for
+    /// why.
     pub(crate) source: &'static str,
 }
 
@@ -116,9 +115,9 @@ demo_gallery! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted"
-/// (attribute absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`). This lets it
-/// skip rebuilding a panel that has already been built once.
+/// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted" (attribute
+/// absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`). This lets it skip rebuilding a
+/// panel that has already been built once.
 ///
 /// Rebuilding it again would duplicate its contents rather than replace them, since each `build_*` function always
 /// appends a fresh `<svg>`/child set into its own container. Mirrors `svg-dom`'s own `PANEL_STATE_ATTR`.
@@ -128,20 +127,20 @@ const PANEL_STATE_ATTR: &str = "data-panel-state";
 /// Builds one demo panel's content the first time it is selected, rather than every panel eagerly at page load.
 ///
 /// Eager load is what this gallery used to do, even though at most one panel is ever visible at once (every other
-/// `<section>` sits behind `display: none`; see `.section`/`.section.active` in `style.css`). Mirrors `svg-dom`'s
-/// own `init_panel`.
+/// `<section>` sits behind `display: none`; see `.section`/`.section.active` in `style.css`). Mirrors `svg-dom`'s own
+/// `init_panel`.
 ///
-/// Call this from JavaScript each time a panel becomes the active one (see `demo/index.template.html`'s
-/// `selectDemo`). It is idempotent — see [`PANEL_STATE_ATTR`] — so calling it again for an already-initialised
-/// panel, e.g. navigating back to one visited earlier, is a no-op rather than a duplicate rebuild.
+/// Call this from JavaScript each time a panel becomes the active one (see `demo/index.template.html`'s `selectDemo`).
+/// It is idempotent — see [`PANEL_STATE_ATTR`] — so calling it again for an already-initialised panel, e.g. navigating
+/// back to one visited earlier, is a no-op rather than a duplicate rebuild.
 ///
 /// A demo that fails to build is recorded as `"failed"` rather than retried on a later visit; [`run_panel`] and
 /// [`report_panel_error`] are what surface that failure in the gallery itself.
 ///
 /// A missing or mismatched panel id is a different kind of problem — a catalogue error rather than a demo runtime
 /// error. It is caught at server startup instead, before the gallery is ever served (see
-/// `demo-server/src/validate/mod.rs` and `demo-server/src/panels/mod.rs`'s `assemble`). So `init_panel` never has
-/// to distinguish the two: by the time it runs, the catalogue has already been validated.
+/// `demo-server/src/validate/mod.rs` and `demo-server/src/panels/mod.rs`'s `assemble`). So `init_panel` never has to
+/// distinguish the two: by the time it runs, the catalogue has already been validated.
 #[wasm_bindgen]
 pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
     let document = util::document().map_err(|e| JsValue::from_str(&e))?;
@@ -159,8 +158,8 @@ pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
         .set_attribute(PANEL_STATE_ATTR, state)
         .map_err(|e| JsValue::from_str(&format!("{e:?}")))?;
 
-    // Show the Rust source of the function that just built this panel — including when it failed to build; the
-    // source is still worth seeing even when the demo itself broke.
+    // Show the Rust source of the function that just built this panel — including when it failed to build; the source
+    // is still worth seeing even when the demo itself broke.
     source_frame::append_demo_source(&document, panel_id).map_err(|e| JsValue::from_str(&e))?;
     Ok(())
 }
@@ -168,8 +167,8 @@ pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs one demo's build function, catching its error rather than letting it propagate, and reports whether it
 /// succeeded so [`init_panel`] can record that as the panel's state. A broken demo is this function's own runtime
-/// behaviour, not a missing or mismatched panel — see [`init_panel`]'s doc comment for why those are
-/// handled differently.
+/// behaviour, not a missing or mismatched panel — see [`init_panel`]'s doc comment for why those are handled
+/// differently.
 fn run_panel(panel: &DemoPanel) -> bool {
     match (panel.build)() {
         Ok(()) => true,

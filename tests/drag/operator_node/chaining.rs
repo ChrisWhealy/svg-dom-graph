@@ -77,10 +77,9 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         crate::common::path_d(&crate::common::nth_connector("operator-chain-drag", n)?)
     };
 
-    // `C` feeds `AND` from a different side than `XOR` does — `XOR` sits directly above `AND`, `C` sits far to its
-    // east — so each of `AND`'s own two inputs resolves its own anchor independently, and every "must stay exactly
-    // as it was" check below holds regardless of how the same-side anti-crossing split behaves elsewhere in the
-    // chain.
+    // `C` feeds `AND` from a different side than `XOR` does — `XOR` sits directly above `AND`, `C` sits far to its east
+    // — so each of `AND`'s own two inputs resolves its own anchor independently, and every "must stay exactly as it
+    // was" check below holds regardless of how the same-side anti-crossing split behaves elsewhere in the chain.
 
     // --- Drag A: only A's own edge into XOR touches A at all. ---
     let (path_xor_and_before, path_c_and_before) = (path(2)?, path(3)?);
@@ -103,9 +102,9 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         "expected C's own edge into AND to stay put while only A moved",
     )?;
 
-    // --- Drag XOR: both of its own inputs, and its own output into AND, all touch XOR. C's own edge into AND does
-    // not — proving a moved *intermediate* operator correctly reroutes both its incoming and its outgoing edges,
-    // without disturbing a sibling edge into the same downstream node. ---
+    // --- Drag XOR: both of its own inputs, and its own output into AND, all touch XOR. C's own edge into AND does not
+    // — proving a moved *intermediate* operator correctly reroutes both its incoming and its outgoing edges, without
+    // disturbing a sibling edge into the same downstream node. ---
     let (path_a_xor_before, path_b_xor_before, path_xor_and_before, path_c_and_before) =
         (path(0)?, path(1)?, path(2)?, path(3)?);
     let xor_group = nth_group("operator-chain-drag", 3)?;
@@ -130,8 +129,8 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         "expected C's own edge into AND to stay put while only XOR moved",
     )?;
 
-    // --- Drag AND: both of its own inputs touch AND. Neither of XOR's own inputs does — proving a moved
-    // *downstream* operator never disturbs the edges feeding the operator upstream of it. ---
+    // --- Drag AND: both of its own inputs touch AND. Neither of XOR's own inputs does — proving a moved *downstream*
+    // operator never disturbs the edges feeding the operator upstream of it. ---
     let (path_a_xor_before, path_b_xor_before, path_xor_and_before, path_c_and_before) =
         (path(0)?, path(1)?, path(2)?, path(3)?);
     let and_group = nth_group("operator-chain-drag", 4)?;

@@ -138,8 +138,8 @@ fn a_non_finite_wheel_delta_changes_nothing() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Zoom-anchoring tests. A view maps a graph point `p` to `s * p + t`. Zooming about an anchor `a` must give
-// `t' = a - (s' / s) * (a - t)`, where `s'` is the scale actually applied *after* clamping — not the scale requested.
+//   Zoom-anchoring tests. A view maps a graph point `p` to `s * p + t`. Zooming about an anchor `a` must give `t' = a -
+//   (s' / s) * (a - t)`, where `s'` is the scale actually applied *after* clamping — not the scale requested.
 
 /// The graph point currently displayed at viewport point `v`: the inverse of [`apply`].
 fn graph_point_under(view: ViewTransform, v: Point) -> Point {
@@ -344,8 +344,8 @@ fn panning_after_a_zoom_moves_the_view_by_exactly_the_pan_amount() -> Result<(),
     )
 }
 
-/// Zoom and pan interleaved in either order end at the same place only when they commute — which they do not, so
-/// the order matters and each must apply against the view as it stands.
+/// Zoom and pan interleaved in either order end at the same place only when they commute — which they do not, so the
+/// order matters and each must apply against the view as it stands.
 #[test]
 fn zoom_and_pan_apply_in_sequence_against_the_current_view() -> Result<(), String> {
     let anchor = Point::new(100.0, 100.0);
@@ -426,8 +426,8 @@ fn repeated_zoom_cycles_do_not_accumulate_error() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A pan or zoom writes this attribute for every animation frame. Once its buffer is large enough it must be reused, not
-/// reallocated, however the transform changes.
+/// A pan or zoom writes this attribute for every animation frame. Once its buffer is large enough it must be reused,
+/// not reallocated, however the transform changes.
 #[test]
 fn writing_the_transform_attribute_reuses_its_buffer() -> Result<(), String> {
     let mut buffer = String::with_capacity(96);

@@ -1,8 +1,8 @@
-//! Ordinary dragging: coordinate conversion, connector reroute, listener and scene lifetime, and pointer/button
-//! edge cases.
+//! Ordinary dragging: coordinate conversion, connector reroute, listener and scene lifetime, and pointer/button edge
+//! cases.
 //!
-//! These observe the real rendered DOM, queried directly, not through any crate-internal state. That proves the
-//! whole pipeline actually reaches the browser, not just that `svg-dom-graph`'s own Rust state changed correctly.
+//! These observe the real rendered DOM, queried directly, not through any crate-internal state. That proves the whole
+//! pipeline actually reaches the browser, not just that `svg-dom-graph`'s own Rust state changed correctly.
 
 use crate::common::{
     attr_f64, check, check_close, dispatch_pointer_event, dispatch_pointer_event_with_button, group_translate,
@@ -16,9 +16,9 @@ use svg_dom_graph::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging a node moves its own `<g>` via its `transform`. That transform carries its rendered `<rect>` and
-/// `<text>` label along with it. Dragging also reroutes its connector's far end.
-/// The `<svg>`'s `viewBox` matches its pixel size 1:1 here. So a client-pixel drag is a same-sized user-space move.
+/// Dragging a node moves its own `<g>` via its `transform`. That transform carries its rendered `<rect>` and `<text>`
+/// label along with it. Dragging also reroutes its connector's far end. The `<svg>`'s `viewBox` matches its pixel size
+/// 1:1 here. So a client-pixel drag is a same-sized user-space move.
 #[wasm_bindgen_test]
 fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), String> {
     let svg = make_svg("drag-1to1", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -51,9 +51,8 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         .ok_or("no <text> in B's group")?;
     let connector = the_connector("drag-1to1")?;
 
-    // The rect and label are drawn once, in local coordinates relative to (0, 0) — the rect at the origin, the
-    // label at the box's own local centre — and never touched again by a move. Only the group's own transform
-    // changes.
+    // The rect and label are drawn once, in local coordinates relative to (0, 0) — the rect at the origin, the label at
+    // the box's own local centre — and never touched again by a move. Only the group's own transform changes.
     let local_rect_xy_before = (attr_f64(&rect_b, "x")?, attr_f64(&rect_b, "y")?);
     let local_label_xy_before = (attr_f64(&label_b, "x")?, attr_f64(&label_b, "y")?);
 
@@ -72,16 +71,16 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
     check_close(group_x, b_rect_after.origin.x)?;
     check_close(group_y, b_rect_after.origin.y)?;
 
-    // Neither the rect's nor the label's own local coordinates changed — the whole box moved as one, via the
-    // group's transform, not by rewriting every child.
+    // Neither the rect's nor the label's own local coordinates changed — the whole box moved as one, via the group's
+    // transform, not by rewriting every child.
     check_close(attr_f64(&rect_b, "x")?, local_rect_xy_before.0)?;
     check_close(attr_f64(&rect_b, "y")?, local_rect_xy_before.1)?;
     check_close(attr_f64(&label_b, "x")?, local_label_xy_before.0)?;
     check_close(attr_f64(&label_b, "y")?, local_label_xy_before.1)?;
 
-    // The connector's B-end rerouted to sit at the midpoint of one of B's new rect's four sides.
-    // This is the anchor rule every elbowed connector follows, checked here independently of the crate's own
-    // internal side-selection logic.
+    // The connector's B-end rerouted to sit at the midpoint of one of B's new rect's four sides. This is the anchor
+    // rule every elbowed connector follows, checked here independently of the crate's own internal side-selection
+    // logic.
     let (end_x, end_y) = last_point_of_path(&path_d(&connector)?)?;
     let b = b_rect_after;
     let side_midpoints = [
@@ -101,12 +100,11 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same drag, but with a `viewBox` half the `<svg>`'s rendered pixel size — so one user-space unit spans two
-/// CSS pixels.
+/// The same drag, but with a `viewBox` half the `<svg>`'s rendered pixel size — so one user-space unit spans two CSS
+/// pixels.
 ///
-/// Proves the pointer-coordinate conversion, not just that a drag moves something.
-/// If the crate still assumed client pixels equalled user-space units, the observed move would come out twice the
-/// expected size.
+/// Proves the pointer-coordinate conversion, not just that a drag moves something. If the crate still assumed client
+/// pixels equalled user-space units, the observed move would come out twice the expected size.
 #[wasm_bindgen_test]
 fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Result<(), String> {
     let svg = make_svg("drag-scaled", Size::new(400.0, 260.0), Size::new(200.0, 130.0));
@@ -142,13 +140,13 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_draggable`'s listener closures must not keep the scene's internal state alive on their own.
 ///
-/// `Scene` is a cheap handle around shared internal state, so an external test cannot hold a `Weak` reference the
-/// way it could when callers had to wrap `Scene` in `Rc<RefCell<_>>` themselves — that internal sharing strategy is
-/// no longer observable from outside the crate. Instead, this checks the same property behaviourally: registers
-/// draggable handlers, then drops every `Scene` handle this test holds before dragging. If a listener closure
-/// captured a strong reference to the scene's internal state (rather than a `Weak` one), the closure's
-/// `Weak::upgrade()` would still succeed and the drag would still move the box; a correctly weak-captured closure
-/// finds nothing left to upgrade to, and the drag becomes a silent no-op.
+/// `Scene` is a cheap handle around shared internal state, so an external test cannot hold a `Weak` reference the way
+/// it could when callers had to wrap `Scene` in `Rc<RefCell<_>>` themselves — that internal sharing strategy is no
+/// longer observable from outside the crate. Instead, this checks the same property behaviourally: registers draggable
+/// handlers, then drops every `Scene` handle this test holds before dragging. If a listener closure captured a strong
+/// reference to the scene's internal state (rather than a `Weak` one), the closure's `Weak::upgrade()` would still
+/// succeed and the drag would still move the box; a correctly weak-captured closure finds nothing left to upgrade to,
+/// and the drag becomes a silent no-op.
 #[wasm_bindgen_test]
 fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), String> {
     let svg = make_svg("scene-lifetime", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -239,8 +237,8 @@ fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<
 /// A non-primary pointerdown (a right or middle mouse button, `button() != 0`) must not start a drag.
 ///
 /// Pointer Events use `0` for the primary button — left mouse, touch, or ordinary pen contact — `1` for the middle
-/// mouse button, and `2` for the right mouse button or a pen's barrel button.
-/// Right-clicking a node (for example, to open a context menu) must not put it into drag mode.
+/// mouse button, and `2` for the right mouse button or a pen's barrel button. Right-clicking a node (for example, to
+/// open a context menu) must not put it into drag mode.
 #[wasm_bindgen_test]
 fn a_non_primary_button_pointerdown_does_not_start_a_drag() -> Result<(), String> {
     let svg = make_svg("non-primary-button", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -316,19 +314,18 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `pointercancel` belonging to the drag's own active pointer ends that drag: any position that pointer's own
-/// `pointermove` had queued but not yet applied is discarded rather than applied, a further move from the same
-/// pointer no longer moves the node, and starting an entirely new drag afterwards still works normally.
+/// `pointermove` had queued but not yet applied is discarded rather than applied, a further move from the same pointer
+/// no longer moves the node, and starting an entirely new drag afterwards still works normally.
 ///
-/// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture, so
-/// — unlike `pointerup`, which flushes a still-pending coalesced position — the position at cancel time is not one
-/// this crate treats as the user's intended drop point. This test's own `pointermove` and `pointercancel` are
-/// dispatched back to back, with no animation frame in between, specifically so nothing has applied that
-/// `pointermove`'s own position yet when `pointercancel` arrives — see `PointerCoalescer::cancel`'s own doc
-/// comment.
+/// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture, so —
+/// unlike `pointerup`, which flushes a still-pending coalesced position — the position at cancel time is not one this
+/// crate treats as the user's intended drop point. This test's own `pointermove` and `pointercancel` are dispatched
+/// back to back, with no animation frame in between, specifically so nothing has applied that `pointermove`'s own
+/// position yet when `pointercancel` arrives — see `PointerCoalescer::cancel`'s own doc comment.
 ///
 /// The complement to `an_unrelated_pointers_pointercancel_does_not_end_the_active_drag`, which only checks that an
-/// unrelated pointer's `pointercancel` is ignored — this checks the positive path `pointercancel` exists for:
-/// clearing `drag_start` for the pointer it actually belongs to.
+/// unrelated pointer's `pointercancel` is ignored — this checks the positive path `pointercancel` exists for: clearing
+/// `drag_start` for the pointer it actually belongs to.
 #[wasm_bindgen_test]
 fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> {
     let svg = make_svg("pointer-cancel-active", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -346,8 +343,8 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
 
     let group_b = nth_group("pointer-cancel-active", 0)?; // B was added first.
 
-    // Start a drag with pointer 1, move it, then cancel that same pointer — before any animation frame has had a
-    // chance to apply the pending move. The node stays exactly where it started.
+    // Start a drag with pointer 1, move it, then cancel that same pointer — before any animation frame has had a chance
+    // to apply the pending move. The node stays exactly where it started.
     dispatch_pointer_event(&group_b, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_b, "pointermove", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointercancel", 150, 130, 1)?;
@@ -362,8 +359,8 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
     check_close(group_x, b_rect_before.origin.x)?;
     check_close(group_y, b_rect_before.origin.y)?;
 
-    // A brand new drag afterwards — even reusing the same pointer_id, since pointercancel released it — still
-    // works normally, and completes via pointerup, so this one's own move is applied.
+    // A brand new drag afterwards — even reusing the same pointer_id, since pointercancel released it — still works
+    // normally, and completes via pointerup, so this one's own move is applied.
     dispatch_pointer_event(&group_b, "pointerdown", 150, 130, 1)?;
     dispatch_pointer_event(&group_b, "pointermove", 200, 160, 1)?;
     dispatch_pointer_event(&group_b, "pointerup", 200, 160, 1)?;
@@ -378,13 +375,12 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A second `make_draggable`/`make_draggable_with` call for the same node is rejected with
-/// `Error::AlreadyDraggable`, rather than silently installing a second, independent set of pointer listeners
-/// alongside the first.
+/// A second `make_draggable`/`make_draggable_with` call for the same node is rejected with `Error::AlreadyDraggable`,
+/// rather than silently installing a second, independent set of pointer listeners alongside the first.
 ///
 /// Also drags the node afterwards and checks it moved by exactly the drag delta, not double it — the strongest
-/// available proof that the rejected second call did not sneak a duplicate `move_node` call onto every
-/// `pointermove` alongside the first installation's own.
+/// available proof that the rejected second call did not sneak a duplicate `move_node` call onto every `pointermove`
+/// alongside the first installation's own.
 #[wasm_bindgen_test]
 fn a_second_make_draggable_call_for_the_same_node_is_rejected() -> Result<(), String> {
     let svg = make_svg("drag-twice", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -465,9 +461,9 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `make_draggable` leaves the idle cursor alone. A node does not look grabbable before a caller has actually
-/// started dragging it. But it does show a grabbing cursor once a drag is actually in progress. It clears that
-/// cursor again once the drag ends.
+/// `make_draggable` leaves the idle cursor alone. A node does not look grabbable before a caller has actually started
+/// dragging it. But it does show a grabbing cursor once a drag is actually in progress. It clears that cursor again
+/// once the drag ends.
 #[wasm_bindgen_test]
 fn make_draggable_sets_no_idle_cursor_but_shows_grabbing_mid_drag() -> Result<(), String> {
     let svg = make_svg("drag-cursor", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

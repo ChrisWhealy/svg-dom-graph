@@ -62,8 +62,8 @@ pub(super) struct ViewInput {
     wheel: bool,
     /// The zoom percentage the target's accessible name currently shows.
     ///
-    /// Remembered here so a frame that has not changed it, which is every frame of a pan, does not format the label, read
-    /// it back from the DOM, or write it. See [`SceneInner::sync_view_label`].
+    /// Remembered here so a frame that has not changed it, which is every frame of a pan, does not format the label,
+    /// read it back from the DOM, or write it. See [`SceneInner::sync_view_label`].
     label_percent: i64,
 }
 
@@ -94,8 +94,8 @@ impl ViewInput {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it. A
-/// keyboard focus target of its own, another `<rect>`, is added beside it, so the same gestures can be reached without a
-/// pointer. The application's `<svg>` is never touched.
+/// keyboard focus target of its own, another `<rect>`, is added beside it, so the same gestures can be reached without
+/// a pointer. The application's `<svg>` is never touched.
 ///
 /// `scale` is the current zoom, for the `<svg>`'s accessible name.
 ///
@@ -127,8 +127,8 @@ fn build(
         surface.set_fill("transparent")?;
         surface.set_attr("aria-hidden", "true")?;
         let Some(root) = content.parent() else { return Ok::<_, Error>(false) };
-        // Both go directly beneath the content layer. The focus target is inserted second, so it lies above the surface —
-        // and takes no pointer events, so the surface still gets every one.
+        // Both go directly beneath the content layer. The focus target is inserted second, so it lies above the surface
+        // — and takes no pointer events, so the surface still gets every one.
         root.insert_before(&surface, content)?;
         root.insert_before(&target, content)?;
 
@@ -175,8 +175,8 @@ fn build(
 impl SceneInner {
     /// Brings the focus target's accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
     ///
-    /// Does nothing if there is no keyboard handling, and writes only if the percentage shown changes. It is a name, not a
-    /// live region, so it never interrupts a screen reader with an announcement on every zoom step.
+    /// Does nothing if there is no keyboard handling, and writes only if the percentage shown changes. It is a name,
+    /// not a live region, so it never interrupts a screen reader with an announcement on every zoom step.
     ///
     /// Runs on every flushed frame of a pan or zoom, so it builds the text in the scene's reused scratch buffer rather
     /// than allocating a new `String` each time.
@@ -238,10 +238,10 @@ impl Scene {
     /// from the toolbar could leave content that a keyboard user cannot get back to. The target is given the
     /// `application` role, and its accessible name reports the current zoom, such as "Graph view, zoom 125%".
     ///
-    /// The focus target is a transparent `<rect>` that the scene creates and removes. **The application's own `<svg>` is
-    /// never touched**, so a role, name, description, or `tabindex` it was given is left exactly as it was, and the
-    /// `application` role is confined to that one control. Only a key pressed while the target has focus is handled, and
-    /// Ctrl, Cmd, and Alt combinations are left alone.
+    /// The focus target is a transparent `<rect>` that the scene creates and removes. **The application's own `<svg>`
+    /// is never touched**, so a role, name, description, or `tabindex` it was given is left exactly as it was, and the
+    /// `application` role is confined to that one control. Only a key pressed while the target has focus is handled,
+    /// and Ctrl, Cmd, and Alt combinations are left alone.
     ///
     /// # Errors
     ///
@@ -328,10 +328,11 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the toolbar and resizes the pan and wheel-zoom surface for the `<svg>`'s visible area as it is now.
     ///
-    /// **The scene cannot observe its `<svg>` being resized, so call this whenever the size or `viewBox` changes,**
-    /// for example after `SvgRoot::set_viewport` or `SvgRoot::set_view_box`, or from a `resize` handler. The one
-    /// exception is an `<svg>` with a `viewBox` whose CSS size changes without changing its shape, since the browser
-    /// then scales everything together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full picture.
+    /// **The scene cannot observe its `<svg>` being resized, so call this whenever the size or `viewBox` changes,** for
+    /// example after `SvgRoot::set_viewport` or `SvgRoot::set_view_box`, or from a `resize` handler. The one exception
+    /// is an `<svg>` with a `viewBox` whose CSS size changes without changing its shape, since the browser then scales
+    /// everything together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full
+    /// picture.
     ///
     /// A stale layout is not only cosmetic. A toolbar is left where it was, and the surface that panning and wheel zoom
     /// work through no longer covers a `<svg>` that has grown, so those gestures stop working in the new area.

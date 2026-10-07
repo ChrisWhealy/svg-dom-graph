@@ -22,11 +22,11 @@ use svg_dom::root::utils::Rect;
 ///
 /// # Append-only, with one narrow exception
 ///
-/// `add_node`/`add_edge` only ever append: a new id's own `index` is always exactly `nodes.len()`/`edges.len()`
-/// before the push. [`remove_node`](Self::remove_node)/[`remove_edge`](Self::remove_edge) are the one exception,
-/// and only ever unwind the single item just appended — see their own doc comments. So `nodes`/`edges` need no
-/// `Option` tombstone layer: every live index is a live element, and a rolled-back index is simply reused by
-/// whichever node/edge gets added next.
+/// `add_node`/`add_edge` only ever append: a new id's own `index` is always exactly `nodes.len()`/`edges.len()` before
+/// the push. [`remove_node`](Self::remove_node)/[`remove_edge`](Self::remove_edge) are the one exception, and only ever
+/// unwind the single item just appended — see their own doc comments. So `nodes`/`edges` need no `Option` tombstone
+/// layer: every live index is a live element, and a rolled-back index is simply reused by whichever node/edge gets
+/// added next.
 pub(crate) struct Graph {
     pub id: usize,
     pub nodes: Vec<Node>,
@@ -134,12 +134,12 @@ impl Graph {
     ///
     /// A narrow rollback primitive, not a general deletion API: this crate's only caller is
     /// `scene::node::OperatorConstructionGuard`, unwinding an edge it wired earlier in the same still-failing
-    /// operator-creation call, always in reverse creation order. There is no public `Scene::remove_edge` — this
-    /// graph never otherwise loses an edge once added.
+    /// operator-creation call, always in reverse creation order. There is no public `Scene::remove_edge` — this graph
+    /// never otherwise loses an edge once added.
     ///
-    /// `id` is expected to always name the most recently added edge — the only one `pop()` can remove without
-    /// shifting every other edge's own index. A debug build panics if it does not; a release build silently does
-    /// nothing, the same as an unknown `id`, rather than removing the wrong edge or corrupting later indices.
+    /// `id` is expected to always name the most recently added edge — the only one `pop()` can remove without shifting
+    /// every other edge's own index. A debug build panics if it does not; a release build silently does nothing, the
+    /// same as an unknown `id`, rather than removing the wrong edge or corrupting later indices.
     pub(crate) fn remove_edge(&mut self, id: EdgeId) {
         if id.graph != self.id {
             return;
@@ -160,8 +160,8 @@ impl Graph {
     }
 
     /// Drops `id` from `node`'s own incident list. `id` is expected to be that list's own last entry — the same
-    /// invariant, and for the same reason, as [`remove_edge`](Self::remove_edge)'s own doc comment: `add_edge`
-    /// appended it there last, and no edge has touched this node since.
+    /// invariant, and for the same reason, as [`remove_edge`](Self::remove_edge)'s own doc comment: `add_edge` appended
+    /// it there last, and no edge has touched this node since.
     fn pop_incidence(node: Option<&mut Node>, id: EdgeId) {
         let Some(node) = node else { return };
         if node.incident.last() == Some(&id) {
@@ -177,14 +177,14 @@ impl Graph {
     ///
     /// Does nothing if `id` does not name a node in this graph, or if `nodes` is empty.
     ///
-    /// The same narrow rollback purpose as [`remove_edge`](Self::remove_edge): only safe to call once every edge
-    /// that could reference `id` has already been removed. Otherwise, those edges would keep pointing at a node
-    /// that no longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always
-    /// holds for its one caller.
+    /// The same narrow rollback purpose as [`remove_edge`](Self::remove_edge): only safe to call once every edge that
+    /// could reference `id` has already been removed. Otherwise, those edges would keep pointing at a node that no
+    /// longer exists. `OperatorConstructionGuard` always removes a node's own edges first, so this always holds for its
+    /// one caller.
     ///
     /// `id` is expected to always name the most recently added node, for the same `pop()`-only reason
-    /// [`remove_edge`](Self::remove_edge) documents. A debug build panics if it does not; a release build silently
-    /// does nothing.
+    /// [`remove_edge`](Self::remove_edge) documents. A debug build panics if it does not; a release build silently does
+    /// nothing.
     pub(crate) fn remove_node(&mut self, id: NodeId) {
         if id.graph != self.id {
             return;

@@ -1,10 +1,10 @@
 //! [`DataNodeContent`]: a node whose visible content is a grid of typed numeric values, not a plain text label. See
-//! [`Scene::add_data_node`](crate::scene::Scene::add_data_node)
-//! and [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with).
+//! [`Scene::add_data_node`](crate::scene::Scene::add_data_node) and
+//! [`Scene::add_data_node_with`](crate::scene::Scene::add_data_node_with).
 //!
 //! [`UnaryOperator`]/[`BinaryOperator`] name a bitwise operation, and [`ArithmeticOperator`] a plain arithmetic one,
-//! that an operator node's own label describes. This crate never evaluates one: a caller supplies the
-//! already-computed result, the same way it supplies every other data node's own values. See
+//! that an operator node's own label describes. This crate never evaluates one: a caller supplies the already-computed
+//! result, the same way it supplies every other data node's own values. See
 //! [`Scene::add_unary_operator_node`](crate::scene::Scene::add_unary_operator_node),
 //! [`Scene::add_binary_operator_node`](crate::scene::Scene::add_binary_operator_node), and
 //! [`Scene::add_arithmetic_operator_node`](crate::scene::Scene::add_arithmetic_operator_node).
@@ -42,8 +42,8 @@
 //! Each value is formatted using its own type's byte representation. [`ByteOrder`] controls the byte order.
 //! [`ByteOrder::BigEndian`] is the default, used unless [`DataNodeContent::with_byte_order`] overrides it. `BigEndian`
 //! puts the most significant byte first, regardless of host endianness. So the displayed digits always read the same
-//! way a human would write the number down. They also read the same on every host, not just whichever host built
-//! the diagram:
+//! way a human would write the number down. They also read the same on every host, not just whichever host built the
+//! diagram:
 //!
 //! - [`DataFormat::Hexadecimal`]: every byte as two uppercase hex digits, space-separated, no `0x` prefix — e.g. `"F0
 //!   E1 D2 C3 B4 A5 96 87"` for a `u64` under `BigEndian`.
@@ -102,16 +102,16 @@ pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats `decimal` as a plain base-10 number into `out` — the [`DataFormat::Decimal`] case, which needs a
-/// value's own numeric magnitude directly, never a byte representation. Clears `out` first, then writes into it —
-/// the same reused-buffer shape [`crate::geometry::elbow_path_into`] already uses for a per-frame `d` attribute.
+/// Formats `decimal` as a plain base-10 number into `out` — the [`DataFormat::Decimal`] case, which needs a value's own
+/// numeric magnitude directly, never a byte representation. Clears `out` first, then writes into it — the same
+/// reused-buffer shape [`crate::geometry::elbow_path_into`] already uses for a per-frame `d` attribute.
 ///
 /// A separate function from [`format_hex_into`]/[`format_binary_into`], rather than one function matching on
 /// [`DataFormat`] internally, so a caller already holding a [`DataFormat`] can dispatch once — outside its own
-/// per-value loop, if it has one — instead of every call redoing that match only to find two of its three arms
-/// always ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is
-/// the caller this matters most for: reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell
-/// only to have this discard them unused would be wasted work on every single one.
+/// per-value loop, if it has one — instead of every call redoing that match only to find two of its three arms always
+/// ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is the caller
+/// this matters most for: reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell only to have
+/// this discard them unused would be wasted work on every single one.
 fn format_decimal_into(decimal: u128, out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
@@ -119,10 +119,10 @@ fn format_decimal_into(decimal: u128, out: &mut String) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Hexadecimal` digit groups
-/// into `out` — generic over the byte width so [`NodeValues`] needs one call site per variant, not one formatting
-/// implementation per width. See [`format_decimal_into`]'s own doc comment for why this is a separate function
-/// rather than one shared, internally-dispatching implementation.
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Hexadecimal` digit groups into
+/// `out` — generic over the byte width so [`NodeValues`] needs one call site per variant, not one formatting
+/// implementation per width. See [`format_decimal_into`]'s own doc comment for why this is a separate function rather
+/// than one shared, internally-dispatching implementation.
 fn format_hex_into<const N: usize>(bytes: [u8; N], out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
@@ -153,8 +153,8 @@ fn format_binary_into<const N: usize>(bytes: [u8; N], out: &mut String) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Ascii` characters into `out`
-/// — the [`format_hex_into`] counterpart for text. A printable ASCII byte (`0x21..=0x7E`) is itself, a space `␣`, and
+/// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Ascii` characters into `out` —
+/// the [`format_hex_into`] counterpart for text. A printable ASCII byte (`0x21..=0x7E`) is itself, a space `␣`, and
 /// every other byte `·`.
 fn format_ascii_into<const N: usize>(bytes: [u8; N], out: &mut String) {
     out.clear();
@@ -200,8 +200,8 @@ fn automatic_grid_shape(n: usize) -> (usize, usize) {
     if let Some(rows) = best_power_of_two_rows(n) {
         return (rows, n / rows);
     }
-    // Fallback: n has no row count that is both a power of two and a non-trivial divisor of n (n is odd, or
-    // n == 1) — the closest-to-square shape from `ceil(sqrt(n))` is the best available instead.
+    // Fallback: n has no row count that is both a power of two and a non-trivial divisor of n (n is odd, or n == 1) —
+    // the closest-to-square shape from `ceil(sqrt(n))` is the best available instead.
     let rows = (n as f64).sqrt().ceil() as usize;
     let cols = n.div_ceil(rows);
     (rows, cols)

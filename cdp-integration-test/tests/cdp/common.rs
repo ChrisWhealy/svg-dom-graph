@@ -131,8 +131,8 @@ pub(crate) fn group_translate(group: &Element<'_>) -> Result<(f64, f64), String>
 /// Turns the real mouse wheel one notch at `(x, y)` with Ctrl held, over CDP's `Input.dispatchMouseEvent`.
 ///
 /// `delta_y` is in pixels, and negative scrolls up, which zooms in: one notch is `-100.0`. This is a genuine `wheel`
-/// event, hit-tested and dispatched by the browser like one from a real device, not one built by a test and sent straight
-/// at an element.
+/// event, hit-tested and dispatched by the browser like one from a real device, not one built by a test and sent
+/// straight at an element.
 pub(crate) fn ctrl_wheel(tab: &Tab, (x, y): (f64, f64), delta_y: f64) -> Result<(), String> {
     /// The `Input.dispatchMouseEvent` modifier bit for Ctrl.
     const CTRL: u32 = 2;

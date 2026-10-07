@@ -9,8 +9,8 @@
 //!
 //! `svg-dom-graph`'s own box+label markup is exactly that shape, so the selection outcome can't distinguish a working
 //! `prevent_default()` from a missing one here since it would pass either way. Reading `defaultPrevented` instead
-//! checks the mechanism `svg-dom-graph`'s code is actually responsible for, independent of that
-//! browser/headless-mode quirk.
+//! checks the mechanism `svg-dom-graph`'s code is actually responsible for, independent of that browser/headless-mode
+//! quirk.
 
 use crate::common::{drag, new_tab};
 use std::time::Duration;
@@ -19,10 +19,10 @@ use std::time::Duration;
 fn dragging_a_node_prevents_the_pointerdowns_default_action() -> Result<(), String> {
     let tab = new_tab()?;
 
-    // Added after `make_draggable`'s own pointerdown listener already exists on this same `<g>` (asserted by
-    // `new_tab` waiting for the fixture's last node before returning), so it runs after it in bubble-phase
-    // registration order — by the time it runs, `defaultPrevented` reflects whatever `svg-dom-graph`'s own
-    // handler already did to this event.
+    // Added after `make_draggable`'s own pointerdown listener already exists on this same `<g>` (asserted by `new_tab`
+    // waiting for the fixture's last node before returning), so it runs after it in bubble-phase registration order —
+    // by the time it runs, `defaultPrevented` reflects whatever `svg-dom-graph`'s own handler already did to this
+    // event.
     tab.evaluate(
         "window.__defaultPrevented = null; \
          document.querySelector('#diagram > g.svg-dom-graph-content > g:nth-of-type(1)') \

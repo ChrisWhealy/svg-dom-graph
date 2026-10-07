@@ -5,10 +5,9 @@
 //! theta(state) -> rho(state) -> pi(state) -> chi(state) -> iota(state, round)
 //! ```
 //!
-//! Every nested scene is given the state it displays from here, so every number a child scene shows is derived
-//! from the number immediately upstream of it: [`round_trace`] returns each intermediate state of one round, and
-//! [`keccak_f`] chains 24 of them. Lane `x + 5y` holds `A[x, y]`, as in FIPS 202, and the bytes of a lane are
-//! little-endian.
+//! Every nested scene is given the state it displays from here, so every number a child scene shows is derived from the
+//! number immediately upstream of it: [`round_trace`] returns each intermediate state of one round, and [`keccak_f`]
+//! chains 24 of them. Lane `x + 5y` holds `A[x, y]`, as in FIPS 202, and the bytes of a lane are little-endian.
 
 use super::{chi::chi, iota::iota, pi::pi, rho::rho};
 
@@ -116,8 +115,8 @@ pub(super) fn keccak_f(state: [u64; 25]) -> [u64; 25] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `A[x][y]`, as `Theta`'s own nested scenes index their input: the state's lane `x + 5y` is `grid[x][y]`. Those
-/// scenes work along `x` — "row `n`" there is column `n` of the state — so a state is handed to them transposed.
+/// `A[x][y]`, as `Theta`'s own nested scenes index their input: the state's lane `x + 5y` is `grid[x][y]`. Those scenes
+/// work along `x` — "row `n`" there is column `n` of the state — so a state is handed to them transposed.
 pub(super) fn to_theta_grid(state: [u64; 25]) -> [[u64; 5]; 5] {
     std::array::from_fn(|x| std::array::from_fn(|y| state[x + 5 * y]))
 }
@@ -155,8 +154,8 @@ pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
 pub(super) struct Sha3_256Run {
     /// The padded block — "Input block".
     pub(super) block: [u64; SHA3_256_RATE_LANES],
-    /// The state entering `Keccak-f\[1600\]`: the block XORed into the rate of an all-zero state — the Keccak scene's own
-    /// round `0` input.
+    /// The state entering `Keccak-f\[1600\]`: the block XORed into the rate of an all-zero state — the Keccak scene's
+    /// own round `0` input.
     pub(super) absorbed: [u64; 25],
     /// The state leaving it — the Keccak scene's own last round's output, and the sponge's own row 3.
     pub(super) permuted: [u64; 25],

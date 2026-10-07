@@ -1,8 +1,8 @@
 //! Renders a graph onto the DOM, and keeps each node's and edge's rendered SVG handles alongside it.
 //!
 //! The topology model (crate-private while this crate's API is still taking shape) owns the topology and is the single
-//! source of truth for it. This module pairs each of its ids with a rendered handle, and keeps both in sync as
-//! nodes move.
+//! source of truth for it. This module pairs each of its ids with a rendered handle, and keeps both in sync as nodes
+//! move.
 //!
 //! This crate has no opinion about which HTML page hosts a [`Scene`], or what graph a caller builds with one. See the
 //! sibling `demo-app` crate for a small worked example.
@@ -61,8 +61,8 @@ fn box_centre(rect: Rect) -> Point {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` — and, so long as a caller's
-/// own document doesn't deliberately collide with this crate's naming, no unrelated content either — is likely
-/// to claim.
+/// own document doesn't deliberately collide with this crate's naming, no unrelated content either — is likely to
+/// claim.
 static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -155,11 +155,11 @@ impl Scene {
         content.set_attr("class", "svg-dom-graph-content")?;
 
         // `NavigationState::focused` is a `Weak<RefCell<SceneInner>>`, but the `Rc<RefCell<SceneInner>>` it would
-        // downgrade from does not exist until `inner`, below, is built. So construction is two-stage: `navigation`
-        // is created first, holding a `Weak` that upgrades to nothing; `inner` is then built, cloning `navigation`
-        // in; and only then is `focused` written for real, once `inner` exists to downgrade from. `focused` is
-        // briefly non-upgradeable between those two steps, never observed from outside this function since nothing
-        // else runs in between.
+        // downgrade from does not exist until `inner`, below, is built. So construction is two-stage: `navigation` is
+        // created first, holding a `Weak` that upgrades to nothing; `inner` is then built, cloning `navigation` in; and
+        // only then is `focused` written for real, once `inner` exists to downgrade from. `focused` is briefly
+        // non-upgradeable between those two steps, never observed from outside this function since nothing else runs in
+        // between.
         let navigation = Rc::new(RefCell::new(NavigationState { focused: Weak::new() }));
         let inner = Rc::new(RefCell::new(SceneInner {
             svg,
