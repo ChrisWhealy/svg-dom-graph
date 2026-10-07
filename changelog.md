@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Rewrite comment sentences having excessive length (> 60 words) (`7b4b815`)
 - Doc only: Rewrite comment sentences in SHA3 Sponge demo (`3b62c2f`)
 - Doc only: Rewrite remaining comment sentences not meeting style guide (`736614f`)
-- Doc only: Clarify `validate_data_content()` doc comments (``)
+- Doc only: Clarify `validate_data_content()` doc comments (`1b62f0e`)
 
 ## Fixed
 
