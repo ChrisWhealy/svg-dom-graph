@@ -359,7 +359,7 @@ impl SceneInner {
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
     /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at creation,
-    /// in local coordinates relative to `(0, 0)`. See [`node::plain::draw_box`]/[`node::data::draw_content_box`]. So
+    /// in local coordinates relative to `(0, 0)`. See [`node::plain::draw_box`]/[`node::data::draw::draw_content_box`]. So
     /// moving the node only ever means rewriting the group's own `transform`. It never touches any child's own
     /// coordinates. This stays exactly as cheap for a data node with hundreds of value cells as for a plain label.
     ///

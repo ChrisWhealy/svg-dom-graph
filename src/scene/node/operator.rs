@@ -62,13 +62,13 @@ const PORT_MARKER_FONT_SIZE: f64 = LABEL_FONT_SIZE * 0.9;
 /// beneath it, grouped under one `<g>`. Returns their handles alongside the box's own final `Rect`.
 ///
 /// The value cell is sized exactly like a single-value [`DataNodeContent`]'s own cell —
-/// [`draw_content_box`](super::data::draw_content_box)'s own single-value path — but, unlike there, never grows to fill
+/// [`draw_content_box`](super::data::draw::draw_content_box)'s own single-value path — but, unlike there, never grows to fill
 /// the node's own outer box. It stays inset by [`OUTER_PADDING`] instead, for the reason this module's own doc comment
 /// gives. `label` renders in the plain style [`draw_box`](super::plain::draw_box) already uses for an ordinary node's
 /// own text. It is measured the same "read the real rendered width back" way every cell in this file already is.
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction, for the same reason as
-/// [`draw_content_box`](super::data::draw_content_box).
+/// [`draw_content_box`](super::data::draw::draw_content_box).
 ///
 /// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
 /// `x`/`y`/`transform` formatting, the same reasoning [`draw_box`](super::plain::draw_box)'s own `scratch` parameter

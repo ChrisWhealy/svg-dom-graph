@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Refactor tests in `tests/drag/data_node` (``)
+- Refactor tests in `tests/drag/data_node` (`7fc8d2b`)
+- Refactor `src/scene/node/data.rs` (``)
 
 # [Released]
 

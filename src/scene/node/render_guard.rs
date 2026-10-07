@@ -68,7 +68,7 @@ impl RenderGuard {
     /// whose own future removal would already cascade to remove it, or the caller has already removed it itself.
     ///
     /// Callers that create-then-immediately-resolve one node at a time call this right after each node's own fate is
-    /// settled. [`draw_content_box`](super::data::draw_content_box)'s per-cell loop is the motivating case. So `loose`
+    /// settled. [`draw_content_box`](super::data::draw::draw_content_box)'s per-cell loop is the motivating case. So `loose`
     /// never grows past the small number of nodes momentarily in flight at once, regardless of how many a whole node's
     /// own construction creates in total. This relies on the caller's own strict create-then-resolve discipline. It
     /// always drops whichever node [`track`](Self::track) most recently added, not a specific one named by the caller.
