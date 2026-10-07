@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add `DataFormat::Ascii` in order to display an ASCII text block containing input message (``)
+- Add `DataFormat::Ascii` in order to display an ASCII text block containing input message (`246d278`)
+
+## Changed
+
+- Adjust SHA3 Sponge layout (``)
 
 # [Released]
 

@@ -119,11 +119,13 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Creates every `<svg>` this panel's own `.nested-scene-stage` needs, if they do not already exist: the base
-/// diagram, then each nested level, shallowest first — document order is paint order, and
+/// Creates every `<svg>` needed by this panel's `.nested-scene-stage`, if they do not already exist.  This is the base
+/// diagram, then each nested level, starting with the shallowest.  The document order is the paint order, and
 /// [`add_backdrop_clone`] relies on a nested child following its own parent. Each is inserted before
-/// `#sha3-sponge-close`, which therefore stays on top. These sizes are the *initial* ones only: each nested
-/// scene fits its own `<svg>` to its content as it is built, and a later call here never reverts that.
+/// `#sha3-sponge-close`, which therefore stays on top.
+///
+/// These sizes are the *initial* ones only: each nested scene fits its own `<svg>` to its content as it is built, and a
+/// later call here never reverts that.
 ///
 /// # Errors
 ///
@@ -181,65 +183,50 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 136-byte SHA3-256 rate block passing
-/// through a single call to `Keccak-f\[1600\]`. Nothing here drags.
+/// Builds the SHA3 Sponge demo's own top-level `Scene` for walk position `stage`: one 136-byte SHA3-256 rate block
+/// passing through a single call to `Keccak-f\[1600\]`. Nothing here drags.
 ///
 /// # What this draws
 ///
-/// Row 1 is the sponge's own starting state, split into two named arrays: "Capacity"
-/// ([`CAPACITY_LANES`] lanes) and "Rate" ([`RATE_LANES`] lanes). The two are butted up against each other with no
-/// gap — one combined state, drawn as two named halves. Both start all-zero, the real sponge construction's own
-/// state before any input is absorbed.
+/// Row 1 is the sponge's own starting state, split into two named arrays: "Capacity" ([`CAPACITY_LANES`] lanes) and
+/// "Rate" ([`RATE_LANES`] lanes). These two subdivisions are butted up against each other with no gap to indicate that
+/// they form a single combined state. Both subdivisions start in an initialised state.
 ///
-/// "Message" sits in row 1, to the right, above "Input block": the text being hashed, drawn as characters. A
-/// connector carries it down into "Input block".
+/// The "Plain Text Message" sits in row 1 above "Input block".  This is text being hashed, shown as printable
+/// characters. A connector carries this data down into "Input block".
 ///
-/// Row 2 holds three boxes. "Keccak f(1600)" sits under "Capacity", centred vertically on "XOR" rather than
-/// sharing its own top edge, fed by a connector from "Capacity" above. It is a container node holding the nested
-/// Keccak-f scene, clickable once the walk reaches it. Its own three
-/// [`EdgeAnchors`] per side put north and east on their shared centre, south's two connectors on the centre and
-/// one outer point — see "Row 3" below for why. "XOR" sits under "Rate", fed by connectors from "Rate" and from
-/// "Input block" (further right) — the padded block of [`MESSAGE`], the one real input this demo absorbs. A further
-/// connector carries "XOR"'s own result back into "Keccak f(1600)" — the absorbed rate joining "Capacity" as the
-/// combined state the permutation runs over.
+/// The "Keccak f(1600)" node on row 2 holds the nested Keccak-f scene.  This node only becomes clickable once the step
+/// walk reaches it.
 ///
-/// "XOR" shows all-zero lanes, the same "not yet written" convention row 3 below already follows, until `stage`
-/// reaches it — see "Stepping through it" below. Only then does it show "Rate" and "Input block"'s own real,
-/// elementwise XOR, computed here in plain Rust.
+/// "XOR" shows all-zero lanes, the same "not yet written" convention row 3 below already follows, until `stage` reaches
+/// it — see "Stepping through it" below. Only then does it show "Rate" and "Input block"'s own real, elementwise XOR,
+/// computed here in plain Rust.
 ///
-/// Row 3 repeats the "Capacity"/"Rate" pair, sharing row 1's own left edge so the two rows stay vertically
-/// aligned. "Rate" sits far enough east of "Keccak f(1600)"'s own centre that the connector into it still lands
-/// on an outer fixing point. "Capacity" sits directly below, so its own connector lands on the centre one
-/// instead. The one into "Rate" enters its own north side, the same as "Capacity"'s own. "Output Hash", further
-/// right, holds its own [`HASH_LANES`] lanes — a real hash length, not this row's own wider "Rate" — fed by a
-/// connector from it.
+/// Row 3 shows the output version of the internal state, still subdivided into "Capacity" and "Rate".
 ///
 /// # Stepping through it
 ///
 /// "Step" is a small, otherwise-meaningless [`STAGE_COUNT`]-value array placed far off-canvas, purely to drive a
-/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar. That bar needs a
-/// data node with exactly as many cells as the walk has stages, and no node already in this diagram happens to
-/// hold that count. [`rebuild`] wires the bar itself; this function only draws "Step" and applies `stage`'s own
-/// focus, via [`apply_stage`].
+/// [`Scene::show_selection_toolbar`](svg_dom_graph::scene::Scene::show_selection_toolbar) bar. That bar needs a data
+/// node with exactly as many cells as the walk has stages, and no node already in this diagram happens to hold that
+/// count. [`rebuild`] wires the bar itself; this function only draws "Step" and applies `stage`'s own focus, via
+/// [`apply_stage`].
 ///
-/// Each stage rings a different set of nodes, un-ringing whichever it moves away from. In order: "Message" alone,
-/// "Input block" and "Rate" together, "XOR" alone, "Keccak f(1600)" alone, row 3's own "Capacity" and "Rate"
-/// together, then "Output Hash" alone. The walk is never "not started": it opens on "Message", and a step back from
-/// there, or a restart, stays on it.
+/// Each stage outlines a different set of nodes, and removes the outline from those nodes no longer in focus. In this
+/// particular scene, the walk is never "not started": it opens on "Message". Attempting to step back from there, or
+/// restart has no effect.
 ///
 /// "Message" holds [`MESSAGE`], one character per cell, and sits above "Input block", which is initialised to zeros.
-/// The first `Next` adds the text to "Input block", with SHA3's padding: the message bytes, then `06`, then zeros,
+/// The first step copies the text to "Input block", with SHA3's padding: the message bytes, then `06`, then zeros,
 /// ending in `80`.
+///
+/// ***IMPORTANT*** The byte order shown in the data nodes is little-endian!
 ///
 /// # Step over or step into
 ///
-/// Every value is computed in plain Rust from the one before it, so stepping over "Keccak f(1600)" gives exactly
-/// what stepping into it would have ended on: row 3's own "Rate" and "Capacity" show the state `keccak_f` leaves once
-/// the walk reaches them, and "Output Hash" the first [`HASH_LANES`] lanes of that "Rate" — the SHA3-256 digest —
-/// once it reaches that. Before then each shows zeros, the same "not yet written" convention "XOR" follows.
-///
-/// "Capacity" is drawn first, above "Keccak f(1600)", and "Rate" second, above "XOR", so each sits over the node it
-/// feeds. The state's own lane order is the other way round: see [`RATE_LANES`].
+/// Every value is computed in plain Rust from the one before it, so stepping over "Keccak f(1600)" gives exactly what
+/// stepping through it would have produced. The output "Rate" and "Capacity" show the state `keccak_f` creates once the
+/// walk reaches them. The first 256 bits of "Rate" then become the SHA3-256 digest.
 ///
 /// # Errors
 ///
@@ -380,15 +367,15 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
     let input_block_rect = scene.node_rect(input_block).map_err(stringify)?;
 
-    // "Message": the text `MESSAGE` holds, one character per cell, 16 to a row with a wider gap after the eighth,
-    // sitting just above "Input block", whose padded bytes it becomes. Added at the top of row 1, then moved once its
-    // own height is known.
+    // "Message": the text `MESSAGE` holds, one character per cell, 16 to a row with a wider gap after the eighth. It
+    // sits just above "Input block", centred on it — the node whose padded bytes it becomes. Added at the top of row 1,
+    // then moved once its own size is known.
     let message = scene
         .add_named_data_node(
             Point::new(input_block_rect.origin.x, TOP_Y),
             "Plain Text Message",
             DataNodeContent::new(NodeValues::U8(MESSAGE.to_vec()), DataFormat::Ascii)
-                .with_layout(GridLayout::Columns(16))
+                .with_layout(GridLayout::Columns(24))
                 .with_column_groups(8),
         )
         .map_err(stringify)?;
@@ -397,13 +384,13 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .move_node(
             message,
             Point::new(
-                input_block_rect.origin.x,
+                input_block_rect.origin.x + (input_block_rect.size.width - message_rect.size.width) / 2.0,
                 (input_block_rect.origin.y - V_GAP - message_rect.size.height).max(TOP_Y),
             ),
         )
         .map_err(stringify)?;
 
-    // Row 3: "Capacity"/"Rate" again, fed out of "Keccak f(1600)" above, then "Output Hash" further right. Each
+    // Row 3: "Capacity"/"Rate" again, fed out of "Keccak f(1600)" above; "Output Hash" has its own row below. Each
     // box's own bottom edge is computed independently now that "Keccak f(1600)" and "XOR" no longer share a
     // common top — see `keccak_y`'s own comment above.
     //
@@ -441,11 +428,24 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
     let rate_out_rect = scene.node_rect(rate_out).map_err(stringify)?;
 
+    // Row 4: "Output Hash", centred directly below "Rate" — the first four lanes of it are the digest. Added, then
+    // moved once its own width is known.
+    let row_4_y = rate_out_rect.origin.y + rate_out_rect.size.height + V_GAP;
     let output_hash = scene
         .add_named_data_node(
-            Point::new(rate_out_rect.origin.x + rate_out_rect.size.width + H_GAP, row_3_y),
+            Point::new(rate_out_rect.origin.x, row_4_y),
             "Output Hash",
             hex_digest(from_stage(5, &permuted[..HASH_LANES])),
+        )
+        .map_err(stringify)?;
+    let output_hash_width = scene.node_rect(output_hash).map_err(stringify)?.size.width;
+    scene
+        .move_node(
+            output_hash,
+            Point::new(
+                rate_out_rect.origin.x + (rate_out_rect.size.width - output_hash_width) / 2.0,
+                row_4_y,
+            ),
         )
         .map_err(stringify)?;
 
@@ -482,15 +482,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
     scene.add_edge_with(keccak, capacity_out, vertical()).map_err(stringify)?;
     scene.add_edge_with(keccak, rate_out, vertical()).map_err(stringify)?;
-    scene
-        .add_edge_with(
-            rate_out,
-            output_hash,
-            ConnectorOptions::default()
-                .with_from_side(Some(Side::East))
-                .with_to_side(Some(Side::West)),
-        )
-        .map_err(stringify)?;
+    scene.add_edge_with(rate_out, output_hash, vertical()).map_err(stringify)?;
 
     // "Step": see this function's own doc comment, "Stepping through it", for why this exists and why it sits far
     // off-canvas rather than anywhere a reader would actually see it.
