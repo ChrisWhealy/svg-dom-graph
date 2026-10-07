@@ -9,11 +9,11 @@ use crate::{
     error::Error,
     geometry::{
         binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, forced_anchor,
-        route::Route, route::straight_route, side::Side, snapped_anchor,
+        position_anchor, route::Route, route::straight_route, side::Side, snapped_anchor,
     },
     model::{edge::EdgeId, node::NodeId},
 };
-pub(crate) use connector_handle::ConnectorHandle;
+pub(crate) use connector_handle::{ConnectorHandle, Pin};
 pub use connector_options::ConnectorOptions;
 pub use connector_type::ConnectorType;
 use svg_dom::root::utils::{Point, Rect};
@@ -21,6 +21,17 @@ use svg_dom::root::utils::{Point, Rect};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that is
 /// not a finite, non-negative value `>= 0.0`. No validation is required for the other `ConnectorType` variants.
+fn validate_connector_options(options: ConnectorOptions) -> Result<(), Error> {
+    for position in [options.from_position, options.to_position].into_iter().flatten() {
+        if !(0.0..=1.0).contains(&position) {
+            return Err(Error::InvalidConnectorPosition(position));
+        }
+    }
+    validate_connector_type(options.connector_type)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::InvalidCornerRadius`] as [`validate_connector_type`] does.
 fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
     match connector_type {
         ConnectorType::Elbow { corner_radius } if !corner_radius.is_finite() || corner_radius < 0.0 => {
@@ -38,8 +49,11 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 /// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
 /// `None` for both keeps [`ConnectorType::Straight`]'s own default, calculated as a continuous ray crossing — see
 /// [`boundary_point`].
-fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> Point {
-    if let Some(side) = forced_side {
+fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Pin>) -> Point {
+    if let Some(Pin { side, position }) = forced_side {
+        if let Some(fraction) = position {
+            return position_anchor(rect, side, fraction);
+        }
         return forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n));
     }
     match anchors {
@@ -56,8 +70,11 @@ fn straight_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, for
 /// automatically: `Some(EdgeAnchors(n))` snaps to the nearest of `n` evenly-spaced candidates — see [`snapped_anchor`].
 /// `None` for both keeps [`ConnectorType::Elbow`]'s own default, calculated as the crossed side's own midpoint — see
 /// [`edge_anchor`].
-fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Side>) -> (Point, Side) {
-    if let Some(side) = forced_side {
+fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced_side: Option<Pin>) -> (Point, Side) {
+    if let Some(Pin { side, position }) = forced_side {
+        if let Some(fraction) = position {
+            return (position_anchor(rect, side, fraction), side);
+        }
         return (forced_anchor(rect, towards, side, anchors.map(|EdgeAnchors(n)| n)), side);
     }
     match anchors {
@@ -111,10 +128,10 @@ pub(crate) fn route(
     connector_type: ConnectorType,
     from: Rect,
     from_anchors: Option<EdgeAnchors>,
-    from_side: Option<Side>,
+    from_side: Option<Pin>,
     to: Rect,
     to_anchors: Option<EdgeAnchors>,
-    to_side: Option<Side>,
+    to_side: Option<Pin>,
     to_override: Option<BinaryOperatorRoute>,
 ) -> (Route, f64) {
     let from_centre = centre(from);
@@ -173,6 +190,9 @@ impl Scene {
     ///
     /// # Errors
     ///
+    /// Returns [`Error::InvalidConnectorPosition`] if `options.from_position`/`to_position` is not finite and in
+    /// `0.0..=1.0`.
+    ///
     /// Returns [`Error::InvalidCornerRadius`] if `options.connector_type` is [`ConnectorType::Elbow`] with a corner
     /// radius that is not a finite value `>= 0.0`. Checked before drawing anything or touching the graph, so a rejected
     /// call leaves the scene exactly as it was.
@@ -182,7 +202,7 @@ impl Scene {
     /// unknown, even if `from` and `to` are the same foreign id. Returns [`Error::SelfLoopUnsupported`] if `from` and
     /// `to` are the same node in this scene — not yet supported, see that variant's own doc comment for why.
     pub fn add_edge_with(&self, from: NodeId, to: NodeId, options: ConnectorOptions) -> Result<EdgeId, Error> {
-        validate_connector_type(options.connector_type)?;
+        validate_connector_options(options)?;
 
         let mut inner = self.inner.borrow_mut();
         let from_rect = inner.node_rect(from)?;
@@ -199,10 +219,16 @@ impl Scene {
             options.connector_type,
             from_rect,
             from_anchors,
-            options.from_side,
+            options.from_side.map(|side| Pin {
+                side,
+                position: options.from_position,
+            }),
             to_rect,
             to_anchors,
-            options.to_side,
+            options.to_side.map(|side| Pin {
+                side,
+                position: options.to_position,
+            }),
             to_override,
         );
         // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability. See
@@ -226,6 +252,8 @@ impl Scene {
                 connector_type: options.connector_type,
                 from_side: options.from_side,
                 to_side: options.to_side,
+                from_position: options.from_position,
+                to_position: options.to_position,
                 port_marker: None,
             },
         );

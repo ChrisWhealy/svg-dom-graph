@@ -216,6 +216,40 @@ h3 {
     margin: 0.5rem 0;
 }
 
+/* Definition lists. The global reset zeroes every margin, so a <dt>/<dd> pair would otherwise render as flat,
+   undifferentiated lines. A term reads as a sub-heading: larger, bolder, in the accent blue, with generous space above
+   it to separate it from the previous definition. Its data is indented under a thin rule so it reads as belonging to
+   the term, and the <p> tags inside it get the same gap `.section>p` gives direct paragraphs. */
+.section dl {
+    margin: 1rem 0;
+}
+
+.section dt {
+    font-size: 1.1rem;
+    font-weight: 700;
+    color: #58a6ff;
+    margin-top: 1.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.section dt:first-child {
+    margin-top: 0;
+}
+
+.section dd {
+    margin-left: 0.5rem;
+    padding-left: 1rem;
+    border-left: 2px solid #30363d;
+}
+
+.section dd>p {
+    margin-bottom: 0.5rem;
+}
+
+.section dd>p:last-child {
+    margin-bottom: 0;
+}
+
 figure {
     margin: 0;
 }

@@ -1,43 +1,47 @@
 <section class="section" id="panel-sha3-sponge">
     <h2>SHA3 Sponge</h2>
-    <p>SHA3 is built on the "sponge" construction.</p>
-    <p>A "sponge" function uses a fixed-size internal state, split into a "Rate" and a "Capacity", and it absorbs input
-        data one block at a time. Each block is <code>XOR</code>ed into the Rate before the whole state is permuted by
-        the <code>Keccak-f[1600]</code> function.</p>
-    <p>SHA3-256 can serve the same fixed-output cryptographic-hash role as SHA-256, but whose internal design is
-        fundamentally different from the Merkle&ndash;Damg&aring;rd construction used by the SHA2 family of algorithms.
-        As a result, SHA3-256 is often described as a "drop-in" replacement for the SHA2-256 algorithm.
+    <p>The SHA3 algorithm belongs to a category of functions known as "sponge" functions.
+        This means that they process their input data in two distinct, strictly sequential phases: absorption and
+        squeezing.
     </p>
-    <p>This diagram computes <strong>SHA3-256</strong> of one short message, in a single call to
-        <code>Keccak-f[1600]</code>. The state is 25 lanes of 64 bits: a Rate of 17 lanes (1088 bits) and a Capacity
-        of 8 lanes (512 bits), so the digest is 4 lanes (256 bits). "Input block" is the message after SHA3's
-        padding &mdash; the message bytes, then <code>06</code>, then zeros, ending in <code>80</code> &mdash; and
-        "Output Hash" is the first 32 bytes of the Rate afterwards, shown byte for byte, so it reads exactly as
-        <code>sha3sum</code> prints it. Only a message shorter than one block, and the fixed-length SHA3-256 output
-        rather than the XOF modes, are covered.
+    <dl>
+        <dt>Absorption</dt>
+        <dd>
+            <p>The input data is ingested or "absorbed" into the algorithm's internal state.</p>
+            <p>The absorption process reads the input data one block at a time into a subdivision of the internal state
+                known as the "Rate". This subdivision is so-named because its size directly effects the rate at which
+                the incoming data can be processed.</p>
+            <p>Each time an input block is acquired, that data is <code>XOR</code>ed with the data currently in the
+                Rate, then the <code>Keccak-f[1600]</code> function is applied to the entire internal state. </p>
+            <p>The remaining part of the internal state is known as the "Capacity" and this is always kept private.</p>
+            <p>This is where the input data is mixed in such a way to make the resulting output cryptographically
+                strong.</p>
+        </dd>
+        <dt>Squeezing</dt>
+        <dd>
+            <p>Once the input data has been fully absorbed into the internal state, the output or "Squeeze" phase can
+                begin.</p>
+            <p>In the simplest case (demonstrated here), whatever data is found in the first 256 bits of the Rate
+                immediately equates to the SHA3-256 hash of the input data. When used in this manner, the SHA3 function
+                can be described as a "drop-in" replacement for the SHA2-256 algorithm.</p>
+            <p>However, even though all the input data has been consumed, the <code>Keccak-f[1600]</code> function can
+                be repeatedly applied to the internal state to create an entirely deterministic stream of psuedo-random
+                content.</p>
+            <p>For the same input, running multiple "squeeze" rounds (I.E. repeatedly running the
+                <code>Keccak-f[1600]</code> function on the internal state) will always produce exactly the same output.
+            </p>
+        </dd>
+    </dl>
+
+    <p>This demo computes the <strong>SHA3-256</strong> hash of a short message, in a single call to
+        <code>Keccak-f[1600]</code>.
     </p>
-    <p>The diagram draws "Capacity" on the left and "Rate" on the right so that each sits over the component it
-        feeds. That is for data-flow layout only: in the Keccak state itself, the Rate occupies the first 17 lanes
-        and the Capacity the last 8, as the "A Bytes" arrays inside the Keccak scene show.
-    </p>
-    <p>"Keccak f(1600)" is a genuine container node: once the walk reaches it, click it to drill into all 24 real
-        rounds of the permutation. Each round shows five named sub-functions &mdash; <code>Theta</code>,
-        <code>Rho</code>, <code>Pi</code>, <code>Chi</code>, <code>Iota</code> &mdash; each a nested
-        <code>Scene</code> in its own right, and the real round constant <code>Iota</code> consumes, highlighted in
-        "Round Constants". <code>Theta</code> drills in one level further, into the same scenes
-        <a href="#panel-theta">Nested Scenes</a> draws standalone.
-    </p>
-    <p>Every value is computed in plain Rust from the one before it, so a nested scene always shows the state
-        entering it, and stepping over a function gives the same result as stepping into it. Round 17's input is
-        round 16's output, <code>Theta</code>'s input is that same state, <code>Rho</code>'s is <code>Theta</code>'s
-        output, and so on. The last round's output is the Rate and Capacity at the bottom of this diagram.
-    </p>
-    <p>The walk opens on "Message", the text being hashed, shown one character per cell; "Input block" starts out
-        as zeros. Press "Next"/"Previous"/"Restart" below the diagram to step through the six stages: "Message",
-        "Input block" and "Rate" (the first Next writes the padded text into "Input block"), "XOR", "Keccak f(1600)",
-        the output "Rate" and "Capacity", and finally "Output Hash". Each node shows zeros, the same "not yet written"
-        look, until the walk reaches it. "Keccak f(1600)" can only be entered once the
-        walk is on it.
+    <p>Press the "Next" button to walk through the steps of the algorithm.</p>
+    <p>When a node such as <code>Keccak f(1600)</code> has a red border around it, it becomes clickable and you can
+        drill down into the internal operation of that function.</p>
+    <p>Every value is computed in plain Rust from the one before it, so a nested scene always shows the correct state
+        when you enter it. Stepping over a function gives the same result as stepping into it.</p>
+    <p>The walk opens on the "Plain Text Message"; this is then copied to the "Input block", which starts out as zeros.
     </p>
     <div class="canvas nested-scene-stage">
         <button id="sha3-sponge-close" class="nested-scene-close" type="button"

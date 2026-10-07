@@ -12,8 +12,8 @@ use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     NodeId,
     scene::{
-        BinaryOperator, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene,
-        SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
+        BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions,
+        NodeValues, Scene, SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 
@@ -161,6 +161,19 @@ pub(crate) fn build_scene(
         .width;
     let operand_stride = operand_width + OPERAND_GAP;
     let operand_x: [f64; 5] = std::array::from_fn(|i| 20.0 + i as f64 * operand_stride);
+
+    // Centres `A Bytes` above the third operand. Its width is only known once drawn, so it is moved here, after the
+    // operand columns are known. Its connectors are drawn later, so they are routed from this final position.
+    let array_rect = scene.node_rect(array).map_err(stringify)?;
+    scene
+        .move_node(
+            array,
+            Point::new(
+                operand_x[2] + operand_width / 2.0 - array_rect.size.width / 2.0,
+                array_rect.origin.y,
+            ),
+        )
+        .map_err(stringify)?;
     // `A Bytes`'s own bottom edge sits at `TOP_Y + 236.6`, a named 5×5 grid's own fixed height. `OPERAND_Y` was once
     // `TOP_Y + 255`, an ≈18-unit gap that turned out too tight once really rendered. Measured text is never exactly the
     // estimate this file reasons from (see this function's own doc comment). A gap this thin had no slack to absorb the
@@ -222,6 +235,20 @@ pub(crate) fn build_scene(
         .map_err(stringify)?;
     if let Some(n) = n {
         scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
+    }
+
+    // One connector per operand, copying column `i` of `A Bytes` down into operand `i`. Each leaves the south face
+    // directly below its own column. The pin is that column's centre as a fraction of the node's width, read from the
+    // real cell rather than estimated.
+    let array_rect = scene.node_rect(array).map_err(stringify)?;
+    for (i, operand) in [op0, op1, op2, op3, op4].into_iter().enumerate() {
+        let cell = scene.cell_rect(array, i).map_err(stringify)?;
+        let column_centre = (cell.origin.x + cell.size.width / 2.0 - array_rect.origin.x) / array_rect.size.width;
+        let unpack = ConnectorOptions::default()
+            .with_from_side(Some(Side::South))
+            .with_from_position(Some(column_centre))
+            .with_to_side(Some(Side::North));
+        scene.add_edge_with(array, operand, unpack).map_err(stringify)?;
     }
 
     scene.add_edge(result, output).map_err(stringify)?;

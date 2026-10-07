@@ -4,7 +4,7 @@ use crate::{
     scene::node::EdgeAnchors,
 };
 use std::{cell::RefCell, rc::Rc};
-use svg_dom::SvgNode;
+use svg_dom::{SvgNode, root::utils::Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
@@ -75,6 +75,10 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_data_values` rewrites. Empty for a plain label node and for an operator node, whose own result is
     /// not replaceable.
     pub(crate) cell_texts: Vec<SvgNode>,
+    /// Every data-node cell's own box, flat, in the same order as [`cell_rects`](Self::cell_rects), in the node's own
+    /// local coordinates. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. Empty for
+    /// a plain label node and for an operator node.
+    pub(crate) cell_geometry: Vec<Rect>,
     /// Every entry in `cell_rects`' own stroke width, as drawn. It is `"1.5"` for a single-value node's own outer box,
     /// and `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label
     /// node, which has no `cell_rects` to begin with.

@@ -389,6 +389,19 @@ pub(crate) fn forced_anchor(rect: Rect, towards: Point, side: side::Side, fixing
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The anchor point `fraction` of the way along `rect`'s own `side`, from its west end (North/South) or north end
+/// (East/West). `0.0` is that end and `1.0` the other. Independent of any other node's position, so a connector
+/// pinned this way leaves at a fixed place however the far endpoint moves.
+pub(crate) fn position_anchor(rect: Rect, side: side::Side, fraction: f64) -> Point {
+    match side {
+        side::Side::North => Point::new(rect.origin.x + rect.size.width * fraction, rect.origin.y),
+        side::Side::South => Point::new(rect.origin.x + rect.size.width * fraction, rect.origin.y + rect.size.height),
+        side::Side::West => Point::new(rect.origin.x, rect.origin.y + rect.size.height * fraction),
+        side::Side::East => Point::new(rect.origin.x + rect.size.width, rect.origin.y + rect.size.height * fraction),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Both of a two-input operator node's own two input anchors on `rect` (the operator node's own rectangle) computed
 /// together in one call. `first` and `second` are the two operands' own centres, in the order the node's own two-input
 /// constructor — `Scene::add_binary_operator_node_with` or `Scene::add_arithmetic_operator_node_with` — received them

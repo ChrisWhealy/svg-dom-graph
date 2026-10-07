@@ -328,8 +328,13 @@ pub(super) fn draw_content_box(
     let mut text_scratch = String::new();
     let mut cell_rects = Vec::with_capacity(if single_value { 1 } else { len });
     let mut cell_texts = Vec::with_capacity(len);
+    let mut cell_geometry = Vec::with_capacity(len);
     if single_value {
         cell_rects.push(rect_el.clone());
+        cell_geometry.push(Rect {
+            origin: content_origin,
+            size: content_size,
+        });
     }
 
     // Captured only in the `single_value` case. It is the same formatted text that one cell's own `<text>` renders,
@@ -392,6 +397,10 @@ pub(super) fn draw_content_box(
                 guard.release();
 
                 cell_rects.push(cell_rect);
+                cell_geometry.push(Rect {
+                    origin: cell_origin,
+                    size: cell_size,
+                });
             }
             Ok(())
         })();
@@ -465,6 +474,7 @@ pub(super) fn draw_content_box(
             outer_rect,
             cell_rects,
             cell_texts,
+            cell_geometry,
             cell_stroke_width: if single_value { "1.5" } else { "1" },
             selection: Selection::None,
             secondary: Vec::new(),
@@ -824,6 +834,32 @@ impl Scene {
         let _ = inner.sync_selection_toolbar_state();
 
         Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The rectangle of cell `index` of data node `id`, in this scene's own coordinates, where `index` is the cell's
+    /// flat row-major position. A single-value node's one cell is its whole content box.
+    ///
+    /// Reflects the node's own current position, so it follows a drag or a [`move_node`](Self::move_node). A caller can
+    /// use it to line something up with one column of a grid, say. Connectors still land only on a node's own outer
+    /// perimeter.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene. Returns
+    /// [`Error::InvalidSelection`], naming `Selection::Cell(index)`, if `id` is not a data node or `index` is out of
+    /// range for it.
+    pub fn cell_rect(&self, id: NodeId, index: usize) -> Result<Rect, Error> {
+        let inner = self.inner.borrow();
+        let origin = inner.node_rect(id)?.origin;
+        let local = inner
+            .node_handle(id)
+            .and_then(|handles| handles.cell_geometry.get(index))
+            .ok_or(Error::InvalidSelection(id, Selection::Cell(index)))?;
+        Ok(Rect {
+            origin: Point::new(origin.x + local.origin.x, origin.y + local.origin.y),
+            size: local.size,
+        })
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

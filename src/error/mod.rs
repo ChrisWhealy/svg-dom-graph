@@ -60,6 +60,12 @@ pub enum Error {
     /// straight through `elbow_path_into` into the resulting path data. Rejected before any other state changes, so the
     /// scene's existing nodes and edges are left exactly as they were.
     InvalidCornerRadius(f64),
+    /// `Scene::add_edge_with` was given a `ConnectorOptions::from_position`/`to_position` that is not a finite value in
+    /// `0.0..=1.0`.
+    ///
+    /// The position is a fraction of the way along a node's side, so a value outside that range would pin the
+    /// connector off the node. Rejected before any other state changes, so the scene is left exactly as it was.
+    InvalidConnectorPosition(f64),
     /// `Scene::add_node_with` or `Scene::set_edge_anchors` was given `Some(EdgeAnchors(0))`.
     ///
     /// Zero fixing points has no meaning: a side with no candidate point cannot anchor a connector. Use `None` instead,
@@ -220,6 +226,9 @@ impl fmt::Display for Error {
             },
             Error::InvalidCornerRadius(radius) => {
                 write!(f, "corner radius {radius} is not a finite value >= 0.0")
+            },
+            Error::InvalidConnectorPosition(position) => {
+                write!(f, "connector position {position} is not a finite value in 0.0..=1.0")
             },
             Error::InvalidEdgeAnchors(n) => {
                 write!(f, "edge anchor count {n} must be >= 1")

@@ -340,3 +340,53 @@ fn add_edge_with_a_forced_from_side_overrides_the_side_that_would_otherwise_be_c
         &format!("expected a route leaving B's own North side at (20, 100), got {d:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `with_from_position` pins the endpoint a fraction of the way along the forced side, whatever the other node's
+/// position is. A quarter of the way along a 100-wide south side is `x = 25`.
+#[wasm_bindgen_test]
+fn add_edge_with_a_from_position_pins_the_endpoint_along_the_forced_side() -> Result<(), String> {
+    let svg = make_svg("connector-from-position", Size::new(800.0, 300.0), Size::new(800.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(100.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(300.0, 200.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+
+    let options = ConnectorOptions::default()
+        .with_from_side(Some(Side::South))
+        .with_from_position(Some(0.25));
+    scene.add_edge_with(a, b, options).map_err(|e| e.to_string())?;
+
+    let d = path_d(&the_connector("connector-from-position")?)?;
+    check(
+        d.starts_with("M 25 40"),
+        &format!("expected the route to start at (25, 40), got {d:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A position that is not a finite value in `0.0..=1.0` is rejected before anything is drawn.
+#[wasm_bindgen_test]
+fn add_edge_with_rejects_an_invalid_position_before_drawing_anything() -> Result<(), String> {
+    let svg = make_svg("connector-bad-position", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(100.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(200.0, 100.0), Size::new(40.0, 20.0), "B")
+        .map_err(|e| e.to_string())?;
+    for bad in [-0.1, 1.1, f64::NAN] {
+        let options = ConnectorOptions::default()
+            .with_from_side(Some(Side::South))
+            .with_from_position(Some(bad));
+        check(
+            matches!(scene.add_edge_with(a, b, options), Err(Error::InvalidConnectorPosition(_))),
+            &format!("expected InvalidConnectorPosition for {bad}"),
+        )?;
+    }
+    check(connector_count("connector-bad-position")? == 0, "nothing was drawn")
+}
