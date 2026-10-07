@@ -25,7 +25,9 @@ fn order_bytes<const N: usize>(mut bytes: [u8; N], order: ByteOrder) -> [u8; N] 
 fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
         DataFormat::Decimal => values.iter().max().copied(),
-        DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii => values.first().copied(),
+        DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
+            values.first().copied()
+        },
     }
 }
 
@@ -109,7 +111,7 @@ impl NodeValues {
                         f(i, scratch);
                     }
                 },
-                DataFormat::Ascii => {
+                DataFormat::Ascii | DataFormat::PlainText => {
                     for (i, &x) in v.iter().enumerate() {
                         format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
                         f(i, scratch);
@@ -135,7 +137,7 @@ impl NodeValues {
                         f(i, scratch);
                     }
                 },
-                DataFormat::Ascii => {
+                DataFormat::Ascii | DataFormat::PlainText => {
                     for (i, &x) in v.iter().enumerate() {
                         format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
                         f(i, scratch);
@@ -161,7 +163,7 @@ impl NodeValues {
                         f(i, scratch);
                     }
                 },
-                DataFormat::Ascii => {
+                DataFormat::Ascii | DataFormat::PlainText => {
                     for (i, &x) in v.iter().enumerate() {
                         format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
                         f(i, scratch);
@@ -187,7 +189,7 @@ impl NodeValues {
                         f(i, scratch);
                     }
                 },
-                DataFormat::Ascii => {
+                DataFormat::Ascii | DataFormat::PlainText => {
                     for (i, &x) in v.iter().enumerate() {
                         format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
                         f(i, scratch);
@@ -214,7 +216,9 @@ impl NodeValues {
                         DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                         DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                         DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Ascii | DataFormat::PlainText => {
+                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                        },
                     }
                 }
             },
@@ -224,7 +228,9 @@ impl NodeValues {
                         DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                         DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                         DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Ascii | DataFormat::PlainText => {
+                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                        },
                     }
                 }
             },
@@ -234,7 +240,9 @@ impl NodeValues {
                         DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                         DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                         DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Ascii | DataFormat::PlainText => {
+                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                        },
                     }
                 }
             },
@@ -244,7 +252,9 @@ impl NodeValues {
                         DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                         DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                         DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                        DataFormat::Ascii | DataFormat::PlainText => {
+                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                        },
                     }
                 }
             },
@@ -267,7 +277,9 @@ impl NodeValues {
                     DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                    },
                 }
                 true
             }),
@@ -276,7 +288,9 @@ impl NodeValues {
                     DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                    },
                 }
                 true
             }),
@@ -285,7 +299,9 @@ impl NodeValues {
                     DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                    },
                 }
                 true
             }),
@@ -294,7 +310,9 @@ impl NodeValues {
                     DataFormat::Decimal => format_decimal_into(u128::from(x), out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii => format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
+                    },
                 }
                 true
             }),

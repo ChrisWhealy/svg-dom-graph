@@ -870,3 +870,31 @@ fn ascii_widest_cell_has_the_same_width_as_every_other() -> Result<(), String> {
     }
     Ok(())
 }
+
+#[test]
+fn plain_text_is_one_cell_holding_the_whole_string_with_real_spaces() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(b"Hello, world".to_vec()), DataFormat::PlainText);
+    check_eq(cells(&content), vec!["Hello, world".to_owned()])?;
+    check_eq(content.len(), 1)?;
+    check_eq(content.shape(), (1, 1))?;
+    check_eq(content.type_name(), "text")
+}
+
+#[test]
+fn plain_text_accepts_only_printable_ascii_bytes() -> Result<(), String> {
+    let ok = DataNodeContent::new(NodeValues::U8(b" ~".to_vec()), DataFormat::PlainText);
+    check_eq(ok.plain_text_is_valid(), true)?;
+    for bad in [vec![0x1F], vec![0x7F], vec![0xFF]] {
+        let content = DataNodeContent::new(NodeValues::U8(bad), DataFormat::PlainText);
+        check_eq(content.plain_text_is_valid(), false)?;
+    }
+    let wide = DataNodeContent::new(NodeValues::U16(vec![0x4142]), DataFormat::PlainText);
+    check_eq(wide.plain_text_is_valid(), false)
+}
+
+#[test]
+fn empty_plain_text_has_no_cells() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(Vec::new()), DataFormat::PlainText);
+    check_eq(content.len(), 0)?;
+    check_eq(cells(&content), Vec::<String>::new())
+}

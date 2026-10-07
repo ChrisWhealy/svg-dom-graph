@@ -92,14 +92,43 @@ impl DataNodeContent {
         {
             return false;
         }
+        if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {
+            return false;
+        }
         self.values = values;
         true
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// How many values this holds.
+    /// How many values this holds. [`DataFormat::PlainText`] content is one value, however many characters it has.
     pub(crate) fn len(&self) -> usize {
-        self.values.len()
+        if self.is_plain_text() {
+            usize::from(self.values.len() > 0)
+        } else {
+            self.values.len()
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`DataFormat::PlainText`] content.
+    pub(crate) fn is_plain_text(&self) -> bool {
+        self.format == DataFormat::PlainText
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::PlainText`] content that is not `u8` or holds a byte outside `0x20..=0x7E`. Every other
+    /// content is valid here.
+    pub(crate) fn plain_text_is_valid(&self) -> bool {
+        !self.is_plain_text() || is_printable_ascii(&self.values)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Writes the bytes of `PlainText` content into `out` as characters.
+    fn plain_text_into(&self, out: &mut String) {
+        out.clear();
+        if let NodeValues::U8(v) = &self.values {
+            out.extend(v.iter().map(|&b| char::from(b)));
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -109,7 +138,7 @@ impl DataNodeContent {
     /// [`NodeValues::type_colour`] would otherwise use. It applies that colour straight to the node's own single box
     /// instead. That gives one box, one colour, and no redundant box-within-a-box.
     pub(crate) fn is_single_value(&self) -> bool {
-        self.values.len() == 1
+        self.len() == 1
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -121,7 +150,7 @@ impl DataNodeContent {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `(rows, cols)` grid this content renders as — see [`grid_shape`].
     pub(crate) fn shape(&self) -> (usize, usize) {
-        grid_shape(self.values.len(), self.layout)
+        grid_shape(self.len(), self.layout)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -132,7 +161,14 @@ impl DataNodeContent {
     /// does not collect every formatted value into a `Vec<String>` up front. Nor does it collect the `Vec<SvgNode>` of
     /// `<text>` elements, one per element, it would otherwise take to render them. See
     /// [`NodeValues::for_each_cell_string`]'s own doc comment for the reused-buffer shape this passes straight through.
-    pub(crate) fn for_each_cell_string(&self, scratch: &mut String, f: impl FnMut(usize, &str)) {
+    pub(crate) fn for_each_cell_string(&self, scratch: &mut String, mut f: impl FnMut(usize, &str)) {
+        if self.is_plain_text() {
+            if self.len() == 1 {
+                self.plain_text_into(scratch);
+                f(0, scratch);
+            }
+            return;
+        }
         self.values.for_each_cell_string(self.format, self.byte_order, scratch, f);
     }
 
@@ -145,6 +181,10 @@ impl DataNodeContent {
     /// iteration just to reach the one string it would ever visit. Nor does it allocate a fresh `String`:
     /// `draw_operator_box` passes its own construction-scratch buffer as `out`.
     pub(crate) fn single_cell_string_into(&self, out: &mut String) -> bool {
+        if self.is_plain_text() {
+            self.plain_text_into(out);
+            return self.len() == 1;
+        }
         self.values.single_cell_string_into(self.format, self.byte_order, out)
     }
 
@@ -153,18 +193,28 @@ impl DataNodeContent {
     /// monospace font. It does so without formatting every value first. See [`NodeValues::widest_cell_string`]'s own
     /// doc comment for how that value is chosen. Leaves `out` empty if this content holds no values at all.
     pub(crate) fn widest_cell_string(&self, out: &mut String) {
+        if self.is_plain_text() {
+            self.plain_text_into(out);
+            return;
+        }
         self.values.widest_cell_string(self.format, self.byte_order, out);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_colour`].
     pub(crate) fn type_colour(&self) -> &'static str {
+        if self.is_plain_text() {
+            return crate::colours::PLAIN_BOX_FILL;
+        }
         self.values.type_colour()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This content's own type name ("u8"/"u16"/"u32"/"u64") — see [`NodeValues::type_name`].
     pub(crate) fn type_name(&self) -> &'static str {
+        if self.is_plain_text() {
+            return "text";
+        }
         self.values.type_name()
     }
 
@@ -263,4 +313,10 @@ impl DataNodeContent {
         };
         (index < self.len()).then_some(index)
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `true` if `values` is `u8` and every byte is printable ASCII, `0x20..=0x7E`.
+fn is_printable_ascii(values: &NodeValues) -> bool {
+    matches!(values, NodeValues::U8(v) if v.iter().all(|b| (0x20..=0x7E).contains(b)))
 }

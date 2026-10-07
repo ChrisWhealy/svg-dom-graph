@@ -236,6 +236,9 @@ pub(super) fn draw_content_box(
     guard.track(measure_el.clone());
     measure_el.set_font_family(GRID_FONT_FAMILY)?;
     measure_el.set_font_size(GRID_FONT_SIZE)?;
+    if content.is_plain_text() {
+        measure_el.set_attr("style", "white-space: pre")?;
+    }
     let max_width = measure_el.bounding_box()?.size.width;
     measure_el.remove();
     guard.release();
@@ -336,6 +339,9 @@ pub(super) fn draw_content_box(
             text.set_font_family(GRID_FONT_FAMILY)?;
             text.set_font_size(GRID_FONT_SIZE)?;
             text.set_fill(TEXT_FILL)?;
+            if content.is_plain_text() {
+                text.set_attr("style", "white-space: pre")?;
+            }
             cell_texts.push(text.clone());
 
             if single_value {

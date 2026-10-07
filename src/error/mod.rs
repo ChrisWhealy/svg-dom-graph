@@ -82,6 +82,10 @@ pub enum Error {
     /// If there is no data to draw inside a grid, then no sensible box size can be computed. This condition is rejected
     /// before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     EmptyNodeContent,
+    /// `DataFormat::PlainText` content that is not `u8`, or holds a byte outside the printable ASCII range
+    /// `0x20..=0x7E`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the
+    /// scene unchanged.
+    InvalidPlainText,
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
@@ -227,6 +231,12 @@ impl fmt::Display for Error {
                 )
             },
             Error::EmptyNodeContent => write!(f, "DataNodeContent must have at least one value to display"),
+            Error::InvalidPlainText => {
+                write!(
+                    f,
+                    "PlainText content must be u8 values in the printable ASCII range 0x20..=0x7E"
+                )
+            },
             Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")

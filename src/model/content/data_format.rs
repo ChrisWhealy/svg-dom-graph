@@ -15,4 +15,12 @@ pub enum DataFormat {
     /// `ByteOrder`, with no separator. Meant for `u8` values that are text. See the `content` module's own doc comment
     /// for exactly what each variant produces.
     Ascii,
+    /// The whole value list as one run of printable ASCII text, drawn in a single text box with no grid.
+    /// The values must be `u8` and fall within the range `0x20..=0x7E`. Spaces are not transformed into a visible
+    /// substitute.
+    ///
+    /// Rejected content raises [`Error::InvalidPlainText`](crate::error::Error::InvalidPlainText).
+    ///
+    /// The node counts as a single value, so `Selection::Cell(0)` marks the whole box.
+    PlainText,
 }

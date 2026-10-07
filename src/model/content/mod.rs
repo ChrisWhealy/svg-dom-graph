@@ -52,6 +52,9 @@
 //!   than counting along an unbroken run of eight digits.
 //! - [`DataFormat::Ascii`]: every byte as a printable ASCII character. A space is shown as `␣` and anything else as a
 //!   `·` with no separator between a multi-byte value's own bytes, so every value has the same width.
+//! - [`DataFormat::PlainText`]: the whole `u8` list as one string of printable ASCII (`0x20..=0x7E`), with real spaces.
+//!   It is drawn in one text box with no grid, and counts as one value. Anything else is rejected with
+//!   [`Error::InvalidPlainText`](crate::error::Error::InvalidPlainText).
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. Decimal has no natural byte boundary to
 //!   split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect under `Decimal`: the same number
 //!   reads the same regardless of which byte order produced it.

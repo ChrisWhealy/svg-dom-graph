@@ -373,9 +373,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         .add_named_data_node(
             Point::new(input_block_rect.origin.x, TOP_Y),
             "Plain Text Message",
-            DataNodeContent::new(NodeValues::U8(MESSAGE.to_vec()), DataFormat::Ascii)
-                .with_layout(GridLayout::Columns(24))
-                .with_column_groups(8),
+            DataNodeContent::new(NodeValues::U8(MESSAGE.to_vec()), DataFormat::PlainText),
         )
         .map_err(stringify)?;
     let message_rect = scene.node_rect(message).map_err(stringify)?;
