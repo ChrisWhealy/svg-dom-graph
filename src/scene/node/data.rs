@@ -27,9 +27,9 @@ use svg_dom::{
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The gap left between adjacent value cells in a multi-value grid, so the node's own background colour shows through
-/// as a visible seam between them — this, together with each cell's own [`NodeValues::type_colour`], is what lets a
-/// reader tell where one value ends and the next begins, rather than reading a wall of digits with no indication of
-/// which byte belongs to which value.
+/// as a visible seam between them. This seam, together with each cell's own [`NodeValues::type_colour`], lets a reader
+/// tell where one value ends and the next begins. Without it, the grid would read as a wall of digits with no
+/// indication of which byte belongs to which value.
 ///
 /// [`NodeValues`]: crate::model::content::NodeValues
 const CELL_GAP: f64 = 6.0;

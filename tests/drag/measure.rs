@@ -2,11 +2,11 @@
 //! render at in *this* `Scene`, without ever adding it — see the design proposal's own "Acceptance tests" for the full
 //! list this file implements against.
 //!
-//! The central property under test throughout is *exact* equality: `measure_*` must report precisely what `node_rect`
-//! on the equivalent `add_*` call would report — not merely "close enough," and not merely "some nonzero size." Both
-//! values come from the same browser text measurement, the same `draw_*` implementation, and the same arithmetic; a
-//! difference of even a thousandth of a pixel would mean the two code paths have silently diverged, which
-//! `check_close`'s own tolerance would hide.
+//! The central property under test throughout is *exact* equality. `measure_*` must report precisely what `node_rect`
+//! on the equivalent `add_*` call would report. "Close enough" is not enough, and neither is "some nonzero size." Both
+//! values come from the same browser text measurement, the same `draw_*` implementation and the same arithmetic. A
+//! difference of even a thousandth of a pixel would mean the two code paths have silently diverged. `check_close`'s own
+//! tolerance would hide that.
 
 use crate::common::{check, make_svg};
 use svg_dom::root::utils::{Point, Size};
@@ -170,9 +170,9 @@ fn measure_operator_box_matches_an_arithmetic_operator_node() -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Acceptance test 5/6: measurement leaves the `Scene`'s own rendered, persistent content unchanged — the count of
+/// Acceptance test 5/6: measurement leaves the `Scene`'s own rendered, persistent content unchanged. The count of
 /// *every* element anywhere under the `<svg>` root, not just its own direct children, is identical before and after a
-/// `measure_*` call, proving the throwaway group was actually removed from wherever in the tree it was drawn, not
+/// `measure_*` call. That proves the throwaway group was actually removed from wherever in the tree it was drawn, not
 /// merely hidden or left nested inside the content layer.
 #[wasm_bindgen_test]
 fn measurement_leaves_the_scenes_own_rendered_content_unchanged() -> Result<(), String> {

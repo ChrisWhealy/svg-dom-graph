@@ -171,9 +171,9 @@ impl Scene {
     ///
     /// Returns a wrapped [`Error::Svg`] if hiding `self` or showing the child fails. If showing the child fails after
     /// `self` was already hidden, this attempts to show `self` again before returning. That second write is exactly the
-    /// same kind of DOM operation as the first, so in practice it succeeds even though the first one just failed — but
-    /// it is not *guaranteed* to: if it fails too, its own error is discarded (there is already one error on its way
-    /// out, and only one can be returned), and `self` can be left hidden, with the child not shown either. Only when
+    /// same kind of DOM operation as the first, so in practice it succeeds even though the first one just failed. It is
+    /// not *guaranteed* to, though. If it fails too, its own error is discarded, because one error is already on its
+    /// way out and only one can be returned. Then `self` can be left hidden, with the child not shown either. Only when
     /// both writes succeed is anything actually restored. The tree's focused `Scene` is only ever updated once both DOM
     /// writes have already succeeded, so a failure here never re-points `focused` at a `Scene` the DOM does not agree
     /// is the one actually visible.
@@ -290,12 +290,12 @@ impl Scene {
     /// listeners, the same reasoning [`Error::AlreadyDraggable`] already documents for
     /// [`make_draggable`](Self::make_draggable)/[`make_draggable_with`](Self::make_draggable_with).
     ///
-    /// If `set_attr` or either listener registration this method makes fails partway through — expected to be extremely
-    /// rare, since it means the underlying `addEventListener`/`setAttribute` DOM call itself failed — `id` is left
-    /// exactly as it was before the call: not marked enterable, with none of this method's own listeners left attached,
-    /// and with `role`/`tabindex`/`style` restored to whatever they held before this call — removed again if any of the
-    /// three was absent, rather than left at whichever of "button"/"0"/ `"cursor: pointer;"` this method's own attempt
-    /// got as far as writing.
+    /// If `set_attr` or either listener registration this method makes fails partway through, `id` is left exactly as
+    /// it was before the call. Such a failure is expected to be extremely rare, since it means the underlying
+    /// `addEventListener`/`setAttribute` DOM call itself failed. The node is not marked enterable, and none of this
+    /// method's own listeners stay attached. The `role`, `tabindex` and `style` attributes are restored to whatever
+    /// they held before this call. Any of the three that was absent is removed again, rather than left at whichever of
+    /// "button", "0" or `"cursor: pointer;"` this method's own attempt got as far as writing.
     pub fn make_enterable(&self, id: NodeId) -> Result<(), Error> {
         let group = {
             let inner = self.inner.borrow();

@@ -46,13 +46,13 @@ impl Scene {
     ///
     /// **This hides `child`'s `<svg>` root by writing its `visibility` as a plain SVG attribute, not through `style` —
     /// and [`enter`](Self::enter)/[`exit`](Self::exit) keep toggling it that way for as long as `child` stays nested. A
-    /// CSS `visibility` declaration on that same `<svg>` root — an inline `style`, a stylesheet rule, or anything it
-    /// inherits the property from — always wins over an attribute, permanently, no matter how many times `enter`/`exit`
-    /// run afterward.** A single `your-selector { visibility: visible; }` rule reaching `child`'s own root is enough to
-    /// defeat this crate's whole navigation model for it — the child would simply never actually hide, `enter`/`exit`
-    /// update `focused` regardless. The host remains free to size, position (`position`/`top`/`left`, to stop a hidden
-    /// root reserving page layout it does not need), and otherwise style that root however it likes; `visibility` alone
-    /// is this crate's own, for as long as the `Scene` stays nested.
+    /// CSS `visibility` declaration on that same `<svg>` root always wins over an attribute, permanently. That covers
+    /// an inline `style`, a stylesheet rule, or anything the root inherits the property from. It wins no matter how
+    /// many times `enter`/`exit` run afterward.** A single `your-selector { visibility: visible; }` rule reaching
+    /// `child`'s own root is enough to defeat this crate's whole navigation model for it. The child would simply never
+    /// actually hide, even though `enter`/`exit` update `focused` regardless. The host remains free to size, position
+    /// (`position`/`top`/`left`, to stop a hidden root reserving page layout it does not need), and otherwise style
+    /// that root however it likes; `visibility` alone is this crate's own, for as long as the `Scene` stays nested.
     ///
     /// # Errors
     ///
@@ -159,9 +159,9 @@ impl Scene {
     /// constructed, standalone `Scene` starts in, not hidden. This crate's navigation model treats "focused" as meaning
     /// "the scene actually shown and receiving input"; a detached child that stayed focused but hidden would quietly
     /// break that equivalence. Making it visible again is safe precisely because `self` is required to be focused for
-    /// this call to succeed at all (see "Errors" below): the old child was therefore already hidden going in, so
-    /// revealing it again on the way out can never produce two visible `Scene`s within one navigation tree — only two
-    /// separate, independent trees, each with exactly one visible, focused root, which is the invariant this crate
+    /// this call to succeed at all (see "Errors" below). The old child was therefore already hidden going in. Revealing
+    /// it again on the way out can never produce two visible `Scene`s within one navigation tree. It can only produce
+    /// two separate, independent trees, each with exactly one visible, focused root. That is the invariant this crate
     /// already guarantees everywhere else. Whether the two `<svg>` roots then sit somewhere sensible on the page is a
     /// host layout concern, exactly as it already is for any standalone `Scene` a host constructs directly.
     ///
@@ -193,11 +193,11 @@ impl Scene {
     /// Also returns a wrapped [`Error::Svg`] if hiding `new_child`'s own `<svg>` root fails. Every one of the checks
     /// above, and that hide, happens before any ownership or navigation state changes — so a rejected call leaves the
     /// original child attached to `node` exactly as it was, and `new_child` exactly as it was: still an independent,
-    /// focused tree of its own. The only DOM write still to come after this point — making the old child visible again
-    /// — cannot itself fail this call: by then the replacement has already fully succeeded, so that write is attempted
-    /// on a best-effort basis, the same "already happened, so a failure to finish a secondary step is not reported as
-    /// this call's own failure" reasoning this crate's own zoom-view bookkeeping already follows after a successful
-    /// view change.
+    /// focused tree of its own. The only DOM write still to come after this point is making the old child visible
+    /// again. It cannot itself fail this call, because the replacement has already fully succeeded by then. That write
+    /// is therefore attempted on a best-effort basis. This follows the same reasoning as this crate's own zoom-view
+    /// bookkeeping after a successful view change. The change already happened, so a failure to finish a secondary step
+    /// is not reported as this call's own failure.
     pub fn replace_container_child(&self, node: NodeId, new_child: Scene) -> Result<Scene, Error> {
         if !self.is_focused() {
             return Err(Error::NotFocused);

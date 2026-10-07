@@ -85,7 +85,8 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its own
 /// real formatted result value as text, rather than just the result's own type. Its `<title>` — the browser's own
-/// mouse-hover tooltip — carries that exact same text, so hovering shows the same thing a screen reader announces.
+/// mouse-hover tooltip — carries that exact same text, so hovering over the node with the mouse pointer shows the same
+/// thing a screen reader announces.
 #[wasm_bindgen_test]
 fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value() -> Result<(), String> {
     let svg = make_svg("operator-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

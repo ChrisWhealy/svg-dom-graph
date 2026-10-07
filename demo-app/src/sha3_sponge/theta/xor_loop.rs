@@ -88,14 +88,14 @@ pub(super) fn display_outputs(outputs: [[u64; 5]; 5], to: Option<usize>) -> [[u6
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested `XOR loop` child for flat cell index `n` (`row = n / 5`, `col = n % 5`), in one row-1/row-2 pair:
-/// `D` — `ThetaD`'s own real output, [`super::theta_d::outputs`], drawn as a `[5; 1]` column (row `row` focused) — sits
-/// at `A`'s own west, both in the same row and the same height; `D[row]` sits centred below `D`, and `A[row, col]` sits
-/// centred below `A`, each its own single-value node fed by an edge from the array above it. `XOR`, east of `A[row,
-/// col]` in that same row, combines them into `A'(row, col)` — both of its own inputs then approach it from the west,
-/// the same `theta_d::build_scene`'s own `MID_Y` reasoning applied here without a shared source array to put them in
-/// one row naturally. `A'`, at the bottom, is the same shape and layout as `A` itself, showing `display`'s own current
-/// values with cell `(row, col)` focused.
+/// Builds the nested `XOR loop` child for flat cell index `n` (`row = n / 5`, `col = n % 5`), in one row-1/row-2 pair.
+/// In row 1, `D` sits at `A`'s own west, at the same height. `D` is `ThetaD`'s own real output
+/// ([`super::theta_d::outputs`]), drawn as a `[5; 1]` column with row `row` focused. In row 2, `D[row]` sits centred
+/// below `D`, and `A[row, col]` sits centred below `A`. Each is its own single-value node, fed by an edge from the
+/// array above it. `XOR`, east of `A[row, col]` in that same row, combines them into `A'(row, col)` — both of its own
+/// inputs then approach it from the west, the same `theta_d::build_scene`'s own `MID_Y` reasoning applied here without
+/// a shared source array to put them in one row naturally. `A'`, at the bottom, is the same shape and layout as `A`
+/// itself, showing `display`'s own current values with cell `(row, col)` focused.
 ///
 /// Steps cell by cell, not row by row like `theta_c`/`theta_d` do: `A'(row, col)` is a genuinely per-cell result —
 /// every column of a row is `⊕`'d with the *same* `D(row)`, but each still needs its own real `A(row, col)` — so there

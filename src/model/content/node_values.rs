@@ -255,11 +255,11 @@ impl NodeValues {
     /// Formats the first value, per `format` and `byte_order`, into caller-owned `out` — `false`, leaving `out`
     /// untouched, if this holds no values at all.
     ///
-    /// For a caller that already knows it holds exactly one value — an operator's own already-validated result,
-    /// [`super::DataNodeContent::single_cell_string_into`]'s one caller — so it never needs
+    /// For a caller that already knows it holds exactly one value. That is an operator's own already-validated result,
+    /// and [`super::DataNodeContent::single_cell_string_into`]'s one caller. It never needs
     /// [`for_each_cell_string`](Self::for_each_cell_string)'s per-value iteration just to reach the one string it would
-    /// ever visit, nor allocate a fresh `String` to hold it: `draw_operator_box` already has its own
-    /// construction-scratch buffer in hand, and reuses it for this too.
+    /// ever visit. Nor does it allocate a fresh `String` to hold it, because `draw_operator_box` already has its own
+    /// construction-scratch buffer in hand and reuses it for this too.
     pub(super) fn single_cell_string_into(&self, format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
         match self {
             Self::U8(v) => v.first().is_some_and(|&x| {

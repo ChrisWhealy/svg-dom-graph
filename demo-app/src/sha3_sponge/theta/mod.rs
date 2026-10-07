@@ -87,13 +87,15 @@ thread_local! {
 /// works along `x`, so its "rows" are the state's columns, and it shows the state transposed relative to the scenes
 /// after it.
 ///
-/// SHA3's real `Theta` function is `C(x) = A(x,0) ⊕ A(x,1) ⊕ A(x,2) ⊕ A(x,3) ⊕ A(x,4)` (`ThetaC`), `D(x) = C(x-1) ⊕
-/// rotl(C(x+1), 1)` (`ThetaD`; built here exactly as that — `rotl` is `u64::rotate_left`, with no further byte-order
-/// adjustment once a lane is a plain `u64` — see `theta_d`'s own `row` function for the exact formula), and finally
-/// `A'(x,y) = A(x,y) ⊕ D(x)` for every cell (`XOR loop`) — the real step needs both `A` and `D` as its own two inputs,
-/// which is why `A`'s own clone sits alongside `ThetaD` feeding `XOR loop` directly, not only through `ThetaC`. `A`
-/// itself is drawn as the real `[5; [5; u64]]` array `ThetaC`'s/`XOR loop`'s own nested views already show in full —
-/// the same content, three times over.
+/// SHA3's real `Theta` function operates in three stages:
+/// 1. `ThetaC` computes `C(x) = A(x,0) ⊕ A(x,1) ⊕ A(x,2) ⊕ A(x,3) ⊕ A(x,4)`.
+/// 2. `ThetaD` computes `D(x) = C(x-1) ⊕ rotl(C(x+1), 1)`, built here exactly as that formula. Here `rotl` is
+///    `u64::rotate_left`, with no further byte-order adjustment once a lane is a plain `u64` (see `theta_d`'s own `row`
+///    function for the exact formula).
+/// 3. `XOR loop` then computes `A'(x,y) = A(x,y) ⊕ D(x)` for every cell. That last step needs both `A` and `D` as its
+///    two inputs. This is why `A`'s own clone sits alongside `ThetaD` feeding `XOR loop` directly, not only through
+///    `ThetaC`. `A` itself is drawn as the real `[5; [5; u64]]` array `ThetaC`'s/`XOR loop`'s own nested views already
+///    show in full — the same content, three times over.
 ///
 /// `Theta Output` is a plain data node, not a container: there is nothing to nest behind it. Its values are `A'`, the
 /// whole result. They are computed up front by [`output`] and shown by `Scene::set_data_values` as the walk reaches

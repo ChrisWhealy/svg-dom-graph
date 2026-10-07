@@ -355,10 +355,10 @@ fn attach_toolbar(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Rebuilds the nested Keccak-f child for walk position `to` — a function of a round, `0..120`, not a round number —
-/// and grafts it into [`SCENE`]'s own `parent` in place of whichever child is currently shown — the nested counterpart
-/// to `theta::theta_c::rebuild_child`; see that function's own doc comment for why a fresh `Scene`, a fresh sibling
-/// `<svg>`, and a view carried over by hand are all needed here for exactly the same reasons.
+/// Rebuilds the nested Keccak-f child for walk position `to`, and grafts it into [`SCENE`]'s own `parent` in place of
+/// whichever child is currently shown. The position is one function of a round, `0..120`, not a round number. This is
+/// the nested counterpart to `theta::theta_c::rebuild_child`. See that function's own doc comment for why a fresh
+/// `Scene`, a fresh sibling `<svg>` and a view carried over by hand are all needed here.
 ///
 /// # Errors
 ///

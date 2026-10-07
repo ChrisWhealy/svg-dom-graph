@@ -80,11 +80,11 @@ pub(crate) const THETA_C_INPUT: [[u64; 5]; 5] = [
 ];
 
 /// Live state the third example's own [`Scene::show_selection_toolbar`] callback shares across steps: every row's own
-/// already-computed `ThetaC` result. There is no current row kept here either — the [`SelectionToolbarOptions`] toolbar
-/// rebuilt on every step is itself the only record of that (see [`rebuild_theta_c_diagram`]'s own doc comment), which
-/// hands its own `to: Option<usize>` straight to [`display_outputs`] on every step — so which rows currently show is a
-/// pure function of `outputs` and that one position, recomputed fresh each time, not a second, separately mutated flag
-/// per row that could drift out of step with it. See [`display_outputs`]'s own doc comment.
+/// already-computed `ThetaC` result. There is no current row kept here either. The [`SelectionToolbarOptions`] toolbar,
+/// rebuilt on every step, is itself the only record of it (see [`rebuild_theta_c_diagram`]'s own doc comment). That
+/// toolbar hands its own `to: Option<usize>` straight to [`display_outputs`] on every step. So which rows currently
+/// show is a pure function of `outputs` and that one position, recomputed fresh each time. A second, separately mutated
+/// flag per row could drift out of step with it, so there is none. See [`display_outputs`]'s own doc comment.
 struct ThetaCDemo {
     /// Row `i`'s own `ThetaC` result — a pure function of `input`, computed once, up front. Stepping never recomputes
     /// these; it only changes which prefix of them [`display_outputs`] currently reveals.
@@ -120,12 +120,12 @@ struct ThetaCDemo {
 ///    directly below the chain's own final `XOR` node, so a plain edge from there reaches `O` with nothing else in the
 ///    way — see [`rebuild_theta_c_diagram`]'s own doc comment.
 /// 5. All three walks start unstarted — before element `0` is ever processed, nothing is highlighted and (for the
-///    third) `O` is entirely blank. The third example's chain is still drawn, over five zero operands, rather than left
-///    out entirely — see [`theta::theta_c::build_scene`](crate::sha3_sponge::theta::theta_c::build_scene)'s own doc
-///    comment for why: an absent chain would read as "this does not exist yet," when what is actually true is "this has
-///    not run yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing
-///    for `None` — see [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own
-///    current position on every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one.
+///    third) `O` is entirely blank. The third example's chain is still drawn over five zero operands, rather than left
+///    out entirely. See [`theta::theta_c::build_scene`](crate::sha3_sponge::theta::theta_c::build_scene)'s own doc
+///    comment for why. An absent chain would read as "this does not exist yet," when the truth is "this has not run
+///    yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing for
+///    `None` — see [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own current
+///    position on every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one.
 ///
 /// None of the three wrap: [`Scene::show_selection_toolbar`]'s own Next/Prev clamp at both ends instead — stepping
 /// "Next" past the last value, or "Previous" before the first, simply disables that button rather than cycling around.

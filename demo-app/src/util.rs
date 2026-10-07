@@ -307,12 +307,12 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
 /// Adds a click-through, decorative duplicate of `svg_id`'s own current content, sitting behind the nested Scene's own
 /// frame — shared by every demo that nests a `Scene` the way `theta`/`sha3_sponge::keccak` do.
 ///
-/// `Scene::enter` hides the real `svg_id` entirely while a nested child is shown — that is the library's own,
-/// deliberate "exactly one Scene visible at a time" invariant (see `svg_dom_graph::scene::navigation`'s own module doc
-/// comment), not a bug to work around, and a demo nesting a `Scene` this way has no reason to want the real parent
-/// interactive while a child has focus. But a modal window's own look wants the parent's content still visible in the
-/// margin around a smaller nested view — so this clones what is currently on screen, as a plain DOM duplicate that the
-/// library's own visibility toggling knows nothing about and never touches.
+/// `Scene::enter` hides the real `svg_id` entirely while a nested child is shown. That is the library's own, deliberate
+/// "exactly one Scene visible at a time" invariant (see `svg_dom_graph::scene::navigation`'s own module doc comment),
+/// not a bug to work around. A demo nesting a `Scene` this way has no reason to want the real parent interactive while
+/// a child has focus. But a modal window's own look wants the parent's content still visible in the margin around a
+/// smaller nested view — so this clones what is currently on screen, as a plain DOM duplicate that the library's own
+/// visibility toggling knows nothing about and never touches.
 ///
 /// Safe to call more than once for the same `svg_id` — e.g. every time a demo whose own `build_scene` rebuilds from
 /// scratch on every step (`sha3_sponge::build_scene`, `sha3_sponge::keccak::build_scene`) calls this again for the same
@@ -329,11 +329,11 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
 /// `.nested-scene-backdrop`'s own `pointer-events: none` (see `style.css`) is what makes the clone a pure visual
 /// backdrop: every click, drag, and wheel event passes straight through it to the real, interactive `svg_id`
 /// underneath, exactly as if the clone were not there at all. `aria-hidden="true"` excludes the whole cloned subtree
-/// from the accessibility tree, and every `tabindex` inside it is stripped so a sighted keyboard user tabbing through
-/// the page cannot land on one of these non-functional duplicates either — a click or keypress on one would already do
-/// nothing even without that, since `cloneNode` never copies event listeners, but it would still *look* clickable
-/// without this. Its own `id` is stripped too, since naming two elements the same id at once would make
-/// `getElementById` calls elsewhere ambiguous.
+/// from the accessibility tree. Every `tabindex` inside it is stripped, so a sighted keyboard user tabbing through the
+/// page cannot land on one of these non-functional duplicates either. A click or keypress on one would already do
+/// nothing even without that, since `cloneNode` never copies event listeners. It would still *look* clickable without
+/// this. Its own `id` is stripped too, since naming two elements the same id at once would make `getElementById` calls
+/// elsewhere ambiguous.
 ///
 /// An `inert` attribute was tried here first, and rejected: it does stop the clone's own descendants from being focused
 /// or announced to assistive technology, but it does **not** make the element transparent to pointer events the way
@@ -481,12 +481,12 @@ pub(crate) fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
 /// already something this crate reaches for directly on the DOM, because `SvgRoot` deliberately does not cache it
 /// either way.
 ///
-/// Safe to call after a `Scene` is already showing content: `svg-dom-graph`'s own internal toolbar/zoom layout
-/// (`visible_area`) reads `viewBox` fresh from the DOM on every layout pass, not from any cache of its own, so a plain
-/// attribute write here is picked up immediately — nothing is left stale for a panel with no drag bounds to desync (a
-/// panel that *does* bound dragging to its own viewBox, via `DragOptions::bounds`/[`view_box_rect`], would need to
-/// recompute those bounds after calling this, since `view_box_rect` itself reads the same attribute fresh each time
-/// rather than caching it).
+/// Safe to call after a `Scene` is already showing content. The library's own internal toolbar/zoom layout
+/// (`visible_area`) reads `viewBox` fresh from the DOM on every layout pass, not from any cache of its own. So a plain
+/// attribute write here is picked up immediately, and nothing is left stale for a panel with no drag bounds to desync.
+/// A panel that *does* bound dragging to its own viewBox, via `DragOptions::bounds`/[`view_box_rect`], would need to
+/// recompute those bounds after calling this. That is because `view_box_rect` itself reads the same attribute fresh
+/// each time rather than caching it.
 ///
 /// # Errors
 ///

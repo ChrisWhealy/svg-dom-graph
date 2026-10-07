@@ -645,12 +645,12 @@ impl SceneInner {
     ///
     /// If `pre_drag_origin`'s centre coincides exactly with the blocking node's own centre, there is no direction to
     /// retreat along, and [`nearest_clear_centre`] returns the blocker's own centre unchanged. This is handled
-    /// explicitly by falling back to `pre_drag_origin` here, rather than converting that returned centre back to an
-    /// origin via `dragged`'s size and relying on the two being numerically identical — which they always are in this
-    /// case (`blocker_centre - dragged.size / 2 == pre_drag_origin` follows directly from `pre_drag_centre ==
-    /// blocker_centre`), but only because of that algebraic identity, not because the conversion was written with this
-    /// case in mind. Spelling it out here keeps that guarantee from depending on `nearest_clear_centre`'s internals
-    /// never changing.
+    /// explicitly by falling back to `pre_drag_origin` here. The alternative would convert that returned centre back to
+    /// an origin via `dragged`'s size, and rely on the two being numerically identical. They always are in this case,
+    /// because `blocker_centre - dragged.size / 2 == pre_drag_origin` follows directly from `pre_drag_centre ==
+    /// blocker_centre`. But that holds only because of the algebraic identity, not because the conversion was written
+    /// with this case in mind. Spelling it out here keeps that guarantee from depending on `nearest_clear_centre`'s
+    /// internals never changing.
     ///
     /// Returns `None` if `id`'s current rect does not overlap any other node, or if `id` does not name a node in this
     /// scene.

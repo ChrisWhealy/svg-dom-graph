@@ -64,10 +64,10 @@ pub(super) fn exit_if_focused() -> bool {
 /// each step clears `svg_id`'s own children and draws everything again, fresh, from this row's own real values.
 ///
 /// `O` is its own `[5; u64]` node, not folded into `A`'s own `[5; [5; u64]]` shape — each keeps the type its own values
-/// actually have. `A` sits at the very top of the canvas, above the chain it feeds; `O` sits right below the chain's
-/// own final `XOR` node, so a connector from there reaches `O` directly, with nothing else in the way — a connector can
-/// only land on a node's own outer perimeter, never a specific cell inside it, and `O` is the node whose perimeter that
-/// connector actually reaches.
+/// actually have. `A` sits at the very top of the canvas, above the chain it feeds. `O` sits right below the chain's
+/// own final `XOR` node, so a connector from there reaches `O` directly, with nothing else in the way. A connector can
+/// only land on a node's own outer perimeter, never a specific cell inside it. `O` is the node whose perimeter that
+/// connector reaches.
 ///
 /// Each of the five operand boxes is named after the exact element of `A` it holds — `A[row, i]` — for `Some(row)`.
 /// Unstarted, there is no real row to name any of them after, so they are drawn unnamed instead — see the `place`
@@ -150,8 +150,8 @@ pub(crate) fn build_scene(
     // boxes, not a measured one.
     //
     // Each `XOR` stage cascades down and to the left of the operand row, combining the running total with the next
-    // operand to its own right; every stage's own `x` sits strictly left of the operand it still has to reach, and
-    // every operand's own connector drops straight down its own column before turning, so nothing here ever crosses an
+    // operand to its own right. Every stage's own `x` sits strictly left of the operand it still has to reach. Every
+    // operand's own connector drops straight down its own column before turning. So nothing here ever crosses an
     // earlier stage's box.
     const OPERAND_GAP: f64 = 4.0;
     let operand_width = scene
@@ -160,10 +160,10 @@ pub(crate) fn build_scene(
         .width;
     let operand_stride = operand_width + OPERAND_GAP;
     let operand_x: [f64; 5] = std::array::from_fn(|i| 20.0 + i as f64 * operand_stride);
-    // `A Bytes`'s own bottom edge sits at `TOP_Y + 236.6` (a named 5×5 grid's own fixed height) — `OPERAND_Y` was once
-    // `TOP_Y + 255`, an ≈18-unit gap that turned out too tight once really rendered: measured text is never exactly the
-    // estimate this file reasons from (see this function's own doc comment), so a gap this thin had no slack to absorb
-    // the difference before the two boxes touched. `+ 295` leaves the same ≈58-unit gap every later stage in this chain
+    // `A Bytes`'s own bottom edge sits at `TOP_Y + 236.6`, a named 5×5 grid's own fixed height. `OPERAND_Y` was once
+    // `TOP_Y + 255`, an ≈18-unit gap that turned out too tight once really rendered. Measured text is never exactly the
+    // estimate this file reasons from (see this function's own doc comment). A gap this thin had no slack to absorb the
+    // difference before the two boxes touched. `+ 295` leaves the same ≈58-unit gap every later stage in this chain
     // already uses.
     const OPERAND_Y: f64 = TOP_Y + 295.0;
 

@@ -291,11 +291,11 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
 
     // A dedicated listener, rather than folding this into `closure` above: dragging P or Q fires no event on any of the
     // three controls above at all — make_draggable's own pointer listeners live entirely inside the library, invisible
-    // to this demo. Listening for `pointermove` on the whole document, rather than trying to attach to P/Q's own
-    // rendered elements specifically, sidesteps needing to know which element a drag is currently attached to, or even
-    // whether one is in progress: refresh_radius_limit is cheap enough (one parsed attribute string, two attribute
-    // writes) to simply call unconditionally on every pointer movement anywhere on the page rather than trying to
-    // filter down to just the ones that actually moved P or Q.
+    // to this demo. Listening for `pointermove` on the whole document, rather than attaching to P and Q's own rendered
+    // elements, avoids needing to know which element a drag is attached to. It also avoids knowing whether a drag is in
+    // progress. This works because refresh_radius_limit is cheap: one parsed attribute string and two attribute writes.
+    // So it is simply called on every pointer movement anywhere on the page, instead of filtering down to the movements
+    // that actually moved P or Q.
     let pointer_closure = Closure::<dyn FnMut()>::new(move || {
         if !pointer_straight_radio.checked() {
             refresh_radius_limit(&pointer_scene, edge, &pointer_path, &pointer_slider, &pointer_output);

@@ -135,20 +135,21 @@ async fn main() -> std::io::Result<()> {
         App::new()
             .wrap(Logger::default())
             // Re-runs prepare_stage — re-assembling index.html and re-copying style.css — so an edit to either is
-            // visible on the very next browser refresh. Only when the request is actually for the page itself (`/` or
-            // `/index.html`): every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified static asset
-            // neither of those could ever change, so skipping the refresh there avoids a needless filesystem stat/write
-            // on every one of those requests, not just the page load that triggers them. build_demo's wasm rebuild is
-            // deliberately not repeated here at all, for either kind of request: wasm-pack is far too slow to run per
-            // request and editing Rust source already requires restarting cargo demo regardless.
+            // visible on the very next browser refresh. It runs only when the request is actually for the page itself
+            // (`/` or `/index.html`). Every other request (`/pkg/*.js`, the `.wasm` binary) is a plain, unmodified
+            // static asset that neither of those could ever change. Skipping the refresh there avoids a needless
+            // filesystem stat/write on every one of those requests, not just the page load that triggers them.
+            // build_demo's wasm rebuild is deliberately not repeated here at all, for either kind of request. wasm-pack
+            // is far too slow to run per request, and editing Rust source already requires restarting cargo demo
+            // regardless.
             //
             // A refresh failure (e.g. index.html was left mid-edit, or style.css went missing) is only logged, not
-            // fatal: the previously staged index.html and style.css are both left in place and keep being served, the
-            // same file-not-found-yet tolerance an editor's own autosave already needs — prepare_stage's own doc
-            // comment explains why it stages both files into temporary files and only promotes them once both have been
-            // prepared successfully, rather than writing either straight onto its live destination. That guarantee
-            // assumes only one refresh ever runs at a time, which is exactly what `.workers(1)` below exists to
-            // guarantee — see its own comment for why.
+            // fatal. The previously staged index.html and style.css are both left in place and keep being served. This
+            // is the same file-not-found-yet tolerance an editor's own autosave already needs. prepare_stage's own doc
+            // comment explains why it stages both files into temporary files first. It promotes them only once both are
+            // prepared, rather than writing either straight onto its live destination. That guarantee assumes only one
+            // refresh ever runs at a time, which is exactly what `.workers(1)` below exists to guarantee — see its own
+            // comment for why.
             .wrap_fn(move |req, srv| {
                 if matches!(req.path(), "/" | "/index.html")
                     && let Err(err) = build::prepare_stage(&root, &stage)

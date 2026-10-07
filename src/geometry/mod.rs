@@ -395,11 +395,11 @@ pub(crate) fn forced_anchor(rect: Rect, towards: Point, side: side::Side, fixing
 /// `fixing_points` is `rect`'s own node's [`crate::scene::EdgeAnchors`] configuration, already unwrapped to a plain
 /// count — `None` for an unconfigured node, `Some(n)` for `Some(EdgeAnchors(n))`.
 ///
-/// Whenever `first` and `second` resolve to *different* sides of `rect`, only one connector lands on either side, so
-/// each lands exactly where an ordinary edge into `rect` would: the side's own plain midpoint, or, with `fixing_points`
-/// configured, the nearest evenly spaced candidate — the same two rules [`edge_anchor`]/ [`snapped_anchor`] apply, but
-/// via [`anchor_from_crossing`] against the side/crossing already in hand, not a second, independent ray/rectangle
-/// intersection against `first`/`second` themselves.
+/// Whenever `first` and `second` resolve to *different* sides of `rect`, only one connector lands on either side. Each
+/// therefore lands exactly where an ordinary edge into `rect` would: the side's own plain midpoint or, with
+/// `fixing_points` configured, the nearest evenly spaced candidate. These are the same two rules [`edge_anchor`]/
+/// [`snapped_anchor`] apply. They are applied via [`anchor_from_crossing`] against the side and crossing already in
+/// hand, not a second, independent ray/rectangle intersection against `first`/`second` themselves.
 ///
 /// When both resolve to the *same* side, this splits to the outer two of `fixing_points.unwrap_or(3)` evenly spaced
 /// candidates — the same division [`snapped_anchor`] would use for that count. So the two connectors no longer overlap.
@@ -540,8 +540,8 @@ pub(crate) fn port_marker_position(anchor: Point, side: side::Side) -> Point {
 /// exactly on its own operand's box edge, never inside it — then straight into the operator. No segment ever moves
 /// backward across the box's own exit height, so there is nothing left to visually cross back through, regardless of
 /// how far the operand has drifted. An earlier version of this function instead pushed a *shared* jog coordinate past
-/// both operands' own positions; that jog sat at the exact height the source box itself occupies across its own full
-/// width, so the connector visibly cut back through its own box no matter how far the jog was pushed out — going
+/// both operands' own positions. That jog sat at the exact height the source box itself occupies across its own full
+/// width. The connector therefore visibly cut back through its own box, no matter how far the jog was pushed out. Going
 /// further never helps once the jog is already at the box's own exit height.
 ///
 /// Falls back to plain [`elbow_route`] whenever `start_side` and `end_side` are not both horizontal or both vertical —

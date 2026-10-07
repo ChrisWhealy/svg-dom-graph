@@ -69,9 +69,9 @@ fn dropping_an_armed_guard_with_no_loose_elements_only_removes_the_group() -> Re
 }
 
 /// `release` stops tracking the most recently tracked node, so an armed guard dropping afterward leaves it exactly
-/// where it was — not one of the elements `draw_content_box`'s own per-cell loop has already appended into `group`
-/// (whose own removal would remove it anyway), but proved here directly: even a node never appended anywhere must
-/// survive, once released, purely because tracking it stopped.
+/// where it was. The test node is not one of the elements `draw_content_box`'s own per-cell loop has already appended
+/// into `group`, whose own removal would remove it anyway. It proves the point directly instead: even a node never
+/// appended anywhere must survive, once released, purely because tracking it stopped.
 #[wasm_bindgen_test]
 fn release_stops_tracking_the_most_recently_tracked_node() -> Result<(), String> {
     let svg = make_svg("render-guard-release");

@@ -147,13 +147,14 @@ fn descendant_buttons(tab: &Tab, root: &AXNodeId) -> Result<Vec<Accessibility::A
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fixture's selection toolbar (bound to `named_value`, shown with no prior `Scene::set_selection` call — see the
-/// fixture's own doc comment) proves Chrome's own computed accessibility tree exposes: the bar itself as `toolbar
-/// "Selection controls"`; each of its three buttons under its own accessible name, not the bare "Prev"/"Next"/"Restart"
-/// label text a sighted reader sees; and — the point `tests/drag/selection_toolbar.rs`'s own DOM-attribute checks
-/// cannot reach — that `aria-disabled="true"` on Previous/Restart, and its absence on Next, actually becomes a real
-/// `disabled` AX property with the right boolean value, not just an attribute that happens to be present in the
-/// rendered markup.
+/// The fixture's selection toolbar is bound to `named_value`, with no prior `Scene::set_selection` call (see the
+/// fixture's own doc comment). It proves Chrome's own computed accessibility tree exposes three things.
+///
+/// 1. The bar itself appears as `toolbar "Selection controls"`
+/// 2. Each of its three buttons appears under its own accessible name, not the bare "Prev", "Next" or "Restart" text a
+///    sighted reader sees
+/// 3. `aria-disabled="true"` on Previous and Restart, and its absence on Next, becomes a real `disabled` AX property
+///    with the right boolean value
 ///
 /// `named_value` holds exactly one value, so `Next` is enabled and `Previous`/`Restart` are disabled from the moment
 /// the toolbar is shown — this is `named_value`'s own default, unstarted state, reached with no interaction at all. See

@@ -14,13 +14,13 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 /// A `BinaryOperatorRoute` with `sibling_end: None` — the different-side case — must route exactly like a plain edge,
 /// never through `binary_operator_elbow_route`'s own same-side, sibling-aware logic.
 ///
-/// The geometry here is not arbitrary: with `sibling_end` wrongly carrying the *other* operand's own anchor (a point on
-/// a genuinely different side of the operator, as this crate did before `BinaryOperatorRoute::sibling_end` became an
-/// `Option`), `binary_operator_elbow_route`'s own "drifted past the far target" comparison reads that unrelated
-/// coordinate as if it were a position along *this* edge's own shared side, and misfires: `start.x` (910) computed here
-/// genuinely exceeds `sibling_end.x` (100, the other operand's own East-side anchor), so the old code would have
-/// rerouted this edge to a single, vertical-first bend instead of the two-bend path a same-orientation, disconnected
-/// pair like this actually needs. `sibling_end: None` must bypass that comparison entirely, landing on plain
+/// The geometry here is not arbitrary. This crate once let `sibling_end` carry the *other* operand's own anchor, a
+/// point on a genuinely different side of the operator, before `BinaryOperatorRoute::sibling_end` became an `Option`.
+/// In that state, `binary_operator_elbow_route`'s own "drifted past the far target" comparison read that unrelated
+/// coordinate as if it were a position along *this* edge's own shared side, and misfired. Here, `start.x` (910)
+/// genuinely exceeds `sibling_end.x` (100, the other operand's own East-side anchor). The old code would therefore have
+/// rerouted this edge to a single, vertical-first bend. A same-orientation, disconnected pair like this actually needs
+/// the two-bend path instead. `sibling_end: None` must bypass that comparison entirely, landing on plain
 /// `elbow_route`'s own output instead.
 #[test]
 fn route_with_a_different_side_override_matches_plain_elbow_route_not_the_sibling_aware_one() -> Result<(), String> {

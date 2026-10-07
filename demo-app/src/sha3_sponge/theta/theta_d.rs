@@ -63,16 +63,16 @@ pub(super) fn outputs(c: [u64; 5]) -> [u64; 5] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the nested `ThetaD` child for `n`: `C` — `ThetaC`'s own real output, [`crate::selection::theta_c_outputs`],
-/// as one `[5; u64]` array, cell `n` selected — sits at the top; `next`, `C[(n + 1) % 5]`, sits directly below it;
-/// `prev` (`C[(n + 4) % 5]`), a `ROTL` node rotating `next`, and an `XOR` node combining `prev` and that `ROTL` result
-/// into `D[n]` all share one further row below that, left to right, so both of `XOR`'s own inputs approach it from the
-/// west rather than `prev` dropping straight down onto it from directly above — see `MID_Y`'s own doc comment for why
-/// that matters. `D`, at the bottom, is the same shape as `C`, showing `display`'s own current values with cell `n`
-/// focused. `Some(row)` computes and highlights row `row`; `None` — the unstarted state, before row `0` is ever
-/// processed — computes the same chain over `prev`/`next` both zero instead, and leaves `C` unselected. See
-/// [`theta_c::build_scene`](super::theta_c::build_scene)'s own doc comment for why the chain is always drawn, even
-/// unstarted, and why `display`'s own current values are passed in rather than computed here.
+/// Builds the nested `ThetaD` child for `n`. At the top sits `C`, `ThetaC`'s own real output
+/// ([`crate::selection::theta_c_outputs`]), as one `[5; u64]` array with cell `n` selected. Directly below it sits
+/// `next`, `C[(n + 1) % 5]`. One further row below holds, left to right, `prev` (`C[(n + 4) % 5]`), a `ROTL` node
+/// rotating `next`, and an `XOR` node combining `prev` and that `ROTL` result into `D[n]`. Both of `XOR`'s own inputs
+/// therefore approach it from the west, instead of `prev` dropping straight down onto it from directly above. See
+/// `MID_Y`'s own doc comment for why that matters. `D`, at the bottom, is the same shape as `C`, showing `display`'s
+/// own current values with cell `n` focused. `Some(row)` computes and highlights row `row`; `None` — the unstarted
+/// state, before row `0` is ever processed — computes the same chain over `prev`/`next` both zero instead, and leaves
+/// `C` unselected. See [`theta_c::build_scene`](super::theta_c::build_scene)'s own doc comment for why the chain is
+/// always drawn, even unstarted, and why `display`'s own current values are passed in rather than computed here.
 ///
 /// # Errors
 ///

@@ -410,9 +410,9 @@ fn set_selection_with_an_identical_selection_touches_no_cell() -> Result<(), Str
 /// `set_selection` only rewrites the cells whose own colour/stroke category (focused, banded, default) actually changes
 /// between the old selection and the new one — not every cell, even for a genuinely different selection.
 ///
-/// Proved the same way as the no-op case above: a sentinel `fill`, planted directly via the raw DOM, survives a
-/// selection change that moves the focus elsewhere but leaves this cell's own category at "default" throughout, then is
-/// gone once a further change actually does bring this cell into the band — confirming the sentinel technique itself is
+/// Proved the same way as the no-op case above. A sentinel `fill`, planted directly via the raw DOM, survives a
+/// selection change that moves the focus elsewhere but leaves this cell's own category at "default" throughout. It is
+/// gone once a further change actually brings this cell into the band. That confirms the sentinel technique itself is
 /// sensitive enough to catch a real rewrite, not just an accident of timing.
 #[wasm_bindgen_test]
 fn set_selection_only_rewrites_cells_whose_own_category_changed() -> Result<(), String> {

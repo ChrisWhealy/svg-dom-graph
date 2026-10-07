@@ -209,12 +209,12 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Also returned — despite `id`
-    /// naming a node whose size this call never changes — if that node's own current size is somehow not finite or not
-    /// strictly positive, the same defensive check every other entry point accepting node geometry in this crate
-    /// already applies; a node that was ever successfully added can't actually be in that state, but this does not rely
-    /// on that remaining true forever. Checked before touching the scene, so a rejected call leaves the node exactly as
-    /// it was.
+    /// Returns [`Error::InvalidNodeGeometry`] if `top_left`'s coordinates are not finite. Also returned, despite `id`
+    /// naming a node whose size this call never changes, if that node's own current size is somehow not finite or not
+    /// strictly positive. This is the same defensive check every other entry point accepting node geometry in this
+    /// crate already applies. A node that was ever successfully added can't actually be in that state, but this does
+    /// not rely on that remaining true forever. Checked before touching the scene, so a rejected call leaves the node
+    /// exactly as it was.
     ///
     /// Also returns a wrapped [`Error::Svg`] if redrawing an incident connector fails partway through — the same "can
     /// leave some incident connectors already redrawn and others not" property [`Scene::set_edge_anchors`]'s own doc

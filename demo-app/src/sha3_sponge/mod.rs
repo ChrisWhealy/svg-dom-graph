@@ -3,12 +3,12 @@
 //!
 //! # What is real
 //!
-//! All of it. [`keccak_f::sha3_256_run`] hashes [`MESSAGE`] in plain Rust, and every value on screen is a piece of that
-//! one calculation: this diagram's "Input block", "XOR", and row 3; the Keccak scene's 24 rounds, each of whose "A
-//! Bytes" is the previous round's real output; and, inside each round, `Theta`, `Rho`, `Pi`, `Chi` and `Iota`, each
-//! handed the state the function before it produced. Stepping over a nested scene therefore gives exactly what stepping
-//! into it would have ended on. [`keccak_f`]'s own tests check it against FIPS 202's own formulas and the published
-//! SHA3-256 digests.
+//! All of it. [`keccak_f::sha3_256_run`] hashes [`MESSAGE`] in plain Rust. Every value on screen is a piece of that one
+//! calculation. That covers this diagram's "Input block", "XOR" and row 3. It covers the Keccak scene's 24 rounds,
+//! where each round's "A Bytes" is the previous round's real output. It also covers `Theta`, `Rho`, `Pi`, `Chi` and
+//! `Iota` inside each round, each handed the state the function before it produced. Stepping over a nested scene
+//! therefore gives exactly what stepping into it would have ended on. [`keccak_f`]'s own tests check it against FIPS
+//! 202's own formulas and the published SHA3-256 digests.
 //!
 //! # What is not covered
 //!
