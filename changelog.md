@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.27] - 2026-10-07
+
+## Changed
+
+- Refactor tests in `tests/drag/data_node` (``)
+
 # [Released]
 
 ## [0.2.26] - 2026-10-07

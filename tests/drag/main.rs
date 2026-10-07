@@ -25,8 +25,8 @@
 //!   edge placement, replacing an existing title, and option validation.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being clamped to
 //!   its edge.
-//! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`: grid rendering, auto-sizing, empty-content rejection,
-//!   dragging every row, and ordinary connector routing.
+//! - [`data_node`] — `DataNodeContent`/`Scene::add_data_node`, split by concern: rendering, grid layout, accessible
+//!   names, input validation, dragging and connectors, named nodes, `PlainText`, and `cell_rect`.
 //! - [`operator_node`] — `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`:
 //!   label/value rendering, auto-wired input edges, operand-type validation, dragging, the same-side anti-crossing
 //!   split, non-commutative port markers, and operator-to-operator chaining.
