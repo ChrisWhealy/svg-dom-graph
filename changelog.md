@@ -11,11 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add `ConnectorOption::with_from_position`/`with_to_position` (`Option<f64>`) to allow precise connector positioning (`fe762e5`)
-- Add regressions tests for `from_position` and `to_position` (``)
+- Add regressions tests for `from_position` and `to_position` (`bdfebd2`)
 
 ## Changed
 
 - Display the SHA3 demo in its own window and fix cloned `<svg>` bug (`845d6fa`)
+- Doc only: Noted the unexpected precendence of `binary_operator_to_override()` over the normal `to` pin in `route()` (``)
 
 ## Fixed
 

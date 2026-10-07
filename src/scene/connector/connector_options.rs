@@ -22,6 +22,9 @@ pub struct ConnectorOptions {
     /// that automatic choice in place. See [`with_from_side`](Self::with_from_side).
     pub from_side: Option<Side>,
     /// The same forced choice as [`from_side`](Self::from_side), for this connector's own `to` endpoint instead.
+    ///
+    /// Not honoured for an edge into a two-input operator node from one of that operator's own operands. See
+    /// [`with_to_side`](Self::with_to_side).
     pub to_side: Option<Side>,
     /// Where along the forced [`from_side`](Self::from_side) this connector's own `from` endpoint sits, as a fraction
     /// from `0.0` to `1.0`. `None` (the default) leaves the position to the node's own anchor rule. Has no routing
@@ -100,6 +103,11 @@ impl ConnectorOptions {
 
     /// The same forced choice as [`with_from_side`](Self::with_from_side), for this connector's own `to` endpoint
     /// instead.
+    ///
+    /// ***Exception: a two-input operator's own inputs.*** An edge from one of a binary or arithmetic operator node's
+    /// own two operands into that operator is anchored by the operator itself. It keeps its two inputs apart and routes
+    /// them so they do not cross. That anchoring overrides `to_side` and [`to_position`](Self::to_position), which are
+    /// accepted and validated but have no routing effect on such an edge. `from_side` and `from_position` still apply.
     ///
     /// ```
     /// use svg_dom_graph::scene::{ConnectorOptions, Side};
