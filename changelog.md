@@ -18,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Fix clippy bug 
+- Fix clippy bug (`001387f`)
+- Fix `cargo check` when running in CI due to running on older Rust version (``)
 
 # [Released]
 

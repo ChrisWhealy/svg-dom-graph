@@ -324,10 +324,10 @@ pub(crate) fn restore_slot(document: &web_sys::Document, slot_id: &str) -> Resul
         .filter_map(|i| found.item(i).and_then(|n| n.dyn_into().ok()))
         .collect();
     // The fixed element itself may have no marker yet, the first time round.
-    if let Some(fixed) = document.get_element_by_id(slot_id)
-        && !elements.iter().any(|e| e == &fixed)
-    {
-        elements.insert(0, fixed);
+    if let Some(fixed) = document.get_element_by_id(slot_id) {
+        if !elements.iter().any(|e| e == &fixed) {
+            elements.insert(0, fixed);
+        }
     }
     let Some(position) = elements
         .iter()
