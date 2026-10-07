@@ -246,7 +246,9 @@ pub(super) fn draw_content_box(
     if content.is_ascii() {
         let chars = widest.chars().count();
         for substitute in ['\u{2423}', '\u{B7}'] {
-            measure_el.set_text(&substitute.to_string().repeat(chars));
+            widest.clear();
+            widest.extend(std::iter::repeat_n(substitute, chars));
+            measure_el.set_text(&widest);
             max_width = max_width.max(measure_el.bounding_box()?.size.width);
         }
     }

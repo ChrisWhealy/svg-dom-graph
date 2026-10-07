@@ -37,10 +37,10 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::EmptyNodeContent`] if:
-/// * `content` holds no values,
-/// * `PlainText` content is not printable ASCII, or
-/// * its own grid layout wraps `0`.
+/// Returns:
+/// * [`Error::EmptyNodeContent`] if `content` holds no values,
+/// * [`Error::InvalidPlainText`] if `PlainText` content is not printable ASCII, or
+/// * [`Error::InvalidGridLayout`] if a non-`PlainText` grid layout wraps `0`.
 ///
 /// `PlainText` content has no grid, so specifying a layout has no effect and is never checked.
 ///
