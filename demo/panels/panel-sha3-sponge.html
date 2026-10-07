@@ -36,15 +36,12 @@
     <p>This demo computes the <strong>SHA3-256</strong> hash of a short message, in a single call to
         <code>Keccak-f[1600]</code>.
     </p>
-    <p>Press the "Next" button to walk through the steps of the algorithm.</p>
-    <p>When a node such as <code>Keccak f(1600)</code> has a red border around it, it becomes clickable and you can
-        drill down into the internal operation of that function.</p>
+    <p>The Algorithm starts with the "Plain Text Message" highlighted, and pressing the "Next" button will walk you
+        through the steps of the algorithm.</p>
+    <p>When a node such as <code>Keccak f(1600)</code> has focus (a red border), it becomes clickable and you can drill
+        down into the internal operation of that function.</p>
     <p>Every value is computed in plain Rust from the one before it, so a nested scene always shows the correct state
         when you enter it. Stepping over a function gives the same result as stepping into it.</p>
-    <p>The walk opens on the "Plain Text Message"; this is then copied to the "Input block", which starts out as zeros.
-    </p>
-    <div class="canvas nested-scene-stage">
-        <button id="sha3-sponge-close" class="nested-scene-close" type="button"
-            aria-label="Close nested view">&times;</button>
-    </div>
+    <p>This particular scene is large, so it opens in its own window.</p>
+    <button id="sha3-sponge-open" class="open-window" type="button">Open the demo in its own window</button>
 </section>

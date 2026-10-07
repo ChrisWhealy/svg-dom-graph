@@ -146,6 +146,12 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     let thetad_child_id = format!("{svg_id}-thetad-child");
     let xorloop_child_id = format!("{svg_id}-xorloop-child");
 
+    // Stepping `ThetaC`/`ThetaD`/`XOR loop` leaves each fixed id gone. A host that rebuilds this scene, as every Keccak
+    // round does, needs them back.
+    for id in [&thetac_child_id, &thetad_child_id, &xorloop_child_id] {
+        crate::util::restore_slot(&document, id)?;
+    }
+
     crate::util::frame_nested_scene(&document, svg_id)?;
     // Cleared first. A host that rebuilds this scene (each Keccak round does) would otherwise draw a second copy of
     // every node, and of the stepping toolbar, on top of the first.

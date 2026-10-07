@@ -302,6 +302,49 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
         .map_err(|e| format!("could not insert the fresh nested child <svg>: {e:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Puts the nested child `<svg>` with the fixed id `slot_id` back as the one element for that slot.
+///
+/// Stepping a nested child clones its `<svg>` under a fresh id (see [`create_child_svg`]) and removes the one it started
+/// from. After a step the fixed id is therefore gone. A host that is rebuilt later, and looks for that fixed id again,
+/// would not find it. That left the rebuilt scene half drawn.
+///
+/// Every element in the slot carries `data-slot="{slot_id}"`, which a clone inherits. This finds them. If none holds
+/// the fixed id, the first takes it back. Any further ones are stale, left by earlier steps, and are removed. The slot's
+/// element then carries the attribute, so later clones are found in turn. Does nothing if the slot has no element at all.
+///
+/// # Errors
+///
+/// Returns `Err` if the DOM cannot be searched or an attribute cannot be written.
+pub(crate) fn restore_slot(document: &web_sys::Document, slot_id: &str) -> Result<(), String> {
+    let found = document
+        .query_selector_all(&format!("[data-slot=\"{slot_id}\"]"))
+        .map_err(|e| format!("could not search for the #{slot_id} slot: {e:?}"))?;
+    let mut elements: Vec<web_sys::Element> = (0..found.length())
+        .filter_map(|i| found.item(i).and_then(|n| n.dyn_into().ok()))
+        .collect();
+    // The fixed element itself may have no marker yet, the first time round.
+    if let Some(fixed) = document.get_element_by_id(slot_id)
+        && !elements.iter().any(|e| e == &fixed)
+    {
+        elements.insert(0, fixed);
+    }
+    let Some(position) = elements
+        .iter()
+        .position(|e| e.id() == slot_id)
+        .or((!elements.is_empty()).then_some(0))
+    else {
+        return Ok(());
+    };
+    let keep = elements.remove(position);
+    for stale in elements {
+        stale.remove();
+    }
+    keep.set_id(slot_id);
+    keep.set_attribute("data-slot", slot_id)
+        .map_err(|e| format!("could not mark #{slot_id} as its slot: {e:?}"))
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds a click-through, decorative duplicate of `svg_id`'s own current content, sitting behind the nested Scene's own
 /// frame — shared by every demo that nests a `Scene` the way `theta`/`sha3_sponge::keccak` do.

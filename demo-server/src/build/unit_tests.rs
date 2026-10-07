@@ -25,6 +25,7 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo-app/src/lib.rs")?;
     copy("demo/index.template.html")?;
     copy("demo/style.css")?;
+    copy("demo/sha3-sponge-window.html")?;
     for id in panels::panel_ids() {
         copy(&format!("demo/panels/{id}.html"))?;
     }
@@ -56,6 +57,9 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
     }
     if !stage.stage_dir.join("style.css").is_file() {
         return Err("expected style.css to be staged alongside index.html".to_owned());
+    }
+    if !stage.stage_dir.join("sha3-sponge-window.html").is_file() {
+        return Err("expected sha3-sponge-window.html to be staged alongside index.html".to_owned());
     }
     Ok(())
 }

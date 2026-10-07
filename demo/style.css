@@ -782,3 +782,25 @@ label.demo-slider-container {
 .controls label {
     margin-right: 1.5rem;
 }
+
+/* The SHA3 Sponge scene's own window (`sha3-sponge-window.html`). It has no menu or title band, so the one section
+   carries the same padding the gallery's `#stage` gives a panel. The window is resized to fit this box. */
+.scene-window {
+    padding: 1.75rem 2rem;
+}
+
+/* The gallery panel's launcher button. */
+.open-window {
+    margin: 0.5rem 0 1rem;
+    padding: 0.5rem 1rem;
+    font: inherit;
+    color: #c9d1d9;
+    background: #21262d;
+    border: 1px solid #58a6ff;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.open-window:hover {
+    background: #30363d;
+}

@@ -346,7 +346,9 @@ fn attach_toolbar(
             // `Prev`/`Next` step one function; the stride buttons step a whole round of five.
             SelectionToolbarOptions::default().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
             move |_scene, _node, transition| {
-                let _ = rebuild_child(transition.to, state.clone());
+                if let Err(e) = rebuild_child(transition.to, state.clone()) {
+                    web_sys::console::error_1(&format!("keccak rebuild failed: {e}").into());
+                }
             },
         )
         .map_err(stringify)?;

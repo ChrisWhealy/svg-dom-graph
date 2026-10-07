@@ -1,0 +1,37 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SHA3 Sponge — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- The SHA3 Sponge scene in a window of its own. The gallery's own panel keeps the description and opens this page
+     (see `build_sha3_sponge_demo`). `init_sha3_sponge_window` builds the scene here, then resizes this window to fit it. -->
+
+<body>
+    <section class="section active scene-window" id="sha3-sponge-window">
+        <div class="canvas nested-scene-stage">
+            <button id="sha3-sponge-close" class="nested-scene-close" type="button"
+                aria-label="Close nested view">&times;</button>
+        </div>
+        <p id="sha3-sponge-window-error" class="demo-error" hidden></p>
+    </section>
+
+    <script type="module">
+        import init, { init_sha3_sponge_window } from "./pkg/svg_dom_graph_demo.js"
+
+        try {
+            await init()
+            init_sha3_sponge_window()
+        } catch (err) {
+            const banner = document.getElementById('sha3-sponge-window-error')
+            banner.textContent = `This demo failed to build: ${err}`
+            banner.hidden = false
+        }
+    </script>
+</body>
+
+</html>

@@ -176,7 +176,11 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
         ),
     ];
     for (id, class, size) in levels {
+        // A step leaves the fixed id gone and a clone under another. Restore it first, so `ensure_svg` does not add a
+        // second element beside the clone.
+        crate::util::restore_slot(document, id)?;
         ensure_svg(document, ANCHOR, id, class, size)?;
+        crate::util::restore_slot(document, id)?;
     }
     Ok(())
 }
@@ -575,18 +579,92 @@ fn rebuild(stage: usize) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge demo at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for
-/// what it draws — and wires its own close button.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The SHA3 Sponge scene is far larger than any other demo. So the gallery panel keeps only the description, plus a
+/// button that opens the scene in a window of its own: `sha3-sponge-window.html`, which runs
+/// [`build_sha3_sponge_window`] there.
+///
+/// A named window is reused. Pressing the button again focuses the one already open rather than opening a second.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha3-sponge-close`, or if any library call fails.
+/// Returns `Err` if `index.html` is missing `#sha3-sponge-open`, or if a listener could not be attached to it.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
-    rebuild(0)?;
-    wire_sha3_sponge_controls(crate::util::document()?)
+    let document = crate::util::document()?;
+    let open = required_element(&document, "sha3-sponge-open")?;
+
+    let open_closure = Closure::<dyn FnMut()>::new(move || {
+        let Some(window) = web_sys::window() else { return };
+        // A blocked pop-up is the user's own choice, and there is nowhere to report it to. It is ignored.
+        if let Ok(Some(popup)) =
+            window.open_with_url_and_target_and_features(WINDOW_PAGE, WINDOW_NAME, "popup,width=1200,height=900")
+        {
+            let _ = popup.focus();
+        }
+    });
+    open.add_event_listener_with_callback("click", open_closure.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the SHA3 Sponge open-window listener: {e:?}"))?;
+    open_closure.forget();
+    Ok(())
 }
 
+/// The page [`build_sha3_sponge_demo`]'s button opens.
+const WINDOW_PAGE: &str = "sha3-sponge-window.html";
+/// The window's own name, so a second click reuses it.
+const WINDOW_NAME: &str = "svg-dom-graph-sha3-sponge";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the SHA3 Sponge scene at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for
+/// what it draws. It wires the scene's own close button, and resizes the window it runs in to fit the scene. Runs in
+/// `sha3-sponge-window.html`, not in the gallery.
+///
+/// # Errors
+///
+/// Returns `Err` if the page is missing `#sha3-sponge-close`, or if any library call fails.
+pub(crate) fn build_sha3_sponge_window() -> Result<(), String> {
+    rebuild(0)?;
+    wire_sha3_sponge_controls(crate::util::document()?)?;
+    fit_window_to_scene()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Resizes this browser window so its viewport is exactly as large as the scene's stage plus the page's own padding
+/// around it. The window's own frame (title bar, borders) is measured as the difference between its outer and inner
+/// size, so it is not guessed.
+///
+/// Does nothing visible in a window the script cannot resize, such as an ordinary tab. The resize is best-effort.
+///
+/// # Errors
+///
+/// Returns `Err` if the stage cannot be found.
+fn fit_window_to_scene() -> Result<(), String> {
+    let document = crate::util::document()?;
+    let window = web_sys::window().ok_or("no window")?;
+    let stage = required_element(&document, "sha3-sponge-diagram")?
+        .parent_element()
+        .ok_or("#sha3-sponge-diagram has no stage")?;
+
+    // The page's own padding is the same on every side, so the stage's offset from the top-left corner is also what is
+    // needed past its far edge.
+    let rect = stage.get_bounding_client_rect();
+    let (content_w, content_h) = (rect.right() + rect.left(), rect.bottom() + rect.top());
+
+    let pixels = |value: Result<JsValue, JsValue>| value.ok().and_then(|v| v.as_f64());
+    let (Some(outer_w), Some(outer_h), Some(inner_w), Some(inner_h)) = (
+        pixels(window.outer_width()),
+        pixels(window.outer_height()),
+        pixels(window.inner_width()),
+        pixels(window.inner_height()),
+    ) else {
+        return Ok(());
+    };
+    #[allow(clippy::cast_possible_truncation)]
+    let _ = window.resize_to(
+        (content_w + outer_w - inner_w).ceil() as i32,
+        (content_h + outer_h - inner_h).ceil() as i32,
+    );
+    Ok(())
+}
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wires `#sha3-sponge-close` — the nested view's own &times; close button — to whichever of "Keccak f(1600)"'s own
 /// descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside

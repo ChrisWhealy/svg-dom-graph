@@ -56,7 +56,7 @@ pub enum BuildError {
     /// A staged temporary file could not be renamed into place over the previously staged file at `dest`. See
     /// [`prepare_stage`]'s own doc comment for why there is a temporary file at all.
     PromoteStagedFile { src: PathBuf, dest: PathBuf, source: io::Error },
-    /// A static asset (`style.css`) could not be copied into its own temporary file in the staging directory.
+    /// A static asset (see `STATIC_ASSETS`) could not be copied into its own temporary file in the staging directory.
     CopyAsset { src: PathBuf, dest: PathBuf, source: io::Error },
     /// `wasm-pack` could not even be started (e.g. not on `PATH`).
     WasmSpawn(io::Error),
@@ -110,7 +110,7 @@ impl From<panels::AssembleError> for BuildError {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs every phase except the wasm rebuild: validates the catalogue, assembles `index.html` (substituting
-/// `{{PANELS}}`), and copies `style.css` — everything needed to stage a servable demo except `pkg/`.
+/// `{{PANELS}}`), and copies the static assets (`style.css` and `sha3-sponge-window.html`) — everything needed to stage a servable demo except `pkg/`.
 ///
 /// Returns as soon as any phase fails, via `?`. A stale catalogue is caught before `index.html` is ever assembled. A
 /// broken assembly is caught before it is ever written into place.
@@ -148,15 +148,25 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
     let tmp_index = stage.stage_dir.join("index.html.tmp");
     panels::assemble(&source_demo_dir, &tmp_index)?;
 
-    // style.css is not generated. It is a static asset index.html references by a plain relative path. So it needs to
-    // sit alongside the assembled file in the staging directory too.
-    let tmp_style = stage.stage_dir.join("style.css.tmp");
-    copy_asset(&source_demo_dir.join("style.css"), &tmp_style)?;
+    // The static assets are not generated. `index.html` references `style.css` by a plain relative path, and the SHA3
+    // Sponge panel's button opens `sha3-sponge-window.html` by one. So both need to sit alongside the assembled file in
+    // the staging directory too.
+    let mut staged = vec![(tmp_index, stage.stage_dir.join("index.html"))];
+    for asset in STATIC_ASSETS {
+        let tmp = stage.stage_dir.join(format!("{asset}.tmp"));
+        copy_asset(&source_demo_dir.join(asset), &tmp)?;
+        staged.push((tmp, stage.stage_dir.join(asset)));
+    }
 
-    // Both temporary files are ready — promote them together.
-    promote(&tmp_index, &stage.stage_dir.join("index.html"))?;
-    promote(&tmp_style, &stage.stage_dir.join("style.css"))
+    // Every temporary file is ready — promote them together.
+    for (tmp, dest) in &staged {
+        promote(tmp, dest)?;
+    }
+    Ok(())
 }
+
+/// The files under `demo/` copied unchanged into the staging directory beside the assembled `index.html`.
+const STATIC_ASSETS: [&str; 2] = ["style.css", "sha3-sponge-window.html"];
 
 /// Renames `tmp` into place over `dest` — a same-directory, atomic replace. See [`prepare_stage`]'s own doc comment for
 /// why every staged file goes through a temporary file rather than being written straight onto its live destination.

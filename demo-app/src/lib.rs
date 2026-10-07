@@ -115,6 +115,14 @@ demo_gallery! {
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the SHA3 Sponge scene in `sha3-sponge-window.html`, the window the gallery's own SHA3 Sponge panel opens. Call
+/// it once, from that page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_sha3_sponge_window() -> Result<(), JsValue> {
+    sha3_sponge::build_sha3_sponge_window().map_err(|e| JsValue::from_str(&e))
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Marks a panel's `<section>` with its initialisation outcome, so [`init_panel`] can tell "never attempted" (attribute
 /// absent) apart from "already attempted" (attribute present, `"ready"` or `"failed"`). This lets it skip rebuilding a
