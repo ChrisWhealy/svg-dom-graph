@@ -104,8 +104,8 @@ async fn pointer_centred_zoom_holds_its_point_under_a_non_zero_origin_and_a_css_
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With the default `preserveAspectRatio` (`xMidYMid meet`), an `<svg>` wider than its `viewBox` shows *more* than the
-/// `viewBox`. Here `0 0 400 400` in a 400 x 200 box scales by 0.5 and is centred, so the visible user-space area is x
-/// from -200 to 600 and y from 0 to 400. The bar belongs on the real top edge of that, not the `viewBox`'s.
+/// `viewBox`. Here `0 0 400 400` in a 400 x 200 box scales by 0.5 and is centred. So the visible user-space area is x
+/// from -200 to 600, and y from 0 to 400. The bar belongs on the real top edge of that, not the `viewBox`'s.
 #[wasm_bindgen_test]
 fn with_meet_the_visible_area_is_wider_than_the_view_box() -> Result<(), String> {
     let scene = scene_in_svg("vb-meet", 400, 200, "0 0 400 400", None)?;

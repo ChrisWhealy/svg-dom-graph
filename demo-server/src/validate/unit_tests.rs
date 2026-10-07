@@ -59,8 +59,9 @@ fn find_duplicate_gallery_id_returns_none_for_a_unique_list() -> Result<(), Stri
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The end-to-end check: `validate` against the real project's own `demo-app/src/lib.rs` and
-/// `demo-server/src/panels/mod.rs`'s real `MANIFEST` — this is what actually proves the two catalogues are wired
-/// together correctly today, not just that each phase's own unit test above passes against synthetic input.
+/// `demo-server/src/panels/mod.rs`'s real `MANIFEST`. This is what actually proves the two catalogues are wired
+/// together correctly today. It does not merely prove that each phase's own unit test above passes against synthetic
+/// input.
 #[test]
 fn validate_accepts_the_real_project() -> Result<(), String> {
     let root = workspace_root()?;

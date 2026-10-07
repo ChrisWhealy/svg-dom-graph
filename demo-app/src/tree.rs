@@ -13,8 +13,8 @@ use svg_dom_graph::scene::{ConnectorOptions, ConnectorType, DragOptions, Scene};
 pub(crate) const SOURCE: &str = include_str!("tree.rs");
 
 thread_local! {
-    // `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only
-    // `Weak` references back to it, whereas a strong self-reference would leak the whole scene forever.
+    // `Scene` is a cheap handle around an `Rc`-shared state. Its own listener closures deliberately hold only `Weak`
+    // references back to it. A strong self-reference would leak the whole scene forever.
     //
     // That means nothing keeps a `Scene` alive once the function that built it returns. A `Scene` created, used, and
     // simply let go out of scope — exactly what happens once `build_demo_tree` itself returns — drops there and then.
@@ -58,8 +58,8 @@ pub(crate) fn build_demo_tree() -> Result<(), String> {
     scene.add_edge_with(root, left, straight).map_err(stringify)?;
     scene.add_edge_with(root, right, straight).map_err(stringify)?;
 
-    // Bounded to the diagram's own viewBox: without this, a child dragged past the visible edge and dropped there
-    // renders clipped, and can never be clicked to pick up again — see `DragOptions::bounds`'s own doc comment.
+    // Bounded to the diagram's own viewBox. Without this, a child dragged past the visible edge and dropped there
+    // renders clipped, and can never be clicked to pick up again. See `DragOptions::bounds`'s own doc comment.
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
     scene.make_draggable_with(left, drag_options).map_err(stringify)?;
     scene.make_draggable_with(right, drag_options).map_err(stringify)?;

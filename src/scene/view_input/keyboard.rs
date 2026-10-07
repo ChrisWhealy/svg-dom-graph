@@ -9,8 +9,8 @@
 //!
 //! The focus target is a transparent `<rect>` that the scene creates and removes, and that is the only thing given a
 //! role, a name, a description, or a `tabindex`. The application's own `<svg>` is never touched. So whatever role,
-//! name, or `tabindex` the application gave it — often a description of the whole graph — is left exactly as it was,
-//! and is there again when the keyboard control goes.
+//! name, or `tabindex` the application gave it is left exactly as it was. That is often a description of the whole
+//! graph. It is there again when the keyboard control goes.
 //!
 //! It also keeps the `application` role, which asks a screen reader to pass keys through instead of keeping them for
 //! reading, confined to one small control. The nodes inside the `<svg>` keep their ordinary accessible descriptions and

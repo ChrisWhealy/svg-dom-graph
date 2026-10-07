@@ -1,9 +1,9 @@
 //! Dragging the scene's background pans its content.
 //!
 //! Zooming in pushes content past the edge of the visible area. Without a way to move it back, that content would be
-//! unreachable. So when panning is on, dragging the transparent surface behind the content layer — which is to say,
-//! dragging any empty background, since nodes and connectors draw on top of it and take their own pointer events —
-//! translates the content layer.
+//! unreachable. So when panning is on, dragging the transparent surface behind the content layer translates the content
+//! layer. That means dragging any empty background, since nodes and connectors draw on top of it and take their own
+//! pointer events.
 
 use super::frame::ViewFlusher;
 use crate::{
@@ -30,8 +30,8 @@ const PANNING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: 
 /// Where a pan has got to. Kept for as long as the pan lasts.
 ///
 /// It holds the pointer's last position and nothing about the view. Each move pans the view *as it is now* by how far
-/// the pointer has moved since the previous one. So a zoom made in the middle of a pan, by the wheel, the keyboard, a
-/// button, or the application, is kept: the pan carries on from the new view, not the one it started with.
+/// the pointer has moved since the previous one. So a zoom made in the middle of a pan is kept, whether by the wheel,
+/// the keyboard, a button, or the application. The pan carries on from the new view, not the one it started with.
 #[derive(Clone, Copy)]
 struct PanStart {
     pointer_id: i32,

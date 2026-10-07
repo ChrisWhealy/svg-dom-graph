@@ -4,8 +4,8 @@ use crate::geometry::side::Side;
 /// An optional second, coarser way for a selection toolbar to step: two extra buttons that move `step` cells at a time.
 /// See [`SelectionToolbarOptions::stride`].
 ///
-/// For a node whose cells fall into equal groups — SHA3's `Keccak-f`, say, with five functions in each of 24 rounds —
-/// `Prev`/`Next` step one cell and these step a whole group.
+/// For a node whose cells fall into equal groups, `Prev`/`Next` step one cell and these step a whole group. An example
+/// is SHA3's `Keccak-f`, with five functions in each of 24 rounds.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct SelectionStride {
     /// How many cells each extra button moves. Must be `>= 1`.

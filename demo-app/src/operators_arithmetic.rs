@@ -22,21 +22,21 @@ thread_local! {
 /// Builds the demo scene: two operand nodes feeding an operator node, for every [`ArithmeticOperator`] this crate
 /// names.
 ///
-/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"` — the raw value's own outer box,
-/// wrapping its value cell, the same way an operator node's own outer box wraps its result — rather than a plain
-/// [`Scene::add_data_node`] box. Naming `inputs.0`/`inputs.1` this way pairs naturally with the non-commutative
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"`, rather than a plain
+/// [`Scene::add_data_node`] box. The raw value's own outer box wraps its value cell, the same way an operator node's
+/// own outer box wraps its result. Naming `inputs.0`/`inputs.1` this way pairs naturally with the non-commutative
 /// operators' own "L"/"R" port markers: `A` is always the left-hand operand, `B` the right-hand one.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`+`, `-`, `*`, `/`, `%`).
-/// `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_arithmetic_operator_node`]'s own doc comment
-/// for why — so this function's job is exactly the one a real caller would have: compute the real value, then hand it
-/// to the library alongside the operator that produced it.
+/// `svg_dom_graph` itself never evaluates an operator. See [`Scene::add_arithmetic_operator_node`]'s own doc comment
+/// for why. So this function's job is exactly the one a real caller would have: compute the real value, then hand it to
+/// the library alongside the operator that produced it.
 ///
 /// Each row uses a different operand width, so between them all four this crate supports — `u8`, `u16`, `u32`, `u64` —
 /// appear at least once. `Subtract` never underflows (the first operand is always `>=` the second), and neither
-/// `Divide` nor `Modulus` ever divides by zero — both are the caller's own responsibility, never checked by the
-/// library, since an operator node's own displayed value is always whatever the caller already computed. See
-/// [`ArithmeticOperator`]'s own doc comment.
+/// `Divide` nor `Modulus` ever divides by zero. Both are the caller's own responsibility, never checked by the library.
+/// An operator node's own displayed value is always whatever the caller already computed. See [`ArithmeticOperator`]'s
+/// own doc comment.
 ///
 /// # Errors
 ///

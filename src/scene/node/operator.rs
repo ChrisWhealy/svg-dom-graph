@@ -41,9 +41,9 @@ fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error>
 }
 
 /// Returns [`Error::EmptyNodeContent`]/[`Error::InvalidGridLayout`] under the same conditions
-/// [`Scene::add_data_node_with`] already rejects `content` for — via the same shared `validate_data_content`, not a
-/// second copy of its checks — plus [`Error::OperatorResultNotSingleValue`] if `result` holds anything other than
-/// exactly one value — an operator always produces one value, never a grid.
+/// [`Scene::add_data_node_with`] already rejects `content` for, via the same shared `validate_data_content` rather than
+/// a second copy of its checks. It also returns [`Error::OperatorResultNotSingleValue`] if `result` holds anything
+/// other than exactly one value. An operator always produces one value, never a grid.
 fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
     validate_data_content(result)?;
     if result.len() != 1 {
@@ -52,20 +52,20 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
     Ok(())
 }
 
-/// A non-commutative operator's own "L"/"R" port marker font size, in user-space units — smaller than
-/// [`LABEL_FONT_SIZE`], so the marker reads as a secondary annotation rather than competing with the node's own label,
-/// but large enough to stay legible once offset clear of the connector's own arrowhead.
+/// A non-commutative operator's own "L"/"R" port marker font size, in user-space units. It is smaller than
+/// [`LABEL_FONT_SIZE`], so the marker reads as a secondary annotation rather than competing with the node's own label.
+/// It is still large enough to stay legible once offset clear of the connector's own arrowhead.
 const PORT_MARKER_FONT_SIZE: f64 = LABEL_FONT_SIZE * 0.9;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator node: a label row naming the operation, with `result`'s own single value in its own inset cell
-/// beneath it, grouped under one `<g>`, and returns their handles alongside the box's own final `Rect`.
+/// beneath it, grouped under one `<g>`. Returns their handles alongside the box's own final `Rect`.
 ///
 /// The value cell is sized exactly like a single-value [`DataNodeContent`]'s own cell —
 /// [`draw_content_box`](super::data::draw_content_box)'s own single-value path — but, unlike there, never grows to fill
 /// the node's own outer box. It stays inset by [`OUTER_PADDING`] instead, for the reason this module's own doc comment
 /// gives. `label` renders in the plain style [`draw_box`](super::plain::draw_box) already uses for an ordinary node's
-/// own text, measured the same "read the real rendered width back" way every cell in this file already is.
+/// own text. It is measured the same "read the real rendered width back" way every cell in this file already is.
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction, for the same reason as
 /// [`draw_content_box`](super::data::draw_content_box).
@@ -73,8 +73,8 @@ const PORT_MARKER_FONT_SIZE: f64 = LABEL_FONT_SIZE * 0.9;
 /// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
 /// `x`/`y`/`transform` formatting, the same reasoning [`draw_box`](super::plain::draw_box)'s own `scratch` parameter
 /// follows. It also holds `result`'s own formatted value text for the brief window between
-/// [`DataNodeContent::single_cell_string_into`] writing it and [`SvgRoot::text`] copying it into a new `<text>` element
-/// — never a separate, one-off `String` allocated just for that.
+/// [`DataNodeContent::single_cell_string_into`] writing it and [`SvgRoot::text`] copying it into a new `<text>`
+/// element. It is never a separate, one-off `String` allocated just for that.
 fn draw_operator_box(
     svg: &SvgRoot,
     scratch: &mut String,
@@ -115,7 +115,7 @@ fn draw_operator_box(
     let value_width = value_el.bounding_box()?.size.width;
 
     // The value cell's own width, plus `OUTER_PADDING` kept clear on either side of it, competes with the label's own
-    // width, plus `CELL_PADDING`, for the box's own final width — whichever of the two needs more room wins. Either way
+    // width, plus `CELL_PADDING`, for the box's own final width. Whichever of the two needs more room wins. Either way
     // the value cell itself never reaches the box's own left/right edges.
     let value_cell_size = Size::new(value_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
     let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
@@ -154,7 +154,7 @@ fn draw_operator_box(
 
     // Same reasoning as `draw_content_box`'s own `<title>`/`aria-label` pair: colour alone conveys the result's own
     // type to neither assistive technology nor a colour-blind reader. The label names the operator and shows its own
-    // real result value — `value_text`, the same formatted text `value_el` itself renders — so the result is available
+    // real result value. `value_text` is the same formatted text `value_el` itself renders. So the result is available
     // as text even without visiting the value cell directly.
     group.set_attr("role", "group")?;
     let node_label = format!("{label} result = {value_text}");
@@ -224,13 +224,13 @@ impl Scene {
     /// [`add_binary_operator_node`](Self::add_binary_operator_node)/
     /// [`add_arithmetic_operator_node`](Self::add_arithmetic_operator_node) all draw.
     ///
-    /// Takes no operand ids, unlike those, and deliberately does not: an operator node's own box size depends only on
-    /// its own label and `result`'s own formatted text, never on which nodes feed it, so nothing here needs real,
+    /// Takes no operand ids, unlike those, and deliberately does not. An operator node's own box size depends only on
+    /// its own label and `result`'s own formatted text, never on which nodes feed it. So nothing here needs real,
     /// already-added operands to measure against. Named `measure_operator_box`, not `measure_operator_node`, for
     /// exactly that reason — it does not construct an operator graph node, only the box.
     ///
-    /// Draws into this `Scene`'s own `SvgRoot`, measures the result, and removes it again before returning —
-    /// structurally, nothing about this call persists: no [`NodeId`] is returned because nothing remains to address
+    /// Draws into this `Scene`'s own `SvgRoot`, measures the result, and removes it again before returning.
+    /// Structurally, nothing about this call persists. No [`NodeId`] is returned, because nothing remains to address
     /// afterward. See [`Scene::measure_data_node`](Self::measure_data_node)'s own doc comment for the full reasoning
     /// this shares, including why a stronger "never visible to assistive technology" claim is deliberately not made
     /// here.
@@ -238,9 +238,9 @@ impl Scene {
     /// # Errors
     ///
     /// Returns [`Error::EmptyNodeContent`]/[`Error::InvalidGridLayout`] under the same conditions
-    /// [`add_binary_operator_node`](Self::add_binary_operator_node) already rejects `result` for, or
-    /// [`Error::OperatorResultNotSingleValue`] if `result` holds more than one value — the same constraint a real
-    /// operator node's own `result` is already held to, via the same shared `validate_operator_result`.
+    /// [`add_binary_operator_node`](Self::add_binary_operator_node) already rejects `result` for. It returns
+    /// [`Error::OperatorResultNotSingleValue`] if `result` holds more than one value. That is the same constraint a
+    /// real operator node's own `result` is already held to, via the same shared `validate_operator_result`.
     pub fn measure_operator_box(&self, label: &str, result: &DataNodeContent) -> Result<Size, Error> {
         validate_operator_result(result)?;
 
@@ -295,7 +295,9 @@ impl Scene {
     /// Returns [`Error::UnknownNode`] if `input` does not name a node in this scene, or [`Error::OperandNotData`] if it
     /// names a plain label node rather than a [`DataNodeContent`] one.
     ///
-    /// Returns [`Error::OperatorTypeMismatch`] if `result`'s own value width does not match `input`'s.
+    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
+    /// `result`'s own value width does not match theirs. Both operands and the result must share one
+    /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
@@ -349,8 +351,8 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds a binary operator node to the graph — labelled with `operator`, showing `result`'s own single value, and
-    /// wired with incoming edges from `inputs.0` and `inputs.1` — and returns its id.
+    /// Adds a binary operator node to the graph, and returns its id. It is labelled with `operator`, shows `result`'s
+    /// own single value, and is wired with incoming edges from `inputs.0` and `inputs.1`.
     ///
     /// `svg-dom-graph` never evaluates `operator` itself. `result` must already be `operator` applied to `inputs`' own
     /// two values, computed by the caller. See this module's own doc comment ("Operator nodes").
@@ -393,7 +395,8 @@ impl Scene {
     /// checked first.
     ///
     /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
-    /// `result`'s own value width does not match theirs — both operands, and the result, must share one
+    /// `result`'s own value width does not match theirs. Both operands and the result must share one
+    /// [`NodeValues`](crate::scene::NodeValues) width. Both operands, and the result, must share one
     /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
@@ -414,8 +417,8 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds an arithmetic operator node to the graph — labelled with `operator`, showing `result`'s own single value,
-    /// and wired with incoming edges from `inputs.0` and `inputs.1` — and returns its id.
+    /// Adds an arithmetic operator node to the graph, and returns its id. It is labelled with `operator`, shows
+    /// `result`'s own single value, and is wired with incoming edges from `inputs.0` and `inputs.1`.
     ///
     /// `svg-dom-graph` never evaluates `operator` itself. `result` must already be `operator` applied to `inputs`' own
     /// two values, computed by the caller. See this module's own doc comment ("Operator nodes").
@@ -462,7 +465,7 @@ impl Scene {
     /// checked first.
     ///
     /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
-    /// `result`'s own value width does not match theirs — both operands, and the result, must share one
+    /// `result`'s own value width does not match theirs. Both operands and the result must share one
     /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the

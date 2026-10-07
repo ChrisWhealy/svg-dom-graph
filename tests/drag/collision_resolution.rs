@@ -10,9 +10,9 @@ use wasm_bindgen_test::wasm_bindgen_test;
 /// Dropping a dragged node so it overlaps another pushes it back to a clear position, along the line from the blocker's
 /// centre to where the drag started, plus padding.
 ///
-/// Same geometry as `cdp-integration-test`'s `overlap_resolution` test, so the expected result there — worked out by
-/// hand in that test's own doc comment — applies unchanged here: mover (20, 150), blocker (300, 150), both 80x40,
-/// dropped on blocker's centre lands mover's origin at (214, 150).
+/// Same geometry as `cdp-integration-test`'s `overlap_resolution` test. So the expected result there, worked out by
+/// hand in that test's own doc comment, applies unchanged here. Mover is at (20, 150) and blocker at (300, 150), both
+/// 80x40. Dropped on blocker's centre, it lands mover's origin at (214, 150).
 #[wasm_bindgen_test]
 fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> Result<(), String> {
     let svg = make_svg("drag-overlap", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
@@ -42,7 +42,7 @@ fn dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position() -> 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `CollisionPolicy::Allow` leaves a dropped node exactly where the pointer released it, even where that overlaps
-/// another node — the push-clear correction the previous test checks is opt-in, not `make_draggable_with`'s only
+/// another node. The push-clear correction the previous test checks is opt-in, not `make_draggable_with`'s only
 /// behaviour.
 ///
 /// Same drag as `dropping_a_dragged_node_onto_another_pushes_it_back_to_a_clear_position`, so the same 280-pixel move
@@ -78,11 +78,11 @@ fn dropping_a_dragged_node_onto_another_with_allow_policy_leaves_them_overlappin
 /// A `PushClear` drop whose pre-drag centre coincides exactly with the blocker's own centre reverts to the pre-drag
 /// origin, rather than landing somewhere still overlapping.
 ///
-/// mover and blocker start at the same origin (so `add_node` allows an overlapping starting position, and their centres
-/// coincide exactly), then mover is dragged a short distance that leaves it still overlapping blocker.
+/// mover and blocker start at the same origin, so `add_node` allows an overlapping starting position and their centres
+/// coincide exactly. Mover is then dragged a short distance that leaves it still overlapping blocker.
 /// `resolve_overlap`'s own doc comment (`src/scene/mod.rs`) works out that this specific case is numerically identical
-/// whether or not it is handled as an explicit fallback — the point of handling it explicitly is not to change this
-/// outcome but to stop it depending on an algebraic coincidence inside `nearest_clear_centre`. This test locks the
+/// whether or not it is handled as an explicit fallback. The point of handling it explicitly is not to change this
+/// outcome. It is to stop it depending on an algebraic coincidence inside `nearest_clear_centre`. This test locks the
 /// outcome in either way, so a future change to either function that broke it would be caught here.
 #[wasm_bindgen_test]
 fn dropping_a_node_whose_pre_drag_centre_coincides_with_the_blockers_centre_reverts_the_drag() -> Result<(), String> {
@@ -116,13 +116,14 @@ fn dropping_a_node_whose_pre_drag_centre_coincides_with_the_blockers_centre_reve
 /// against `blocker_b` (added second) push in opposite directions and land at different, hand-worked positions — (134,
 /// 150) vs (214, 150) — so this test can tell which one actually won, not just that the result avoided both.
 ///
-/// Worked out with `blocker_a`'s own geometry, mirroring `overlap_resolution.rs`'s CDP test: mover starts at (20, 150),
-/// size (80, 40) — pre-drag centre (60, 170), on the same horizontal line as every box here, so the approach direction
-/// and every intermediate calculation stay purely horizontal (no diagonal rounding). `mover` is dragged so its centre
-/// lands at (300, 170) — origin (260, 150). `blocker_a`, size (80, 40), centred at (260, 170) (origin (220, 150)),
-/// inflated by half of `mover`'s size on every side spans x: [180, 340], y: [130, 210], centre (260, 170). The approach
-/// line from (60, 170) is horizontal, crossing that inflated boundary at x = 180. Padding (6.0, the default) pushes
-/// another 6 units left, to (174, 170) — `mover`'s final origin (174 - 40, 170 - 20) = (134, 150).
+/// Worked out with `blocker_a`'s own geometry, mirroring `overlap_resolution.rs`'s CDP test. Mover starts at (20, 150),
+/// size (80, 40), so its pre-drag centre is (60, 170). That is on the same horizontal line as every box here. So the
+/// approach direction and every intermediate calculation stay purely horizontal, with no diagonal rounding. `mover` is
+/// dragged so its centre lands at (300, 170) — origin (260, 150). `blocker_a`, size (80, 40), centred at (260, 170)
+/// (origin (220, 150)), inflated by half of `mover`'s size on every side spans x: [180, 340], y: [130, 210], centre
+/// (260, 170). The approach line from (60, 170) is horizontal, crossing that inflated boundary at x = 180. Padding
+/// (6.0, the default) pushes another 6 units left, to (174, 170) — `mover`'s final origin (174 - 40, 170 - 20) = (134,
+/// 150).
 #[wasm_bindgen_test]
 fn dropping_between_two_equidistant_blockers_resolves_to_the_lower_index() -> Result<(), String> {
     let svg = make_svg("drag-tiebreak", Size::new(500.0, 300.0), Size::new(500.0, 300.0));

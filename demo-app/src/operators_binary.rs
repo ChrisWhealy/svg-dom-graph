@@ -21,18 +21,18 @@ thread_local! {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the demo scene: two operand nodes feeding an operator node, for every [`BinaryOperator`] this crate names.
 ///
-/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"` — the raw value's own outer box,
-/// wrapping its value cell, the same way an operator node's own outer box wraps its result — rather than a plain
-/// [`Scene::add_data_node`] box.
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`/`"B"`, rather than a plain
+/// [`Scene::add_data_node`] box. The raw value's own outer box wraps its value cell, the same way an operator node's
+/// own outer box wraps its result.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`&`, `|`, `^`, and their own
-/// complements). `svg_dom_graph` itself never evaluates an operator — see [`Scene::add_binary_operator_node`]'s own doc
-/// comment for why — so this function's job is exactly the one a real caller would have: compute the real value, then
+/// complements). `svg_dom_graph` itself never evaluates an operator. See [`Scene::add_binary_operator_node`]'s own doc
+/// comment for why. So this function's job is exactly the one a real caller would have: compute the real value, then
 /// hand it to the library alongside the operator that produced it.
 ///
-/// See [`crate::operators_chained::build_chained_operator_demo`] for operator nodes feeding further operator nodes — an
-/// operator's own [`DataNodeContent`] result is a valid operand like any other data node's, which this page's six rows
-/// don't show on their own.
+/// See [`crate::operators_chained::build_chained_operator_demo`] for operator nodes feeding further operator nodes. An
+/// operator's own [`DataNodeContent`] result is a valid operand like any other data node's. This page's six rows don't
+/// show that on their own.
 ///
 /// # Errors
 ///

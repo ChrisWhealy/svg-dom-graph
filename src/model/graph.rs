@@ -14,7 +14,7 @@ use svg_dom::root::utils::Rect;
 /// Holds every node and edge; each [`Node`] carries its own incident edges alongside it — see that type's own doc
 /// comment.
 ///
-/// `nodes`/`edges` are stored densely rather than in a `HashMap`: `NodeId`/`EdgeId` already carry a monotonic index
+/// `nodes`/`edges` are stored densely rather than in a `HashMap`. `NodeId`/`EdgeId` already carry a monotonic index
 /// within this graph, so `id.index` addresses a `Vec` slot directly, with no need to compute a hash.
 ///
 /// `id.graph` is first checked everywhere, so an id belonging to a different `Graph` is rejected even when its own
@@ -132,7 +132,7 @@ impl Graph {
     ///
     /// Does nothing if `id` does not name an edge in this graph, or if `edges` is empty.
     ///
-    /// A narrow rollback primitive, not a general deletion API: this crate's only caller is
+    /// A narrow rollback primitive, not a general deletion API. This crate's only caller is
     /// `scene::node::OperatorConstructionGuard`, unwinding an edge it wired earlier in the same still-failing
     /// operator-creation call, always in reverse creation order. There is no public `Scene::remove_edge` — this graph
     /// never otherwise loses an edge once added.
@@ -159,7 +159,7 @@ impl Graph {
         Self::pop_incidence(self.node_mut(edge.to), id);
     }
 
-    /// Drops `id` from `node`'s own incident list. `id` is expected to be that list's own last entry — the same
+    /// Drops `id` from `node`'s own incident list. `id` is expected to be that list's own last entry. This is the same
     /// invariant, and for the same reason, as [`remove_edge`](Self::remove_edge)'s own doc comment: `add_edge` appended
     /// it there last, and no edge has touched this node since.
     fn pop_incidence(node: Option<&mut Node>, id: EdgeId) {

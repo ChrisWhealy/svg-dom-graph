@@ -120,8 +120,8 @@ fn ax_disabled(node: &Accessibility::AXNode) -> bool {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every descendant of `root` whose own AX role is `"button"`, walked breadth-first via repeated
-/// `Accessibility.getChildAXNodes` calls — see [`descendant_name_contains`]'s own doc comment for why this walks
-/// however deep the real tree goes, rather than assuming the toolbar's own three buttons are its direct AX children.
+/// `Accessibility.getChildAXNodes` calls. See [`descendant_name_contains`]'s own doc comment for why this walks however
+/// deep the real tree goes. It does not assume the toolbar's own three buttons are its direct AX children.
 fn descendant_buttons(tab: &Tab, root: &AXNodeId) -> Result<Vec<Accessibility::AXNode>, String> {
     let mut frontier = vec![root.clone()];
     let mut buttons = Vec::new();
@@ -157,7 +157,7 @@ fn descendant_buttons(tab: &Tab, root: &AXNodeId) -> Result<Vec<Accessibility::A
 ///    with the right boolean value
 ///
 /// `named_value` holds exactly one value, so `Next` is enabled and `Previous`/`Restart` are disabled from the moment
-/// the toolbar is shown — this is `named_value`'s own default, unstarted state, reached with no interaction at all. See
+/// the toolbar is shown. That is `named_value`'s own default, unstarted state, reached with no interaction at all. See
 /// `show_selection_toolbar`'s own doc comment ("Disabled buttons") for why an empty/single- value node's own buttons
 /// start, and stay, in exactly this shape.
 #[test]

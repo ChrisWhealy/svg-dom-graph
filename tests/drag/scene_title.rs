@@ -47,7 +47,7 @@ fn there_is_no_scene_title_until_one_is_shown_and_none_after_it_is_hidden() -> R
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The default options draw the title's own text content, `role="heading"`, the default `aria-level`, and bold and
-/// underlined styling — the "heading-style text" the feature request asked default options to look like.
+/// underlined styling. That is the "heading-style text" the feature request asked default options to look like.
 #[wasm_bindgen_test]
 fn show_scene_title_with_default_options_draws_a_bold_underlined_heading() -> Result<(), String> {
     let svg = make_svg("title-defaults", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -95,9 +95,9 @@ fn show_scene_title_without_bold_or_underline_omits_those_attributes() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A North or South title is centred horizontally on the `<svg>`'s own visible area — exactly at its own midpoint,
-/// regardless of the title's own rendered width, since `text-anchor="middle"` positioning cancels it out. A West or
-/// East title is centred vertically the same way.
+/// A North or South title is centred horizontally on the `<svg>`'s own visible area, exactly at its own midpoint. This
+/// holds regardless of the title's own rendered width, since `text-anchor="middle"` positioning cancels it out. A West
+/// or East title is centred vertically the same way.
 #[wasm_bindgen_test]
 fn each_edge_centres_the_title_along_the_visible_areas_own_opposite_axis() -> Result<(), String> {
     let svg = make_svg("title-edges", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -121,8 +121,8 @@ fn each_edge_centres_the_title_along_the_visible_areas_own_opposite_axis() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `North` sits in the visible area's own top half, `South` in its own bottom half — qualitative, since the exact
-/// offset depends on the title's own rendered height, which this crate measures rather than assumes.
+/// `North` sits in the visible area's own top half, and `South` in its own bottom half. The check is qualitative, since
+/// the exact offset depends on the title's own rendered height, which this crate measures rather than assumes.
 #[wasm_bindgen_test]
 fn north_and_south_sit_on_their_own_expected_half_of_the_visible_area() -> Result<(), String> {
     let svg = make_svg("title-halves", Size::new(400.0, 300.0), Size::new(400.0, 300.0));

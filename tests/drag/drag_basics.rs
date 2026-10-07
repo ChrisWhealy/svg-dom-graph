@@ -51,8 +51,8 @@ fn dragging_a_node_moves_its_rect_label_and_reroutes_its_edge() -> Result<(), St
         .ok_or("no <text> in B's group")?;
     let connector = the_connector("drag-1to1")?;
 
-    // The rect and label are drawn once, in local coordinates relative to (0, 0) — the rect at the origin, the label at
-    // the box's own local centre — and never touched again by a move. Only the group's own transform changes.
+    // The rect and label are drawn once, in local coordinates relative to (0, 0). The rect is at the origin, and the
+    // label at the box's own local centre. A move never touches them again. Only the group's own transform changes.
     let local_rect_xy_before = (attr_f64(&rect_b, "x")?, attr_f64(&rect_b, "y")?);
     let local_label_xy_before = (attr_f64(&label_b, "x")?, attr_f64(&label_b, "y")?);
 
@@ -140,13 +140,13 @@ fn dragging_under_a_scaled_view_box_converts_client_pixels_to_user_space() -> Re
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_draggable`'s listener closures must not keep the scene's internal state alive on their own.
 ///
-/// `Scene` is a cheap handle around shared internal state, so an external test cannot hold a `Weak` reference the way
-/// it could when callers had to wrap `Scene` in `Rc<RefCell<_>>` themselves — that internal sharing strategy is no
+/// `Scene` is a cheap handle around shared internal state. So an external test cannot hold a `Weak` reference the way
+/// it could when callers had to wrap `Scene` in `Rc<RefCell<_>>` themselves. That internal sharing strategy is no
 /// longer observable from outside the crate. Instead, this checks the same property behaviourally: registers draggable
 /// handlers, then drops every `Scene` handle this test holds before dragging. If a listener closure captured a strong
 /// reference to the scene's internal state (rather than a `Weak` one), the closure's `Weak::upgrade()` would still
-/// succeed and the drag would still move the box; a correctly weak-captured closure finds nothing left to upgrade to,
-/// and the drag becomes a silent no-op.
+/// succeed. The drag would still move the box. A correctly weak-captured closure finds nothing left to upgrade to, and
+/// the drag becomes a silent no-op.
 #[wasm_bindgen_test]
 fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), String> {
     let svg = make_svg("scene-lifetime", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -182,10 +182,10 @@ fn dropping_every_scene_handle_makes_dragging_a_silent_no_op() -> Result<(), Str
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A second pointer touching the same element mid-drag must not steal the drag, drive it, or end it by lifting off.
 ///
-/// Sends a real `pointerdown` for the second pointer too, not just a stray `pointermove`/`pointerup` — a `pointerdown`
-/// that doesn't check for an already-active drag would silently overwrite the first pointer's `DragStart`, after which
-/// pointer 2's own `pointermove` would then legitimately match and drive the box, since the `pointer_id` guards defined
-/// elsewhere only check against whichever `DragStart` is currently stored.
+/// Sends a real `pointerdown` for the second pointer too, not just a stray `pointermove`/`pointerup`. A `pointerdown`
+/// that doesn't check for an already-active drag would silently overwrite the first pointer's `DragStart`. Pointer 2's
+/// own `pointermove` would then legitimately match and drive the box. The `pointer_id` guards defined elsewhere only
+/// check against whichever `DragStart` is currently stored.
 #[wasm_bindgen_test]
 fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<(), String> {
     let svg = make_svg("multi-pointer", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -236,9 +236,9 @@ fn a_second_pointer_cannot_steal_drive_or_end_another_pointers_drag() -> Result<
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A non-primary pointerdown (a right or middle mouse button, `button() != 0`) must not start a drag.
 ///
-/// Pointer Events use `0` for the primary button — left mouse, touch, or ordinary pen contact — `1` for the middle
-/// mouse button, and `2` for the right mouse button or a pen's barrel button. Right-clicking a node (for example, to
-/// open a context menu) must not put it into drag mode.
+/// Pointer Events use `0` for the primary button: left mouse, touch, or ordinary pen contact. They use `1` for the
+/// middle mouse button, and `2` for the right mouse button or a pen's barrel button. Right-clicking a node (for
+/// example, to open a context menu) must not put it into drag mode.
 #[wasm_bindgen_test]
 fn a_non_primary_button_pointerdown_does_not_start_a_drag() -> Result<(), String> {
     let svg = make_svg("non-primary-button", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -313,18 +313,18 @@ fn an_unrelated_pointers_pointercancel_does_not_end_the_active_drag() -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A `pointercancel` belonging to the drag's own active pointer ends that drag: any position that pointer's own
-/// `pointermove` had queued but not yet applied is discarded rather than applied, a further move from the same pointer
-/// no longer moves the node, and starting an entirely new drag afterwards still works normally.
+/// A `pointercancel` belonging to the drag's own active pointer ends that drag. Any position that pointer's own
+/// `pointermove` had queued but not yet applied is discarded rather than applied. A further move from the same pointer
+/// no longer moves the node. Starting an entirely new drag afterwards still works normally.
 ///
-/// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture, so —
-/// unlike `pointerup`, which flushes a still-pending coalesced position — the position at cancel time is not one this
-/// crate treats as the user's intended drop point. This test's own `pointermove` and `pointercancel` are dispatched
-/// back to back, with no animation frame in between, specifically so nothing has applied that `pointermove`'s own
-/// position yet when `pointercancel` arrives — see `PointerCoalescer::cancel`'s own doc comment.
+/// `pointercancel` fires when something *other than* the user's own deliberate release interrupted the gesture. So the
+/// position at cancel time is not one this crate treats as the user's intended drop point. `pointerup`, by contrast,
+/// flushes a still-pending coalesced position. This test's own `pointermove` and `pointercancel` are dispatched back to
+/// back, with no animation frame in between. So nothing has applied that `pointermove`'s own position yet when
+/// `pointercancel` arrives. See `PointerCoalescer::cancel`'s own doc comment.
 ///
 /// The complement to `an_unrelated_pointers_pointercancel_does_not_end_the_active_drag`, which only checks that an
-/// unrelated pointer's `pointercancel` is ignored — this checks the positive path `pointercancel` exists for: clearing
+/// unrelated pointer's `pointercancel` is ignored. This checks the positive path `pointercancel` exists for: clearing
 /// `drag_start` for the pointer it actually belongs to.
 #[wasm_bindgen_test]
 fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> {
@@ -378,7 +378,7 @@ fn a_pointercancel_for_the_active_pointer_ends_the_drag() -> Result<(), String> 
 /// A second `make_draggable`/`make_draggable_with` call for the same node is rejected with `Error::AlreadyDraggable`,
 /// rather than silently installing a second, independent set of pointer listeners alongside the first.
 ///
-/// Also drags the node afterwards and checks it moved by exactly the drag delta, not double it — the strongest
+/// Also drags the node afterwards and checks it moved by exactly the drag delta, not double it. That is the strongest
 /// available proof that the rejected second call did not sneak a duplicate `move_node` call onto every `pointermove`
 /// alongside the first installation's own.
 #[wasm_bindgen_test]
@@ -416,8 +416,8 @@ fn a_second_make_draggable_call_for_the_same_node_is_rejected() -> Result<(), St
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_draggable_with` rejects a `CollisionPolicy::PushClear` padding that is not a finite value `>= 0.0`, before
-/// changing any state — a rejected call never marks the node draggable, so the same node can be retried (here, with
-/// several different invalid values in a row) without ever hitting `Error::AlreadyDraggable` instead.
+/// changing any state. A rejected call never marks the node draggable. So the same node can be retried, here with
+/// several different invalid values in a row, without ever hitting `Error::AlreadyDraggable` instead.
 #[wasm_bindgen_test]
 fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), String> {
     let svg = make_svg("drag-padding", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

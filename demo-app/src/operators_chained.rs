@@ -26,7 +26,7 @@ thread_local! {
 /// every row standing alone the way [`crate::operators_unary`]/[`crate::operators_binary`]'s rows do.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators. `svg_dom_graph` itself never evaluates
-/// an operator — see [`Scene::add_binary_operator_node`]'s own doc comment for why — so this function's job is exactly
+/// an operator. See [`Scene::add_binary_operator_node`]'s own doc comment for why. So this function's job is exactly
 /// the one a real caller would have: compute each stage's real value, then hand it to the library alongside the
 /// operator that produced it. Feeding one operator node's id back in as another's operand is nothing special to the
 /// library — its own [`DataNodeContent`] result is a valid operand like any other data node's.
@@ -37,13 +37,14 @@ thread_local! {
 ///   whole panel.
 /// - `XOR(w0, AND(NOT(w1), w2))` for three `u32` values — a three-stage chain built from a `NOT` feeding an `AND`
 ///   feeding an `XOR`.
-/// - SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)` — `x` feeds two different operator
-///   nodes (its own `NOT`, and the `AND` with `y`), so this row also demonstrates one operand feeding more than one
+/// - SHA-256's own "Choose" function, `Ch(x, y, z) = (x AND y) XOR (NOT(x) AND z)`. `x` feeds two different operator
+///   nodes (its own `NOT`, and the `AND` with `y`). So this row also demonstrates one operand feeding more than one
 ///   operator.
 ///
-/// Every leaf operand — never an intermediate operator's own result, which already carries the operator's own label —
-/// is a [`Scene::add_named_data_node`] node, labelled with its own variable name from the prose above (`"A"`/`"B"`,
-/// `"w0"`/`"w1"`/`"w2"`, `"x"`/`"y"`/`"z"`), so the rendered diagram reads directly against the formula it draws.
+/// Every leaf operand is a [`Scene::add_named_data_node`] node, never an intermediate operator's own result, which
+/// already carries the operator's own label. Each is labelled with its own variable name from the prose above
+/// (`"A"`/`"B"`, `"w0"`/`"w1"`/`"w2"`, `"x"`/`"y"`/`"z"`). So the rendered diagram reads directly against the formula
+/// it draws.
 ///
 /// # Errors
 ///
@@ -60,8 +61,8 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     let scene = Scene::new(svg).map_err(stringify)?;
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
-    // Every chain's leftmost operand column shares this x; a unary stage sits one column over, and each further stage
-    // moves one more column to the right to make room for the operator node it feeds.
+    // Every chain's leftmost operand column shares this x. A unary stage sits one column over. Each further stage moves
+    // one more column to the right to make room for the operator node it feeds.
     const X_OPERAND: f64 = 20.0;
     const X_UNARY: f64 = 260.0;
     const X_STAGE_2: f64 = 500.0;
@@ -170,9 +171,9 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
     // operator nodes (its own `NOT`, and the `AND` with `y`) — one operand, more than one operator.
     //
     // `NOT(x)` sits in the operand column, directly below `x`, rather than in the usual unary-operator column beside
-    // it. `x`'s other outgoing edge, to `AND(x, y)`, leaves `x`'s east side — putting `NOT(x)` there too would put it
-    // directly in that edge's path, exactly the leftover-single-operator-page column scheme this three-way fan-out
-    // doesn't fit.
+    // it. `x`'s other outgoing edge, to `AND(x, y)`, leaves `x`'s east side. Putting `NOT(x)` there too would put it
+    // directly in that edge's path. That is exactly the leftover-single-operator-page column scheme this three-way
+    // fan-out doesn't fit.
     //
     // `x` sits directly above `NOT(x)`, with `y` above `x` rather than between them — so `x`'s own straight drop to
     // `NOT(x)` has no other node's box in its way.
@@ -221,8 +222,8 @@ pub(crate) fn build_chained_operator_demo() -> Result<(), String> {
         .map_err(stringify)?;
     scene.make_draggable_with(and_xy_node, drag_options).map_err(stringify)?;
 
-    // A clear vertical gap from `and_xy_node` above — otherwise the two `AND` nodes, stacked in the same column, read
-    // as one combined node rather than two independent stages feeding the final `XOR`.
+    // A clear vertical gap from `and_xy_node` above. Otherwise the two `AND` nodes, stacked in the same column, read as
+    // one combined node. They should read as two independent stages feeding the final `XOR`.
     let and_notx_z = not_x & z;
     let and_notx_z_node = scene
         .add_binary_operator_node(

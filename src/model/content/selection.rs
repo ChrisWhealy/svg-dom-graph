@@ -36,7 +36,7 @@ impl Selection {
     ///
     /// Writes nothing for [`Selection::None`], so the label reads exactly as it did before any selection was made.
     /// `Scene::set_selection` calls this into its own reused label buffer, first truncated back to the node's base
-    /// description, then appends the current selection not only as a colour, but also as text, without allocating a
+    /// description. It then appends the current selection not only as a colour, but also as text, without allocating a
     /// fresh `String` on every call.
     ///
     /// Colour alone conveys nothing to assistive technology or a colour-blind reader — the same reasoning
@@ -60,12 +60,12 @@ impl Selection {
 /// A [`Selection::Row`]/[`Selection::Column`] already resolved against its own content's actual grid shape, in a form
 /// [`Scene::set_selection`](crate::scene::Scene::set_selection) can walk and test cheaply.
 ///
-/// Deliberately holds no list of member indices. A grid can hold arbitrarily many cells, so
-/// [`for_each_index`](Self::for_each_index) walks a band's own members directly — a contiguous range for `Row`, a
-/// `step_by(cols)` stride for `Column` — rather than scanning every cell in the grid and testing each one against
-/// membership. [`contains`](Self::contains) is the `O(1)`-per-cell, allocation-free membership test
-/// `Scene::set_selection` uses alongside that walk: to check whether an index it reaches while walking one band is
-/// already covered by the other, so it is not visited twice — not, itself, how a band's own members are found.
+/// Deliberately holds no list of member indices. A grid can hold arbitrarily many cells. So
+/// [`for_each_index`](Self::for_each_index) walks a band's own members directly: a contiguous range for `Row`, a
+/// `step_by(cols)` stride for `Column`. It does not scan every cell in the grid and test each one against membership.
+/// [`contains`](Self::contains) is the `O(1)`-per-cell, allocation-free membership test `Scene::set_selection` uses
+/// alongside that walk. It checks whether an index reached while walking one band is already covered by the other, so
+/// it is not visited twice. It is not, itself, how a band's own members are found.
 ///
 /// [`contains`](Self::contains)/[`for_each_index`](Self::for_each_index) both trust their own caller to only ever query
 /// a flat index — or, for `for_each_index`, a `len` bound — that names a real cell.
@@ -100,10 +100,11 @@ impl ResolvedBand {
     /// members, not a `0..len` scan tested one at a time via [`contains`](Self::contains).
     ///
     /// `len` clamps to the content's own actual value count, for the same reason [`contains`](Self::contains)'s own doc
-    /// comment gives: a short last row/column can leave a nominal member past the real data.
+    /// comment gives. A short last row/column can leave a nominal member past the real data.
     ///
     /// `Scene::set_selection` uses this to touch only the cells a changed band could plausibly have changed the
-    /// category of — `O(row width)`/`O(column height)`, not `O(len)` — rather than testing every cell in the grid.
+    /// category of. That costs `O(row width)`/`O(column height)`, not `O(len)`, rather than testing every cell in the
+    /// grid.
     pub(crate) fn for_each_index(self, len: usize, mut f: impl FnMut(usize)) {
         match self {
             Self::None => {},

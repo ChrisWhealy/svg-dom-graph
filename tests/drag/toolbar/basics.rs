@@ -125,7 +125,7 @@ fn zooming_changes_the_content_layer_but_never_the_toolbar() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Zooming keeps the centre of the visible area fixed: at scale 1.25 about (200, 150), the translation is (200 - 200 *
+/// Zooming keeps the centre of the visible area fixed. At scale 1.25 about (200, 150), the translation is (200 - 200 *
 /// 1.25, 150 - 150 * 1.25) = (-50, -37.5).
 #[wasm_bindgen_test]
 fn zoom_in_keeps_the_centre_of_the_visible_area_fixed() -> Result<(), String> {
@@ -177,8 +177,8 @@ fn view_reads_back_the_current_scale_and_translation() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `set_view` writes exactly the given scale and translation — no "zoom about the visible area's own centre" adjustment
-/// the way `zoom_in`/`zoom_out` make, since a caller restoring a value `view()` read from elsewhere already has the
+/// `set_view` writes exactly the given scale and translation. It makes no "zoom about the visible area's own centre"
+/// adjustment the way `zoom_in`/`zoom_out` do. A caller restoring a value `view()` read from elsewhere already has the
 /// exact numbers it wants.
 #[wasm_bindgen_test]
 fn set_view_writes_the_exact_given_scale_and_translation() -> Result<(), String> {
@@ -196,7 +196,7 @@ fn set_view_writes_the_exact_given_scale_and_translation() -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The real motivating case: a view read from one `Scene` round-trips onto a second, independent one — carrying a
+/// The real motivating case: a view read from one `Scene` round-trips onto a second, independent one. That carries a
 /// pan/zoom state across a `Scene` rebuilt from scratch to show different content at the same position.
 #[wasm_bindgen_test]
 fn set_view_round_trips_a_view_from_one_scene_onto_another() -> Result<(), String> {

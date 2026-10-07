@@ -45,9 +45,9 @@ fn add_edge_rejects_a_self_loop() -> Result<(), String> {
 /// A `NodeId` from a different `Scene` must be rejected with an error, not silently treated as one of this `Scene`'s
 /// own nodes.
 ///
-/// Both `Scene`s' graphs number their nodes from zero, so `foreign`'s `NodeId` and this scene's own first `NodeId`
-/// share the same internal sequence position — exactly the case a numbering scheme not scoped to its owning `Scene`
-/// would confuse.
+/// Both `Scene`s' graphs number their nodes from zero. So `foreign`'s `NodeId` and this scene's own first `NodeId`
+/// share the same internal sequence position. That is exactly the case a numbering scheme not scoped to its owning
+/// `Scene` would confuse.
 #[wasm_bindgen_test]
 fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Result<(), String> {
     let foreign_svg = make_svg("foreign-scene", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -78,9 +78,9 @@ fn a_node_id_from_a_different_scene_is_rejected_not_silently_mismatched() -> Res
 /// not a self-loop.
 ///
 /// `foreign` names no node at all in `scene`, so `UnknownNode` is the correct diagnosis even though `from == to`.
-/// Checking membership before the self-loop comparison is what makes this so: reversing that order would report
-/// `SelfLoopUnsupported` instead, which is misleading — the id does not belong to this scene at all, let alone name a
-/// node connected to itself.
+/// Checking membership before the self-loop comparison is what makes this so. Reversing that order would report
+/// `SelfLoopUnsupported` instead. That is misleading, because the id does not belong to this scene at all, let alone
+/// name a node connected to itself.
 #[wasm_bindgen_test]
 fn add_edge_with_the_same_foreign_id_twice_is_reported_as_unknown_not_a_self_loop() -> Result<(), String> {
     let foreign_svg = make_svg("foreign-self-pair", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -105,7 +105,7 @@ fn add_edge_with_the_same_foreign_id_twice_is_reported_as_unknown_not_a_self_loo
 /// Two `Scene`s sharing one `<svg>` must not collide on their arrow marker's id.
 ///
 /// A hardcoded id such as `"arrow"` would make the second `Scene::new` either fail outright or silently produce a
-/// second `<marker id="arrow">`, leaving both `Scene`s' connectors pointing at whichever one the browser resolves
+/// second `<marker id="arrow">`. Both `Scene`s' connectors would then point at whichever one the browser resolves
 /// `url(#arrow)` to.
 #[wasm_bindgen_test]
 fn scenes_sharing_one_svg_get_distinct_arrow_marker_ids() -> Result<(), String> {
@@ -129,8 +129,8 @@ fn scenes_sharing_one_svg_get_distinct_arrow_marker_ids() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `add_node` rejects non-finite or non-positive geometry before drawing anything or touching the graph's model — a
-/// rejected call leaves the scene with no rendered `<g>` at all, and a later, valid `add_node` call still lands as the
+/// `add_node` rejects non-finite or non-positive geometry before drawing anything or touching the graph's model. A
+/// rejected call leaves the scene with no rendered `<g>` at all. A later, valid `add_node` call still lands as the
 /// scene's first (and only) node, not a second one after some partially-added ghost.
 #[wasm_bindgen_test]
 fn add_node_rejects_invalid_geometry_before_touching_the_scene() -> Result<(), String> {

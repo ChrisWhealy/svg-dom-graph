@@ -1,5 +1,5 @@
-//! `hub`'s two connectors render at the expected, distinct `EdgeAnchors(3)` fixing points, both as first drawn and
-//! after a real, CDP-driven drag moves `branch_a` far enough to re-snap onto a different one.
+//! `hub`'s two connectors render at the expected, distinct `EdgeAnchors(3)` fixing points. That holds both as first
+//! drawn and after a real, CDP-driven drag moves `branch_a` far enough to re-snap onto a different one.
 //!
 //! Uses the fixture's `hub`-to-`branch_a` and `hub`-to-`branch_b` connectors (`#diagram > g.svg-dom-graph-content >
 //! path:nth-of-type(3)` and `#diagram > g.svg-dom-graph-content > path:nth-of-type(4)`). See
@@ -28,7 +28,7 @@
 //!
 //! `dragging_branch_a_re_snaps_its_connector_onto_a_different_fixing_point` repeats the `hub`-to-`branch_a` calculation
 //! after dragging `branch_a` by `(100, 0)`. Its new centre is `(200, 360)`. From `hub` toward this new centre: `dx =
-//! -50`, `dy = 120`, crossing the south side at `x ≈ 241.67`, which now snaps to the middle candidate, `250` — a
+//! -50`, `dy = 120`, crossing the south side at `x ≈ 241.67`. That now snaps to the middle candidate, `250`, a
 //! different fixing point from the original `230`. `branch_a`'s own anchor also moves, to `(200, 340)`. The new route
 //! is `(250, 260) -> (250, 300) -> (200, 300) -> (200, 340)`. `branch_b` did not move, so its own connector's path is
 //! unchanged.
@@ -72,8 +72,8 @@ fn hubs_two_connectors_land_on_distinct_fixing_points() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Dragging `branch_a` far enough moves its `hub`-side anchor onto a different one of `hub`'s three fixing points —
-/// proving the snapped candidate is recomputed live on every redraw, not fixed once at `add_edge` time.
+/// Dragging `branch_a` far enough moves its `hub`-side anchor onto a different one of `hub`'s three fixing points. That
+/// proves the snapped candidate is recomputed live on every redraw, not fixed once at `add_edge` time.
 #[test]
 fn dragging_branch_a_re_snaps_its_connector_onto_a_different_fixing_point() -> Result<(), String> {
     let tab = new_tab()?;

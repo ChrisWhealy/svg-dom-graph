@@ -21,9 +21,9 @@ fn is_straight_two_point_path(d: &str) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::add_node_with` rejects `Some(EdgeAnchors(0))` before drawing anything or touching the graph's model — a
-/// rejected call leaves the scene with no rendered `<g>` at all, and a later, valid call still lands as the scene's
-/// first (and only) node.
+/// `Scene::add_node_with` rejects `Some(EdgeAnchors(0))` before drawing anything or touching the graph's model. A
+/// rejected call leaves the scene with no rendered `<g>` at all. A later, valid call still lands as the scene's first
+/// (and only) node.
 #[wasm_bindgen_test]
 fn add_node_with_rejects_edge_anchors_zero_before_touching_the_scene() -> Result<(), String> {
     let svg = make_svg(
@@ -112,7 +112,7 @@ fn set_edge_anchors_rejects_an_unknown_node() -> Result<(), String> {
 /// always the crossed side's own midpoint, exactly the default rule `edge_anchor` already applies.
 ///
 /// This does *not* generalise to a straight connector, whose default (`boundary_point`) is the continuous ray/boundary
-/// crossing rather than a side's midpoint — `EdgeAnchors(1)` still snaps a straight connector onto that midpoint, which
+/// crossing rather than a side's midpoint. `EdgeAnchors(1)` still snaps a straight connector onto that midpoint. That
 /// usually differs from where the unsnapped ray would have landed. This test uses `add_edge`, whose default connector
 /// is an elbow, specifically to exercise the elbow case.
 #[wasm_bindgen_test]
@@ -208,15 +208,15 @@ fn set_edge_anchors_snaps_each_incident_edge_independently_and_redraws_live() ->
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `EdgeAnchors` on a [`ConnectorType::Straight`] connector, not just an elbow — the elbow-only equivalence in
-/// [`edge_anchors_one_matches_default_elbow_midpoint`] does not generalise to `Straight`, whose own default anchor
+/// `EdgeAnchors` on a [`ConnectorType::Straight`] connector, not just an elbow. The elbow-only equivalence in
+/// [`edge_anchors_one_matches_default_elbow_midpoint`] does not generalise to `Straight`. Its own default anchor
 /// (`None`) is the continuous ray/boundary crossing, not a side's midpoint. This is the distinct `straight_anchor`
 /// branch of `connector::route`, so it needs its own coverage rather than relying on the elbow tests above.
 ///
-/// Also proves the round trip back to `None`: `None` is not "zero anchors", it is *this connector type's own default
-/// anchoring rule*, and `set_edge_anchors` must restore exactly that rule, not just leave the last snapped point
-/// behind. `Some(EdgeAnchors(3))` and a later `None` on the same node must therefore land at different points, and the
-/// second call must reproduce the original, unconfigured coordinates exactly.
+/// Also proves the round trip back to `None`. `None` is not "zero anchors". It is *this connector type's own default
+/// anchoring rule*. `set_edge_anchors` must restore exactly that rule, not just leave the last snapped point behind.
+/// `Some(EdgeAnchors(3))` and a later `None` on the same node must therefore land at different points, and the second
+/// call must reproduce the original, unconfigured coordinates exactly.
 ///
 /// # Expected anchors, worked by hand
 ///
@@ -295,7 +295,7 @@ fn set_edge_anchors_round_trips_a_straight_connector_through_none_and_back() -> 
 /// incident connector at all, not merely leave its rendered path unchanged.
 ///
 /// Proved here by planting a sentinel `d` directly on the connector's `<path>` via the raw DOM, bypassing `Scene`
-/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path — its surviving an
+/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path. Its surviving an
 /// unchanged `set_edge_anchors` call is the only way to observe, from here, that no redraw happened.
 #[wasm_bindgen_test]
 fn set_edge_anchors_with_an_unchanged_configuration_redraws_nothing() -> Result<(), String> {

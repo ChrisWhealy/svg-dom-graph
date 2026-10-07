@@ -64,12 +64,12 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Drives a real mouse press-move-release sequence over CDP's `Input.dispatchMouseEvent`, the same primitive a real
-/// OS-level mouse drag produces — unlike `EventTarget::dispatchEvent(new PointerEvent(...))`, this goes through the
+/// OS-level mouse drag produces. Unlike `EventTarget::dispatchEvent(new PointerEvent(...))`, this goes through the
 /// browser's actual hit-testing, pointer capture, and default-action machinery.
 ///
-/// A `waypoint` must have at least two points: the first is where the button goes down, the last is where it comes back
-/// up, and any in between are intermediate `mousemove`s while the button is held. Real drags rarely jump straight from
-/// their start location to the end location in one move, and some of what this suite exists to catch (pointer capture,
+/// A `waypoint` must have at least two points. The first is where the button goes down, and the last is where it comes
+/// back up. Any in between are intermediate `mousemove`s while the button is held. Real drags rarely jump straight from
+/// their start location to the end location in one move. Some of what this suite exists to catch (pointer capture,
 /// default-action suppression etc) only manifests itself once the pointer actually leaves its starting element.
 ///
 /// A short pause follows each dispatched event — see [`SETTLE`]'s own doc comment for why.
@@ -90,15 +90,15 @@ pub(crate) fn drag(tab: &Tab, waypoints: &[(f64, f64)]) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A short pause inserted after every individual `Input.dispatchMouseEvent` call this suite makes.
 ///
-/// `Tab::call_method` returns once Chrome's browser process has accepted the CDP command, not once the corresponding JS
-/// event has actually finished running in the page's renderer process — those two processes talk over IPC, and dispatch
+/// `Tab::call_method` returns once Chrome's browser process has accepted the CDP command. It does not wait for the
+/// corresponding JS event to finish running in the page's renderer process. Those two processes talk over IPC. Dispatch
 /// is not guaranteed to keep up with a tight, back-to-back loop of commands under load. On a slower or busier machine
-/// (for example, a GitHub Actions runner), a `pointermove` or `pointerup` fired by this suite can be coalesced or
-/// arrive before this crate's own listener has processed the one before it. For `pointerup`, dropped-overlap correction
-/// depends on all previous `move_node` from `pointermove` already having been applied, so losing even one mid-drag step
-/// can leave the model in an implausible state (i.e. one the pointerup handler never expected). This pause is cheap,
-/// costing a handful of milliseconds per waypoint and is negligible in comparison to launching Chrome and building the
-/// wasm fixture, as opposed to the cost of trying to track down an intermittent CI failure.
+/// (for example, a GitHub Actions runner), a `pointermove` or `pointerup` fired by this suite can be coalesced. It can
+/// also arrive before this crate's own listener has processed the one before it. For `pointerup`, dropped-overlap
+/// correction depends on all previous `move_node` calls from `pointermove` already having been applied. So losing even
+/// one mid-drag step can leave the model in an implausible state, i.e. one the pointerup handler never expected. This
+/// pause is cheap, costing a handful of milliseconds per waypoint. That is negligible in comparison to launching Chrome
+/// and building the wasm fixture. It is far cheaper than trying to track down an intermittent CI failure.
 const SETTLE: Duration = Duration::from_millis(50);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

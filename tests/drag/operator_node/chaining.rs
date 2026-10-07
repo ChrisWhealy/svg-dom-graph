@@ -6,14 +6,14 @@ use svg_dom_graph::scene::{BinaryOperator, DataFormat, DataNodeContent, NodeValu
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A chain — `A`/`B` feed `XOR`, whose own result feeds `AND` alongside `C` — auto-wires all four edges from a plain
-/// data node's own value, an operator node's own single-value result, or a mix of both. `add_binary_operator_node`
-/// makes no distinction: `XOR`'s own [`NodeId`] is just as valid an operand as any [`DataNodeContent`] node's own,
-/// since an operator node's own result is itself stored as `NodeContent::Data`.
+/// A chain auto-wires all four edges: `A`/`B` feed `XOR`, whose own result feeds `AND` alongside `C`. Each input is a
+/// plain data node's own value, an operator node's own single-value result, or a mix of both.
+/// `add_binary_operator_node` makes no distinction: `XOR`'s own [`NodeId`] is just as valid an operand as any
+/// [`DataNodeContent`] node's own, since an operator node's own result is itself stored as `NodeContent::Data`.
 ///
-/// Dragging each of `A`, `XOR`, and `AND` in turn then proves the routing this chain depends on: an edge always
-/// reroutes when either of its own two endpoints moves, and — just as important — never touches an edge whose own
-/// endpoints did not, whether that edge sits upstream or downstream of the node that actually moved.
+/// Dragging each of `A`, `XOR`, and `AND` in turn then proves the routing this chain depends on. An edge always
+/// reroutes when either of its own two endpoints moves. Just as important, it never touches an edge whose own endpoints
+/// did not move, whether that edge sits upstream or downstream of the node that actually moved.
 #[wasm_bindgen_test]
 fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_incident_connectors() -> Result<(), String>
 {
@@ -49,8 +49,8 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         )
         .map_err(|e| e.to_string())?;
 
-    // `xor` — an operator node's own id, not a plain data node's — is `AND`'s own first operand here: this is the
-    // "operator feeding operator" wiring the demos show but no prior test exercises directly.
+    // `xor` is an operator node's own id, not a plain data node's, and it is `AND`'s own first operand here. This is
+    // the "operator feeding operator" wiring the demos show but no prior test exercises directly.
     let and = scene
         .add_binary_operator_node(
             Point::new(220.0, 400.0),
@@ -77,8 +77,8 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         crate::common::path_d(&crate::common::nth_connector("operator-chain-drag", n)?)
     };
 
-    // `C` feeds `AND` from a different side than `XOR` does — `XOR` sits directly above `AND`, `C` sits far to its east
-    // — so each of `AND`'s own two inputs resolves its own anchor independently, and every "must stay exactly as it
+    // `C` feeds `AND` from a different side than `XOR` does: `XOR` sits directly above `AND`, and `C` sits far to its
+    // east. So each of `AND`'s own two inputs resolves its own anchor independently. Every "must stay exactly as it
     // was" check below holds regardless of how the same-side anti-crossing split behaves elsewhere in the chain.
 
     // --- Drag A: only A's own edge into XOR touches A at all. ---
@@ -102,9 +102,9 @@ fn dragging_each_node_in_an_operator_to_operator_chain_reroutes_only_its_own_inc
         "expected C's own edge into AND to stay put while only A moved",
     )?;
 
-    // --- Drag XOR: both of its own inputs, and its own output into AND, all touch XOR. C's own edge into AND does not
-    // — proving a moved *intermediate* operator correctly reroutes both its incoming and its outgoing edges, without
-    // disturbing a sibling edge into the same downstream node. ---
+    // --- Drag XOR: both of its own inputs, and its own output into AND, all touch XOR. C's own edge into AND does not.
+    // That proves a moved *intermediate* operator correctly reroutes both its incoming and its outgoing edges. It does
+    // so without disturbing a sibling edge into the same downstream node.
     let (path_a_xor_before, path_b_xor_before, path_xor_and_before, path_c_and_before) =
         (path(0)?, path(1)?, path(2)?, path(3)?);
     let xor_group = nth_group("operator-chain-drag", 3)?;

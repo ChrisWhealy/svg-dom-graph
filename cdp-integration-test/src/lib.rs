@@ -1,10 +1,10 @@
 //! Shared setup helpers for `cdp-integration-test`'s Chrome-DevTools-Protocol integration tests.
 //!
-//! The tests themselves live in one Cargo integration-test binary, `tests/cdp/`, with one scenario per sibling module —
-//! see
+//! The tests themselves live in one Cargo integration-test binary, `tests/cdp/`, with one scenario per sibling module.
+//! See
 //! [`tests/cdp/main.rs`](https://github.com/ChrisWhealy/svg-dom-graph/blob/main/cdp-integration-test/tests/cdp/main.rs)'s
-//! own module doc comment for the scenario list and why this crate lives in its own on-demand workspace member. This
-//! mirrors `svg-dom`'s own `cdp-integration-test` crate, down to this file's structure.
+//! own module doc comment for the scenario list. It also explains why this crate lives in its own on-demand workspace
+//! member. This mirrors `svg-dom`'s own `cdp-integration-test` crate, down to this file's structure.
 //!
 //! The functions below build the `cdp-test-fixture` wasm package, serve it, and launch Chrome. `tests/cdp/common.rs`
 //! calls them exactly once per test run, via a lazily-initialised `OnceLock`, and hands every scenario module its own
@@ -28,7 +28,7 @@ pub fn fixture_dir() -> PathBuf {
 ///
 /// `tests/cdp/common.rs` calls this once per test run, from behind its own `OnceLock`, so within this crate's own `cdp`
 /// binary only one call is ever in flight. The exclusive cross-process file lock taken below still guards against a
-/// second, independent `cargo test`/`cargo nextest run` invocation racing this one: two `wasm-pack build` invocations
+/// second, independent `cargo test`/`cargo nextest run` invocation racing this one. Two `wasm-pack build` invocations
 /// running in the same `dir` at once would corrupt each other's intermediate states.
 pub fn build_fixture(dir: &PathBuf) {
     let lock_path = dir.join(".build_fixture.lock");
@@ -94,10 +94,10 @@ pub fn serve(dir: PathBuf) -> u16 {
 /// this crate, so there is no untrusted content to be sandboxed. This is disabled unconditionally, not just in CI, so
 /// local and CI runs stay on the same code path.
 ///
-/// `window_size` is set explicitly, rather than left at Chrome's own headless default (small enough that a deliberately
-/// large drag delta — `bounds.rs` drags a node hundreds of pixels past the fixture's own view box — can otherwise land
-/// short of, or land at an unrelated point past, the actual window edge). Every other scenario here only ever uses
-/// deltas relative to an element's own midpoint, so a larger window changes nothing for them.
+/// `window_size` is set explicitly, rather than left at Chrome's own headless default. That default is small enough
+/// that a deliberately large drag delta could land short of the actual window edge, or at an unrelated point past it.
+/// `bounds.rs` drags a node hundreds of pixels past the fixture's own view box. Every other scenario here only ever
+/// uses deltas relative to an element's own midpoint, so a larger window changes nothing for them.
 pub fn launch_browser() -> Result<Browser, Box<dyn std::error::Error>> {
     let path = default_executable().map_err(|e| format!("could not locate a Chrome/Chromium binary: {e}"))?;
     let launch_options = LaunchOptions::default_builder()

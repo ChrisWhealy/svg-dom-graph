@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adjust SHA3 Sponge layout (`8187952`)
 - Doc only: Ensure Rust doc comments flow up to, but not beyond column 120 (`19c6094`)
 - Doc only: Rewrite comment sentences having excessive length (> 60 words) (`7b4b815`)
-- Doc only: Rewrite comment sentences in SHA3 Sponge demo (``)
+- Doc only: Rewrite comment sentences in SHA3 Sponge demo (`3b62c2f`)
+- Doc only: Rewrite remaining comment sentences not meeting style guide (``)
 
 # [Released]
 

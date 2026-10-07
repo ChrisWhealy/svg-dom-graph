@@ -93,9 +93,9 @@ fn release_stops_tracking_the_most_recently_tracked_node() -> Result<(), String>
     )
 }
 
-/// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge` — its rendered path, its
-/// `edge_handles` entry, and its place in the graph — then the node itself, the same partial state a failure drawing an
-/// operator's own auto-wired input edge would otherwise leave behind.
+/// Dropping an armed `OperatorConstructionGuard` removes every edge tracked via `track_edge`: its rendered path, its
+/// `edge_handles` entry, and its place in the graph. It then removes the node itself. That is the same partial state a
+/// failure drawing an operator's own auto-wired input edge would otherwise leave behind.
 #[wasm_bindgen_test]
 fn dropping_an_armed_construction_guard_removes_the_node_and_every_tracked_edge() -> Result<(), String> {
     let svg = make_svg("construction-guard-rollback");

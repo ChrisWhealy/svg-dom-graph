@@ -1,14 +1,14 @@
-//! `Scene`'s toolbar and zoom: showing, hiding, and moving the button bar, keeping it a fixed size while the content
-//! zooms, the zoom buttons themselves (by click and by keyboard), and dragging under zoom.
+//! `Scene`'s toolbar and zoom. They cover showing, hiding, and moving the button bar, and keeping it a fixed size while
+//! the content zooms. They also cover the zoom buttons themselves (by click and by keyboard), and dragging under zoom.
 //!
 //! Every test uses a viewport and `viewBox` of `400 x 300`, 1:1, so client pixels and user-space units coincide, unless
 //! a scenario's own module doc comment says otherwise.
 //!
 //! - [`basics`] — showing/hiding the bar, sibling ordering, edge placement, buttons by click and by keyboard, disabled
 //!   state at the zoom limits, and option validation.
-//! - [`gestures`] — pan and wheel-zoom mechanics: dragging a node under zoom, the pan surface, following/
-//!   releasing/cancelling a pan, ctrl/cmd-plus-wheel, wheel direction and amount, coalescing a burst into one frame,
-//!   and a toolbar button winning over a pending frame.
+//! - [`gestures`] covers pan and wheel-zoom mechanics. They include dragging a node under zoom, the pan surface, and
+//!   following/ releasing/cancelling a pan. They also include ctrl/cmd-plus-wheel, wheel direction and amount,
+//!   coalescing a burst into one frame, and a toolbar button winning over a pending frame.
 //! - [`input_modes`] — pan and wheel zoom independent of the toolbar via `InputMode`: `WithToolbar`, `On`, `Off`, and
 //!   forcing/switching combinations of the two.
 //! - [`responsive_layout`] — the toolbar and pan surface laid out in the `<svg>`'s own user space, an attribute-less
@@ -20,8 +20,8 @@
 //!   node position and connector path left untouched.
 //! - [`lifecycle`] — showing and hiding the toolbar, and toggling input modes, repeatedly, install no duplicate
 //!   handlers; a dropped `Scene` answers no input at all.
-//! - [`mid_gesture_changes`] — a node drag or a pan that carries on correctly through a wheel zoom, an
-//!   application-initiated zoom, or a toolbar button pressed while the gesture is still in progress.
+//! - [`mid_gesture_changes`] covers a node drag or a pan that carries on correctly through a wheel zoom. It also covers
+//!   an application-initiated zoom, or a toolbar button pressed while the gesture is still in progress.
 //! - [`frame_teardown`] — the toolbar hidden, a mode switched, or the `Scene` dropped, between an input and the
 //!   animation frame that would have drawn it.
 //! - [`host_svg_attributes`] — the application's own `<svg>` may carry its own accessibility attributes, and the scene

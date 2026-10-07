@@ -344,8 +344,8 @@ fn panning_after_a_zoom_moves_the_view_by_exactly_the_pan_amount() -> Result<(),
     )
 }
 
-/// Zoom and pan interleaved in either order end at the same place only when they commute — which they do not, so the
-/// order matters and each must apply against the view as it stands.
+/// Zoom and pan interleaved in either order end at the same place only when they commute. They do not, so the order
+/// matters. Each must apply against the view as it stands.
 #[test]
 fn zoom_and_pan_apply_in_sequence_against_the_current_view() -> Result<(), String> {
     let anchor = Point::new(100.0, 100.0);

@@ -20,7 +20,7 @@ fn text_children(group: &web_sys::Element) -> Result<Vec<web_sys::Element>, Stri
     elements_matching(group, "text")
 }
 
-/// Every `<rect>` child of `group`, in document order — for a data node, index 0 is always the outer box, and any
+/// Every `<rect>` child of `group`, in document order. For a data node, index 0 is always the outer box, and any
 /// further entries are the per-value inner cells (see `draw_content_box`'s own doc comment).
 fn rect_children(group: &web_sys::Element) -> Result<Vec<web_sys::Element>, String> {
     elements_matching(group, "rect")
@@ -41,8 +41,8 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A single value gets no inner cell box — the outer box itself is filled with the value's own type colour — and its
-/// text reads exactly the byte-group hex text the feature request's own example describes: no `0x` prefix, uppercase,
+/// A single value gets no inner cell box, and the outer box itself is filled with the value's own type colour. Its text
+/// reads exactly the byte-group hex text the feature request's own example describes: no `0x` prefix, uppercase,
 /// single-space byte separation.
 #[wasm_bindgen_test]
 fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell() -> Result<(), String> {
@@ -85,8 +85,8 @@ fn add_data_node_with_a_single_value_colours_the_whole_box_and_has_no_inner_cell
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two or more values each get their own type-coloured inner cell box, inside the node's own unchanged, light blue
-/// outer box — the second example from the feature request (two values stack into two rows of one column), now rendered
-/// as two distinct coloured cells rather than two plain text lines.
+/// outer box. This is the second example from the feature request: two values stack into two rows of one column. It is
+/// now rendered as two distinct coloured cells rather than two plain text lines.
 #[wasm_bindgen_test]
 fn add_data_node_with_two_values_gives_each_its_own_coloured_inner_cell() -> Result<(), String> {
     let svg = make_svg("data-node-two", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -160,8 +160,9 @@ fn add_data_node_with_a_u64_binary_value_renders_an_extremely_wide_cell() -> Res
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `draw_content_box` measures only the widest cell's own rendered text, by character count, to size every cell alike —
 /// see that function's own doc comment. Every `Hexadecimal`/`Binary` value of one integer type already renders the same
-/// character count regardless of magnitude, so `Decimal` values of genuinely different digit counts are the one
-/// scenario that actually exercises "pick the *right* cell to measure," not merely "measuring is skipped for the rest."
+/// character count regardless of magnitude. So `Decimal` values of genuinely different digit counts are the one
+/// scenario that actually exercises "pick the *right* cell to measure". They are not merely "measuring is skipped for
+/// the rest."
 #[wasm_bindgen_test]
 fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_uniform_cell_width() -> Result<(), String> {
     let svg = make_svg("data-node-decimal-widths", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -199,10 +200,9 @@ fn add_data_node_with_decimal_values_of_different_digit_counts_shares_one_unifor
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Five values under [`GridLayout::Automatic`] render a `3 x 2` grid (see
-/// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`) with the last row only
-/// half full — a non-complete final row, rather than the exact multiple of columns every other rendering test here
-/// happens to use.
+/// Five values under [`GridLayout::Automatic`] render a `3 x 2` grid, with the last row only half full. See
+/// `grid_shape_of_five_values_is_three_rows_of_two_columns` in `model::content::unit_tests`. That is a non-complete
+/// final row, rather than the exact multiple of columns every other rendering test here happens to use.
 #[wasm_bindgen_test]
 fn add_data_node_with_five_values_leaves_the_last_row_incomplete() -> Result<(), String> {
     let svg = make_svg("data-node-five-values", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -537,8 +537,8 @@ fn dragging_a_data_node_moves_the_outer_box_and_every_cell() -> Result<(), Strin
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A connector routes to/from a data node exactly as it would an ordinary label node: the same `boundary_point`/elbow
-/// routing logic, since it only ever looks at a node's `Rect`, never its content.
+/// A connector routes to/from a data node exactly as it would an ordinary label node. It uses the same
+/// `boundary_point`/elbow routing logic, since it only ever looks at a node's `Rect`, never its content.
 #[wasm_bindgen_test]
 fn a_connector_routes_to_a_data_node_like_any_other_node() -> Result<(), String> {
     let svg = make_svg("data-node-connector", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
@@ -638,7 +638,7 @@ fn a_data_node_with_custom_edge_anchors_snaps_like_any_other_node() -> Result<()
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// `Scene::add_named_data_node` wraps a single-value node's own box in a further outer box of its own, labelled with
-/// the given name — the same "outer box labelled with a name, inset value box beneath it" shape an operator node
+/// the given name. It is the same "outer box labelled with a name, inset value box beneath it" shape an operator node
 /// already draws for its own result. The inner value box stays inset from every outer edge, exactly as an operator's
 /// own value cell does.
 #[wasm_bindgen_test]
@@ -712,9 +712,9 @@ fn a_named_single_value_data_node_wraps_it_in_a_further_labelled_outer_box() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A named single-value node's own `aria-label` reads `"{name}: {type} = {value}"` — the node's own name, its type, and
-/// its real formatted value, all as text, not just the type a plain (unnamed) node's own label gives. Its `<title>` —
-/// the browser's own mouse-hover tooltip — carries that exact same text.
+/// A named single-value node's own `aria-label` reads `"{name}: {type} = {value}"`. That is the node's own name, its
+/// type, and its real formatted value, all as text. A plain (unnamed) node's own label gives only the type. Its
+/// `<title>` — the browser's own mouse-hover tooltip — carries that exact same text.
 #[wasm_bindgen_test]
 fn a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real_value() -> Result<(), String> {
     let svg = make_svg("data-node-named-aria-label", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -735,8 +735,9 @@ fn a_named_single_value_data_nodes_own_aria_label_includes_the_name_and_the_real
     )
 }
 
-/// Same shape again, but for a multi-value grid: the outer named box wraps the grid's own existing box (itself
-/// unchanged — still its own light-blue background plus one coloured `<rect>` per value), rather than replacing it.
+/// Same shape again, but for a multi-value grid. The outer named box wraps the grid's own existing box rather than
+/// replacing it. That box is itself unchanged: still its own light-blue background plus one coloured `<rect>` per
+/// value.
 #[wasm_bindgen_test]
 fn a_named_multi_value_data_node_wraps_the_grid_in_a_further_labelled_outer_box() -> Result<(), String> {
     let svg = make_svg("data-node-named-multi", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -769,7 +770,7 @@ fn a_named_multi_value_data_node_wraps_the_grid_in_a_further_labelled_outer_box(
 }
 
 /// An incoming connector anchors to a named data node's own *outer* named box, never to the inner value box `name`
-/// wraps — the same guarantee an operator node's own result cell already gets, for the same reason: a connector landing
+/// wraps. An operator node's own result cell already gets the same guarantee, for the same reason. A connector landing
 /// on the inner box would look like it terminates at the value, not at the named quantity as a whole.
 #[wasm_bindgen_test]
 fn a_named_data_nodes_own_connector_anchors_to_the_outer_named_box() -> Result<(), String> {
@@ -870,8 +871,8 @@ fn add_named_data_node_accepts_a_name_padded_with_whitespace_verbatim() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `with_column_groups(8)` on a 16-column grid widens only the gap after the eighth column, leaves every row and the
-/// cell order alone, and makes the node exactly one group gap wider than the same grid without groups.
+/// `with_column_groups(8)` on a 16-column grid widens only the gap after the eighth column. It leaves every row and the
+/// cell order alone. It makes the node exactly one group gap wider than the same grid without groups.
 #[wasm_bindgen_test]
 fn column_groups_widen_only_the_gap_between_groups() -> Result<(), String> {
     let svg = make_svg("data-node-column-groups", Size::new(600.0, 300.0), Size::new(600.0, 300.0));

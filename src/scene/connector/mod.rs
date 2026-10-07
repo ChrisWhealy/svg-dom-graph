@@ -81,8 +81,8 @@ pub(crate) struct BinaryOperatorRoute {
     /// this same `side`, the one case [`binary_operator_elbow_route`]'s own sibling-aware routing applies.
     ///
     /// `None` when the two inputs land on different sides of the operator. [`binary_operator_anchors`]'s own doc
-    /// comment already documents that a different-side input behaves exactly like an ordinary edge would — `route`
-    /// honours that here by falling back to plain [`elbow_route`] rather than calling [`binary_operator_elbow_route`]
+    /// comment already documents that a different-side input behaves exactly like an ordinary edge would. `route`
+    /// honours that here by falling back to plain [`elbow_route`]. It does not call [`binary_operator_elbow_route`]
     /// with an unrelated sibling coordinate from a genuinely different side, which that function's own drift comparison
     /// assumes never happens.
     ///
@@ -102,10 +102,10 @@ pub(crate) struct BinaryOperatorRoute {
 /// [`to_side`](crate::scene::ConnectorOptions::to_side) — independent of each other and of `from_anchors`/
 /// `to_anchors`, the same way `EdgeAnchors` already is.
 ///
-/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors`/ `to_side`
-/// — see [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for the one case
-/// that supplies it: a binary operator node's own two inputs, split apart and routed clear of each other when they land
-/// on the same side.
+/// `to_override`, when `Some`, replaces the `to`-side anchor this would otherwise compute from `to_anchors`/ `to_side`.
+/// See [`SceneInner::binary_operator_to_override`](super::SceneInner::binary_operator_to_override) for the one case
+/// that supplies it. That is a binary operator node's own two inputs, split apart and routed clear of each other when
+/// they land on the same side.
 #[allow(clippy::too_many_arguments)]
 pub(crate) fn route(
     connector_type: ConnectorType,
@@ -205,7 +205,7 @@ impl Scene {
             options.to_side,
             to_override,
         );
-        // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability — see
+        // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability. See
         // `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per new edge.
         let mut d = std::mem::take(&mut inner.scratch);
         elbow_path_into(&vertices, radius, &mut d);
@@ -274,7 +274,7 @@ impl Scene {
             return Ok(());
         }
 
-        // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back — see
+        // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back. See
         // `SceneInner::scratch`'s own doc comment for why this, rather than a fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
         let result = inner.redraw_edge_with_type(id, connector_type, &mut scratch);

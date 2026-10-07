@@ -10,7 +10,7 @@
 /// division and modulus.
 ///
 /// Unlike all of the [`super::binary::BinaryOperator`]s, the operands for the arithmetic operators `subtract`, `divide`
-/// and `modulo` are not commutative: When passing the `input` tuple to
+/// and `modulo` are not commutative. When passing the `input` tuple to
 /// [`crate::scene::Scene::add_arithmetic_operator_node_with`], `inputs.0` is always the left-hand operand and
 /// `inputs.1` always the right-hand one.
 ///

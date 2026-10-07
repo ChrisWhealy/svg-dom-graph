@@ -1,6 +1,6 @@
-//! `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`: the size a data or operator node would
-//! render at in *this* `Scene`, without ever adding it — see the design proposal's own "Acceptance tests" for the full
-//! list this file implements against.
+//! `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box` return the size a data or operator node
+//! would render at in *this* `Scene`, without ever adding it. See the design proposal's own "Acceptance tests" for the
+//! full list this file implements against.
 //!
 //! The central property under test throughout is *exact* equality. `measure_*` must report precisely what `node_rect`
 //! on the equivalent `add_*` call would report. "Close enough" is not enough, and neither is "some nonzero size." Both
@@ -28,9 +28,9 @@ fn assert_size_exact(measured: Size, actual: Size) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The number of elements anywhere under `root`, not just its own direct children — `Element::child_element_count`
-/// alone would miss a leaked element nested inside `root`'s own persistent content (a `<g class="scene-content">`
-/// wrapper, say), rather than one sitting directly under the `<svg>` root itself.
+/// The number of elements anywhere under `root`, not just its own direct children. `Element::child_element_count` alone
+/// would miss a leaked element nested inside `root`'s own persistent content (a `<g class="scene-content">` wrapper,
+/// say). It would count only one sitting directly under the `<svg>` root itself.
 fn descendant_element_count(root: &web_sys::Element) -> Result<u32, String> {
     root.query_selector_all("*")
         .map(|nodes| nodes.length())
@@ -356,9 +356,9 @@ fn measure_operator_box_rejects_an_invalid_grid_layout_like_add_binary_operator_
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Acceptance test 9 (weak form — see the design proposal's own caveat): two `Scene`s, each with no special CSS
-/// applied, measure the same content to the same size, independently — nothing about measuring in one `Scene` leaks
-/// into or depends on shared global state.
+/// Acceptance test 9 (weak form; see the design proposal's own caveat). Two `Scene`s, each with no special CSS applied,
+/// measure the same content to the same size, independently. Nothing about measuring in one `Scene` leaks into or
+/// depends on shared global state.
 #[wasm_bindgen_test]
 fn two_scenes_measure_the_same_content_independently_and_consistently() -> Result<(), String> {
     let svg_a = make_svg("measure-two-scenes-a", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

@@ -50,7 +50,7 @@ fn make_enterable_rejects_a_second_call() -> Result<(), String> {
     )
 }
 
-/// Clicking an enterable container node's own rendered group enters its nested `Scene` — the whole point of
+/// Clicking an enterable container node's own rendered group enters its nested `Scene`. That is the whole point of
 /// `make_enterable`: no external button, no host-written listener, just a click on the node itself.
 #[wasm_bindgen_test]
 fn clicking_an_enterable_container_node_enters_it() -> Result<(), String> {
@@ -94,11 +94,11 @@ fn keydown_on_an_enterable_container_node_enters_it() -> Result<(), String> {
     )
 }
 
-/// The external review that caught this: a failed attribute write or listener registration inside `make_enterable` must
-/// leave the node exactly as it was — not a container node advertising `role="button"` with no working click handler
-/// behind it, and not a caller's own pre-existing `style` clobbered and never restored. Forces the `tabindex` write to
-/// fail, after `role` has already been written successfully, so a correct rollback has real work to do beyond just
-/// removing listeners that were never reached.
+/// The external review that caught this found that a failed attribute write or listener registration inside
+/// `make_enterable` must leave the node exactly as it was. It must not leave a container node advertising
+/// `role="button"` with no working click handler behind it. It must not leave a caller's own pre-existing `style`
+/// clobbered and never restored. Forces the `tabindex` write to fail, after `role` has already been written
+/// successfully, so a correct rollback has real work to do beyond just removing listeners that were never reached.
 #[wasm_bindgen_test]
 fn a_failed_make_enterable_restores_every_attribute_it_had_already_written() -> Result<(), String> {
     let parent = Scene::new(make_svg("make-enterable-rollback-parent")).map_err(|e| e.to_string())?;

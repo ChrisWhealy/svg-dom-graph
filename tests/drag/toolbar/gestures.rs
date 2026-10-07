@@ -1,6 +1,6 @@
-//! Pan and wheel-zoom gesture mechanics: dragging a node under zoom, the pan surface itself, following/releasing/
-//! cancelling a pan, ctrl/cmd-plus-wheel, wheel direction and amount, coalescing a burst into one frame, and a toolbar
-//! button winning over a pending frame.
+//! Pan and wheel-zoom gesture mechanics. They cover dragging a node under zoom, the pan surface itself, and
+//! following/releasing/ cancelling a pan. They also cover ctrl/cmd-plus-wheel, wheel direction and amount, coalescing a
+//! burst into one frame, and a toolbar button winning over a pending frame.
 
 use super::support::*;
 use crate::common::{
@@ -424,8 +424,8 @@ fn ten_wheel_events_of_ten_pixels_zoom_exactly_as_one_of_a_hundred() -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A button pressed while a wheel burst is still waiting for its frame acts on the latest view, and the frame that
-/// follows cannot resurrect the stale wheel view over it.
+/// A button pressed while a wheel burst is still waiting for its frame acts on the latest view. The frame that follows
+/// cannot resurrect the stale wheel view over it.
 #[wasm_bindgen_test]
 async fn a_button_pressed_mid_burst_wins_over_the_pending_frame() -> Result<(), String> {
     let scene = new_scene("tb-wheel-then-reset")?;
@@ -445,8 +445,8 @@ async fn a_button_pressed_mid_burst_wins_over_the_pending_frame() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A pan is written to the DOM one frame late while it runs, but the moment the pointer is released the DOM is exact —
-/// nothing is left for a later frame to catch up on.
+/// A pan is written to the DOM one frame late while it runs. The moment the pointer is released, the DOM is exact.
+/// Nothing is left for a later frame to catch up on.
 #[wasm_bindgen_test]
 fn releasing_a_pan_writes_its_final_position_immediately() -> Result<(), String> {
     let scene = new_scene("tb-pan-release")?;

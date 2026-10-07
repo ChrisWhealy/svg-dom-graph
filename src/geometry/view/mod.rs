@@ -45,8 +45,8 @@ pub(crate) fn wheel_zoom_factor(delta_y: f64, delta_mode: u32) -> f64 {
 /// no translation.
 ///
 /// Read via [`Scene::view`](crate::scene::Scene::view) and restored via
-/// [`Scene::set_view`](crate::scene::Scene::set_view), so a host can carry one `Scene`'s own pan/zoom across to another
-/// — for example, one it has just rebuilt from scratch to show different content at the same position.
+/// [`Scene::set_view`](crate::scene::Scene::set_view). So a host can carry one `Scene`'s own pan/zoom across to
+/// another. An example is one it has just rebuilt from scratch to show different content at the same position.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub struct ViewTransform {
     pub scale: f64,

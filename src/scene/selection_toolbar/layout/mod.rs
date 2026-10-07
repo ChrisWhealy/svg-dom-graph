@@ -1,9 +1,9 @@
 //! Where a selection toolbar's bar and its three buttons sit within a scene's visible area, as pure arithmetic.
 //!
-//! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`. The arrangement itself — N buttons
-//! along one edge of an area, centred, inset by a margin, `gap` apart — is identical to
-//! [`super::super::toolbar::layout`]'s own; this is a deliberate, separately-tested copy rather than a shared
-//! dependency between the two toolbars, so either one's own geometry can change without touching the other's.
+//! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`. The arrangement itself is N buttons
+//! along one edge of an area, centred, inset by a margin, `gap` apart. It is identical to
+//! [`super::super::toolbar::layout`]'s own. This is a deliberate, separately-tested copy rather than a shared
+//! dependency between the two toolbars. So either one's own geometry can change without touching the other's.
 
 use super::Side;
 use svg_dom::root::utils::{Point, Rect, Size};

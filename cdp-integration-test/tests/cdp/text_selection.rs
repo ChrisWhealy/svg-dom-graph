@@ -3,9 +3,9 @@
 //!
 //! This is checked by reading back `Event::defaultPrevented`, not by checking `window.getSelection()` after the drag. A
 //! first attempt did check the selection directly, driven by real, CDP-dispatched mouse input — the same technique used
-//! by `small_drag` and `overlap_resolution`. However, a control experiment (defined as a bare `<rect>` painted
-//! immediately before a `<text>` in one `<g>`, with no listeners and no `svg-dom-graph` involved) showed headless
-//! Chrome never starts a text selection over that exact shape to begin with.
+//! by `small_drag` and `overlap_resolution`. However, a control experiment showed headless Chrome never starts a text
+//! selection over that exact shape to begin with. The experiment was a bare `<rect>` painted immediately before a
+//! `<text>` in one `<g>`, with no listeners and no `svg-dom-graph` involved.
 //!
 //! `svg-dom-graph`'s own box+label markup is exactly that shape, so the selection outcome can't distinguish a working
 //! `prevent_default()` from a missing one here since it would pass either way. Reading `defaultPrevented` instead
@@ -19,9 +19,9 @@ use std::time::Duration;
 fn dragging_a_node_prevents_the_pointerdowns_default_action() -> Result<(), String> {
     let tab = new_tab()?;
 
-    // Added after `make_draggable`'s own pointerdown listener already exists on this same `<g>` (asserted by `new_tab`
-    // waiting for the fixture's last node before returning), so it runs after it in bubble-phase registration order —
-    // by the time it runs, `defaultPrevented` reflects whatever `svg-dom-graph`'s own handler already did to this
+    // Added after `make_draggable`'s own pointerdown listener already exists on this same `<g>`. `new_tab` asserts that
+    // by waiting for the fixture's last node before returning. So it runs after it in bubble-phase registration order.
+    // By the time it runs, `defaultPrevented` reflects whatever `svg-dom-graph`'s own handler already did to this
     // event.
     tab.evaluate(
         "window.__defaultPrevented = null; \

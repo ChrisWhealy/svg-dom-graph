@@ -42,8 +42,8 @@ fn move_node_to_the_same_origin_skips_the_edge_redraw_loop_entirely() -> Result<
     let edge = scene.add_edge(a, b).map_err(|e| e.to_string())?;
 
     // Removing the edge's own handle, while leaving it incident on `a` in the graph, reproduces exactly the
-    // inconsistency `redraw_edge` reports as `Error::UnknownEdge` — the one and only way to observe from here whether
-    // `move_node`'s edge-redraw loop actually ran.
+    // inconsistency `redraw_edge` reports as `Error::UnknownEdge`. That is the one and only way to observe from here
+    // whether `move_node`'s edge-redraw loop actually ran.
     scene.inner.borrow_mut().remove_edge_handle(edge);
 
     let mut scratch = String::new();
@@ -65,10 +65,10 @@ fn move_node_to_the_same_origin_skips_the_edge_redraw_loop_entirely() -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Lifetime. A `Scene` is a cheap handle to `Rc`-shared state, and every listener it installs — node dragging, toolbar
-// buttons, the pan surface, wheel zoom, keyboard control — holds only a `Weak` reference back to that state. If any of
-// them held a strong one, the state would sit in a cycle (`SceneInner` -> DOM node -> listener -> `SceneInner`) and never
-// be freed, still responding to input after every `Scene` handle had gone.
+//   Lifetime. A `Scene` is a cheap handle to `Rc`-shared state. Every listener it installs holds only a `Weak`
+//   reference back to that state. That covers node dragging, toolbar buttons, the pan surface, wheel zoom, and keyboard
+//   control. If any of them held a strong one, the state would sit in a cycle (`SceneInner` -> DOM node -> listener ->
+//   `SceneInner`) and never be freed. It would still respond to input after every `Scene` handle had gone.
 //
 // The proof is a `Weak` taken from the shared state: once every handle is dropped, it must no longer upgrade.
 

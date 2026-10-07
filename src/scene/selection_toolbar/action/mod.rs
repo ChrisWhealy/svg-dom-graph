@@ -46,12 +46,12 @@ impl SelectionToolbarAction {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The flat position this action moves to from `current`, for a data node holding `len` values — `None` if
-    /// activating it right now would change nothing, which is also this button's own disabled/enabled test (see
+    /// The flat position this action moves to from `current`, for a data node holding `len` values. It is `None` if
+    /// activating it right now would change nothing. That is also this button's own disabled/enabled test (see
     /// [`is_enabled`](Self::is_enabled)).
     ///
-    /// `current` is `None` for the unstarted state — before element `0` has ever been processed, or after `Prev` or
-    /// `Restart` has walked back to it — never a separate cursor kept alongside the node's own `Selection`; see
+    /// `current` is `None` for the unstarted state. That is before element `0` has ever been processed, or after `Prev`
+    /// or `Restart` has walked back to it. It is never a separate cursor kept alongside the node's own `Selection`. See
     /// [`crate::scene::Scene::show_selection_toolbar`]'s own doc comment for why there is only ever this one value.
     ///
     /// - [`Prev`](Self::Prev)/[`Restart`](Self::Restart) never move past the unstarted state — there is nothing before

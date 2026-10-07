@@ -60,9 +60,9 @@ fn box_centre(rect: Rect) -> Point {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` — and, so long as a caller's
-/// own document doesn't deliberately collide with this crate's naming, no unrelated content either — is likely to
-/// claim.
+/// Assigns each `Scene` a distinct number, so its arrow marker gets an id no other `Scene` is likely to claim.
+/// Unrelated content is also unlikely to claim it, so long as a caller's own document doesn't deliberately collide with
+/// this crate's naming.
 static NEXT_SCENE_ID: AtomicUsize = AtomicUsize::new(0);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -103,19 +103,19 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 /// A cheap, cloneable handle to a rendered graph.
 ///
 /// Internally an `Rc<RefCell<SceneInner>>` — this crate owns that sharing strategy, not the caller. A `Scene` can be
-/// cloned freely (every clone refers to the same underlying graph and DOM state) and its methods take `&self`, not
-/// `&mut self`, so a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
+/// cloned freely, because every clone refers to the same underlying graph and DOM state. Its methods take `&self`, not
+/// `&mut self`. So a caller never has to wrap it in `Rc<RefCell<_>>` themselves just to call
 /// [`make_draggable`](Self::make_draggable) or to share it with more than one closure.
 ///
 /// # Keep at least one handle alive for as long as the scene should stay interactive
 ///
 /// [`make_draggable`](Self::make_draggable)'s own listener closures deliberately hold only `Weak` references back to
-/// this scene's shared state, not strong ones — a strong self-reference there would leak the whole scene (and every
-/// node, edge, and DOM element it owns) forever, since nothing would ever be able to drop the last strong handle.
+/// this scene's shared state, not strong ones. A strong self-reference there would leak the whole scene (and every
+/// node, edge, and DOM element it owns) forever. Nothing would ever be able to drop the last strong handle.
 ///
-/// The consequence: once every `Scene` handle a caller holds is dropped, the scene's shared state is freed immediately,
-/// and every listener silently stops responding — no panic, nothing in the console. This is easy to trip over in
-/// exactly the shape a `#[wasm_bindgen(start)]` entry point naturally takes:
+/// The consequence: once every `Scene` handle a caller holds is dropped, the scene's shared state is freed immediately.
+/// Every listener then silently stops responding, with no panic and nothing in the console. This is easy to trip over
+/// in exactly the shape a `#[wasm_bindgen(start)]` entry point naturally takes:
 ///
 /// ```rust,no_run
 /// # use svg_dom::{SvgRoot, root::utils::{Point, Size}};
@@ -155,9 +155,9 @@ impl Scene {
         content.set_attr("class", "svg-dom-graph-content")?;
 
         // `NavigationState::focused` is a `Weak<RefCell<SceneInner>>`, but the `Rc<RefCell<SceneInner>>` it would
-        // downgrade from does not exist until `inner`, below, is built. So construction is two-stage: `navigation` is
-        // created first, holding a `Weak` that upgrades to nothing; `inner` is then built, cloning `navigation` in; and
-        // only then is `focused` written for real, once `inner` exists to downgrade from. `focused` is briefly
+        // downgrade from does not exist until `inner`, below, is built. So construction is two-stage. `navigation` is
+        // created first, holding a `Weak` that upgrades to nothing. `inner` is then built, cloning `navigation` in.
+        // Only then is `focused` written for real, once `inner` exists to downgrade from. `focused` is briefly
         // non-upgradeable between those two steps, never observed from outside this function since nothing else runs in
         // between.
         let navigation = Rc::new(RefCell::new(NavigationState { focused: Weak::new() }));

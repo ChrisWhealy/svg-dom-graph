@@ -22,11 +22,11 @@ const LABEL_MARGIN: f64 = 5.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shrinks `label`'s own font size, proportionally, so its rendered bounding box fits within `size` once
-/// [`LABEL_MARGIN`] is kept clear on every side — otherwise a label close to as wide (or tall) as its box renders with
+/// [`LABEL_MARGIN`] is kept clear on every side. Otherwise a label close to as wide (or tall) as its box renders with
 /// its text sitting flush against, or spilling past, the box's own edges.
 ///
 /// Reads `label`'s real, rendered bounding box (`getBBox()`, via [`SvgNode::bounding_box`]) rather than estimating
-/// character widths, so this stays correct for whatever font the browser actually substitutes, with no per-glyph
+/// character widths. So this stays correct for whatever font the browser actually substitutes, with no per-glyph
 /// metrics table to keep in sync. Only ever shrinks — a label that already fits at [`LABEL_FONT_SIZE`] keeps that size
 /// exactly, rather than being nudged to fill the available room.
 fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
@@ -54,9 +54,9 @@ fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
 /// A [`RenderGuard`] covers this function's own DOM construction: any `?` failing partway through removes whatever was
 /// already created, rather than leaving stray elements behind.
 ///
-/// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
-/// `transform` formatting rather than allocating a fresh `String` for it, the same reasoning every other one-shot
-/// path/attribute buffer in this crate already follows.
+/// `scratch` is a caller-owned buffer, `SceneInner::scratch` in every real caller. It is reused for this call's own
+/// `transform` formatting rather than allocating a fresh `String` for it. Every other one-shot path/attribute buffer in
+/// this crate already follows the same reasoning.
 pub(super) fn draw_box(
     svg: &SvgRoot,
     scratch: &mut String,
@@ -165,7 +165,7 @@ impl Scene {
         let label = label.into();
         let mut inner = self.inner.borrow_mut();
         // Taken out for the call so `draw_box` can format into it without also needing `&inner.svg` to borrow `inner`
-        // in two conflicting ways at once — see `SceneInner::scratch`'s own doc comment for why this, rather than a
+        // in two conflicting ways at once. See `SceneInner::scratch`'s own doc comment for why this, rather than a
         // fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
         let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors);

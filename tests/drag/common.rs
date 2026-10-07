@@ -3,7 +3,7 @@
 
 // Shared fixture and assertion helpers for the browser integration tests.
 //
-// Tests are isolated by using a unique element id per test — there are no teardown hooks, but the elements are harmless
+// Tests are isolated by using a unique element id per test. There are no teardown hooks, but the elements are harmless
 // since the browser page is discarded after the test run.
 use svg_dom::{SvgRoot, root::utils::Size};
 use wasm_bindgen::JsCast;
@@ -53,8 +53,8 @@ pub fn dispatch_pointer_event(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Same as [`dispatch_pointer_event`], but with an explicit `button`.
 ///
-/// `button` follows the Pointer Events convention: `0` is the primary button (left mouse, touch, ordinary pen contact),
-/// `1` is the middle mouse button, `2` is the right mouse button (or a pen's barrel button).
+/// `button` follows the Pointer Events convention. `0` is the primary button (left mouse, touch, ordinary pen contact),
+/// `1` is the middle mouse button, and `2` is the right mouse button (or a pen's barrel button).
 pub fn dispatch_pointer_event_with_button(
     element: &web_sys::Element,
     event_type: &str,
@@ -201,17 +201,17 @@ pub fn nth_port_marker(container_id: &str, n: u32) -> Result<web_sys::Element, S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Checks that port marker 0 stays bound to connector 0's own endpoint, and marker 1 to connector 1's own endpoint —
-/// never swapped, however the anti-crossing router currently assigns the near/far slots.
+/// Checks that port marker 0 stays bound to connector 0's own endpoint, and marker 1 to connector 1's own endpoint.
+/// They are never swapped, however the anti-crossing router currently assigns the near/far slots.
 ///
 /// Splits on whether the two connectors currently land on the operator's own same side:
 ///
-/// - Same side (one of `end_0`/`end_1`'s own x or y coordinates matches, since every anchor on a given side shares that
-///   side's own fixed coordinate): both markers go through the identical side-based offset formula, so marker 1 minus
+/// - Same side. One of `end_0`/`end_1`'s own x or y coordinates matches, since every anchor on a given side shares that
+///   side's own fixed coordinate. Both markers go through the identical side-based offset formula. So marker 1 minus
 ///   marker 0 must equal connector 1's own endpoint minus connector 0's, exactly. A plain nearest-connector distance
-///   comparison was tried here first and dropped: once the near/far split narrows enough that the marker's own
-///   perpendicular clearance rivals the spacing between the two connectors, "nearest" becomes a near-tie that flips on
-///   ordinary floating-point rounding differences between platforms.
+///   comparison was tried here first and dropped. Once the near/far split narrows enough that the marker's own
+///   perpendicular clearance rivals the spacing between the two connectors, "nearest" becomes a near-tie. That near-tie
+///   flips on ordinary floating-point rounding differences between platforms.
 /// - Different sides: the two endpoints are never close together in that case, so a plain nearest-connector distance
 ///   comparison is unambiguous.
 pub fn check_port_marker_identity(container_id: &str) -> Result<(), String> {

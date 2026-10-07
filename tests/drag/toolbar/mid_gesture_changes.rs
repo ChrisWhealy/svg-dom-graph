@@ -1,5 +1,5 @@
-//! Changing the view in the middle of a pointer gesture. The view can change at any moment — the wheel, the keyboard, a
-//! toolbar button, or the application calling `zoom_in` — and a node drag or a pan that is already under way must go on
+//! Changing the view in the middle of a pointer gesture. The view can change at any moment: the wheel, the keyboard, a
+//! toolbar button, or the application calling `zoom_in`. A node drag or a pan that is already under way must go on
 //! tracking the pointer correctly. Both would otherwise rest on a picture of the view taken when the gesture began.
 
 use super::support::*;
@@ -9,7 +9,8 @@ use wasm_bindgen_test::*;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Drag a node, zoom with the wheel at the pointer, then keep dragging. A wheel at the pointer holds the grabbed point
-/// still, so the second move of 25 pixels at 1.25x is 20 units of content, not 25: the node ends at 100 + 25 + 20 =
+/// still. So the second move of 25 pixels at 1.25x is 20 units of content, not 25. The node ends at 100 + 25 + 20 =
+/// 145.
 /// 145. Using the matrix from the start of the drag would give 150.
 #[wasm_bindgen_test]
 async fn a_node_drag_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> Result<(), String> {
@@ -29,10 +30,10 @@ async fn a_node_drag_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same for a zoom that comes from the application rather than from an input: `zoom_in` is public, so a drag cannot
-/// assume only the wheel or keyboard will change the view. That zoom is about the centre of the view, not the pointer,
-/// so the grabbed point moves on screen. The node must follow the pointer to wherever it now is: the point of content
-/// under the pointer, less the offset it was grabbed at.
+/// The same holds for a zoom that comes from the application rather than from an input. `zoom_in` is public, so a drag
+/// cannot assume only the wheel or keyboard will change the view. That zoom is about the centre of the view, not the
+/// pointer, so the grabbed point moves on screen. The node must follow the pointer to wherever it now is: the point of
+/// content under the pointer, less the offset it was grabbed at.
 #[wasm_bindgen_test]
 async fn a_node_drag_carries_on_correctly_after_the_application_zooms_in_the_middle() -> Result<(), String> {
     let scene = draggable_node_scene("mid-drag-api")?;
@@ -90,7 +91,7 @@ async fn a_drag_that_starts_before_a_pending_zoom_has_been_drawn_uses_the_new_zo
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Pan, zoom with the wheel at the pointer, then keep panning. The zoom must not be thrown away by the next move: the
+/// Pan, zoom with the wheel at the pointer, then keep panning. The zoom must not be thrown away by the next move. The
 /// pan is 30 pixels, then a zoom of 1.25 about the pointer, then 30 more pixels across and 10 down.
 #[wasm_bindgen_test]
 async fn a_pan_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> Result<(), String> {

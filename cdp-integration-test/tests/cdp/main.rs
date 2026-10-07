@@ -17,9 +17,9 @@
 //!   re-snaps one of them.
 //! - [`bounds`] — a real drag past the view box's own edge clamps `bounded` to it, and the clamped node stays
 //!   real-hit-testable for a second, separate drag.
-//! - [`pan`] — dragging empty background pans the whole scene, and a real, captured pointer keeps a pan a pan (and a
-//!   node drag a node drag) even when it crosses over the other kind of target. Pointer capture is held during either
-//!   and released afterwards.
+//! - [`pan`] covers dragging empty background to pan the whole scene. It also checks that a real, captured pointer
+//!   keeps a pan a pan, and a node drag a node drag, even when it crosses over the other kind of target. Pointer
+//!   capture is held during either and released afterwards.
 //! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach Chrome's
 //!   own computed accessibility tree, and its own descendant value text stays exposed alongside them.
 //!

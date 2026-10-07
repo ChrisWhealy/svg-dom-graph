@@ -62,8 +62,8 @@ pub(super) struct ViewInput {
     wheel: bool,
     /// The zoom percentage the target's accessible name currently shows.
     ///
-    /// Remembered here so a frame that has not changed it, which is every frame of a pan, does not format the label,
-    /// read it back from the DOM, or write it. See [`SceneInner::sync_view_label`].
+    /// Remembered here so a frame that has not changed it does not format the label, read it back from the DOM, or
+    /// write it. That is every frame of a pan. See [`SceneInner::sync_view_label`].
     label_percent: i64,
 }
 
@@ -233,13 +233,13 @@ impl Scene {
     ///
     /// # Keyboard
     ///
-    /// While panning is active the scene also adds a keyboard focus target, so a keyboard user can pan too: the arrow
-    /// keys move the view like scrolling, 40 units a press, and Shift moves it five times further. Otherwise zooming in
+    /// While panning is active the scene also adds a keyboard focus target, so a keyboard user can pan too. The arrow
+    /// keys move the view like scrolling, 40 units a press. Shift moves it five times further. Otherwise zooming in
     /// from the toolbar could leave content that a keyboard user cannot get back to. The target is given the
     /// `application` role, and its accessible name reports the current zoom, such as "Graph view, zoom 125%".
     ///
     /// The focus target is a transparent `<rect>` that the scene creates and removes. **The application's own `<svg>`
-    /// is never touched**, so a role, name, description, or `tabindex` it was given is left exactly as it was, and the
+    /// is never touched**, so a role, name, description, or `tabindex` it was given is left exactly as it was. The
     /// `application` role is confined to that one control. Only a key pressed while the target has focus is handled,
     /// and Ctrl, Cmd, and Alt combinations are left alone.
     ///
@@ -334,8 +334,8 @@ impl Scene {
     /// everything together. See "Keeping the layout current" under [`show_toolbar`](Self::show_toolbar) for the full
     /// picture.
     ///
-    /// A stale layout is not only cosmetic. A toolbar is left where it was, and the surface that panning and wheel zoom
-    /// work through no longer covers a `<svg>` that has grown, so those gestures stop working in the new area.
+    /// A stale layout is not only cosmetic. A toolbar is left where it was. The surface that panning and wheel zoom
+    /// work through no longer covers a `<svg>` that has grown. So those gestures stop working in the new area.
     ///
     /// Each part is skipped if there is nothing to update, so it is always safe to call.
     ///

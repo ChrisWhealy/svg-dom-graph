@@ -1,6 +1,6 @@
-//! `Scene::node_rect`: a node's own current rendered rectangle, in the `<svg>`'s own user space — the same value this
-//! crate itself already tracks internally, exposed so a caller can lay out a node relative to another one whose own
-//! rendered size (a data node's, in particular) is not knowable ahead of drawing it.
+//! `Scene::node_rect` returns a node's own current rendered rectangle, in the `<svg>`'s own user space. It is the same
+//! value this crate itself already tracks internally. It is exposed so a caller can lay out a node relative to another
+//! one whose own rendered size is not knowable ahead of drawing it. A data node's is the main example.
 
 use crate::common::{attr_f64, check, check_close, dispatch_pointer_event, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
@@ -30,7 +30,7 @@ fn node_rect_of_a_plain_node_is_exactly_what_it_was_constructed_with() -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A data node's own `node_rect` matches the box this crate itself computed to fit its own content — exactly the
+/// A data node's own `node_rect` matches the box this crate itself computed to fit its own content. It is exactly the
 /// `width`/`height` its rendered outer `<rect>` was actually given, not a guess or an estimate. This is the whole point
 /// of `node_rect`: a data node's own real size is not knowable ahead of drawing it.
 #[wasm_bindgen_test]

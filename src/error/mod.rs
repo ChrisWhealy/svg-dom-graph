@@ -32,15 +32,15 @@ pub enum Error {
     SelfLoopUnsupported(NodeId),
     /// `Scene::make_draggable`/`Scene::make_draggable_with` was called more than once for the same node.
     ///
-    /// `svg-dom`'s listener registration is append-only — a second call would not replace the first, it would add a
+    /// `svg-dom`'s listener registration is append-only. A second call would not replace the first. It would add a
     /// second, independent set of pointer listeners and drag-state alongside it, both responding to the same events.
     /// Rejecting the second call keeps that from happening silently.
     AlreadyDraggable(NodeId),
     /// `Scene::make_draggable_with` was given a `CollisionPolicy::PushClear` padding that is not a finite value `>=
     /// 0.0`.
     ///
-    /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending it, and
-    /// a non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into the resulting
+    /// A negative padding pulls the corrected position back inside the clearance boundary instead of extending it. A
+    /// non-finite value (`NaN`, `+inf`, `-inf`) propagates straight through `nearest_clear_centre` into the resulting
     /// coordinates. Rejected before any other state changes, so the scene's existing nodes are left exactly as they
     /// were.
     InvalidCollisionPadding(f64),
@@ -69,9 +69,9 @@ pub enum Error {
     ///
     /// Every field of `rect` must be finite: SVG defines a negative `<rect>` `width`/`height` as illegal. An infinite
     /// coordinate or dimension would otherwise sit in the graph's model and contaminate every later geometry
-    /// calculation in which it takes part — `box_centre`, `boundary_point`, overlap detection, connector routing, and
-    /// collision resolution all use it. `width` and `height` must also both be strictly positive: a zero-sized node has
-    /// no visible box, and gives connector routing no direction to point at it in (`boundary_point` needs a
+    /// calculation in which it takes part. `box_centre`, `boundary_point`, overlap detection, connector routing, and
+    /// collision resolution all use it. `width` and `height` must also both be strictly positive. A zero-sized node has
+    /// no visible box. It also gives connector routing no direction to point at it in (`boundary_point` needs a
     /// well-defined interior to aim a ray at).
     ///
     /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene exactly as
@@ -121,13 +121,14 @@ pub enum Error {
     DuplicateOperands(NodeId),
     /// `Scene::set_selection` was given a [`crate::scene::Selection`] that cannot be applied to node `id`.
     ///
-    /// Either `id` names a plain label node, which has no cells to select, or `selection` names a cell/row/column index
+    /// Either `id` names a plain label node, which has no cells to select. Or `selection` names a cell/row/column index
     /// out of range for `id`'s own actual value count or grid shape.
     ///
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
-    /// `Scene::set_data_values` was given values it cannot show in this node: not a multi-value data node, or a
-    /// different integer width, or a different number of values than the node was drawn with.
+    /// `Scene::set_data_values` was given values it cannot show in this node. The node may not be a multi-value data
+    /// node. The values may have a different integer width. They may also have a different number of values than the
+    /// node was drawn with.
     ///
     /// Rejected before changing anything, so a rejected call leaves every cell exactly as it was.
     IncompatibleNodeValues(NodeId),
@@ -179,9 +180,9 @@ pub enum Error {
     /// ancestor of `self` in the scene tree.
     ///
     /// Either would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from. No node has
-    /// been added yet when this is checked, so — unlike [`Error::AlreadyDraggable`]'s/[`Error::SelfLoopUnsupported`]'s
-    /// own `NodeId` — there is no existing node to name here: it is `self` and `child` (both already in the caller's
-    /// own hands) that are the wrong combination, not any particular node in either one's graph. Rejected before
+    /// been added yet when this is checked. So, unlike [`Error::AlreadyDraggable`]'s/[`Error::SelfLoopUnsupported`]'s
+    /// own `NodeId`, there is no existing node to name here. It is `self` and `child`, both already in the caller's own
+    /// hands, that are the wrong combination. No particular node in either one's graph is at fault. Rejected before
     /// drawing anything or touching either scene's own model, so a rejected call leaves both scenes exactly as they
     /// were.
     SelfNesting,

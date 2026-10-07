@@ -1,10 +1,11 @@
 //! Dropping a node onto another node pushes it back to the expected clear position, via real, CDP-driven mouse input.
 //!
-//! Drags the fixture's `mover` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(3)`) onto `blocker` (`#diagram
-//! > g.svg-dom-graph-content > g:nth-of-type(2)`, not draggable, fixed in place), then checks that `mover`'s final
-//! position is the one the documented overlap-resolution rule predicted: pushed back along a straight line from its own
-//! pre-drag centre through `blocker`'s centre, stopping just outside `blocker`'s boundary (inflated by half of
-//! `mover`'s own size, so `mover`'s rectangle — not just its centre — clears the overlap) plus a small padding gap.
+//! Drags the fixture's `mover` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(3)`) onto `blocker`
+//! (`#diagram > g.svg-dom-graph-content > g:nth-of-type(2)`, not draggable, fixed in place). It then checks that
+//! `mover`'s final position is the one the documented overlap-resolution rule predicted. That rule pushes it back along a
+//! straight line from its own pre-drag centre through `blocker`'s centre. It stops just outside `blocker`'s boundary,
+//! plus a small padding gap. The boundary is inflated by half of `mover`'s own size, so `mover`'s rectangle, not just its
+//! centre, clears the overlap.
 //!
 //! # Expected position, worked by hand
 //!

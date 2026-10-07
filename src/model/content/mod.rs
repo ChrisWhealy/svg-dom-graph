@@ -107,11 +107,11 @@ pub use selection::Selection;
 /// reused-buffer shape [`crate::geometry::elbow_path_into`] already uses for a per-frame `d` attribute.
 ///
 /// A separate function from [`format_hex_into`]/[`format_binary_into`], rather than one function matching on
-/// [`DataFormat`] internally, so a caller already holding a [`DataFormat`] can dispatch once — outside its own
-/// per-value loop, if it has one — instead of every call redoing that match only to find two of its three arms always
-/// ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is the caller
-/// this matters most for: reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell only to have
-/// this discard them unused would be wasted work on every single one.
+/// [`DataFormat`] internally. A caller already holding a [`DataFormat`] can then dispatch once, outside its own
+/// per-value loop if it has one. Otherwise every call would redo that match only to find that two of its three arms
+/// always ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is the
+/// caller this matters most for. Reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell, only to
+/// have this discard them unused, would be wasted work on every single one.
 fn format_decimal_into(decimal: u128, out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
@@ -120,7 +120,7 @@ fn format_decimal_into(decimal: u128, out: &mut String) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats one value's own already-ordered `bytes` (see [`order_bytes`]) as `DataFormat::Hexadecimal` digit groups into
-/// `out` — generic over the byte width so [`NodeValues`] needs one call site per variant, not one formatting
+/// `out`. It is generic over the byte width, so [`NodeValues`] needs one call site per variant, not one formatting
 /// implementation per width. See [`format_decimal_into`]'s own doc comment for why this is a separate function rather
 /// than one shared, internally-dispatching implementation.
 fn format_hex_into<const N: usize>(bytes: [u8; N], out: &mut String) {
@@ -200,8 +200,8 @@ fn automatic_grid_shape(n: usize) -> (usize, usize) {
     if let Some(rows) = best_power_of_two_rows(n) {
         return (rows, n / rows);
     }
-    // Fallback: n has no row count that is both a power of two and a non-trivial divisor of n (n is odd, or n == 1) —
-    // the closest-to-square shape from `ceil(sqrt(n))` is the best available instead.
+    // Fallback: n has no row count that is both a power of two and a non-trivial divisor of n (n is odd, or n == 1).
+    // The closest-to-square shape from `ceil(sqrt(n))` is the best available instead.
     let rows = (n as f64).sqrt().ceil() as usize;
     let cols = n.div_ceil(rows);
     (rows, cols)
@@ -209,16 +209,16 @@ fn automatic_grid_shape(n: usize) -> (usize, usize) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The row count [`grid_shape`] prefers: the power of two, strictly between `1` and `n`, that evenly divides `n` and
-/// gives the grid closest to square — i.e. the smallest `|cols - rows|`, where `cols = n / rows`.
+/// gives the grid closest to square. That means the smallest `|cols - rows|`, where `cols = n / rows`.
 ///
 /// `1` and `n` are excluded even when they would themselves be powers of two (e.g. `n = 8` could technically use `rows
-/// = 1` or `rows = 8`): both describe a single row or a single column, not a real "grouping" of the kind this rule
-/// exists to prefer — see this module's own doc comment.
+/// = 1` or `rows = 8`). Both describe a single row or a single column, not a real "grouping" of the kind this rule
+/// exists to prefer. See this module's own doc comment.
 ///
-/// Ties are broken toward the *smaller* candidate `rows` (so more, narrower rows lose to fewer, wider ones) — `n = 8`
-/// has two equally square candidates, `rows = 2` (2×4) and `rows = 4` (4×2), and the wider `2×4` is the one actually
-/// preferred. Candidates are checked in ascending order and only replaced by a strictly better score, which is what
-/// gives the smaller candidate this priority on a tie.
+/// Ties are broken toward the *smaller* candidate `rows`, so more, narrower rows lose to fewer, wider ones. For
+/// example, `n = 8` has two equally square candidates, `rows = 2` (2×4) and `rows = 4` (4×2). The wider `2×4` is the
+/// one actually preferred. Candidates are checked in ascending order and only replaced by a strictly better score,
+/// which is what gives the smaller candidate this priority on a tie.
 ///
 /// Returns `None` if no such `rows` exists — every prime `n`, and `n = 1` or `n = 2`, whose only power-of-two divisor
 /// is the trivial `1`.

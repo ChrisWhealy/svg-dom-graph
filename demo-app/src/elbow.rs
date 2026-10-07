@@ -38,8 +38,8 @@ thread_local! {
 ///    over-large request. This demo also keeps the slider's own `max`, and its value if that value no longer fits, in
 ///    step with the true limit — see [`refresh_radius_limit`] for how.
 /// 6. Dragging `P` or `Q` further apart dynamically raises the slider's own ceiling. The slider's *value* does not
-///    follow it back up on its own: it represents the currently applicable radius, not some previously remembered value
-///    — see [`refresh_radius_limit`]'s own doc comment for why that is the chosen behaviour, not an oversight.
+///    follow it back up on its own. It represents the currently applicable radius, not some previously remembered
+///    value. See [`refresh_radius_limit`]'s own doc comment for why that is the chosen behaviour, not an oversight.
 ///
 /// # Errors
 ///
@@ -107,15 +107,15 @@ const FALLBACK_MAX_RADIUS: f64 = 80.0;
 /// # PoC coupling between `elbow_path_into` and `max_renderable_radius`, acceptable here
 ///
 /// The demo has been coupled to `elbow_path_into`'s serialization. `d` must be scanned in order to locate the `A`
-/// token, which then identifies the elbow point. A future change such as different whitespace, a relative `a` command
-/// etc, would not break compilation, but it would make this function quietly stop finding the `A` token and incorrectly
+/// token, which then identifies the elbow point. A future change such as different whitespace, or a relative `a`
+/// command, would not break compilation. It would make this function quietly stop finding the `A` token and incorrectly
 /// return `None`. It would then fall back to [`FALLBACK_MAX_RADIUS`] which represents a silent wrong answer rather than
 /// a loud failure.
 ///
 /// This is acceptable for one demo control, and is preferable to reimplementing the elbow-routing geometry simply to
 /// avoid it. However, it is anticpated that in future, a real application will probably need the public API shape to
 /// include the query "how much room is actually left". At that point, it is appropriate to implement a proper library
-/// method reporting it directly and removing this string coupling and the resulting doubled render that
+/// method reporting it directly. That removes this string coupling. It also removes the doubled render that
 /// [`refresh_radius_limit`]'s probe technique costs on every call.
 fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
     let d = connector_path.get_attribute("d")?;
@@ -123,9 +123,9 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
     let mut min_radius: Option<f64> = None;
 
     while let Some(token) = tokens.next() {
-        // Not collapsed into a `&&`-chained `if let` (clippy's own preference on a modern toolchain): let-chains are
-        // not yet stable on this crate's declared MSRV (1.85) — see the `msrv` CI job, which builds demo-app too, not
-        // just the library.
+        // Not collapsed into a `&&`-chained `if let`, which is clippy's own preference on a modern toolchain.
+        // Let-chains are not yet stable on this crate's declared MSRV (1.85). See the `msrv` CI job, which builds
+        // demo-app too, not just the library.
         #[allow(clippy::collapsible_if)]
         if token == "A" {
             if let Some(r) = tokens.next().and_then(|s| s.parse::<f64>().ok()) {
@@ -152,11 +152,11 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 ///
 /// Reading `radius_slider`'s own current value as `desired` (below), rather than some separately tracked "last value
 /// requested by the user" is deliberate. If room shrinks and this function pulls the slider down from, say, `60` to
-/// `25`, the slider *becomes* `25`: the previous value of `60` is not hidden away in some cache. If room later returns,
+/// `25`, the slider *becomes* `25`. The previous value of `60` is not hidden away in some cache. If room later returns,
 /// only the slider's own `max` rises back up; its value stays at `25` until the user moves it again.
 ///
-/// The alternative of silently restoring the previous value of `60` once room returns would move the control without
-/// the user having touched it, which is considered to be the more surprising of the two slider behaviours a user can
+/// The alternative is silently restoring the previous value of `60` once room returns. That would move the control
+/// without the user having touched it. It is considered the more surprising of the two slider behaviours a user can
 /// experience.
 ///
 /// Only called while `Elbow` is selected. `Straight` has no corner to round, so this function leaves the limit
@@ -195,10 +195,10 @@ fn refresh_radius_limit(
     let _ = scene.set_connector_type(edge, ConnectorType::Elbow { corner_radius: RADIUS_PROBE });
 
     // Floored once, then reused for both the slider's own `max` attribute and the clamp below — not two separate
-    // computations of "the limit". `#corner-radius` declares `step="1"`, an integer slider; a fractional `max` (say
-    // `22.7`) would let `applied` land on a value (`22.7`) the slider itself could never actually represent, so the
-    // displayed value, the slider's declared maximum, and the connector's own request would each tell a different story
-    // about the same drag.
+    // computations of "the limit". `#corner-radius` declares `step="1"`, an integer slider. A fractional `max` (say
+    // `22.7`) would let `applied` land on a value (`22.7`) the slider itself could never actually represent. The
+    // displayed value, the slider's declared maximum, and the connector's own request would then each tell a different
+    // story about the same drag.
     let available = max_renderable_radius(connector_path).unwrap_or(FALLBACK_MAX_RADIUS).floor();
 
     let max_str = available.to_string();
@@ -272,8 +272,8 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
         radius_slider.set_disabled(straight_radio.checked());
 
         if straight_radio.checked() {
-            // Both radio buttons only ever request a value this crate already accepts, so in practice, this can never
-            // fail — see refresh_radius_limit's own doc comment for the identical reasoning behind its own ignored
+            // Both radio buttons only ever request a value this crate already accepts, so in practice this can never
+            // fail. See refresh_radius_limit's own doc comment for the identical reasoning behind its own ignored
             // results.
             let _ = closure_scene.set_connector_type(edge, ConnectorType::Straight);
         } else {
@@ -289,8 +289,8 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
     }
     closure.forget();
 
-    // A dedicated listener, rather than folding this into `closure` above: dragging P or Q fires no event on any of the
-    // three controls above at all — make_draggable's own pointer listeners live entirely inside the library, invisible
+    // A dedicated listener, rather than folding this into `closure` above. Dragging P or Q fires no event on any of the
+    // three controls above at all. make_draggable's own pointer listeners live entirely inside the library, invisible
     // to this demo. Listening for `pointermove` on the whole document, rather than attaching to P and Q's own rendered
     // elements, avoids needing to know which element a drag is attached to. It also avoids knowing whether a drag is in
     // progress. This works because refresh_radius_limit is cheap: one parsed attribute string and two attribute writes.

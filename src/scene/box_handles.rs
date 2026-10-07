@@ -23,7 +23,7 @@ pub(crate) struct BoxHandles {
     pub(crate) group: SvgNode,
     /// This box's own outer `<rect>` — the one element every node kind draws, named label or not, data grid or not. For
     /// a named data node this is the wrapping box around the label row and the grid together, not the grid's own inner
-    /// background; for every other kind there is only the one rect, so it serves as both.
+    /// background. Every other kind has only the one rect, so it serves as both.
     ///
     /// `Scene::set_focus`'s only reader — a node has exactly one outer box to ring, regardless of how many
     /// [`cell_rects`](Self::cell_rects) it holds within it.
@@ -35,9 +35,9 @@ pub(crate) struct BoxHandles {
     pub(crate) draggable: bool,
     /// Whether `Scene::make_enterable` has already been called for this node.
     ///
-    /// Same reasoning as [`draggable`](Self::draggable), for the same underlying cause: `svg-dom`'s listener
+    /// Same reasoning as [`draggable`](Self::draggable), for the same underlying cause. `svg-dom`'s listener
     /// registration is append-only, so a second call would add a second, independent click/keydown listener rather than
-    /// replacing the first — see [`crate::Error::AlreadyEnterable`].
+    /// replacing the first. See [`crate::Error::AlreadyEnterable`].
     pub(crate) enterable: bool,
     /// How many evenly spaced connector fixing points this node's own sides offer — see [`EdgeAnchors`].
     ///
@@ -45,9 +45,9 @@ pub(crate) struct BoxHandles {
     /// This value must live alongside the rendered handle, not just get used once at creation.
     pub(crate) edge_anchors: Option<EdgeAnchors>,
     /// `Some((inputs.0, inputs.1))` for a two-input operator node — a `BinaryOperator` or `ArithmeticOperator` one —
-    /// its own two operand ids, in the order its own constructor received them. Not "left"/"right": the anti-crossing
+    /// its own two operand ids, in the order its own constructor received them. Not "left"/"right". The anti-crossing
     /// router freely reassigns which operand's connector lands on which visual side, so this order is a stable operand
-    /// *identity*, never a stable position — see `node::operator::draw_port_marker`'s own doc comment for the
+    /// *identity*, never a stable position. See `node::operator::draw_port_marker`'s own doc comment for the
     /// non-commutative "L"/"R" marker that makes that identity visible to a reader too. `None` for every other node,
     /// unary operator nodes included, since only a two-input node's inputs can ever collide on the same side.
     ///
@@ -75,14 +75,14 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_data_values` rewrites. Empty for a plain label node and for an operator node, whose own result is
     /// not replaceable.
     pub(crate) cell_texts: Vec<SvgNode>,
-    /// Every entry in `cell_rects`' own stroke width, as drawn — `"1.5"` for a single-value node's own outer box, `"1"`
-    /// for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label node,
-    /// which has no `cell_rects` to begin with.
+    /// Every entry in `cell_rects`' own stroke width, as drawn. It is `"1.5"` for a single-value node's own outer box,
+    /// and `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label
+    /// node, which has no `cell_rects` to begin with.
     ///
-    /// Already formatted, rather than a plain `f64`: every stroke width this crate ever draws is one of a small fixed
-    /// set (this default, or [`Scene::set_selection`](crate::scene::Scene::set_selection)'s own band/focus widths), so
-    /// there is no reason to format one from scratch on a hot path — see `svg-dom`'s own `SvgNode::set_stroke_width`
-    /// doc comment for why that convenience setter allocates a `String` on every call.
+    /// Already formatted, rather than a plain `f64`. Every stroke width this crate ever draws is one of a small fixed
+    /// set (this default, or [`Scene::set_selection`](crate::scene::Scene::set_selection)'s own band/focus widths). So
+    /// there is no reason to format one from scratch on a hot path. See `svg-dom`'s own `SvgNode::set_stroke_width` doc
+    /// comment for why that convenience setter allocates a `String` on every call.
     ///
     /// `Scene::set_selection` restores this on every cell it does not band or focus. That way a selection's own thicker
     /// stroke never lingers once a cell is deselected — see that method's own doc comment for why it uses one.
@@ -90,9 +90,9 @@ pub(crate) struct BoxHandles {
     /// The current [`Selection`] `Scene::set_selection` last recoloured this node's own cells to, defaulting to
     /// [`Selection::None`] at creation.
     ///
-    /// `Scene::set_selection` compares its own new `Selection` against this before touching anything: an identical
-    /// selection is an immediate no-op, and even a genuinely different one only rewrites whichever cells actually
-    /// changed category (focused/banded/default), not all `N` of them unconditionally.
+    /// `Scene::set_selection` compares its own new `Selection` against this before touching anything. An identical
+    /// selection is an immediate no-op. Even a genuinely different one only rewrites whichever cells actually changed
+    /// category (focused/banded/default), not all `N` of them unconditionally.
     pub(crate) selection: Selection,
     /// The flat indices `Scene::set_secondary_selection` last marked as derived, sorted and without duplicates — empty
     /// until it is first called, and for every node kind with no cells. Independent of [`selection`](Self::selection):
@@ -105,7 +105,7 @@ pub(crate) struct BoxHandles {
     /// appended. Empty for a plain label node, whose own visible text already serves as its accessible name.
     ///
     /// `Scene::set_selection` truncates this back to [`base_label_len`](Self::base_label_len), then appends the new
-    /// selection's own [`Selection::describe_into`](crate::scene::Selection::describe_into) onto what remains — after
+    /// selection's own [`Selection::describe_into`](crate::scene::Selection::describe_into) onto what remains. After
     /// the first call grows its capacity, a later selection change needs no further allocation.
     pub(crate) aria_label: String,
     /// `aria_label`'s own length at creation, before any selection was ever appended — the point `Scene::set_selection`

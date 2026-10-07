@@ -21,14 +21,14 @@ thread_local! {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the demo scene: one operand node feeding an operator node, for every [`UnaryOperator`] this crate names.
 ///
-/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"` — the raw value's own outer box, wrapping its
-/// value cell, the same way an operator node's own outer box wraps its result. Naming the operand this way, rather than
+/// Each operand is a [`Scene::add_named_data_node`] node, labelled `"A"`. The raw value's own outer box wraps its value
+/// cell, the same way an operator node's own outer box wraps its result. Naming the operand this way, rather than
 /// leaving it a plain [`Scene::add_data_node`] box, gives the reader an unambiguous handle for the value the operator
 /// acts on.
 ///
 /// Every result shown is computed right here, with plain Rust integer operators (`!`, `<<`, `>>`, `rotate_left`,
-/// `rotate_right`, `reverse_bits`, `swap_bytes`). `svg_dom_graph` itself never evaluates an operator — see
-/// [`Scene::add_unary_operator_node`]'s own doc comment for why — so this function's job is exactly the one a real
+/// `rotate_right`, `reverse_bits`, `swap_bytes`). `svg_dom_graph` itself never evaluates an operator. See
+/// [`Scene::add_unary_operator_node`]'s own doc comment for why. So this function's job is exactly the one a real
 /// caller would have: compute the real value, then hand it to the library alongside the operator that produced it.
 ///
 /// See [`crate::operators_binary::build_binary_operator_demo`] for this demo's own binary-operator counterpart, and

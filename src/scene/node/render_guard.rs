@@ -25,9 +25,9 @@ const MAX_LOOSE: usize = 4;
 /// [`SvgNode::remove`](svg_dom::SvgNode::remove) is idempotent, so removing an element already inside `group`'s own
 /// (also being removed) subtree is harmless.
 ///
-/// `loose` is fixed-size, not a `Vec`: every real caller tracks at most [`MAX_LOOSE`] nodes at once (see that
-/// constant's own doc comment), so a heap-allocated, growable buffer would only ever hold a handful of elements at
-/// most, for the cost of one allocation per node this crate ever constructs — successful or rolled back alike.
+/// `loose` is fixed-size, not a `Vec`. Every real caller tracks at most [`MAX_LOOSE`] nodes at once (see that
+/// constant's own doc comment). A heap-allocated, growable buffer would only ever hold a handful of elements, for the
+/// cost of one allocation per node this crate ever constructs, successful or rolled back alike.
 ///
 /// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener installation.
 pub(super) struct RenderGuard {
@@ -52,8 +52,8 @@ impl RenderGuard {
     ///
     /// # Panics
     ///
-    /// Panics if more than [`MAX_LOOSE`] nodes are tracked at once, without an intervening [`release`](Self::release) —
-    /// every real caller in this crate stays within that bound (see its own doc comment), so this can only fire from a
+    /// Panics if more than [`MAX_LOOSE`] nodes are tracked at once, without an intervening [`release`](Self::release).
+    /// Every real caller in this crate stays within that bound (see its own doc comment). So this can only fire from a
     /// bug in this module itself, not from anything external.
     pub(super) fn track(&mut self, node: SvgNode) {
         let slot = self
@@ -64,17 +64,15 @@ impl RenderGuard {
         self.len += 1;
     }
 
-    /// Stops tracking the most recently [`track`](Self::track)ed node because it is now safely appended into `group`,
-    /// whose own future removal would already cascade to remove it, or because the caller has already removed it
-    /// itself.
+    /// Stops tracking the most recently [`track`](Self::track)ed node. Either it is now safely appended into `group`,
+    /// whose own future removal would already cascade to remove it, or the caller has already removed it itself.
     ///
-    /// Callers that create-then-immediately-resolve one node at a time
-    /// ([`draw_content_box`](super::data::draw_content_box)'s per-cell loop is the motivating case) call this right
-    /// after each node's own fate is settled, so `loose` never grows past the small number of nodes momentarily in
-    /// flight at once, regardless of how many a whole node's own construction creates in total. This relies on the
-    /// caller's own strict create-then-resolve discipline: this always drops whichever node [`track`](Self::track) most
-    /// recently added, not a specific one named by the caller, so tracking a second node before resolving the first
-    /// would silently stop tracking the wrong one.
+    /// Callers that create-then-immediately-resolve one node at a time call this right after each node's own fate is
+    /// settled. [`draw_content_box`](super::data::draw_content_box)'s per-cell loop is the motivating case. So `loose`
+    /// never grows past the small number of nodes momentarily in flight at once, regardless of how many a whole node's
+    /// own construction creates in total. This relies on the caller's own strict create-then-resolve discipline. It
+    /// always drops whichever node [`track`](Self::track) most recently added, not a specific one named by the caller.
+    /// So tracking a second node before resolving the first would silently stop tracking the wrong one.
     pub(super) fn release(&mut self) {
         if let Some(i) = self.len.checked_sub(1) {
             self.loose[i] = None;

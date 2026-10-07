@@ -96,7 +96,7 @@ fn enter_rejects_a_node_that_is_not_a_container() -> Result<(), String> {
     )
 }
 
-/// Once a container node has been entered, the parent it was entered from is no longer the tree's focused Scene, so it
+/// Once a container node has been entered, the parent it was entered from is no longer the tree's focused Scene. So it
 /// can no longer be navigated from until control returns via `exit`.
 #[wasm_bindgen_test]
 fn navigation_from_a_scene_that_is_not_focused_fails() -> Result<(), String> {
@@ -171,7 +171,7 @@ fn add_container_node_rejects_an_already_nested_child() -> Result<(), String> {
     )
 }
 
-/// `add_container_node` rejects `self` as its own child, and rejects any of `self`'s own ancestors as a child — both
+/// `add_container_node` rejects `self` as its own child, and rejects any of `self`'s own ancestors as a child. Both
 /// would close a cycle through the strong `Rc` chain nested `Scene` ownership is built from.
 #[wasm_bindgen_test]
 fn add_container_node_rejects_self_and_ancestor_nesting() -> Result<(), String> {
@@ -196,8 +196,8 @@ fn add_container_node_rejects_self_and_ancestor_nesting() -> Result<(), String> 
 /// The scenario external review's third round asked for explicitly: a detached subtree (its own former parent dropped)
 /// becomes graftable again through ordinary navigation, with no special reset operation needed.
 ///
-/// `A → B → C`, `C` focused; drop `A`; `B` becomes the effective root, `C` stays focused; grafting `B` under `D` fails
-/// (`C`, a live descendant, is still focused, not `B`); `C.exit()` focuses `B`; grafting `B` under `D` now succeeds.
+/// `A → B → C`, `C` focused; drop `A`; `B` becomes the effective root, `C` stays focused. Grafting `B` under `D` fails
+/// (`C`, a live descendant, is still focused, not `B`). `C.exit()` focuses `B`. Grafting `B` under `D` now succeeds.
 #[wasm_bindgen_test]
 fn a_detached_subtree_can_be_regrafted_once_its_own_root_is_focused_again() -> Result<(), String> {
     let a = Scene::new(make_svg("container-regraft-a")).map_err(|e| e.to_string())?;

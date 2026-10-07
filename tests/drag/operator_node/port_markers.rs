@@ -12,8 +12,8 @@ use svg_dom_graph::scene::{
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A commutative binary operator — swapping the operands never changes the result — draws no "L"/"R" port marker at
-/// all: there is nothing ambiguous about operand order for a reader to be told apart.
+/// A commutative binary operator draws no "L"/"R" port marker at all. Swapping its operands never changes the result.
+/// So there is nothing ambiguous about operand order for a reader to be told apart.
 #[wasm_bindgen_test]
 fn a_commutative_binary_operator_node_draws_no_port_markers() -> Result<(), String> {
     let svg = make_svg(
@@ -85,8 +85,8 @@ fn commutative_arithmetic_operators_draw_no_port_markers() -> Result<(), String>
     )
 }
 
-/// `Subtract`, `Divide`, and `Modulus` each draw exactly two port markers — one per input — labelled "L"/"R", with an
-/// `aria-label` naming which operand each one is, and `role="img"` so assistive technology announces that name rather
+/// `Subtract`, `Divide`, and `Modulus` each draw exactly two port markers, one per input, labelled "L"/"R". Each has an
+/// `aria-label` naming which operand it is. Each has `role="img"`, so assistive technology announces that name rather
 /// than reading the bare glyph.
 #[wasm_bindgen_test]
 fn non_commutative_arithmetic_operators_draw_labelled_port_markers() -> Result<(), String> {
@@ -148,10 +148,10 @@ fn non_commutative_arithmetic_operators_draw_labelled_port_markers() -> Result<(
 }
 
 /// The core regression this feature exists to fix: dragging one operand onto its sibling's own side forces the
-/// anti-crossing router to reassign which operand's connector lands on the near/far slot — see
+/// anti-crossing router to reassign which operand's connector lands on the near/far slot. See
 /// `dragging_an_operand_onto_its_siblings_side_re_splits_both_connectors_live`, the matching test for the plain
 /// connector routing this builds on. Despite that reassignment, the "L" marker must stay bound to `inputs.0`'s own
-/// connector and the "R" marker to `inputs.1`'s — never swapped just because the router moved one of them to a
+/// connector and the "R" marker to `inputs.1`'s. They are never swapped just because the router moved one of them to a
 /// different visual slot.
 #[wasm_bindgen_test]
 fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identity_stays_correct() -> Result<(), String>
@@ -180,14 +180,14 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
         .add_arithmetic_operator_node(Point::new(220.0, 300.0), ArithmeticOperator::Subtract, (a, b), result)
         .map_err(|e| e.to_string())?;
 
-    // Marker 0 ("L") stays bound to `a` == `inputs.0`'s own edge (connector 0), marker 1 ("R") to connector 1 — never
-    // swapped — both before the drag below (where `a` and `b` start on different operator sides) and after (where the
-    // drag forces them onto the same side, triggering a near/far reassignment). See `check_port_marker_identity`'s own
-    // doc comment for how it stays exact in both cases.
+    // Marker 0 ("L") stays bound to `a` == `inputs.0`'s own edge (connector 0), and marker 1 ("R") to connector 1. They
+    // are never swapped. That holds both before the drag below, where `a` and `b` start on different operator sides,
+    // and after it. The drag forces them onto the same side, triggering a near/far reassignment. See
+    // `check_port_marker_identity`'s own doc comment for how it stays exact in both cases.
     crate::common::check_port_marker_identity("operator-markers-live-identity")?;
 
-    // Drag `b` to join `a` above the operator, forcing the same-side split — and, for at least one of the two input
-    // rows, a near/far reassignment relative to before the drag.
+    // Drag `b` to join `a` above the operator, forcing the same-side split. For at least one of the two input rows,
+    // this also forces a near/far reassignment relative to before the drag.
     let b_group = nth_group("operator-markers-live-identity", 1)?;
     dispatch_pointer_event(&b_group, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&b_group, "pointermove", -50, -190, 1)?;
@@ -197,10 +197,10 @@ fn dragging_an_operand_re_splits_the_connectors_but_each_port_markers_own_identi
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Physically exchanging `SUB`'s own two operand nodes' positions — not just dragging one across, but swapping which
-/// one sits where — must never disturb which port marker names which operand: `inputs.0`'s own edge keeps the "L"
-/// marker and `inputs.1`'s own edge keeps "R", wherever each one now physically sits. This is the concrete case the
-/// original report calls out: a diagram reader cannot tell `A - B` from `B - A` by position alone, so the marker's own
+/// Physically exchanging `SUB`'s own two operand nodes' positions must never disturb which port marker names which
+/// operand. That means not just dragging one across, but swapping which one sits where. `inputs.0`'s own edge keeps the
+/// "L" marker and `inputs.1`'s own edge keeps "R", wherever each one now physically sits. This is the concrete case the
+/// original report calls out. A diagram reader cannot tell `A - B` from `B - A` by position alone. So the marker's own
 /// identity must survive exactly this kind of exchange.
 #[wasm_bindgen_test]
 fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_identity() -> Result<(), String> {

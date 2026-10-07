@@ -1,9 +1,9 @@
 //! Panning and node dragging share one pointer, and must never be confused for each other.
 //!
 //! `wasm-bindgen-test`'s synthetic events are dispatched straight at a chosen element, so they cannot prove what
-//! matters here: that once the browser has captured the pointer for one gesture, every further event belongs to that
-//! gesture *wherever the pointer then travels*. Only real, CDP-driven input goes through the browser's own hit-testing
-//! and pointer capture.
+//! matters here. Once the browser has captured the pointer for one gesture, every further event belongs to that gesture
+//! *wherever the pointer then travels*. Only real, CDP-driven input goes through the browser's own hit-testing and
+//! pointer capture.
 //!
 //! The fixture has panning switched on with no toolbar. Its background is clear of every node and connector at `(450,
 //! 200)` and `(150, 90)`. `solo` is the node at `(20, 20)`, `80 x 40`.
@@ -100,7 +100,7 @@ fn dragging_empty_background_pans_the_scene_and_holds_then_releases_pointer_capt
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A pan that starts on background and then sweeps across a node is still a pan: the node neither moves nor gets the
+/// A pan that starts on background and then sweeps across a node is still a pan. The node neither moves nor gets the
 /// events, because the surface has captured the pointer.
 #[test]
 fn a_pan_that_crosses_over_a_node_stays_a_pan() -> Result<(), String> {
@@ -301,9 +301,9 @@ fn a_pan_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), String> {
 ///
 /// **Ignored by default**, and run on its own with `cargo test -p cdp-integration-test -- --ignored`. Passing alone, it
 /// fails when it shares the browser with the rest of this binary. Every other test opens its own tab in the one shared
-/// Chrome and runs at the same time. A real mouse wheel, though, only reaches a tab the browser treats as active, and
-/// with several tabs in play the `Input.dispatchMouseEvent` call for the wheel times out ("The event waited for never
-/// came") or loses its connection. Nothing in the scene is at fault: the same scenarios pass alone, in either order.
+/// Chrome and runs at the same time. A real mouse wheel, though, only reaches a tab the browser treats as active. With
+/// several tabs in play the `Input.dispatchMouseEvent` call for the wheel times out ("The event waited for never came")
+/// or loses its connection. Nothing in the scene is at fault: the same scenarios pass alone, in either order.
 ///
 /// What it adds over the synthetic tests in `tests/drag/toolbar.rs` is a genuine wheel event in the middle of a
 /// genuine, pointer-captured drag or pan. The composition itself — that the gesture carries on tracking the pointer

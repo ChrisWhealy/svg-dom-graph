@@ -1,6 +1,6 @@
-//! `Scene::set_secondary_selection`: marking the cells a step derives from its own current selection — independent of
-//! `Scene::set_selection`, drawn with both a teal fill and a dashed outline, and described in the node's own
-//! `aria-label`.
+//! `Scene::set_secondary_selection` marks the cells a step derives from its own current selection. It is independent of
+//! `Scene::set_selection`. It draws with both a teal fill and a dashed outline, and describes the cells in the node's
+//! own `aria-label`.
 
 use crate::common::{check, make_svg};
 use svg_dom::root::utils::{Point, Size};

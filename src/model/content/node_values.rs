@@ -17,11 +17,11 @@ fn order_bytes<const N: usize>(mut bytes: [u8; N], order: ByteOrder) -> [u8; N] 
 /// formatting any of them.
 ///
 /// [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`]/[`DataFormat::Ascii`] give every value the same rendered width
-/// regardless of magnitude — a fixed number of bytes' worth of digits, all `values` here sharing one integer width
-/// already (see [`NodeValues`]'s own "Deliberately one width per node" doc section) — so the first value is exactly as
-/// representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude, and these are all
-/// unsigned, so the numerically largest value is always the widest one to render — found here by a plain comparison,
-/// `Ord::max`, not by formatting every value just to compare the resulting text lengths.
+/// regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all `values` here share one
+/// integer width already (see [`NodeValues`]'s own "Deliberately one width per node" doc section). So the first value
+/// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude, and
+/// these are all unsigned. So the numerically largest value is always the widest one to render. It is found here by a
+/// plain comparison, `Ord::max`, not by formatting every value just to compare the resulting text lengths.
 fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
         DataFormat::Decimal => values.iter().max().copied(),
@@ -199,10 +199,10 @@ impl NodeValues {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Formats into `out` whichever one value [`pick_widest`] identifies as guaranteed to render the widest cell under
-    /// `format`/`byte_order` — clearing `out` first, then leaving it empty if this holds no values at all.
+    /// `format`/`byte_order`. It clears `out` first, then leaves it empty if this holds no values at all.
     ///
-    /// A caller measuring the one rendered width every cell in a node shares (every cell uses one monospace font — see
-    /// `scene::node::draw_content_box`'s own doc comment) needs exactly this one value's own text, not every value's.
+    /// A caller measuring the one rendered width every cell in a node shares needs exactly this one value's own text,
+    /// not every value's. Every cell uses one monospace font (see `scene::node::draw_content_box`'s own doc comment).
     /// Finding it via [`pick_widest`] rather than [`for_each_cell_string`](Self::for_each_cell_string) means this
     /// formats one value, not every value, to answer that.
     pub(super) fn widest_cell_string(&self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
@@ -306,8 +306,8 @@ impl NodeValues {
     /// primary. So a data node's colouring reads as a quiet label, not an alarm.
     ///
     /// Each width gets a distinct hue, chosen to stay visually distinct from
-    /// [`PLAIN_BOX_FILL`](crate::colours::PLAIN_BOX_FILL), the pale blue every ordinary node — and a multi-value data
-    /// node's own outer box — already uses. See [`crate::colours`] for every shade this crate draws with, including
+    /// [`PLAIN_BOX_FILL`](crate::colours::PLAIN_BOX_FILL). That is the pale blue every ordinary node, and a multi-value
+    /// data node's own outer box, already uses. See [`crate::colours`] for every shade this crate draws with, including
     /// these four.
     pub(crate) fn type_colour(&self) -> &'static str {
         match self {

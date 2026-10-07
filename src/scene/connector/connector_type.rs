@@ -21,8 +21,8 @@ pub enum ConnectorType {
     /// Horizontal and vertical segments only, joined at corners whose radius varies from 0 pixels (90º corner) up to
     /// half the connector's length.
     ///
-    /// Unless fixing points are defined for the node's edges, each end is anchored at the midpoint of the horizontal or
-    /// vertical side first intersected by a ray cast between the box's centres.
+    /// Unless fixing points are defined for the node's edges, each end is anchored at the midpoint of the side first
+    /// intersected by a ray cast between the box's centres. That side is horizontal or vertical.
     Elbow {
         /// How far to round each corner, in this scene's user-space units. `0.0` draws a sharp, 90º corner.
         ///

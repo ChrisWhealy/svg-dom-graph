@@ -1,5 +1,5 @@
-//! `Scene::set_focus`: a whole-box focus ring, independent of `Scene::set_selection`'s own per-cell highlighting —
-//! works on a plain node, an operator node, and a named data node alike, since none of them need a cell to ring.
+//! `Scene::set_focus` draws a whole-box focus ring, independent of `Scene::set_selection`'s own per-cell highlighting.
+//! It works on a plain node, an operator node, and a named data node alike, since none of them need a cell to ring.
 
 use crate::common::{check, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
@@ -9,9 +9,9 @@ use svg_dom_graph::{
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
-/// `(stroke, stroke-width)` of `container_id`'s own `n`th node's outer `<rect>` — the first `rect` in document order
-/// under that node's own `<g>`, which is always the outer box itself (see `BoxHandles::outer_rect`'s own doc comment
-/// for why that holds for every node kind this crate draws).
+/// `(stroke, stroke-width)` of `container_id`'s own `n`th node's outer `<rect>`. That is the first `rect` in document
+/// order under that node's own `<g>`, which is always the outer box itself. See `BoxHandles::outer_rect`'s own doc
+/// comment for why that holds for every node kind this crate draws.
 fn outer_stroke(container_id: &str, n: u32) -> Result<(String, String), String> {
     let group = nth_group(container_id, n)?;
     let rect = group
@@ -24,8 +24,8 @@ fn outer_stroke(container_id: &str, n: u32) -> Result<(String, String), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Focusing a plain node rings its own outer box, and un-focusing restores the plain default — proving this works where
-/// `Scene::set_selection` flatly cannot: a plain node has no cell to select at all.
+/// Focusing a plain node rings its own outer box, and un-focusing restores the plain default. That proves this works
+/// where `Scene::set_selection` flatly cannot, because a plain node has no cell to select at all.
 #[wasm_bindgen_test]
 fn focusing_a_plain_node_rings_its_own_outer_box() -> Result<(), String> {
     let svg = make_svg("focus-plain", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
@@ -111,8 +111,8 @@ fn focusing_a_named_data_node_rings_the_named_wrapper_not_the_content_cell() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Any number of nodes can be focused at once — unlike `Scene::show_selection_toolbar`'s own managed `Selection`, there
-/// is no single "current" focus this crate tracks, so focusing a second node never un-focuses a first.
+/// Any number of nodes can be focused at once. Unlike `Scene::show_selection_toolbar`'s own managed `Selection`, this
+/// crate tracks no single "current" focus. So focusing a second node never un-focuses a first.
 #[wasm_bindgen_test]
 fn more_than_one_node_can_be_focused_at_once() -> Result<(), String> {
     let svg = make_svg("focus-multi", Size::new(400.0, 300.0), Size::new(400.0, 300.0));

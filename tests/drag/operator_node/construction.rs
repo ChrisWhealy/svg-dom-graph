@@ -34,7 +34,8 @@ fn elements_matching(group: &web_sys::Element, selector: &str) -> Result<Vec<web
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A unary operator node renders a label row naming the operator, and its single result value in its own inset cell,
-/// coloured by the result's own type — one outer rect plus one value-cell rect, one label text plus one value text.
+/// coloured by the result's own type. That is one outer rect plus one value-cell rect, and one label text plus one
+/// value text.
 #[wasm_bindgen_test]
 fn a_unary_operator_node_renders_its_label_and_value_rows() -> Result<(), String> {
     let svg = make_svg("operator-unary", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -84,8 +85,8 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its own
-/// real formatted result value as text, rather than just the result's own type. Its `<title>` — the browser's own
-/// mouse-hover tooltip — carries that exact same text, so hovering over the node with the mouse pointer shows the same
+/// real formatted result value as text, rather than just the result's own type. Its `<title>`, the browser's own
+/// mouse-hover tooltip, carries that exact same text. So hovering over the node with the mouse pointer shows the same
 /// thing a screen reader announces.
 #[wasm_bindgen_test]
 fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value() -> Result<(), String> {
@@ -148,9 +149,9 @@ fn a_binary_operator_node_auto_wires_both_input_edges() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The value cell drawn inside an operator node's own box never touches that box's own left, right, or bottom edge. A
-/// connector's own anchor point is always somewhere on the outer box's own perimeter — never on some inner sub-region —
-/// so an inset value cell keeps every such anchor visually attached to the "named operation" box, rather than looking
-/// like it terminates at the result cell instead.
+/// connector's own anchor point is always somewhere on the outer box's own perimeter, never on some inner sub-region.
+/// So an inset value cell keeps every such anchor visually attached to the "named operation" box. It does not look like
+/// it terminates at the result cell instead.
 #[wasm_bindgen_test]
 fn operator_node_value_cell_is_inset_from_every_outer_edge() -> Result<(), String> {
     let svg = make_svg("operator-value-cell-inset", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -316,8 +317,8 @@ fn add_binary_operator_node_rejects_mismatched_operand_widths() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A binary operator's own two operands must be distinct nodes — combining a node with itself has no second "other
-/// side" to route a connector to, and the router could never tell its two auto-wired edges apart anyway.
+/// A binary operator's own two operands must be distinct nodes. Combining a node with itself has no second "other side"
+/// to route a connector to. The router could never tell its two auto-wired edges apart anyway.
 #[wasm_bindgen_test]
 fn add_binary_operator_node_rejects_duplicate_operands() -> Result<(), String> {
     let svg = make_svg("operator-duplicate-operands", Size::new(400.0, 260.0), Size::new(400.0, 260.0));

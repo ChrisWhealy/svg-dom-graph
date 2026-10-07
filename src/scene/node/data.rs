@@ -88,9 +88,9 @@ impl CellStyle {
 /// focused and secondary shows as focused. Each of the three is a flag, not an index list: the caller already knows
 /// whether its cell is a member, and this stays allocation-free.
 ///
-/// `Scene::set_selection` and `Scene::set_secondary_selection` call this twice — once for the old state, once for the
-/// new one — for each cell they visit, and only write to the DOM when the two results differ. Each visits only the
-/// cells a changed old/new focus, band, or secondary set could plausibly affect, not every cell in the grid.
+/// `Scene::set_selection` and `Scene::set_secondary_selection` call this twice for each cell they visit: once for the
+/// old state, once for the new one. They only write to the DOM when the two results differ. Each visits only the cells
+/// a changed old/new focus, band, or secondary set could plausibly affect, not every cell in the grid.
 fn cell_style(
     focus: bool,
     banded: bool,
@@ -121,36 +121,36 @@ fn cell_style(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`, and returns their handles
-/// alongside the box's own final `Rect` — computed here, not supplied by the caller.
+/// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`. Returns their handles alongside
+/// the box's own final `Rect`, which is computed here, not supplied by the caller.
 ///
 /// Every value gets its own `<text>` element (monospace — see [`GRID_FONT_FAMILY`]). Under a monospace font, character
 /// count alone determines a cell's own rendered width. Every string [`DataNodeContent::cells`]/
 /// [`DataNodeContent::for_each_cell_string`] produces is ASCII, so byte length already is character count. So only the
-/// widest cell's own text is ever read back via [`SvgNode::bounding_box`](svg_dom::SvgNode::bounding_box) — the same
-/// "measure, don't estimate" approach [`shrink_label_to_fit`](super::plain::shrink_label_to_fit) already uses for plain
-/// labels, applied once per node, not once per cell. Every cell then shares that one measured width plus
+/// widest cell's own text is ever read back via [`SvgNode::bounding_box`](svg_dom::SvgNode::bounding_box). This is the
+/// same "measure, don't estimate" approach [`shrink_label_to_fit`](super::plain::shrink_label_to_fit) already uses for
+/// plain labels, applied once per node, not once per cell. Every cell then shares that one measured width plus
 /// [`CELL_PADDING`], so the grid's rows and columns still line up even when [`DataFormat::Decimal`] values differ in
 /// digit count.
 ///
-/// Formats and places each cell streaming — never collecting a `Vec<String>` of every cell's own text, or a
-/// `Vec<SvgNode>` of every `<text>` element, regardless of how many values `content` holds, and never formatting any
-/// value twice:
+/// Formats and places each cell streaming. It never collects a `Vec<String>` of every cell's own text, or a
+/// `Vec<SvgNode>` of every `<text>` element, regardless of how many values `content` holds. It never formats any value
+/// twice, as follows:
 ///
 /// 1. [`DataNodeContent::widest_cell_string`] identifies and formats the one value guaranteed to need the widest cell,
 ///    without formatting every value first — see that method's own doc comment for how. A throwaway element built from
-///    it, once `cell_size` is known, is all `bounding_box()` ever needs; which specific value that was is otherwise
+///    it, once `cell_size` is known, is all `bounding_box()` ever needs. Which specific value that was is otherwise
 ///    irrelevant, since any string of the same length would measure identically under a monospace font.
-/// 2. [`DataNodeContent::for_each_cell_string`] then formats every value once, reusing one buffer, and this time
-///    creates each cell's own `<text>` (and, for a multi-value grid, its own `<rect>`) directly at its final position,
-///    appending each immediately rather than deferring every cell's own placement to a later pass. The one value pass 1
+/// 2. [`DataNodeContent::for_each_cell_string`] then formats every value once, reusing one buffer. This time it creates
+///    each cell's own `<text>` (and, for a multi-value grid, its own `<rect>`) directly at its final position. It
+///    appends each immediately, rather than deferring every cell's own placement to a later pass. The one value pass 1
 ///    already formatted is formatted again here, along with every other — a single value's worth of repeated work, not
 ///    repeated for the whole node.
 ///
 /// [`DataNodeContent::is_single_value`] decides which of two layouts is drawn:
 ///
-/// - A single value has no sibling to be told apart from, so it gets no inner cell box at all — the node's own
-///   `rect_el` is filled directly with [`NodeValues::type_colour`], and the value's text sits centred in it.
+/// - A single value has no sibling to be told apart from, so it gets no inner cell box at all. The node's own `rect_el`
+///   is filled directly with [`NodeValues::type_colour`], and the value's text sits centred in it.
 /// - Two or more values each get their own small [`NodeValues::type_colour`]-filled `<rect>`, arranged into the
 ///   `content.shape()` grid with [`CELL_GAP`] between them, inside the node's own (unchanged, light blue) outer box.
 ///
@@ -165,28 +165,28 @@ fn cell_style(
 /// cell's own `x`/`y` attributes on every pointer move. See [`SceneInner::move_node`].
 ///
 /// A [`RenderGuard`] covers this function's own DOM construction, as in [`draw_box`](super::plain::draw_box). Streaming
-/// each cell — create, style, append, immediately — keeps the window this matters for down to one cell (two nodes,
-/// briefly, for a multi-value grid's own rect-then-text pair) at a time, via [`RenderGuard::release`], rather than
-/// every cell created so far staying tracked until the whole node finishes.
+/// each cell (create, style, append, immediately) keeps the window this matters for down to one cell at a time. That is
+/// two nodes, briefly, for a multi-value grid's own rect-then-text pair. It works via [`RenderGuard::release`], rather
+/// than every cell created so far staying tracked until the whole node finishes.
 ///
 /// `scratch` is a caller-owned buffer — `SceneInner::scratch`, in every real caller — reused for this call's own
 /// per-cell `x`/`y`/`transform` formatting, the same reasoning [`draw_box`](super::plain::draw_box)'s own `scratch`
-/// parameter follows. This is a distinct concern from pass 1/2's own per-value formatting buffer above, which holds
-/// cell *content*, not attribute values, and stays a plain local: nothing outside a single `draw_content_box` call ever
-/// needs it.
+/// parameter follows. This is a distinct concern from pass 1/2's own per-value formatting buffer above. That buffer
+/// holds cell *content*, not attribute values, and stays a plain local. Nothing outside a single `draw_content_box`
+/// call ever needs it.
 ///
 /// `name`, when `Some`, wraps the box described above in a further outer box of its own, with `name` in a label row
-/// above it — the same "outer box labelled with a name, inset value box beneath it" shape
+/// above it. This is the same "outer box labelled with a name, inset value box beneath it" shape
 /// [`draw_operator_box`](super::operator::draw_operator_box) already draws for an operator's own result. The returned
-/// `Rect` is then that outer box's own, so an incoming connector anchors to it, never to the inner (unlabelled, exactly
-/// as drawn below) content box directly — see [`draw_operator_box`]'s own module doc comment for why a connector must
+/// `Rect` is then that outer box's own. So an incoming connector anchors to it, never to the inner (unlabelled, exactly
+/// as drawn below) content box directly. See [`draw_operator_box`]'s own module doc comment for why a connector must
 /// never land on an inset inner box. `name` is `None` for every plain (unnamed) data node, which renders exactly as
-/// before this parameter existed: no label row, no further outer box, the content box itself starting flush at local
-/// `(0, 0)`.
+/// before this parameter existed. It has no label row and no further outer box, and the content box itself starts flush
+/// at local `(0, 0)`.
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::EmptyNodeName`] if `name` is empty or holds only whitespace — see that variant's own doc comment
-/// for why a blank name is rejected outright, rather than merely drawing an oddly-worded label. Shared by every path
-/// that draws a named data node — construction and measurement alike.
+/// Returns [`Error::EmptyNodeName`] if `name` is empty or holds only whitespace. See that variant's own doc comment for
+/// why a blank name is rejected outright, rather than merely drawing an oddly-worded label. Shared by every path that
+/// draws a named data node — construction and measurement alike.
 fn validate_node_name(name: &str) -> Result<(), Error> {
     if name.trim().is_empty() {
         return Err(Error::EmptyNodeName);
@@ -209,9 +209,9 @@ pub(super) fn draw_content_box(
     }
 
     let group = svg.group()?;
-    // At most two nodes are ever loose (created but not yet appended) at once here — see `RenderGuard::release`'s own
-    // doc comment — regardless of how many values `content` holds, or whether `name` is given: each of the name label's
-    // own text/outer-box elements below is released again, in turn, before the next is created.
+    // At most two nodes are ever loose (created but not yet appended) at once here, regardless of how many values
+    // `content` holds, or whether `name` is given. See `RenderGuard::release`'s own doc comment. Each of the name
+    // label's own text/outer-box elements below is released again, in turn, before the next is created.
     let mut guard = RenderGuard::new(group.clone());
     let type_colour = content.type_colour();
     let type_name = content.type_name();
@@ -224,15 +224,14 @@ pub(super) fn draw_content_box(
     let column_group = content.column_group();
     let group_gaps = |cols: usize| cols.saturating_sub(1).checked_div(column_group).unwrap_or(0);
 
-    // Finds and formats the one value guaranteed to need the widest rendered cell — see
-    // `DataNodeContent::widest_cell_string`'s own doc comment for how, without formatting every value just to compare
-    // the resulting text lengths.
+    // Finds and formats the one value guaranteed to need the widest rendered cell, without formatting every value just
+    // to compare the resulting text lengths. See `DataNodeContent::widest_cell_string`'s own doc comment for how.
     let mut widest = String::new();
     content.widest_cell_string(&mut widest);
 
     // `widest`'s own real content is measured once, via a throwaway element that never becomes one of `group`'s own
-    // children: tracked for rollback like any other fallible-construction element, then removed the moment it has
-    // served its purpose, rather than kept around as one of the real cells.
+    // children. It is tracked for rollback like any other fallible-construction element. It is then removed the moment
+    // it has served its purpose, rather than kept around as one of the real cells.
     let measure_el = svg.text(origin, &widest)?;
     guard.track(measure_el.clone());
     measure_el.set_font_family(GRID_FONT_FAMILY)?;
@@ -256,11 +255,11 @@ pub(super) fn draw_content_box(
         )
     };
 
-    // `content_origin` is where the content box drawn below sits, local to `group` — `(0, 0)` exactly as before this
-    // parameter existed, unless `name` wraps it in a further named outer box, in which case it is inset and centred
-    // under that outer box's own label row instead. `named_outer_rect` is that wrapping box's own `<rect>` — `Some`
-    // only when `name` draws one — read back below once `rect_el` is in scope too, to decide `BoxHandles::outer_rect`:
-    // the named wrapper when there is one, `rect_el` itself otherwise.
+    // `content_origin` is where the content box drawn below sits, local to `group`. It is `(0, 0)` exactly as before
+    // this parameter existed, unless `name` wraps it in a further named outer box. In that case it is inset and centred
+    // under that outer box's own label row instead. `named_outer_rect` is that wrapping box's own `<rect>`, which is
+    // `Some` only when `name` draws one. It is read back below once `rect_el` is in scope too, to decide
+    // `BoxHandles::outer_rect`: the named wrapper when there is one, `rect_el` itself otherwise.
     let (content_origin, size, named_outer_rect) = if let Some(name) = name {
         let label_el = svg.text(origin, name)?;
         guard.track(label_el.clone());
@@ -270,10 +269,10 @@ pub(super) fn draw_content_box(
         label_el.set_fill(TEXT_FILL)?;
         let label_width = label_el.bounding_box()?.size.width;
 
-        // Same competition `draw_operator_box` resolves for its own label vs. value cell: the content box's own width,
-        // plus `OUTER_PADDING` clear on either side, against the label's own width, plus `CELL_PADDING` — whichever
-        // needs more room sets the outer box's own width. Either way the content box itself never reaches the outer
-        // box's own left/right edges.
+        // Same competition `draw_operator_box` resolves for its own label vs. value cell. The content box's own width,
+        // plus `OUTER_PADDING` clear on either side, competes against the label's own width, plus `CELL_PADDING`.
+        // Whichever needs more room sets the outer box's own width. Either way the content box itself never reaches the
+        // outer box's own left/right edges.
         let box_width = (label_width + 2.0 * CELL_PADDING).max(content_size.width + 2.0 * OUTER_PADDING);
         let box_size = Size::new(box_width, LABEL_ROW_HEIGHT + content_size.height + OUTER_PADDING);
 
@@ -318,10 +317,10 @@ pub(super) fn draw_content_box(
         cell_rects.push(rect_el.clone());
     }
 
-    // Captured only in the `single_value` case — the same formatted text that one cell's own `<text>` renders, reused
-    // again below for the node's own `aria-label`, so the value reads as text without visiting the cell directly. Left
-    // empty for a multi-value grid, whose own `aria-label` names a value count instead — see that `node_label` match
-    // below.
+    // Captured only in the `single_value` case. It is the same formatted text that one cell's own `<text>` renders,
+    // reused again below for the node's own `aria-label`. So the value reads as text without visiting the cell
+    // directly. Left empty for a multi-value grid, whose own `aria-label` names a value count instead — see that
+    // `node_label` match below.
     let mut single_value_text = String::new();
 
     let mut error: Option<Error> = None;
@@ -390,7 +389,7 @@ pub(super) fn draw_content_box(
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // This names the whole node for assistive technology, and — via `<title>` below — for the browser's own mouse-hover
-    // tooltip too. Assistive technology usually announces a group before its children, so a reader need not visit every
+    // tooltip too. Assistive technology usually announces a group before its children. So a reader need not visit every
     // individual cell to learn the node's own name, type, or (for a single value) its real value.
     //
     // `aria-label` only names an element whose role supports naming. A bare `<g>` has no implicit role, so its
@@ -462,11 +461,11 @@ pub(super) fn draw_content_box(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
-    /// Adds a data node to the graph — one whose visible content is `content`'s own grid of values (see
-    /// [`DataNodeContent`]) rather than a plain text label — and returns its id.
+    /// Adds a data node to the graph, and returns its id. Its visible content is `content`'s own grid of values (see
+    /// [`DataNodeContent`]) rather than a plain text label.
     ///
-    /// Unlike [`add_node`](Self::add_node), there is no `size` parameter: the box is always sized to fit `content`'s
-    /// rendered grid exactly — see [`DataNodeContent`]'s own doc comment for the layout and formatting rules, and
+    /// Unlike [`add_node`](Self::add_node), there is no `size` parameter. The box is always sized to fit `content`'s
+    /// rendered grid exactly. See [`DataNodeContent`]'s own doc comment for the layout and formatting rules, and
     /// `draw_content_box`'s own doc comment for how the fit is computed.
     ///
     /// Equivalent to [`add_data_node_with`](Self::add_data_node_with) with [`NodeOptions::default`].
@@ -528,12 +527,12 @@ impl Scene {
     /// how many connector fixing points this node's sides offer — see [`EdgeAnchors`].
     ///
     /// An incoming connector still anchors to this node's own *outer* (named) box, never to the inner content box
-    /// `name` wraps — the same reasoning [`add_binary_operator_node`](Self::add_binary_operator_node)'s own module doc
-    /// comment gives for why a connector must never land on an inset inner box.
+    /// `name` wraps. This is the same reasoning [`add_binary_operator_node`](Self::add_binary_operator_node)'s own
+    /// module doc comment gives for why a connector must never land on an inset inner box.
     ///
-    /// `name` is not stored in the graph's own model — unlike [`add_node`](Self::add_node)'s own `label`, it exists
-    /// only to draw this one label row, the same way an operator's own label (`"ADD"`, `"XOR"`, …) is never stored
-    /// either. Query this node's own value(s) back through `content` itself, exactly as for an unnamed data node.
+    /// `name` is not stored in the graph's own model. Unlike [`add_node`](Self::add_node)'s own `label`, it exists only
+    /// to draw this one label row. An operator's own label (`"ADD"`, `"XOR"`, …) is never stored either, in the same
+    /// way. Query this node's own value(s) back through `content` itself, exactly as for an unnamed data node.
     ///
     /// # Errors
     ///
@@ -567,14 +566,14 @@ impl Scene {
     /// [`add_data_node`](Self::add_data_node) followed by [`Scene::node_rect`] on the result would report, without ever
     /// adding `content` to the graph to find out.
     ///
-    /// To ensure that the same styling context is used, the node is drawn into this `Scene`'s own `SvgRoot`, then the
-    /// result is measured, and the node is removed again before returning.
+    /// The node is drawn into this `Scene`'s own `SvgRoot`, so the same styling context applies. The result is then
+    /// measured, and the node is removed again before returning.
     ///
-    /// Structurally, nothing about this call persists: no [`NodeId`] is returned because nothing remains to address
-    /// afterward, no graph node is created, no node handle is registered, and no edge or accessibility/navigation state
+    /// Structurally, nothing about this call persists. No [`NodeId`] is returned, because nothing remains to address
+    /// afterward. No graph node is created, no node handle is registered, and no edge or accessibility/navigation state
     /// is touched. The drawn content itself exists only for the instant between `draw_content_box` returning and this
-    /// function removing it again — in practice never visible, selectable, or reachable by assistive technology, though
-    /// that stronger claim about transient browser behaviour is not itself something a test here establishes, only the
+    /// function removing it again. In practice it is never visible, selectable, or reachable by assistive technology.
+    /// That stronger claim about transient browser behaviour is not itself something a test here establishes, only the
     /// structural absence above.
     ///
     /// This is most useful for sizing content that cannot be known until runtime. Character count is not equivalent to
@@ -669,19 +668,22 @@ impl Scene {
     /// [`add_binary_operator_node`](Self::add_binary_operator_node)). A plain label node has no cells to highlight.
     ///
     /// This is the only way to change a node's own selection after it is first drawn. A live "previous"/"next" control
-    /// stepping through an array as it is processed is one example.
+    /// stepping through an array as it is processed only ever touches a handful of cells per step, however large the
+    /// array. This shape is the hot path being optimised, in both the DOM writes it performs and the Rust computation
+    /// that decides them. This is the hot path that shape is optimised for, in both the DOM writes it performs and the
+    /// Rust computation that decides them.
     ///
     /// [`Selection::None`] clears back to every cell's own default `NodeValues::type_colour`. So there is no need to
     /// clear before setting a new selection.
     ///
     /// An identical `selection` to `id`'s own current one is an immediate no-op — no cell is touched, and no
     /// `aria-label` write happens. Otherwise, only the cells whose own colour/stroke category (focused, banded, or
-    /// default) actually changes between the old selection and the new one are even examined, let alone written to —
-    /// the old/new focus cells, plus each band's own members, via `ResolvedBand::for_each_index`. A cell in neither
-    /// band, and not a focus either way, is never visited: its category cannot have changed. A live "previous"/"next"
-    /// control stepping through an array as it is processed only ever touches a handful of cells per step, however
-    /// large the array — this is the hot path that shape is optimised for, in both the DOM writes it performs and the
-    /// Rust computation that decides them.
+    /// default) changes between the old and new selection are examined, let alone written to. Those are the old and new
+    /// focus cells, plus each band's own members, via `ResolvedBand::for_each_index`. A cell in neither band, and not a
+    /// focus either way, is never visited: its category cannot have changed. A live "previous"/"next" control stepping
+    /// through an array as it is processed only ever touches a handful of cells per step, however large the array. This
+    /// shape is the hot path being optimised, in both the DOM writes it performs and the Rust computation that decides
+    /// them.
     ///
     /// Also gives the focused cell, and, less strongly, a banded row/column, a thicker stroke than its own default
     /// border. It also rebuilds the node's own `aria-label` to describe the current selection as text. Neither depends
@@ -718,11 +720,11 @@ impl Scene {
 
         let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
         if old_selection == selection {
-            // No cell needs recolouring, but a selection toolbar just installed against this node (its own commit is
-            // exactly a same-as-current `set_selection` call whenever the node's `Selection` already happened to be
-            // `Selection::None`) has never had its own button states synced at all — see
-            // `sync_selection_toolbar_state`'s own doc comment. Skipping this call here would leave every button with
-            // no `aria-disabled`/`opacity` written, not just a stale one.
+            // No cell needs recolouring. But a selection toolbar just installed against this node has never had its own
+            // button states synced at all. Its own commit is exactly a same-as-current `set_selection` call whenever
+            // the node's `Selection` already happened to be `Selection::None`. See `sync_selection_toolbar_state`'s own
+            // doc comment. Skipping this call here would leave every button with no `aria-disabled`/`opacity` written,
+            // not just a stale one.
             let _ = inner.sync_selection_toolbar_state();
             return Ok(());
         }
@@ -737,8 +739,8 @@ impl Scene {
         let len = cell_rects.len();
 
         // Every index whose own category (focused, banded, or default) could possibly differ between the old selection
-        // and the new one — never the whole grid, and each visited at most once. A cell outside this set is provably
-        // unchanged: it is neither an old/new focus, nor in the symmetric difference of the two bands, so `cell_style`
+        // and the new one, never the whole grid. Each is visited at most once. A cell outside this set is provably
+        // unchanged. It is neither an old/new focus, nor in the symmetric difference of the two bands. So `cell_style`
         // resolves it to the same category either way. See `ResolvedBand::for_each_index`'s own doc comment.
         let mut result = Ok(());
         let mut restyle = |i: usize| {
@@ -777,9 +779,9 @@ impl Scene {
             }
         }
         if old_band != new_band {
-            // True symmetric difference, not each band walked in full: a member of both bands (their intersection) is
-            // skipped in both traversals below, since its own category cannot have changed between them either — and a
-            // focus index is skipped here too, since it was already visited, explicitly, above.
+            // True symmetric difference, not each band walked in full. A member of both bands (their intersection) is
+            // skipped in both traversals below, since its own category cannot have changed between them either. A focus
+            // index is skipped here too, since it was already visited, explicitly, above.
             let already_visited = |i: usize| new_band.contains(i) || Some(i) == old_focus || Some(i) == new_focus;
             old_band.for_each_index(len, |i| {
                 if !already_visited(i) {
@@ -799,16 +801,17 @@ impl Scene {
         handles.refresh_label()?;
 
         // The selection has already changed, so a failure to keep a selection toolbar's own button states in sync with
-        // it is not reported as this call's own failure — same reasoning as `SceneInner::flush_view`'s own `let _ =
-        // self.sync_toolbar_state();`. The next selection change puts it right.
+        // it is not reported as this call's own failure. This follows the same reasoning as `SceneInner::flush_view`'s
+        // own `let _ = self.sync_toolbar_state();`. The next selection change puts it right.
         let _ = inner.sync_selection_toolbar_state();
 
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Marks the cells at flat indices `cells` of node `id` as *secondary*: derived from the current selection, and
-    /// part of the same step, without being the one cell (or row/column) [`set_selection`](Self::set_selection) names.
+    /// Marks the cells at flat indices `cells` of node `id` as *secondary*. They are derived from the current
+    /// selection, and part of the same step, without being the one cell (or row/column)
+    /// [`set_selection`](Self::set_selection) names.
     ///
     /// A walk often reads more than the cell it is standing on. SHA3's `Chi` step, standing on `A[x, y]`, also reads
     /// `A[x + 1, y]` and `A[x + 2, y]`; `Pi` writes that same step's value to a cell elsewhere. `cells` names those
@@ -839,9 +842,9 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Returns [`Error::InvalidSelection`] — carrying the offending index as a [`Selection::Cell`] — if `id` names a
-    /// plain label or container node, or if any index in `cells` is out of range for `id`'s own value count. Checked
-    /// before recolouring any cell, so a rejected call leaves every cell exactly as it was.
+    /// Returns [`Error::InvalidSelection`], carrying the offending index as a [`Selection::Cell`], if `id` names a
+    /// plain label or container node. It also returns it if any index in `cells` is out of range for `id`'s own value
+    /// count. Checked before recolouring any cell, so a rejected call leaves every cell exactly as it was.
     ///
     /// Also returns a wrapped [`Error::Svg`] if recolouring a cell fails partway through, with the same "can leave some
     /// cells already recoloured" property [`set_selection`](Self::set_selection) documents.
@@ -906,15 +909,15 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces the values shown by data node `id` with `values`, rewriting each cell's own text in place.
     ///
-    /// For a node whose content depends on a step the host walks through — a function's own output array, initialised
-    /// to zeros until the walk reaches the step that produces it. Without this, a host could only draw such a node
-    /// once, with whatever it held at that moment.
+    /// For a node whose content depends on a step the host walks through, such as a function's own output array. It is
+    /// initialised to zeros until the walk reaches the step that produces it. Without this, a host could only draw such
+    /// a node once, with whatever it held at that moment.
     ///
     /// `values` must be the same width of integer, and the same number of values, as the node was drawn with. The grid
     /// then keeps exactly the size, shape and position it already has, and so does every connector attached to it. The
-    /// node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn with, so
+    /// node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn with. So
     /// a [`crate::model::content::DataFormat::Decimal`] value with more digits than any value shown when the node was
-    /// drawn will overflow its cell; [`crate::model::content::DataFormat::Hexadecimal`] and
+    /// drawn will overflow its cell. [`crate::model::content::DataFormat::Hexadecimal`] and
     /// [`crate::model::content::DataFormat::Binary`] values never change width.
     ///
     /// Only for a node with two or more values drawn via [`add_data_node`](Self::add_data_node)/

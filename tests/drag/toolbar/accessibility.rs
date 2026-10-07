@@ -27,8 +27,8 @@ fn every_toolbar_button_has_the_button_role_an_explicit_name_and_a_tab_stop() ->
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Keyboard focus is drawn explicitly — a thicker, differently coloured border — rather than left to whatever outline a
-/// browser draws for a focused SVG element, and goes away again on blur.
+/// Keyboard focus is drawn explicitly, as a thicker, differently coloured border. It is not left to whatever outline a
+/// browser draws for a focused SVG element. It goes away again on blur.
 #[wasm_bindgen_test]
 fn a_focused_toolbar_button_shows_an_obvious_focus_ring_that_blur_removes() -> Result<(), String> {
     let scene = new_scene("a11y-focus")?;
@@ -213,7 +213,7 @@ fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Keys the scene does not use, and keys held with Ctrl, Cmd, or Alt, are neither acted on nor cancelled — so the
+/// Keys the scene does not use, and keys held with Ctrl, Cmd, or Alt, are neither acted on nor cancelled. So the
 /// browser's own page zoom (Ctrl or Cmd with plus or minus) and other shortcuts keep working.
 #[wasm_bindgen_test]
 fn unrelated_keys_and_browser_shortcuts_are_left_alone() -> Result<(), String> {
@@ -242,7 +242,7 @@ fn unrelated_keys_and_browser_shortcuts_are_left_alone() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A key pressed on a toolbar button bubbles up through the `<svg>`, but is the button's, not the scene's: an arrow key
+/// A key pressed on a toolbar button bubbles up through the `<svg>`, but is the button's, not the scene's. An arrow key
 /// on a focused button must not pan the view.
 #[wasm_bindgen_test]
 fn a_key_pressed_on_a_toolbar_button_does_not_pan_the_view() -> Result<(), String> {
@@ -332,7 +332,7 @@ fn hiding_the_toolbar_removes_the_keyboard_target_and_leaves_the_svg_alone() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A key sent to the application's `<svg>` itself is not the scene's: only the focus target takes keys, so an
+/// A key sent to the application's `<svg>` itself is not the scene's. Only the focus target takes keys. So an
 /// application that handles keys on its own `<svg>` is not competing with anything.
 #[wasm_bindgen_test]
 fn a_key_sent_to_the_svg_itself_does_nothing() -> Result<(), String> {
@@ -376,7 +376,7 @@ fn the_keyboard_target_outlines_the_scene_only_while_it_has_focus() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The target lies above the pan surface but takes no pointer events, and covers the same area, so it neither blocks
+/// The target lies above the pan surface but takes no pointer events. It covers the same area. So it neither blocks
 /// panning nor is left behind when the layout is refreshed.
 #[wasm_bindgen_test]
 fn the_keyboard_target_never_gets_in_the_way_of_the_pan_surface() -> Result<(), String> {
@@ -412,9 +412,8 @@ fn the_keyboard_target_never_gets_in_the_way_of_the_pan_surface() -> Result<(), 
     check_close(scene.zoom_scale(), 1.0)
 }
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Zoom changes must not cause disruptive announcements. Nothing here is a live region, and the state attributes are
-/// only rewritten when they actually change, so a run of zoom steps that changes no button's state touches none of
-/// them.
+/// Zoom changes must not cause disruptive announcements. Nothing here is a live region. The state attributes are only
+/// rewritten when they actually change. So a run of zoom steps that changes no button's state touches none of them.
 #[wasm_bindgen_test]
 fn zooming_adds_no_live_region_and_rewrites_no_unchanged_button_state() -> Result<(), String> {
     let scene = new_scene("a11y-quiet")?;

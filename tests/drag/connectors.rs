@@ -72,8 +72,8 @@ fn set_connector_type_rejects_an_unknown_edge() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A corner radius too large for the current geometry renders clamped to the available room, with no error. Once a drag
-/// gives the connector more room, the very same stored radius renders at its full, unclamped value — proving the clamp
-/// recomputes from the current geometry on every redraw, rather than permanently shrinking the setting.
+/// gives the connector more room, the very same stored radius renders at its full, unclamped value. That proves the
+/// clamp recomputes from the current geometry on every redraw, rather than permanently shrinking the setting.
 ///
 /// # Expected paths, worked by hand
 ///
@@ -251,7 +251,7 @@ fn set_connector_type_toggles_a_connector_between_straight_and_elbow() -> Result
 /// nothing at all, not merely leave the rendered path unchanged.
 ///
 /// Proved here by planting a sentinel `d` directly on the connector's `<path>` via the raw DOM, bypassing `Scene`
-/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path — its surviving an
+/// entirely. A call that actually redrew the edge would overwrite the sentinel with a real path. Its surviving an
 /// unchanged `set_connector_type` call is the only way to observe, from here, that no redraw happened. This is the
 /// exact scenario a live corner-radius slider hits on every input event whose value has not actually moved.
 #[wasm_bindgen_test]
@@ -287,9 +287,9 @@ fn set_connector_type_with_an_unchanged_type_redraws_nothing() -> Result<(), Str
 ///
 /// `A` is wide and sits above-right of `B` — `A`: `(300, -10)`, size `(400, 40)`, centre `(500, 10)`. `B`: `(0, 100)`,
 /// size `(40, 20)`, centre `(20, 110)`. Left alone, the ray from `B`'s own centre toward `A`'s reaches `B`'s East side
-/// first (`half_w / dx` = 20/480 ≈ 0.042, less than `half_h / dy` = 10/100 = 0.1) — the same "a wide box skews the ray
-/// shallow" effect a much wider node left-aligned above a narrower one already produces (see `demo-app`'s own
-/// `theta.rs`, the nested-Scene demo this was written for). Forcing `Side::North` instead must actually land the
+/// first (`half_w / dx` = 20/480 ≈ 0.042, less than `half_h / dy` = 10/100 = 0.1). That is the same "a wide box skews
+/// the ray shallow" effect a much wider node left-aligned above a narrower one already produces. See `demo-app`'s own
+/// `theta.rs`, the nested-Scene demo this was written for. Forcing `Side::North` instead must actually land the
 /// connector on `B`'s own top edge, not its East side.
 #[wasm_bindgen_test]
 fn add_edge_with_a_forced_to_side_overrides_the_side_that_would_otherwise_be_chosen() -> Result<(), String> {

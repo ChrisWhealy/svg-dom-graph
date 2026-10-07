@@ -4,9 +4,9 @@ use svg_dom::SvgNode;
 /// Unless [`disarm`](Self::disarm) is called first, this removes every listener [`Scene::make_draggable_with`] may have
 /// registered on a `group`.
 ///
-/// A `?` on any fallible step occurring between construction and [`disarm`](Self::disarm) (which may be `set_attr`, or
-/// any one of the four listener registrations) drops this `groups`'s still-armed, unwinding installation back to
-/// exactly its previous state.
+/// A `?` on any fallible step occurring between construction and [`disarm`](Self::disarm) drops this `groups`'s
+/// still-armed guard. The step may be `set_attr`, or any one of the four listener registrations. The drop unwinds the
+/// installation back to exactly its previous state.
 ///
 /// Since `SvgNode::remove_listeners` is a no-op for an event type for which nothing has been registered,
 /// unconditionally removing all four here is always safe, irrespective of progress (including not started).

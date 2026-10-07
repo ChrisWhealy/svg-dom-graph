@@ -6,8 +6,8 @@
 ///
 /// Covers every same-width bitwise transform a single unsigned operand supports: complement, shift, rotate, bit
 /// reversal, and byte-order reversal. Deliberately excludes a bit-counting operation such as population count or
-/// leading/trailing zero count — those produce a small count, not a same-width value, so they would not fit this
-/// crate's own "operand, result, and every input share one `NodeValues` width" contract
+/// leading/trailing zero count. Those produce a small count, not a same-width value. So they would not fit this crate's
+/// own "operand, result, and every input share one `NodeValues` width" contract, which
 /// [`crate::model::content::data_node_content::DataNodeContent`] enforces.
 ///
 /// `#[non_exhaustive]`, for the same reason as [`crate::model::content::data_format::DataFormat`].
@@ -27,9 +27,9 @@ pub enum UnaryOperator {
     /// Reverses the operand's own bit order end to end — the type's own most significant bit becomes its least
     /// significant, and so on inward. The same transform ARM's own `RBIT` instruction names.
     ReverseBits,
-    /// Reverses the operand's own byte order end to end, leaving each byte's own bits untouched — the same transform
-    /// x86's own `BSWAP` instruction names, and [`crate::model::content::byte_order::ByteOrder`] applies implicitly
-    /// when/ formatting [`crate::model::content::data_format::DataFormat::Hexadecimal`] /
+    /// Reverses the operand's own byte order end to end, leaving each byte's own bits untouched. This is the same
+    /// transform x86's own `BSWAP` instruction names. [`crate::model::content::byte_order::ByteOrder`] applies it
+    /// implicitly when/ formatting [`crate::model::content::data_format::DataFormat::Hexadecimal`] /
     /// [`crate::model::content::data_format::DataFormat::Binary`] under
     /// [`crate::model::content::byte_order::ByteOrder::LittleEndian`]. Here, unlike there, the reversed byte order is
     /// the value itself, not just how it is displayed.

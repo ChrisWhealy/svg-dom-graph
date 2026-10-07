@@ -1,6 +1,7 @@
 //! The per-frame path. A `MutationObserver` shows what a pan or zoom frame *writes*, but not what it *reads*. Reading
-//! an attribute from the DOM crosses the WASM and JavaScript boundary and allocates a `String` for the answer, so a
-//! frame that reads to decide there is nothing to write is still paying for it — on every animation frame of a pan.
+//! an attribute from the DOM crosses the WASM and JavaScript boundary and allocates a `String` for the answer. So a
+//! frame that reads to decide there is nothing to write is still paying for it. That cost recurs on every animation
+//! frame of a pan.
 
 use super::support::*;
 use crate::common::{check, dispatch_pointer_event};

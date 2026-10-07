@@ -12,17 +12,17 @@
 ///
 /// # How a connector picks one of the `n` candidates
 ///
-/// A connector still picks *which side* to leave from exactly as it always does: by the ray from this node's own centre
-/// toward the other endpoint's centre, and whichever side that ray crosses first. `EdgeAnchors` only changes *where on
-/// that side* the connector lands.
+/// A connector still picks *which side* to leave from exactly as it always does. It uses the ray from this node's own
+/// centre toward the other endpoint's centre, and whichever side that ray crosses first. `EdgeAnchors` only changes
+/// *where on that side* the connector lands.
 ///
 /// That side is divided into `n + 1` equal segments, giving `n` internal division points — the two corners bounding the
 /// side are never candidates. The connector then snaps to whichever of those `n` points sits closest to where the
 /// unsnapped ray would have crossed.
 ///
 /// If the two nodes' centres exactly coincide, that ray has no direction to pick a side from. This is the same
-/// pre-existing degenerate case ordinary, unconfigured routing already has to handle, and `EdgeAnchors` resolves it the
-/// same way: falling back to this node's own centre and `Side::East`, rather than an actual fixing point.
+/// pre-existing degenerate case ordinary, unconfigured routing already has to handle. `EdgeAnchors` resolves it the
+/// same way, by falling back to this node's own centre and `Side::East`, rather than an actual fixing point.
 ///
 /// # `EdgeAnchors(1)` does not always match `None`
 ///
@@ -35,8 +35,8 @@
 /// connector onto the midpoint regardless, so the two will often render at visibly different points.
 ///
 /// Every connector touching this node makes this choice independently, from its own other endpoint's position alone.
-/// Fixing points are not reserved or assigned: nothing stops two, or all, of a node's incident connectors from landing
-/// on the same point — there is no occupancy tracking or one-connector-per-point allocation.
+/// Fixing points are not reserved or assigned. Nothing stops two, or all, of a node's incident connectors from landing
+/// on the same point. There is no occupancy tracking or one-connector-per-point allocation.
 ///
 /// `EdgeAnchors(5)` means "five candidate positions per side," not "capacity for five edges."
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

@@ -22,9 +22,9 @@ pub struct SceneTitleOptions {
     pub edge: Side,
     /// The space between the title and the edge it is fixed to. Must be a finite value `>= 0.0`. Default: `12.0`.
     pub margin: f64,
-    /// The title's own font size. Must be a finite value `> 0.0`. Default: `20.0` — deliberately larger than a plain
-    /// node's own label (`14.0`) or a data node's own cell text (`13.0`), so the title reads as a heading for the whole
-    /// scene, not just another label.
+    /// The title's own font size. Must be a finite value `> 0.0`. Default: `20.0`. It is deliberately larger than a
+    /// plain node's own label (`14.0`) or a data node's own cell text (`13.0`). So the title reads as a heading for the
+    /// whole scene, not just another label.
     pub font_size: f64,
     /// Whether the title is drawn bold. Default: `true`.
     pub bold: bool,
@@ -33,16 +33,15 @@ pub struct SceneTitleOptions {
     /// The title's own `aria-level`, for assistive technology that navigates a page by heading. Must be `>= 1`.
     /// Default: `2`.
     ///
-    /// This crate cannot know where in the host page's own heading hierarchy a scene sits — a title drawn inside a
-    /// panel that already has its own `<h2>` reads more correctly at level `3`, and a different host page might want
-    /// something else again. Adjust this to fit whatever heading structure actually surrounds the `<svg>`.
+    /// This crate cannot know where in the host page's own heading hierarchy a scene sits. A title drawn inside a panel
+    /// that already has its own `<h2>` reads more correctly at level `3`. A different host page might want something
+    /// else again. Adjust this to fit whatever heading structure actually surrounds the `<svg>`.
     ///
-    /// Only one scene's own title is ever exposed to assistive technology at a time, whatever the nesting depth:
+    /// Only one scene's own title is ever exposed to assistive technology at a time, whatever the nesting depth.
     /// [`Scene::enter`](crate::scene::Scene::enter)/[`exit`](crate::scene::Scene::exit) hide a scene's whole `<svg>`
-    /// root via the `visibility` attribute, and a `visibility: hidden` subtree — however it is set — is excluded from
-    /// the accessibility tree entirely, the same as `display: none`. So a fixed `aria_level` can never make it
-    /// ambiguous *which* scene's title is current; it only affects how that one title reads relative to the page around
-    /// it.
+    /// root via the `visibility` attribute. A `visibility: hidden` subtree, however it is set, is excluded from the
+    /// accessibility tree entirely, the same as `display: none`. So a fixed `aria_level` can never make it ambiguous
+    /// *which* scene's title is current; it only affects how that one title reads relative to the page around it.
     pub aria_level: u8,
 }
 

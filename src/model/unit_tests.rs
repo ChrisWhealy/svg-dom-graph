@@ -253,8 +253,8 @@ fn foreign_node_id_at_the_same_sequence_position_does_not_resolve_locally() -> R
     let mut graph_b = Graph::new();
     let b0 = graph_b.add_node(test_rect(50.0, 50.0), "b0");
 
-    // If ids were only distinguished by sequence number, a0 and b0 would be indistinguishable: both are their graph's
-    // first node. graph_b must still refuse a0, and must still resolve its own b0 correctly.
+    // If ids were only distinguished by sequence number, a0 and b0 would be indistinguishable, because both are their
+    // graph's first node. graph_b must still refuse a0. It must also still resolve its own b0 correctly.
     if graph_b.node(a0).is_some() {
         return Err(
             "a NodeId from graph_a resolved to a node in graph_b, despite sharing b0's sequence position".into(),
@@ -290,7 +290,7 @@ fn foreign_edge_id_at_the_same_sequence_position_does_not_resolve_locally() -> R
 fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
     let mut graph = Graph::new();
 
-    // Built at runtime and borrowed from a local `String`: this could never satisfy `&'static str`, which is exactly
+    // Built at runtime and borrowed from a local `String`. This could never satisfy `&'static str`, which is exactly
     // the constraint `add_node` used to impose on every caller, including one reading a label from data fetched at
     // runtime.
     let owned_label = format!("node-{}", 42);
@@ -308,8 +308,8 @@ fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The graph model retains a data node's own [`DataNodeContent`] unchanged, not just its rendered SVG. This is the fix
-/// for the review comment that started this: `add_data_node_with` used to store an empty label instead, discarding the
-/// actual values once the SVG was drawn — see [`NodeContent`]'s own doc comment.
+/// for the review comment that started this. `add_data_node_with` used to store an empty label instead, discarding the
+/// actual values once the SVG was drawn. See [`NodeContent`]'s own doc comment.
 #[test]
 fn add_node_retains_the_original_data_node_content() -> Result<(), String> {
     let mut graph = Graph::new();

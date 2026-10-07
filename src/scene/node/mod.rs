@@ -38,9 +38,9 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::EmptyNodeContent`] if `content` holds no values, or [`Error::InvalidGridLayout`] if its own grid
-/// layout wraps `0`. Shared by every path that draws a `DataNodeContent` grid — a data node's own construction, a
+/// layout wraps `0`. Shared by every path that draws a `DataNodeContent` grid: a data node's own construction, a
 /// `measure_data_node`/`measure_named_data_node` call, and an operator node's own `result` (via
-/// `validate_operator_result`) — so content validity can never drift between drawing a real node and merely measuring
+/// `validate_operator_result`). So content validity can never drift between drawing a real node and merely measuring
 /// what one would look like.
 fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     if content.len() == 0 {
@@ -61,8 +61,8 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
 /// The label's default font size, in user-space units, before a node's own label is ever shrunk to fit its box.
 const LABEL_FONT_SIZE: f64 = 14.0;
 
-/// Font size for a data node's cell text, in user-space units. Deliberately smaller than [`LABEL_FONT_SIZE`]: a
-/// byte-group value (e.g. `"F0 E1 D2 C3 B4 A5 96 87"`) is far longer than a typical plain label, so a slightly smaller
+/// Font size for a data node's cell text, in user-space units. Deliberately smaller than [`LABEL_FONT_SIZE`]. A
+/// byte-group value (e.g. `"F0 E1 D2 C3 B4 A5 96 87"`) is far longer than a typical plain label. So a slightly smaller
 /// size keeps a modest grid from demanding an oversized box by default.
 const GRID_FONT_SIZE: f64 = 13.0;
 
@@ -73,15 +73,16 @@ const GRID_FONT_FAMILY: &str = "ui-monospace, SFMono-Regular, Menlo, Consolas, m
 
 /// The height of one value's own cell, in user-space units — a fixed multiple of [`GRID_FONT_SIZE`], not measured.
 ///
-/// Unlike a cell's width — which depends entirely on how many characters its own value holds, and so is measured via
-/// [`SvgNode::bounding_box`](svg_dom::SvgNode::bounding_box) — a monospace font's own line height at one fixed size is
-/// predictable enough that measuring it separately for every node would only add overhead, not accuracy.
+/// Unlike a cell's width, this is predictable. A cell's width depends entirely on how many characters its own value
+/// holds, so it is measured via [`SvgNode::bounding_box`](svg_dom::SvgNode::bounding_box). A monospace font's own line
+/// height at one fixed size is predictable enough that measuring it separately for every node would only add overhead,
+/// not accuracy.
 const CELL_HEIGHT: f64 = GRID_FONT_SIZE * 1.4;
 
 /// The gap kept clear, on every side, between one value's own text and that value's own cell edges.
 const CELL_PADDING: f64 = 6.0;
 
-/// The gap kept clear, on every side, between a node's own inset value cell(s) and its outer box edges — so a connector
+/// The gap kept clear, on every side, between a node's own inset value cell(s) and its outer box edges. So a connector
 /// anchored anywhere on the outer box's own perimeter never coincides with a cell's own border. See [`operator`]'s own
 /// module doc comment for why this matters for an operator node specifically.
 const OUTER_PADDING: f64 = 10.0;
@@ -134,15 +135,15 @@ impl Scene {
         let own_input_edges = handles.binary_operator_input_edges;
 
         // Taken out for the call so `redraw_edge`/`redraw_binary_operator_inputs` can freely borrow the rest of `inner`
-        // on every iteration, then put back — see `SceneInner::scratch`'s own doc comment for why this, rather than a
-        // fresh `String` per call.
+        // on every iteration. It is then put back. See `SceneInner::scratch`'s own doc comment for why this, rather
+        // than a fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
 
-        // `id` is itself a binary operator node, so `edge_anchors` is *its own* fixing-point configuration: it feeds
-        // `binary_operator_anchors` for both input edges at once, and both are redrawn together, once, here — the same
-        // reasoning `SceneInner::move_node` follows for `redraw_binary_operator_inputs`. Changing an ordinary node's,
-        // or an operand's own, `edge_anchors` never needs this: it only ever affects that one node's own from-side
-        // anchor, never the operator-side split.
+        // `id` is itself a binary operator node, so `edge_anchors` is *its own* fixing-point configuration. It feeds
+        // `binary_operator_anchors` for both input edges at once, and both are redrawn together, once, here.
+        // `SceneInner::move_node` follows the same reasoning for `redraw_binary_operator_inputs`. Changing an ordinary
+        // node's, or an operand's own, `edge_anchors` never needs this: it only ever affects that one node's own
+        // from-side anchor, never the operator-side split.
         if own_input_edges.is_some() {
             if let Err(e) = inner.redraw_binary_operator_inputs(id, &mut scratch) {
                 inner.scratch = scratch;
@@ -168,10 +169,10 @@ impl Scene {
     /// as this crate itself last drew it.
     ///
     /// For a plain or container node this is exactly the `top_left`/`size` its own constructor was given. For a data or
-    /// operator node it is the box this crate itself computed to fit its own content instead — a caller has no way to
-    /// know that size ahead of drawing (`draw_content_box` measures each cell's own real rendered text width; see its
-    /// own doc comment), so this is the only way to learn it afterward. Useful for laying out a node relative to
-    /// another one already drawn — for example, positioning a second node so its own centre lines up with a first
+    /// operator node it is the box this crate itself computed to fit its own content instead. A caller has no way to
+    /// know that size ahead of drawing, because `draw_content_box` measures each cell's own real rendered text width
+    /// (see its own doc comment). So this is the only way to learn it afterward. Useful for laying out a node relative
+    /// to another one already drawn. For example, it can position a second node so its own centre lines up with a first
     /// node's, when the first node's own rendered width was not known in advance.
     ///
     /// Reflects `id`'s own position as most recently written: after a drag moves it, this returns the moved rectangle,
@@ -199,9 +200,9 @@ impl Scene {
     /// node whose width is based on dynamic content and cannot therefore be known in advance.
     ///
     /// Any edge already wired to `id` at its own placeholder position (e.g. an operator node's own auto-wired inputs)
-    /// is redrawn against the new position too: a connector's own side is re-resolved from the node's current rect on
-    /// every redraw, not cached from whichever position was current when the edge was first drawn. This uses the same
-    /// ray-cast calculation as a live drag does on every frame.
+    /// is redrawn against the new position too. A connector's own side is re-resolved from the node's current rect on
+    /// every redraw. It is not cached from whichever position was current when the edge was first drawn. This uses the
+    /// same ray-cast calculation as a live drag does on every frame.
     ///
     /// `id`'s own current position already equal to `top_left` is a no-op: nothing is redrawn.
     ///
@@ -216,9 +217,9 @@ impl Scene {
     /// not rely on that remaining true forever. Checked before touching the scene, so a rejected call leaves the node
     /// exactly as it was.
     ///
-    /// Also returns a wrapped [`Error::Svg`] if redrawing an incident connector fails partway through — the same "can
-    /// leave some incident connectors already redrawn and others not" property [`Scene::set_edge_anchors`]'s own doc
-    /// comment already describes, for the same reason.
+    /// Also returns a wrapped [`Error::Svg`] if redrawing an incident connector fails partway through. This is the same
+    /// "can leave some incident connectors already redrawn and others not" property [`Scene::set_edge_anchors`]'s own
+    /// doc comment already describes, for the same reason.
     pub fn move_node(&self, id: NodeId, top_left: Point) -> Result<(), Error> {
         let size = self.inner.borrow().node_rect(id)?.size;
         let rect = Rect { origin: top_left, size };
@@ -234,8 +235,8 @@ impl Scene {
 
         let mut inner = self.inner.borrow_mut();
         // Taken out for the call so `redraw_edge`/`redraw_binary_operator_inputs` can freely borrow the rest of `inner`
-        // on every iteration, then put back — see `SceneInner::scratch`'s own doc comment for why this, rather than a
-        // fresh `String` per call.
+        // on every iteration. It is then put back. See `SceneInner::scratch`'s own doc comment for why this, rather
+        // than a fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
         let result = inner.move_node(id, top_left, &mut scratch);
         inner.scratch = scratch;
@@ -245,19 +246,19 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Rings or un-rings node `id`'s own outer box as a whole, with the same focus-ring stroke this crate's own toolbar
     /// buttons already use. Unlike [`Scene::set_selection`](crate::scene::Scene::set_selection), this works on any node
-    /// kind — a plain node, a container node, or a data node — since it never looks at a node's own cells, only the one
-    /// outer box every kind draws.
+    /// kind: a plain node, a container node, or a data node. It never looks at a node's own cells, only the one outer
+    /// box every kind draws.
     ///
-    /// A host driving its own multi-node walk — stepping through a diagram's own stages, say, rather than one node's
-    /// own values — uses this to mark whichever nodes the current stage puts in focus, and clears it from whichever it
-    /// moves away from. There is no single-node "current stage" this crate tracks on a host's behalf; unlike
-    /// [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)'s own managed `Selection`,
-    /// calling this twice with `focused: true` for two different nodes focuses both at once.
+    /// A host driving its own multi-node walk uses this to mark whichever nodes the current stage puts in focus. An
+    /// example is stepping through a diagram's own stages rather than one node's own values. It also clears the mark
+    /// from whichever nodes it moves away from. There is no single-node "current stage" this crate tracks on a host's
+    /// behalf. Unlike [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)'s own managed
+    /// `Selection`, calling this twice with `focused: true` for two different nodes focuses both at once.
     ///
     /// `focused: false` always restores the plain default stroke, not whatever this node's own stroke was before its
     /// last `focused: true` call. For a single-value data node, that default is also what
-    /// [`Scene::set_selection`](crate::scene::Scene::set_selection) itself restores a deselected cell to — the two
-    /// features agree on an unfocused/unselected node's own resting look, but neither coordinates with the other's own
+    /// [`Scene::set_selection`](crate::scene::Scene::set_selection) itself restores a deselected cell to. The two
+    /// features agree on an unfocused/unselected node's own resting look. Neither coordinates with the other's own
     /// writes to the same `<rect>`. A host that calls both on the same node is responsible for not fighting itself over
     /// which one writes last.
     ///

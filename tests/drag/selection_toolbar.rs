@@ -1,6 +1,6 @@
-//! Browser tests for `Scene`'s selection toolbar: showing, hiding, Prev/Next/Restart by click and by keyboard,
-//! disabled-button no-ops, an empty data node, reentrancy into the same `Scene` from `on_step`, and the callback's own
-//! lifetime once the toolbar is hidden.
+//! Browser tests for `Scene`'s selection toolbar. They cover showing, hiding, Prev/Next/Restart by click and by
+//! keyboard, and disabled-button no-ops. They also cover an empty data node, reentrancy into the same `Scene` from
+//! `on_step`, and the callback's own lifetime once the toolbar is hidden.
 
 use super::common::*;
 use std::{cell::RefCell, rc::Rc};
@@ -104,10 +104,10 @@ fn there_is_no_selection_toolbar_until_one_is_shown_and_none_after_it_is_hidden(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The ordinary case: a freshly built data node's own `Selection` is already `Selection::None` before
-/// `show_selection_toolbar` ever runs, so its own commit (`set_selection(node, Selection::None)`) is a same-as- current
-/// no-op — it must still sync every button's own `aria-disabled`, not skip it because nothing needed recolouring.
-/// Reproduces a real regression: `set_selection`'s own no-op fast path used to return before ever reaching that sync,
-/// so a toolbar installed against an already-unstarted node drew every button with no `aria-disabled` attribute at all.
+/// `show_selection_toolbar` ever runs. So its own commit (`set_selection(node, Selection::None)`) is a same-as-current
+/// no-op. It must still sync every button's own `aria-disabled`, not skip it because nothing needed recolouring.
+/// Reproduces a real regression. `set_selection`'s own no-op fast path used to return before ever reaching that sync.
+/// So a toolbar installed against an already-unstarted node drew every button with no `aria-disabled` attribute at all.
 #[wasm_bindgen_test]
 fn showing_it_on_an_already_unstarted_node_still_syncs_every_buttons_disabled_state() -> Result<(), String> {
     let scene = new_scene("st-fresh-node")?;
@@ -171,8 +171,8 @@ fn invalid_options_are_rejected_and_leave_any_existing_toolbar_unchanged() -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Showing a second selection toolbar removes the first's own bar from the DOM — not just from
-/// `SceneInner::selection_toolbar` — drops the first's own `on_step` along with it, and leaves only the second one
+/// Showing a second selection toolbar removes the first's own bar from the DOM, not just from
+/// `SceneInner::selection_toolbar`. It drops the first's own `on_step` along with it. It leaves only the second one
 /// responding to activation.
 #[wasm_bindgen_test]
 fn showing_a_second_selection_toolbar_replaces_the_first_in_the_dom_and_drops_its_callback() -> Result<(), String> {
@@ -216,8 +216,8 @@ fn showing_a_second_selection_toolbar_replaces_the_first_in_the_dom_and_drops_it
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Showing the toolbar resets the managed node to the unstarted state regardless of whatever `Selection` it already
-/// held — observed indirectly here, through Prev/Restart both starting out disabled (which could only be true if the
-/// node is genuinely unstarted, not still at cell 2).
+/// held. This is observed indirectly here, through Prev/Restart both starting out disabled. That could only be true if
+/// the node is genuinely unstarted, not still at cell 2.
 #[wasm_bindgen_test]
 fn showing_it_resets_the_managed_node_to_unstarted_regardless_of_prior_selection() -> Result<(), String> {
     let scene = new_scene("st-resets-on-show")?;
@@ -403,8 +403,8 @@ fn keyboard_activation_works_the_same_as_a_click() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `on_step` is explicitly meant to reenter this crate. This drives that directly: the callback itself calls
-/// `scene.set_selection` on a second node — if the click handler still held any part of `SceneInner` borrowed while
+/// `on_step` is explicitly meant to reenter this crate. This drives that directly. The callback itself calls
+/// `scene.set_selection` on a second node. If the click handler still held any part of `SceneInner` borrowed while
 /// calling `on_step`, this would panic on a re-entrant `RefCell` borrow instead of succeeding.
 #[wasm_bindgen_test]
 fn on_step_can_reenter_the_same_scene_without_panicking() -> Result<(), String> {
@@ -427,7 +427,7 @@ fn on_step_can_reenter_the_same_scene_without_panicking() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `on_step` is owned only by the three buttons' own DOM closures, never by `SceneInner` itself — so once
+/// `on_step` is owned only by the three buttons' own DOM closures, never by `SceneInner` itself. So once
 /// `hide_selection_toolbar` removes them, the callback becomes droppable as soon as nothing else in the host's own code
 /// still holds a reference into it.
 #[wasm_bindgen_test]
@@ -458,8 +458,8 @@ fn hiding_the_toolbar_drops_the_callback() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With a stride, the bar holds five buttons in order — `Prev Round`, `Prev`, `Next`, `Next Round`, `Restart` — each
-/// with its own accessible name; without one it still holds the original three.
+/// With a stride, the bar holds five buttons in order: `Prev Round`, `Prev`, `Next`, `Next Round`, `Restart`. Each has
+/// its own accessible name. Without a stride it still holds the original three.
 #[wasm_bindgen_test]
 fn a_stride_adds_two_buttons_in_the_expected_order_with_their_own_names() -> Result<(), String> {
     let scene = new_scene("st-stride-buttons")?;

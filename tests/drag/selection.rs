@@ -73,8 +73,9 @@ fn cell_selection_on_a_single_value_node_recolours_its_own_outer_rect() -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A single-row (one-dimensional) grid's own `Selection::Cell(i)` recolours exactly cell `i`, leaving every other cell
-/// — and the outer box, which is not itself a "cell" once there is more than one value — untouched.
+/// A single-row (one-dimensional) grid's own `Selection::Cell(i)` recolours exactly cell `i`. It leaves every other
+/// cell untouched. It also leaves the outer box untouched, since that is not itself a "cell" once there is more than
+/// one value.
 #[wasm_bindgen_test]
 fn cell_selection_on_a_one_dimensional_grid_recolours_exactly_one_cell() -> Result<(), String> {
     let svg = make_svg("selection-1d", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -111,8 +112,8 @@ fn cell_selection_on_a_one_dimensional_grid_recolours_exactly_one_cell() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// On a two-dimensional grid, `Selection::Row` bands every cell in that row, and its own optional `col` gets the
-/// stronger focus colour instead — the two-tier highlight a data-flow walk over a matrix needs.
+/// On a two-dimensional grid, `Selection::Row` bands every cell in that row. Its own optional `col` gets the stronger
+/// focus colour instead. That is the two-tier highlight a data-flow walk over a matrix needs.
 #[wasm_bindgen_test]
 fn row_selection_bands_the_row_and_focuses_the_named_cell() -> Result<(), String> {
     let svg = make_svg("selection-row", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -256,8 +257,8 @@ fn set_selection_rejects_out_of_range_indices() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A band and a focus are each also distinguishable by stroke width alone, not just by fill colour — the same "not
-/// colour alone" reasoning `NodeValues::type_color`'s own `<title>`/`aria-label` pairing already follows.
+/// A band and a focus are each also distinguishable by stroke width alone, not just by fill colour.
+/// `NodeValues::type_color`'s own `<title>`/`aria-label` pairing already follows the same "not colour alone" reasoning.
 #[wasm_bindgen_test]
 fn selection_gives_band_and_focus_cells_a_thicker_stroke_than_the_default() -> Result<(), String> {
     let svg = make_svg("selection-stroke-width", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -375,8 +376,9 @@ fn set_selection_updates_the_nodes_own_aria_label() -> Result<(), String> {
 /// cell's own rendered value unchanged.
 ///
 /// Proved here by planting a sentinel `fill` directly on a cell via the raw DOM, bypassing `Scene` entirely, right
-/// after selecting it once. A call that actually rewrote the cell would overwrite the sentinel back to the focus colour
-/// — its surviving an identical second call is the only way to observe, from here, that the call did nothing at all.
+/// after selecting it once. A call that actually rewrote the cell would overwrite the sentinel back to the focus
+/// colour. Its surviving an identical second call is the only way to observe, from here, that the call did nothing at
+/// all.
 #[wasm_bindgen_test]
 fn set_selection_with_an_identical_selection_touches_no_cell() -> Result<(), String> {
     let svg = make_svg("selection-no-op", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -408,7 +410,7 @@ fn set_selection_with_an_identical_selection_touches_no_cell() -> Result<(), Str
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `set_selection` only rewrites the cells whose own colour/stroke category (focused, banded, default) actually changes
-/// between the old selection and the new one — not every cell, even for a genuinely different selection.
+/// between the old selection and the new one. It does not rewrite every cell, even for a genuinely different selection.
 ///
 /// Proved the same way as the no-op case above. A sentinel `fill`, planted directly via the raw DOM, survives a
 /// selection change that moves the focus elsewhere but leaves this cell's own category at "default" throughout. It is
@@ -459,12 +461,12 @@ fn set_selection_only_rewrites_cells_whose_own_category_changed() -> Result<(), 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moving a `Selection::Column` band to a disjoint column both un-bands every cell the old column touched and bands
-/// every cell the new one does — `Scene::set_selection` visits a column's own members via `step_by`, not a `0..len`
-/// scan, so this exercises that stride directly rather than the contiguous-range walk a `Row` uses.
+/// every cell the new one does. `Scene::set_selection` visits a column's own members via `step_by`, not a `0..len`
+/// scan. So this exercises that stride directly rather than the contiguous-range walk a `Row` uses.
 ///
-/// Proved the same sentinel way as the row case above: the untouched middle column must survive both calls unwritten,
-/// while the old and new columns must each end up in their correct final colour, not merely "some colour different from
-/// the sentinel."
+/// Proved the same sentinel way as the row case above. The untouched middle column must survive both calls unwritten.
+/// The old and new columns must each end up in their correct final colour, not merely "some colour different from the
+/// sentinel."
 #[wasm_bindgen_test]
 fn set_selection_moving_the_band_to_a_different_column_only_touches_the_two_columns() -> Result<(), String> {
     let svg = make_svg("selection-column-to-column", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -513,8 +515,8 @@ fn set_selection_moving_the_band_to_a_different_column_only_touches_the_two_colu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::set_selection` on a named data node (`Scene::add_named_data_node`) recolours the same inner value box a
-/// plain (unnamed) single-value node's own outer rect gets recoloured — `BoxHandles::cell_rects` still points at the
+/// `Scene::set_selection` on a named data node (`Scene::add_named_data_node`) recolours the same inner value box that a
+/// plain (unnamed) single-value node's own outer rect gets recoloured. `BoxHandles::cell_rects` still points at the
 /// inner content box the name wraps, not the further outer named box around it. The outer named box's own light-blue
 /// fill never changes: selection is a property of the *value*, not of the name labelling it.
 #[wasm_bindgen_test]

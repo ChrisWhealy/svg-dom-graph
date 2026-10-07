@@ -30,7 +30,7 @@ use svg_dom::{
 /// box/label position, and its incident connectors all in sync.
 ///
 /// Owns the `SvgRoot` it renders into. `Scene::new(svg)` binds them for the `SceneInner`'s whole lifetime, so every
-/// node and edge in one `Scene` is guaranteed to live in the same `<svg>` document — there is no `svg` parameter on
+/// node and edge in one `Scene` is guaranteed to live in the same `<svg>` document. There is no `svg` parameter on
 /// [`Scene::add_node`] or [`Scene::add_edge`] through which a caller could pass a different root by mistake.
 ///
 /// `node_handles`/`edge_handles` are stored the same way [`Graph`] stores its own nodes/edges — densely, by `id.index`,
@@ -66,32 +66,32 @@ pub(super) struct SceneInner {
     pub node_handles: Vec<BoxHandles>,
     pub edge_handles: Vec<ConnectorHandle>,
     pub arrow: SvgMarker,
-    /// The (parent `Scene`, container `NodeId`) pair that owns this `Scene` as its nested child, if any — `None` for a
-    /// `Scene` that has never been grafted into another one via `Scene::add_container_node`/ `add_container_node_with`.
-    /// See [`navigation`](super::navigation)'s own module doc comment.
+    /// The (parent `Scene`, container `NodeId`) pair that owns this `Scene` as its nested child, if any. It is `None`
+    /// for a `Scene` that has never been grafted into another one via `Scene::add_container_node`/
+    /// `add_container_node_with`. See [`navigation`](super::navigation)'s own module doc comment.
     pub parent: Option<ParentLink>,
     /// Shared by every `Scene` in this one's own scene tree: which of them is currently focused. Created once, when a
-    /// `Scene` that starts a new tree is made — see [`Scene::new`](super::Scene::new) for the two-stage construction
-    /// this needs, since the `Rc<RefCell<SceneInner>>` a `Weak` inside it would downgrade from does not exist yet at
-    /// the point this field is first written. Every `Scene` `Scene::add_container_node`/ `add_container_node_with` ever
+    /// `Scene` that starts a new tree is made. See [`Scene::new`](super::Scene::new) for the two-stage construction
+    /// this needs. The `Rc<RefCell<SceneInner>>` a `Weak` inside it would downgrade from does not exist yet at the
+    /// point this field is first written. Every `Scene` `Scene::add_container_node`/ `add_container_node_with` ever
     /// grafts underneath this one adopts this same shared value in place of whichever one it held before — see
     /// [`navigation::repoint_subtree`](super::navigation::repoint_subtree).
     pub navigation: Rc<RefCell<NavigationState>>,
     /// A single reused buffer, shared by every one-shot construction/redraw call that needs to format a path `d` or
-    /// element attribute — [`Scene::add_edge_with`], [`Scene::set_connector_type`], [`Scene::set_edge_anchors`], and
-    /// node construction (`draw_box`/`draw_content_box`/`draw_operator_box`, called from [`Scene::add_node_with`],
-    /// [`Scene::add_data_node_with`], and the operator constructors) — rather than each allocating its own fresh
-    /// `String`.
+    /// element attribute. Those callers are [`Scene::add_edge_with`], [`Scene::set_connector_type`],
+    /// [`Scene::set_edge_anchors`], and node construction. Node construction means
+    /// `draw_box`/`draw_content_box`/`draw_operator_box`, called from [`Scene::add_node_with`],
+    /// [`Scene::add_data_node_with`], and the operator constructors. None of them allocates its own fresh `String`.
     ///
-    /// A caller driving a redraw through a live slider fires one call per input event, so a fresh allocation per call
-    /// would mean one per event; a caller building many nodes in a loop would likewise mean one per node. Taken out via
-    /// [`std::mem::take`] for the duration of a call (its callers can then freely borrow the rest of `SceneInner`
-    /// without conflicting with it) and put back once the call is done, so its capacity — not its content — is what
-    /// persists between calls.
+    /// A caller driving a redraw through a live slider fires one call per input event. A fresh allocation per call
+    /// would mean one per event. A caller building many nodes in a loop would likewise mean one per node. Taken out via
+    /// [`std::mem::take`] for the duration of a call, so its callers can freely borrow the rest of `SceneInner` without
+    /// conflicting with it. It is put back once the call is done. So its capacity, not its content, is what persists
+    /// between calls.
     ///
     /// The pointer-move/pointer-up drag handlers in [`drag`](super::drag) keep their own separate, closure-captured
-    /// buffer instead, reused for the lifetime of one drag rather than the whole scene — already the right shape for a
-    /// handler that fires far more often, for as long as a single gesture lasts.
+    /// buffer instead. It is reused for the lifetime of one drag rather than the whole scene. That is already the right
+    /// shape for a handler that fires far more often, for as long as a single gesture lasts.
     pub scratch: String,
 }
 
@@ -189,9 +189,10 @@ impl SceneInner {
         Ok(())
     }
 
-    /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph` —
-    /// always in lockstep with it, so `id.index` is always exactly `self.node_handles.len()` here, the same
-    /// always-an-append reasoning [`Graph::add_node`](crate::model::graph::Graph::add_node)'s own comment gives.
+    /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph`, always
+    /// in lockstep with it. So `id.index` is always exactly `self.node_handles.len()` here.
+    /// [`Graph::add_node`](crate::model::graph::Graph::add_node)'s own comment gives the same always-an-append
+    /// reasoning.
     pub(super) fn insert_node_handle(&mut self, id: NodeId, handles: BoxHandles) {
         debug_assert_eq!(
             id.graph, self.graph.id,
@@ -205,8 +206,8 @@ impl SceneInner {
         self.node_handles.push(handles);
     }
 
-    /// Removes and returns node `id`'s own box handles, or `None` if `id` does not name a node in this scene, or if
-    /// `id` does not name the most recently added one — see [`Graph::remove_node`](crate::model::graph::Graph::
+    /// Removes and returns node `id`'s own box handles. It returns `None` if `id` does not name a node in this scene,
+    /// or does not name the most recently added one. See [`Graph::remove_node`](crate::model::graph::Graph::
     /// remove_node)'s own doc comment for why only the last is ever a valid target.
     pub(super) fn remove_node_handle(&mut self, id: NodeId) -> Option<BoxHandles> {
         if id.graph != self.graph.id {
@@ -256,8 +257,8 @@ impl SceneInner {
         self.edge_handles.push(handle);
     }
 
-    /// Removes and returns edge `id`'s own connector handle, or `None` if `id` does not name an edge in this scene, or
-    /// if `id` does not name the most recently added one — see [`Graph::remove_edge`](crate::model::graph::
+    /// Removes and returns edge `id`'s own connector handle. It returns `None` if `id` does not name an edge in this
+    /// scene, or does not name the most recently added one. See [`Graph::remove_edge`](crate::model::graph::
     /// Graph::remove_edge)'s own doc comment for why only the last is ever a valid target.
     pub(super) fn remove_edge_handle(&mut self, id: EdgeId) -> Option<ConnectorHandle> {
         if id.graph != self.graph.id {
@@ -289,11 +290,11 @@ impl SceneInner {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `to`-side routing override for the edge from `from` to `to`, if `to` is a binary operator node and `from` is
-    /// one of its own two known inputs — see [`connector::route`]'s own `to_override` parameter.
+    /// one of its own two known inputs. See [`connector::route`]'s own `to_override` parameter.
     ///
-    /// `None` for every other edge: an unknown `from`/`to`, a `to` that is not a two-input operator node, or a `from`
-    /// that is not one of its two inputs (an edge a caller wired up by hand, bypassing both
-    /// [`Scene::add_binary_operator_node_with`] and [`Scene::add_arithmetic_operator_node_with`]). Each of those falls
+    /// `None` for every other edge. That covers an unknown `from`/`to`, a `to` that is not a two-input operator node,
+    /// and a `from` that is not one of its two inputs. The last is an edge a caller wired up by hand, bypassing both
+    /// [`Scene::add_binary_operator_node_with`] and [`Scene::add_arithmetic_operator_node_with`]. Each of those falls
     /// back to `route`'s own existing default, exactly as before this existed.
     pub(super) fn binary_operator_to_override(
         &self,
@@ -301,8 +302,8 @@ impl SceneInner {
         to: NodeId,
     ) -> Option<connector::BinaryOperatorRoute> {
         let (input_a, input_b) = self.node_handle(to)?.binary_operator_inputs?;
-        // Both two-input operator constructors reject `input_a == input_b`, so this is an unambiguous, stable identity
-        // — not just "which `NodeId`", but "which of the two operand *slots* this edge is" — see
+        // Both two-input operator constructors reject `input_a == input_b`, so this is an unambiguous, stable identity.
+        // It says not just "which `NodeId`", but "which of the two operand *slots* this edge is". See
         // `binary_operator_anchors`'s own doc comment for why that stability matters.
         let from_is_a = if from == input_a {
             true
@@ -342,9 +343,9 @@ impl SceneInner {
     ///
     /// `move_node` redraws every edge already incident to the node that moved. For an edge this identifies, it calls
     /// [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) instead of
-    /// [`redraw_edge`](Self::redraw_edge) — the sibling operand's own edge into the same operator is not incident to
-    /// `mover`, so nothing else would ever redraw it, and it would keep showing wherever it last computed its own
-    /// anchor, stale, until something else happened to move it too.
+    /// [`redraw_edge`](Self::redraw_edge). The sibling operand's own edge into the same operator is not incident to
+    /// `mover`. So nothing else would ever redraw it. It would keep showing wherever it last computed its own anchor,
+    /// stale, until something else happened to move it too.
     pub(super) fn binary_operator_input_target(&self, mover: NodeId, edge_id: EdgeId) -> Option<NodeId> {
         let edge = self.graph.edge(edge_id)?;
         if edge.from != mover {
@@ -369,11 +370,12 @@ impl SceneInner {
     /// If `new_origin` exactly matches `id`'s current origin, then we can bail out early and ourselves from redrawing
     /// an unchanged incident-edge.
     ///
-    /// A binary operator input edge — either because `id` itself is a binary operator node, redrawing its own two input
-    /// edges, or because `id` is one of some other operator's own two operands — is routed through
+    /// A binary operator input edge is routed through
     /// [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) rather than
-    /// [`redraw_edge`](Self::redraw_edge), so a dragged operand's own shared-side pair is only ever computed once per
-    /// frame, not once per edge. See that method's own doc comment.
+    /// [`redraw_edge`](Self::redraw_edge). That happens either because `id` itself is a binary operator node, redrawing
+    /// its own two input edges, or because `id` is one of some other operator's own two operands. A dragged operand's
+    /// own shared-side pair is then only ever computed once per frame, not once per edge. See that method's own doc
+    /// comment.
     ///
     /// # Errors
     ///
@@ -400,9 +402,8 @@ impl SceneInner {
             .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
         let own_input_edges = handles.binary_operator_input_edges;
 
-        // `id` is itself a binary operator node: its own two input edges are redrawn together, once, below — rather
-        // than via two separate iterations in the loop that would each recompute their shared pair geometry
-        // independently.
+        // `id` is itself a binary operator node. Its own two input edges are redrawn together, once, below. Two
+        // separate iterations in the loop would each recompute their shared pair geometry independently.
         if own_input_edges.is_some() {
             self.redraw_binary_operator_inputs(id, scratch)?;
         }
@@ -450,8 +451,9 @@ impl SceneInner {
     /// input edge — see `node::operator::draw_port_marker`'s own doc comment for which edges get one.
     ///
     /// Repositions the existing element rather than recreating it, the same as
-    /// [`write_edge_path`](Self::write_edge_path) does for the connector's own `<path>` — both are direct SVG-root
-    /// children in absolute coordinates, rewritten on every redraw rather than relying on any node's own `transform`.
+    /// [`write_edge_path`](Self::write_edge_path) does for the connector's own `<path>`. Both are direct SVG-root
+    /// children in absolute coordinates. They are rewritten on every redraw rather than relying on any node's own
+    /// `transform`.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
     /// event.
@@ -478,10 +480,10 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
     ///
-    /// The ordinary-edge fallback: correct for a binary operator input edge too (`binary_operator_to_override` still
-    /// recomputes the full pair to answer for this one edge), but [`move_node`](Self::move_node) prefers
-    /// [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs) for those, so that pair is computed once
-    /// for both edges rather than once per `redraw_edge` call.
+    /// The ordinary-edge fallback. It is correct for a binary operator input edge too, because
+    /// `binary_operator_to_override` still recomputes the full pair to answer for this one edge. But
+    /// [`move_node`](Self::move_node) prefers [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs)
+    /// for those. So that pair is computed once for both edges rather than once per `redraw_edge` call.
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
     /// event.
@@ -509,19 +511,19 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Redraws both of binary operator node `operator`'s own two input edges together: computes the shared pair
-    /// geometry — [`binary_operator_anchors`], and which side each input lands on — exactly once, then derives and
+    /// Redraws both of binary operator node `operator`'s own two input edges together. It computes the shared pair
+    /// geometry exactly once: [`binary_operator_anchors`], and which side each input lands on. It then derives and
     /// writes each edge's own route from it.
     ///
     /// [`move_node`](Self::move_node) calls this instead of two separate [`redraw_edge`](Self::redraw_edge) calls
     /// whenever an edge it would otherwise redraw is one of a binary operator's own registered inputs. Two independent
     /// `redraw_edge` calls would each recompute this same pair from scratch, via
-    /// [`binary_operator_to_override`](Self::binary_operator_to_override) — once for dragging either operand, and again
-    /// for moving the operator itself, whose own two incident edges are exactly this pair.
+    /// [`binary_operator_to_override`](Self::binary_operator_to_override). That would happen once for dragging either
+    /// operand, and again for moving the operator itself, whose own two incident edges are exactly this pair.
     ///
     /// Does nothing if `operator` does not name a binary operator node in this scene with both its own input edges
-    /// still wired — for example, a plain node, or (mid-construction only, never observable afterward) an operator
-    /// whose own rollback is still in progress.
+    /// still wired. Examples are a plain node, or an operator whose own rollback is still in progress. The latter
+    /// happens mid-construction only, never observably afterward.
     ///
     /// # Errors
     ///
@@ -631,9 +633,9 @@ impl SceneInner {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// If node `id`'s current rect overlaps another node's, returns a corrected origin that resolves the overlap.
     ///
-    /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` — `id`'s own position before the drag
-    /// that produced its current, overlapping position — through the overlapped node's centre, stopping just clear of
-    /// that node's boundary, plus `padding` user-space units.
+    /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` through the overlapped node's centre.
+    /// `pre_drag_origin` is `id`'s own position before the drag that produced its current, overlapping position. It
+    /// stops just clear of that node's boundary, plus `padding` user-space units.
     ///
     /// When `id`'s rect overlaps more than one other node, it resolves against whichever overlapping node's centre is
     /// nearest to `id`'s own current centre. Ties are broken by `NodeId`'s index, so the choice stays deterministic

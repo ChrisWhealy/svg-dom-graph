@@ -41,12 +41,12 @@ const STRIDE_BUTTON_WIDTH: f64 = 104.0;
 /// What a `SelectionTransition` reports: a change to the managed node's own flat position, never which button caused
 /// it.
 ///
-/// `Restart` from `Some(3)` and `Prev` from `Some(0)` both produce `{from: Some(_), to: None}` and are deliberately
-/// indistinguishable here — both leave the managed node at the same unstarted state, and a host's own "reset
-/// everything" response to `to.is_none()` is correct for either. A caller that needs to tell them apart has no way to,
-/// by design — see [`Scene::show_selection_toolbar`]'s own doc comment. The host's own `on_step` callback,
-/// reference-counted so all three buttons can share one copy — see [`SelectionToolbar::on_step`]'s own doc comment for
-/// why it lives only there, never on `SceneInner` itself.
+/// `Restart` from `Some(3)` and `Prev` from `Some(0)` both produce `{from: Some(_), to: None}`, and are deliberately
+/// indistinguishable here. Both leave the managed node at the same unstarted state. A host's own "reset everything"
+/// response to `to.is_none()` is correct for either. A caller that needs to tell them apart has no way to, by design —
+/// see [`Scene::show_selection_toolbar`]'s own doc comment. The host's own `on_step` callback, reference-counted so all
+/// three buttons can share one copy — see [`SelectionToolbar::on_step`]'s own doc comment for why it lives only there,
+/// never on `SceneInner` itself.
 type OnStep = Rc<dyn Fn(&Scene, NodeId, SelectionTransition)>;
 
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -183,10 +183,10 @@ fn build_button(
     })?;
 
     // Both listeners hold only a `Weak` reference to the scene's shared state, exactly like `toolbar::build_button`'s
-    // own — a strong one would keep `SceneInner` alive for as long as the page holds this listener. `on_step` is
-    // reference-counted separately (see `SelectionToolbar::on_step`'s own doc comment): each button's own `Rc::clone`
-    // is owned by that button's DOM closure alone, never by `SceneInner` itself, so there is no retained-callback cycle
-    // through it either — see `Scene::show_selection_toolbar`'s own doc comment ("Ownership").
+    // own. A strong one would keep `SceneInner` alive for as long as the page holds this listener. `on_step` is
+    // reference-counted separately (see `SelectionToolbar::on_step`'s own doc comment). Each button's own `Rc::clone`
+    // is owned by that button's DOM closure alone, never by `SceneInner` itself. So there is no retained-callback cycle
+    // through it either. See `Scene::show_selection_toolbar`'s own doc comment ("Ownership").
     let on_click_inner = inner.clone();
     let on_click_step = on_step.clone();
     group.on_click(move |_| apply(&on_click_inner, node, action, stride, &on_click_step))?;
@@ -261,11 +261,11 @@ impl SceneInner {
     /// Marks each selection toolbar button enabled or disabled, to match what its action could currently do against the
     /// managed node's own current [`Selection`].
     ///
-    /// Same "write only what changed" shape as the zoom toolbar's own equivalent internal sync step — each button
+    /// Same "write only what changed" shape as the zoom toolbar's own equivalent internal sync step. Each button
     /// remembers whether it was last drawn enabled, and writes its attributes only when that changes. Called from every
-    /// successful [`Scene::set_selection`], not only from a click through this toolbar's own buttons: an external
+    /// successful [`Scene::set_selection`], not only from a click through this toolbar's own buttons. An external
     /// `set_selection` call against the managed node is, by design, exactly as valid a way to move it as one of these
-    /// buttons — see `Scene::show_selection_toolbar`'s own doc comment.
+    /// buttons. See `Scene::show_selection_toolbar`'s own doc comment.
     pub(super) fn sync_selection_toolbar_state(&self) -> Result<(), Error> {
         let Some(toolbar) = &self.selection_toolbar else { return Ok(()) };
         let Some(node_data) = self.graph.node(toolbar.node) else { return Ok(()) };
@@ -317,7 +317,7 @@ impl Scene {
     ///
     /// Because there is only one value, not two, there is nothing to fall out of sync. A `Scene::set_selection` call
     /// against `node` made after this toolbar is shown simply becomes the new starting point the next button press
-    /// advances from — see [`SelectionTransition`]'s own doc comment for exactly what the callback sees when that
+    /// advances from. See [`SelectionTransition`]'s own doc comment for exactly what the callback sees when that
     /// external `Selection` is not one this toolbar's own buttons would ever have produced.
     ///
     /// Showing the toolbar resets `node` to [`Selection::None`] — "unstarted", before element `0` is ever processed —
@@ -326,42 +326,42 @@ impl Scene {
     ///
     /// # An optional stride
     ///
-    /// With [`SelectionToolbarOptions::stride`] set, the bar also holds `Prev <label>` and `Next <label>`, which move
-    /// [`SelectionStride::step`] cells at a time — for cells that fall into equal groups, such as the five functions of
-    /// each Keccak round. Both are clamped to the first and last cell, are disabled when they could not move, and
-    /// report an ordinary [`SelectionTransition`]. `Prev <label>` never goes back to the unstarted state. From
-    /// unstarted, `Next <label>` lands on the last cell of the first group.
+    /// With [`SelectionToolbarOptions::stride`] set, the bar also holds `Prev <label>` and `Next <label>`. They move
+    /// [`SelectionStride::step`] cells at a time, for cells that fall into equal groups. An example is the five
+    /// functions of each Keccak round. Both are clamped to the first and last cell, are disabled when they could not
+    /// move, and report an ordinary [`SelectionTransition`]. `Prev <label>` never goes back to the unstarted state.
+    /// From unstarted, `Next <label>` lands on the last cell of the first group.
     ///
     /// # Disabled buttons
     ///
     /// Activating a disabled button does nothing: it does not change `node`'s own `Selection`, and does not invoke
     /// `on_step`. Prev and Restart are disabled once `node` is already unstarted — there is nothing before it to walk
     /// back to. Next is disabled at the last element, and outright for a `node` with no values at all, which also holds
-    /// it at the unstarted state forever; showing this toolbar on such a node is not an error — every button just
+    /// it at the unstarted state forever. Showing this toolbar on such a node is not an error. Every button just
     /// starts, and stays, disabled.
     ///
     /// # `on_step`
     ///
-    /// Called after every actual change to `node`'s own `Selection` — never for a disabled button's own activation —
-    /// with the [`Scene`] the change happened in, `node`, and a [`SelectionTransition`] describing the change.
-    /// Mandatory, not an optional `_with` variant: the library owns `node`'s own `Selection`, `on_step` is how the host
-    /// owns the consequences of it changing, and there is no meaningful toolbar without both halves. A `node` whose
+    /// Called after every actual change to `node`'s own `Selection`, never for a disabled button's own activation. It
+    /// receives the [`Scene`] the change happened in, `node`, and a [`SelectionTransition`] describing the change.
+    /// Mandatory, not an optional `_with` variant. The library owns `node`'s own `Selection`, and `on_step` is how the
+    /// host owns the consequences of it changing. There is no meaningful toolbar without both halves. A `node` whose
     /// selection changes need no downstream response can still pass `|_, _, _| {}`.
     ///
     /// ## Callback lifecycle
     ///
-    /// `on_step` is always called with every part of this `Scene`'s own state already fully updated and unborrowed — it
+    /// `on_step` is always called with every part of this `Scene`'s own state already fully updated and unborrowed. It
     /// is free to reenter this crate, including calling back into this same `Scene`.
     ///
     /// ## Ownership
     ///
     /// `on_step` is not stored on this `Scene`'s own shared state. It is wrapped once and cloned into each of the three
-    /// buttons' own DOM click/keydown closures, which already hold only a `Weak` reference back to the scene — the same
-    /// shape [`make_enterable`](Self::make_enterable)'s own listeners use. So there is no retained- callback cycle
-    /// through this crate's own state. What remains the host's own responsibility: a closure that captures a strong
-    /// `Scene` clone (rather than using the `&Scene` argument it is handed at call time) keeps that `Scene`'s
-    /// underlying state alive for as long as the page's own DOM listener lives — no different from any other
-    /// `on_click`/`on_keydown` closure a host writes today.
+    /// buttons' own DOM click/keydown closures. Those already hold only a `Weak` reference back to the scene.
+    /// [`make_enterable`](Self::make_enterable)'s own listeners use the same shape. So there is no retained- callback
+    /// cycle through this crate's own state. What remains the host's own responsibility is this. A closure that
+    /// captures a strong `Scene` clone (rather than using the `&Scene` argument it is handed at call time) keeps that
+    /// `Scene`'s underlying state alive. It stays alive for as long as the page's own DOM listener lives. That is no
+    /// different from any other `on_click`/`on_keydown` closure a host writes today.
     ///
     /// # Errors
     ///
@@ -445,9 +445,9 @@ impl Scene {
         }
 
         // Only now is the new toolbar fully committed — built, installed, laid out, and the managed node's own
-        // `Selection` reset. Only now is it safe to remove whatever toolbar this one replaced: `previous`'s own DOM
-        // group (and with it, its buttons' own listeners and their `Rc<dyn Fn>` clone of its own `on_step`) must stay
-        // intact until this point, since either of the two failure branches above puts it straight back into
+        // `Selection` reset. Only now is it safe to remove whatever toolbar this one replaced. `previous`'s own DOM
+        // group must stay intact until this point. That includes its buttons' own listeners and their `Rc<dyn Fn>`
+        // clone of its own `on_step`. Either of the two failure branches above puts it straight back into
         // `inner.selection_toolbar` as the still-live, still-shown toolbar.
         if let Some(previous) = previous {
             previous.remove();
@@ -459,10 +459,10 @@ impl Scene {
     /// Removes the selection toolbar from the DOM entirely, and with it every button and its listeners. Does nothing if
     /// none is shown.
     ///
-    /// This also drops this toolbar's own `Rc<dyn Fn>` wrapper around `on_step` — since it was never held anywhere but
-    /// the removed buttons' own DOM closures (see [`show_selection_toolbar`](Self::show_selection_toolbar)'s own doc
-    /// comment, "Ownership"), `on_step` itself becomes droppable as soon as nothing else in the host's own code still
-    /// holds a reference into it.
+    /// This also drops this toolbar's own `Rc<dyn Fn>` wrapper around `on_step`. It was never held anywhere but the
+    /// removed buttons' own DOM closures (see [`show_selection_toolbar`](Self::show_selection_toolbar)'s own doc
+    /// comment, "Ownership"). So `on_step` itself becomes droppable as soon as nothing else in the host's own code
+    /// still holds a reference into it.
     ///
     /// The managed node's current `Selection` is left exactly as it was.
     pub fn hide_selection_toolbar(&self) {

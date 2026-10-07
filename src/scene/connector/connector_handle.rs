@@ -3,8 +3,8 @@ use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered `<path>` for one edge's connector, plus everything about it `redraw_edge` has no other way to learn
-/// once a node move forces a reroute — the [`ConnectorType`] and the forced `from`/`to` side (if any) it was created
-/// with. These values must live alongside the rendered handle, not just get used once at creation.
+/// once a node move forces a reroute. That is the [`ConnectorType`] and the forced `from`/`to` side (if any) it was
+/// created with. These values must live alongside the rendered handle, not just get used once at creation.
 pub(crate) struct ConnectorHandle {
     pub(crate) path: SvgNode,
     pub(crate) connector_type: ConnectorType,

@@ -1,23 +1,23 @@
 //! Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and the panel fragments in
 //! `demo/panels/`.
 //!
-//! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`, minus its category dividers: `svg-dom`'s gallery groups
-//! roughly eighty panels under menu headings like "Basic Shapes" and "Filters", which this gallery's much smaller panel
-//! count has no need for yet. Add category support here the same way `svg-dom` does, if this list ever grows large
+//! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`, minus its category dividers. `svg-dom`'s gallery groups
+//! roughly eighty panels under menu headings like "Basic Shapes" and "Filters". This gallery's much smaller panel count
+//! has no need for that yet. Add category support here the same way `svg-dom` does, if this list ever grows large
 //! enough to want it.
 //!
-//! [`MANIFEST`] is this gallery's single source of truth for both panel order and menu labelling: it drives the
-//! generated `<nav>` menu and the generated panel body, so the two can never disagree about which panels exist or what
+//! [`MANIFEST`] is this gallery's single source of truth for both panel order and menu labelling. It drives the
+//! generated `<nav>` menu and the generated panel body. So the two can never disagree about which panels exist or what
 //! order they come in.
 //!
-//! It does not know anything about the Rust demo functions that build each panel's content — that mapping lives in
-//! `demo-app/src/lib.rs`'s `demo_gallery!` invocation instead, which holds a separate list for a separate reason (see
-//! that macro's own doc comment). The job of [`super::validate`] is to keep the two ids in step.
+//! It does not know anything about the Rust demo functions that build each panel's content. That mapping lives in
+//! `demo-app/src/lib.rs`'s `demo_gallery!` invocation instead. That invocation holds a separate list for a separate
+//! reason (see that macro's own doc comment). The job of [`super::validate`] is to keep the two ids in step.
 //!
 //! # Adding a new demo
 //!
-//! Add its id and menu label to [`MANIFEST`], create the matching `demo/panels/{id}.html` fragment (containing an
-//! element with `id="{id}"`, since [`assemble`] checks the two match), and add the matching `demo_gallery!` entry in
+//! Add its id and menu label to [`MANIFEST`]. Create the matching `demo/panels/{id}.html` fragment, containing an
+//! element with `id="{id}"`, since [`assemble`] checks the two match. Then add the matching `demo_gallery!` entry in
 //! `demo-app/src/lib.rs`.
 
 use std::{
@@ -30,8 +30,8 @@ const PANELS_PLACEHOLDER: &str = "{{PANELS}}";
 const MENU_PLACEHOLDER: &str = "{{MENU}}";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `(panel id, menu label)`, in the order the menu and the assembled page both present them. A panel's own body markup
-/// — including its `<h2>` heading — lives entirely in `demo/panels/{id}.html`; this list only decides which fragments
+/// `(panel id, menu label)`, in the order the menu and the assembled page both present them. A panel's own body markup,
+/// including its `<h2>` heading, lives entirely in `demo/panels/{id}.html`. This list only decides which fragments
 /// exist, what order they appear in, and what their `<nav>` link reads.
 const MANIFEST: &[(&str, &str)] = &[
     ("panel-tree", "Directed tree"),
@@ -55,10 +55,10 @@ pub fn panel_ids() -> Vec<&'static str> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Everything that can go wrong assembling `index.html`. None of these checks need an HTML parser — every one is a
-/// targeted check against a specific convention this gallery already relies on (one placeholder per token, one
-/// `id="..."` per fragment, a fragments directory that matches [`MANIFEST`] exactly), not a general claim about
-/// well-formed HTML.
+/// Everything that can go wrong assembling `index.html`. None of these checks need an HTML parser. Every one is a
+/// targeted check against a specific convention this gallery already relies on. The conventions are one placeholder per
+/// token, one `id="..."` per fragment, and a fragments directory that matches [`MANIFEST`] exactly. None is a general
+/// claim about well-formed HTML.
 #[derive(Debug)]
 pub enum AssembleError {
     /// A file could not be read, or the assembled result could not be written.
@@ -80,9 +80,9 @@ pub enum AssembleError {
     /// A fragment's own content does not contain `id="{id}"` for the id it is filed under — it may have been
     /// copy-pasted from another panel's fragment and never updated.
     FragmentIdMismatch { id: &'static str, fragment_path: PathBuf },
-    /// [`MANIFEST`]'s panel ids and `demo/panels/*.html`'s own filenames are not the same set — exactly how an orphaned
-    /// fragment (removed from `MANIFEST` but left on disk) or a missing one (added to `MANIFEST` but never created)
-    /// gets caught.
+    /// [`MANIFEST`]'s panel ids and `demo/panels/*.html`'s own filenames are not the same set. That is exactly how an
+    /// orphaned fragment (removed from `MANIFEST` but left on disk) or a missing one (added to `MANIFEST` but never
+    /// created) gets caught.
     CatalogueMismatch(String),
     /// The fully assembled output still contains a `{{...}}` token after both placeholders were substituted — evidence
     /// of a typo'd or unexpected placeholder that no check above already caught.
@@ -211,8 +211,8 @@ fn is_valid_panel_id(id: &str) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `template` must contain `placeholder` exactly once: zero means nothing will ever be substituted in, and more than
-/// one means `replacen(..., 1)` would leave every occurrence after the first sitting in the output untouched.
+/// `template` must contain `placeholder` exactly once. Zero means nothing will ever be substituted in. More than one
+/// means `replacen(..., 1)` would leave every occurrence after the first sitting in the output untouched.
 fn check_placeholder_count(
     template: &str,
     template_path: &Path,
@@ -289,7 +289,7 @@ fn check_catalogue_consistency(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The assembled output must not contain any `{{...}}` token once both placeholders have been substituted — a leftover
+/// The assembled output must not contain any `{{...}}` token once both placeholders have been substituted. A leftover
 /// one means a typo'd or unexpected placeholder that none of the checks above already caught. Mirrors `svg-dom`'s own
 /// `check_no_leftover_placeholders`.
 fn check_no_leftover_placeholders(assembled: &str) -> Result<(), AssembleError> {
@@ -334,7 +334,7 @@ fn render_menu() -> String {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Escapes `&`, `<` and `>` for safe insertion into an HTML text node — the full set that matters there. Labels are
-/// trusted source code, not user input, so this is not a security boundary; it exists so a future label (e.g. one
+/// trusted source code, not user input, so this is not a security boundary. It exists so a future label (e.g. one
 /// containing `<`) is rendered as text rather than parsed as markup.
 fn escape_text(s: &str) -> String {
     s.replace('&', "&amp;").replace('<', "&lt;").replace('>', "&gt;")

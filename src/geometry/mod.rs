@@ -49,9 +49,10 @@ pub fn boundary_point(rect: Rect, towards: Point) -> Point {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Inverts a 2D affine transform matrix.
 ///
-/// Used to convert a point from `matrix`'s destination coordinate space back into its source space — for example,
-/// `SvgNode::screen_ctm()` maps an element's local coordinates to viewport CSS-pixel coordinates, so its inverse maps
-/// viewport CSS pixels (such as `PointerEvent::client_x`/`client_y`) back into that element's own local coordinates.
+/// Used to convert a point from `matrix`'s destination coordinate space back into its source space. For example,
+/// `SvgNode::screen_ctm()` maps an element's local coordinates to viewport CSS-pixel coordinates. Its inverse therefore
+/// maps viewport CSS pixels (such as `PointerEvent::client_x`/`client_y`) back into that element's own local
+/// coordinates.
 ///
 /// Returns `None` if `matrix` is not invertible: a zero determinant, meaning a degenerate transform such as zero scale
 /// on one axis.
@@ -105,7 +106,7 @@ pub(crate) fn rects_overlap(a: Rect, b: Rect) -> bool {
 ///
 /// Each axis clamps independently, to the range `[bounds start, bounds start + bounds size - box size]`. If `size` is
 /// larger than `bounds` on some axis, that range is empty. This pins the box to `bounds`'s own near edge on that axis
-/// instead, rather than clamping to a negative-width range — the box still overflows `bounds`, but at a fixed,
+/// instead, rather than clamping to a negative-width range. The box still overflows `bounds`, but at a fixed,
 /// predictable edge rather than free to drift arbitrarily far past it.
 pub(crate) fn clamp_to_bounds(origin: Point, size: Size, bounds: Rect) -> Point {
     let max_x = (bounds.origin.x + bounds.size.width - size.width).max(bounds.origin.x);
@@ -118,9 +119,9 @@ pub(crate) fn clamp_to_bounds(origin: Point, size: Size, bounds: Rect) -> Point 
 /// along the line between `blocker`'s own centre and the `previous_centre` by some padding distance.
 ///
 /// Inflates `blocker` by half of `moving_size` on every side, then reuses [`boundary_point`] on that inflated
-/// rectangle: the point where a *point* would just clear the inflated rectangle is exactly the point where a
-/// `moving_size`-sized rectangle, centred there, would just clear the original `blocker` — the standard Minkowski-sum
-/// technique for rectangle/rectangle clearance along a line.
+/// rectangle. The point where a *point* would just clear the inflated rectangle is exactly the point where a
+/// `moving_size`-sized rectangle, centred there, would just clear the original `blocker`. This is the standard
+/// Minkowski-sum technique for rectangle/rectangle clearance along a line.
 ///
 /// `padding` then pushes the result a little further out, so the two rectangles are separated by a visible gap rather
 /// than touching edges.
@@ -251,13 +252,14 @@ pub(crate) fn snapped_anchor(rect: Rect, towards: Point, fixing_points: u8) -> (
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The side of `rect` a ray from its own already-known `centre` toward `towards` first crosses, and the raw coordinate
-/// along that side (an x for a north/south side, a y for an east/west one) the ray actually crosses at.
+/// The side of `rect` a ray from its own already-known `centre` toward `towards` first crosses, together with the raw
+/// coordinate the ray actually crosses at along that side. That coordinate is an x for a north/south side and a y for
+/// an east/west one.
 ///
 /// Picks the side the same way [`edge_anchor`] does. Returns the crossing coordinate itself, not a point snapped to any
-/// candidate — [`binary_operator_anchors`] needs to compare two crossings before deciding where either one finally
-/// lands, and, once decided, passes the winning crossing straight to [`anchor_from_crossing`] rather than recomputing
-/// it there.
+/// candidate. [`binary_operator_anchors`] needs to compare two crossings before deciding where either one finally
+/// lands. Once decided, it passes the winning crossing straight to [`anchor_from_crossing`] rather than recomputing it
+/// there.
 ///
 /// Takes `centre` rather than `rect` alone since [`binary_operator_anchors`] calls this twice, against the same rect,
 /// and computes `centre` itself only once for both calls.
@@ -291,10 +293,10 @@ fn side_and_crossing(rect: Rect, centre: Point, towards: Point) -> (side::Side, 
 /// The anchor point on `rect`'s own `side`, given the ray's own already-known `crossing` coordinate along it — see
 /// [`side_and_crossing`]'s own doc comment for what `crossing` means for a given `side`.
 ///
-/// [`binary_operator_anchors`]'s own different-side branch is the only caller: it already has `side`/`crossing` in hand
-/// for both operands, from its own initial [`side_and_crossing`] calls, so it reaches here instead of calling
-/// [`edge_anchor`]/[`snapped_anchor`] — either of which would redo the same ray/rectangle intersection just to
-/// re-derive the side and crossing this already has.
+/// [`binary_operator_anchors`]'s own different-side branch is the only caller. It already has `side` and `crossing` in
+/// hand for both operands, from its own initial [`side_and_crossing`] calls. So it reaches here instead of calling
+/// [`edge_anchor`]/[`snapped_anchor`]. Either of those would redo the same ray/rectangle intersection just to re-derive
+/// the side and crossing this already has.
 ///
 /// `fixing_points: None` returns `side`'s own plain midpoint, ignoring `crossing` entirely — the same point
 /// [`edge_anchor`] itself would return. `Some(n)` quantises `crossing` to the nearest of `n` evenly spaced candidates
@@ -341,14 +343,15 @@ fn anchor_from_crossing(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `crossing` [`anchor_from_crossing`] needs for `rect`'s own explicitly forced `side`: the ray from `centre`
-/// toward `towards`, projected onto the infinite line `side` itself lies on — the same coordinate [`side_and_crossing`]
-/// would have returned, had it picked `side` itself, rather than whichever side its own ray-cast actually prefers.
+/// The `crossing` [`anchor_from_crossing`] needs for `rect`'s own explicitly forced `side`. It is the ray from `centre`
+/// toward `towards`, projected onto the infinite line `side` itself lies on. That is the same coordinate
+/// [`side_and_crossing`] would have returned, had it picked `side` itself, rather than whichever side its own ray-cast
+/// actually prefers.
 ///
-/// Falls back to `centre`'s own coordinate on that axis when the ray runs parallel to `side` — an East/West side with
-/// `towards` at exactly `centre`'s own y, or a North/South side with `towards` at exactly `centre`'s own x. Direction
-/// along that axis is undefined at zero distance, the same degenerate case [`side_and_crossing`] and [`snapped_anchor`]
-/// both already fall back for.
+/// Falls back to `centre`'s own coordinate on that axis when the ray runs parallel to `side`. That happens for an
+/// East/West side with `towards` at exactly `centre`'s own y. It also happens for a North/South side with `towards` at
+/// exactly `centre`'s own x. Direction along that axis is undefined at zero distance, the same degenerate case
+/// [`side_and_crossing`] and [`snapped_anchor`] both already fall back for.
 fn forced_crossing(centre: Point, towards: Point, rect: Rect, side: side::Side) -> f64 {
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
@@ -372,7 +375,7 @@ fn forced_crossing(centre: Point, towards: Point, rect: Rect, side: side::Side) 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The anchor point on `rect`'s own `side`, forced by the caller rather than picked by [`edge_anchor`]/
-/// [`snapped_anchor`]'s own ray-cast — see [`Scene::add_edge_with`](crate::scene::Scene::add_edge_with)'s own doc
+/// [`snapped_anchor`]'s own ray-cast. See [`Scene::add_edge_with`](crate::scene::Scene::add_edge_with)'s own doc
 /// comment for when a caller needs this instead of leaving the side to be chosen automatically.
 ///
 /// `fixing_points: None` returns `side`'s own plain midpoint, ignoring `towards` entirely — the same point
@@ -413,13 +416,13 @@ pub(crate) fn forced_anchor(rect: Rect, towards: Point, side: side::Side, fixing
 /// [`crate::scene::EdgeAnchors`]'s own "not reserved" contract.
 ///
 /// This is ordered so the two never cross. Whichever operand's own crossing position sits first along the side gets the
-/// first outer candidate. `first` breaks the tie when the two crossings are *exactly* equal — not just the same `Point`
-/// passed twice, but two distinct operands sitting on the same ray from `rect`'s own centre, where comparing the
+/// first outer candidate. `first` breaks the tie when the two crossings are *exactly* equal. That means two distinct
+/// operands sitting on the same ray from `rect`'s own centre, not just the same `Point` passed twice. Comparing the
 /// crossings alone cannot order them.
 ///
-/// `rect`'s own centre, and each of `first`/`second`'s own side/crossing, is computed exactly once, here, and reused
-/// for both returned anchors — on the same-side branch directly, and on the different-side branch via
-/// [`anchor_from_crossing`] — unlike two independent calls each recomputing all of it from scratch. See
+/// `rect`'s own centre, and each of `first`/`second`'s own side and crossing, is computed exactly once, here. It is
+/// reused for both returned anchors: directly on the same-side branch, and via [`anchor_from_crossing`] on the
+/// different-side branch. This differs from two independent calls, each recomputing all of it from scratch. See
 /// [`SceneInner::binary_operator_to_override`](crate::scene::SceneInner::binary_operator_to_override), the one caller
 /// that needs both of a pair's own anchors together.
 pub(crate) fn binary_operator_anchors(
@@ -481,8 +484,9 @@ pub(crate) fn binary_operator_anchors(
 /// user-space units. Comfortably past the arrowhead marker's own 10-unit length (see `define_arrow_marker`), so the
 /// glyph reads clearly on the connector's own shaft rather than sitting on top of the arrowhead. Shared between
 /// [`crate::scene::node::operator`], which places each marker at construction, and
-/// [`crate::scene::SceneInner::redraw_binary_operator_inputs`], which repositions it on every later redraw — both must
-/// offset by the same distance, or a drag would visibly snap the marker to a new position the first time it redraws.
+/// [`crate::scene::SceneInner::redraw_binary_operator_inputs`], which repositions it on every later redraw. Both must
+/// offset by the same distance. Otherwise a drag would visibly snap the marker to a new position the first time it
+/// redraws.
 pub(crate) const PORT_MARKER_OFFSET: f64 = 22.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -524,20 +528,20 @@ pub(crate) fn port_marker_position(anchor: Point, side: side::Side) -> Point {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The elbow route for one of a two-input operator node's own two same-side inputs — `mine`'s own edge, from `start` to
-/// `end`, given `sibling_end` too, so the two routes cannot cross for the case that matters most: dragging one operand
-/// to a position where its own route would otherwise sweep across the other's.
+/// The elbow route for one of a two-input operator node's own two same-side inputs: `mine`'s own edge, from `start` to
+/// `end`. It is given `sibling_end` too, so the two routes cannot cross for the case that matters most. That case is
+/// dragging one operand to a position where its own route would otherwise sweep across the other's.
 ///
-/// Only ever changes anything for whichever connector is anchored *nearer* along the shared side, and only when its own
-/// operand has been dragged past the *farther* connector's own target — the specific "one input moved too far" case
-/// this exists to correct. Every other call — the farther connector's own edge, always, and the nearer one whenever its
-/// operand has not drifted — returns exactly what plain [`elbow_route`] would, unchanged. That matches the shape
-/// already confirmed correct once the two candidates are simply split apart (see [`binary_operator_anchors`]); nothing
-/// further is needed there.
+/// It only ever changes anything for whichever connector is anchored *nearer* along the shared side. It does so only
+/// when its own operand has been dragged past the *farther* connector's own target. That is the specific "one input
+/// moved too far" case this exists to correct. Every other call — the farther connector's own edge, always, and the
+/// nearer one whenever its operand has not drifted — returns exactly what plain [`elbow_route`] would, unchanged. That
+/// matches the shape already confirmed correct once the two candidates are simply split apart (see
+/// [`binary_operator_anchors`]); nothing further is needed there.
 ///
 /// The drifted connector reroutes to a single-bend, vertical-first path instead of [`elbow_route`]'s own
-/// horizontal-first one: from `start`, straight to its own target row — at `start`'s own coordinate, which already sits
-/// exactly on its own operand's box edge, never inside it — then straight into the operator. No segment ever moves
+/// horizontal-first one. From `start`, it goes straight to its own target row, then straight into the operator.
+/// `start`'s own coordinate already sits exactly on its own operand's box edge, never inside it. No segment ever moves
 /// backward across the box's own exit height, so there is nothing left to visually cross back through, regardless of
 /// how far the operand has drifted. An earlier version of this function instead pushed a *shared* jog coordinate past
 /// both operands' own positions. That jog sat at the exact height the source box itself occupies across its own full
@@ -649,7 +653,7 @@ pub(crate) fn elbow_path_into(vertices: &[Point], radius: f64, out: &mut String)
         let dy_out = next.y - corner.y;
         // Every segment `elbow_route`/`binary_operator_elbow_route` ever produces is purely horizontal or purely
         // vertical — see this function's own doc comment. A future route builder that violated that would silently
-        // corrupt the direction/length math below, which no longer computes a real `hypot` at all — so this stays
+        // corrupt the direction/length math below. That math no longer computes a real `hypot` at all. So this stays
         // asserted, not merely assumed.
         debug_assert!(
             dx_in == 0.0 || dy_in == 0.0,
@@ -660,8 +664,8 @@ pub(crate) fn elbow_path_into(vertices: &[Point], radius: f64, out: &mut String)
             "elbow_path_into: outgoing segment at vertex {i} is not axis-aligned: ({dx_out}, {dy_out})"
         );
 
-        // Each length is just the one non-zero delta's own magnitude, and each direction is one of (±1, 0)/(0, ±1) — no
-        // `hypot` call or vector normalisation needed for an axis-aligned segment.
+        // Each length is just the one non-zero delta's own magnitude, and each direction is one of (±1, 0)/(0, ±1). No
+        // `hypot` call or vector normalisation is needed for an axis-aligned segment.
         let (in_x, in_y, len_in) = if dx_in == 0.0 {
             (0.0, dy_in.signum(), dy_in.abs())
         } else {

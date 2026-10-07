@@ -65,8 +65,8 @@ fn zoom_on_wheel(surface: &WeakSvgNode, inner: &Weak<RefCell<SceneInner>>, flush
 
     let factor = wheel_zoom_factor(event.delta_y(), event.delta_mode());
     // A trackpad pinch delivers many small events, so this only updates the view. Each event composes against the
-    // latest one — the factors multiply, so ten events of 10 pixels zoom exactly as one of 100 does — and the DOM is
-    // written once per animation frame.
+    // latest one. The factors multiply, so ten events of 10 pixels zoom exactly as one of 100 does. The DOM is written
+    // once per animation frame.
     let mut inner = inner.borrow_mut();
     let next = inner.view.zoomed_about(factor, pivot);
     if inner.set_view_deferred(next) {

@@ -9,7 +9,7 @@
 //!
 //! The underlying topology model is a private implementation detail while this crate's API is still taking shape. Only
 //! the opaque [`NodeId`]/[`EdgeId`] handles it hands out are public. Each carries the id of the `Graph` that created
-//! it, so an id from one `Scene` can never be mistaken for one from another, even where their internal sequence numbers
+//! it. So an id from one `Scene` can never be mistaken for one from another, even where their internal sequence numbers
 //! happen to coincide.
 //!
 //! This crate has no opinion about which HTML page hosts it, what graph a caller builds, or when. The sibling

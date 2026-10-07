@@ -170,8 +170,8 @@ fn forcing_only_pan_on_leaves_wheel_zoom_off() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Going back to `WithToolbar`, or to `Off`, tears the gesture down completely: no surface, no leftover wheel listener
-/// on the content layer, so a wheel over a node is no longer cancelled.
+/// Going back to `WithToolbar`, or to `Off`, tears the gesture down completely. There is no surface and no leftover
+/// wheel listener on the content layer. So a wheel over a node is no longer cancelled.
 #[wasm_bindgen_test]
 fn switching_a_gesture_back_off_removes_its_surface_and_listener() -> Result<(), String> {
     let scene = new_scene("im-teardown")?;
@@ -372,7 +372,7 @@ fn pressing_a_toolbar_button_does_not_start_a_pan() -> Result<(), String> {
 /// which is removed with the gestures, except the wheel listener on the content layer.
 ///
 /// A leaked wheel listener cannot zoom, since it only holds a weak reference to a surface that no longer exists. What
-/// it can still do is cancel the event, so the test that catches a leak is the last one: with everything torn down, a
+/// it can still do is cancel the event. So the test that catches a leak is the last one. With everything torn down, a
 /// modified wheel over a node must no longer be cancelled by anything.
 #[wasm_bindgen_test]
 fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() -> Result<(), String> {

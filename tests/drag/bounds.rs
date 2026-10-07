@@ -94,10 +94,10 @@ fn dragging_without_bounds_stays_unconstrained() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// After a bounded drag clamps a node to the edge and drops it there, the same node's pointer listeners are still live
-/// and still respond to a fresh drag — the exact case this feature exists to protect. Without `bounds`, a node dropped
-/// outside the view box renders clipped, and a real browser could never hit-test it again to start this second drag at
-/// all.
+/// After a bounded drag clamps a node to the edge and drops it there, the same node's pointer listeners are still live.
+/// They still respond to a fresh drag. That is the exact case this feature exists to protect. Without `bounds`, a node
+/// dropped outside the view box renders clipped, and a real browser could never hit-test it again to start this second
+/// drag at all.
 #[wasm_bindgen_test]
 fn a_node_clamped_to_the_edge_can_still_be_dragged_again() -> Result<(), String> {
     let svg = make_svg("bounds-redrag", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -251,7 +251,7 @@ fn make_draggable_with_accepts_a_zero_width_bounds() -> Result<(), String> {
 ///
 /// Dragging `A`'s centre from `(45, 125)` to `(55, 125)` — a small, deliberate 10-unit move — lands `A`'s new rect at
 /// `(10, 100)`, overlapping `blocker`. `CollisionPolicy::PushClear`'s default 6-unit padding then pushes `A` back along
-/// the line from `blocker`'s centre through `A`'s own *pre-drag* centre — continuing further west, not back toward
+/// the line from `blocker`'s centre through `A`'s own *pre-drag* centre. That continues further west, not back toward
 /// where it was just dropped. That push alone would land `A`'s corrected origin at roughly `(-65.9, 113.2)` — far past
 /// `bounds`'s own `x = 0` edge. With `bounds` in effect, the corrected origin clamps to `x = 0`, leaving `y` (`113.18`,
 /// well inside `bounds`) untouched.

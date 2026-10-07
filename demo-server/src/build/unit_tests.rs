@@ -9,9 +9,9 @@ fn workspace_root() -> Result<PathBuf, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Copies just the files `prepare_stage` actually reads — `demo-app/src/lib.rs` (for [`validate::validate`]) and
-/// `demo/` (for [`panels::assemble`]) — from `src_root` into `dst_root`, so a test can freely edit a copied fragment
-/// afterwards without ever touching the real project's own source tree.
+/// Copies just the files `prepare_stage` actually reads from `src_root` into `dst_root`. Those are
+/// `demo-app/src/lib.rs` (for [`validate::validate`]) and `demo/` (for [`panels::assemble`]). A test can then freely
+/// edit a copied fragment afterwards without ever touching the real project's own source tree.
 fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), String> {
     let copy = |rel: &str| -> Result<(), String> {
         let src = src_root.join(rel);
@@ -34,8 +34,8 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   prepare_stage — the end-to-end staging check: everything build_demo does except the wasm rebuild, run against the
 //   real project. This is what actually proves catalogue validation, template assembly, and asset copying stay wired
-//   together correctly as one pipeline, not just that each phase's own unit tests (in panels::unit_tests and
-//   validate::unit_tests) pass in isolation.
+//   together correctly as one pipeline. It does not merely prove that each phase's own unit tests (in
+//   panels::unit_tests and validate::unit_tests) pass in isolation.
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -82,7 +82,7 @@ fn prepare_stage_creates_a_stage_dir_that_does_not_already_exist() -> Result<(),
 fn prepare_stage_reports_a_missing_source_root() -> Result<(), String> {
     let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
     let stage = StagePaths::new(stage_root.path());
-    // `stage_root` itself has no `demo-app/src/lib.rs`, so using it as a fake root is a convenient way to point
+    // `stage_root` itself has no `demo-app/src/lib.rs`. Using it as a fake root is a convenient way to point
     // `prepare_stage` at a source tree that definitely fails at the very first phase, validation.
     let fake_root = stage_root.path().join("no-such-root");
 
@@ -95,8 +95,8 @@ fn prepare_stage_reports_a_missing_source_root() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A failed refresh must leave the previously staged `index.html` completely untouched — the guarantee `main`'s
 /// per-request middleware documents. Proves `prepare_stage` assembles into a temporary file and `rename`s it into
-/// place, rather than writing straight onto the live destination, where a failure partway could leave a partially
-/// written file being served instead of the old, good one.
+/// place. It does not write straight onto the live destination. A failure partway there could leave a partially written
+/// file being served instead of the old, good one.
 #[test]
 fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Result<(), String> {
     let root = workspace_root()?;
@@ -127,11 +127,11 @@ fn prepare_stage_leaves_the_previously_staged_file_untouched_on_failure() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The successful counterpart to [`prepare_stage_leaves_the_previously_staged_file_untouched_on_failure`]: two
-/// successful calls against the same stage directory, with a source fragment edited in between, must actually replace
-/// the previously staged `index.html` with content reflecting that edit — not just leave the old one in place, and not
-/// just fail to error. Runs against a copied source root (see [`copy_minimal_source_root`]) rather than the real
-/// project's own `demo/`, so this test can freely edit a fragment without ever touching a real source file.
+/// The successful counterpart to [`prepare_stage_leaves_the_previously_staged_file_untouched_on_failure`]. Two
+/// successful calls run against the same stage directory, with a source fragment edited in between. They must actually
+/// replace the previously staged `index.html` with content reflecting that edit. They must not just leave the old one
+/// in place, or just fail to error. Runs against a copied source root (see [`copy_minimal_source_root`]) rather than
+/// the real project's own `demo/`, so this test can freely edit a fragment without ever touching a real source file.
 #[test]
 fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Result<(), String> {
     let real_root = workspace_root()?;
@@ -167,7 +167,7 @@ fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Resu
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The exact gap an external review flagged: a failure copying `style.css` must leave the previously staged
 /// `index.html` untouched too, not just `style.css`. Proves `prepare_stage` stages both files into temporary files
-/// before promoting either, rather than promoting `index.html` first and only then attempting `style.css` — which would
+/// before promoting either. It does not promote `index.html` first and only then attempt `style.css`. That order would
 /// otherwise let this exact scenario silently replace `index.html` even though the overall call fails.
 #[test]
 fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Result<(), String> {
@@ -185,7 +185,7 @@ fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Resu
         fs::read_to_string(stage.stage_dir.join("style.css")).map_err(|e| format!("read staged style.css: {e:?}"))?;
 
     // Edit the fragment too, so a bug that promotes index.html before checking style.css would actually be visible
-    // below: the staged index.html would change even though the whole call is expected to fail.
+    // below. The staged index.html would change even though the whole call is expected to fail.
     const MARKER: &str = "<!-- prepare-stage-style-failure-marker -->";
     let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
     let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;

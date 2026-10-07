@@ -1,18 +1,18 @@
-//! The demo's build pipeline — resolving staging paths, validating the catalogue, assembling `index.html`, copying
-//! static assets, and rebuilding the wasm package — factored out of `main` so it can run, and be tested, without ever
-//! touching Actix or the network.
+//! The demo's build pipeline: resolving staging paths, validating the catalogue, assembling `index.html`, copying
+//! static assets, and rebuilding the wasm package. It is factored out of `main` so it can run, and be tested, without
+//! ever touching Actix or the network.
 //!
 //! Mirrors `svg-dom`'s own `demo-server/src/build/mod.rs`, including its two-layer split:
 //!  - [`prepare_stage`] runs every phase except the wasm build: validate the catalogue, assemble `index.html`, copy
-//!    `style.css`. This is the part a plain `wasm-pack build demo-app ...` invocation does not exercise at all — CI's
-//!    own `wasm` job no longer makes that invocation directly either; see its `--build-only` step below (and `main`'s
+//!    `style.css`. This is the part a plain `wasm-pack build demo-app ...` invocation does not exercise at all. CI's
+//!    own `wasm` job no longer makes that invocation directly either. See its `--build-only` step below (and `main`'s
 //!    own doc comment) for what it runs instead.
 //!  - [`build_demo`] runs [`prepare_stage`] and then rebuilds the wasm package, which is what `cargo demo` actually
 //!    needs to serve the page.
 //!
 //! Separating them means CI (via `demo-server --prepare-only`, see `main`) or a test can exercise catalogue validation,
-//! fragment validation, and template assembly together — the actual pipeline, not just each phase's own unit tests in
-//! isolation — without paying for a full wasm build every time. Deciding what a failure means for the process — report
+//! fragment validation, and template assembly together. That is the actual pipeline, not just each phase's own unit
+//! tests in isolation. It costs no full wasm build every time. Deciding what a failure means for the process — report
 //! to stderr, `exit(1)` — stays `main`'s job alone.
 use crate::{panels, validate};
 use std::{
@@ -53,7 +53,7 @@ pub enum BuildError {
     /// `index.html` could not be assembled from `demo/index.template.html` and its panel fragments — see
     /// [`panels::AssembleError`].
     Assemble(panels::AssembleError),
-    /// A staged temporary file could not be renamed into place over the previously staged file at `dest` — see
+    /// A staged temporary file could not be renamed into place over the previously staged file at `dest`. See
     /// [`prepare_stage`]'s own doc comment for why there is a temporary file at all.
     PromoteStagedFile { src: PathBuf, dest: PathBuf, source: io::Error },
     /// A static asset (`style.css`) could not be copied into its own temporary file in the staging directory.
@@ -112,24 +112,24 @@ impl From<panels::AssembleError> for BuildError {
 /// Runs every phase except the wasm rebuild: validates the catalogue, assembles `index.html` (substituting
 /// `{{PANELS}}`), and copies `style.css` — everything needed to stage a servable demo except `pkg/`.
 ///
-/// Returns as soon as any phase fails, via `?`: a stale catalogue is caught before `index.html` is ever assembled, and
-/// a broken assembly is caught before it is ever written into place.
+/// Returns as soon as any phase fails, via `?`. A stale catalogue is caught before `index.html` is ever assembled. A
+/// broken assembly is caught before it is ever written into place.
 ///
 /// Both `index.html` and `style.css` are staged into temporary files in `stage.stage_dir` first, and neither of the two
 /// *live* filenames is touched until both temporary files have been prepared successfully. Only then are both promoted
-/// (`fs::rename`-d) into place. This is what makes the failure guarantee exact: a failure preparing either file — a
-/// broken template/fragment, or a missing `style.css` — leaves the previously staged `index.html` *and* `style.css`
-/// both completely untouched, not just the one that happened to fail. Promoting `index.html` first and then discovering
-/// the `style.css` copy had failed would otherwise leave a live `index.html` already replaced while its `style.css` was
-/// not, however narrow that window in practice for a local development server.
+/// (`fs::rename`-d) into place. This is what makes the failure guarantee exact. A failure preparing either file leaves
+/// the previously staged `index.html` *and* `style.css` both completely untouched, not just the one that happened to
+/// fail. Such a failure is a broken template/fragment, or a missing `style.css`. Promoting `index.html` first and then
+/// discovering the `style.css` copy had failed would otherwise leave a live `index.html` already replaced while its
+/// `style.css` was not. That window is narrow in practice for a local development server.
 ///
 /// Each promotion is itself a same-directory `rename`, so every request either sees the old file or the new one, never
 /// a partially written one.
 ///
-/// That guarantee is only sound when at most one call to this function runs at a time: the temporary paths below are
-/// fixed, not made unique per call, so two concurrent calls could interleave their own stage-then-promote sequences
-/// over the same temporary files. `main`'s `.workers(1)` is what keeps every request — including the refresh that calls
-/// this function — strictly sequential, so that race cannot happen in practice; see its own comment for why a single
+/// That guarantee is only sound when at most one call to this function runs at a time. The temporary paths below are
+/// fixed, not made unique per call. So two concurrent calls could interleave their own stage-then-promote sequences
+/// over the same temporary files. `main`'s `.workers(1)` is what keeps every request strictly sequential, including the
+/// refresh that calls this function. So that race cannot happen in practice. See its own comment for why a single
 /// worker is the right fix here rather than a mutex or per-call-unique temporary files.
 pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> {
     fs::create_dir_all(&stage.stage_dir).map_err(|source| BuildError::CreateStageDir {
@@ -148,7 +148,7 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
     let tmp_index = stage.stage_dir.join("index.html.tmp");
     panels::assemble(&source_demo_dir, &tmp_index)?;
 
-    // style.css is not generated — it is a static asset index.html references by a plain relative path, so it needs to
+    // style.css is not generated. It is a static asset index.html references by a plain relative path. So it needs to
     // sit alongside the assembled file in the staging directory too.
     let tmp_style = stage.stage_dir.join("style.css.tmp");
     copy_asset(&source_demo_dir.join("style.css"), &tmp_style)?;

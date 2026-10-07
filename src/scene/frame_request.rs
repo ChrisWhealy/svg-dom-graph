@@ -5,9 +5,9 @@
 //! still pending at that moment, the browser goes on to call the function anyway, and it throws "closure invoked
 //! recursively or after being dropped".
 //!
-//! That is easy to arrange. Whatever owns the closure is dropped whenever the listeners holding it are — when a toolbar
-//! is hidden, a mode is changed, or a `Scene` goes — and a wheel event or a pointer move may have scheduled a frame
-//! only moments before.
+//! That is easy to arrange. Whatever owns the closure is dropped whenever the listeners holding it are. That happens
+//! when a toolbar is hidden, a mode is changed, or a `Scene` goes. A wheel event or a pointer move may have scheduled a
+//! frame only moments before.
 //!
 //! So the closure and the pending request live together here, and dropping the request cancels the frame first. Once it
 //! is gone, the browser has nothing left to call.

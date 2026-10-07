@@ -5,9 +5,9 @@
 /// to drive the rendered node's own label; a caller supplies the already-computed result separately.
 ///
 /// Covers all six non-trivial two-input Boolean functions bitwise operators commonly name: `And`/`Or`/`Xor` and their
-/// own negations `Nand`/`Nor`/`Xnor`. Deliberately excludes the degenerate functions a truth table also admits —
-/// constant true/false, either operand alone or negated, and the two "ignores one operand" implications — none of which
-/// read as a distinct bitwise *operator* the way these six do.
+/// own negations `Nand`/`Nor`/`Xnor`. Deliberately excludes the degenerate functions a truth table also admits. These
+/// are constant true/false, either operand alone or negated, and the two "ignores one operand" implications. None of
+/// them reads as a distinct bitwise *operator* the way these six do.
 ///
 /// `#[non_exhaustive]`, for the same reason as [`crate::model::content::data_format::DataFormat`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]

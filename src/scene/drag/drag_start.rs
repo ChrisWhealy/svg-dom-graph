@@ -21,16 +21,15 @@ pub(super) struct DragStart {
     pub(super) box_origin: Point,
     /// The dragged box's own size, read from the same `Rect` `box_origin` came from, at drag start.
     ///
-    /// A node's size never changes while it is being dragged, so this is read once here rather than re-fetched as this
-    /// would incur another graph lookup and `RefCell` borrow on every bounded `pointermove` / collision-correcting
-    /// `pointerup` event.
+    /// A node's size never changes while it is being dragged. So this is read once here. Re-fetching it would incur
+    /// another graph lookup and `RefCell` borrow on every bounded `pointermove` / collision-correcting `pointerup`
+    /// event.
     pub(super) box_size: Size,
     /// The dragged group's screen CTM, inverted once at pointerdown and reused for the duration of this drag.
     ///
     /// `SvgNode::screen_ctm()` may force a synchronous layout, so this is captured once per drag rather than on every
-    /// pointermove. It reflects the scene's view *as it was at pointerdown* — see [`view`](Self::view) — and the
-    /// dragged group's own translation at that moment, which is why it is never re-read: that translation changes on
-    /// every move.
+    /// pointermove. It reflects the scene's view *as it was at pointerdown* (see [`view`](Self::view)), and the dragged
+    /// group's own translation at that moment. That is why it is never re-read: that translation changes on every move.
     ///
     /// The view can change during a drag, so this matrix alone is not enough to place the pointer once it has.
     pub(super) inverse_ctm: Matrix2D,

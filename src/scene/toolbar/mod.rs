@@ -208,10 +208,10 @@ impl Toolbar {
 impl SceneInner {
     /// The rectangle of the `<svg>`'s own user space that is visible right now.
     ///
-    /// This is what the browser actually shows, which is not always the `viewBox`: a `viewBox` origin other than `(0,
-    /// 0)` shifts it, `preserveAspectRatio="meet"` (the default) shows more than the `viewBox` when the box is a
+    /// This is what the browser actually shows, which is not always the `viewBox`. A `viewBox` origin other than `(0,
+    /// 0)` shifts it. `preserveAspectRatio="meet"` (the default) shows more than the `viewBox` when the box is a
     /// different shape, and `"slice"` shows less. So it is found by mapping the rendered box back into user space
-    /// through the `<svg>`'s own screen matrix, which accounts for all of those and for any CSS scaling at once.
+    /// through the `<svg>`'s own screen matrix. That accounts for all of those, and for any CSS scaling, at once.
     ///
     /// Falls back to [`visible_area`], which reads the `viewBox` or size attributes, if the browser cannot give a
     /// screen matrix — for example for an `<svg>` that is not being displayed.
@@ -289,8 +289,8 @@ impl SceneInner {
     /// Returns [`Error::Svg`] if the `transform` cannot be written. The view stays marked as waiting, so the next flush
     /// tries again.
     ///
-    /// Only that write can fail this. Once it has succeeded the graph has been redrawn, so the accessible name and the
-    /// toolbar buttons that follow are bookkeeping: an error from either would report failure for something that has
+    /// Only that write can fail this. Once it has succeeded the graph has been redrawn. So the accessible name and the
+    /// toolbar buttons that follow are bookkeeping. An error from either would report failure for something that has
     /// visibly happened, and is not returned. Neither is treated as up to date until its write succeeds, so the next
     /// flush puts it right.
     pub(super) fn flush_view(&mut self) -> Result<(), Error> {
@@ -318,8 +318,8 @@ impl SceneInner {
     /// from under someone who has just pressed it into its own limit.
     ///
     /// Each button remembers whether it was last drawn enabled, and writes its attributes only when that changes. A
-    /// pan, or a zoom that leaves every button as it was, therefore neither writes to the DOM nor reads from it:
-    /// reading an attribute back to compare it costs a call across the WASM and JavaScript boundary and a `String`, on
+    /// pan, or a zoom that leaves every button as it was, therefore neither writes to the DOM nor reads from it.
+    /// Reading an attribute back to compare it costs a call across the WASM and JavaScript boundary and a `String`, on
     /// every animation frame.
     fn sync_toolbar_state(&self) -> Result<(), Error> {
         let Some(toolbar) = &self.toolbar else { return Ok(()) };
@@ -366,9 +366,11 @@ impl Scene {
     ///
     /// # Keeping the layout current
     ///
-    /// **The scene cannot observe its `<svg>` being resized.** The bar is positioned against the `<svg>`'s visible area
-    /// as it is at the moment of this call, and stays there until told otherwise. Nothing reports an error when it goes
-    /// stale, so it is easy to miss. Call [`refresh_layout`](Self::refresh_layout) whenever the visible area changes.
+    /// **The scene cannot observe its `<svg>` being resized. Call this, or better [`refresh_layout`](
+    /// Self::refresh_layout), whenever the size or `viewBox` changes.** The exception is when the `<svg>` has a
+    /// `viewBox` and only its CSS size changed. The bar is positioned against the `<svg>`'s visible area as it is at
+    /// the moment of this call, and stays there until told otherwise. Nothing reports an error when it goes stale, so
+    /// it is easy to miss. Call [`refresh_layout`](Self::refresh_layout) whenever the visible area changes.
     ///
     /// Whether it does depends on how the `<svg>` is sized:
     ///
@@ -386,14 +388,14 @@ impl Scene {
     ///
     /// The bar is placed against the part of the `<svg>`'s user space that is actually on screen, which is not always
     /// the `viewBox`. A `viewBox` origin other than `(0, 0)`, such as `-500 -300 1000 600`, is honoured. So is
-    /// `preserveAspectRatio`: with the default `meet`, an `<svg>` shaped differently from its `viewBox` shows *more*
-    /// than the `viewBox`, and with `slice` it shows *less*, so the bar follows the visible edge rather than
-    /// disappearing off-screen. The centre that [`zoom_in`](Self::zoom_in) and [`zoom_out`](Self::zoom_out) zoom about
-    /// is the centre of that same area.
+    /// `preserveAspectRatio`. With the default `meet`, an `<svg>` shaped differently from its `viewBox` shows *more*
+    /// than the `viewBox`. With `slice` it shows *less*. So the bar follows the visible edge rather than disappearing
+    /// off-screen. The centre that [`zoom_in`](Self::zoom_in) and [`zoom_out`](Self::zoom_out) zoom about is the centre
+    /// of that same area.
     ///
-    /// A stale layout is not only cosmetic. The surface that panning and wheel zoom work through is sized the same way,
-    /// so if the `<svg>` grows and the layout is not refreshed, the new area has no surface behind it and those
-    /// gestures stop working there.
+    /// A stale layout is not only cosmetic. The surface that panning and wheel zoom work through is sized the same way.
+    /// If the `<svg>` grows and the layout is not refreshed, the new area has no surface behind it. Those gestures then
+    /// stop working there.
     ///
     /// Without a `viewBox`, an `<svg>` sized purely by CSS is measured by its rendered size, at each call that lays it
     /// out.
@@ -464,9 +466,9 @@ impl Scene {
     pub fn hide_toolbar(&self) {
         let Some(toolbar) = self.inner.borrow_mut().toolbar.take() else { return };
         toolbar.remove();
-        // This method cannot report an error. Switching gestures off only removes things, and the one case that
-        // rebuilds — another gesture forced on while this one was following the toolbar — leaves it unavailable if the
-        // DOM refuses, without disturbing anything else.
+        // This method cannot report an error. Switching gestures off only removes things. The one case that rebuilds is
+        // another gesture forced on while this one was following the toolbar. If the DOM refuses, it leaves the toolbar
+        // unavailable, without disturbing anything else.
         let _ = self.sync_view_input();
     }
 
@@ -500,12 +502,12 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the shown toolbar against the `<svg>`'s visible area as it is now. Does nothing if none is shown.
     ///
-    /// **The scene cannot observe its `<svg>` being resized, so call this — or better, [`refresh_layout`](
-    /// Self::refresh_layout) — whenever the size or `viewBox` changes,** unless the `<svg>` has a `viewBox` and only
-    /// its CSS size changed. Nothing reports an error when the layout goes stale. See "Keeping the layout current"
-    /// under [`show_toolbar`](Self::show_toolbar) for exactly when it is needed.
+    /// **The scene cannot observe its `<svg>` being resized. Call this, or better [`refresh_layout`](
+    /// Self::refresh_layout), whenever the size or `viewBox` changes.** The exception is when the `<svg>` has a
+    /// `viewBox` and only its CSS size changed. Nothing reports an error when the layout goes stale. See "Keeping the
+    /// layout current" under [`show_toolbar`](Self::show_toolbar) for exactly when it is needed.
     ///
-    /// Also resizes the surface that panning and wheel zoom work through, so this is the same call as
+    /// Also resizes the surface that panning and wheel zoom work through. So this is the same call as
     /// [`refresh_layout`](Self::refresh_layout), which describes it better now that those gestures no longer depend on
     /// the toolbar.
     ///
@@ -564,9 +566,10 @@ impl Scene {
 
     /// The content's current view — scale and translation together, as one value.
     ///
-    /// Pairs with [`set_view`](Self::set_view) to carry a pan/zoom state across to another `Scene`, typically one just
-    /// rebuilt from scratch to show different content at the same position — a fresh `Scene` otherwise starts at
-    /// [`ViewTransform::default`], unzoomed and unpanned, regardless of what the one it replaces last showed.
+    /// Pairs with [`set_view`](Self::set_view) to carry a pan/zoom state across to another `Scene`. That is typically
+    /// one just rebuilt from scratch to show different content at the same position. A fresh `Scene` otherwise starts
+    /// at [`ViewTransform::default`], unzoomed and unpanned. It does so regardless of what the one it replaces last
+    /// showed.
     pub fn view(&self) -> ViewTransform {
         self.inner.borrow().view
     }
@@ -575,15 +578,16 @@ impl Scene {
     /// [`view`](Self::view).
     ///
     /// Unlike [`zoom_in`](Self::zoom_in)/[`zoom_out`](Self::zoom_out)/[`reset_view`](Self::reset_view), `view` is
-    /// written exactly as given: there is no "zoom about a pivot" adjustment, since the caller — typically restoring a
-    /// value [`view`](Self::view) read from elsewhere — already has the exact scale and translation it wants.
+    /// written exactly as given. There is no "zoom about a pivot" adjustment. The caller, typically restoring a value
+    /// [`view`](Self::view) read from elsewhere, already has the exact scale and translation it wants.
     ///
     /// # Errors
     ///
-    /// Returns [`Error::InvalidView`] if `view.scale` is not finite and within `0.25..=4.0` — the same range
-    /// [`zoom_in`](Self::zoom_in)/[`zoom_out`](Self::zoom_out) already clamp to, so a restored view can never put this
-    /// `Scene`'s own zoom buttons at odds with what [`zoom_scale`](Self::zoom_scale) reports — or if
-    /// `view.tx`/`view.ty` is not finite. Checked first, so a rejected call leaves the current view exactly as it was.
+    /// Returns [`Error::InvalidView`] if `view.scale` is not finite and within `0.25..=4.0`, or if `view.tx`/`view.ty`
+    /// is not finite. The range is the same one [`zoom_in`](Self::zoom_in)/[`zoom_out`](Self::zoom_out) already clamp
+    /// to. So a restored view can never put this `Scene`'s own zoom buttons at odds with what
+    /// [`zoom_scale`](Self::zoom_scale) reports. Checked first, so a rejected call leaves the current view exactly as
+    /// it was.
     ///
     /// Otherwise returns [`Error::Svg`] if the `transform` cannot be written — see [`zoom_in`](Self::zoom_in)'s own doc
     /// comment for the same failure-leaves-nothing-changed guarantee.

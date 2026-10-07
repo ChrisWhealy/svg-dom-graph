@@ -1,7 +1,7 @@
-//! `panel-data` / `#data-diagram`: draggable nodes whose content is a [`DataNodeContent`] grid of values rather than a
-//! plain text label — one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`), the
-//! multi-value counts chosen to cover every combination the grid layout rule can produce. See [`build_data_demo`]'s own
-//! doc comment for exactly which.
+//! `panel-data` / `#data-diagram` holds draggable nodes whose content is a [`DataNodeContent`] grid of values rather
+//! than a plain text label. There is one single-value and one multi-value node per integer width
+//! (`u8`/`u16`/`u32`/`u64`). The multi-value counts are chosen to cover every combination the grid layout rule can
+//! produce. See [`build_data_demo`]'s own doc comment for exactly which.
 
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
@@ -17,9 +17,9 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the data-node demo: one row per integer width (`u8`, `u16`, `u32`, `u64`), each row holding a single-value
-/// box on the left and a multi-value box on the right — every box draggable, and every box sized to fit its own content
-/// automatically, unlike [`crate::tree::build_demo_tree`]'s caller-sized boxes.
+/// Builds the data-node demo: one row per integer width (`u8`, `u16`, `u32`, `u64`). Each row holds a single-value box
+/// on the left and a multi-value box on the right. Every box is draggable, and every box is sized to fit its own
+/// content automatically, unlike [`crate::tree::build_demo_tree`]'s caller-sized boxes.
 ///
 /// The four multi-value counts are deliberately chosen to cover every combination
 /// [`DataNodeContent::shape`](svg_dom_graph::scene::DataNodeContent::shape)'s layout rule can produce:
@@ -27,7 +27,7 @@ thread_local! {
 /// - `u8`, 8 values: divides evenly by a power of two (`2`) but is not itself a square — renders as 2 rows of 4.
 /// - `u16`, 5 values: no power-of-two divisor at all — falls back to the closest-to-square shape, 3 rows of 2 (one slot
 ///   left blank).
-/// - `u32`, 9 values: a perfect square with no power-of-two divisor — falls back to the same closest-to-square rule,
+/// - `u32`, 9 values: a perfect square with no power-of-two divisor. It falls back to the same closest-to-square rule,
 ///   which for a perfect square is an exact fit: 3 rows of 3.
 /// - `u64`, 4 values: both a perfect square and evenly divisible by a power of two (`2`) — the two rules agree, landing
 ///   on the same 2×2 shape either way.
@@ -113,7 +113,7 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         ),
     )?;
 
-    // u64: a single value, and 4 values — both a perfect square and evenly divisible by a power of two, so the two
+    // u64: a single value, and 4 values. 4 is both a perfect square and evenly divisible by a power of two. So the two
     // layout rules agree on the same 2x2 shape.
     place(
         X_SINGLE,

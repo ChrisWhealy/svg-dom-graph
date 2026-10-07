@@ -12,14 +12,15 @@
 //!   `set_edge_anchors`.
 //! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
 //!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
-//! - [`move_node`] — `Scene::move_node`: moving a node and rerouting its edges exactly as a drag does, `UnknownNode`/
-//!   `InvalidNodeGeometry` rejection, and the motivating case — centring an operator node under a wider data node using
-//!   its own measured size, with already-auto-wired input edges rerouted to the new position.
-//! - [`measure`] — `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`: equality against the
-//!   real rendered size from the equivalent `add_*` + `node_rect`, for plain/grid/named data nodes and every operator
-//!   kind, plus no residual DOM, no accumulation over repeated calls, and matching error classes.
-//! - [`focus`] — `Scene::set_focus`: ringing a whole node's own outer box on a plain node, an operator node, and a
-//!   named data node alike, more than one focused node at once, and `UnknownNode` rejection.
+//! - [`move_node`] covers `Scene::move_node`. It moves a node and reroutes its edges exactly as a drag does, and checks
+//!   `UnknownNode`/ `InvalidNodeGeometry` rejection. The motivating case centres an operator node under a wider data
+//!   node using its own measured size. Already-auto-wired input edges are rerouted to the new position.
+//! - [`measure`] covers `Scene::measure_data_node`/`measure_named_data_node`/`measure_operator_box`. It checks equality
+//!   against the real rendered size from the equivalent `add_*` + `node_rect`, for plain/grid/named data nodes and
+//!   every operator kind. It also checks no residual DOM, no accumulation over repeated calls, and matching error
+//!   classes.
+//! - [`focus`] covers `Scene::set_focus`. It rings a whole node's own outer box on a plain node, an operator node, and
+//!   a named data node alike. It also checks more than one focused node at once, and `UnknownNode` rejection.
 //! - [`scene_title`] — `Scene::show_scene_title`/`hide_scene_title`: drawn attributes, default bold/underlined styling,
 //!   edge placement, replacing an existing title, and option validation.
 //! - [`bounds`] — `DragOptions::bounds`: clamping a drag to a rectangle, and staying draggable after being clamped to
@@ -37,12 +38,13 @@
 //!   cells' text and accessible names following, and rejection of a different width, count, or node kind.
 //! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of its
 //!   own endpoints, fan-out to more than one destination, and surviving a later `Scene::set_selection`.
-//! - [`toolbar`] — `Scene::show_toolbar` and the zoom controls: placement against each edge, staying a fixed size while
-//!   the content zooms, click and keyboard activation, disabled state at the zoom limits, and dragging under zoom.
-//! - [`selection_toolbar`] — `Scene::show_selection_toolbar` and the Prev/Next/Restart controls: showing/hiding,
-//!   rejecting a non-data node and invalid options, resetting to unstarted on show, stepping by click and by keyboard,
-//!   disabled-button no-ops, `on_step` reentering the same `Scene`, and the callback's own lifetime once the toolbar is
-//!   hidden.
+//! - [`toolbar`] covers `Scene::show_toolbar` and the zoom controls. It checks placement against each edge, staying a
+//!   fixed size while the content zooms, click and keyboard activation, disabled state at the zoom limits, and dragging
+//!   under zoom.
+//! - [`selection_toolbar`] covers `Scene::show_selection_toolbar` and the Prev/Next/Restart controls. It checks
+//!   showing/hiding, rejecting a non-data node and invalid options, resetting to unstarted on show, and stepping by
+//!   click and by keyboard. It also checks disabled-button no-ops, `on_step` reentering the same `Scene`, and the
+//!   callback's own lifetime once the toolbar is hidden.
 //!
 //! All sixteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 

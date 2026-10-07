@@ -1,6 +1,6 @@
-//! `Scene::move_node`: repositioning a node already added to a scene — the programmatic counterpart to dragging it, for
-//! the case `Scene::node_rect`'s own doc comment describes: laying a node out relative to another whose own rendered
-//! size was not knowable ahead of drawing it.
+//! `Scene::move_node` repositions a node already added to a scene. It is the programmatic counterpart to dragging it.
+//! It serves the case `Scene::node_rect`'s own doc comment describes: laying a node out relative to another whose own
+//! rendered size was not knowable ahead of drawing it.
 //!
 //! These observe the real rendered DOM, queried directly, not through any crate-internal state — the same reasoning
 //! [`drag_basics`](super::drag_basics)'s own module doc comment gives.
@@ -17,9 +17,9 @@ use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `move_node` moves a node's own `<g>` via its `transform`, exactly as a drag does, and reroutes its connector's far
-/// end to match — the same assertions
+/// end to match. It makes the same assertions as
 /// [`dragging_a_node_moves_its_rect_label_and_reroutes_its_edge`](super::drag_basics::dragging_a_node_moves_its_rect_label_and_reroutes_its_edge)
-/// makes for a live drag, called here programmatically instead.
+/// does for a live drag, called here programmatically instead.
 #[wasm_bindgen_test]
 fn move_node_moves_a_plain_nodes_own_rect_and_reroutes_its_edge() -> Result<(), String> {
     let svg = make_svg("move-node-1to1", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -79,8 +79,8 @@ fn move_node_moves_a_plain_nodes_own_rect_and_reroutes_its_edge() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `move_node` rejects a `NodeId` that does not belong to this `Scene` — the same contract `node_rect` already has, and
-/// for the same reason: a foreign id's own size can't be read to validate against either.
+/// `move_node` rejects a `NodeId` that does not belong to this `Scene`. `node_rect` already has the same contract, for
+/// the same reason: a foreign id's own size can't be read to validate against either.
 #[wasm_bindgen_test]
 fn move_node_rejects_a_node_id_from_a_different_scene() -> Result<(), String> {
     let svg_a = make_svg("move-node-unknown-a", Size::new(200.0, 200.0), Size::new(200.0, 200.0));
@@ -131,7 +131,7 @@ fn move_node_rejects_a_non_finite_top_left() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The motivating case: an operator node's own real width is not known until after it is drawn, so it can't be centred
 /// under a wider data node at construction time. Added at a placeholder position, measured via `node_rect`, then moved
-/// to the computed centre — with its own already-auto-wired input edges rerouted to the new position, not left pointing
+/// to the computed centre. Its own already-auto-wired input edges are rerouted to the new position, not left pointing
 /// at the placeholder one.
 #[wasm_bindgen_test]
 fn move_node_centers_an_operator_node_under_a_wider_data_node_using_its_own_measured_size() -> Result<(), String> {
@@ -184,8 +184,8 @@ fn move_node_centers_an_operator_node_under_a_wider_data_node_using_its_own_meas
     let centre_x = op_rect_after.origin.x + op_rect_after.size.width / 2.0;
     check_close(centre_x, array_rect.origin.x + array_rect.size.width / 2.0)?;
 
-    // Both of the operator's own auto-wired input edges, drawn against the placeholder position, rerouted to the new
-    // one — neither still ends at a point that would only make sense for the old, discarded position. Exactly two
+    // Both of the operator's own auto-wired input edges, drawn against the placeholder position, are rerouted to the
+    // new one. Neither still ends at a point that would only make sense for the old, discarded position. Exactly two
     // connectors exist (one per operand), both ending at `op`'s own new rect.
     let count = crate::common::connector_count("move-node-centre")?;
     check(

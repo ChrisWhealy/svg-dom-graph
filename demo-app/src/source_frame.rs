@@ -4,7 +4,7 @@
 //! still worth seeing when the demo itself broke.
 //!
 //! Every demo module embeds its own file's full source at compile time (`include_str!`, as a `pub(crate) const
-//! SOURCE`), so the text shown here never drifts from what is actually running — there is no separate copy kept in sync
+//! SOURCE`). So the text shown here never drifts from what is actually running. There is no separate copy kept in sync
 //! by hand. [`demo_fn_source`] slices a single top-level function's body out of whichever module's `SOURCE`
 //! [`crate::DEMO_PANELS`] names for that panel. Mirrors `svg-dom`'s own demo gallery, which does the same thing across
 //! its own many demo files.
@@ -15,7 +15,7 @@ use crate::DEMO_PANELS;
 /// Returns the source text of the top-level `fn {name}` item in `source`, from its signature line through its closing
 /// brace, or `None` if it cannot be located.
 ///
-/// Relies on `rustfmt`'s guarantee that a top-level item's own closing brace always sits in column 0, while every brace
+/// Relies on `rustfmt`'s guarantee that a top-level item's own closing brace always sits in column 0. Every brace
 /// nested inside the body (including one inside a `format!` string) does not. Scanning for the first line that is
 /// exactly `}` after the signature therefore finds the function's end without parsing anything. Mirrors `svg-dom`'s own
 /// `demo_fn_source`.

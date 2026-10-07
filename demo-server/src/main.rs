@@ -1,8 +1,8 @@
 //! Static file server for the `svg-dom-graph` demo gallery.
 //!
 //! Mirrors `svg-dom`'s own `demo-server`: a `<nav>`-driven gallery where each panel builds lazily the first time it is
-//! selected — see [`panels`]'s own doc comment for the one thing this crate's much smaller panel count still simplifies
-//! away (category dividers in the menu).
+//! selected. See [`panels`]'s own doc comment for the one thing this crate's much smaller panel count still simplifies
+//! away: category dividers in the menu.
 //!
 //! Run from the project root with:
 //! ```sh
@@ -17,9 +17,9 @@
 //! 1. Rebuilds the `svg-dom-graph-demo` crate's wasm package using `wasm-pack build demo-app --target web`
 //! 1. Serves the result at <http://127.0.0.1:8000/>
 //!
-//! The generated `index.html`, the copied `style.css`, and the wasm `pkg/` are kept under `target/demo-stage/` rather
-//! than written into the source tree (as the old `./demo` shell script did, alongside a `python3 -m http.server` to
-//! serve it) or served straight out of the project root. Concretely:
+//! The generated `index.html`, the copied `style.css`, and the wasm `pkg/` are kept under `target/demo-stage/`. They
+//! are not written into the source tree, as the old `./demo` shell script did alongside a `python3 -m http.server` to
+//! serve it. They are not served straight out of the project root either. Concretely:
 //!
 //! ```text
 //! target/demo-stage/
@@ -36,15 +36,15 @@
 //!
 //! The port number can be overridden using the `PORT` environment variable, e.g. `PORT=9000 cargo demo`.
 //!
-//! [`build::prepare_stage`] also reruns before every request for `/` or `/index.html`, not just once at startup — see
+//! [`build::prepare_stage`] also reruns before every request for `/` or `/index.html`, not just once at startup. See
 //! `main`'s own middleware for why it is scoped to just those two paths rather than every request the server handles.
 //! So editing `index.html`'s own template, its panel fragments, or `style.css` is visible on the next browser refresh
 //! alone. Nothing restages the wasm package per request: `wasm-pack` is too slow for that, and editing Rust source
 //! needs a restart regardless, for the wasm rebuild to even happen.
 //!
-//! The build pipeline itself — resolving staging paths through to a wasm package ready to serve — lives in [`build`],
-//! as a `Result`-returning [`build::build_demo`] rather than something that reports errors and exits on its own. That
-//! keeps every "how do we stage the demo" decision testable and reusable independently of Actix, and leaves `main` as
+//! The build pipeline itself lives in [`build`]. It resolves staging paths through to a wasm package ready to serve. It
+//! is a `Result`-returning [`build::build_demo`] rather than something that reports errors and exits on its own. That
+//! keeps every "how do we stage the demo" decision testable and reusable independently of Actix. It leaves `main` as
 //! the one place that decides what a build failure means for the process.
 //!
 //! Run with `--prepare-only` (`cargo run -p demo-server -- --prepare-only`) to run [`build::prepare_stage`] alone —
@@ -54,9 +54,9 @@
 //!
 //! Run with `--build-only` (`cargo run -p demo-server -- --build-only`) to run the full [`build::build_demo`] pipeline
 //! — stage everything and rebuild the wasm package — and exit, without starting the server. CI's `wasm` job uses this
-//! instead of invoking `wasm-pack build demo-app ...` directly, so it exercises the exact command `build::build_wasm`
-//! actually constructs (working directory, argument order, the absolute `--out-dir` computed from `StagePaths`) rather
-//! than a hand-written approximation of it that could quietly drift out of step with what `cargo demo` really runs.
+//! instead of invoking `wasm-pack build demo-app ...` directly. So it exercises the exact command `build::build_wasm`
+//! actually constructs: working directory, argument order, and the absolute `--out-dir` computed from `StagePaths`. A
+//! hand-written approximation of it could quietly drift out of step with what `cargo demo` really runs.
 mod build;
 mod panels;
 mod validate;
@@ -78,16 +78,16 @@ async fn main() -> std::io::Result<()> {
         .to_path_buf();
 
     // Respects a `CARGO_TARGET_DIR` environment variable override, rather than assuming the target directory always
-    // sits directly under the project root. This is not the full resolution `cargo build` itself performs — it does not
-    // consult `build.target-dir` from `.cargo/config.toml` or user-level Cargo configuration — so an unusual Cargo
+    // sits directly under the project root. This is not the full resolution `cargo build` itself performs. It does not
+    // consult `build.target-dir` from `.cargo/config.toml` or user-level Cargo configuration. So an unusual Cargo
     // configuration using one of those instead of the environment variable is not picked up here.
     let target_dir = std::env::var_os("CARGO_TARGET_DIR")
         .map(PathBuf::from)
         .unwrap_or_else(|| root.join("target"));
     let stage = StagePaths::new(&target_dir);
 
-    // Unlike CARGO_TARGET_DIR above (where any absence just means "use the default layout"), a *present but
-    // unparseable* PORT is a configuration mistake worth reporting rather than silently falling back to DEFAULT_PORT —
+    // Unlike CARGO_TARGET_DIR above, where any absence just means "use the default layout", a *present but unparseable*
+    // PORT is a configuration mistake. It is worth reporting rather than silently falling back to DEFAULT_PORT.
     // `PORT=abc cargo demo` should fail loudly, not quietly start on 8000.
     let port: u16 = match std::env::var("PORT") {
         Ok(value) => value
@@ -115,9 +115,9 @@ async fn main() -> std::io::Result<()> {
         return Ok(());
     }
 
-    // Every build phase — staging index.html, rebuilding the wasm package — runs here, in order, before the server ever
-    // starts; a failure at either phase is fatal, so `main` reports it and exits rather than starting Actix in front of
-    // an incomplete or stale demo.
+    // Every build phase runs here, in order, before the server ever starts. The phases are staging index.html and
+    // rebuilding the wasm package. A failure at either phase is fatal. So `main` reports it and exits rather than
+    // starting Actix in front of an incomplete or stale demo.
     if let Err(err) = build::build_demo(&root, &stage) {
         eprintln!("aborting: {err}");
         process::exit(1);
@@ -140,7 +140,7 @@ async fn main() -> std::io::Result<()> {
             // static asset that neither of those could ever change. Skipping the refresh there avoids a needless
             // filesystem stat/write on every one of those requests, not just the page load that triggers them.
             // build_demo's wasm rebuild is deliberately not repeated here at all, for either kind of request. wasm-pack
-            // is far too slow to run per request, and editing Rust source already requires restarting cargo demo
+            // is far too slow to run per request. Editing Rust source already requires restarting cargo demo
             // regardless.
             //
             // A refresh failure (e.g. index.html was left mid-edit, or style.css went missing) is only logged, not
@@ -162,11 +162,11 @@ async fn main() -> std::io::Result<()> {
     })
     // A single worker, deliberately: prepare_stage's own temporary file (index.html.tmp) is a fixed, shared path within
     // stage_dir, not one made unique per request. Two workers refreshing it for two near-simultaneous requests to `/`
-    // or `/index.html` could otherwise interleave their own assemble-then-rename sequences over that same path — one
-    // worker's rename landing on the other's still-being-written temporary file, or the two renames racing each other.
-    // A single worker makes every request, including that refresh, run strictly one at a time, which removes the race
-    // outright rather than merely making it unlikely. This demo server has no throughput requirement multiple workers
-    // would ever be serving — see this module's own doc comment for what it actually needs to handle.
+    // or `/index.html` could otherwise interleave their own assemble-then-rename sequences over that same path. One
+    // worker's rename could land on the other's still-being-written temporary file. Or the two renames could race each
+    // other. A single worker makes every request, including that refresh, run strictly one at a time, which removes the
+    // race outright rather than merely making it unlikely. This demo server has no throughput requirement multiple
+    // workers would ever be serving — see this module's own doc comment for what it actually needs to handle.
     .workers(1)
     .bind(addr)?
     .run()

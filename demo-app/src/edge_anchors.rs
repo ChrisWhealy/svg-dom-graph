@@ -195,8 +195,8 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
         };
 
         // This demo's own geometry is always valid, so this never fails in practice. The rebuild is still chained
-        // through `if let`, not unwrapped: on failure `state` keeps its previous `Scene` handle rather than being left
-        // in a broken half-updated state, and the page does not crash on a stray input event. Note that
+        // through `if let`, not unwrapped. On failure `state` keeps its previous `Scene` handle rather than being left
+        // in a broken half-updated state. The page does not crash on a stray input event. Note that
         // `rebuild_edge_anchors_scene` clears `#edge-anchors-diagram`'s DOM before it can fail, so a failure here would
         // still leave the container empty even though the old `Scene` handle lives on.
         if let Ok(demo) = rebuild_edge_anchors_scene(&slider_document, fixing_points, connector_type) {

@@ -1,8 +1,8 @@
 //! Coalesces a burst of view changes into one DOM write per animation frame.
 //!
 //! A trackpad pinch or a fast pan can deliver more wheel or pointer events than the browser paints frames. Each one
-//! updates [`SceneInner::view`] at once — that is cheap arithmetic, and consecutive events must compose against the
-//! latest view — but writing the content layer's `transform` more than once per frame is wasted work. So the write is
+//! updates [`SceneInner::view`] at once. That is cheap arithmetic, and consecutive events must compose against the
+//! latest view. But writing the content layer's `transform` more than once per frame is wasted work. So the write is
 //! deferred to a single animation frame, the same way [`PointerCoalescer`](
 //! crate::scene::drag::pointer_coalescer::PointerCoalescer) defers a dragged node's move.
 //!
@@ -54,7 +54,7 @@ impl ViewFlusher {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Writes the current view now and cancels any frame still pending, so a gesture that has just ended leaves the DOM
+    /// Writes the current view now and cancels any frame still pending. So a gesture that has just ended leaves the DOM
     /// exactly at its final position rather than one frame behind.
     pub(super) fn flush_now(&self) {
         self.frame.cancel();

@@ -1,5 +1,5 @@
-//! `Scene::set_data_values`: replacing the values a multi-value data node shows, in place — the cells keep their size,
-//! shape, selection and colours, and each cell's own text and accessible name follow the new values.
+//! `Scene::set_data_values` replaces the values a multi-value data node shows, in place. The cells keep their size,
+//! shape, selection and colours. Each cell's own text and accessible name follow the new values.
 
 use crate::common::{check, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};

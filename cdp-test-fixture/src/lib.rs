@@ -23,9 +23,9 @@
 //!    that the clamped node stays real-hit-testable — see `bounds.rs`.
 //! 8. `named_value` — not draggable, a named single-value data node (`"B: u64 = AB CD EF 01 23 45 67 89"`), with a
 //!    [`Scene::show_selection_toolbar`] bound to it. Used by `accessibility_tree.rs` to query the real,
-//!    browser-computed accessibility tree via CDP's own `Accessibility` domain, not just the rendered DOM `wasm-pack
-//!    test`'s own suite already checks — both `named_value`'s own role/name, and the selection toolbar's role, name,
-//!    each button's own name, and disabled state.
+//!    browser-computed accessibility tree via CDP's own `Accessibility` domain. That goes beyond the rendered DOM
+//!    `wasm-pack test`'s own suite already checks. It checks `named_value`'s own role/name, and the selection toolbar's
+//!    role, name, each button's own name, and disabled state.
 //!
 //! Panning and wheel zoom are switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the
 //! whole scene and Ctrl plus the wheel zooms it. The background is clear of every node and connector at, for example,
@@ -42,10 +42,10 @@
 //! 4. `hub` to `branch_b`, sharp corners. Shares `hub`'s same three fixing points, but lands on a different one —
 //!    proving sibling edges sharing one node do not all crowd onto the same spot.
 //!
-//! `Scene` is a cheap handle around an `Rc`-shared state, and its own listener closures deliberately hold only `Weak`
-//! references back to it (so a dropped `Scene` cannot leak the whole page's DOM forever). That means a `Scene` built
-//! and then simply let go out of scope, which is the natural shape of a `#[wasm_bindgen(start)]` function, drops before
-//! the user ever gets a chance to click anything. This in turn, silently kills every listener with no panic and no
+//! `Scene` is a cheap handle around an `Rc`-shared state. Its own listener closures deliberately hold only `Weak`
+//! references back to it, so a dropped `Scene` cannot leak the whole page's DOM forever. That means a `Scene` built and
+//! then simply let go out of scope drops before the user ever gets a chance to click anything. That is the natural
+//! shape of a `#[wasm_bindgen(start)]` function. This in turn, silently kills every listener with no panic and no
 //! console output.
 //!
 //! `SCENE` below keeps this fixture's only `Scene` handle alive for the page's whole lifetime, the same pattern
@@ -131,10 +131,10 @@ fn build() -> Result<(), Error> {
         DataNodeContent::new(NodeValues::U64(vec![0xABCD_EF01_2345_6789]), DataFormat::Hexadecimal),
     )?;
 
-    // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it — the
-    // ordinary case for a freshly built data node, and the one `accessibility_tree.rs` uses to prove Chrome's own
-    // computed accessibility tree actually exposes the toolbar's role, name, and each button's own name and disabled
-    // state, not just what the rendered DOM attributes claim. `named_value` holds exactly one value, so this starts
+    // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it. That is
+    // the ordinary case for a freshly built data node. `accessibility_tree.rs` uses it to prove Chrome's own computed
+    // accessibility tree actually exposes the toolbar's role, name, and each button's own name and disabled state. It
+    // does not rely on what the rendered DOM attributes claim. `named_value` holds exactly one value, so this starts
     // with Next enabled and Prev/Restart disabled — a real, deterministic disabled state with no interaction needed to
     // reach it.
     scene.show_selection_toolbar(named_value, SelectionToolbarOptions::default(), |_, _, _| {})?;

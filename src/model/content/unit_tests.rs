@@ -10,9 +10,9 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Collects every one of `content`'s own cells into a `Vec<String>`, via `DataNodeContent::for_each_cell_string` —
-/// production code streams instead of collecting, but a test asserting on formatting correctness reads far more
-/// naturally against a plain `Vec<String>` equality check than against a sequence of callback invocations.
+/// Collects every one of `content`'s own cells into a `Vec<String>`, via `DataNodeContent::for_each_cell_string`.
+/// Production code streams instead of collecting. A test asserting on formatting correctness reads far more naturally
+/// against a plain `Vec<String>` equality check than against a sequence of callback invocations.
 fn cells(content: &DataNodeContent) -> Vec<String> {
     let mut out = Vec::new();
     let mut scratch = String::new();
@@ -21,7 +21,7 @@ fn cells(content: &DataNodeContent) -> Vec<String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// grid_shape
+//   grid_shape
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -52,9 +52,9 @@ fn grid_shape_of_five_values_is_three_rows_of_two_columns() -> Result<(), String
 
 #[test]
 fn grid_shape_of_six_values_prefers_two_rows_of_three_over_three_rows_of_two() -> Result<(), String> {
-    // 2 is a power of two, strictly between 1 and 6, dividing it evenly, and gives a squarer grid (2x3, diff 1) than
-    // the sqrt-based fallback would (3x2 is the same shape transposed, so this is really about which one
-    // best_power_of_two_rows picks as "rows" — see that function's own doc comment on ties).
+    // 2 is a power of two, strictly between 1 and 6, dividing it evenly. It gives a squarer grid (2x3, diff 1) than the
+    // sqrt-based fallback would. 3x2 is the same shape transposed. So this is really about which one
+    // best_power_of_two_rows picks as "rows". See that function's own doc comment on ties.
     check_eq(grid_shape(6, GridLayout::Automatic), (2, 3))
 }
 
@@ -66,8 +66,8 @@ fn grid_shape_of_seven_values_is_three_rows_of_three_columns() -> Result<(), Str
 
 #[test]
 fn grid_shape_of_eight_values_prefers_two_rows_of_four_over_a_square_with_a_gap() -> Result<(), String> {
-    // The revised feature request's own example: 2 rows of 4 (an exact fit), not the 3x3 square the plain "closest to
-    // square" rule would have picked (which would leave one slot blank).
+    // The revised feature request's own example: 2 rows of 4 (an exact fit). It is not the 3x3 square the plain
+    // "closest to square" rule would have picked, which would leave one slot blank.
     check_eq(grid_shape(8, GridLayout::Automatic), (2, 4))
 }
 
@@ -91,13 +91,13 @@ fn grid_shape_of_zero_values_is_empty() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// grid_shape — GridLayout::Columns/Rows/MaxColumns
+//   grid_shape — GridLayout::Columns/Rows/MaxColumns
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn columns_fixes_the_column_count_regardless_of_squareness() -> Result<(), String> {
-    // 8 values, forced into 3 columns: Automatic would pick 2x4 (see the test above), but Columns overrides that
-    // entirely — 3 rows of 3 columns, with the last row only 2/3 full.
+    // 8 values, forced into 3 columns. Automatic would pick 2x4 (see the test above), but Columns overrides that
+    // entirely. The result is 3 rows of 3 columns, with the last row only 2/3 full.
     check_eq(grid_shape(8, GridLayout::Columns(3)), (3, 3))
 }
 
@@ -124,7 +124,7 @@ fn max_columns_above_the_value_count_behaves_like_a_single_row() -> Result<(), S
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// GridLayout::is_valid
+//   GridLayout::is_valid
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -147,7 +147,7 @@ fn a_zero_columns_rows_or_max_columns_is_invalid() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// best_power_of_two_rows
+//   best_power_of_two_rows
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -174,7 +174,7 @@ fn best_power_of_two_rows_is_none_when_the_only_divisor_is_the_trivial_one() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Per-value formatting
+//   Per-value formatting
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -220,7 +220,7 @@ fn decimal_does_not_split_into_bytes() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ByteOrder
+//   ByteOrder
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -260,7 +260,7 @@ fn byte_order_has_no_visible_effect_under_decimal_format() -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// DataNodeContent::for_each_cell_string — one string per value, not yet arranged into rows
+//   DataNodeContent::for_each_cell_string — one string per value, not yet arranged into rows
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -291,8 +291,8 @@ fn twenty_five_values_produce_twenty_five_cells_arranged_as_a_five_by_five_grid(
 
 #[test]
 fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> Result<(), String> {
-    // 7 values -> a 3x3 grid (see grid_shape_of_seven_values above), with 2 blank slots in the last row —
-    // for_each_cell_string itself has no concept of blanks, it is draw_content_box's job to stop after the 7th.
+    // 7 values -> a 3x3 grid (see grid_shape_of_seven_values above), with 2 blank slots in the last row.
+    // for_each_cell_string itself has no concept of blanks. It is draw_content_box's job to stop after the 7th.
     let values = (0..7u8).collect();
     let content = DataNodeContent::new(NodeValues::U8(values), DataFormat::Decimal);
     check_eq(cells(&content).len(), 7)?;
@@ -306,8 +306,8 @@ fn cells_are_returned_even_when_the_last_grid_row_is_only_partially_filled() -> 
 
 #[test]
 fn widest_cell_string_picks_the_largest_value_under_decimal() -> Result<(), String> {
-    // Digit count grows with magnitude for an unsigned decimal value, so the numerically largest value — not whichever
-    // happens to come first — is always the one with the most digits to render.
+    // Digit count grows with magnitude for an unsigned decimal value. So the numerically largest value, not whichever
+    // happens to come first, is always the one with the most digits to render.
     let content = DataNodeContent::new(NodeValues::U32(vec![1, 4_294_967_295, 42]), DataFormat::Decimal);
     let mut out = String::new();
     content.widest_cell_string(&mut out);
@@ -317,7 +317,7 @@ fn widest_cell_string_picks_the_largest_value_under_decimal() -> Result<(), Stri
 #[test]
 fn widest_cell_string_uses_any_value_under_hexadecimal_since_every_cell_shares_one_width() -> Result<(), String> {
     // Every value under one integer width renders the same number of hexadecimal characters regardless of its own
-    // magnitude, so there is no widest value to search for — the first is exactly as representative as any other.
+    // magnitude. So there is no widest value to search for. The first is exactly as representative as any other.
     let content = DataNodeContent::new(NodeValues::U16(vec![0x0001, 0xFFFF]), DataFormat::Hexadecimal);
     let mut out = String::new();
     content.widest_cell_string(&mut out);
@@ -363,7 +363,7 @@ fn len_reports_the_value_count_regardless_of_width() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// is_single_value / type_colour
+//   is_single_value / type_colour
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -413,7 +413,7 @@ fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// resolve_selection
+//   resolve_selection
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -508,7 +508,7 @@ fn resolve_selection_of_a_column_with_an_out_of_range_row_is_none() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// resolve_selection — incomplete grids (a row/column index within shape, but the flat cell it names is blank)
+//   resolve_selection — incomplete grids (a row/column index within shape, but the flat cell it names is blank)
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// Seven values under `Automatic` render as a 3×3 grid with the last two positions blank:
@@ -559,8 +559,8 @@ fn resolve_selection_of_a_column_focusing_a_blank_cell_in_an_incomplete_grid_is_
 #[test]
 fn resolve_selection_of_a_row_with_no_focus_still_succeeds_on_an_incomplete_grid() -> Result<(), String> {
     let content = seven_values_as_a_three_by_three_grid();
-    // Row 2 is nominally indices 6, 7, 8, of which only 6 is real — `resolve_selection` itself still succeeds;
-    // see the `ResolvedBand::contains` tests below for how the blank indices are kept out of the recoloured set.
+    // Row 2 is nominally indices 6, 7, 8, of which only 6 is real. `resolve_selection` itself still succeeds. See the
+    // `ResolvedBand::contains` tests below for how the blank indices are kept out of the recoloured set.
     check_eq(
         content.resolve_selection(Selection::Row { row: 2, col: None }),
         Some((ResolvedBand::Row { row: 2, cols: 3 }, None)),
@@ -580,7 +580,7 @@ fn resolve_selection_of_an_entirely_blank_row_under_an_over_specified_layout_sti
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// ResolvedBand::contains
+//   ResolvedBand::contains
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -618,7 +618,7 @@ fn resolved_band_contains_is_a_pure_shape_arithmetic_with_no_notion_of_a_blank_c
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Selection::describe_into
+//   Selection::describe_into
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// `Selection::describe_into`'s own output, as an owned `String` — this file's own tests only ever check the finished
@@ -670,15 +670,15 @@ fn describe_of_a_column_with_a_cell_names_both() -> Result<(), String> {
 
 #[test]
 fn describe_into_appends_rather_than_replacing_existing_content() -> Result<(), String> {
-    // `Scene::set_selection` relies on this: it truncates its reused buffer back to the node's own base label, then
-    // calls `describe_into` to append onto whatever remains — never to replace the whole buffer.
+    // `Scene::set_selection` relies on this. It truncates its reused buffer back to the node's own base label, then
+    // calls `describe_into` to append onto whatever remains. It never replaces the whole buffer.
     let mut out = String::from("base label");
     Selection::Cell(3).describe_into(&mut out);
     check_eq(out, "base label, cell 3 selected".to_owned())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// UnaryOperator::label / BinaryOperator::label
+//   UnaryOperator::label / BinaryOperator::label
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -720,7 +720,7 @@ fn arithmetic_operator_label_names_each_variant() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// BinaryOperator::commutes / ArithmeticOperator::commutes
+//   BinaryOperator::commutes / ArithmeticOperator::commutes
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -743,7 +743,7 @@ fn only_add_and_multiply_commute_among_arithmetic_operators() -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// natural_selection / flat_index
+//   natural_selection / flat_index
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
@@ -836,7 +836,7 @@ fn flat_index_of_an_out_of_range_cell_is_none() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// DataFormat::Ascii
+//   DataFormat::Ascii
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
