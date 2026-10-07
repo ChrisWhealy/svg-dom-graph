@@ -14,6 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Refactor `src/scene/node/data.rs` (`fcf9e06`)
 - Decompose `draw_content_box` function into smaller, reusable components (`53ebd4b`)
 - Decompose `make_draggable_with ` function (`1fdc9a7`)
+- Decompose `make_draggable_with ` function (`87adbf4`)
+- Decompose `for_each_cell_string` function (``)
 
 # [Released]
 

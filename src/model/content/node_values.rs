@@ -32,6 +32,72 @@ fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An unsigned integer width a [`NodeValues`] variant can hold. One implementation per width, from [`impl_word`],
+/// replaces what was once the same `match format` repeated for every variant of every method.
+trait Word: Ord + Copy {
+    /// Formats this value into `out` per `format` and `byte_order`.
+    ///
+    /// [`DataFormat::Decimal`] never computes `to_be_bytes()`/[`order_bytes`] at all, since [`format_decimal_into`] only
+    /// ever needs the value's own numeric magnitude. Computing and reordering a value's bytes only to have `Decimal`
+    /// discard them unused would be wasted work on every value, so the bytes are only built in the arms that use them.
+    fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String);
+}
+
+macro_rules! impl_word {
+    ($($width:ty),+) => {$(
+        impl Word for $width {
+            fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+                match format {
+                    DataFormat::Decimal => format_decimal_into(u128::from(self), out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(self.to_be_bytes(), byte_order), out);
+                    },
+                }
+            }
+        }
+    )+};
+}
+
+impl_word!(u8, u16, u32, u64);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Calls `f(index, formatted)` for every value of `values`, reusing `scratch` for the text. See
+/// [`NodeValues::for_each_cell_string`].
+fn for_each_formatted<T: Word>(
+    values: &[T],
+    format: DataFormat,
+    byte_order: ByteOrder,
+    scratch: &mut String,
+    mut f: impl FnMut(usize, &str),
+) {
+    for (i, &x) in values.iter().enumerate() {
+        x.format_into(format, byte_order, scratch);
+        f(i, scratch);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats into `out` the one value of `values` that [`pick_widest`] picks, if any. See
+/// [`NodeValues::widest_cell_string`].
+fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+    if let Some(x) = pick_widest(values, format) {
+        x.format_into(format, byte_order, out);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats the first value of `values` into `out`. `false`, leaving `out` untouched, if there is none. See
+/// [`NodeValues::single_cell_string_into`].
+fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
+    values.first().is_some_and(|&x| {
+        x.format_into(format, byte_order, out);
+        true
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The values a [`super::DataNodeContent`] displays. Each variant names the Rust integer type the values were captured
 /// as. This determines how many bytes [`super::DataFormat::Hexadecimal`]/[`super::DataFormat::Binary`] split each value
 /// into. It also determines which colour is assigned (`super::NodeValues::type_colour`, crate-private).
@@ -80,122 +146,20 @@ impl NodeValues {
     /// `Vec<String>` does. `f` borrows `scratch`'s own contents for the duration of one call only — the string is not
     /// valid, and must not be kept, past that call returning.
     ///
-    /// Dispatches on `format` once, before the loop, not once per value: [`DataFormat::Decimal`] never computes
-    /// `x.to_be_bytes()`/[`order_bytes`] at all, since [`format_decimal_into`] only ever needs the value's own numeric
-    /// magnitude. Computing and byte-order-reordering a value's own bytes only to have `Decimal` discard them unused,
-    /// on every value, is exactly the wasted work this avoids.
+    /// Every value is formatted by its own width's [`Word::format_into`], which builds a value's bytes only for the
+    /// formats that use them. [`DataFormat::Decimal`] never computes or reorders them.
     pub(super) fn for_each_cell_string(
         &self,
         format: DataFormat,
         byte_order: ByteOrder,
         scratch: &mut String,
-        mut f: impl FnMut(usize, &str),
+        f: impl FnMut(usize, &str),
     ) {
         match self {
-            Self::U8(v) => match format {
-                DataFormat::Decimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_decimal_into(u128::from(x), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Hexadecimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Binary => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Ascii | DataFormat::PlainText => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-            },
-            Self::U16(v) => match format {
-                DataFormat::Decimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_decimal_into(u128::from(x), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Hexadecimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Binary => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Ascii | DataFormat::PlainText => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-            },
-            Self::U32(v) => match format {
-                DataFormat::Decimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_decimal_into(u128::from(x), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Hexadecimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Binary => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Ascii | DataFormat::PlainText => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-            },
-            Self::U64(v) => match format {
-                DataFormat::Decimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_decimal_into(u128::from(x), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Hexadecimal => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_hex_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Binary => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_binary_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-                DataFormat::Ascii | DataFormat::PlainText => {
-                    for (i, &x) in v.iter().enumerate() {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), scratch);
-                        f(i, scratch);
-                    }
-                },
-            },
+            Self::U8(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::U16(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::U32(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::U64(v) => for_each_formatted(v, format, byte_order, scratch, f),
         }
     }
 
@@ -210,54 +174,10 @@ impl NodeValues {
     pub(super) fn widest_cell_string(&self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
         out.clear();
         match self {
-            Self::U8(v) => {
-                if let Some(x) = pick_widest(v, format) {
-                    match format {
-                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii | DataFormat::PlainText => {
-                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                        },
-                    }
-                }
-            },
-            Self::U16(v) => {
-                if let Some(x) = pick_widest(v, format) {
-                    match format {
-                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii | DataFormat::PlainText => {
-                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                        },
-                    }
-                }
-            },
-            Self::U32(v) => {
-                if let Some(x) = pick_widest(v, format) {
-                    match format {
-                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii | DataFormat::PlainText => {
-                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                        },
-                    }
-                }
-            },
-            Self::U64(v) => {
-                if let Some(x) = pick_widest(v, format) {
-                    match format {
-                        DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                        DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                        DataFormat::Ascii | DataFormat::PlainText => {
-                            format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                        },
-                    }
-                }
-            },
+            Self::U8(v) => format_widest(v, format, byte_order, out),
+            Self::U16(v) => format_widest(v, format, byte_order, out),
+            Self::U32(v) => format_widest(v, format, byte_order, out),
+            Self::U64(v) => format_widest(v, format, byte_order, out),
         }
     }
 
@@ -272,50 +192,10 @@ impl NodeValues {
     /// construction-scratch buffer in hand and reuses it for this too.
     pub(super) fn single_cell_string_into(&self, format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
         match self {
-            Self::U8(v) => v.first().is_some_and(|&x| {
-                match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                    },
-                }
-                true
-            }),
-            Self::U16(v) => v.first().is_some_and(|&x| {
-                match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                    },
-                }
-                true
-            }),
-            Self::U32(v) => v.first().is_some_and(|&x| {
-                match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                    },
-                }
-                true
-            }),
-            Self::U64(v) => v.first().is_some_and(|&x| {
-                match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(x), out),
-                    DataFormat::Hexadecimal => format_hex_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Binary => format_binary_into(order_bytes(x.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
-                        format_ascii_into(order_bytes(x.to_be_bytes(), byte_order), out)
-                    },
-                }
-                true
-            }),
+            Self::U8(v) => format_first(v, format, byte_order, out),
+            Self::U16(v) => format_first(v, format, byte_order, out),
+            Self::U32(v) => format_first(v, format, byte_order, out),
+            Self::U64(v) => format_first(v, format, byte_order, out),
         }
     }
 
