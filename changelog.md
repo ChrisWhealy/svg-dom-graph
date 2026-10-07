@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.25] - 2026-10-07
 
 ## Added
@@ -27,8 +29,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Edge case: Fallback monospace font used for `␣` may have different advance width (`7f66797`)
 - Do not validate `.with_layout()` if supplied for `DataFormat::PlainText` as it is irrelevant (`0b2b5d1`)
 - Avoid duplicate `String` allocation during ASCII measurement (`60eea5c`)
-
-# [Released]
 
 ## [0.2.24] - 2026-10-06
 
