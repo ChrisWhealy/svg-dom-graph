@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Initial demo implementation of SHA2-256 algorithm (``)
+- Initial demo implementation of SHA2-256 algorithm (`b990cb2`)
+
+## Changed
+
+- Bump `Cargo.toml` version (``)
 
 # [Released]
 
