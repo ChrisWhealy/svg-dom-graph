@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.28] - 2026-10-09
+
+## Added
+
+- Initial demo implementation of SHA2-256 algorithm (``)
+
 # [Released]
 
 ## [0.2.27] - 2026-10-07

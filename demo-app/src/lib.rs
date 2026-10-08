@@ -59,6 +59,7 @@ mod operators_binary;
 mod operators_chained;
 mod operators_unary;
 mod selection;
+mod sha2_256;
 mod sha3_sponge;
 mod source_frame;
 mod tree;
@@ -112,6 +113,7 @@ demo_gallery! {
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
     "panel-theta" => theta::build_theta_demo,
+    "panel-sha2-256" => sha2_256::build_sha2_256_demo,
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo,
 }
 

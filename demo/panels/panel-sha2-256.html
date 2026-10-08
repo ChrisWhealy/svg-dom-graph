@@ -1,0 +1,43 @@
+<section class="section" id="panel-sha2-256">
+    <h2>SHA2-256</h2>
+    <p>SHA-256 hashes a message in 64-byte blocks. This demo hashes one short message, so it needs only one block. Every
+        value on screen is a real result of that one calculation, worked out in plain Rust.</p>
+    <dl>
+        <dt>The message block</dt>
+        <dd>
+            <p>The message is padded out to one 64-byte block, seen as 16 big-endian 32-bit words. The byte straight
+                after the last message byte is the terminator, <code>0x80</code>. The last 64 bits hold the message's
+                length in bits, big-endian. This message is short, so only the last word, <code>w15</code>, is used.</p>
+        </dd>
+        <dt>The message schedule</dt>
+        <dd>
+            <p>The block is copied into the first 16 words of a 64-word schedule. Each of the other 48 is the sum of four
+                earlier words, ignoring overflow: <code>ms[n-16] + sigma0(ms[n-15]) + ms[n-7] + sigma1(ms[n-2])</code>.
+                While a word is being built, it is marked, and the four words it reads are marked as secondary.</p>
+            <p><code>sigma0(w)</code> is <code>ROTR(w, 7) XOR ROTR(w, 18) XOR SHR(w, 3)</code>, and <code>sigma1(w)</code>
+                is <code>ROTR(w, 17) XOR ROTR(w, 19) XOR SHR(w, 10)</code>.</p>
+        </dd>
+        <dt>Compression</dt>
+        <dd>
+            <p>Eight working variables, <code>a</code> to <code>h</code>, start as the initial hash value: the first 32
+                bits of the fractional parts of the square roots of the first 8 primes. The 64 round constants
+                <code>K</code> are the same for the cube roots of the first 64 primes. Each round uses one schedule word
+                and one constant.</p>
+            <p><code>temp1 = h + bigSigma1(e) + choice(e, f, g) + K[i] + W[i]</code> and
+                <code>temp2 = bigSigma0(a) + majority(a, b, c)</code>, where
+                <code>bigSigma0(w)</code> is <code>ROTR(w, 2) XOR ROTR(w, 13) XOR ROTR(w, 22)</code>,
+                <code>bigSigma1(w)</code> is <code>ROTR(w, 6) XOR ROTR(w, 11) XOR ROTR(w, 25)</code>,
+                <code>choice(e, f, g)</code> is <code>(e AND f) XOR (NOT(e) AND g)</code>, and
+                <code>majority(a, b, c)</code> is <code>(a AND b) XOR (a AND c) XOR (b AND c)</code>.</p>
+            <p>The next working variables are <code>h=g, g=f, f=e, e=d+temp1, d=c, c=b, b=a, a=temp1+temp2</code>.</p>
+        </dd>
+        <dt>The digest</dt>
+        <dd>
+            <p>After 64 rounds, each working variable is added to the initial hash word it started as. The digest is
+                those 8 words, joined. Without that last addition, the result would not be a hash of the block.</p>
+        </dd>
+    </dl>
+    <p>Press "Next" to walk through the steps. The "8" buttons step eight at a time.</p>
+    <div class="canvas" id="sha2-256-diagram-stage">
+    </div>
+</section>
