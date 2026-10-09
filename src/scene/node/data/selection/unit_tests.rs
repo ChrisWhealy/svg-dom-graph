@@ -91,3 +91,73 @@ fn the_cells_outside_every_band_and_focus_are_never_visited() -> Result<(), Stri
         "row 2 is in neither band, so it is untouched",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   try_for_each_difference
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Every `(index, now_in_set)` pair the walk over `old` and `new` visits, in order.
+fn differences(old: &[usize], new: &[usize]) -> Vec<(usize, bool)> {
+    let mut out = Vec::new();
+    let result: Result<(), ()> = try_for_each_difference(old, new, |i, now| {
+        out.push((i, now));
+        Ok(())
+    });
+    assert!(result.is_ok());
+    out
+}
+
+#[test]
+fn identical_sets_have_no_difference() -> Result<(), String> {
+    check_eq(differences(&[1, 4, 9], &[1, 4, 9]), Vec::new())
+}
+
+#[test]
+fn an_index_only_in_the_new_set_enters_it() -> Result<(), String> {
+    check_eq(differences(&[1, 4], &[1, 4, 9]), vec![(9, true)])
+}
+
+#[test]
+fn an_index_only_in_the_old_set_leaves_it() -> Result<(), String> {
+    check_eq(differences(&[1, 4, 9], &[1, 9]), vec![(4, false)])
+}
+
+#[test]
+fn entering_and_leaving_indices_come_out_in_index_order() -> Result<(), String> {
+    check_eq(
+        differences(&[2, 5, 8], &[3, 5, 7, 8, 10]),
+        vec![(2, false), (3, true), (7, true), (10, true)],
+    )
+}
+
+#[test]
+fn an_empty_side_gives_every_index_of_the_other() -> Result<(), String> {
+    check_eq(differences(&[], &[3, 4]), vec![(3, true), (4, true)])?;
+    check_eq(differences(&[3, 4], &[]), vec![(3, false), (4, false)])?;
+    check_eq(differences(&[], &[]), Vec::new())
+}
+
+#[test]
+fn the_walk_agrees_with_the_set_arithmetic_it_replaces() -> Result<(), String> {
+    let old: Vec<usize> = (0..60).filter(|i| i % 3 == 0).collect();
+    let new: Vec<usize> = (0..60).filter(|i| i % 5 == 0).collect();
+    let expected: Vec<(usize, bool)> = (0..60)
+        .filter_map(|i| match (old.contains(&i), new.contains(&i)) {
+            (true, false) => Some((i, false)),
+            (false, true) => Some((i, true)),
+            _ => None,
+        })
+        .collect();
+    check_eq(differences(&old, &new), expected)
+}
+
+#[test]
+fn the_walk_stops_at_the_first_error() -> Result<(), String> {
+    let mut seen = Vec::new();
+    let result = try_for_each_difference(&[1, 2, 3], &[], |i, _| {
+        seen.push(i);
+        if i == 2 { Err("stop") } else { Ok(()) }
+    });
+    check_eq(result, Err("stop"))?;
+    check_eq(seen, vec![1, 2])
+}

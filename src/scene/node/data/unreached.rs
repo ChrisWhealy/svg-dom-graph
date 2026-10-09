@@ -1,6 +1,6 @@
 //! Marking a data node's cells that have no value yet: `Scene::set_unreached_cells`.
 
-use super::selection::Highlight;
+use super::selection::{Highlight, try_for_each_difference};
 use crate::{
     error::Error,
     model::node::{NodeContent, NodeId},
@@ -78,25 +78,21 @@ impl Scene {
 
         // Only a cell that enters or leaves the set can change style, so walk the two sorted lists' own symmetric
         // difference rather than every cell in the grid.
-        let old = &handles.unreached;
-        let mut changed = Vec::with_capacity(old.len() + new_unreached.len());
-        changed.extend(old.iter().filter(|i| new_unreached.binary_search(i).is_err()));
-        changed.extend(new_unreached.iter().filter(|i| old.binary_search(i).is_err()));
-
-        let mut result = Ok(());
-        for i in changed {
-            let Some(cell) = handles.cell_rects.get(i) else { continue };
-            let secondary = handles.secondary.binary_search(&i).is_ok();
-            let style_with = |unreached: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
-            let new_style = style_with(new_unreached.binary_search(&i).is_ok());
-            if new_style != style_with(old.binary_search(&i).is_ok()) {
-                result = new_style.apply(cell, handles.cell_texts.get(i));
-                if result.is_err() {
-                    break;
+        try_for_each_difference(
+            &handles.unreached,
+            &new_unreached,
+            |i, now_in_set| -> Result<(), svg_dom::Error> {
+                let Some(cell) = handles.cell_rects.get(i) else { return Ok(()) };
+                let secondary = handles.secondary.binary_search(&i).is_ok();
+                let style_with =
+                    |unreached: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
+                let new_style = style_with(now_in_set);
+                if new_style != style_with(!now_in_set) {
+                    new_style.apply(cell, handles.cell_texts.get(i))?;
                 }
-            }
-        }
-        result?;
+                Ok(())
+            },
+        )?;
 
         handles.unreached = new_unreached;
         handles.refresh_label()?;

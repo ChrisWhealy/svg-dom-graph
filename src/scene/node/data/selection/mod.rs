@@ -185,25 +185,21 @@ impl Scene {
 
         // Only a cell that enters or leaves the set can change style, so walk the two sorted lists' own symmetric
         // difference rather than every cell in the grid.
-        let old = &handles.secondary;
-        let mut changed = Vec::with_capacity(old.len() + new_secondary.len());
-        changed.extend(old.iter().filter(|i| new_secondary.binary_search(i).is_err()));
-        changed.extend(new_secondary.iter().filter(|i| old.binary_search(i).is_err()));
-
-        let mut result = Ok(());
-        for i in changed {
-            let Some(cell) = handles.cell_rects.get(i) else { continue };
-            let unreached = handles.unreached.binary_search(&i).is_ok();
-            let style_with = |secondary: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
-            let new_style = style_with(new_secondary.binary_search(&i).is_ok());
-            if new_style != style_with(old.binary_search(&i).is_ok()) {
-                result = new_style.apply(cell, handles.cell_texts.get(i));
-                if result.is_err() {
-                    break;
+        try_for_each_difference(
+            &handles.secondary,
+            &new_secondary,
+            |i, now_in_set| -> Result<(), svg_dom::Error> {
+                let Some(cell) = handles.cell_rects.get(i) else { return Ok(()) };
+                let unreached = handles.unreached.binary_search(&i).is_ok();
+                let style_with =
+                    |secondary: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
+                let new_style = style_with(now_in_set);
+                if new_style != style_with(!now_in_set) {
+                    new_style.apply(cell, handles.cell_texts.get(i))?;
                 }
-            }
-        }
-        result?;
+                Ok(())
+            },
+        )?;
 
         handles.secondary = new_secondary;
         handles.refresh_label()?;
@@ -282,6 +278,47 @@ fn for_each_changed_cell(old: &Highlight, new: &Highlight, len: usize, mut visit
             }
         });
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Calls `visit(index, now_in_set)` for every index in exactly one of `old` and `new`: `true` for one only in `new`, so
+/// it enters the set, and `false` for one only in `old`, so it leaves. Both must be sorted and free of duplicates.
+/// Stops at, and returns, the first error `visit` gives.
+///
+/// One merge walk over both lists, in index order. It builds no list of changes and searches nothing, so it costs
+/// `old.len() + new.len()` steps.
+pub(super) fn try_for_each_difference<E>(
+    old: &[usize],
+    new: &[usize],
+    mut visit: impl FnMut(usize, bool) -> Result<(), E>,
+) -> Result<(), E> {
+    let (mut o, mut n) = (0, 0);
+    while o < old.len() || n < new.len() {
+        match (old.get(o), new.get(n)) {
+            (Some(&a), Some(&b)) if a == b => {
+                o += 1;
+                n += 1;
+            },
+            (Some(&a), Some(&b)) if a < b => {
+                visit(a, false)?;
+                o += 1;
+            },
+            (Some(_), Some(&b)) => {
+                visit(b, true)?;
+                n += 1;
+            },
+            (Some(&a), None) => {
+                visit(a, false)?;
+                o += 1;
+            },
+            (None, Some(&b)) => {
+                visit(b, true)?;
+                n += 1;
+            },
+            (None, None) => break,
+        }
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
