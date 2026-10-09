@@ -20,6 +20,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move SHA2 demo into its own window (`1cc22cc`)
 - Adapt SHA2 demo layout and add `SAME_SIDE_CLEARANCE` in elbow routing geometry (``)
 
+## Fixed
+
+- Handle step callback errors in SHA2/3 demos gracefully (``)
+
 # [Released]
 
 ## [0.2.27] - 2026-10-07

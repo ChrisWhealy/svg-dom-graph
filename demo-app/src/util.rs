@@ -616,3 +616,49 @@ pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
     );
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows `message` in the element `#banner_id`, and logs it to the console too.
+///
+/// `#banner_id` is a `.demo-error` paragraph a window page keeps `hidden` until something fails. It is for a failure with
+/// nowhere to be returned to, such as one inside a toolbar's own callback. A gallery panel that fails to build gets the
+/// same red banner from `report_panel_error`. A failure here must not be swallowed. If it were, the diagram would sit
+/// half updated with no sign of why.
+///
+/// A page with no such element is the gallery itself, which a shared demo can also run in. There the message goes into a
+/// `.demo-error` paragraph at the end of the section on show instead, which [`clear_error`] removes again.
+pub(crate) fn report_error(banner_id: &str, message: &str) {
+    web_sys::console::error_1(&message.into());
+    let Ok(document) = document() else { return };
+    if let Some(banner) = document.get_element_by_id(banner_id) {
+        banner.set_text_content(Some(message));
+        let _ = banner.remove_attribute("hidden");
+        return;
+    }
+    let Ok(Some(section)) = document.query_selector("#stage .section.active") else {
+        return;
+    };
+    let existing = section.query_selector(".step-error").ok().flatten();
+    let banner = existing.or_else(|| {
+        let banner = document.create_element("p").ok()?;
+        banner.set_attribute("class", "demo-error step-error").ok()?;
+        section.append_child(&banner).ok()?;
+        Some(banner)
+    });
+    if let Some(banner) = banner {
+        banner.set_text_content(Some(message));
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Hides the banner [`report_error`] showed, or removes the paragraph it added to the gallery's section, once whatever
+/// failed has worked again. Does nothing if there is none.
+pub(crate) fn clear_error(banner_id: &str) {
+    let Ok(document) = document() else { return };
+    if let Some(banner) = document.get_element_by_id(banner_id) {
+        banner.set_text_content(None);
+        let _ = banner.set_attribute("hidden", "");
+    } else if let Ok(Some(added)) = document.query_selector("#stage .section.active .step-error") {
+        added.remove();
+    }
+}

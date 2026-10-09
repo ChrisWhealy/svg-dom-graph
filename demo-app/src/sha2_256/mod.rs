@@ -61,6 +61,8 @@ thread_local! {
 /// The id of the `<svg>` this demo draws into, and of the `<div>` in the window that hosts it.
 const DIAGRAM_ID: &str = "sha2-256-diagram";
 const STAGE_ID: &str = "sha2-256-diagram-stage";
+/// The id of the hidden `.demo-error` paragraph in the window that shows a failure in a step.
+const ERROR_ID: &str = "sha2-256-window-error";
 
 /// The first column's left edge, and the first row's top. The top leaves room for the scene's title and, below it, the
 /// stepping toolbar, which sits at the top of the diagram because the diagram is tall and narrow.
@@ -541,11 +543,12 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moves the diagram to walk position `position`. Within a half this only writes values and marks. Crossing into the
-/// other half draws the diagram again for it. A failure is reported in the console, since the toolbar's own callback
-/// has nowhere to return it to.
+/// other half draws the diagram again for it. A failure is shown in the window's own error banner, and logged, since the
+/// toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
-    if let Err(e) = step_to(position) {
-        web_sys::console::error_1(&format!("sha2-256 step {position} failed: {e}").into());
+    match step_to(position) {
+        Ok(()) => crate::util::clear_error(ERROR_ID),
+        Err(e) => crate::util::report_error(ERROR_ID, &format!("This step failed (position {position}): {e}")),
     }
 }
 

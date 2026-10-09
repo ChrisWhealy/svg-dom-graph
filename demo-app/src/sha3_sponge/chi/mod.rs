@@ -249,7 +249,7 @@ pub(super) fn exit_if_focused() -> bool {
 fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), String> {
     child
         .show_selection_toolbar(driver, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
-            let _ = rebuild_child(transition.to, state.clone());
+            crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
         })
         .map_err(stringify)?;
     if let Some(n) = n {

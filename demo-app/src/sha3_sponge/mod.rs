@@ -569,7 +569,7 @@ fn rebuild(stage: usize) -> Result<(), String> {
         .show_selection_toolbar(step, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
             // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
             // a restart, lands on it again.
-            let _ = rebuild(transition.to.unwrap_or(0));
+            report_step(rebuild(transition.to.unwrap_or(0)));
         })
         .map_err(stringify)?;
     scene.set_selection(step, Selection::Cell(stage)).map_err(stringify)?;
@@ -635,4 +635,20 @@ fn wire_sha3_sponge_controls(document: web_sys::Document) -> Result<(), String> 
     close_closure.forget();
 
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The id of the hidden `.demo-error` paragraph in `sha3-sponge-window.html` that shows a failure in a step.
+const ERROR_ID: &str = "sha3-sponge-window-error";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows a step's own failure, or hides the last one once a step works again. Every selection toolbar in this demo calls
+/// it with the result of its own step. The step runs in the toolbar's own callback, which has nowhere to return an
+/// error to. Dropping it would leave the diagram half updated with no sign of why. The window's own error banner shows
+/// it. A theta scene run on the gallery's own page shows it in that panel instead. See [`crate::util::report_error`].
+pub(crate) fn report_step(result: Result<(), String>) {
+    match result {
+        Ok(()) => crate::util::clear_error(ERROR_ID),
+        Err(e) => crate::util::report_error(ERROR_ID, &format!("This step failed: {e}")),
+    }
 }

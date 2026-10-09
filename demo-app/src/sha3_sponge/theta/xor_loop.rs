@@ -344,5 +344,5 @@ fn step(state: &Rc<RefCell<XorLoopState>>, to: Option<usize>) {
     let demo = state.borrow();
     let display = display_outputs(demo.outputs, to);
     drop(demo);
-    let _ = rebuild_child(to, display, state.clone());
+    crate::sha3_sponge::report_step(rebuild_child(to, display, state.clone()));
 }
