@@ -7,8 +7,8 @@
 //! # Scope
 //!
 //! One block only: a message of up to [`MAX_MESSAGE_LEN`] bytes, so that the `0x80` terminator and the 64-bit length
-//! still fit in the 64-byte block. A longer message needs several blocks, each chained into the next, which this does not
-//! do.
+//! still fit in the 64-byte block. A longer message needs several blocks, each chained into the next, which this does
+//! not do.
 
 mod round;
 mod trace;
@@ -29,8 +29,8 @@ pub(super) const MAX_MESSAGE_LEN: usize = 55;
 /// The initial hash value `H`: the first 32 bits of the fractional parts of the square roots of the first 8 primes.
 /// `H[0]` is working variable `a`, and `H[7]` is `h`.
 ///
-/// Fixed by the standard, so it is a constant rather than something computed at run time. The tests recompute it from the
-/// primes and check that this table agrees.
+/// Fixed by the standard, so it is a constant rather than something computed at run time. The tests recompute it from
+/// the primes and check that this table agrees.
 #[rustfmt::skip]
 pub(super) const INITIAL_HASH: [u32; 8] = [
     0x6a09_e667, 0xbb67_ae85,
@@ -39,8 +39,8 @@ pub(super) const INITIAL_HASH: [u32; 8] = [
     0x1f83_d9ab, 0x5be0_cd19,
 ];
 
-/// The round constants `K`: the first 32 bits of the fractional parts of the cube roots of the first 64 primes. Fixed by
-/// the standard, and checked against a recomputation in the tests, as [`INITIAL_HASH`] is.
+/// The round constants `K`: the first 32 bits of the fractional parts of the cube roots of the first 64 primes. Fixed
+/// by the standard, and checked against a recomputation in the tests, as [`INITIAL_HASH`] is.
 #[rustfmt::skip]
 pub(super) const ROUND_CONSTANTS: [u32; ROUNDS] = [
     0x428a_2f98, 0x7137_4491, 0xb5c0_fbcf, 0xe9b5_dba5,
@@ -126,8 +126,8 @@ pub(super) fn message_block(message: &[u8]) -> Option<[u32; BLOCK_WORDS]> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Schedule word `n`, for `n >= 16`, from the earlier words of `schedule`:
-/// `ms[n-16] + sigma0(ms[n-15]) + ms[n-7] + sigma1(ms[n-2])`, with overflow ignored.
+/// Schedule word `n`, for `n >= 16`, from the earlier words of `schedule`: `ms[n-16] + sigma0(ms[n-15]) + ms[n-7] +
+/// sigma1(ms[n-2])`, with overflow ignored.
 pub(super) fn expanded_word(schedule: &[u32; SCHEDULE_WORDS], n: usize) -> u32 {
     schedule[n - 16]
         .wrapping_add(sigma0(schedule[n - 15]))
@@ -146,15 +146,9 @@ pub(super) fn message_schedule(block: &[u32; BLOCK_WORDS]) -> [u32; SCHEDULE_WOR
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The digest's 32 bytes: its 8 words, each big-endian, concatenated. Only the tests need the bytes, to compare against
-/// published hex digests.
-#[cfg(test)]
-pub(super) fn digest_bytes(digest: &[u32; 8]) -> [u8; 32] {
-    let mut bytes = [0_u8; 32];
-    for (chunk, word) in bytes.chunks_exact_mut(4).zip(digest) {
-        chunk.copy_from_slice(&word.to_be_bytes());
-    }
-    bytes
+/// The digest as the 64 lowercase hexadecimal digits `sha256sum` prints: its 8 words, each as 8 digits, joined.
+pub(super) fn digest_hex(digest: &[u32; 8]) -> String {
+    digest.iter().map(|word| format!("{word:08x}")).collect()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

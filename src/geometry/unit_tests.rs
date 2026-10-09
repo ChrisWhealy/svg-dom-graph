@@ -855,6 +855,83 @@ fn elbow_route_between_stacked_boxes_is_one_straight_vertical_segment() -> Resul
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
+fn elbow_route_with_both_anchors_on_the_west_goes_beyond_the_outer_one() -> Result<(), String> {
+    // The end is further west than the start. The midpoint between them is still east of the end, so a route bending
+    // there would double back through the node it enters. The bend lies beyond the outer anchor instead.
+    check_eq(
+        elbow_route(Point::new(100.0, 50.0), Side::West, Point::new(60.0, 150.0), Side::West),
+        route(&[
+            Point::new(100.0, 50.0),
+            Point::new(40.0, 50.0),
+            Point::new(40.0, 150.0),
+            Point::new(60.0, 150.0),
+        ]),
+    )?;
+    // Whichever of the two is further west, the bend clears it.
+    check_eq(
+        elbow_route(Point::new(60.0, 50.0), Side::West, Point::new(100.0, 150.0), Side::West),
+        route(&[
+            Point::new(60.0, 50.0),
+            Point::new(40.0, 50.0),
+            Point::new(40.0, 150.0),
+            Point::new(100.0, 150.0),
+        ]),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_route_with_both_anchors_on_the_east_goes_beyond_the_outer_one() -> Result<(), String> {
+    check_eq(
+        elbow_route(Point::new(100.0, 50.0), Side::East, Point::new(140.0, 150.0), Side::East),
+        route(&[
+            Point::new(100.0, 50.0),
+            Point::new(160.0, 50.0),
+            Point::new(160.0, 150.0),
+            Point::new(140.0, 150.0),
+        ]),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_route_with_both_anchors_on_the_north_or_south_goes_beyond_the_outer_one() -> Result<(), String> {
+    check_eq(
+        elbow_route(Point::new(50.0, 100.0), Side::North, Point::new(150.0, 60.0), Side::North),
+        route(&[
+            Point::new(50.0, 100.0),
+            Point::new(50.0, 40.0),
+            Point::new(150.0, 40.0),
+            Point::new(150.0, 60.0),
+        ]),
+    )?;
+    check_eq(
+        elbow_route(Point::new(50.0, 100.0), Side::South, Point::new(150.0, 140.0), Side::South),
+        route(&[
+            Point::new(50.0, 100.0),
+            Point::new(50.0, 160.0),
+            Point::new(150.0, 160.0),
+            Point::new(150.0, 140.0),
+        ]),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn elbow_route_with_opposite_horizontal_sides_still_bends_on_the_midpoint() -> Result<(), String> {
+    check_eq(
+        elbow_route(Point::new(40.0, 10.0), Side::East, Point::new(100.0, 90.0), Side::West),
+        route(&[
+            Point::new(40.0, 10.0),
+            Point::new(70.0, 10.0),
+            Point::new(70.0, 90.0),
+            Point::new(100.0, 90.0),
+        ]),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
 fn elbow_route_between_mismatched_aspect_boxes_bends_once() -> Result<(), String> {
     // A is taller than it is wide, so a 45-degree offset anchors it on its east side — see `edge_anchor`'s own
     // aspect-aware rule. B is wider than it is tall, so the same offset anchors it on its north side instead. One

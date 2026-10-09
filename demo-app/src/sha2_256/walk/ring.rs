@@ -5,4 +5,5 @@ pub(in crate::sha2_256) enum Ring {
     Message,
     Block,
     Digest,
+    Hash,
 }

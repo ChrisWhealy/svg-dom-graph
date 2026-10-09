@@ -531,3 +531,34 @@ fn a_position_pin_overrides_the_nodes_edge_anchors() -> Result<(), String> {
         &format!("the pinned connector should start at (10, 40), got {pinned:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A connector between two west sides turns beyond the further west of the two, and so enters its last node from
+/// outside it. `B`'s west edge is further west than `A`'s, so a bend at the midpoint between the two would still be east
+/// of `B` and double back through it.
+#[wasm_bindgen_test]
+fn a_connector_between_two_west_sides_turns_beyond_the_outer_one() -> Result<(), String> {
+    let svg = make_svg("connector-west-west", Size::new(600.0, 400.0), Size::new(600.0, 400.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(200.0, 0.0), Size::new(100.0, 40.0), "A")
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_node(Point::new(150.0, 200.0), Size::new(100.0, 40.0), "B")
+        .map_err(|e| e.to_string())?;
+    scene
+        .add_edge_with(
+            a,
+            b,
+            ConnectorOptions::default()
+                .with_from_side(Some(Side::West))
+                .with_to_side(Some(Side::West)),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let d = path_d(&the_connector("connector-west-west")?)?;
+    check(
+        d == "M 200 20 L 130 20 L 130 220 L 150 220",
+        &format!("expected the route to turn at x = 130, beyond B's own west edge, got {d:?}"),
+    )
+}

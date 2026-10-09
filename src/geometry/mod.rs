@@ -599,7 +599,10 @@ pub(crate) fn binary_operator_elbow_route(
 ///
 /// - Both anchors already share an x or y coordinate: one straight segment.
 /// - One anchor leaves horizontally and the other vertically: one bend.
-/// - Both anchors leave along the same axis but do not align: two bends, through the midpoint between them.
+/// - Both anchors leave along the same axis but do not align: two bends. If they leave in opposite directions, for
+///   example one east and one west, the bends lie on the midpoint between them. If they leave the same way, for example
+///   both west, the bends lie [`SAME_SIDE_CLEARANCE`] beyond the outer of the two, so the connector enters its last node
+///   from outside it.
 ///
 /// Returns 2 to 4 points. The first point is always `start`. The last is always `end`.
 ///
@@ -612,14 +615,24 @@ pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_
 
     match (is_horizontal(start_side), is_horizontal(end_side)) {
         (true, true) if start.y != end.y => {
-            let mid_x = (start.x + end.x) / 2.0;
-            route.push(Point::new(mid_x, start.y));
-            route.push(Point::new(mid_x, end.y));
+            let x = if start_side == end_side {
+                // Both anchors leave the same way, so the bend must lie beyond both, or the last segment would double
+                // back through the node it ends on.
+                beyond(start.x, end.x, start_side)
+            } else {
+                (start.x + end.x) / 2.0
+            };
+            route.push(Point::new(x, start.y));
+            route.push(Point::new(x, end.y));
         },
         (false, false) if start.x != end.x => {
-            let mid_y = (start.y + end.y) / 2.0;
-            route.push(Point::new(start.x, mid_y));
-            route.push(Point::new(end.x, mid_y));
+            let y = if start_side == end_side {
+                beyond(start.y, end.y, start_side)
+            } else {
+                (start.y + end.y) / 2.0
+            };
+            route.push(Point::new(start.x, y));
+            route.push(Point::new(end.x, y));
         },
         (true, false) => route.push(Point::new(end.x, start.y)),
         (false, true) => route.push(Point::new(start.x, end.y)),
@@ -627,6 +640,19 @@ pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_
     }
     route.push(end);
     route
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How far past the outer of two anchors on the same `side` a connector between them travels before it turns.
+pub(crate) const SAME_SIDE_CLEARANCE: f64 = 20.0;
+
+/// The coordinate, along the axis `side` faces, [`SAME_SIDE_CLEARANCE`] beyond the outer of `a` and `b`: the smaller
+/// minus the clearance for a west or north side, the larger plus it for an east or south one.
+fn beyond(a: f64, b: f64, side: side::Side) -> f64 {
+    match side {
+        side::Side::West | side::Side::North => a.min(b) - SAME_SIDE_CLEARANCE,
+        side::Side::East | side::Side::South => a.max(b) + SAME_SIDE_CLEARANCE,
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

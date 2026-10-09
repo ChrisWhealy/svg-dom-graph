@@ -11,13 +11,9 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
     check(got == expected, &format!("expected {expected:?}, got {got:?}"))
 }
 
-fn hex(bytes: &[u8]) -> String {
-    bytes.iter().map(|b| format!("{b:02x}")).collect()
-}
-
 fn digest_of(message: &[u8]) -> Result<String, String> {
     let trace = trace(message).ok_or("the message fits one block")?;
-    Ok(hex(&digest_bytes(&trace.digest)))
+    Ok(digest_hex(&trace.digest))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -189,12 +185,14 @@ fn a_round_shifts_the_working_variables_down_and_computes_a_and_e() -> Result<()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn each_rounds_output_is_the_next_rounds_input() -> Result<(), String> {
+fn each_rounds_output_is_the_next_rounds_input_and_the_last_feeds_the_digest() -> Result<(), String> {
     let trace = trace(b"abc").ok_or("fits one block")?;
     for pair in trace.rounds.windows(2) {
         check_eq(pair[0].after, pair[1].before)?;
     }
-    check_eq(trace.rounds[ROUNDS - 1].after, trace.compressed)
+    // The digest is that last state added to the initial hash, word by word.
+    let last = trace.rounds[ROUNDS - 1].after;
+    check_eq(trace.digest, std::array::from_fn(|i| INITIAL_HASH[i].wrapping_add(last[i])))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -239,7 +237,14 @@ fn the_digest_of_the_longest_single_block_message_is_the_published_one() -> Resu
 fn the_compressed_state_alone_is_not_the_digest() -> Result<(), String> {
     let trace = trace(b"abc").ok_or("fits one block")?;
     check(
-        trace.compressed != trace.digest,
+        trace.rounds[ROUNDS - 1].after != trace.digest,
         "the final feed-forward addition changes the result",
     )
+}
+
+#[test]
+fn the_hex_digest_is_sixty_four_lowercase_digits_with_leading_zeros_kept() -> Result<(), String> {
+    let hex = digest_hex(&[0x0000_000a, 0, 0, 0, 0, 0, 0, 0xffff_ffff]);
+    check_eq(hex.len(), 64)?;
+    check(hex.starts_with("0000000a") && hex.ends_with("ffffffff"), &hex)
 }

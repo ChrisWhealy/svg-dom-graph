@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Bump `Cargo.toml` version (`bce7f8d`)
 - Extend `set_data_values` to allow mutation of single-value nodes and refresh the group label (`82e41b3`)
 - Adapt SHA2 demo to use extended `set_data_values` (`781114a`)
-- Move SHA2 demo into its own window (``)
+- Move SHA2 demo into its own window (`1cc22cc`)
+- Adapt SHA2 demo layout and add `SAME_SIDE_CLEARANCE` in elbow routing geometry (``)
 
 # [Released]
 

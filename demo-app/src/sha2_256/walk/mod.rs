@@ -11,18 +11,21 @@
 //! | `3..=50` | Schedule word `n`, one for each `n` from 16 to 63. |
 //! | `51..=114` | Round `i`, one for each `i` from 0 to 63. |
 //! | `115` | The digest: the working variables added to the initial hash. |
+//! | `116` | The digest as a hexadecimal hash value. |
 //!
-//! Anything the walk has not reached yet shows zeros, the same "not yet written" convention the SHA3 demo uses.
+//! The walk has two halves, see [`Stage`]. The diagram draws only the half in progress. Anything the walk has not
+//! reached yet within it shows zeros, the same "not yet written" convention the SHA3 demo uses.
 
 mod phase;
 mod ring;
 mod shown;
 
 use phase::{Phase, phase};
+pub(super) use phase::{Stage, stage};
 pub(super) use ring::Ring;
 pub(super) use shown::{Shown, shown};
 
-use super::algorithm::{BLOCK_WORDS, ROUNDS, Round, SCHEDULE_WORDS, Trace};
+use super::algorithm::{BLOCK_WORDS, ROUNDS, Round, SCHEDULE_WORDS, Trace, digest_hex, sigma0, sigma1};
 
 /// The one message this demo hashes.
 pub(super) const MESSAGE: &[u8] = b"The quick brown fox jumps over the lazy dog";
@@ -34,7 +37,7 @@ const ROUND_START: usize = EXPAND_START + (SCHEDULE_WORDS - BLOCK_WORDS);
 /// The position that adds the working variables to the initial hash.
 const FINAL: usize = ROUND_START + ROUNDS;
 /// How many positions the walk has.
-pub(super) const STEPS: usize = FINAL + 1;
+pub(super) const STEPS: usize = FINAL + 2;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
