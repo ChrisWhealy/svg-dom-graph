@@ -64,6 +64,9 @@ struct Demo {
     /// The "Step" node that drives the selection toolbar.
     step: NodeId,
     trace: Rc<Trace>,
+    /// The position the nodes' values show now, or `None` if the last write to them failed partway, so nothing is known
+    /// about what they hold. [`apply`] skips what this position already shows.
+    shown_at: Option<usize>,
 }
 
 thread_local! {
@@ -228,18 +231,26 @@ impl Nodes {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes everything the walk shows at one position into the nodes already drawn: each node's values, then the marks.
 ///
-/// Every write is absolute. Nothing is read back, and nothing depends on the position the walk came from, so a step
-/// back and a step forward are the same operation. A node the walk has not reached shows zeros, and a mark it has not
-/// reached is cleared.
+/// Every write is absolute, so a step back and a step forward are the same operation. A node the walk has not reached
+/// shows zeros, and a mark it has not reached is cleared.
+///
+/// `previous` is what the nodes show now, if that is known. The message block and the message schedule are the two
+/// biggest nodes, and they are final for most of the walk. They are only written when `previous` shows something
+/// different, so a step during compression leaves their 80 cells alone. Without a `previous`, as after drawing the
+/// diagram afresh, everything is written.
 ///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails.
-fn apply(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String> {
+fn apply(scene: &Scene, nodes: &Nodes, shown: &walk::Shown, previous: Option<&walk::Shown>) -> Result<(), String> {
     let set =
         |node: NodeId, values: &[u32]| scene.set_data_values(node, NodeValues::U32(values.to_vec())).map_err(stringify);
-    set(nodes.common.block, &shown.block)?;
-    set(nodes.common.schedule, &shown.schedule)?;
+    if previous.is_none_or(|p| p.block != shown.block) {
+        set(nodes.common.block, &shown.block)?;
+    }
+    if previous.is_none_or(|p| p.schedule != shown.schedule) {
+        set(nodes.common.schedule, &shown.schedule)?;
+    }
 
     match &nodes.half {
         Half::Expansion(expansion) => {
@@ -584,7 +595,7 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
     }
-    apply(&scene, &nodes, &shown(&trace, position))?;
+    apply(&scene, &nodes, &shown(&trace, position), None)?;
 
     let mut options = SelectionToolbarOptions::new(Side::North).with_stride(SelectionStride::new(8, "8"));
     options.margin = TOOLBAR_MARGIN;
@@ -595,7 +606,13 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
     scene.set_selection(step, Selection::Cell(position)).map_err(stringify)?;
 
     DEMO.with_borrow_mut(|slot| {
-        *slot = Some(Demo { scene, nodes, step, trace });
+        *slot = Some(Demo {
+            scene,
+            nodes,
+            step,
+            trace,
+            shown_at: Some(position),
+        });
     });
     if let Some(label) = focused {
         focus_button(&label);
@@ -623,9 +640,12 @@ fn step_to(position: usize) -> Result<(), String> {
     if current != wanted {
         return build(wanted, position, trace);
     }
-    DEMO.with_borrow(|slot| {
-        let demo = slot.as_ref().ok_or("the diagram is not built")?;
-        apply(&demo.scene, &demo.nodes, &shown(&demo.trace, position))?;
+    DEMO.with_borrow_mut(|slot| {
+        let demo = slot.as_mut().ok_or("the diagram is not built")?;
+        // Unknown until the write has finished, so a failure partway leaves the next step writing everything.
+        let previous = demo.shown_at.take().map(|at| shown(&demo.trace, at));
+        apply(&demo.scene, &demo.nodes, &shown(&demo.trace, position), previous.as_ref())?;
+        demo.shown_at = Some(position);
         // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on the
         // first position, so its next click advances from there and not from nowhere.
         if position == 0 {
