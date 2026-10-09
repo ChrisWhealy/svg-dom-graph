@@ -155,6 +155,13 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` unless `values` is exactly what this content holds now. A caller can skip formatting anything for a
+    /// replacement that changes nothing.
+    pub(crate) fn differs_from(&self, values: &NodeValues) -> bool {
+        self.values != *values
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many values this holds. [`DataFormat::PlainText`] content is one value, however many characters it has.
     pub(crate) fn len(&self) -> usize {
         if self.is_plain_text() {

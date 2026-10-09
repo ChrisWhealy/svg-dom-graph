@@ -88,10 +88,11 @@ impl Scene {
             return Err(Error::IncompatibleNodeValues(id));
         }
 
-        // The old text of a single value, kept to find it again in the node's own accessible name below.
+        // The old text of a single value, kept to find it again in the node's own accessible name below. A replacement
+        // that changes nothing never writes the name, so it formats nothing.
         let single_value = content.is_single_value();
         let mut old_text = String::new();
-        if single_value {
+        if single_value && content.differs_from(&values) {
             content.single_cell_string_into(&mut old_text);
         }
         let (_, cols) = content.shape();

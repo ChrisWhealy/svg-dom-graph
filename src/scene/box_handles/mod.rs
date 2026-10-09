@@ -187,9 +187,7 @@ impl BoxHandles {
     /// The base description's length is adjusted by the difference, since a decimal value can change length. A label
     /// that does not hold `old` after `"{type_name} = "` is left as it is.
     pub(crate) fn replace_label_value(&mut self, type_name: &str, old: &str, new: &str) -> Result<(), svg_dom::Error> {
-        let needle = format!("{type_name} = {old}");
-        if let Some(position) = self.aria_label[..self.base_label_len].find(&needle) {
-            let start = position + type_name.len() + " = ".len();
+        if let Some(start) = find_value(&self.aria_label[..self.base_label_len], type_name, old) {
             self.aria_label.replace_range(start..start + old.len(), new);
             self.base_label_len = self.base_label_len - old.len() + new.len();
             let written = self.refresh_label();
@@ -230,6 +228,17 @@ impl BoxHandles {
             Selection::Column { col, row: Some(row) } => format!("{}({row}, {col})", self.ref_name),
         }
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where in `label` the value `old` starts, in `"{type_name} = {old}"`, or `None` if `label` holds no such text. It
+/// searches without building that text, so a value rewrite allocates nothing to find it.
+fn find_value(label: &str, type_name: &str, old: &str) -> Option<usize> {
+    label.match_indices(type_name).find_map(|(at, _)| {
+        let value = at + type_name.len() + " = ".len();
+        let rest = label[at + type_name.len()..].strip_prefix(" = ")?;
+        rest.starts_with(old).then_some(value)
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -68,3 +68,35 @@ fn the_clause_reuses_a_buffer_with_room() -> Result<(), String> {
     super::unreached_clause_into(&[0, 2, 3, 4, 9, 20, 21, 22, 23], 64, &mut out);
     check(out.as_ptr() == before, "the clause should fit the buffer it was given")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   find_value
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn a_value_is_found_after_its_type_name() {
+    assert_eq!(super::find_value("u32 = 0A 0B", "u32", "0A 0B"), Some(6));
+}
+
+#[test]
+fn a_value_is_found_after_a_node_name() {
+    assert_eq!(super::find_value("Key: u8 = 7", "u8", "7"), Some(10));
+}
+
+#[test]
+fn a_different_value_is_not_found() {
+    assert_eq!(super::find_value("u8 = 7", "u8", "8"), None);
+}
+
+#[test]
+fn a_type_name_without_the_equals_is_skipped_for_a_later_match() {
+    // "u8" first appears inside a name, with no " = " after it, then as the real type.
+    assert_eq!(super::find_value("u8 counter: u8 = 12", "u8", "12"), Some(17));
+}
+
+#[test]
+fn a_decimal_value_that_is_a_prefix_of_another_matches_the_text_it_is_given() {
+    // The replacement uses the old text's own length, so a longer value that merely starts with it is not a problem
+    // for finding where it starts.
+    assert_eq!(super::find_value("u8 = 12", "u8", "1"), Some(5));
+}
