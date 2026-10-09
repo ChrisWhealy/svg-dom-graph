@@ -13,9 +13,11 @@ use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
     scene::{
-        ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, UnaryOperator,
+        ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues, Scene,
+        UnaryOperator,
     },
 };
+use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -371,4 +373,78 @@ fn two_scenes_measure_the_same_content_independently_and_consistently() -> Resul
     let size_b = scene_b.measure_data_node(&content).map_err(|e| e.to_string())?;
 
     assert_size_exact(size_a, size_b)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Exact equality for the content features that change a node's own size: row labels, column groups, an `Ascii` or
+/// `PlainText` format, and a name wider than the content.
+#[wasm_bindgen_test]
+fn measure_matches_nodes_with_labels_groups_and_other_formats() -> Result<(), String> {
+    let svg = make_svg("measure-features", Size::new(900.0, 900.0), Size::new(900.0, 900.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let contents = [
+        DataNodeContent::new(NodeValues::U32(vec![1; 8]), DataFormat::Binary)
+            .with_layout(GridLayout::Columns(1))
+            .with_labelling_style(LabellingStyle::Alphabetic),
+        DataNodeContent::new(NodeValues::U8((0..40).collect()), DataFormat::Decimal)
+            .with_layout(GridLayout::Columns(8))
+            .with_column_groups(4)
+            .with_labels(),
+        DataNodeContent::new(NodeValues::U8(b"hello world".to_vec()), DataFormat::Ascii),
+        DataNodeContent::new(NodeValues::U8(b"hello world".to_vec()), DataFormat::PlainText),
+    ];
+    for (i, content) in contents.into_iter().enumerate() {
+        for name in [None, Some("A rather long name for a small node, to be the wider of the two")] {
+            let measured = match name {
+                Some(name) => scene.measure_named_data_node(name, &content),
+                None => scene.measure_data_node(&content),
+            }
+            .map_err(|e| e.to_string())?;
+            let id = match name {
+                Some(name) => scene.add_named_data_node(Point::new(10.0, 10.0), name, content.clone()),
+                None => scene.add_data_node(Point::new(10.0, 10.0), content.clone()),
+            }
+            .map_err(|e| e.to_string())?;
+            let actual = scene.node_rect(id).map_err(|e| e.to_string())?.size;
+            assert_size_exact(measured, actual).map_err(|e| format!("content {i}, named {}: {e}", name.is_some()))?;
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Measuring builds no cell grid. However many values the content holds, only the handful of elements measuring needs
+/// is ever added to the document. A grid drawn for real adds two elements per cell.
+#[wasm_bindgen_test]
+fn measuring_a_large_grid_adds_only_a_few_elements_to_the_document() -> Result<(), String> {
+    let svg = make_svg("measure-cost", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let root = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id("measure-cost"))
+        .ok_or("no svg root")?;
+
+    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
+        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
+    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
+    let options = web_sys::MutationObserverInit::new();
+    options.set_child_list(true);
+    options.set_subtree(true);
+    observer.observe_with_options(&root, &options).map_err(|e| format!("{e:?}"))?;
+
+    let content = DataNodeContent::new(NodeValues::U16((0..1000).collect()), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(10))
+        .with_labels();
+    scene.measure_named_data_node("Big", &content).map_err(|e| e.to_string())?;
+
+    let added: u32 = observer
+        .take_records()
+        .iter()
+        .map(|r| r.unchecked_into::<web_sys::MutationRecord>().added_nodes().length())
+        .sum();
+    observer.disconnect();
+    check(
+        added <= 10,
+        &format!("measuring 1000 values added {added} elements; a drawn grid would add over 2000"),
+    )
 }

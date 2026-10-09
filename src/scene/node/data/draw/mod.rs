@@ -304,6 +304,68 @@ struct NameFrame {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Creates the `<text>` that shows a node's `name` in its label row, tracked by `guard`. [`draw_name_frame`] draws it, and
+/// [`measure_content_box`] only reads its width, so both see the same font.
+fn name_label(svg: &SvgRoot, guard: &mut RenderGuard, name: &str) -> Result<SvgNode, Error> {
+    let label_el = svg.text(Point::origin(), name)?;
+    guard.track(label_el.clone());
+    label_el.set_text_anchor(TextAnchor::Middle)?;
+    label_el.set_dominant_baseline(DominantBaseline::Middle)?;
+    label_el.set_font_size(LABEL_FONT_SIZE)?;
+    label_el.set_fill(TEXT_FILL)?;
+    Ok(label_el)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The size of the named wrapper around a content box of `content_size`, given the measured width of the name. Whichever
+/// is wider sets the box: the name plus [`CELL_PADDING`] each side, or the content box plus [`OUTER_PADDING`] each side.
+/// The height adds the label row above and [`OUTER_PADDING`] below.
+fn named_frame_size(label_width: f64, content_size: Size) -> Size {
+    Size::new(
+        (label_width + 2.0 * CELL_PADDING).max(content_size.width + 2.0 * OUTER_PADDING),
+        LABEL_ROW_HEIGHT + content_size.height + OUTER_PADDING,
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The size [`draw_content_box`] would give a node of `name` and `content`, without drawing it: no cell `<rect>` or
+/// `<text>`, no handles and no accessible names. Only the few elements measuring needs are created, and all are removed
+/// again.
+///
+/// It uses the same [`GridLayoutMetrics::measure`], [`GridLayoutMetrics::content_size`], [`name_label`] and
+/// [`named_frame_size`] that drawing does, so the two cannot disagree. Finding the widest cell can still look at every
+/// value under decimal formatting, but the DOM work no longer grows with the value count.
+///
+/// # Errors
+///
+/// Returns `Err` if `content` is empty, or if creating or measuring an element fails.
+pub(super) fn measure_content_box(svg: &SvgRoot, name: Option<&str>, content: &DataNodeContent) -> Result<Size, Error> {
+    if content.len() == 0 {
+        return Err(Error::Svg(svg_dom::Error::Dom(
+            "measure_content_box: content length must be > 0".into(),
+        )));
+    }
+    // An empty group the guard can roll back to, so a failure part way leaves nothing behind in the document.
+    let group = svg.group()?;
+    let mut guard = RenderGuard::new(group.clone());
+    let content_size = GridLayoutMetrics::measure(svg, &mut guard, content)?.content_size();
+    let size = match name {
+        Some(name) => {
+            let label_el = name_label(svg, &mut guard, name)?;
+            let label_width = label_el.bounding_box()?.size.width;
+            label_el.remove();
+            guard.release();
+            named_frame_size(label_width, content_size)
+        },
+        None => content_size,
+    };
+    // Dropping the guard armed would do this too. Done openly, since removing the group is the point.
+    guard.disarm();
+    group.remove();
+    Ok(size)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the named wrapper, if `name` is given: an outer box with `name` in a label row above where the content box
 /// will sit. Without a name there is nothing to draw, and the content box starts flush at `(0, 0)`.
 ///
@@ -328,16 +390,11 @@ fn draw_name_frame(
         });
     };
 
-    let label_el = svg.text(origin, name)?;
-    guard.track(label_el.clone());
-    label_el.set_text_anchor(TextAnchor::Middle)?;
-    label_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    label_el.set_font_size(LABEL_FONT_SIZE)?;
-    label_el.set_fill(TEXT_FILL)?;
+    let label_el = name_label(svg, guard, name)?;
     let label_width = label_el.bounding_box()?.size.width;
 
-    let box_width = (label_width + 2.0 * CELL_PADDING).max(content_size.width + 2.0 * OUTER_PADDING);
-    let box_size = Size::new(box_width, LABEL_ROW_HEIGHT + content_size.height + OUTER_PADDING);
+    let box_size = named_frame_size(label_width, content_size);
+    let box_width = box_size.width;
 
     let outer_el = svg.rect(origin, box_size)?;
     guard.track(outer_el.clone());

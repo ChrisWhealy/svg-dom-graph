@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.29] - 2026-10-09
+
+## Fixed
+
+- Avoid building temporary node during data node measurement (``)
+
 # [Released]
 
 ## [0.2.28] - 2026-10-09

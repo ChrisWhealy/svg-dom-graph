@@ -1,7 +1,10 @@
 //! Adding a data node to a `Scene`, and measuring one without adding it.
 
 use super::super::{NodeOptions, validate_data_content, validate_edge_anchors};
-use super::{draw::draw_content_box, validate_node_name};
+use super::{
+    draw::{draw_content_box, measure_content_box},
+    validate_node_name,
+};
 use crate::{
     error::Error,
     model::node::NodeId,
@@ -153,23 +156,15 @@ impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shared implementation behind [`measure_data_node`](Self::measure_data_node) and
     /// [`measure_named_data_node`](Self::measure_named_data_node) — the measurement counterpart to
-    /// [`add_data_node_with_impl`](Self::add_data_node_with_impl): the same drawing call, stopped before
-    /// `inner.attach`/`inner.graph.add_node`/`inner.insert_node_handle` ever run, with the drawn group removed again
-    /// instead.
+    /// [`add_data_node_with_impl`](Self::add_data_node_with_impl). It applies the same validation, then asks
+    /// [`measure_content_box`] for the size drawing would give, without drawing any cell.
     fn measure_data_node_impl(&self, name: Option<&str>, content: &DataNodeContent) -> Result<Size, Error> {
         if let Some(name) = name {
             validate_node_name(name)?;
         }
         validate_data_content(content)?;
 
-        let mut inner = self.inner.borrow_mut();
-        // See `add_data_node_with_impl`'s own matching comment for why `scratch` is taken out for the call.
-        let mut scratch = std::mem::take(&mut inner.scratch);
-        let result = draw_content_box(&inner.svg, &mut scratch, Point::origin(), name, content, None);
-        inner.scratch = scratch;
-        let (handles, rect) = result?;
-        handles.group.remove();
-        Ok(rect.size)
+        measure_content_box(&self.inner.borrow().svg, name, content)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
