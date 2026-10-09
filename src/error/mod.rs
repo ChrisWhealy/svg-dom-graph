@@ -136,9 +136,9 @@ pub enum Error {
     ///
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
-    /// `Scene::set_data_values` was given values it cannot show in this node. The node may not be a multi-value data
-    /// node. The values may have a different integer width. They may also have a different number of values than the
-    /// node was drawn with.
+    /// `Scene::set_data_values` was given values that cannot be shown in this node. The node may not be a data node
+    /// with cells of its own, as an operator node's result is not. The values may have a different integer width. They
+    /// may also have a different number of values than the node was drawn with.
     ///
     /// Rejected before changing anything, so a rejected call leaves every cell exactly as it was.
     IncompatibleNodeValues(NodeId),
@@ -262,7 +262,7 @@ impl fmt::Display for Error {
             },
             Error::IncompatibleNodeValues(id) => write!(
                 f,
-                "node {id:?} cannot show those values: it must be a multi-value data node, and they must be the same width and count"
+                "node {id:?} cannot show those values: it must be a data node with cells of its own, and they must be the same width and count"
             ),
             Error::InvalidSelection(id, selection) => {
                 write!(f, "selection {selection:?} cannot be applied to node {id:?}")

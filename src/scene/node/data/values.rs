@@ -47,45 +47,64 @@ impl Scene {
     /// drawn will overflow its cell. [`crate::model::content::DataFormat::Hexadecimal`] and
     /// [`crate::model::content::DataFormat::Binary`] values never change width.
     ///
-    /// Only for a node with two or more values drawn via [`add_data_node`](Self::add_data_node)/
-    /// [`add_named_data_node`](Self::add_named_data_node) and their `_with` variants. A single-value node, and an
-    /// operator node's own result, are rejected: their accessible name quotes the value itself.
+    /// For a node drawn via [`add_data_node`](Self::add_data_node) or [`add_named_data_node`](Self::add_named_data_node)
+    /// and their `_with` variants. A single-value node is replaced too. Its own accessible name and tooltip quote the
+    /// value, so those are rewritten as well, keeping every relationship and selection clause after it. An operator
+    /// node's own result is rejected. Its value is computed by the caller when the node is added, and there is no cell
+    /// of its own to rewrite.
     ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a multi-value data node, or if `values` has a different
-    /// integer width or a different number of values. Checked before changing anything.
+    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node drawn with cells of its own, or if `values`
+    /// has a different integer width or a different number of values. Checked before changing anything.
     ///
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
     /// already rewritten.
     pub fn set_data_values(&self, id: NodeId, values: NodeValues) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
 
+        // Everything that can reject the call is checked before anything changes. A node drawn by `draw_content_box`
+        // has one `<text>` per value. An operator node's own result has none, and cannot be replaced.
+        let drawn = inner.node_handle(id).map(|handles| handles.cell_texts.len());
         let node = inner.graph.node_mut(id).ok_or(Error::UnknownNode(id))?;
         let NodeContent::Data(content) = &mut node.content else {
             return Err(Error::IncompatibleNodeValues(id));
         };
-        if content.is_single_value() || !content.replace_values(values) {
+        if drawn != Some(content.len()) {
+            return Err(Error::IncompatibleNodeValues(id));
+        }
+
+        // The old text of a single value, kept to find it again in the node's own accessible name below.
+        let single_value = content.is_single_value();
+        let mut old_text = String::new();
+        if single_value {
+            content.single_cell_string_into(&mut old_text);
+        }
+        if !content.replace_values(values) {
             return Err(Error::IncompatibleNodeValues(id));
         }
 
         // Formatted into owned strings first: `content` is borrowed from the graph, and the handles that hold the
         // cells' own `<text>` elements live elsewhere in the same `SceneInner`.
         let (_, cols) = content.shape();
+        let type_name = content.type_name();
         let mut texts: Vec<String> = Vec::with_capacity(content.len());
         let mut scratch = String::new();
         content.for_each_cell_string(&mut scratch, |_, text| texts.push(text.to_owned()));
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
-        if handles.cell_texts.len() != texts.len() {
-            return Err(Error::IncompatibleNodeValues(id));
-        }
         for (i, (cell, text)) in handles.cell_texts.iter().zip(&texts).enumerate() {
             cell.set_text(text);
-            // Matches the accessible name `draw_content_box` gave this cell when it drew it.
-            cell.set_attr("aria-label", &format!("row {}, column {}: {text}", i / cols, i % cols))?;
+            // A grid's cell is named by its row and column, matching what `draw_content_box` gave it. A single value's
+            // text has no such name: the node's own accessible name quotes the value instead.
+            if !single_value {
+                cell.set_attr("aria-label", &format!("row {}, column {}: {text}", i / cols, i % cols))?;
+            }
+        }
+        if single_value {
+            handles.replace_label_value(type_name, &old_text, &texts[0])?;
         }
         Ok(())
     }

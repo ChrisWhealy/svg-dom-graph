@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Bump `Cargo.toml` version (``)
+- Bump `Cargo.toml` version (`bce7f8d`)
+- Extend `set_data_values` to allow mutation of single-value nodes and refresh the group label (``)
 
 # [Released]
 

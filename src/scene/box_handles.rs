@@ -164,6 +164,28 @@ impl BoxHandles {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Replaces a single-value node's own value text, `old`, with `new` in its `aria-label` and tooltip, then rebuilds
+    /// them. The value follows `"{type_name} = "` in the base description, for example `"u32 = 0A 0B 0C 0D"`. Any
+    /// relationship clauses after it, and the selection description, are kept.
+    ///
+    /// The base description's length is adjusted by the difference, since a decimal value can change length. A label
+    /// that does not hold `old` after `"{type_name} = "` is left as it is.
+    pub(crate) fn replace_label_value(
+        &mut self,
+        type_name: &str,
+        old: &str,
+        new: &str,
+    ) -> Result<(), svg_dom::Error> {
+        let needle = format!("{type_name} = {old}");
+        if let Some(position) = self.aria_label[..self.base_label_len].find(&needle) {
+            let start = position + type_name.len() + " = ".len();
+            self.aria_label.replace_range(start..start + old.len(), new);
+            self.base_label_len = self.base_label_len - old.len() + new.len();
+        }
+        self.refresh_label()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This node's own name right now, layering whatever `selection` currently highlights onto `ref_name`.
     ///
     /// `ref_name` alone names a node's whole self — "A" for an array `Scene::set_selection` re-bands each step, never
