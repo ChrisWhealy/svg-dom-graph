@@ -280,3 +280,77 @@ fn a_plain_text_node_is_replaced_with_a_string_of_the_same_length() -> Result<()
         "a string of another length was accepted",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many DOM mutations (text, attribute or child changes) `group` sees while `act` runs.
+fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(), String>) -> Result<u32, String> {
+    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
+        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
+    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
+    let options = web_sys::MutationObserverInit::new();
+    options.set_child_list(true);
+    options.set_subtree(true);
+    options.set_attributes(true);
+    options.set_character_data(true);
+    observer.observe_with_options(group, &options).map_err(|e| format!("{e:?}"))?;
+    act()?;
+    let seen = observer.take_records().length();
+    observer.disconnect();
+    Ok(seen)
+}
+
+/// Replacing a node's values with the ones it already holds leaves the document alone.
+#[wasm_bindgen_test]
+fn replacing_with_identical_values_changes_nothing_in_the_document() -> Result<(), String> {
+    let (scene, node, group) = grid("set-values-identical")?;
+    let seen = mutations_during(&group, || {
+        scene
+            .set_data_values(node, NodeValues::U8(vec![1, 2, 3, 4, 5, 6]))
+            .map_err(|e| e.to_string())
+    })?;
+    check(seen == 0, &format!("expected no DOM mutations, saw {seen}"))
+}
+
+/// Only the cell whose value changed is rewritten, so the others keep their text and accessible name untouched.
+#[wasm_bindgen_test]
+fn only_the_changed_cell_is_rewritten() -> Result<(), String> {
+    let (scene, node, group) = grid("set-values-partial")?;
+    let seen = mutations_during(&group, || {
+        scene
+            .set_data_values(node, NodeValues::U8(vec![1, 2, 3, 4, 50, 6]))
+            .map_err(|e| e.to_string())
+    })?;
+    // One cell: its text changes and its `aria-label` is set.
+    check(
+        seen > 0 && seen <= 3,
+        &format!("expected a single cell's own few mutations, saw {seen}"),
+    )?;
+    let texts = cell_texts(&group)?;
+    check(
+        texts.contains(&"50".to_owned()) && texts.contains(&"4".to_owned()),
+        &format!("got {texts:?}"),
+    )
+}
+
+/// A single value's accessible name quotes the value, so it follows a change, and is left alone when there is none.
+#[wasm_bindgen_test]
+fn a_single_value_is_rewritten_only_when_it_changes() -> Result<(), String> {
+    let svg = make_svg("set-values-single-skip", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8(vec![7]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let group = nth_group("set-values-single-skip", 0)?;
+    let same = mutations_during(&group, || {
+        scene.set_data_values(node, NodeValues::U8(vec![7])).map_err(|e| e.to_string())
+    })?;
+    check(same == 0, &format!("an unchanged value should change nothing, saw {same}"))?;
+    scene
+        .set_data_values(node, NodeValues::U8(vec![9]))
+        .map_err(|e| e.to_string())?;
+    let label = group.get_attribute("aria-label").unwrap_or_default();
+    check(label.contains("u8 = 9"), &format!("got {label:?}"))
+}

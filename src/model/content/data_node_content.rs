@@ -115,11 +115,20 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Replaces this content's own values with `values`, keeping its format, layout and byte order.
+    /// Replaces this content's own values with `values`, keeping its format, layout and byte order. It then calls
+    /// `f(index, formatted)` for each cell whose value changed, in order, and for no other. A cell that holds the same
+    /// value as before is not even formatted, and nothing is called at all if no value changed.
     ///
-    /// Returns `false`, changing nothing, unless `values` is the same integer width and holds the same number of
-    /// values. So the grid keeps exactly the same shape it was drawn with.
-    pub(crate) fn replace_values(&mut self, values: NodeValues) -> bool {
+    /// Returns `false`, changing nothing and calling nothing, unless `values` is the same integer width and holds the
+    /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
+    /// content also needs printable ASCII, and counts as one cell, whole.
+    pub(crate) fn replace_values(
+        &mut self,
+        values: NodeValues,
+        scratch: &mut String,
+        f: impl FnMut(usize, &str),
+    ) -> bool {
+        let mut f = f;
         if std::mem::discriminant(&self.values) != std::mem::discriminant(&values) || self.values.len() != values.len()
         {
             return false;
@@ -127,7 +136,16 @@ impl DataNodeContent {
         if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {
             return false;
         }
-        self.values = values;
+        let old = std::mem::replace(&mut self.values, values);
+        if self.is_plain_text() {
+            if self.values != old && self.len() == 1 {
+                self.plain_text_into(scratch);
+                f(0, scratch);
+            }
+        } else {
+            self.values
+                .for_each_changed_cell_string(&old, self.format, self.byte_order, scratch, f);
+        }
         true
     }
 

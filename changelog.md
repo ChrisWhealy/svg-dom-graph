@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Avoid building temporary node during data node measurement (``)
+- Avoid building temporary node during data node measurement (`dac9555`)
+- Remove per-cell `String` allocation during `set_data_values()` (``)
 
 # [Released]
 

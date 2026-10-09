@@ -4,7 +4,7 @@ use super::draw::cell_name;
 use crate::{
     error::Error,
     model::node::{NodeContent, NodeId},
-    scene::{NodeValues, Scene, Selection},
+    scene::{NodeValues, Scene, Selection, scene_inner::SceneInner},
 };
 use svg_dom::root::utils::{Point, Rect};
 
@@ -41,6 +41,10 @@ impl Scene {
     /// initialised to zeros until the walk reaches the step that produces it. Without this, a host could only draw such
     /// a node once, with whatever it held at that moment.
     ///
+    /// Only cells whose value changed are formatted and rewritten. Replacing a node's values with the ones it already
+    /// holds does nothing to the document, so a caller can pass the whole state each step without the unchanged part
+    /// costing anything.
+    ///
     /// `values` must be the same width of integer, and the same number of values, as the node was drawn with. The grid
     /// then keeps exactly the size, shape and position it already has, and so does every connector attached to it. The
     /// node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn with. So
@@ -69,12 +73,16 @@ impl Scene {
         // Everything that can reject the call is checked before anything changes. Only a node drawn from a
         // `DataNodeContent` can be replaced. An operator node's own result is worked out by the caller when the node is
         // added.
-        let replaceable = inner.node_handle(id).is_some_and(|handles| handles.replaceable);
-        let node = inner.graph.node_mut(id).ok_or(Error::UnknownNode(id))?;
+        //
+        // `graph` and `node_handles` are separate fields, so the content and the cells' own `<text>` elements are
+        // borrowed side by side. Each cell is then rewritten as it is formatted, with no list of texts built first.
+        let SceneInner { graph, node_handles, .. } = &mut *inner;
+        let node = graph.node_mut(id).ok_or(Error::UnknownNode(id))?;
         let NodeContent::Data(content) = &mut node.content else {
             return Err(Error::IncompatibleNodeValues(id));
         };
-        if !replaceable {
+        let handles = node_handles.get_mut(id.index).ok_or(Error::UnknownNode(id))?;
+        if !handles.replaceable {
             return Err(Error::IncompatibleNodeValues(id));
         }
 
@@ -84,30 +92,37 @@ impl Scene {
         if single_value {
             content.single_cell_string_into(&mut old_text);
         }
-        if !content.replace_values(values) {
-            return Err(Error::IncompatibleNodeValues(id));
-        }
-
-        // Formatted into owned strings first: `content` is borrowed from the graph, and the handles that hold the
-        // cells' own `<text>` elements live elsewhere in the same `SceneInner`.
         let (_, cols) = content.shape();
         let labelling = content.labelling();
         let type_name = content.type_name();
-        let mut texts: Vec<String> = Vec::with_capacity(content.len());
-        let mut scratch = String::new();
-        content.for_each_cell_string(&mut scratch, |_, text| texts.push(text.to_owned()));
 
-        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
-        for (i, (cell, text)) in handles.cell_texts.iter().zip(&texts).enumerate() {
+        // Only a cell whose value changed is called back, and only it is rewritten. The first DOM failure is kept, and
+        // later cells are left alone.
+        let mut scratch = String::new();
+        let mut failure: Option<svg_dom::Error> = None;
+        let mut new_text: Option<String> = None;
+        let accepted = content.replace_values(values, &mut scratch, |i, text| {
+            if failure.is_some() {
+                return;
+            }
+            let Some(cell) = handles.cell_texts.get(i) else { return };
             cell.set_text(text);
             // A grid's cell is named by its row and column, matching what `draw_content_box` gave it. A single value's
             // text has no such name: the node's own accessible name quotes the value instead.
-            if !single_value {
-                cell.set_attr("aria-label", &cell_name(labelling, i, cols, text))?;
+            if single_value {
+                new_text = Some(text.to_owned());
+            } else if let Err(e) = cell.set_attr("aria-label", &cell_name(labelling, i, cols, text)) {
+                failure = Some(e);
             }
+        });
+        if !accepted {
+            return Err(Error::IncompatibleNodeValues(id));
         }
-        if single_value {
-            handles.replace_label_value(type_name, &old_text, &texts[0])?;
+        if let Some(e) = failure {
+            return Err(e.into());
+        }
+        if let Some(new_text) = new_text {
+            handles.replace_label_value(type_name, &old_text, &new_text)?;
         }
         Ok(())
     }

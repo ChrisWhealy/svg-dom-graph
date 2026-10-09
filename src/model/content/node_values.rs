@@ -79,6 +79,25 @@ fn for_each_formatted<T: Word>(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Calls `f(index, formatted)` for every value of `values` that differs from the value at the same index of `old`, and
+/// formats no other. `old` holds the same number of values. See [`NodeValues::for_each_changed_cell_string`].
+fn for_each_changed<T: Word>(
+    values: &[T],
+    old: &[T],
+    format: DataFormat,
+    byte_order: ByteOrder,
+    scratch: &mut String,
+    mut f: impl FnMut(usize, &str),
+) {
+    for (i, (&x, &was)) in values.iter().zip(old).enumerate() {
+        if x != was {
+            x.format_into(format, byte_order, scratch);
+            f(i, scratch);
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats into `out` the one value of `values` that [`pick_widest`] picks, if any. See
 /// [`NodeValues::widest_cell_string`].
 fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
@@ -160,6 +179,28 @@ impl NodeValues {
             Self::U16(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Calls `f(index, formatted)` for every value of `self` that differs from the value at the same index of `old`,
+    /// reusing `scratch` for the text. A value that has not changed is neither formatted nor reported.
+    ///
+    /// `old` must be the same integer width and hold the same number of values. If it is not, `f` is never called.
+    pub(super) fn for_each_changed_cell_string(
+        &self,
+        old: &Self,
+        format: DataFormat,
+        byte_order: ByteOrder,
+        scratch: &mut String,
+        f: impl FnMut(usize, &str),
+    ) {
+        match (self, old) {
+            (Self::U8(v), Self::U8(o)) => for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::U16(v), Self::U16(o)) => for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::U32(v), Self::U32(o)) => for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::U64(v), Self::U64(o)) => for_each_changed(v, o, format, byte_order, scratch, f),
+            _ => {},
         }
     }
 
