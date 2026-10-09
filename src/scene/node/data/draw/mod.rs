@@ -27,6 +27,9 @@ const CELL_GAP: f64 = 6.0;
 /// [`CELL_GAP`]. Small enough that a group still reads as part of one grid.
 const GROUP_GAP: f64 = 8.0;
 
+/// Clear space on each side of a row label, in the grid box's own left padding.
+const ELEMENT_LABEL_MARGIN: f64 = 4.0;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`. Returns their handles alongside
 /// the box's own final `Rect`, which is computed here, not supplied by the caller.
@@ -170,6 +173,9 @@ pub(super) fn draw_content_box(
 struct GridLayoutMetrics {
     /// One cell's own box, the widest value's measured text plus [`CELL_PADDING`] on every side.
     cell: Size,
+    /// The padding between the grid box's own left edge and its first column. [`OUTER_PADDING`], or more when row labels
+    /// need the room.
+    left_pad: f64,
     rows: usize,
     cols: usize,
     /// How many columns make up one group, or `0` for none. See `DataNodeContent::with_column_groups`.
@@ -212,18 +218,34 @@ impl GridLayoutMetrics {
         measure_el.remove();
         guard.release();
 
+        // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. A label never gets
+        // shorter as its index grows, so the last row's own is the longest.
         let (rows, cols) = content.shape();
+        let mut left_pad = OUTER_PADDING;
+        if let Some(style) = content.labelling() {
+            style.label_into((rows - 1) * cols, &mut widest);
+            let label_el = svg.text(Point::origin(), &widest)?;
+            guard.track(label_el.clone());
+            label_el.set_font_family(GRID_FONT_FAMILY)?;
+            label_el.set_font_size(GRID_FONT_SIZE)?;
+            left_pad = left_pad.max(label_el.bounding_box()?.size.width + 2.0 * ELEMENT_LABEL_MARGIN);
+            label_el.remove();
+            guard.release();
+        }
+
         Ok(Self::new(
             Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING),
+            left_pad,
             (rows, cols),
             content.column_group(),
             content.is_single_value(),
         ))
     }
 
-    fn new(cell: Size, (rows, cols): (usize, usize), column_group: usize, single_value: bool) -> Self {
+    fn new(cell: Size, left_pad: f64, (rows, cols): (usize, usize), column_group: usize, single_value: bool) -> Self {
         Self {
             cell,
+            left_pad,
             rows,
             cols,
             column_group,
@@ -248,7 +270,8 @@ impl GridLayoutMetrics {
             self.cols as f64 * self.cell.width
                 + (self.cols as f64 - 1.0) * CELL_GAP
                 + self.group_gaps(self.cols) as f64 * GROUP_GAP
-                + 2.0 * OUTER_PADDING,
+                + self.left_pad
+                + OUTER_PADDING,
             self.rows as f64 * self.cell.height + (self.rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
         )
     }
@@ -259,7 +282,7 @@ impl GridLayoutMetrics {
         let (row, col) = (i / self.cols, i % self.cols);
         Point::new(
             content_origin.x
-                + OUTER_PADDING
+                + self.left_pad
                 + col as f64 * (self.cell.width + CELL_GAP)
                 + self.group_gaps(col + 1) as f64 * GROUP_GAP,
             content_origin.y + OUTER_PADDING + row as f64 * (self.cell.height + CELL_GAP),
@@ -408,6 +431,7 @@ fn draw_cells(
     }
 
     let mut text_scratch = String::new();
+    let mut label_scratch = String::new();
     let mut error: Option<Error> = None;
     content.for_each_cell_string(&mut text_scratch, |i, cell_text| {
         if error.is_some() {
@@ -446,7 +470,24 @@ fn draw_cells(
                 text.set_attr_display(scratch, "x", cell_origin.x + layout.cell.width / 2.0)?;
                 text.set_attr_display(scratch, "y", cell_origin.y + layout.cell.height / 2.0)?;
                 let (row, col) = (i / layout.cols, i % layout.cols);
-                text.set_attr_display(scratch, "aria-label", format_args!("row {row}, column {col}: {cell_text}"))?;
+                match content.labelling() {
+                    Some(style) => {
+                        style.label_into(i, &mut label_scratch);
+                        if col == 0 {
+                            draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
+                        }
+                        text.set_attr_display(
+                            scratch,
+                            "aria-label",
+                            format_args!("element {label_scratch}, row {row}, column {col}: {cell_text}"),
+                        )?;
+                    },
+                    None => text.set_attr_display(
+                        scratch,
+                        "aria-label",
+                        format_args!("row {row}, column {col}: {cell_text}"),
+                    )?,
+                }
                 group.append(&text)?;
                 guard.release();
 
@@ -466,6 +507,35 @@ fn draw_cells(
         Some(e) => Err(e),
         None => Ok(cells),
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws row label `label` just left of the first cell of its row, at `cell_origin`, outside the cell and vertically
+/// centred on it. It is hidden from assistive technology, because the cell's own value text already names the element
+/// in its `aria-label`.
+fn draw_row_label(
+    svg: &SvgRoot,
+    scratch: &mut String,
+    group: &SvgNode,
+    guard: &mut RenderGuard,
+    label: &str,
+    cell_origin: Point,
+    cell: Size,
+) -> Result<(), Error> {
+    let el = svg.text(Point::origin(), label)?;
+    guard.track(el.clone());
+    el.set_text_anchor(TextAnchor::End)?;
+    el.set_dominant_baseline(DominantBaseline::Middle)?;
+    el.set_font_family(GRID_FONT_FAMILY)?;
+    el.set_font_size(GRID_FONT_SIZE)?;
+    el.set_fill(TEXT_FILL)?;
+    el.set_attr("aria-hidden", "true")?;
+    el.set_attr("pointer-events", "none")?;
+    el.set_attr_display(scratch, "x", cell_origin.x - ELEMENT_LABEL_MARGIN)?;
+    el.set_attr_display(scratch, "y", cell_origin.y + cell.height / 2.0)?;
+    group.append(&el)?;
+    guard.release();
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

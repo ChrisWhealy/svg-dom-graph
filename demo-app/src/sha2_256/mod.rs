@@ -34,8 +34,8 @@ use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{
-        ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
-        SelectionStride, SelectionToolbarOptions, Side, ToolbarOptions,
+        ConnectorOptions, DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues, Scene,
+        SceneTitleOptions, Selection, SelectionStride, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 use walk::{MESSAGE, Ring, STEPS, Stage, shown, stage};
@@ -79,6 +79,11 @@ const V_GAP: f64 = 36.0;
 /// SHA-256, and bits make them visible. A word is four bytes, shown big-endian, the way the standard writes them.
 fn words(values: &[u32]) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U32(values.to_vec()), DataFormat::Binary).with_layout(GridLayout::Columns(1))
+}
+
+/// `content` with its eight words labelled `a` to `h`, as the standard names the working variables.
+fn lettered(content: DataNodeContent) -> DataNodeContent {
+    content.with_labelling_style(LabellingStyle::Alphabetic)
 }
 
 /// A forced south-to-north connector, for a flow that runs straight down a column.
@@ -430,7 +435,7 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
             let column_3 = schedule_rect.origin.x + schedule_rect.size.width + H_GAP;
             let items = vec![
                 ("Initial hash H", words(&INITIAL_HASH)),
-                ("Working variables a..h", words(&[0; 8])),
+                ("Working variables a..h", lettered(words(&[0; 8]))),
                 ("bigSigma1(e)", words(&[0])),
                 ("choice(e,f,g)", words(&[0])),
                 ("h", words(&[0])),
@@ -440,7 +445,7 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
                 ("bigSigma0(a)", words(&[0])),
                 ("majority(a,b,c)", words(&[0])),
                 ("temp2", words(&[0])),
-                ("Next working variables a..h", words(&[0; 8])),
+                ("Next working variables a..h", lettered(words(&[0; 8]))),
                 ("Digest = H + working", words(&[0; 8])),
             ];
             let c = column(&scene, column_3, row_2, items)?;

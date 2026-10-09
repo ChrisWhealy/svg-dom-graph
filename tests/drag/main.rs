@@ -36,6 +36,8 @@
 //!   outline, independence from `set_selection`, precedence against focus and band, `aria-label`, and validation.
 //! - [`unreached_cells`] — `Scene::set_unreached_cells`: cells with no value yet drawn faint, box and digits, with the
 //!   other marks winning over it, its own `aria-label` clause, and validation.
+//! - [`element_labels`] — `DataNodeContent::with_labels`/`with_labelling_style`: off by default, numeric and alphabetic
+//!   labels, the wider cells, the accessible name, and no labels on a single value.
 //! - [`set_data_values`] — `Scene::set_data_values`: replacing a data node's own values in place, single value or grid,
 //!   with the cells' text and accessible names following, and rejection of a different width, count, or node kind.
 //! - [`relationships`] — `Scene::add_edge`/`add_edge_with`: the relationship text each new edge appends to both of its
@@ -58,6 +60,7 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod element_labels;
 mod focus;
 mod measure;
 mod move_node;

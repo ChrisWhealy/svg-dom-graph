@@ -21,8 +21,8 @@ mod view_input;
 
 pub use crate::geometry::{side::Side, view::ViewTransform};
 pub use crate::model::content::{
-    ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, NodeValues, Selection,
-    UnaryOperator,
+    ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues,
+    Selection, UnaryOperator,
 };
 pub(crate) use box_handles::BoxHandles;
 pub use connector::{ConnectorOptions, ConnectorType};

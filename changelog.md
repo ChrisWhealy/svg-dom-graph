@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Initial demo implementation of SHA2-256 algorithm (`b990cb2`)
-- Add `Scene::set_unreached_cells(node, &[usize])` to show unreached data and apply to SHA2/3 demos (``)
+- Add `Scene::set_unreached_cells(node, &[usize])` to show unreached data and apply to SHA2/3 demos (`09775b8`)
+- Add `LabellingStyle` enum to label array elements (``)
 
 ## Changed
 

@@ -14,6 +14,7 @@ pub struct DataNodeContent {
     layout: GridLayout,
     byte_order: ByteOrder,
     column_group: usize,
+    labelling: Option<LabellingStyle>,
 }
 
 impl DataNodeContent {
@@ -35,6 +36,7 @@ impl DataNodeContent {
             layout: GridLayout::default(),
             byte_order: ByteOrder::default(),
             column_group: 0,
+            labelling: None,
         }
     }
 
@@ -65,6 +67,35 @@ impl DataNodeContent {
     pub fn with_column_groups(mut self, columns: usize) -> Self {
         self.column_group = columns;
         self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with every element labelled by its own index, `0` to `N - 1`: [`LabellingStyle::Numeric`].
+    ///
+    /// Labelling is off unless this or [`with_labelling_style`](Self::with_labelling_style) is called, so existing
+    /// content draws exactly as before. A label is drawn in the data text's own size, outside the cells, in the grid box's
+    /// own left padding. That padding grows only if the label needs more room than it has. A grid of one column has a
+    /// label for every element. A wider grid has one beside each row, naming that row's first element. A node with one
+    /// value has no grid to label, so this has no effect on it, nor on [`DataFormat::PlainText`].
+    #[must_use]
+    pub fn with_labels(self) -> Self {
+        self.with_labelling_style(LabellingStyle::default())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with every element labelled in `style`, which also turns labelling on. See [`LabellingStyle`] for
+    /// what each style produces, and [`with_labels`](Self::with_labels) for where a label is drawn.
+    #[must_use]
+    pub fn with_labelling_style(mut self, style: LabellingStyle) -> Self {
+        self.labelling = Some(style);
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The style to label each element in, or `None` for no labels. Always `None` for a node with one value, which has
+    /// no grid to label.
+    pub(crate) fn labelling(&self) -> Option<LabellingStyle> {
+        if self.is_single_value() { None } else { self.labelling }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

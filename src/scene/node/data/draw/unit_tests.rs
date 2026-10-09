@@ -13,12 +13,12 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 
 /// A 20 x 10 cell in a 2 x 3 grid, with `column_group` columns per group.
 fn grid(column_group: usize) -> GridLayoutMetrics {
-    GridLayoutMetrics::new(Size::new(20.0, 10.0), (2, 3), column_group, false)
+    GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (2, 3), column_group, false)
 }
 
 #[test]
 fn a_single_value_is_exactly_one_cell() -> Result<(), String> {
-    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), (1, 1), 0, true);
+    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (1, 1), 0, true);
     check_eq(layout.content_size(), Size::new(20.0, 10.0))
 }
 
@@ -30,7 +30,7 @@ fn a_grid_adds_the_gaps_between_cells_and_the_padding_all_round() -> Result<(), 
 
 #[test]
 fn a_column_group_adds_one_wider_gap_between_groups_only() -> Result<(), String> {
-    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), (1, 4), 2, false);
+    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (1, 4), 2, false);
     // Four columns in groups of two have one boundary between them, never one after the last group.
     check_eq(layout.group_gaps(4), 1)?;
     check_eq(layout.group_gaps(2), 0)?;
@@ -63,4 +63,11 @@ fn a_single_values_name_gives_its_type_and_text() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![0x0A]), DataFormat::Hexadecimal);
     check_eq(describe(None, &content, "0A"), "u8 = 0A".to_owned())?;
     check_eq(describe(Some("B"), &content, "0A"), "B: u8 = 0A".to_owned())
+}
+
+#[test]
+fn extra_left_padding_widens_the_grid_by_exactly_that_much() -> Result<(), String> {
+    let wide = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING + 4.0, (2, 3), 0, false);
+    check_eq(wide.content_size().width, grid(0).content_size().width + 4.0)?;
+    check_eq(wide.cell_origin(Point::origin(), 0).x, OUTER_PADDING + 4.0)
 }
