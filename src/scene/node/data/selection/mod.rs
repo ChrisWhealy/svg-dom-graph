@@ -74,6 +74,9 @@ impl Scene {
             // the node's `Selection` already happened to be `Selection::None`. See `sync_selection_toolbar_state`'s own
             // doc comment. Skipping this call here would leave every button with no `aria-disabled`/`opacity` written,
             // not just a stale one.
+            //
+            // Nothing needs recolouring, but a label an earlier call failed to write is still owed.
+            inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?.resync_label()?;
             let _ = inner.sync_selection_toolbar_state();
             return Ok(());
         }
@@ -177,8 +180,9 @@ impl Scene {
 
         // The same indices again, already sorted and without duplicates, change nothing. That is checked before the
         // copy below, which still normalises anything else.
-        if inner.node_handle(id).ok_or(Error::UnknownNode(id))?.secondary == cells {
-            return Ok(());
+        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        if handles.secondary == cells {
+            return Ok(handles.resync_label()?);
         }
 
         let mut new_secondary = cells.to_vec();
@@ -187,7 +191,7 @@ impl Scene {
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         if handles.secondary == new_secondary {
-            return Ok(());
+            return Ok(handles.resync_label()?);
         }
         let cell_stroke_width = handles.cell_stroke_width;
         let single_value = handles.cell_grid.is_some_and(|grid| grid.single_value);

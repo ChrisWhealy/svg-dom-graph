@@ -192,6 +192,8 @@ fn draw_operator_box(
             unreached: Vec::new(),
             aria_label: node_label,
             base_label_len,
+            label_stale: false,
+            edge_anchors_stale: false,
             ref_name: label.to_owned(),
             child: None,
         },

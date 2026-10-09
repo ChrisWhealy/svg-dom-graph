@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid temporary `String` allocation during value replacement (`94b7277`)
 - Avoid copying and sorting identical secondary selections (`b7b414c`)
 - Avoid `measure_content_box()` from creating an empty SVG group during data node measurement (`46d2a5e`)
-- Remove unneccessary DOM writes during cell highlighting (``)
+- Remove unneccessary DOM writes during cell highlighting (`21aa00b`)
+- Delay DOM updates until after callbacks return successfully (``)
 
 # [Released]
 

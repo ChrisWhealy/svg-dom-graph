@@ -164,10 +164,13 @@ impl Scene {
 
         let mut inner = self.inner.borrow_mut();
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
-        if handles.edge_anchors == edge_anchors {
+        // The same anchors are a no-op only once every incident edge has been redrawn for them. After a redraw that
+        // failed part way, repeating them redraws again.
+        if handles.edge_anchors == edge_anchors && !handles.edge_anchors_stale {
             return Ok(());
         }
         handles.edge_anchors = edge_anchors;
+        handles.edge_anchors_stale = true;
         let own_input_edges = handles.binary_operator_input_edges;
 
         // Taken out for the call so `redraw_edge`/`redraw_binary_operator_inputs` can freely borrow the rest of `inner`
@@ -197,6 +200,9 @@ impl Scene {
             }
         }
         inner.scratch = scratch;
+        if let Some(handles) = inner.node_handle_mut(id) {
+            handles.edge_anchors_stale = false;
+        }
         Ok(())
     }
 

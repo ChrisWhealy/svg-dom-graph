@@ -114,6 +114,8 @@ pub(super) fn draw_box(
         unreached: Vec::new(),
         aria_label: String::new(),
         base_label_len: 0,
+        label_stale: false,
+        edge_anchors_stale: false,
         ref_name: label.to_owned(),
         child: None,
     })

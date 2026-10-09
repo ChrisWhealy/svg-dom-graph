@@ -322,3 +322,36 @@ pub fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(
     observer.disconnect();
     Ok(seen)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes `Element.setAttribute` throw for the named attributes while it is alive, and puts the real one back when
+/// dropped. For a test that needs a DOM write to fail on purpose and then succeed on a retry.
+pub struct FailingWrites;
+
+impl FailingWrites {
+    pub fn start(names: &[&str]) -> Result<Self, String> {
+        let list = names.iter().map(|n| format!("{n:?}")).collect::<Vec<_>>().join(", ");
+        js_sys::Function::new_no_args(&format!(
+            "const proto = Element.prototype;
+             if (!proto.__originalSetAttribute) {{ proto.__originalSetAttribute = proto.setAttribute; }}
+             const failing = [{list}];
+             proto.setAttribute = function (name, value) {{
+                 if (failing.includes(name)) {{ throw new Error('injected failure writing ' + name); }}
+                 return proto.__originalSetAttribute.apply(this, arguments);
+             }};"
+        ))
+        .call0(&wasm_bindgen::JsValue::NULL)
+        .map_err(|e| format!("{e:?}"))?;
+        Ok(Self)
+    }
+}
+
+impl Drop for FailingWrites {
+    fn drop(&mut self) {
+        let _ = js_sys::Function::new_no_args(
+            "const proto = Element.prototype;
+             if (proto.__originalSetAttribute) { proto.setAttribute = proto.__originalSetAttribute; }",
+        )
+        .call0(&wasm_bindgen::JsValue::NULL);
+    }
+}

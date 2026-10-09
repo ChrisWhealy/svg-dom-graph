@@ -155,6 +155,8 @@ pub(super) fn draw_content_box(
             unreached: Vec::new(),
             aria_label: node_label,
             base_label_len,
+            label_stale: false,
+            edge_anchors_stale: false,
             // A named node is called by that name. An unnamed one, having none, is called by its own type instead. See
             // `BoxHandles::ref_name`'s own doc comment.
             ref_name: name.unwrap_or(content.type_name()).to_owned(),

@@ -36,6 +36,8 @@
 //!   outline, independence from `set_selection`, precedence against focus and band, `aria-label`, and validation.
 //! - [`unreached_cells`] — `Scene::set_unreached_cells`: cells with no value yet drawn faint, box and digits, with the
 //!   other marks winning over it, its own `aria-label` clause, and validation.
+//! - [`retry_after_failure`] — a repeated request is not skipped as a no-op after an earlier call failed part way: the
+//!   label a selection call could not write, and the connectors a `set_edge_anchors` call could not redraw.
 //! - [`cell_style_writes`] — restyling a cell writes only the attributes that changed: two per cell when the focus moves, one
 //!   opacity pair when a cell is marked unreached, and a full restyle for a single value.
 //! - [`element_labels`] — `DataNodeContent::with_labels`/`with_labelling_style`: off by default, numeric and alphabetic
@@ -70,6 +72,7 @@ mod move_node;
 mod node_rect;
 mod operator_node;
 mod relationships;
+mod retry_after_failure;
 mod scene_title;
 mod scene_validation;
 mod secondary_selection;

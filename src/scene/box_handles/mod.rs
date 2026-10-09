@@ -127,6 +127,15 @@ pub(crate) struct BoxHandles {
     /// `aria_label`'s own length at creation, before any selection was ever appended — the point `Scene::set_selection`
     /// truncates back to before appending a new selection's own description.
     pub(crate) base_label_len: usize,
+    /// `true` while this node's own `aria-label` and tooltip may not show what [`aria_label`](Self::aria_label) says,
+    /// because writing them failed. [`refresh_label`](Self::refresh_label) sets it first and clears it on success. A
+    /// request that changes nothing then still calls [`resync_label`](Self::resync_label), so repeating a selection
+    /// after such a failure repairs the label instead of being skipped as a no-op.
+    pub(crate) label_stale: bool,
+    /// `true` from the moment `Scene::set_edge_anchors` starts redrawing this node's incident edges until it has
+    /// redrawn them all. A repeat of the same anchors while it is set redraws them again, so one failed redraw cannot be
+    /// skipped as a no-op later.
+    pub(crate) edge_anchors_stale: bool,
     /// A short, stable name for this node, so a later node's own description can refer to it by name. A plain label
     /// node uses its own visible text; a named data node uses its own given `name`. An operator node uses its own label
     /// — `"NOT"`, `"XOR"`, `"ROTR 1"`, and so on; an unnamed data node falls back to its own type name instead.
@@ -160,6 +169,7 @@ impl BoxHandles {
     /// not yet computed: cells 16 to 63"`, after that, for the same reason. See [`unreached_clause`].
     pub(crate) fn refresh_label(&mut self) -> Result<(), svg_dom::Error> {
         use std::fmt::Write as _;
+        self.label_stale = true;
         self.aria_label.truncate(self.base_label_len);
         self.selection.describe_into(&mut self.aria_label);
         if !self.secondary.is_empty() {
@@ -176,7 +186,16 @@ impl BoxHandles {
         self.group.set_attr("aria-label", &self.aria_label)?;
         // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
         // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
-        self.group.set_title(&self.aria_label)
+        self.group.set_title(&self.aria_label)?;
+        self.label_stale = false;
+        Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Writes the label again if an earlier write of it failed, and does nothing otherwise. A selection call that finds
+    /// nothing to change calls this, so the one thing it can still owe, a label that never got written, is paid.
+    pub(crate) fn resync_label(&mut self) -> Result<(), svg_dom::Error> {
+        if self.label_stale { self.refresh_label() } else { Ok(()) }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -68,8 +68,9 @@ impl Scene {
 
         // The same indices again, already sorted and without duplicates, change nothing. That is checked before the
         // copy below, which still normalises anything else.
-        if inner.node_handle(id).ok_or(Error::UnknownNode(id))?.unreached == cells {
-            return Ok(());
+        let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        if handles.unreached == cells {
+            return Ok(handles.resync_label()?);
         }
 
         let mut new_unreached = cells.to_vec();
@@ -78,7 +79,7 @@ impl Scene {
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         if handles.unreached == new_unreached {
-            return Ok(());
+            return Ok(handles.resync_label()?);
         }
         let cell_stroke_width = handles.cell_stroke_width;
         let single_value = handles.cell_grid.is_some_and(|grid| grid.single_value);
