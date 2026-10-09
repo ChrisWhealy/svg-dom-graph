@@ -448,3 +448,40 @@ fn measuring_a_large_grid_adds_only_a_few_elements_to_the_document() -> Result<(
         &format!("measuring 1000 values added {added} elements; a drawn grid would add over 2000"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Measuring an operator box draws no boxes and no cells: only its two measuring texts are ever added to the document,
+/// and none stays. Drawing the same box adds its group, two rectangles and two texts.
+#[wasm_bindgen_test]
+fn measuring_an_operator_box_adds_only_its_two_texts_and_leaves_nothing() -> Result<(), String> {
+    let svg = make_svg("measure-operator-cost", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let root = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id("measure-operator-cost"))
+        .ok_or("no svg root")?;
+    let before = descendant_element_count(&root)?;
+
+    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
+        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
+    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
+    let options = web_sys::MutationObserverInit::new();
+    options.set_child_list(true);
+    options.set_subtree(true);
+    observer.observe_with_options(&root, &options).map_err(|e| format!("{e:?}"))?;
+
+    let result = DataNodeContent::new(NodeValues::U32(vec![7]), DataFormat::Hexadecimal);
+    scene.measure_operator_box("XOR", &result).map_err(|e| e.to_string())?;
+
+    let added: u32 = observer
+        .take_records()
+        .iter()
+        .map(|r| r.unchecked_into::<web_sys::MutationRecord>().added_nodes().length())
+        .sum();
+    observer.disconnect();
+    check(
+        added <= 3,
+        &format!("expected a group and two texts at most, {added} elements were added"),
+    )?;
+    check(descendant_element_count(&root)? == before, "measuring left elements behind")
+}

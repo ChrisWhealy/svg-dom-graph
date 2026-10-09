@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove redundant storage of cell geometry (`09a0aa2`)
 - Prevent secondary and unreached selection changes from creating intermediate vectors (`ae9497e`)
 - Prevent `DataNodeContent::replace_values()` from commiting DOM changes until its callback returns successfully (``)
+- Avoid building temporary node during operator node measurement (``)
 
 # [Released]
 

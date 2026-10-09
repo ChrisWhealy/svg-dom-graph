@@ -203,6 +203,39 @@ fn draw_operator_box(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The size [`draw_operator_box`] would give an operator box of `label` and `result`, without drawing it. Only the two
+/// `<text>` elements whose widths decide the size are created, and both are removed again. There is no outer box, no
+/// value cell, no group attributes and no accessible name.
+///
+/// It measures through the same [`measure_label`] and [`measure_value`], and sizes through the same
+/// [`OperatorLayout::new`], that drawing does, so the two cannot disagree.
+///
+/// # Errors
+///
+/// Returns `Err` if `result` does not hold exactly one value, or if creating or measuring an element fails.
+fn measure_operator_layout(
+    svg: &SvgRoot,
+    scratch: &mut String,
+    label: &str,
+    result: &DataNodeContent,
+) -> Result<Size, Error> {
+    // An empty group the guard can roll back to, so a failure part way leaves nothing behind in the document.
+    let group = svg.group()?;
+    let mut guard = RenderGuard::new(group.clone());
+    let (label_el, label_width) = measure_label(svg, &mut guard, label)?;
+    let (value_el, _, value_width) = measure_value(svg, &mut guard, scratch, result)?;
+    let size = OperatorLayout::new(label_width, value_width).size;
+    // Both texts attach to the document as soon as they are created, so they are removed by hand. The group goes last.
+    value_el.remove();
+    guard.release();
+    label_el.remove();
+    guard.release();
+    guard.disarm();
+    group.remove();
+    Ok(size)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Creates the operator's label `<text>`, styled but not yet placed or appended, and measures its real rendered width.
 fn measure_label(svg: &SvgRoot, guard: &mut RenderGuard, label: &str) -> Result<(SvgNode, f64), Error> {
     let label_el = svg.text(Point::origin(), label)?;
@@ -365,7 +398,8 @@ impl Scene {
     /// already-added operands to measure against. Named `measure_operator_box`, not `measure_operator_node`, for
     /// exactly that reason — it does not construct an operator graph node, only the box.
     ///
-    /// Draws into this `Scene`'s own `SvgRoot`, measures the result, and removes it again before returning.
+    /// Measures in this `Scene`'s own `SvgRoot`, so the fonts are the ones a real node would use. Only the label and the
+    /// value are created, as `<text>` elements, and both are removed again before returning. No box is drawn.
     /// Structurally, nothing about this call persists. No [`NodeId`] is returned, because nothing remains to address
     /// afterward. See [`Scene::measure_data_node`](Self::measure_data_node)'s own doc comment for the full reasoning
     /// this shares, including why a stronger "never visible to assistive technology" claim is deliberately not made
@@ -383,11 +417,9 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         // See `add_unary_operator_node_with`'s own matching comment for why `scratch` is taken out for the call.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let draw_result = draw_operator_box(&inner.svg, &mut scratch, Point::origin(), label, result, None);
+        let size = measure_operator_layout(&inner.svg, &mut scratch, label, result);
         inner.scratch = scratch;
-        let (handles, rect) = draw_result?;
-        handles.group.remove();
-        Ok(rect.size)
+        size
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
