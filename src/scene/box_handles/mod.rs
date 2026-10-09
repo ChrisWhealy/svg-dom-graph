@@ -160,15 +160,16 @@ impl BoxHandles {
         self.aria_label.truncate(self.base_label_len);
         self.selection.describe_into(&mut self.aria_label);
         if !self.secondary.is_empty() {
-            let _ = write!(
-                self.aria_label,
-                ", also highlighted: {} {}",
-                if self.secondary.len() == 1 { "cell" } else { "cells" },
-                self.secondary.iter().map(usize::to_string).collect::<Vec<_>>().join(", ")
-            );
+            let noun = if self.secondary.len() == 1 { "cell" } else { "cells" };
+            let _ = write!(self.aria_label, ", also highlighted: {noun} ");
+            for (n, cell) in self.secondary.iter().enumerate() {
+                if n > 0 {
+                    self.aria_label.push_str(", ");
+                }
+                let _ = write!(self.aria_label, "{cell}");
+            }
         }
-        self.aria_label
-            .push_str(&unreached_clause(&self.unreached, self.cell_rects.len()));
+        unreached_clause_into(&self.unreached, self.cell_rects.len(), &mut self.aria_label);
         self.group.set_attr("aria-label", &self.aria_label)?;
         // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
         // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
@@ -221,20 +222,30 @@ impl BoxHandles {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How `cells`, sorted and without duplicates, read in a node's accessible name when they are not yet computed, for a node
-/// with `total` cells.
+/// Appends to `out` how `cells`, sorted and without duplicates, read in a node's accessible name when they are not yet
+/// computed, for a node with `total` cells. Appends nothing when there are none.
 ///
-/// Nothing when there are none. A node of a single cell reads as just `", not yet computed"`. Otherwise
-/// `", not yet computed: cells 16 to 63"`. A run of three or more consecutive cells is written as a range, so a
-/// schedule that is nearly all unreached does not read out dozens of numbers. Shorter runs are listed.
-pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
+/// A node of a single cell reads as just `", not yet computed"`. Otherwise `", not yet computed: cells 16 to 63"`. A run
+/// of three or more consecutive cells is written as a range, so a schedule that is nearly all unreached does not read
+/// out dozens of numbers. Shorter runs are listed. Everything is written straight into `out`, so a label rebuilt on
+/// every selection change allocates only if `out` must grow.
+pub(crate) fn unreached_clause_into(cells: &[usize], total: usize, out: &mut String) {
+    use std::fmt::Write as _;
     if cells.is_empty() {
-        return String::new();
+        return;
     }
     if total == 1 {
-        return ", not yet computed".to_owned();
+        out.push_str(", not yet computed");
+        return;
     }
-    let mut parts: Vec<String> = Vec::new();
+    let noun = if cells.len() == 1 { "cell" } else { "cells" };
+    let _ = write!(out, ", not yet computed: {noun} ");
+    let mut first = true;
+    let mut separate = |out: &mut String| {
+        if !std::mem::take(&mut first) {
+            out.push_str(", ");
+        }
+    };
     let mut start = 0;
     while start < cells.len() {
         let mut end = start;
@@ -242,14 +253,25 @@ pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
             end += 1;
         }
         if end - start >= 2 {
-            parts.push(format!("{} to {}", cells[start], cells[end]));
+            separate(out);
+            let _ = write!(out, "{} to {}", cells[start], cells[end]);
         } else {
-            parts.extend(cells[start..=end].iter().map(usize::to_string));
+            for cell in &cells[start..=end] {
+                separate(out);
+                let _ = write!(out, "{cell}");
+            }
         }
         start = end + 1;
     }
-    let noun = if cells.len() == 1 { "cell" } else { "cells" };
-    format!(", not yet computed: {noun} {}", parts.join(", "))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`unreached_clause_into`] as an owned `String`, for the tests that only read the finished text.
+#[cfg(test)]
+pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
+    let mut out = String::new();
+    unreached_clause_into(cells, total, &mut out);
+    out
 }
 
 #[cfg(test)]

@@ -13,7 +13,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid building temporary node during data node measurement (`dac9555`)
 - Remove per-cell `String` allocation during `set_data_values()` (`69306d8`)
 - Correct `LabellingStyle::Alphabetic` to use reusable `String` buffer (`cba7217`)
-- Remove unnecessary per-cell `String` allocation for accessibility labels (``)
+- Remove unnecessary per-cell `String` allocation for accessibility labels (`467acda`)
+- Remove temporary collection allocation from `BoxHandles::refresh_label()` (``)
 
 # [Released]
 
