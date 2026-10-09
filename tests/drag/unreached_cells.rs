@@ -2,7 +2,7 @@
 //! alike. It is independent of `Scene::set_selection` and `Scene::set_secondary_selection`, which win over it on a cell,
 //! and it is described in the node's own `aria-label`.
 
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
@@ -245,4 +245,28 @@ fn order_and_duplicates_do_not_matter_and_a_repeat_is_harmless() -> Result<(), S
     g.scene.set_unreached_cells(g.node, &[7, 8, 9]).map_err(|e| e.to_string())?;
     check(label(&g.group) == first, &label(&g.group))?;
     check(first.ends_with(", not yet computed: cells 7 to 9"), &first)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Marking the same cells again, in the order they were already given, touches nothing in the document. Unsorted input
+/// with duplicates is still accepted, and still ends in the same state.
+#[wasm_bindgen_test]
+fn repeating_the_same_marked_cells_changes_nothing_and_unsorted_input_still_works() -> Result<(), String> {
+    let g = grid("unreached-repeat")?;
+    g.scene.set_unreached_cells(g.node, &[2, 3, 7]).map_err(|e| e.to_string())?;
+    let seen = mutations_during(&g.group, || {
+        g.scene.set_unreached_cells(g.node, &[2, 3, 7]).map_err(|e| e.to_string())
+    })?;
+    check(seen == 0, &format!("a repeat should change nothing, saw {seen} mutations"))?;
+    let seen = mutations_during(&g.group, || {
+        g.scene.set_unreached_cells(g.node, &[7, 2, 3, 3]).map_err(|e| e.to_string())
+    })?;
+    check(
+        seen == 0,
+        &format!("the same set, unsorted with a duplicate, should change nothing, saw {seen}"),
+    )?;
+    check(
+        is_faint(&g, 2) && is_faint(&g, 7) && is_full(&g, 0),
+        "the cells should still be marked",
+    )
 }

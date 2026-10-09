@@ -2,7 +2,7 @@
 //! The cells keep their size, shape, selection and colours. Each cell's own text and accessible name follow the new
 //! values, and so does a single value's own accessible name and tooltip.
 
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
@@ -279,24 +279,6 @@ fn a_plain_text_node_is_replaced_with_a_string_of_the_same_length() -> Result<()
         ),
         "a string of another length was accepted",
     )
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How many DOM mutations (text, attribute or child changes) `group` sees while `act` runs.
-fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(), String>) -> Result<u32, String> {
-    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
-        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
-    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
-    let options = web_sys::MutationObserverInit::new();
-    options.set_child_list(true);
-    options.set_subtree(true);
-    options.set_attributes(true);
-    options.set_character_data(true);
-    observer.observe_with_options(group, &options).map_err(|e| format!("{e:?}"))?;
-    act()?;
-    let seen = observer.take_records().length();
-    observer.disconnect();
-    Ok(seen)
 }
 
 /// Replacing a node's values with the ones it already holds leaves the document alone.

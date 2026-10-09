@@ -228,3 +228,23 @@ fn secondary_selection_works_on_a_single_value_node() -> Result<(), String> {
     scene.set_secondary_selection(node, &[]).map_err(|e| e.to_string())?;
     check(attr(&rect, "fill") == DEFAULT_FILL, &attr(&rect, "fill"))
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Giving the same derived cells again, in the order they were already given, touches nothing in the document. Unsorted
+/// input with duplicates is still accepted, and still ends in the same state.
+#[wasm_bindgen_test]
+fn repeating_the_same_secondary_cells_changes_nothing_and_unsorted_input_still_works() -> Result<(), String> {
+    let (scene, node, _, group) = grid("secondary-repeat")?;
+    scene.set_secondary_selection(node, &[1, 4, 6]).map_err(|e| e.to_string())?;
+    let seen = crate::common::mutations_during(&group, || {
+        scene.set_secondary_selection(node, &[1, 4, 6]).map_err(|e| e.to_string())
+    })?;
+    crate::common::check(seen == 0, &format!("a repeat should change nothing, saw {seen} mutations"))?;
+    let seen = crate::common::mutations_during(&group, || {
+        scene.set_secondary_selection(node, &[6, 1, 4, 4]).map_err(|e| e.to_string())
+    })?;
+    crate::common::check(
+        seen == 0,
+        &format!("the same set, unsorted with a duplicate, saw {seen} mutations"),
+    )
+}

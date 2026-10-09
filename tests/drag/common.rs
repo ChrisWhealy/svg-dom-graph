@@ -304,3 +304,21 @@ pub fn check_close(got: f64, expected: f64) -> Result<(), String> {
         Ok(())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many DOM mutations (text, attribute or child changes) `group` sees while `act` runs.
+pub fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(), String>) -> Result<u32, String> {
+    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
+        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
+    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
+    let options = web_sys::MutationObserverInit::new();
+    options.set_child_list(true);
+    options.set_subtree(true);
+    options.set_attributes(true);
+    options.set_character_data(true);
+    observer.observe_with_options(group, &options).map_err(|e| format!("{e:?}"))?;
+    act()?;
+    let seen = observer.take_records().length();
+    observer.disconnect();
+    Ok(seen)
+}

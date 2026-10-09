@@ -173,6 +173,12 @@ impl Scene {
             Highlight::resolve(content, selection).unwrap_or_default()
         };
 
+        // The same indices again, already sorted and without duplicates, change nothing. That is checked before the
+        // copy below, which still normalises anything else.
+        if inner.node_handle(id).ok_or(Error::UnknownNode(id))?.secondary == cells {
+            return Ok(());
+        }
+
         let mut new_secondary = cells.to_vec();
         new_secondary.sort_unstable();
         new_secondary.dedup();
