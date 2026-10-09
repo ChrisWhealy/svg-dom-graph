@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Initial demo implementation of SHA2-256 algorithm (`b990cb2`)
 - Add `Scene::set_unreached_cells(node, &[usize])` to show unreached data and apply to SHA2/3 demos (`09775b8`)
 - Add `LabellingStyle` enum to label array elements (`4dd4507`)
-- Extend test coverage to show accessibility data remains after value node mutation (``) 
+- Extend test coverage to show accessibility data remains after value node mutation (`52a007e`) 
 
 ## Changed
 
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move SHA2 demo into its own window (`1cc22cc`)
 - Adapt SHA2 demo layout and add `SAME_SIDE_CLEARANCE` in elbow routing geometry (`06ca031`)
 - Tidy up SHA2 demo layout (`dd4fd73`)
+- Refactor `src/model/content/unit_tests` by test category (``)
 
 ## Fixed
 
