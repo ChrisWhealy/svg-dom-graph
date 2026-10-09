@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adapt SHA2 demo to use extended `set_data_values` (`781114a`)
 - Move SHA2 demo into its own window (`1cc22cc`)
 - Adapt SHA2 demo layout and add `SAME_SIDE_CLEARANCE` in elbow routing geometry (`06ca031`)
-- Tidy up SHA2 demo layout (``)
+- Tidy up SHA2 demo layout (`dd4fd73`)
 
 ## Fixed
 
