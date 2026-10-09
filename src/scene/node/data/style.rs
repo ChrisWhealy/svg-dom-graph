@@ -61,6 +61,48 @@ impl CellStyle {
         }
         Ok(())
     }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Moves `cell`, and its `text`, from the `old` style to this one, writing only the attributes the two styles
+    /// disagree on. A cell going from default to focused changes its fill and stroke width and nothing else, so two
+    /// writes are made, not six.
+    ///
+    /// This relies on `cell` currently showing `old`. That holds for a cell this module has styled throughout, whose
+    /// attributes that were never written read as the default style does: no dash, and full opacity.
+    ///
+    /// `full` writes every attribute, as [`apply`](Self::apply) does, whatever `old` says. It is for a single-value
+    /// node, whose one cell is also the node's own outer box that `Scene::set_focus` styles too. A full write puts
+    /// back the canonical attributes after any such interference.
+    pub(super) fn apply_from(
+        self,
+        old: Self,
+        full: bool,
+        cell: &svg_dom::SvgNode,
+        text: Option<&svg_dom::SvgNode>,
+    ) -> Result<(), svg_dom::Error> {
+        if full {
+            return self.apply(cell, text);
+        }
+        if self.fill != old.fill {
+            cell.set_fill(self.fill)?;
+        }
+        if self.stroke_width != old.stroke_width {
+            cell.set_attr("stroke-width", self.stroke_width)?;
+        }
+        if self.stroke != old.stroke {
+            cell.set_attr("stroke", self.stroke)?;
+        }
+        if self.dash != old.dash {
+            cell.set_attr("stroke-dasharray", self.dash)?;
+        }
+        if self.opacity != old.opacity {
+            cell.set_attr("opacity", self.opacity)?;
+            if let Some(text) = text {
+                text.set_attr("opacity", self.opacity)?;
+            }
+        }
+        Ok(())
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

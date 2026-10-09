@@ -36,6 +36,8 @@
 //!   outline, independence from `set_selection`, precedence against focus and band, `aria-label`, and validation.
 //! - [`unreached_cells`] — `Scene::set_unreached_cells`: cells with no value yet drawn faint, box and digits, with the
 //!   other marks winning over it, its own `aria-label` clause, and validation.
+//! - [`cell_style_writes`] — restyling a cell writes only the attributes that changed: two per cell when the focus moves, one
+//!   opacity pair when a cell is marked unreached, and a full restyle for a single value.
 //! - [`element_labels`] — `DataNodeContent::with_labels`/`with_labelling_style`: off by default, numeric and alphabetic
 //!   labels, the wider cells, the accessible name, and no labels on a single value.
 //! - [`set_data_values`] — `Scene::set_data_values`: replacing a data node's own values in place, single value or grid,
@@ -55,6 +57,7 @@
 mod common;
 
 mod bounds;
+mod cell_style_writes;
 mod collision_resolution;
 mod connectors;
 mod data_node;

@@ -81,6 +81,7 @@ impl Scene {
             return Ok(());
         }
         let cell_stroke_width = handles.cell_stroke_width;
+        let single_value = handles.cell_grid.is_some_and(|grid| grid.single_value);
 
         // Only a cell that enters or leaves the set can change style, so walk the two sorted lists' own symmetric
         // difference rather than every cell in the grid.
@@ -93,8 +94,9 @@ impl Scene {
                 let style_with =
                     |unreached: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
                 let new_style = style_with(now_in_set);
-                if new_style != style_with(!now_in_set) {
-                    new_style.apply(cell, handles.cell_texts.get(i))?;
+                let old_style = style_with(!now_in_set);
+                if new_style != old_style {
+                    new_style.apply_from(old_style, single_value, cell, handles.cell_texts.get(i))?;
                 }
                 Ok(())
             },

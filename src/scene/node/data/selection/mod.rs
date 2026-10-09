@@ -85,6 +85,7 @@ impl Scene {
         let cell_stroke_width = handles.cell_stroke_width;
         let (cell_rects, cell_texts) = (&handles.cell_rects, &handles.cell_texts);
         let (secondary, unreached) = (&handles.secondary, &handles.unreached);
+        let single_value = handles.cell_grid.is_some_and(|grid| grid.single_value);
 
         let mut result = Ok(());
         for_each_changed_cell(&old, &new, cell_rects.len(), |i| {
@@ -95,10 +96,11 @@ impl Scene {
             let is_secondary = secondary.binary_search(&i).is_ok();
             let is_unreached = unreached.binary_search(&i).is_ok();
             let new_style = new.style(i, is_secondary, is_unreached, base_colour, cell_stroke_width);
-            if new_style == old.style(i, is_secondary, is_unreached, base_colour, cell_stroke_width) {
+            let old_style = old.style(i, is_secondary, is_unreached, base_colour, cell_stroke_width);
+            if new_style == old_style {
                 return;
             }
-            result = new_style.apply(cell, cell_texts.get(i));
+            result = new_style.apply_from(old_style, single_value, cell, cell_texts.get(i));
         });
         result?;
 
@@ -188,6 +190,7 @@ impl Scene {
             return Ok(());
         }
         let cell_stroke_width = handles.cell_stroke_width;
+        let single_value = handles.cell_grid.is_some_and(|grid| grid.single_value);
 
         // Only a cell that enters or leaves the set can change style, so walk the two sorted lists' own symmetric
         // difference rather than every cell in the grid.
@@ -200,8 +203,9 @@ impl Scene {
                 let style_with =
                     |secondary: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
                 let new_style = style_with(now_in_set);
-                if new_style != style_with(!now_in_set) {
-                    new_style.apply(cell, handles.cell_texts.get(i))?;
+                let old_style = style_with(!now_in_set);
+                if new_style != old_style {
+                    new_style.apply_from(old_style, single_value, cell, handles.cell_texts.get(i))?;
                 }
                 Ok(())
             },
