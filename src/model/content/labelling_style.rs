@@ -23,8 +23,14 @@ impl LabellingStyle {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the label of element `index` into `out`, replacing what it held.
     pub(crate) fn label_into(self, index: usize, out: &mut String) {
-        use std::fmt::Write;
         out.clear();
+        self.append_label(index, out);
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Appends the label of element `index` to `out`, keeping what it held. Allocates only if `out` must grow.
+    pub(crate) fn append_label(self, index: usize, out: &mut String) {
+        use std::fmt::Write;
         match self {
             Self::Numeric => {
                 let _ = write!(out, "{index}");

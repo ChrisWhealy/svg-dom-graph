@@ -489,6 +489,7 @@ fn draw_cells(
 
     let mut text_scratch = String::new();
     let mut label_scratch = String::new();
+    let mut name_scratch = String::new();
     let mut error: Option<Error> = None;
     content.for_each_cell_string(&mut text_scratch, |i, cell_text| {
         if error.is_some() {
@@ -531,7 +532,8 @@ fn draw_cells(
                     style.label_into(i, &mut label_scratch);
                     draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
                 }
-                text.set_attr("aria-label", &cell_name(content.labelling(), i, layout.cols, cell_text))?;
+                cell_name_into(content.labelling(), i, layout.cols, cell_text, &mut name_scratch);
+                text.set_attr("aria-label", &name_scratch)?;
                 group.append(&text)?;
                 guard.release();
 
@@ -554,19 +556,19 @@ fn draw_cells(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible name of grid cell `i`, in a grid of `cols` columns, showing `text`: its row and column, and its
-/// element label first if `labelling` is on, as in "element a, row 0, column 0: 6A 09 E6 67". Drawing a cell and
-/// rewriting its value both build the name here, so the two cannot disagree.
-pub(super) fn cell_name(labelling: Option<LabellingStyle>, i: usize, cols: usize, text: &str) -> String {
-    let (row, col) = (i / cols, i % cols);
-    match labelling {
-        Some(style) => {
-            let mut label = String::new();
-            style.label_into(i, &mut label);
-            format!("element {label}, row {row}, column {col}: {text}")
-        },
-        None => format!("row {row}, column {col}: {text}"),
+/// Writes the accessible name of grid cell `i`, in a grid of `cols` columns, showing `text`, into `out`, replacing what
+/// it held. It names the cell's row and column, and its element label first if `labelling` is on, as in "element a, row
+/// 0, column 0: 6A 09 E6 67". Drawing a cell and rewriting its value both build the name here, so the two cannot
+/// disagree. A caller reuses one `out` for every cell, so a name allocates only if it outgrows the buffer.
+pub(super) fn cell_name_into(labelling: Option<LabellingStyle>, i: usize, cols: usize, text: &str, out: &mut String) {
+    use std::fmt::Write;
+    out.clear();
+    if let Some(style) = labelling {
+        out.push_str("element ");
+        style.append_label(i, out);
+        out.push_str(", ");
     }
+    let _ = write!(out, "row {}, column {}: {text}", i / cols, i % cols);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

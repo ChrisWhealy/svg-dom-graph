@@ -1,6 +1,6 @@
 //! Reading and replacing a data node's cells: `Scene::cell_rect` and `Scene::set_data_values`.
 
-use super::draw::cell_name;
+use super::draw::cell_name_into;
 use crate::{
     error::Error,
     model::node::{NodeContent, NodeId},
@@ -99,6 +99,7 @@ impl Scene {
         // Only a cell whose value changed is called back, and only it is rewritten. The first DOM failure is kept, and
         // later cells are left alone.
         let mut scratch = String::new();
+        let mut name_scratch = String::new();
         let mut failure: Option<svg_dom::Error> = None;
         let mut new_text: Option<String> = None;
         let accepted = content.replace_values(values, &mut scratch, |i, text| {
@@ -111,8 +112,11 @@ impl Scene {
             // text has no such name: the node's own accessible name quotes the value instead.
             if single_value {
                 new_text = Some(text.to_owned());
-            } else if let Err(e) = cell.set_attr("aria-label", &cell_name(labelling, i, cols, text)) {
-                failure = Some(e);
+            } else {
+                cell_name_into(labelling, i, cols, text, &mut name_scratch);
+                if let Err(e) = cell.set_attr("aria-label", &name_scratch) {
+                    failure = Some(e);
+                }
             }
         });
         if !accepted {

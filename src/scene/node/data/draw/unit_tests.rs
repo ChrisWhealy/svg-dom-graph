@@ -71,3 +71,44 @@ fn extra_left_padding_widens_the_grid_by_exactly_that_much() -> Result<(), Strin
     check_eq(wide.content_size().width, grid(0).content_size().width + 4.0)?;
     check_eq(wide.cell_origin(Point::origin(), 0).x, OUTER_PADDING + 4.0)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   cell_name_into
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fn name(labelling: Option<crate::scene::LabellingStyle>, i: usize, cols: usize, text: &str) -> String {
+    let mut out = String::from("stale");
+    cell_name_into(labelling, i, cols, text, &mut out);
+    out
+}
+
+#[test]
+fn an_unlabelled_cell_is_named_by_its_row_and_column() -> Result<(), String> {
+    check_eq(name(None, 5, 4, "6"), "row 1, column 1: 6".to_owned())
+}
+
+#[test]
+fn an_alphabetic_cell_name_starts_with_its_letter() -> Result<(), String> {
+    check_eq(
+        name(Some(crate::scene::LabellingStyle::Alphabetic), 0, 1, "FF"),
+        "element a, row 0, column 0: FF".to_owned(),
+    )
+}
+
+#[test]
+fn a_numeric_cell_name_starts_with_its_index() -> Result<(), String> {
+    check_eq(
+        name(Some(crate::scene::LabellingStyle::Numeric), 7, 4, "x"),
+        "element 7, row 1, column 3: x".to_owned(),
+    )
+}
+
+#[test]
+fn a_cell_name_reuses_the_buffer_it_is_given() -> Result<(), String> {
+    let mut out = String::with_capacity(64);
+    let before = out.as_ptr();
+    for i in 0..20 {
+        cell_name_into(Some(crate::scene::LabellingStyle::Alphabetic), i, 4, "00 11 22 33", &mut out);
+    }
+    check_eq(out.as_ptr(), before)
+}
