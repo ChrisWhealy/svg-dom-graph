@@ -13,7 +13,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions,
-        NodeValues, Scene, SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
+        NodeValues, Scene, SceneTitleOptions, Selection, Side, ToolbarOptions,
     },
 };
 
@@ -106,7 +106,8 @@ pub(crate) fn build_scene(
     // The input array: `A`'s own 25 values, its own `[5; [5; u64]]` node, at the top of the canvas. `TOP_Y` (50, not
     // `0`) leaves the scene title's own band clear above it, rather than overlapping it. That band is `margin` 12 plus
     // its own ≈28-unit-tall text, an estimate as usual with no browser here to measure it.
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     let array = scene
         .add_named_data_node(
             Point::new(20.0, TOP_Y),
@@ -252,6 +253,11 @@ pub(crate) fn build_scene(
     }
 
     scene.add_edge(result, output).map_err(stringify)?;
+    // Unstarted, the operands are placeholders. Row `n` and the ones before it are written to the output.
+    for operand in [op0, op1, op2, op3, op4] {
+        crate::util::mark_unreached(&scene, operand, &crate::util::all_if(n.is_none(), 1))?;
+    }
+    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 5))?;
     let right = [array, op4, result, output]
         .into_iter()
         .map(|id| scene.node_rect(id).map(|r| r.origin.x + r.size.width))
@@ -260,7 +266,7 @@ pub(crate) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, true)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     Ok((scene, output))
@@ -282,7 +288,7 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             step(&state, transition.to);
         })
         .map_err(stringify)?;

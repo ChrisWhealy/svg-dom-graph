@@ -83,8 +83,8 @@ impl Scene {
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         let cell_stroke_width = handles.cell_stroke_width;
-        let cell_rects = &handles.cell_rects;
-        let secondary = &handles.secondary;
+        let (cell_rects, cell_texts) = (&handles.cell_rects, &handles.cell_texts);
+        let (secondary, unreached) = (&handles.secondary, &handles.unreached);
 
         let mut result = Ok(());
         for_each_changed_cell(&old, &new, cell_rects.len(), |i| {
@@ -93,11 +93,12 @@ impl Scene {
             }
             let Some(cell) = cell_rects.get(i) else { return };
             let is_secondary = secondary.binary_search(&i).is_ok();
-            let new_style = new.style(i, is_secondary, base_colour, cell_stroke_width);
-            if new_style == old.style(i, is_secondary, base_colour, cell_stroke_width) {
+            let is_unreached = unreached.binary_search(&i).is_ok();
+            let new_style = new.style(i, is_secondary, is_unreached, base_colour, cell_stroke_width);
+            if new_style == old.style(i, is_secondary, is_unreached, base_colour, cell_stroke_width) {
                 return;
             }
-            result = new_style.apply(cell);
+            result = new_style.apply(cell, cell_texts.get(i));
         });
         result?;
 
@@ -192,10 +193,11 @@ impl Scene {
         let mut result = Ok(());
         for i in changed {
             let Some(cell) = handles.cell_rects.get(i) else { continue };
-            let style_with = |secondary: bool| highlight.style(i, secondary, base_colour, cell_stroke_width);
+            let unreached = handles.unreached.binary_search(&i).is_ok();
+            let style_with = |secondary: bool| highlight.style(i, secondary, unreached, base_colour, cell_stroke_width);
             let new_style = style_with(new_secondary.binary_search(&i).is_ok());
             if new_style != style_with(old.binary_search(&i).is_ok()) {
-                result = new_style.apply(cell);
+                result = new_style.apply(cell, handles.cell_texts.get(i));
                 if result.is_err() {
                     break;
                 }
@@ -213,24 +215,25 @@ impl Scene {
 /// A node's own primary selection, resolved against its content's real grid shape: the row or column band, and the one
 /// focused cell within it, if any. The two together decide every cell's own highlight.
 #[derive(Default)]
-struct Highlight {
-    band: ResolvedBand,
-    focus: Option<usize>,
+pub(super) struct Highlight {
+    pub(super) band: ResolvedBand,
+    pub(super) focus: Option<usize>,
 }
 
 impl Highlight {
     /// Resolves `selection` against `content`. `None` if it names a row, column or cell the content does not have.
-    fn resolve(content: &DataNodeContent, selection: Selection) -> Option<Self> {
+    pub(super) fn resolve(content: &DataNodeContent, selection: Selection) -> Option<Self> {
         let (band, focus) = content.resolve_selection(selection)?;
         Some(Self { band, focus })
     }
 
-    /// Cell `i`'s style under this highlight, given whether it is also a secondary cell. See [`cell_style`] for the
-    /// precedence.
-    fn style(
+    /// Cell `i`'s style under this highlight, given whether it is also a secondary cell, or not yet computed. See
+    /// [`cell_style`] for the precedence.
+    pub(super) fn style(
         &self,
         i: usize,
         secondary: bool,
+        unreached: bool,
         base_colour: &'static str,
         base_stroke_width: &'static str,
     ) -> CellStyle {
@@ -238,6 +241,7 @@ impl Highlight {
             Some(i) == self.focus,
             self.band.contains(i),
             secondary,
+            unreached,
             base_colour,
             base_stroke_width,
         )

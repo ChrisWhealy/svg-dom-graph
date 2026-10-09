@@ -148,3 +148,62 @@ fn no_word_is_being_built_outside_the_expansion() -> Result<(), String> {
     check(shown(&trace, 2).expansion.is_none(), "the copy step builds no word")?;
     check(shown(&trace, 51).expansion.is_none(), "a round builds no word")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   What has not been reached yet
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn at_the_start_nothing_but_the_message_has_been_reached() -> Result<(), String> {
+    let shown = shown(&the_trace()?, 0);
+    check(shown.block_unreached, "the block")?;
+    check_eq(shown.schedule_unreached.len(), SCHEDULE_WORDS)?;
+    check(
+        shown.terms_unreached && shown.digest_unreached && shown.hash_unreached,
+        "the rest",
+    )
+}
+
+#[test]
+fn the_block_is_reached_at_its_own_step_and_stays_reached() -> Result<(), String> {
+    let trace = the_trace()?;
+    check(shown(&trace, 0).block_unreached, "unreached before its step")?;
+    check(!shown(&trace, 1).block_unreached, "reached at its step")?;
+    check(!shown(&trace, 100).block_unreached, "and after it")
+}
+
+#[test]
+fn the_block_words_that_are_zero_are_reached_while_the_unbuilt_schedule_words_are_not() -> Result<(), String> {
+    // After the copy step the block's own padding words are real zeros, and words 16 onward are placeholders. The two
+    // look the same on screen, which is the whole point of marking the second set.
+    let shown = shown(&the_trace()?, 2);
+    check_eq(shown.schedule_unreached, (BLOCK_WORDS..SCHEDULE_WORDS).collect::<Vec<_>>())?;
+    check_eq(shown.schedule[11], 0)
+}
+
+#[test]
+fn building_a_word_reaches_it() -> Result<(), String> {
+    let shown = shown(&the_trace()?, 3);
+    check_eq(shown.schedule_unreached.first().copied(), Some(17))?;
+    check(!shown.terms_unreached, "the terms of the sum are in use")
+}
+
+#[test]
+fn the_schedule_is_complete_from_the_first_round() -> Result<(), String> {
+    let shown = shown(&the_trace()?, 51);
+    check(shown.schedule_unreached.is_empty(), "every word is built")?;
+    check(!shown.terms_unreached, "a round is running")?;
+    check(shown.digest_unreached && shown.hash_unreached, "the digest is not reached yet")
+}
+
+#[test]
+fn the_digest_and_the_hash_are_reached_in_their_own_steps() -> Result<(), String> {
+    let trace = the_trace()?;
+    let digest_step = shown(&trace, STEPS - 2);
+    check(
+        !digest_step.digest_unreached && digest_step.hash_unreached,
+        "digest reached, hash not",
+    )?;
+    let hash_step = shown(&trace, STEPS - 1);
+    check(!hash_step.digest_unreached && !hash_step.hash_unreached, "both reached")
+}

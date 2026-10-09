@@ -662,3 +662,48 @@ pub(crate) fn clear_error(banner_id: &str) {
         added.remove();
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `y` of a scene's first row when its stepping toolbar is at the top: below the scene's own title and the toolbar. See
+/// [`step_toolbar_options`].
+pub(crate) const CONTENT_TOP: f64 = 100.0;
+
+/// How far a scene's stepping toolbar sits from its top edge: below the scene's own title.
+const STEP_TOOLBAR_TOP_MARGIN: f64 = 52.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The options for a stepping toolbar at the top of its scene, below the scene's own title. A scene with one starts its
+/// first row at [`CONTENT_TOP`], and fits its `<svg>` with `fit_nested_size`'s `step_toolbar` set to `false`, since no
+/// room is needed below the content for it.
+pub(crate) fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOptions {
+    let mut options = svg_dom_graph::scene::SelectionToolbarOptions::new(svg_dom_graph::scene::Side::North);
+    options.margin = STEP_TOOLBAR_TOP_MARGIN;
+    options
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Marks `cells` of `node` as not yet computed, or clears the mark if there are none. See
+/// `Scene::set_unreached_cells`.
+///
+/// # Errors
+///
+/// Returns `Err` if the library call fails.
+pub(crate) fn mark_unreached(
+    scene: &svg_dom_graph::scene::Scene,
+    node: svg_dom_graph::NodeId,
+    cells: &[usize],
+) -> Result<(), String> {
+    scene.set_unreached_cells(node, cells).map_err(stringify)
+}
+
+/// Every one of `count` cells if `unreached`, and none otherwise.
+pub(crate) fn all_if(unreached: bool, count: usize) -> Vec<usize> {
+    if unreached { (0..count).collect() } else { Vec::new() }
+}
+
+/// The cells of an array of `count` that a walk standing at `at` has not reached yet, when it fills the array one cell
+/// at a time in order and has written cells `0..=at`. All of them before the walk has started.
+pub(crate) fn after(at: Option<usize>, count: usize) -> Vec<usize> {
+    let first = at.map_or(0, |n| n + 1);
+    (first..count).collect()
+}

@@ -8,6 +8,7 @@
 //! - [`draw`] — measuring the cells, sizing the box to fit them, and rendering the grid.
 //! - [`style`] — each cell's fill, stroke and dash under a selection.
 //! - [`selection`] — `set_selection` and `set_secondary_selection`.
+//! - [`unreached`] — `set_unreached_cells`.
 //! - [`values`] — `cell_rect` and `set_data_values`.
 
 use crate::error::Error;
@@ -16,6 +17,7 @@ mod construct;
 mod draw;
 mod selection;
 mod style;
+mod unreached;
 mod values;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

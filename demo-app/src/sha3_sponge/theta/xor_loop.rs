@@ -13,7 +13,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene,
-        SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
+        SceneTitleOptions, Selection, Side, ToolbarOptions,
     },
 };
 
@@ -133,7 +133,8 @@ pub(super) fn build_scene(
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     // The gap every row transition in this diagram leaves. See `theta_d::build_scene`'s own `PREV_NEXT_Y` doc comment
     // for why a gap this size, not the tighter one an earlier version of that diagram used.
     const V_GAP: f64 = 58.0;
@@ -249,6 +250,11 @@ pub(super) fn build_scene(
         )
         .map_err(stringify)?;
     scene.add_edge(xor_node, output).map_err(stringify)?;
+    // Unstarted, the two working values are placeholders. Cells up to `n` are written to the output, in row-major order.
+    for node in [d_cell, a_cell] {
+        crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
+    }
+    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 25))?;
     if n.is_some() {
         scene
             .set_selection(output, Selection::Row { row, col: Some(col) })
@@ -263,7 +269,7 @@ pub(super) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, true)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, output))
 }
@@ -283,7 +289,7 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<XorLoopState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             step(&state, transition.to);
         })
         .map_err(stringify)?;

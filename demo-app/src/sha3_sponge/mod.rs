@@ -27,7 +27,7 @@ mod pi;
 mod rho;
 pub(crate) mod theta;
 
-use crate::util::{add_backdrop_clone, ensure_svg, required_element, stringify};
+use crate::util::{add_backdrop_clone, all_if, ensure_svg, mark_unreached, required_element, stringify};
 use keccak_f::sha3_256_run;
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
@@ -35,7 +35,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions, NodeValues, Scene,
-        SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
+        SceneTitleOptions, Selection, Side, ToolbarOptions,
     },
 };
 use wasm_bindgen::{JsCast, prelude::*};
@@ -80,14 +80,14 @@ struct StageNodes {
     output_hash: NodeId,
 }
 
-/// Focuses whichever of `nodes` stage `to` puts in focus, via
+/// Focuses whichever of `nodes` stage `to` puts in focus, and marks every one not yet reached, via
 /// [`Scene::set_focus`](svg_dom_graph::scene::Scene::set_focus), and un-focuses every other node this walk ever touches
 /// first. `None` — unstarted, or walked/restarted all the way back — focuses nothing.
 ///
 /// Recomputing the full set from `to` alone, rather than tracking "what was focused last" separately, matches
 /// `crate::selection::display_outputs`'s own rule. "Previous" un-focuses a later stage exactly as readily as "Next"
 /// focuses one, with nothing left over from before to forget to clear.
-fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
+fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) -> Result<(), String> {
     let StageNodes {
         message,
         rate_in,
@@ -99,22 +99,35 @@ fn apply_stage(scene: &Scene, nodes: StageNodes, to: usize) {
         output_hash,
     } = nodes;
     for node in [message, rate_in, input_block, xor, keccak, capacity_out, rate_out, output_hash] {
-        let _ = scene.set_focus(node, false);
+        scene.set_focus(node, false).map_err(stringify)?;
     }
-    let focus = |ids: &[NodeId]| {
+    let focus = |ids: &[NodeId]| -> Result<(), String> {
         for &id in ids {
-            let _ = scene.set_focus(id, true);
+            scene.set_focus(id, true).map_err(stringify)?;
         }
+        Ok(())
     };
     match to {
-        0 => focus(&[message]),
-        1 => focus(&[input_block, rate_in]),
-        2 => focus(&[xor]),
-        3 => focus(&[keccak]),
-        4 => focus(&[capacity_out, rate_out]),
-        5 => focus(&[output_hash]),
+        0 => focus(&[message])?,
+        1 => focus(&[input_block, rate_in])?,
+        2 => focus(&[xor])?,
+        3 => focus(&[keccak])?,
+        4 => focus(&[capacity_out, rate_out])?,
+        5 => focus(&[output_hash])?,
         _ => {},
     }
+    // Every node that shows zeros until its own stage is reached holds placeholders until then. "Capacity" and "Rate"
+    // at the top are not among them: the sponge really does start from an all-zero state.
+    for (node, from, lanes) in [
+        (input_block, 1, RATE_LANES),
+        (xor, 2, RATE_LANES),
+        (capacity_out, 4, CAPACITY_LANES),
+        (rate_out, 4, RATE_LANES),
+        (output_hash, 5, HASH_LANES),
+    ] {
+        mark_unreached(scene, node, &all_if(to < from, lanes))?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -257,7 +270,8 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         |values: Vec<u64>| hex_narrow(values).with_byte_order(svg_dom_graph::scene::ByteOrder::LittleEndian);
 
     const LEFT_X: f64 = 20.0;
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     const H_GAP: f64 = 40.0;
     const V_GAP: f64 = 50.0;
     let keccak_size = Size::new(160.0, 70.0);
@@ -506,9 +520,9 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         rate_out,
         output_hash,
     };
-    apply_stage(&scene, stage_nodes, stage);
+    apply_stage(&scene, stage_nodes, stage)?;
 
-    // Fit this diagram's own `<svg>` to its content, plus room for its stepping toolbar. The 17-lane "Rate", "XOR",
+    // Fit this diagram's own `<svg>` to its content. The stepping toolbar is at the top, inside `TOP_Y`. The 17-lane "Rate", "XOR",
     // "Input block" and the rest are taller than a fixed size can anticipate. Nested scenes then size themselves
     // against the stage this makes.
     let mut right = 0.0_f64;
@@ -518,7 +532,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         right = right.max(rect.origin.x + rect.size.width);
         bottom = bottom.max(rect.origin.y + rect.size.height);
     }
-    crate::util::fit_nested_size(&scene, "sha3-sponge-diagram", right, bottom, true)?;
+    crate::util::fit_nested_size(&scene, "sha3-sponge-diagram", right, bottom, false)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
@@ -566,7 +580,7 @@ fn rebuild(stage: usize) -> Result<(), String> {
     }
 
     scene
-        .show_selection_toolbar(step, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(step, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
             // a restart, lands on it again.
             report_step(rebuild(transition.to.unwrap_or(0)));

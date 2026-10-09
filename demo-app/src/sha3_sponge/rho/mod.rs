@@ -10,7 +10,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
-        SelectionToolbarOptions, Side, ToolbarOptions, UnaryOperator,
+        Side, ToolbarOptions, UnaryOperator,
     },
 };
 use wasm_bindgen::JsCast;
@@ -123,7 +123,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .map_err(stringify)?;
 
     const LEFT_X: f64 = 20.0;
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     const V_GAP: f64 = 58.0;
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
     let hex25 = |values: [u64; 25]| {
@@ -169,6 +170,9 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         )
         .map_err(stringify)?;
     centre_on(rotl_node, 0.5)?;
+    // Unstarted, the lane and its rotation are placeholders: nothing has been selected to rotate yet.
+    crate::util::mark_unreached(&scene, lane_node, &crate::util::all_if(n.is_none(), 1))?;
+    crate::util::mark_unreached(&scene, rotl_node, &crate::util::all_if(n.is_none(), 1))?;
 
     let table_node = scene
         .add_named_data_node(
@@ -210,6 +214,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     if let Some(n) = n {
         scene.set_secondary_selection(output, &[n]).map_err(stringify)?;
     }
+    // Lanes after `n` are not written yet.
+    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 25))?;
 
     let sides = |from, to| ConnectorOptions::default().with_from_side(Some(from)).with_to_side(Some(to));
     scene
@@ -233,7 +239,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, true)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     Ok((scene, input_node))
@@ -248,7 +254,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
 /// Returns `Err` if showing the toolbar or reapplying the selection fails.
 fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), String> {
     child
-        .show_selection_toolbar(driver, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(driver, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
         })
         .map_err(stringify)?;

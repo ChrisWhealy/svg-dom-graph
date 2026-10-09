@@ -71,10 +71,14 @@ pub(crate) struct BoxHandles {
     /// `Scene::set_selection` is the only reader — nothing else needs to reach an individual cell again once it is
     /// drawn.
     pub(crate) cell_rects: Vec<SvgNode>,
-    /// Every data-node cell's own `<text>`, flat, in the same order as [`cell_rects`](Self::cell_rects) — what
-    /// `Scene::set_data_values` rewrites. Empty for a plain label node and for an operator node, whose own result is
-    /// not replaceable.
+    /// Every cell's own `<text>`, flat, in the same order as [`cell_rects`](Self::cell_rects). `Scene::set_data_values`
+    /// rewrites them, and `Scene::set_unreached_cells` dims them along with their boxes. Empty for a plain label node.
+    /// An operator node has its one result text here too, though [`replaceable`](Self::replaceable) is `false` for it.
     pub(crate) cell_texts: Vec<SvgNode>,
+    /// Whether `Scene::set_data_values` may replace this node's values. `true` for a node drawn from a
+    /// `DataNodeContent`, `false` for a plain label node and for an operator node, whose result the caller works out
+    /// once, when it adds the node.
+    pub(crate) replaceable: bool,
     /// Every data-node cell's own box, flat, in the same order as [`cell_rects`](Self::cell_rects), in the node's own
     /// local coordinates. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. Empty for
     /// a plain label node and for an operator node.
@@ -102,6 +106,11 @@ pub(crate) struct BoxHandles {
     /// until it is first called, and for every node kind with no cells. Independent of [`selection`](Self::selection):
     /// `Scene::set_selection` never changes it, and it never changes `selection`.
     pub(crate) secondary: Vec<usize>,
+    /// The flat indices `Scene::set_unreached_cells` last marked as not yet computed, sorted and without duplicates —
+    /// empty until it is first called, and for every node kind with no cells. Independent of both
+    /// [`selection`](Self::selection) and [`secondary`](Self::secondary), and always overridden by either's own mark on
+    /// a cell.
+    pub(crate) unreached: Vec<usize>,
     /// This node's own live `aria-label` text, reused in place rather than rebuilt from scratch on every
     /// [`Scene::set_selection`](crate::scene::Scene::set_selection) call.
     ///
@@ -144,7 +153,8 @@ impl BoxHandles {
     /// `secondary` currently say — `Scene::set_selection` and `Scene::set_secondary_selection` both end here.
     ///
     /// The secondary cells read as `", also highlighted: cells 3, 4"`, appended after the primary selection's own
-    /// description. Colour and dash alone convey nothing to assistive technology.
+    /// description. Colour and dash alone convey nothing to assistive technology. Cells not yet computed read as `",
+    /// not yet computed: cells 16 to 63"`, after that, for the same reason. See [`unreached_clause`].
     pub(crate) fn refresh_label(&mut self) -> Result<(), svg_dom::Error> {
         use std::fmt::Write as _;
         self.aria_label.truncate(self.base_label_len);
@@ -157,6 +167,8 @@ impl BoxHandles {
                 self.secondary.iter().map(usize::to_string).collect::<Vec<_>>().join(", ")
             );
         }
+        self.aria_label
+            .push_str(&unreached_clause(&self.unreached, self.cell_rects.len()));
         self.group.set_attr("aria-label", &self.aria_label)?;
         // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
         // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
@@ -207,3 +219,38 @@ impl BoxHandles {
         }
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How `cells`, sorted and without duplicates, read in a node's accessible name when they are not yet computed, for a node
+/// with `total` cells.
+///
+/// Nothing when there are none. A node of a single cell reads as just `", not yet computed"`. Otherwise
+/// `", not yet computed: cells 16 to 63"`. A run of three or more consecutive cells is written as a range, so a
+/// schedule that is nearly all unreached does not read out dozens of numbers. Shorter runs are listed.
+pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
+    if cells.is_empty() {
+        return String::new();
+    }
+    if total == 1 {
+        return ", not yet computed".to_owned();
+    }
+    let mut parts: Vec<String> = Vec::new();
+    let mut start = 0;
+    while start < cells.len() {
+        let mut end = start;
+        while end + 1 < cells.len() && cells[end + 1] == cells[end] + 1 {
+            end += 1;
+        }
+        if end - start >= 2 {
+            parts.push(format!("{} to {}", cells[start], cells[end]));
+        } else {
+            parts.extend(cells[start..=end].iter().map(usize::to_string));
+        }
+        start = end + 1;
+    }
+    let noun = if cells.len() == 1 { "cell" } else { "cells" };
+    format!(", not yet computed: {noun} {}", parts.join(", "))
+}
+
+#[cfg(test)]
+mod unit_tests;

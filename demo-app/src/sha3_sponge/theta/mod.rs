@@ -30,7 +30,7 @@ use svg_dom_graph::{
     Error, NodeId,
     scene::{
         ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
-        SelectionToolbarOptions, Side, ToolbarOptions,
+        Side, ToolbarOptions,
     },
 };
 use wasm_bindgen::{JsCast, prelude::*};
@@ -189,7 +189,8 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     let fn_height = 70.0;
     let fn_size = Size::new(fn_width, fn_height);
 
-    let mut row_top = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    let mut row_top = crate::util::CONTENT_TOP;
 
     let a = parent
         .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())
@@ -302,7 +303,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     parent
         .show_selection_toolbar(
             step_driver,
-            SelectionToolbarOptions::default(),
+            crate::util::step_toolbar_options(),
             move |scene, driver, transition| {
                 // This walk is never "not started": a step back from the first function, or a restart, stays on it.
                 let position = transition.to.unwrap_or(0);
@@ -322,7 +323,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
         svg_id,
         (a_rect.origin.x + a_rect.size.width).max(theta_out_rect.origin.x + theta_out_rect.size.width),
         theta_out_rect.origin.y + theta_out_rect.size.height,
-        true,
+        false,
     )?;
 
     // Fitting `svg_id` just resized the stage whenever it is the stage's own base diagram (`panel-theta`), after each
@@ -362,7 +363,8 @@ pub(crate) fn output(a: [[u64; 5]; 5]) -> [[u64; 5]; 5] {
 /// Returns `Err` if `output` is not a 25-value `u64` node of `scene`.
 fn show_theta_output(scene: &Scene, output: NodeId, result: &[u64], position: usize) -> Result<(), String> {
     let values = if position >= 2 { result.to_vec() } else { vec![0; result.len()] };
-    scene.set_data_values(output, NodeValues::U64(values)).map_err(stringify)
+    scene.set_data_values(output, NodeValues::U64(values)).map_err(stringify)?;
+    crate::util::mark_unreached(scene, output, &crate::util::all_if(position < 2, result.len()))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

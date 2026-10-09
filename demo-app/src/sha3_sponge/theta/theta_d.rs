@@ -9,7 +9,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions,
-        NodeValues, Scene, SceneTitleOptions, Selection, SelectionToolbarOptions, Side, ToolbarOptions, UnaryOperator,
+        NodeValues, Scene, SceneTitleOptions, Selection, Side, ToolbarOptions, UnaryOperator,
     },
 };
 
@@ -96,7 +96,8 @@ pub(super) fn build_scene(
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
-    const INPUT_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const INPUT_Y: f64 = crate::util::CONTENT_TOP;
     const PREV_NEXT_Y: f64 = INPUT_Y + 150.0;
     const MID_Y: f64 = PREV_NEXT_Y + 130.0;
     const OUTPUT_Y: f64 = MID_Y + 130.0;
@@ -167,6 +168,11 @@ pub(super) fn build_scene(
         )
         .map_err(stringify)?;
     scene.add_edge(xor_node, output).map_err(stringify)?;
+    // Unstarted, `prev` and `next` are placeholders. Cell `n` and the ones before it are written to the output.
+    for node in [prev_node, next_node] {
+        crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
+    }
+    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 5))?;
     if let Some(n) = n {
         scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
     }
@@ -179,7 +185,7 @@ pub(super) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, true)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, output))
 }
@@ -197,7 +203,7 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             step(&state, transition.to);
         })
         .map_err(stringify)?;

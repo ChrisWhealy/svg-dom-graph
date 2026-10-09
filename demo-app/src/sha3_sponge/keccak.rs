@@ -17,7 +17,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, SceneTitleOptions, Selection,
-        SelectionStride, SelectionToolbarOptions, Side, ToolbarOptions,
+        SelectionStride, Side, ToolbarOptions,
     },
 };
 
@@ -165,7 +165,8 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let hex25 = |values: [u64; 25]| DataNodeContent::new(NodeValues::U64(values.to_vec()), DataFormat::Hexadecimal);
 
     const LEFT_X: f64 = 20.0;
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     const V_GAP: f64 = 50.0;
     const H_GAP: f64 = 80.0;
     let fn_size = Size::new(130.0, 60.0);
@@ -228,6 +229,12 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let a_out = scene
         .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(shown_output))
         .map_err(stringify)?;
+    // Until the walk reaches `Iota` the output holds placeholders. Round `r`'s own input and its function row are real.
+    crate::util::mark_unreached(
+        &scene,
+        a_out,
+        &crate::util::all_if(focused_function != FUNCTIONS_PER_ROUND - 1, 25),
+    )?;
 
     // "Round Constants" sits to the right of "A Bytes - round {round}" and the function row, not below them. Its
     // midpoint is level with `Iota`'s, which keeps the round's own overall height down.
@@ -301,22 +308,16 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     // smaller visual polish this feature does without.
 
     // Shrink this round's own `<svg>` to its content. The width is the rightmost of "Round Constants" and the function
-    // row. The height is the bottom of "A Bytes Output" plus clear space for the stepping toolbar [`attach_toolbar`]
-    // adds below it (laid out as in `selection::fit_canvas_to_toolbar`). Each gets the left margin, and the width also
-    // gets room for the East toolbar.
+    // row, and the height is the bottom of "A Bytes Output". Each gets the left margin, and the width also gets room for
+    // the East toolbar. The stepping toolbar [`attach_toolbar`] adds is at the top, inside `TOP_Y`.
     const TOOLBAR_ALLOWANCE: f64 = 60.0;
-    const STEP_TOOLBAR_GAP: f64 = 20.0;
-    let step_toolbar = SelectionToolbarOptions::default();
     let a_out_rect = scene.node_rect(a_out).map_err(stringify)?;
     let right = (rc_rect.origin.x + rc_rect.size.width).max(iota_rect.origin.x + iota_rect.size.width);
     let bottom = a_out_rect.origin.y + a_out_rect.size.height;
     crate::util::resize_svg(
         &document,
         svg_id,
-        Size::new(
-            right + LEFT_X + TOOLBAR_ALLOWANCE,
-            bottom + STEP_TOOLBAR_GAP + step_toolbar.margin + step_toolbar.button_height + LEFT_X,
-        ),
+        Size::new(right + LEFT_X + TOOLBAR_ALLOWANCE, bottom + LEFT_X),
     )?;
     // The title and toolbar were positioned against the `<svg>`'s old size; the scene cannot observe a resize.
     scene.refresh_layout().map_err(stringify)?;
@@ -344,7 +345,7 @@ fn attach_toolbar(
         .show_selection_toolbar(
             step_driver,
             // `Prev`/`Next` step one function; the stride buttons step a whole round of five.
-            SelectionToolbarOptions::default().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
+            crate::util::step_toolbar_options().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
             move |_scene, _node, transition| {
                 crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
             },

@@ -65,14 +65,15 @@ impl Scene {
     pub fn set_data_values(&self, id: NodeId, values: NodeValues) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
 
-        // Everything that can reject the call is checked before anything changes. A node drawn by `draw_content_box`
-        // has one `<text>` per value. An operator node's own result has none, and cannot be replaced.
-        let drawn = inner.node_handle(id).map(|handles| handles.cell_texts.len());
+        // Everything that can reject the call is checked before anything changes. Only a node drawn from a
+        // `DataNodeContent` can be replaced. An operator node's own result is worked out by the caller when the node is
+        // added.
+        let replaceable = inner.node_handle(id).is_some_and(|handles| handles.replaceable);
         let node = inner.graph.node_mut(id).ok_or(Error::UnknownNode(id))?;
         let NodeContent::Data(content) = &mut node.content else {
             return Err(Error::IncompatibleNodeValues(id));
         };
-        if drawn != Some(content.len()) {
+        if !replaceable {
             return Err(Error::IncompatibleNodeValues(id));
         }
 

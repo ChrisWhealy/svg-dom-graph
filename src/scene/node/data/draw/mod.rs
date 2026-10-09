@@ -144,10 +144,12 @@ pub(super) fn draw_content_box(
             outer_rect: frame.outer_el.unwrap_or(content_rect_el),
             cell_rects: cells.rects,
             cell_texts: cells.texts,
+            replaceable: true,
             cell_geometry: cells.geometry,
             cell_stroke_width: if content.is_single_value() { "1.5" } else { "1" },
             selection: Selection::None,
             secondary: Vec::new(),
+            unreached: Vec::new(),
             aria_label: node_label,
             base_label_len,
             // A named node is called by that name. An unnamed one, having none, is called by its own type instead. See

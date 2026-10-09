@@ -10,7 +10,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene,
-        SceneTitleOptions, SelectionToolbarOptions, Side, ToolbarOptions, UnaryOperator,
+        SceneTitleOptions, Side, ToolbarOptions, UnaryOperator,
     },
 };
 use wasm_bindgen::JsCast;
@@ -73,7 +73,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .map_err(stringify)?;
 
     const LEFT_X: f64 = 20.0;
-    const TOP_Y: f64 = 50.0;
+    // Below the scene's own title and its stepping toolbar, which is at the top.
+    const TOP_Y: f64 = crate::util::CONTENT_TOP;
     const V_GAP: f64 = 40.0;
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
     let hex25 = |values: [u64; 25]| {
@@ -185,6 +186,11 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
     if let Some(n) = n {
         scene.set_secondary_selection(output, &[n]).map_err(stringify)?;
     }
+    // Lanes after `n` are not written yet. Unstarted, the whole working out is over placeholders.
+    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 25))?;
+    for node in [w0_node, w1_node, w2_node, not_node, not_out, and_node, and_out, xor_node] {
+        crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
+    }
 
     let sides = |from, to| ConnectorOptions::default().with_from_side(Some(from)).with_to_side(Some(to));
     let down = || sides(Side::South, Side::North);
@@ -197,7 +203,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
 
     let output_rect = scene.node_rect(output).map_err(stringify)?;
     let right = (input_rect.origin.x + input_rect.size.width).max(output_rect.origin.x + output_rect.size.width);
-    crate::util::fit_nested_size(&scene, svg_id, right, bottom(output_rect), true)?;
+    crate::util::fit_nested_size(&scene, svg_id, right, bottom(output_rect), false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     Ok((scene, input_node))
@@ -248,7 +254,7 @@ pub(super) fn exit_if_focused() -> bool {
 /// Returns `Err` if showing the toolbar or reapplying the selection fails.
 fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<RefCell<ChiState>>) -> Result<(), String> {
     child
-        .show_selection_toolbar(driver, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(driver, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
         })
         .map_err(stringify)?;

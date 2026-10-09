@@ -255,7 +255,8 @@ fn apply(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rings or marks the cells the walk is on, per `shown`: the whole node for a step that names one, the schedule word
 /// being built or used, the four words it reads, and the round constant in use. Whatever `shown` does not name is
-/// cleared. The digest and the round constants exist only in the second half.
+/// cleared. The digest and the round constants exist only in the second half. Then the cells with no value yet are
+/// marked, by [`apply_unreached`].
 fn apply_marks(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String> {
     let (digest, hash) = match &nodes.half {
         Half::Compression(c) => (Some(c.digest), Some(c.hash)),
@@ -285,6 +286,33 @@ fn apply_marks(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), 
         .map_err(stringify)?;
     if let Half::Compression(c) = &nodes.half {
         scene.set_selection(c.k, cell(&c.k_content, shown.k_focus)).map_err(stringify)?;
+    }
+    apply_unreached(scene, nodes, shown)?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Marks the cells the walk has not reached yet, so a placeholder zero cannot be taken for a computed one. The message
+/// block's own padding words, and a schedule word that legitimately comes out as zero, are real values. They are not
+/// marked.
+fn apply_unreached(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String> {
+    let mark = |node: NodeId, cells: &[usize]| scene.set_unreached_cells(node, cells).map_err(stringify);
+    // `count` cells from the first, if `unreached`, and none otherwise.
+    let first =
+        |count: usize, unreached: bool| -> Vec<usize> { if unreached { (0..count).collect() } else { Vec::new() } };
+
+    mark(nodes.common.block, &first(algorithm::BLOCK_WORDS, shown.block_unreached))?;
+    mark(nodes.common.schedule, &shown.schedule_unreached)?;
+    match &nodes.half {
+        Half::Expansion(expansion) => {
+            for term in &expansion.terms {
+                mark(*term, &first(1, shown.terms_unreached))?;
+            }
+        },
+        Half::Compression(c) => {
+            mark(c.digest, &first(8, shown.digest_unreached))?;
+            mark(c.hash, &first(1, shown.hash_unreached))?;
+        },
     }
     Ok(())
 }

@@ -3,6 +3,16 @@ use super::*;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything the demo's nodes show at one position.
 pub(in crate::sha2_256) struct Shown {
+    /// Whether the message block has not been reached yet, so its zeros are placeholders and not words.
+    pub(in crate::sha2_256) block_unreached: bool,
+    /// The schedule words not built yet. They hold zero as a placeholder, which a built word can also legitimately be.
+    pub(in crate::sha2_256) schedule_unreached: Vec<usize>,
+    /// Whether the terms of the schedule sum have no word to be taken from yet, so they hold placeholders.
+    pub(in crate::sha2_256) terms_unreached: bool,
+    /// Whether the digest has not been reached yet.
+    pub(in crate::sha2_256) digest_unreached: bool,
+    /// Whether the hexadecimal hash value has not been reached yet.
+    pub(in crate::sha2_256) hash_unreached: bool,
     /// The four schedule words schedule word `n` is built from, the two sigma results, and their sum, while it is being
     /// built.
     pub(in crate::sha2_256) expansion: Option<Expansion>,
@@ -94,6 +104,11 @@ pub(in crate::sha2_256) fn shown(trace: &Trace, position: usize) -> Shown {
     };
 
     Shown {
+        block_unreached: !at_least(1),
+        schedule_unreached: (built..SCHEDULE_WORDS).collect(),
+        terms_unreached: round.is_none() && expansion.is_none(),
+        digest_unreached: !matches!(phase, Phase::Final | Phase::Hash),
+        hash_unreached: phase != Phase::Hash,
         expansion,
         round_index,
         ring: match phase {
