@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.28] - 2026-10-09
 
 ## Added
@@ -23,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Move SHA2 demo into its own window (`1cc22cc`)
 - Adapt SHA2 demo layout and add `SAME_SIDE_CLEARANCE` in elbow routing geometry (`06ca031`)
 - Tidy up SHA2 demo layout (`dd4fd73`)
-- Refactor `src/model/content/unit_tests` by test category (``)
+- Refactor `src/model/content/unit_tests` by test category (`f3dc85c`)
 
 ## Fixed
 
@@ -31,8 +33,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Fix stale doc comments (`84d947a`)
 - Prevent labelled cells losing their accessible names after mutation (`0f7c81d`)
 - Remove unnecessary DOM updates (`6940ad7`)
-
-# [Released]
 
 ## [0.2.27] - 2026-10-07
 
