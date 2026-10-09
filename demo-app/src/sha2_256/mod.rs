@@ -17,8 +17,8 @@
 //!
 //! All of it. [`algorithm::trace`] hashes [`walk::MESSAGE`] in plain Rust, and every value on screen is a piece of that
 //! one calculation: the padded block, the 64-word message schedule, the 64 rounds of compression, and the digest. The
-//! constants are declared as tables. `algorithm`'s own tests recompute them, and check the digests of several messages
-//! against the published values.
+//! SHA-256 constants are fixed tables. Their values are recomputed independently, from the primes, and verified by
+//! `algorithm`'s unit tests, which also check the digests of several messages against the published values.
 //!
 //! # What is not covered
 //!
@@ -543,8 +543,8 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moves the diagram to walk position `position`. Within a half this only writes values and marks. Crossing into the
-/// other half draws the diagram again for it. A failure is shown in the window's own error banner, and logged, since the
-/// toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
+/// other half draws the diagram again for it. A failure is shown in the window's own error banner, and logged, since
+/// the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
     match step_to(position) {
         Ok(()) => crate::util::clear_error(ERROR_ID),

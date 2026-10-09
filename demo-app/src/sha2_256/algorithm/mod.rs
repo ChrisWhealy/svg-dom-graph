@@ -1,8 +1,9 @@
 //! SHA-256 (FIPS 180-4) for one message block, in plain Rust, split into the same named pieces the demo draws.
 //!
 //! Every function here is a direct reading of the standard's own definitions, and every value the demo shows is one of
-//! these results. The two tables of constants, [`INITIAL_HASH`] and [`ROUND_CONSTANTS`], are fixed by the standard and
-//! declared as constants. The tests recompute them from the primes, with exact integer arithmetic, to check them.
+//! these results. The two tables of constants, [`INITIAL_HASH`] and [`ROUND_CONSTANTS`], are fixed tables, not computed
+//! at run time. Their values are recomputed independently from the primes, with exact integer arithmetic, and verified
+//! by the unit tests.
 //!
 //! # Scope
 //!

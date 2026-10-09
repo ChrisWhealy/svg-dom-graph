@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Handle step callback errors in SHA2/3 demos gracefully (``)
+- Handle step callback errors in SHA2/3 demos gracefully (`0e97769`)
+- Doc only: Fix stale doc comments (``)
 
 # [Released]
 
