@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>SHA2-256 — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- The SHA2-256 scene in a window of its own. The gallery's own panel keeps the description and opens this page
+     (see `build_sha2_256_demo`). `init_sha2_256_window` builds the scene here, then resizes this window to fit it. -->
+
+<body>
+    <section class="section active scene-window" id="sha2-256-window">
+        <div class="canvas" id="sha2-256-diagram-stage">
+        </div>
+        <p id="sha2-256-window-error" class="demo-error" hidden></p>
+    </section>
+
+    <script type="module">
+        import init, { init_sha2_256_window } from "./pkg/svg_dom_graph_demo.js"
+
+        try {
+            await init()
+            init_sha2_256_window()
+        } catch (err) {
+            const banner = document.getElementById('sha2-256-window-error')
+            banner.textContent = `This demo failed to build: ${err}`
+            banner.hidden = false
+        }
+    </script>
+</body>
+
+</html>

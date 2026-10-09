@@ -5,7 +5,7 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
-use wasm_bindgen::JsCast;
+use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::HtmlInputElement;
 
 thread_local! {
@@ -544,4 +544,75 @@ pub(crate) fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> 
     svg.set_attribute("viewBox", &format!("0 0 {width} {height}"))
         .map_err(|e| format!("could not set #{id}'s own viewBox: {e:?}"))?;
     frame_nested_scene(document, id)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes the button `#button_id` open `page` in a pop-up window named `name` when clicked.
+///
+/// A named window is reused. Pressing the button again focuses the one already open rather than opening a second. The
+/// pop-up is given a starting size. The page it opens is expected to resize its own window to fit its scene, with
+/// [`fit_window_to_stage`].
+///
+/// # Errors
+///
+/// Returns `Err` if `button_id` is missing, or if a listener could not be attached to it.
+pub(crate) fn wire_open_window(
+    document: &web_sys::Document,
+    button_id: &str,
+    page: &'static str,
+    name: &'static str,
+) -> Result<(), String> {
+    let button = required_element(document, button_id)?;
+    let open = Closure::<dyn FnMut()>::new(move || {
+        let Some(window) = web_sys::window() else { return };
+        // A blocked pop-up is the user's own choice, and there is nowhere to report it to. It is ignored.
+        if let Ok(Some(popup)) = window.open_with_url_and_target_and_features(page, name, "popup,width=1200,height=900")
+        {
+            let _ = popup.focus();
+        }
+    });
+    button
+        .add_event_listener_with_callback("click", open.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the open-window listener to #{button_id}: {e:?}"))?;
+    open.forget();
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Resizes this browser window so its viewport is exactly as large as the stage holding `#diagram_id`, plus the page's own
+/// padding around it. The window's own frame (title bar, borders) is measured as the difference between its outer and
+/// inner size, so it is not guessed.
+///
+/// Does nothing visible in a window the script cannot resize, such as an ordinary tab. The resize is best-effort.
+///
+/// # Errors
+///
+/// Returns `Err` if the diagram or its stage cannot be found.
+pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
+    let document = document()?;
+    let window = web_sys::window().ok_or("no window")?;
+    let stage = required_element(&document, diagram_id)?
+        .parent_element()
+        .ok_or_else(|| format!("#{diagram_id} has no stage"))?;
+
+    // The page's own padding is the same on every side, so the stage's offset from the top-left corner is also what is
+    // needed past its far edge.
+    let rect = stage.get_bounding_client_rect();
+    let (content_w, content_h) = (rect.right() + rect.left(), rect.bottom() + rect.top());
+
+    let pixels = |value: Result<JsValue, JsValue>| value.ok().and_then(|v| v.as_f64());
+    let (Some(outer_w), Some(outer_h), Some(inner_w), Some(inner_h)) = (
+        pixels(window.outer_width()),
+        pixels(window.outer_height()),
+        pixels(window.inner_width()),
+        pixels(window.inner_height()),
+    ) else {
+        return Ok(());
+    };
+    #[allow(clippy::cast_possible_truncation)]
+    let _ = window.resize_to(
+        (content_w + outer_w - inner_w).ceil() as i32,
+        (content_h + outer_h - inner_h).ceil() as i32,
+    );
+    Ok(())
 }

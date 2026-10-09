@@ -1,5 +1,6 @@
 //! `panel-sha2-256` / `#sha2-256-diagram`: SHA-256 of one short message, drawn as the standard describes it. See
-//! [`build_scene`]'s own doc comment for what the diagram shows.
+//! [`build_scene`]'s own doc comment for what the diagram shows. The scene is large, so it runs in a window of its own.
+//! The gallery's panel keeps the description and opens that window: see [`build_sha2_256_demo`].
 //!
 //! # Built once, then updated in place
 //!
@@ -387,16 +388,17 @@ fn build_scene() -> Result<(Scene, Nodes, NodeId), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA-256 demo once, at its first step with the message in focus, and wires its stepping toolbar.
+/// Builds the SHA-256 scene once, at its first step with the message in focus, wires its stepping toolbar, and resizes
+/// the window it runs in to fit the scene. Runs in `sha2-256-window.html`, not in the gallery.
 ///
 /// The toolbar's callback writes each new position into the diagram with [`apply`]. It never redraws anything. Walking
 /// back past the first position, or restarting, lands on that position again, since this walk is never "not started".
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#sha2-256-diagram-stage`, if the message does not fit one block, or if any
+/// Returns `Err` if the page is missing `#sha2-256-diagram-stage`, if the message does not fit one block, or if any
 /// library call fails.
-pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
+pub(crate) fn build_sha2_256_window() -> Result<(), String> {
     let trace: Rc<Trace> = Rc::new(algorithm::trace(MESSAGE).ok_or("the message does not fit one block")?);
     let (scene, nodes, step) = build_scene()?;
     let nodes = Rc::new(nodes);
@@ -426,5 +428,22 @@ pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
     scene.set_selection(step, Selection::Cell(0)).map_err(stringify)?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
-    Ok(())
+    crate::util::fit_window_to_stage(DIAGRAM_ID)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The SHA-256 scene is larger than most demos. So the gallery panel keeps only the description, plus a button that
+/// opens the scene in a window of its own: `sha2-256-window.html`, which runs [`build_sha2_256_window`] there. A named
+/// window is reused. Pressing the button again focuses the one already open.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#sha2-256-open`, or if a listener could not be attached to it.
+pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
+    crate::util::wire_open_window(&crate::util::document()?, "sha2-256-open", WINDOW_PAGE, WINDOW_NAME)
+}
+
+/// The page [`build_sha2_256_demo`]'s button opens.
+const WINDOW_PAGE: &str = "sha2-256-window.html";
+/// The window's own name, so a second click reuses it.
+const WINDOW_NAME: &str = "svg-dom-graph-sha2-256";

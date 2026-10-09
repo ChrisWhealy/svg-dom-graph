@@ -110,7 +110,7 @@ impl From<panels::AssembleError> for BuildError {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs every phase except the wasm rebuild: validates the catalogue, assembles `index.html` (substituting
-/// `{{PANELS}}`), and copies the static assets (`style.css` and `sha3-sponge-window.html`) — everything needed to stage a servable demo except `pkg/`.
+/// `{{PANELS}}`), and copies the static assets (`style.css` and the two pop-up pages) — everything needed to stage a servable demo except `pkg/`.
 ///
 /// Returns as soon as any phase fails, via `?`. A stale catalogue is caught before `index.html` is ever assembled. A
 /// broken assembly is caught before it is ever written into place.
@@ -149,7 +149,7 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
     panels::assemble(&source_demo_dir, &tmp_index)?;
 
     // The static assets are not generated. `index.html` references `style.css` by a plain relative path, and the SHA3
-    // Sponge panel's button opens `sha3-sponge-window.html` by one. So both need to sit alongside the assembled file in
+    // Sponge and SHA2-256 panels' buttons open `sha3-sponge-window.html` and `sha2-256-window.html` by one. So both need to sit alongside the assembled file in
     // the staging directory too.
     let mut staged = vec![(tmp_index, stage.stage_dir.join("index.html"))];
     for asset in STATIC_ASSETS {
@@ -166,7 +166,7 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
 }
 
 /// The files under `demo/` copied unchanged into the staging directory beside the assembled `index.html`.
-const STATIC_ASSETS: [&str; 2] = ["style.css", "sha3-sponge-window.html"];
+const STATIC_ASSETS: [&str; 3] = ["style.css", "sha3-sponge-window.html", "sha2-256-window.html"];
 
 /// Renames `tmp` into place over `dest` — a same-directory, atomic replace. See [`prepare_stage`]'s own doc comment for
 /// why every staged file goes through a temporary file rather than being written straight onto its live destination.
