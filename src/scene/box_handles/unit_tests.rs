@@ -100,3 +100,40 @@ fn a_decimal_value_that_is_a_prefix_of_another_matches_the_text_it_is_given() {
     // for finding where it starts.
     assert_eq!(super::find_value("u8 = 12", "u8", "1"), Some(5));
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   append_cell_list
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fn list(cells: &[usize]) -> String {
+    let mut out = String::new();
+    super::append_cell_list(cells, &mut out);
+    out
+}
+
+#[test]
+fn a_long_run_reads_as_a_range() {
+    assert_eq!(list(&[0, 1, 2, 3, 4, 5, 6, 7]), "0 to 7");
+}
+
+#[test]
+fn two_consecutive_cells_are_listed_and_three_make_a_range() {
+    assert_eq!(list(&[3, 4]), "3, 4");
+    assert_eq!(list(&[3, 4, 5]), "3 to 5");
+}
+
+#[test]
+fn ranges_and_single_cells_mix_in_order() {
+    assert_eq!(list(&[0, 2, 3, 4, 9, 11, 12]), "0, 2 to 4, 9, 11, 12");
+}
+
+#[test]
+fn no_cells_gives_an_empty_list() {
+    assert_eq!(list(&[]), "");
+}
+
+#[test]
+fn a_thousand_consecutive_cells_stay_short() {
+    let all: Vec<usize> = (0..1000).collect();
+    assert_eq!(list(&all), "0 to 999");
+}

@@ -248,3 +248,19 @@ fn repeating_the_same_secondary_cells_changes_nothing_and_unsorted_input_still_w
         &format!("the same set, unsorted with a duplicate, saw {seen} mutations"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A run of three or more secondary cells reads as a range in the accessible name, as the unreached cells do, and a
+/// shorter run is still listed.
+#[wasm_bindgen_test]
+fn consecutive_secondary_cells_read_as_a_range_in_the_accessible_name() -> Result<(), String> {
+    let (scene, node, _, group) = grid("secondary-range")?;
+    scene
+        .set_secondary_selection(node, &[0, 1, 2, 3, 4, 7, 8])
+        .map_err(|e| e.to_string())?;
+    let label = group.get_attribute("aria-label").unwrap_or_default();
+    crate::common::check(
+        label.ends_with(", also highlighted: cells 0 to 4, 7, 8"),
+        &format!("got {label:?}"),
+    )
+}

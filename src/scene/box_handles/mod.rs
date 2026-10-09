@@ -165,8 +165,9 @@ impl BoxHandles {
     /// `secondary` currently say — `Scene::set_selection` and `Scene::set_secondary_selection` both end here.
     ///
     /// The secondary cells read as `", also highlighted: cells 3, 4"`, appended after the primary selection's own
-    /// description. Colour and dash alone convey nothing to assistive technology. Cells not yet computed read as `",
-    /// not yet computed: cells 16 to 63"`, after that, for the same reason. See [`unreached_clause`].
+    /// description. A run of three or more consecutive cells is written as a range, such as `cells 0 to 7`. Colour and
+    /// dash alone convey nothing to assistive technology. Cells not yet computed read as `", not yet computed: cells 16
+    /// to 63"`, after that, for the same reason. See [`unreached_clause_into`].
     pub(crate) fn refresh_label(&mut self) -> Result<(), svg_dom::Error> {
         use std::fmt::Write as _;
         self.label_stale = true;
@@ -175,12 +176,7 @@ impl BoxHandles {
         if !self.secondary.is_empty() {
             let noun = if self.secondary.len() == 1 { "cell" } else { "cells" };
             let _ = write!(self.aria_label, ", also highlighted: {noun} ");
-            for (n, cell) in self.secondary.iter().enumerate() {
-                if n > 0 {
-                    self.aria_label.push_str(", ");
-                }
-                let _ = write!(self.aria_label, "{cell}");
-            }
+            append_cell_list(&self.secondary, &mut self.aria_label);
         }
         unreached_clause_into(&self.unreached, self.cell_rects.len(), &mut self.aria_label);
         self.group.set_attr("aria-label", &self.aria_label)?;
@@ -279,6 +275,16 @@ pub(crate) fn unreached_clause_into(cells: &[usize], total: usize, out: &mut Str
     }
     let noun = if cells.len() == 1 { "cell" } else { "cells" };
     let _ = write!(out, ", not yet computed: {noun} ");
+    append_cell_list(cells, out);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Appends `cells`, sorted and without duplicates, to `out` as a comma-separated list. A run of three or more
+/// consecutive cells is written as a range, so `0, 1, 2, 3, 4, 5, 6, 7` reads as `0 to 7`. Shorter runs are listed:
+/// `3, 4`. Both the secondary and the unreached description use it, so a large set stays short for assistive technology
+/// and in the repeated writes of the label. It is written straight into `out`.
+fn append_cell_list(cells: &[usize], out: &mut String) {
+    use std::fmt::Write as _;
     let mut first = true;
     let mut separate = |out: &mut String| {
         if !std::mem::take(&mut first) {
