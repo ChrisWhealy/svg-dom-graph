@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.29] - 2026-10-09
 
 ## Fixed
@@ -24,9 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid `measure_content_box()` from creating an empty SVG group during data node measurement (`46d2a5e`)
 - Remove unneccessary DOM writes during cell highlighting (`21aa00b`)
 - Delay DOM updates until after callbacks return successfully (`455d75e`)
-- Shorten long accessibility labels by quoting ranges, not individual values (``)
-
-# [Released]
+- Shorten long accessibility labels by quoting ranges, not individual values (`696bac0`)
 
 ## [0.2.28] - 2026-10-09
 
