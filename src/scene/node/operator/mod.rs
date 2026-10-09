@@ -219,19 +219,18 @@ fn measure_operator_layout(
     label: &str,
     result: &DataNodeContent,
 ) -> Result<Size, Error> {
-    // An empty group the guard can roll back to, so a failure part way leaves nothing behind in the document.
-    let group = svg.group()?;
-    let mut guard = RenderGuard::new(group.clone());
+    // Every temporary element is removed by hand as soon as it has been measured. The guard only removes one that a
+    // failure left behind, so no group is needed.
+    let mut guard = RenderGuard::for_measurement();
     let (label_el, label_width) = measure_label(svg, &mut guard, label)?;
     let (value_el, _, value_width) = measure_value(svg, &mut guard, scratch, result)?;
     let size = OperatorLayout::new(label_width, value_width).size;
-    // Both texts attach to the document as soon as they are created, so they are removed by hand. The group goes last.
+    // Both texts attach to the document as soon as they are created, so they are removed by hand.
     value_el.remove();
     guard.release();
     label_el.remove();
     guard.release();
     guard.disarm();
-    group.remove();
     Ok(size)
 }
 

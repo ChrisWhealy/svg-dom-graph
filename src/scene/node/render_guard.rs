@@ -31,7 +31,8 @@ const MAX_LOOSE: usize = 4;
 ///
 /// Mirrors `scene::drag`'s own `InstallGuard` rollback pattern, for DOM construction rather than listener installation.
 pub(super) struct RenderGuard {
-    group: SvgNode,
+    /// The node removed along with the loose elements, or `None` for a guard that only tracks loose ones.
+    group: Option<SvgNode>,
     loose: [Option<SvgNode>; MAX_LOOSE],
     len: usize,
     armed: bool,
@@ -39,6 +40,16 @@ pub(super) struct RenderGuard {
 
 impl RenderGuard {
     pub(super) fn new(group: SvgNode) -> Self {
+        Self::with_group(Some(group))
+    }
+
+    /// A guard with no group, for a measurement that creates a few temporary elements and removes them itself. If it
+    /// is dropped armed after a failure, it removes whatever is still tracked, and no empty `<g>` was ever needed.
+    pub(super) fn for_measurement() -> Self {
+        Self::with_group(None)
+    }
+
+    fn with_group(group: Option<SvgNode>) -> Self {
         Self {
             group,
             loose: [None, None, None, None],
@@ -90,7 +101,9 @@ impl RenderGuard {
 impl Drop for RenderGuard {
     fn drop(&mut self) {
         if self.armed {
-            self.group.remove();
+            if let Some(group) = &self.group {
+                group.remove();
+            }
             for node in self.loose[..self.len].iter().flatten() {
                 node.remove();
             }

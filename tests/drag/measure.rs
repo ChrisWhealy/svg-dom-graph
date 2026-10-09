@@ -444,14 +444,16 @@ fn measuring_a_large_grid_adds_only_a_few_elements_to_the_document() -> Result<(
         .sum();
     observer.disconnect();
     check(
-        added <= 10,
-        &format!("measuring 1000 values added {added} elements; a drawn grid would add over 2000"),
+        added <= 3,
+        &format!(
+            "measuring 1000 values added {added} elements; expected the cell text, the row label and the name only"
+        ),
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Measuring an operator box draws no boxes and no cells: only its two measuring texts are ever added to the document,
-/// and none stays. Drawing the same box adds its group, two rectangles and two texts.
+/// Measuring an operator box draws no boxes, no cells and no group: only its two measuring texts are ever added to the
+/// document, and none stays. Drawing the same box adds its group, two rectangles and two texts.
 #[wasm_bindgen_test]
 fn measuring_an_operator_box_adds_only_its_two_texts_and_leaves_nothing() -> Result<(), String> {
     let svg = make_svg("measure-operator-cost", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -480,8 +482,8 @@ fn measuring_an_operator_box_adds_only_its_two_texts_and_leaves_nothing() -> Res
         .sum();
     observer.disconnect();
     check(
-        added <= 3,
-        &format!("expected a group and two texts at most, {added} elements were added"),
+        added == 2,
+        &format!("expected exactly the label and the value texts, {added} elements were added"),
     )?;
     check(descendant_element_count(&root)? == before, "measuring left elements behind")
 }

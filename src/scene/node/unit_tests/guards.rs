@@ -185,3 +185,37 @@ fn disarming_a_construction_guard_leaves_the_node_and_every_tracked_edge_in_plac
         "the graph lost the edge despite a disarmed guard",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A measurement guard has no group. Dropped armed, it still removes every loose element it tracks.
+#[wasm_bindgen_test]
+fn a_measurement_guard_removes_loose_elements_without_a_group() -> Result<(), String> {
+    let svg = make_svg("render-guard-measurement");
+    let loose = svg.rect(Point::origin(), Size::new(10.0, 10.0)).unwrap();
+
+    let mut guard = RenderGuard::for_measurement();
+    guard.track(loose.clone());
+    drop(guard);
+
+    check(
+        loose.as_element().parent_node().is_none(),
+        "the loosely tracked element was still attached after a measurement guard dropped",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Disarmed, a measurement guard leaves what it tracked alone, like any other.
+#[wasm_bindgen_test]
+fn a_disarmed_measurement_guard_leaves_loose_elements_attached() -> Result<(), String> {
+    let svg = make_svg("render-guard-measurement-disarm");
+    let loose = svg.rect(Point::origin(), Size::new(10.0, 10.0)).unwrap();
+
+    let mut guard = RenderGuard::for_measurement();
+    guard.track(loose.clone());
+    guard.disarm();
+
+    check(
+        loose.as_element().parent_node().is_some(),
+        "a disarmed measurement guard should not remove what it tracked",
+    )
+}

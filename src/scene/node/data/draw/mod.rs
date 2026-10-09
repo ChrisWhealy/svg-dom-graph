@@ -343,9 +343,9 @@ pub(super) fn measure_content_box(svg: &SvgRoot, name: Option<&str>, content: &D
             "measure_content_box: content length must be > 0".into(),
         )));
     }
-    // An empty group the guard can roll back to, so a failure part way leaves nothing behind in the document.
-    let group = svg.group()?;
-    let mut guard = RenderGuard::new(group.clone());
+    // Every temporary element is removed by hand as soon as it has been measured. The guard only removes one that a
+    // failure left behind, so no group is needed.
+    let mut guard = RenderGuard::for_measurement();
     let content_size = GridLayoutMetrics::measure(svg, &mut guard, content)?.content_size();
     let size = match name {
         Some(name) => {
@@ -357,9 +357,7 @@ pub(super) fn measure_content_box(svg: &SvgRoot, name: Option<&str>, content: &D
         },
         None => content_size,
     };
-    // Dropping the guard armed would do this too. Done openly, since removing the group is the point.
     guard.disarm();
-    group.remove();
     Ok(size)
 }
 
