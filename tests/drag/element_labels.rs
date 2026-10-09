@@ -145,3 +145,30 @@ fn a_single_value_is_never_labelled() -> Result<(), String> {
     let (_, texts) = draw("labels-single", content)?;
     check(texts.len() == 1, "a single value draws only its own text")
 }
+
+#[wasm_bindgen_test]
+fn replacing_the_values_keeps_the_element_letters_in_the_accessible_names() -> Result<(), String> {
+    let svg = make_svg("labels-replace", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let content = DataNodeContent::new(NodeValues::U8(vec![0; 8]), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(1))
+        .with_labelling_style(LabellingStyle::Alphabetic);
+    let node = scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+    scene
+        .set_data_values(node, NodeValues::U8((1..=8).collect()))
+        .map_err(|e| e.to_string())?;
+    let group = nth_group("labels-replace", 0)?;
+    let all = group.query_selector_all("text[aria-label]").map_err(|e| format!("{e:?}"))?;
+    let names: Vec<String> = (0..all.length())
+        .filter_map(|i| all.get(i))
+        .filter_map(|n| n.dyn_into::<web_sys::Element>().ok())
+        .filter_map(|e| e.get_attribute("aria-label"))
+        .collect();
+    check(
+        names.first().map(String::as_str) == Some("element a, row 0, column 0: 1")
+            && names.last().map(String::as_str) == Some("element h, row 7, column 0: 8"),
+        &format!("got {names:?}"),
+    )
+}

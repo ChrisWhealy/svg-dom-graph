@@ -1,5 +1,6 @@
 //! Reading and replacing a data node's cells: `Scene::cell_rect` and `Scene::set_data_values`.
 
+use super::draw::cell_name;
 use crate::{
     error::Error,
     model::node::{NodeContent, NodeId},
@@ -90,6 +91,7 @@ impl Scene {
         // Formatted into owned strings first: `content` is borrowed from the graph, and the handles that hold the
         // cells' own `<text>` elements live elsewhere in the same `SceneInner`.
         let (_, cols) = content.shape();
+        let labelling = content.labelling();
         let type_name = content.type_name();
         let mut texts: Vec<String> = Vec::with_capacity(content.len());
         let mut scratch = String::new();
@@ -101,7 +103,7 @@ impl Scene {
             // A grid's cell is named by its row and column, matching what `draw_content_box` gave it. A single value's
             // text has no such name: the node's own accessible name quotes the value instead.
             if !single_value {
-                cell.set_attr("aria-label", &format!("row {}, column {}: {text}", i / cols, i % cols))?;
+                cell.set_attr("aria-label", &cell_name(labelling, i, cols, text))?;
             }
         }
         if single_value {

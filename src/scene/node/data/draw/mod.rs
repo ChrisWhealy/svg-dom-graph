@@ -7,7 +7,7 @@ use super::super::{
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
-    scene::{BoxHandles, DataNodeContent, Selection},
+    scene::{BoxHandles, DataNodeContent, LabellingStyle, Selection},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -469,25 +469,12 @@ fn draw_cells(
 
                 text.set_attr_display(scratch, "x", cell_origin.x + layout.cell.width / 2.0)?;
                 text.set_attr_display(scratch, "y", cell_origin.y + layout.cell.height / 2.0)?;
-                let (row, col) = (i / layout.cols, i % layout.cols);
-                match content.labelling() {
-                    Some(style) => {
-                        style.label_into(i, &mut label_scratch);
-                        if col == 0 {
-                            draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
-                        }
-                        text.set_attr_display(
-                            scratch,
-                            "aria-label",
-                            format_args!("element {label_scratch}, row {row}, column {col}: {cell_text}"),
-                        )?;
-                    },
-                    None => text.set_attr_display(
-                        scratch,
-                        "aria-label",
-                        format_args!("row {row}, column {col}: {cell_text}"),
-                    )?,
+                let col = i % layout.cols;
+                if let (Some(style), 0) = (content.labelling(), col) {
+                    style.label_into(i, &mut label_scratch);
+                    draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
                 }
+                text.set_attr("aria-label", &cell_name(content.labelling(), i, layout.cols, cell_text))?;
                 group.append(&text)?;
                 guard.release();
 
@@ -506,6 +493,22 @@ fn draw_cells(
     match error {
         Some(e) => Err(e),
         None => Ok(cells),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The accessible name of grid cell `i`, in a grid of `cols` columns, showing `text`: its row and column, and its
+/// element label first if `labelling` is on, as in "element a, row 0, column 0: 6A 09 E6 67". Drawing a cell and
+/// rewriting its value both build the name here, so the two cannot disagree.
+pub(super) fn cell_name(labelling: Option<LabellingStyle>, i: usize, cols: usize, text: &str) -> String {
+    let (row, col) = (i / cols, i % cols);
+    match labelling {
+        Some(style) => {
+            let mut label = String::new();
+            style.label_into(i, &mut label);
+            format!("element {label}, row {row}, column {col}: {text}")
+        },
+        None => format!("row {row}, column {col}: {text}"),
     }
 }
 
