@@ -172,3 +172,52 @@ fn replacing_the_values_keeps_the_element_letters_in_the_accessible_names() -> R
         &format!("got {names:?}"),
     )
 }
+
+/// Every cell's accessible name in the grid drawn into scene `id`, after replacing its 12 values with `1..=12`.
+fn names_after_replacing(id: &str, content: DataNodeContent) -> Result<(Vec<String>, Vec<String>), String> {
+    let svg = make_svg(id, Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+    scene
+        .set_data_values(node, NodeValues::U8((1..=12).collect()))
+        .map_err(|e| e.to_string())?;
+    let group = nth_group(id, 0)?;
+    let all = group.query_selector_all("text").map_err(|e| format!("{e:?}"))?;
+    let texts: Vec<web_sys::Element> = (0..all.length())
+        .filter_map(|i| all.get(i))
+        .filter_map(|n| n.dyn_into::<web_sys::Element>().ok())
+        .collect();
+    let names = texts.iter().filter_map(|t| t.get_attribute("aria-label")).collect();
+    Ok((names, visible(&texts)))
+}
+
+fn twelve() -> DataNodeContent {
+    DataNodeContent::new(NodeValues::U8(vec![0; 12]), DataFormat::Decimal).with_layout(GridLayout::Columns(4))
+}
+
+#[wasm_bindgen_test]
+fn replacing_the_values_of_a_numeric_grid_keeps_the_indices_in_the_names() -> Result<(), String> {
+    let (names, _) = names_after_replacing("labels-replace-numeric", twelve().with_labels())?;
+    check(
+        names.get(5).map(String::as_str) == Some("element 5, row 1, column 1: 6"),
+        &format!("got {:?}", names.get(5)),
+    )
+}
+
+#[wasm_bindgen_test]
+fn replacing_the_values_leaves_the_visible_row_labels_alone() -> Result<(), String> {
+    let (_, labels) =
+        names_after_replacing("labels-replace-rows", twelve().with_labelling_style(LabellingStyle::Alphabetic))?;
+    check(labels == ["a", "e", "i"], &format!("got {labels:?}"))
+}
+
+#[wasm_bindgen_test]
+fn replacing_the_values_of_an_unlabelled_grid_adds_no_element_names() -> Result<(), String> {
+    let (names, labels) = names_after_replacing("labels-replace-off", twelve())?;
+    check(
+        labels.is_empty() && names.first().map(String::as_str) == Some("row 0, column 0: 1"),
+        &format!("got {names:?}"),
+    )
+}

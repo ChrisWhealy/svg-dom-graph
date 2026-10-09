@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Initial demo implementation of SHA2-256 algorithm (`b990cb2`)
 - Add `Scene::set_unreached_cells(node, &[usize])` to show unreached data and apply to SHA2/3 demos (`09775b8`)
 - Add `LabellingStyle` enum to label array elements (`4dd4507`)
+- Extend test coverage to show accessibility data remains after value node mutation (``) 
 
 ## Changed
 
@@ -28,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Handle step callback errors in SHA2/3 demos gracefully (`0e97769`)
 - Doc only: Fix stale doc comments (`84d947a`)
 - Prevent labelled cells losing their accessible names after mutation (`0f7c81d`)
-- Remove unnecessary DOM updates (``)
+- Remove unnecessary DOM updates (`6940ad7`)
 
 # [Released]
 
