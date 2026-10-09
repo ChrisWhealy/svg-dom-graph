@@ -19,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove temporary collection allocation from `BoxHandles::refresh_label()` (`1b1e52f`)
 - Remove redundant storage of cell geometry (`09a0aa2`)
 - Prevent secondary and unreached selection changes from creating intermediate vectors (`ae9497e`)
-- Prevent `DataNodeContent::replace_values()` from commiting DOM changes until its callback returns successfully (``)
+- Prevent `DataNodeContent::replace_values()` from commiting DOM changes until its callback returns successfully (`3b88bd0`)
 - Avoid building temporary node during operator node measurement (`b42874e`)
 - Avoid temporary `String` allocation during value replacement (`94b7277`)
 - Avoid copying and sorting identical secondary selections (`b7b414c`)
