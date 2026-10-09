@@ -69,3 +69,20 @@ fn a_single_value_has_nothing_to_label() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).with_labels();
     check_eq(content.labelling(), None)
 }
+
+#[test]
+fn alphabetic_labels_never_overflow_at_the_largest_index() -> Result<(), String> {
+    let label = LabellingStyle::Alphabetic.label(usize::MAX);
+    check_eq(label.is_empty() || !label.chars().all(|c| c.is_ascii_lowercase()), false)
+}
+
+#[test]
+fn alphabetic_label_into_reuses_the_buffer_it_is_given() -> Result<(), String> {
+    let mut out = String::with_capacity(16);
+    let before = out.as_ptr();
+    for index in [0, 25, 26, 701, 702, 100_000] {
+        LabellingStyle::Alphabetic.label_into(index, &mut out);
+    }
+    check_eq(out.as_ptr(), before)?;
+    check_eq(out.capacity(), 16)
+}

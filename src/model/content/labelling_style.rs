@@ -29,17 +29,7 @@ impl LabellingStyle {
             Self::Numeric => {
                 let _ = write!(out, "{index}");
             },
-            Self::Alphabetic => {
-                // Fills the digits least significant first. One more than the index makes it a number counted from 1.
-                let mut rest = index + 1;
-                while rest > 0 {
-                    rest -= 1;
-                    out.push(char::from(b'a' + (rest % 26) as u8));
-                    rest /= 26;
-                }
-                let reversed: String = out.chars().rev().collect();
-                *out = reversed;
-            },
+            Self::Alphabetic => write_alphabetic(index, out),
         }
     }
 
@@ -51,4 +41,16 @@ impl LabellingStyle {
         self.label_into(index, &mut out);
         out
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Appends the spreadsheet-style letters for `index` to `out`, most significant first: `a` to `z`, then `aa`, `ab`, and
+/// so on. The leading letters are written before the last one, so nothing is built backwards and then reversed, and
+/// `out` allocates only if it must grow. The recursion is at most 14 calls deep for a 64-bit `usize`. Counting from `0`
+/// with `- 1` on the leading part avoids `index + 1`, which could overflow.
+fn write_alphabetic(index: usize, out: &mut String) {
+    if index >= 26 {
+        write_alphabetic(index / 26 - 1, out);
+    }
+    out.push(char::from(b'a' + (index % 26) as u8));
 }
