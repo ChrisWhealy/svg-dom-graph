@@ -81,7 +81,12 @@ fn type_name_matches_each_widths_own_rust_type() -> Result<(), String> {
 fn replace(content: &mut DataNodeContent, values: NodeValues) -> (bool, Vec<(usize, String)>) {
     let mut changed = Vec::new();
     let mut scratch = String::new();
-    let accepted = content.replace_values(values, &mut scratch, |i, text| changed.push((i, text.to_owned())));
+    let accepted = content
+        .try_replace_values(values, &mut scratch, |i, text| -> Result<(), ()> {
+            changed.push((i, text.to_owned()));
+            Ok(())
+        })
+        .unwrap_or(false);
     (accepted, changed)
 }
 
@@ -127,4 +132,29 @@ fn replaced_plain_text_is_reported_whole_or_not_at_all() -> Result<(), String> {
     check_eq(same, Vec::new())?;
     let (_, different) = replace(&mut content, NodeValues::U8(b"abd".to_vec()));
     check_eq(different, vec![(0, "abd".to_owned())])
+}
+
+#[test]
+fn a_failed_update_keeps_the_old_values_so_a_retry_sees_every_cell_again() -> Result<(), String> {
+    let mut content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal);
+    let mut scratch = String::new();
+    let mut written = Vec::new();
+    let failed = content.try_replace_values(NodeValues::U8(vec![9, 2, 8, 7]), &mut scratch, |i, text| {
+        if i == 2 {
+            return Err("write failed");
+        }
+        written.push(i);
+        let _ = text;
+        Ok(())
+    });
+    check_eq(failed, Err("write failed"))?;
+    check_eq(written, vec![0])?;
+    // The model still holds the old values, so none of the three changes is lost.
+    check_eq(
+        cells(&content),
+        vec!["1".to_owned(), "2".to_owned(), "3".to_owned(), "4".to_owned()],
+    )?;
+    let (accepted, changed) = replace(&mut content, NodeValues::U8(vec![9, 2, 8, 7]));
+    check_eq(accepted, true)?;
+    check_eq(changed.iter().map(|(i, _)| *i).collect::<Vec<_>>(), vec![0, 2, 3])
 }

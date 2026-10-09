@@ -115,38 +115,43 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Replaces this content's own values with `values`, keeping its format, layout and byte order. It then calls
-    /// `f(index, formatted)` for each cell whose value changed, in order, and for no other. A cell that holds the same
+    /// Replaces this content's own values with `values`, keeping its format, layout and byte order. `update(index,
+    /// formatted)` is called for each cell whose value changed, in order, and for no other. A cell that holds the same
     /// value as before is not even formatted, and nothing is called at all if no value changed.
     ///
-    /// Returns `false`, changing nothing and calling nothing, unless `values` is the same integer width and holds the
+    /// The new values are committed only after every `update` has succeeded. If one returns an error, that error is
+    /// returned and this content still holds its old values. A caller that retries with the same `values` therefore sees
+    /// every cell that was not yet confirmed as changed again, including those it had already written.
+    ///
+    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same integer width and holds the
     /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
     /// content also needs printable ASCII, and counts as one cell, whole.
-    pub(crate) fn replace_values(
+    pub(crate) fn try_replace_values<E>(
         &mut self,
         values: NodeValues,
         scratch: &mut String,
-        f: impl FnMut(usize, &str),
-    ) -> bool {
-        let mut f = f;
+        mut update: impl FnMut(usize, &str) -> Result<(), E>,
+    ) -> Result<bool, E> {
         if std::mem::discriminant(&self.values) != std::mem::discriminant(&values) || self.values.len() != values.len()
         {
-            return false;
+            return Ok(false);
         }
         if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {
-            return false;
+            return Ok(false);
         }
-        let old = std::mem::replace(&mut self.values, values);
         if self.is_plain_text() {
-            if self.values != old && self.len() == 1 {
-                self.plain_text_into(scratch);
-                f(0, scratch);
+            if values != self.values && self.len() == 1 {
+                scratch.clear();
+                if let NodeValues::U8(v) = &values {
+                    scratch.extend(v.iter().map(|&b| char::from(b)));
+                }
+                update(0, scratch)?;
             }
         } else {
-            self.values
-                .for_each_changed_cell_string(&old, self.format, self.byte_order, scratch, f);
+            values.try_for_each_changed_cell_string(&self.values, self.format, self.byte_order, scratch, update)?;
         }
-        true
+        self.values = values;
+        Ok(true)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

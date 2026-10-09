@@ -192,6 +192,14 @@ impl BoxHandles {
             let start = position + type_name.len() + " = ".len();
             self.aria_label.replace_range(start..start + old.len(), new);
             self.base_label_len = self.base_label_len - old.len() + new.len();
+            let written = self.refresh_label();
+            if written.is_err() {
+                // Back to the old value, so the text here still says what the model's old values say. A retry then
+                // finds `old` again and replaces it.
+                self.aria_label.replace_range(start..start + new.len(), old);
+                self.base_label_len = self.base_label_len - new.len() + old.len();
+            }
+            return written;
         }
         self.refresh_label()
     }

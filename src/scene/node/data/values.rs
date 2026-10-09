@@ -67,7 +67,8 @@ impl Scene {
     /// has a different integer width or a different number of values. Checked before changing anything.
     ///
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
-    /// already rewritten.
+    /// already rewritten. The node's own values stay as they were then, so calling this again with the same `values`
+    /// rewrites every cell that differs from them, including those already written, and repairs the node.
     pub fn set_data_values(&self, id: NodeId, values: NodeValues) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
 
@@ -97,37 +98,26 @@ impl Scene {
         let labelling = content.labelling();
         let type_name = content.type_name();
 
-        // Only a cell whose value changed is called back, and only it is rewritten. The first DOM failure is kept, and
-        // later cells are left alone.
+        // Only a cell whose value changed is called back, and only it is rewritten. The model commits the new values
+        // only once every cell has been written. A failure part way therefore leaves the old values in the model, so
+        // retrying with the same values rewrites every cell again, those already written included.
         let mut scratch = String::new();
         let mut name_scratch = String::new();
-        let mut failure: Option<svg_dom::Error> = None;
-        let mut new_text: Option<String> = None;
-        let accepted = content.replace_values(values, &mut scratch, |i, text| {
-            if failure.is_some() {
-                return;
-            }
-            let Some(cell) = handles.cell_texts.get(i) else { return };
+        let accepted = content.try_replace_values(values, &mut scratch, |i, text| -> Result<(), svg_dom::Error> {
+            let Some(cell) = handles.cell_texts.get(i) else { return Ok(()) };
             cell.set_text(text);
-            // A grid's cell is named by its row and column, matching what `draw_content_box` gave it. A single value's
-            // text has no such name: the node's own accessible name quotes the value instead.
             if single_value {
-                new_text = Some(text.to_owned());
+                // A single value's text has no name of its own: the node's own accessible name quotes the value
+                // instead, and is part of the same write.
+                handles.replace_label_value(type_name, &old_text, text)
             } else {
+                // A grid's cell is named by its row and column, matching what `draw_content_box` gave it.
                 cell_name_into(labelling, i, cols, text, &mut name_scratch);
-                if let Err(e) = cell.set_attr("aria-label", &name_scratch) {
-                    failure = Some(e);
-                }
+                cell.set_attr("aria-label", &name_scratch)
             }
-        });
+        })?;
         if !accepted {
             return Err(Error::IncompatibleNodeValues(id));
-        }
-        if let Some(e) = failure {
-            return Err(e.into());
-        }
-        if let Some(new_text) = new_text {
-            handles.replace_label_value(type_name, &old_text, &new_text)?;
         }
         Ok(())
     }
