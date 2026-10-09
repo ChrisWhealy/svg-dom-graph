@@ -29,23 +29,6 @@ fn a_grid_adds_the_gaps_between_cells_and_the_padding_all_round() -> Result<(), 
 }
 
 #[test]
-fn a_column_group_adds_one_wider_gap_between_groups_only() -> Result<(), String> {
-    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (1, 4), 2, false);
-    // Four columns in groups of two have one boundary between them, never one after the last group.
-    check_eq(layout.group_gaps(4), 1)?;
-    check_eq(layout.group_gaps(2), 0)?;
-    check_eq(grid(0).group_gaps(3), 0)
-}
-
-#[test]
-fn a_cells_origin_follows_its_row_and_column() -> Result<(), String> {
-    let origin = Point::new(5.0, 7.0);
-    check_eq(grid(0).cell_origin(origin, 0), Point::new(15.0, 17.0))?;
-    // Index 4 is row 1, column 1: one cell and one gap right, one cell and one gap down.
-    check_eq(grid(0).cell_origin(origin, 4), Point::new(15.0 + 26.0, 17.0 + 16.0))
-}
-
-#[test]
 fn a_grids_name_gives_its_type_shape_and_value_count() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Hexadecimal);
     check_eq(
@@ -69,7 +52,20 @@ fn a_single_values_name_gives_its_type_and_text() -> Result<(), String> {
 fn extra_left_padding_widens_the_grid_by_exactly_that_much() -> Result<(), String> {
     let wide = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING + 4.0, (2, 3), 0, false);
     check_eq(wide.content_size().width, grid(0).content_size().width + 4.0)?;
-    check_eq(wide.cell_origin(Point::origin(), 0).x, OUTER_PADDING + 4.0)
+    check_eq(
+        wide.grid(Point::origin(), 6).cell_rect(0).map(|r| r.origin.x),
+        Some(OUTER_PADDING + 4.0),
+    )
+}
+
+#[test]
+fn the_layouts_grid_places_a_cell_after_the_padding_and_gaps_the_size_counts() -> Result<(), String> {
+    let layout = grid(0);
+    let cells = layout.grid(Point::origin(), 6);
+    // The last cell's far edge plus the padding is exactly the content box.
+    let last = cells.cell_rect(5).ok_or("no last cell")?;
+    check_eq(last.origin.x + last.size.width + OUTER_PADDING, layout.content_size().width)?;
+    check_eq(last.origin.y + last.size.height + OUTER_PADDING, layout.content_size().height)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

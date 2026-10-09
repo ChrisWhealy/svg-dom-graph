@@ -24,7 +24,7 @@ pub use crate::model::content::{
     ArithmeticOperator, BinaryOperator, ByteOrder, DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues,
     Selection, UnaryOperator,
 };
-pub(crate) use box_handles::BoxHandles;
+pub(crate) use box_handles::{BoxHandles, CellGrid, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};

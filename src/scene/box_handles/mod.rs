@@ -1,10 +1,13 @@
+mod cell_grid;
+
 use super::SceneInner;
 use crate::{
     model::{content::Selection, edge::EdgeId, node::NodeId},
     scene::node::EdgeAnchors,
 };
+pub(crate) use cell_grid::{CellGrid, group_gaps};
 use std::{cell::RefCell, rc::Rc};
-use svg_dom::{SvgNode, root::utils::Rect};
+use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
@@ -79,10 +82,10 @@ pub(crate) struct BoxHandles {
     /// `DataNodeContent`, `false` for a plain label node and for an operator node, whose result the caller works out
     /// once, when it adds the node.
     pub(crate) replaceable: bool,
-    /// Every data-node cell's own box, flat, in the same order as [`cell_rects`](Self::cell_rects), in the node's own
-    /// local coordinates. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. Empty for
+    /// Where every data-node cell sits, in the node's own local coordinates, as one small [`CellGrid`] and not a
+    /// rectangle per cell. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. `None` for
     /// a plain label node and for an operator node.
-    pub(crate) cell_geometry: Vec<Rect>,
+    pub(crate) cell_grid: Option<CellGrid>,
     /// Every entry in `cell_rects`' own stroke width, as drawn. It is `"1.5"` for a single-value node's own outer box,
     /// and `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label
     /// node, which has no `cell_rects` to begin with.
@@ -274,5 +277,6 @@ pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
     out
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

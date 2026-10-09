@@ -26,7 +26,8 @@ impl Scene {
         let origin = inner.node_rect(id)?.origin;
         let local = inner
             .node_handle(id)
-            .and_then(|handles| handles.cell_geometry.get(index))
+            .and_then(|handles| handles.cell_grid.as_ref())
+            .and_then(|grid| grid.cell_rect(index))
             .ok_or(Error::InvalidSelection(id, Selection::Cell(index)))?;
         Ok(Rect {
             origin: Point::new(origin.x + local.origin.x, origin.y + local.origin.y),

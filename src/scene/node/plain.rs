@@ -107,7 +107,7 @@ pub(super) fn draw_box(
         cell_rects: Vec::new(),
         cell_texts: Vec::new(),
         replaceable: false,
-        cell_geometry: Vec::new(),
+        cell_grid: None,
         cell_stroke_width: "",
         selection: Selection::None,
         secondary: Vec::new(),

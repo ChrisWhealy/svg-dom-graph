@@ -7,7 +7,7 @@ use super::super::{
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
-    scene::{BoxHandles, DataNodeContent, LabellingStyle, Selection},
+    scene::{BoxHandles, CellGrid, DataNodeContent, LabellingStyle, Selection, group_gaps},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -148,7 +148,7 @@ pub(super) fn draw_content_box(
             cell_rects: cells.rects,
             cell_texts: cells.texts,
             replaceable: true,
-            cell_geometry: cells.geometry,
+            cell_grid: Some(cells.grid),
             cell_stroke_width: if content.is_single_value() { "1.5" } else { "1" },
             selection: Selection::None,
             secondary: Vec::new(),
@@ -253,12 +253,6 @@ impl GridLayoutMetrics {
         }
     }
 
-    /// How many wider gaps separate one group of columns from the next, among the first `cols` columns. None without
-    /// groups, and never one after the last group.
-    fn group_gaps(&self, cols: usize) -> usize {
-        cols.saturating_sub(1).checked_div(self.column_group).unwrap_or(0)
-    }
-
     /// The content box's own size. A single value is just its one cell. A grid is every cell, the gaps between them, and
     /// [`OUTER_PADDING`] all round.
     #[allow(clippy::cast_precision_loss)]
@@ -269,24 +263,28 @@ impl GridLayoutMetrics {
         Size::new(
             self.cols as f64 * self.cell.width
                 + (self.cols as f64 - 1.0) * CELL_GAP
-                + self.group_gaps(self.cols) as f64 * GROUP_GAP
+                + group_gaps(self.column_group, self.cols) as f64 * GROUP_GAP
                 + self.left_pad
                 + OUTER_PADDING,
             self.rows as f64 * self.cell.height + (self.rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
         )
     }
 
-    /// Where cell `i` of a grid sits, given the content box's own origin. The cell's own flat, row-major index is `i`.
-    #[allow(clippy::cast_precision_loss)]
-    fn cell_origin(&self, content_origin: Point, i: usize) -> Point {
-        let (row, col) = (i / self.cols, i % self.cols);
-        Point::new(
-            content_origin.x
-                + self.left_pad
-                + col as f64 * (self.cell.width + CELL_GAP)
-                + self.group_gaps(col + 1) as f64 * GROUP_GAP,
-            content_origin.y + OUTER_PADDING + row as f64 * (self.cell.height + CELL_GAP),
-        )
+    /// Where every cell of this layout sits, for a node of `len` cells whose content box has origin `content_origin`.
+    /// Drawing and `Scene::cell_rect` both place cells through the [`CellGrid`] this returns.
+    fn grid(&self, content_origin: Point, len: usize) -> CellGrid {
+        CellGrid {
+            content_origin,
+            cell: self.cell,
+            left_pad: self.left_pad,
+            top_pad: OUTER_PADDING,
+            gap: CELL_GAP,
+            group_gap: GROUP_GAP,
+            cols: self.cols,
+            column_group: self.column_group,
+            len,
+            single_value: self.single_value,
+        }
     }
 }
 
@@ -444,8 +442,8 @@ struct DrawnCells {
     rects: Vec<SvgNode>,
     /// Every cell's own `<text>`.
     texts: Vec<SvgNode>,
-    /// Every cell's own box, local to the group.
-    geometry: Vec<Rect>,
+    /// Where every cell sits, local to the group.
+    grid: CellGrid,
     /// The one value's own formatted text, for a single value. Empty for a grid, whose own `aria-label` names a value
     /// count instead. See [`describe`].
     single_value_text: String,
@@ -456,7 +454,7 @@ struct DrawnCells {
 /// front. `text_scratch` is reused for every cell's own formatted text.
 ///
 /// A single value has no inner box, so its text sits centred in `content_rect_el` itself. Each value of a grid gets
-/// its own `<rect>`, positioned by [`GridLayoutMetrics::cell_origin`], and its text is given an accessible name that
+/// its own `<rect>`, positioned by [`CellGrid::cell_rect`], and its text is given an accessible name that
 /// carries its row and column. A bare digit string, read on its own, says nothing about which row/column it belongs to.
 /// That relationship exists only in the cell's own `x`/`y`, invisible to assistive technology.
 #[allow(clippy::too_many_arguments)]
@@ -472,19 +470,16 @@ fn draw_cells(
 ) -> Result<DrawnCells, Error> {
     let len = content.len();
     let single_value = layout.single_value;
+    let grid = layout.grid(content_origin, len);
     let type_colour = content.type_colour();
     let mut cells = DrawnCells {
         rects: Vec::with_capacity(if single_value { 1 } else { len }),
         texts: Vec::with_capacity(len),
-        geometry: Vec::with_capacity(len),
+        grid,
         single_value_text: String::new(),
     };
     if single_value {
         cells.rects.push(content_rect_el.clone());
-        cells.geometry.push(Rect {
-            origin: content_origin,
-            size: layout.cell,
-        });
     }
 
     let mut text_scratch = String::new();
@@ -515,7 +510,9 @@ fn draw_cells(
                 group.append(&text)?;
                 guard.release();
             } else {
-                let cell_origin = layout.cell_origin(content_origin, i);
+                let Some(cell_origin) = grid.cell_rect(i).map(|r| r.origin) else {
+                    return Ok(());
+                };
 
                 let cell_rect = svg.rect(cell_origin, layout.cell)?;
                 guard.track(cell_rect.clone());
@@ -538,10 +535,6 @@ fn draw_cells(
                 guard.release();
 
                 cells.rects.push(cell_rect);
-                cells.geometry.push(Rect {
-                    origin: cell_origin,
-                    size: layout.cell,
-                });
             }
             Ok(())
         })();

@@ -185,7 +185,7 @@ fn draw_operator_box(
             cell_rects: vec![value_cell_el],
             cell_texts: vec![value_el],
             replaceable: false,
-            cell_geometry: Vec::new(),
+            cell_grid: None,
             cell_stroke_width: "1",
             selection: Selection::None,
             secondary: Vec::new(),

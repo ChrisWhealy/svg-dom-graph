@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Remove per-cell `String` allocation during `set_data_values()` (`69306d8`)
 - Correct `LabellingStyle::Alphabetic` to use reusable `String` buffer (`cba7217`)
 - Remove unnecessary per-cell `String` allocation for accessibility labels (`467acda`)
-- Remove temporary collection allocation from `BoxHandles::refresh_label()` (``)
+- Remove temporary collection allocation from `BoxHandles::refresh_label()` (`1b1e52f`)
+- Remove redundant storage of cell geometry (``)
 
 # [Released]
 
