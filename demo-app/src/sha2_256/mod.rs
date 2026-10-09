@@ -1,12 +1,20 @@
 //! `panel-sha2-256` / `#sha2-256-diagram`: SHA-256 of one short message, drawn as the standard describes it. See
 //! [`build_scene`]'s own doc comment for what the diagram shows.
 //!
+//! # Built once, then updated in place
+//!
+//! The diagram is drawn once. Every step after that only writes new values and marks into the nodes already there, via
+//! [`apply`]. Which values and marks a step shows comes from [`walk::shown`], a pure function of the position alone, so
+//! stepping backwards is the same write as stepping forwards, with nothing to diff or undo. Because the `Scene` and its
+//! toolbar are never replaced, keyboard focus stays on the button that was pressed, and zoom and pan are kept without
+//! any carrying over.
+//!
 //! # What is real
 //!
 //! All of it. [`algorithm::trace`] hashes [`walk::MESSAGE`] in plain Rust, and every value on screen is a piece of that
 //! one calculation: the padded block, the 64-word message schedule, the 64 rounds of compression, and the digest. The
-//! constants are computed, not pasted in. `algorithm`'s own tests check them, and the digests of several messages,
-//! against the published values.
+//! constants are declared as tables. `algorithm`'s own tests recompute them, and check the digests of several
+//! messages against the published values.
 //!
 //! # What is not covered
 //!
@@ -16,8 +24,8 @@ mod algorithm;
 mod walk;
 
 use crate::util::{ensure_svg_in, fit_nested_size, stringify};
-use algorithm::{INITIAL_HASH, ROUND_CONSTANTS, Trace};
-use std::cell::RefCell;
+use algorithm::{BLOCK_WORDS, INITIAL_HASH, ROUND_CONSTANTS, SCHEDULE_WORDS, Trace};
+use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
@@ -32,8 +40,9 @@ use walk::{MESSAGE, Ring, STEPS, shown};
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 thread_local! {
-    // Keeps the current `Scene` alive for the page's lifetime. Every listener the toolbars install holds only a `Weak`
-    // reference back to it, so without a strong handle kept here it would drop the moment [`rebuild`] returns.
+    // Keeps the `Scene` alive for the page's lifetime. Every listener the toolbars install holds only a `Weak`
+    // reference back to it, so without a strong handle kept here it would drop the moment [`build_sha2_256_demo`]
+    // returns.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
@@ -82,9 +91,85 @@ fn word(scene: &Scene, x: f64, y: f64, name: &str, value: u32) -> Result<(NodeId
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The SHA2-specific node the walk writes to after the diagram is drawn, with the content of the two tables it
+/// addresses by cell.
+struct Nodes {
+    message: NodeId,
+    block: NodeId,
+    schedule: NodeId,
+    schedule_content: DataNodeContent,
+    k: NodeId,
+    k_content: DataNodeContent,
+    working: NodeId,
+    digest: NodeId,
+    /// The seven terms the round reads, in the order [`TERMS`] names them.
+    terms: [NodeId; 7],
+    temp1: NodeId,
+    temp2: NodeId,
+    next: NodeId,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The seven terms of a round, in drawing order. The first five feed `temp1`, and the last two feed `temp2`.
+///
+/// Their names are fixed. A node's own name cannot change once it is drawn, and the walk shows which round constant
+/// and schedule word are in use by marking them in their tables instead.
+const TERMS: [&str; 7] = [
+    "bigSigma1(e)",
+    "choice(e,f,g)",
+    "h",
+    "K[i]",
+    "W[i]",
+    "bigSigma0(a)",
+    "majority(a,b,c)",
+];
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes everything the walk shows at one position into the nodes already drawn: each node's values, then the marks.
+///
+/// Every write is absolute. Nothing is read back, and nothing depends on the position the walk came from, so a step
+/// back and a step forward are the same operation. A node the walk has not reached shows zeros, and a mark it has not
+/// reached is cleared.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+fn apply(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String> {
+    let set =
+        |node: NodeId, values: &[u32]| scene.set_data_values(node, NodeValues::U32(values.to_vec())).map_err(stringify);
+    set(nodes.block, &shown.block)?;
+    set(nodes.schedule, &shown.schedule)?;
+    set(nodes.working, &shown.working)?;
+    set(nodes.digest, &shown.digest)?;
+
+    let round = shown.round.as_ref();
+    let from_round = |f: fn(&algorithm::Round) -> u32| round.map_or(0, f);
+    let k = shown.k_focus.map_or(0, |n| ROUND_CONSTANTS[n]);
+    let w = shown.k_focus.map_or(0, |n| shown.schedule[n]);
+    let term_values: [u32; 7] = [
+        from_round(|r| r.big_sigma1),
+        from_round(|r| r.choice),
+        round.map_or(0, |r| r.before[7]),
+        k,
+        w,
+        from_round(|r| r.big_sigma0),
+        from_round(|r| r.majority),
+    ];
+    for (node, value) in nodes.terms.iter().zip(term_values) {
+        set(*node, &[value])?;
+    }
+    set(nodes.temp1, &[from_round(|r| r.temp1)])?;
+    set(nodes.temp2, &[from_round(|r| r.temp2)])?;
+    set(nodes.next, &round.map_or([0; 8], |r| r.after))?;
+
+    apply_marks(scene, nodes, shown)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rings or marks the cells the walk is on, per `shown`: the whole node for a step that names one, the schedule word
-/// being built or used, the four words it reads, and the round constant in use.
-fn apply_marks(scene: &Scene, shown: &walk::Shown, nodes: &Marked) -> Result<(), String> {
+/// being built or used, the four words it reads, and the round constant in use. Whatever `shown` does not name is
+/// cleared.
+fn apply_marks(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<(), String> {
     for (ring, node) in [
         (Ring::Message, nodes.message),
         (Ring::Block, nodes.block),
@@ -92,34 +177,22 @@ fn apply_marks(scene: &Scene, shown: &walk::Shown, nodes: &Marked) -> Result<(),
     ] {
         scene.set_focus(node, shown.ring == Some(ring)).map_err(stringify)?;
     }
-    if let Some(focus) = shown.schedule_focus {
-        let cell = nodes.schedule_content.natural_selection(focus).unwrap_or(Selection::None);
-        scene.set_selection(nodes.schedule, cell).map_err(stringify)?;
-        scene
-            .set_secondary_selection(nodes.schedule, &shown.schedule_secondary)
-            .map_err(stringify)?;
-    }
-    if let Some(focus) = shown.k_focus {
-        let cell = nodes.k_content.natural_selection(focus).unwrap_or(Selection::None);
-        scene.set_selection(nodes.k, cell).map_err(stringify)?;
-    }
-    Ok(())
+    let cell = |content: &DataNodeContent, focus: Option<usize>| {
+        focus.and_then(|i| content.natural_selection(i)).unwrap_or(Selection::None)
+    };
+    scene
+        .set_selection(nodes.schedule, cell(&nodes.schedule_content, shown.schedule_focus))
+        .map_err(stringify)?;
+    scene
+        .set_secondary_selection(nodes.schedule, &shown.schedule_secondary)
+        .map_err(stringify)?;
+    scene
+        .set_selection(nodes.k, cell(&nodes.k_content, shown.k_focus))
+        .map_err(stringify)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The nodes [`apply_marks`] reaches, with the content of the two tables it addresses by cell.
-struct Marked {
-    message: NodeId,
-    block: NodeId,
-    digest: NodeId,
-    schedule: NodeId,
-    schedule_content: DataNodeContent,
-    k: NodeId,
-    k_content: DataNodeContent,
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the whole diagram for walk position `position`, from scratch, and returns the "Step" node that drives its
+/// Draws the whole diagram once, with nothing reached yet, and returns its nodes and the "Step" node that drives its
 /// toolbar.
 ///
 /// # What this draws
@@ -143,15 +216,13 @@ struct Marked {
 /// # Stepping through it
 ///
 /// "Step" is a small array of one cell per walk position, placed far off-canvas, purely to drive a selection toolbar.
-/// See [`walk`] for what each position shows. Anything the walk has not reached yet is zeros.
+/// See [`walk`] for what each position shows, and [`apply`] for how a position is written into the diagram. Anything the
+/// walk has not reached yet is zeros.
 ///
 /// # Errors
 ///
-/// Returns `Err` if the message is too long for one block, or if any library call fails.
-fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
-    let trace: Trace = algorithm::trace(MESSAGE).ok_or("the message does not fit one block")?;
-    let shown = shown(&trace, position);
-
+/// Returns `Err` if the panel's own stage is missing, or if any library call fails.
+fn build_scene() -> Result<(Scene, Nodes, NodeId), String> {
     let document = crate::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(1900.0, 1700.0))?;
     crate::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
@@ -174,7 +245,7 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
         message_rect.origin.x + message_rect.size.width + H_GAP,
         TOP,
         "Message Block",
-        words(&shown.block, 4),
+        words(&[0; BLOCK_WORDS], 4),
     )?;
     scene
         .add_edge_with(
@@ -188,7 +259,7 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
 
     // Row 2: the message schedule, and the round constants beside it.
     let row_2 = bottom_of(&[message_rect, block_rect]) + V_GAP;
-    let schedule_content = words(&shown.schedule, 8);
+    let schedule_content = words(&[0; SCHEDULE_WORDS], 8);
     let (schedule, schedule_rect) = add(&scene, LEFT, row_2, "Message Schedule", schedule_content.clone())?;
     let k_content = words(&ROUND_CONSTANTS, 8);
     let (k, k_rect) = add(
@@ -202,15 +273,15 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
 
     // Row 3: the working variables, the digest they feed, and the initial hash the digest adds them to.
     let row_3 = bottom_of(&[schedule_rect, k_rect]) + V_GAP;
-    let (working, working_rect) = add(&scene, LEFT, row_3, "Working variables a..h", words(&shown.working, 4))?;
+    let (working, working_rect) = add(&scene, LEFT, row_3, "Working variables a..h", words(&[0; 8], 4))?;
     let (digest, digest_rect) = add(
         &scene,
         working_rect.origin.x + working_rect.size.width + H_GAP,
         row_3,
         "Digest",
-        words(&shown.digest, 4),
+        words(&[0; 8], 4),
     )?;
-    let (initial, _) = add(
+    let (initial, initial_rect) = add(
         &scene,
         digest_rect.origin.x + digest_rect.size.width + H_GAP,
         row_3,
@@ -236,24 +307,12 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
         )
         .map_err(stringify)?;
 
-    // Row 4: the five terms of temp1 and the two of temp2, each one word. Values are zero until a round is running.
-    let round = shown.round;
-    let value = |f: fn(&algorithm::Round) -> u32| round.as_ref().map_or(0, f);
-    let index = |i: &str| shown.k_focus.map_or_else(|| format!("{i}[i]"), |n| format!("{i}[{n}]"));
+    // Row 4: the five terms of temp1 and the two of temp2, each one word.
     let row_4 = working_rect.origin.y + working_rect.size.height + V_GAP;
-    let terms: [(&str, u32); 7] = [
-        ("bigSigma1(e)", value(|r| r.big_sigma1)),
-        ("choice(e,f,g)", value(|r| r.choice)),
-        ("h", round.as_ref().map_or(0, |r| r.before[7])),
-        (&index("K"), shown.k_focus.map_or(0, |n| ROUND_CONSTANTS[n])),
-        (&index("W"), shown.k_focus.map_or(0, |n| shown.schedule[n])),
-        ("bigSigma0(a)", value(|r| r.big_sigma0)),
-        ("majority(a,b,c)", value(|r| r.majority)),
-    ];
     let mut x = LEFT;
     let mut term_nodes: Vec<(NodeId, Rect)> = Vec::new();
-    for (name, v) in &terms {
-        let (id, rect) = word(&scene, x, row_4, name, *v)?;
+    for name in TERMS {
+        let (id, rect) = word(&scene, x, row_4, name, 0)?;
         x = rect.origin.x + rect.size.width + 40.0;
         term_nodes.push((id, rect));
     }
@@ -264,22 +323,21 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
         let (first, last) = (nodes[0].1, nodes[nodes.len() - 1].1);
         (first.origin.x + last.origin.x + last.size.width) / 2.0
     };
-    let place = |name: &str, v: u32, centre: f64| -> Result<(NodeId, Rect), String> {
-        let (id, rect) = word(&scene, 0.0, row_5, name, v)?;
+    let place = |name: &str, centre: f64| -> Result<(NodeId, Rect), String> {
+        let (id, rect) = word(&scene, 0.0, row_5, name, 0)?;
         let moved = Point::new(centre - rect.size.width / 2.0, row_5);
         scene.move_node(id, moved).map_err(stringify)?;
         Ok((id, scene.node_rect(id).map_err(stringify)?))
     };
-    let (temp1, temp1_rect) = place("temp1", value(|r| r.temp1), centre_of(&term_nodes[..5]))?;
-    let (temp2, temp2_rect) = place("temp2", value(|r| r.temp2), centre_of(&term_nodes[5..]))?;
+    let (temp1, temp1_rect) = place("temp1", centre_of(&term_nodes[..5]))?;
+    let (temp2, temp2_rect) = place("temp2", centre_of(&term_nodes[5..]))?;
 
     // Row 6: the working variables the round produces.
     let row_6 = bottom_of(&[temp1_rect, temp2_rect]) + V_GAP;
-    let next = round.as_ref().map_or([0; 8], |r| r.after);
-    let (next_working, next_rect) = add(&scene, LEFT, row_6, "Next working variables a..h", words(&next, 4))?;
+    let (next, next_rect) = add(&scene, LEFT, row_6, "Next working variables a..h", words(&[0; 8], 4))?;
 
-    // The flows: the working variables into the terms that read them, the terms into the temps, the temps into the next
-    // working variables, and the tables into the two terms taken from them.
+    // The flows: the working variables into the terms that read them, the terms into the temps, and the temps into the
+    // next working variables.
     for &i in &[0, 1, 2, 5, 6] {
         scene.add_edge_with(working, term_nodes[i].0, downward()).map_err(stringify)?;
     }
@@ -289,22 +347,8 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
     for node in &term_nodes[5..] {
         scene.add_edge_with(node.0, temp2, downward()).map_err(stringify)?;
     }
-    scene.add_edge_with(temp1, next_working, downward()).map_err(stringify)?;
-    scene.add_edge_with(temp2, next_working, downward()).map_err(stringify)?;
-
-    apply_marks(
-        &scene,
-        &shown,
-        &Marked {
-            message,
-            block,
-            digest,
-            schedule,
-            schedule_content,
-            k,
-            k_content,
-        },
-    )?;
+    scene.add_edge_with(temp1, next, downward()).map_err(stringify)?;
+    scene.add_edge_with(temp2, next, downward()).map_err(stringify)?;
 
     // "Step": see this function's own doc comment, "Stepping through it".
     let step_values: Vec<u8> = (1..=STEPS as u8).collect();
@@ -317,67 +361,70 @@ fn build_scene(position: usize) -> Result<(Scene, NodeId), String> {
         .map_err(stringify)?;
 
     // Fit this diagram's own `<svg>` to its content, plus room for its stepping toolbar.
-    let right = [message_rect, block_rect, schedule_rect, k_rect, next_rect]
+    let right = [message_rect, block_rect, schedule_rect, k_rect, next_rect, initial_rect]
         .iter()
         .chain(term_nodes.iter().map(|(_, r)| r))
         .map(|r| r.origin.x + r.size.width)
         .fold(0.0, f64::max);
-    let initial_rect = scene.node_rect(initial).map_err(stringify)?;
-    fit_nested_size(
-        &scene,
-        DIAGRAM_ID,
-        right.max(initial_rect.origin.x + initial_rect.size.width),
-        bottom_of(&[next_rect]),
-        true,
-    )?;
+    fit_nested_size(&scene, DIAGRAM_ID, right, bottom_of(&[next_rect]), true)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
-    Ok((scene, step))
+    let nodes = Nodes {
+        message,
+        block,
+        schedule,
+        schedule_content,
+        k,
+        k_content,
+        working,
+        digest,
+        terms: std::array::from_fn(|i| term_nodes[i].0),
+        temp1,
+        temp2,
+        next,
+    };
+    Ok((scene, nodes, step))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Rebuilds the whole diagram for walk position `position`, via [`build_scene`], and wires a fresh selection toolbar
-/// onto its own freshly drawn "Step" to drive the *next* step.
+/// Builds the SHA-256 demo once, at its first step with the message in focus, and wires its stepping toolbar.
 ///
-/// A fresh rebuild is the simplest way here. A node cannot change the value it shows, and nearly every node does as the
-/// walk advances. `show_selection_toolbar` always resets "Step" to unstarted as its first committed act, so `position`
-/// is reapplied immediately afterward. That keeps the toolbar's *next* click advancing from the right place. A fresh
-/// `Scene` would also reset zoom and pan, so the outgoing one's view is carried over onto it.
+/// The toolbar's callback writes each new position into the diagram with [`apply`]. It never redraws anything. Walking
+/// back past the first position, or restarting, lands on that position again, since this walk is never "not started".
 ///
 /// # Errors
 ///
-/// Returns `Err` if the panel's own stage is missing, or if any library call fails.
-fn rebuild(position: usize) -> Result<(), String> {
-    let view = SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
-
-    let (scene, step) = build_scene(position)?;
-    if let Some(view) = view {
-        scene.set_view(view).map_err(stringify)?;
-    }
+/// Returns `Err` if `index.html` is missing `#sha2-256-diagram-stage`, if the message does not fit one block, or if any
+/// library call fails.
+pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
+    let trace: Rc<Trace> = Rc::new(algorithm::trace(MESSAGE).ok_or("the message does not fit one block")?);
+    let (scene, nodes, step) = build_scene()?;
+    let nodes = Rc::new(nodes);
+    apply(&scene, &nodes, &shown(&trace, 0))?;
 
     scene
         .show_selection_toolbar(
             step,
             SelectionToolbarOptions::default().with_stride(SelectionStride::new(8, "8")),
-            move |_scene, _node, transition| {
-                // This walk is never "not started": the message is in focus from the first draw, so a step back from it,
-                // or a restart, lands on it again.
-                let _ = rebuild(transition.to.unwrap_or(0));
+            move |scene, step, transition| {
+                let position = transition.to.unwrap_or(0);
+                let applied = apply(scene, &nodes, &shown(&trace, position));
+                // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on
+                // the first position, so its next click advances from there and not from nowhere.
+                let reselected = if transition.to.is_none() {
+                    scene.set_selection(step, Selection::Cell(0)).map_err(stringify)
+                } else {
+                    Ok(())
+                };
+                if let Err(e) = applied.and(reselected) {
+                    web_sys::console::error_1(&format!("sha2-256 step {position} failed: {e}").into());
+                }
             },
         )
         .map_err(stringify)?;
-    scene.set_selection(step, Selection::Cell(position)).map_err(stringify)?;
+    // `show_selection_toolbar` always resets "Step" to unstarted as its first committed act. Reapply the first position.
+    scene.set_selection(step, Selection::Cell(0)).map_err(stringify)?;
 
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
     Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA-256 demo at its first step, with the message in focus.
-///
-/// # Errors
-///
-/// Returns `Err` if `index.html` is missing `#sha2-256-diagram-stage`, or if any library call fails.
-pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
-    rebuild(0)
 }

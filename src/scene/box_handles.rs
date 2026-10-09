@@ -170,12 +170,7 @@ impl BoxHandles {
     ///
     /// The base description's length is adjusted by the difference, since a decimal value can change length. A label
     /// that does not hold `old` after `"{type_name} = "` is left as it is.
-    pub(crate) fn replace_label_value(
-        &mut self,
-        type_name: &str,
-        old: &str,
-        new: &str,
-    ) -> Result<(), svg_dom::Error> {
+    pub(crate) fn replace_label_value(&mut self, type_name: &str, old: &str, new: &str) -> Result<(), svg_dom::Error> {
         let needle = format!("{type_name} = {old}");
         if let Some(position) = self.aria_label[..self.base_label_len].find(&needle) {
             let start = position + type_name.len() + " = ".len();
