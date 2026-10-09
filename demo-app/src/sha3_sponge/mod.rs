@@ -27,6 +27,7 @@ mod pi;
 mod rho;
 pub(crate) mod theta;
 
+use crate::source_file;
 use crate::util::{add_backdrop_clone, all_if, ensure_svg, mark_unreached, required_element, stringify};
 use keccak_f::sha3_256_run;
 use std::cell::RefCell;
@@ -42,6 +43,22 @@ use wasm_bindgen::{JsCast, prelude::*};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
+
+/// The files behind this demo's one function, which only opens a window. The permutation comes first, then the scenes
+/// that draw it, from the sponge down to each step of a round.
+pub(crate) const FILES: &[crate::SourceFile] = &[
+    source_file!("sha3_sponge/keccak_f/mod.rs", "keccak_f/mod.rs"),
+    source_file!("sha3_sponge/mod.rs", "mod.rs"),
+    source_file!("sha3_sponge/keccak.rs", "keccak.rs"),
+    source_file!("sha3_sponge/theta/mod.rs", "theta/mod.rs"),
+    source_file!("sha3_sponge/theta/theta_c.rs", "theta/theta_c.rs"),
+    source_file!("sha3_sponge/theta/theta_d.rs", "theta/theta_d.rs"),
+    source_file!("sha3_sponge/theta/xor_loop.rs", "theta/xor_loop.rs"),
+    source_file!("sha3_sponge/rho/mod.rs", "rho/mod.rs"),
+    source_file!("sha3_sponge/pi/mod.rs", "pi/mod.rs"),
+    source_file!("sha3_sponge/chi/mod.rs", "chi/mod.rs"),
+    source_file!("sha3_sponge/iota/mod.rs", "iota/mod.rs"),
+];
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`. Every listener

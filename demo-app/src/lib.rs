@@ -84,11 +84,36 @@ pub(crate) struct DemoPanel {
     /// `build`'s own module's full source, embedded at compile time — see `crate::source_frame`'s own doc comment for
     /// why.
     pub(crate) source: &'static str,
+    /// Further files that hold what `build`'s own function only calls into: the calculation and the walk behind a
+    /// scene. Each is shown in a frame of its own below the function. Empty when `build` and `source` say it all.
+    pub(crate) files: &'static [SourceFile],
 }
 
-/// Generates [`DEMO_PANELS`] from `"panel id" => module::build_fn` pairs, one per demo.
+/// One more source file a [`DemoPanel`] shows, whole, beside its own function.
+pub(crate) struct SourceFile {
+    /// The file's path below `demo-app/src`, shown as its frame's heading.
+    pub(crate) path: &'static str,
+    /// The file's own full source, embedded at compile time like [`DemoPanel::source`].
+    pub(crate) source: &'static str,
+}
+
+/// One [`SourceFile`], embedding `$path` relative to the file this appears in and naming it `$name`.
+macro_rules! source_file {
+    ($name:literal, $path:literal) => {
+        $crate::SourceFile {
+            path: $name,
+            source: include_str!($path),
+        }
+    };
+}
+pub(crate) use source_file;
+
+/// Generates [`DEMO_PANELS`] from `"panel id" => module::build_fn` pairs, one per demo. A pair can end with `+
+/// path::TO_FILES`, a `&[SourceFile]` for the files behind that demo.
 macro_rules! demo_gallery {
-    ( $( $panel_id:literal => $module:ident :: $name:ident ),+ $(,)? ) => {
+    (@files) => { &[] };
+    (@files $files:path) => { $files };
+    ( $( $panel_id:literal => $module:ident :: $name:ident $( + $files:path )? ),+ $(,)? ) => {
         pub(crate) const DEMO_PANELS: &[DemoPanel] = &[
             $(
                 DemoPanel {
@@ -96,6 +121,7 @@ macro_rules! demo_gallery {
                     build: $module::$name,
                     fn_name: stringify!($name),
                     source: $module::SOURCE,
+                    files: demo_gallery!(@files $( $files )?),
                 }
             ),+
         ];
@@ -112,9 +138,9 @@ demo_gallery! {
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
-    "panel-theta" => theta::build_theta_demo,
-    "panel-sha2-256" => sha2_256::build_sha2_256_demo,
-    "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo,
+    "panel-theta" => theta::build_theta_demo + theta::FILES,
+    "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,
+    "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

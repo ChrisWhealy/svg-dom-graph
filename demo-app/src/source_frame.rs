@@ -1,4 +1,6 @@
 //! Each demo panel gets a collapsible frame below it showing the formatted Rust source of the function that built it.
+//! A panel whose function only calls into other files gets one more, closed, frame for each of them, whole. See
+//! [`crate::DemoPanel::files`].
 //!
 //! [`crate::init_panel`] appends this itself, deliberately even when that function reported failure — the source is
 //! still worth seeing when the demo itself broke.
@@ -81,5 +83,19 @@ pub(crate) fn append_demo_source(document: &web_sys::Document, panel_id: &str) -
     details.append_child(&pre).map_err(|e| format!("{e:?}"))?;
 
     section.append_child(&details).map_err(|e| format!("{e:?}"))?;
+
+    for file in panel.files {
+        let frame = create("details")?;
+        frame.set_attribute("class", "source").map_err(|e| format!("{e:?}"))?;
+        let heading = create("summary")?;
+        heading.set_text_content(Some(&format!("Rust source — {}", file.path)));
+        frame.append_child(&heading).map_err(|e| format!("{e:?}"))?;
+        let pre = create("pre")?;
+        let code = create("code")?;
+        code.set_inner_html(&crate::highlight::rust_to_html(file.source));
+        pre.append_child(&code).map_err(|e| format!("{e:?}"))?;
+        frame.append_child(&pre).map_err(|e| format!("{e:?}"))?;
+        section.append_child(&frame).map_err(|e| format!("{e:?}"))?;
+    }
     Ok(())
 }

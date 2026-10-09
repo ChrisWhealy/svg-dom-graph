@@ -27,6 +27,7 @@
 mod algorithm;
 mod walk;
 
+use crate::source_file;
 use crate::util::{ensure_svg_in, fit_nested_size, stringify};
 use algorithm::{INITIAL_HASH, ROUND_CONSTANTS, Trace};
 use std::{cell::RefCell, rc::Rc};
@@ -42,6 +43,19 @@ use walk::{MESSAGE, Ring, STEPS, Stage, shown, stage};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
+
+/// The files behind this demo's one function, which only opens a window. The calculation comes first, then the walk
+/// through it, then the scene that draws both.
+pub(crate) const FILES: &[crate::SourceFile] = &[
+    source_file!("sha2_256/algorithm/mod.rs", "algorithm/mod.rs"),
+    source_file!("sha2_256/algorithm/round.rs", "algorithm/round.rs"),
+    source_file!("sha2_256/algorithm/trace.rs", "algorithm/trace.rs"),
+    source_file!("sha2_256/walk/mod.rs", "walk/mod.rs"),
+    source_file!("sha2_256/walk/phase.rs", "walk/phase.rs"),
+    source_file!("sha2_256/walk/ring.rs", "walk/ring.rs"),
+    source_file!("sha2_256/walk/shown.rs", "walk/shown.rs"),
+    source_file!("sha2_256/mod.rs", "mod.rs"),
+];
 
 /// What the toolbar's callback needs to find again on every step: the scene, its nodes, and the hash being walked.
 struct Demo {
@@ -137,6 +151,14 @@ fn column(scene: &Scene, x: f64, y: f64, items: Vec<(&str, DataNodeContent)>) ->
         *rect = scene.node_rect(*id).map_err(stringify)?;
     }
     Ok(nodes)
+}
+
+/// Moves `id`, drawn at `rect`, sideways until its middle is on `axis`, and returns where it ended up.
+fn centre_on(scene: &Scene, id: NodeId, rect: Rect, axis: f64) -> Result<Rect, String> {
+    scene
+        .move_node(id, Point::new(axis - rect.size.width / 2.0, rect.origin.y))
+        .map_err(stringify)?;
+    scene.node_rect(id).map_err(stringify)
 }
 
 /// The right edge of the rightmost of `rects`, and the lowest edge of any of them.
@@ -385,10 +407,14 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
         "Message Block",
         words(&[0; algorithm::BLOCK_WORDS]),
     )?;
+    // The block is the widest node of the column. The message above it, and the terms below it in the first half, are
+    // centred on its middle, so every node of the column is centred above the next.
+    let column_1_axis = block_rect.origin.x + block_rect.size.width / 2.0;
+    let message_rect = centre_on(&scene, message, message_rect, column_1_axis)?;
     scene.add_edge_with(message, block, downward()).map_err(stringify)?;
 
     // Column 2: the message schedule, from the block's own height.
-    let column_2 = message_rect.origin.x + message_rect.size.width.max(block_rect.size.width) + H_GAP;
+    let column_2 = block_rect.origin.x + block_rect.size.width + H_GAP;
     let row_2 = block_rect.origin.y;
     let schedule_content = words(&[0; algorithm::SCHEDULE_WORDS]);
     let (schedule, schedule_rect) = add(&scene, column_2, row_2, "Message Schedule", schedule_content.clone())?;
@@ -418,7 +444,10 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
             ]
             .map(|name| (name, words(&[0])))
             .to_vec();
-            let terms = column(&scene, LEFT, block_rect.origin.y + block_rect.size.height + 2.0 * V_GAP, items)?;
+            let mut terms = column(&scene, LEFT, block_rect.origin.y + block_rect.size.height + 2.0 * V_GAP, items)?;
+            for (id, rect) in &mut terms {
+                *rect = centre_on(&scene, *id, *rect, column_1_axis)?;
+            }
             // Each sigma is applied to the word just above it, and the sum is the new schedule word.
             scene.add_edge_with(terms[1].0, terms[2].0, downward()).map_err(stringify)?;
             scene.add_edge_with(terms[4].0, terms[5].0, downward()).map_err(stringify)?;

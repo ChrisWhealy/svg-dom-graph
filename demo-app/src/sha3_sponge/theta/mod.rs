@@ -20,6 +20,7 @@ mod unit_tests;
 
 use crate::{
     selection::{INITIAL_5X5_BUFFER, THETA_C_INPUT},
+    source_file,
     util::{add_backdrop_clone, required_element, stringify},
 };
 use support::SteppedChildState;
@@ -40,6 +41,13 @@ use wasm_bindgen::{JsCast, prelude::*};
 /// [`build_theta_demo`] itself is ever shown from it (see that doc comment's own "SOURCE" note). `theta_c`, `theta_d`
 /// and `support` live in their own files precisely so this one stays that function alone.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
+
+/// The files behind [`build_theta_demo`], which holds only the scene around the three steps.
+pub(crate) const FILES: &[crate::SourceFile] = &[
+    source_file!("sha3_sponge/theta/theta_c.rs", "theta_c.rs"),
+    source_file!("sha3_sponge/theta/theta_d.rs", "theta_d.rs"),
+    source_file!("sha3_sponge/theta/xor_loop.rs", "xor_loop.rs"),
+];
 
 thread_local! {
     // Keeps this module's own top-level "parent" `Scene` alive across however many times `build_scene` is called. See

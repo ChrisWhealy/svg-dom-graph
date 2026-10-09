@@ -20,3 +20,31 @@ fn every_registered_demo_has_extractable_source() -> Result<(), String> {
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn every_extra_source_file_is_named_and_not_empty() -> Result<(), String> {
+    for panel in DEMO_PANELS {
+        for file in panel.files {
+            if file.path.is_empty() || file.source.trim().is_empty() {
+                return Err(format!("panel {} has an empty source file entry ({:?})", panel.id, file.path));
+            }
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn the_sha2_panel_shows_the_calculation_behind_its_one_function() -> Result<(), String> {
+    let panel = DEMO_PANELS
+        .iter()
+        .find(|p| p.id == "panel-sha2-256")
+        .ok_or("panel-sha2-256 is not registered")?;
+    let shows = |needle: &str| panel.files.iter().any(|f| f.source.contains(needle));
+    if shows("fn big_sigma0") && shows("fn expanded_word") && shows("pub(in crate::sha2_256) fn shown") {
+        Ok(())
+    } else {
+        Err("the SHA-256 panel should show its algorithm and its walk".to_owned())
+    }
+}
