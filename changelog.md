@@ -15,13 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add labelling style to selection demos (`8d818bc`)
 - Extend test coverage for label width calculations (`c5bfbe1`)
 - Extend `NodeValues` enum to include signed integers (`1f99bee`)
-- Extend test coverage for signed/unsigned values during node value updates (``)
+- Extend test coverage for signed/unsigned values during node value updates (`f454040`)
 
 ## Changed
 
 - Doc only: Update docs and images (`e5e8ddb`)
 - Doc only: Minor doc corrections (`84b25b3`)
-- Doc only: Clarify byte-order documentation (``)
+- Doc only: Clarify byte-order documentation (`3bd57d7`)
 
 ## Fixed
 
