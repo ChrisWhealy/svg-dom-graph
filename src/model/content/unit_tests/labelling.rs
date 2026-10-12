@@ -52,6 +52,18 @@ fn text_labels_are_the_strings_given() -> Result<(), String> {
 }
 
 #[test]
+fn a_text_label_belongs_to_a_row_not_an_element() -> Result<(), String> {
+    // In a grid of five columns, elements 0 to 4 are row 0, and elements 5 to 9 are row 1.
+    let style = LabellingStyle::Text(&["0-4", "5-9"]);
+    let mut out = String::new();
+    let labels = [0, 4, 5, 9, 10].map(|i| {
+        style.label_into(i, 5, &mut out);
+        out.clone()
+    });
+    check_eq(labels, ["0-4", "0-4", "5-9", "5-9", ""].map(String::from))
+}
+
+#[test]
 fn the_widest_text_label_is_found_in_any_row() -> Result<(), String> {
     let style = LabellingStyle::Text(&["a", "ms[n-14]", "bb"]);
     let mut out = String::new();
@@ -60,11 +72,10 @@ fn the_widest_text_label_is_found_in_any_row() -> Result<(), String> {
 }
 
 #[test]
-fn only_the_first_element_of_each_row_is_a_candidate_for_the_widest_text_label() -> Result<(), String> {
-    // With two columns, labels are drawn for elements 0 and 2. Element 1's own label is never drawn.
-    let style = LabellingStyle::Text(&["a", "a very long label", "bb"]);
+fn a_text_label_for_a_row_the_grid_does_not_have_is_not_a_candidate_for_the_widest() -> Result<(), String> {
+    let style = LabellingStyle::Text(&["a", "bb", "a label for a third row"]);
     let mut out = String::new();
-    style.widest_label_into(2, 2, &mut out);
+    style.widest_label_into(2, 3, &mut out);
     check_eq(out.as_str(), "bb")
 }
 
@@ -111,7 +122,7 @@ fn alphabetic_label_into_reuses_the_buffer_it_is_given() -> Result<(), String> {
     let mut out = String::with_capacity(16);
     let before = out.as_ptr();
     for index in [0, 25, 26, 701, 702, 100_000] {
-        LabellingStyle::Alphabetic.label_into(index, &mut out);
+        LabellingStyle::Alphabetic.label_into(index, 1, &mut out);
     }
     check_eq(out.as_ptr(), before)?;
     check_eq(out.capacity(), 16)

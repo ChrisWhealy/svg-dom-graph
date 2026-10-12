@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - `LabellingStyle::Text` labels grid rows with caller-supplied text (`b2ac547`)
-- SHA1 demo implementation (``)
+- SHA1 demo implementation (`89fb10d`)
+- Add labelling style to selection demos (``)
 
 # [Released]
 

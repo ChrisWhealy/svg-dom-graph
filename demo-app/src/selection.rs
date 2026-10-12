@@ -1,13 +1,17 @@
-//! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, and `#selection-thetac-diagram`: three
-//! examples, each stepping through an array's values via its own in-canvas [`Scene::show_selection_toolbar`] bar — no
-//! external HTML buttons. See [`build_selection_demo`]'s own doc comment for what each demonstrates.
+//! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, `#selection-2d-labelled-diagram` and
+//! `#selection-thetac-diagram`: four examples, each stepping through an array's values via its own in-canvas
+//! [`Scene::show_selection_toolbar`] bar — no external HTML buttons. See [`build_selection_demo`]'s own doc comment for
+//! what each demonstrates. The second and third are two-dimensional arrays, side by side. The third has three values,
+//! each in a row labelled alphabetically.
 
 use crate::util::{ensure_svg_in, required_element, resize_svg, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
-    scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, SelectionToolbarOptions},
+    scene::{
+        DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues, Scene, Selection, SelectionToolbarOptions,
+    },
 };
 
 #[cfg(test)]
@@ -20,7 +24,7 @@ thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own two, separate `Scene`s — one per array
     // dimension. Kept alive for the page's own lifetime: `show_selection_toolbar`'s own button listeners hold only a
     // `Weak` reference back to the `Scene` they step — see its own doc comment ("Ownership").
-    static SCENE: RefCell<Option<(Scene, Scene)>> = const { RefCell::new(None) };
+    static SCENE: RefCell<Option<(Scene, Scene, Scene)>> = const { RefCell::new(None) };
 
     // The third example's own canvas has a `Scene` too, replaced by each step's own rebuild — see
     // [`rebuild_theta_c_diagram`]'s own doc comment for why it must be kept.
@@ -30,6 +34,9 @@ thread_local! {
 /// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_demo`])
 /// deliberately does not divide evenly by this, so the grid's own last row renders short.
 const SELECTION_TWO_D_COLS: usize = 4;
+
+/// How many columns the labelled two-dimensional example uses: one, so every value has a row, and so a label, of its own.
+const LABELLED_COLS: usize = 1;
 
 pub(crate) const INITIAL_5X5_BUFFER: [[u64; 5]; 5] = [
     [0x0, 0x0, 0x0, 0x0, 0x0],
@@ -94,7 +101,7 @@ struct ThetaCDemo {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the cell-selection demo: three examples stepping through an array's values, each via its own in-canvas
+/// Builds the cell-selection demo: four examples stepping through an array's values, each via its own in-canvas
 /// [`Scene::show_selection_toolbar`] bar — Prev, Next, Restart — rather than any external HTML button. The first two
 /// bind the toolbar directly to their own already-drawn array. On a step they update nothing else but the selection and
 /// a status line. The third needs a fresh toolbar on every step instead, since its own diagram is redrawn from scratch
@@ -166,31 +173,35 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
 
     // Ten values over four columns: a 3×4 shape with the last row short by two cells. See this function's own doc
     // comment (point 3) — a deliberately ragged grid, not the coincidentally-exact fit twelve values would be.
-    let two_d_values: Vec<u8> = (1..=10).collect();
-    crate::util::ensure_svg_in(
-        &document,
-        "selection-2d-diagram-stage",
-        "selection-2d-diagram",
-        Size::new(400.0, 200.0),
-    )?;
-    let two_d_svg = svg_dom::SvgRoot::attach("selection-2d-diagram").map_err(stringify)?;
-    let two_d_scene = Scene::new(two_d_svg).map_err(stringify)?;
-    let two_d_node = two_d_scene
-        .add_named_data_node(
-            Point::new(20.0, 20.0),
-            "Some other array",
-            DataNodeContent::new(NodeValues::U8(two_d_values), DataFormat::Decimal)
-                .with_layout(GridLayout::Columns(SELECTION_TWO_D_COLS)),
-        )
-        .map_err(stringify)?;
-    let two_d_rect = two_d_scene.node_rect(two_d_node).map_err(stringify)?;
-    fit_canvas_to_toolbar(&document, "selection-2d-diagram", two_d_rect)?;
+    let two_d_content = DataNodeContent::new(NodeValues::U8((1..=10).collect()), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(SELECTION_TWO_D_COLS));
+    let (two_d_scene, two_d_node) =
+        build_two_d_scene(&document, "selection-2d-diagram", "Some other array", two_d_content)?;
 
-    // Keeps both Scenes' only strong handle alive for the page's lifetime — see SCENE's own doc comment.
-    SCENE.with_borrow_mut(|slot| *slot = Some((one_d_scene.clone(), two_d_scene.clone())));
+    // Three `u32` values in hexadecimal, one to a row, each row labelled alphabetically.
+    let labelled_content = DataNodeContent::new(
+        NodeValues::U32(vec![0x1234_5678, 0x9abc_def0, 0x0fed_cba9]),
+        DataFormat::Hexadecimal,
+    )
+    .with_layout(GridLayout::Columns(LABELLED_COLS))
+    .with_labelling_style(LabellingStyle::Alphabetic);
+    let (labelled_scene, labelled_node) =
+        build_two_d_scene(&document, "selection-2d-labelled-diagram", "Labelled array", labelled_content)?;
+
+    // Keeps every Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
+    SCENE.with_borrow_mut(|slot| {
+        *slot = Some((one_d_scene.clone(), two_d_scene.clone(), labelled_scene.clone()));
+    });
 
     show_one_d_toolbar(&document, &one_d_scene, one_d_node)?;
-    show_two_d_toolbar(&document, &two_d_scene, two_d_node)?;
+    show_two_d_toolbar(&document, &two_d_scene, two_d_node, "selection-2d-index", SELECTION_TWO_D_COLS)?;
+    show_two_d_toolbar(
+        &document,
+        &labelled_scene,
+        labelled_node,
+        "selection-2d-labelled-index",
+        LABELLED_COLS,
+    )?;
 
     // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
     let input = THETA_C_INPUT;
@@ -199,9 +210,43 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws one two-dimensional example's array, `content`, named `name`, into `#{svg_id}` inside `#{svg_id}-stage`. Sizes
+/// the canvas to fit it and the toolbar below it. Returns the scene and the array's node.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing the stage, or if any library call fails.
+fn build_two_d_scene(
+    document: &web_sys::Document,
+    svg_id: &str,
+    name: &str,
+    content: DataNodeContent,
+) -> Result<(Scene, NodeId), String> {
+    ensure_svg_in(document, &format!("{svg_id}-stage"), svg_id, Size::new(400.0, 200.0))?;
+    let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
+    let scene = Scene::new(svg).map_err(stringify)?;
+    let node = scene
+        .add_named_data_node(Point::new(20.0, 20.0), name, content)
+        .map_err(stringify)?;
+    // A narrow array is centred in a canvas that is at least as wide as the toolbar below it.
+    let mut rect = scene.node_rect(node).map_err(stringify)?;
+    let centred_x = (MIN_CANVAS_WIDTH - rect.size.width) / 2.0;
+    if centred_x > rect.origin.x {
+        scene.move_node(node, Point::new(centred_x, rect.origin.y)).map_err(stringify)?;
+        rect = scene.node_rect(node).map_err(stringify)?;
+    }
+    fit_canvas_to_toolbar(document, svg_id, rect)?;
+    Ok((scene, node))
+}
+
 /// The clear space left between an array's own bottom edge and the selection toolbar drawn below it. It is a chosen
 /// visual gap, not a measured one. `V_GAP`-style constants elsewhere in this crate's own diagrams work the same way.
 const TOOLBAR_GAP: f64 = 20.0;
+
+/// The narrowest a canvas can be and still show the toolbar below its array in full. It is a chosen width, not a
+/// measured one.
+const MIN_CANVAS_WIDTH: f64 = 240.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Resizes `id`'s own `<svg>` — via [`resize_svg`] — to exactly fit `content_rect` plus a default
@@ -221,7 +266,7 @@ const TOOLBAR_GAP: f64 = 20.0;
 /// Returns `Err` if `index.html` is missing `#id`, or a DOM write fails.
 fn fit_canvas_to_toolbar(document: &web_sys::Document, id: &str, content_rect: Rect) -> Result<(), String> {
     let toolbar = SelectionToolbarOptions::default();
-    let width = 2.0 * content_rect.origin.x + content_rect.size.width;
+    let width = (2.0 * content_rect.origin.x + content_rect.size.width).max(MIN_CANVAS_WIDTH);
     let height =
         content_rect.origin.y + content_rect.size.height + TOOLBAR_GAP + toolbar.margin + toolbar.button_height;
     resize_svg(document, id, Size::new(width, height))
@@ -267,13 +312,19 @@ fn show_one_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId)
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing `#selection-2d-index`, or if showing the toolbar fails.
-fn show_two_d_toolbar(document: &web_sys::Document, scene: &Scene, node: NodeId) -> Result<(), String> {
-    let output = required_element(document, "selection-2d-index")?;
-    output.set_text_content(Some(&two_d_status(None, SELECTION_TWO_D_COLS)));
+/// Returns `Err` if `index.html` is missing `#{output_id}`, or if showing the toolbar fails.
+fn show_two_d_toolbar(
+    document: &web_sys::Document,
+    scene: &Scene,
+    node: NodeId,
+    output_id: &str,
+    cols: usize,
+) -> Result<(), String> {
+    let output = required_element(document, output_id)?;
+    output.set_text_content(Some(&two_d_status(None, cols)));
     scene
         .show_selection_toolbar(node, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
-            output.set_text_content(Some(&two_d_status(transition.to, SELECTION_TWO_D_COLS)));
+            output.set_text_content(Some(&two_d_status(transition.to, cols)));
         })
         .map_err(stringify)
 }
@@ -342,7 +393,7 @@ fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCel
     }
 
     scene
-        .show_selection_toolbar(output, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
             step_theta_c(&state, transition.to);
         })
         .map_err(stringify)?;

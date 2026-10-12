@@ -28,21 +28,21 @@ pub enum LabellingStyle {
 impl LabellingStyle {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the label of element `index` into `out`, replacing what it held.
-    pub(crate) fn label_into(self, index: usize, out: &mut String) {
+    pub(crate) fn label_into(self, index: usize, cols: usize, out: &mut String) {
         out.clear();
-        self.append_label(index, out);
+        self.append_label(index, cols, out);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Appends the label of element `index` to `out`, keeping what it held. Allocates only if `out` must grow.
-    pub(crate) fn append_label(self, index: usize, out: &mut String) {
+    pub(crate) fn append_label(self, index: usize, cols: usize, out: &mut String) {
         use std::fmt::Write;
         match self {
             Self::Numeric => {
                 let _ = write!(out, "{index}");
             },
             Self::Alphabetic => write_alphabetic(index, out),
-            Self::Text(labels) => out.push_str(labels.get(index).copied().unwrap_or("")),
+            Self::Text(labels) => out.push_str(labels.get(index / cols.max(1)).copied().unwrap_or("")),
         }
     }
 
@@ -54,16 +54,13 @@ impl LabellingStyle {
     pub(crate) fn widest_label_into(self, rows: usize, cols: usize, out: &mut String) {
         match self {
             Self::Text(labels) => {
-                let widest = (0..rows)
-                    .filter_map(|row| labels.get(row * cols).copied())
-                    .fold(
-                        "",
-                        |widest, label| if label.chars().count() > widest.chars().count() { label } else { widest },
-                    );
+                let widest = labels.iter().take(rows).fold("", |widest, label| {
+                    if label.chars().count() > widest.chars().count() { label } else { widest }
+                });
                 out.clear();
                 out.push_str(widest);
             },
-            _ => self.label_into(rows.saturating_sub(1) * cols, out),
+            _ => self.label_into(rows.saturating_sub(1) * cols, cols, out),
         }
     }
 
@@ -72,7 +69,7 @@ impl LabellingStyle {
     #[cfg(test)]
     pub(crate) fn label(self, index: usize) -> String {
         let mut out = String::new();
-        self.label_into(index, &mut out);
+        self.label_into(index, 1, &mut out);
         out
     }
 }

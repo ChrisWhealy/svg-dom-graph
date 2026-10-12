@@ -526,7 +526,7 @@ fn draw_cells(
                 text.set_attr_display(scratch, "y", cell_origin.y + layout.cell.height / 2.0)?;
                 let col = i % layout.cols;
                 if let (Some(style), 0) = (content.labelling(), col) {
-                    style.label_into(i, &mut label_scratch);
+                    style.label_into(i, layout.cols, &mut label_scratch);
                     draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
                 }
                 cell_name_into(content.labelling(), i, layout.cols, cell_text, &mut name_scratch);
@@ -558,7 +558,7 @@ pub(super) fn cell_name_into(labelling: Option<LabellingStyle>, i: usize, cols: 
     out.clear();
     if let Some(style) = labelling {
         out.push_str("element ");
-        style.append_label(i, out);
+        style.append_label(i, cols, out);
         out.push_str(", ");
     }
     let _ = write!(out, "row {}, column {}: {text}", i / cols, i % cols);

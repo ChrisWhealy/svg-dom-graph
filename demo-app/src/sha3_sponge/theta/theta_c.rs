@@ -12,10 +12,13 @@ use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     NodeId,
     scene::{
-        BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, NodeOptions,
-        NodeValues, Scene, SceneTitleOptions, Selection, Side, ToolbarOptions,
+        BinaryOperator, ConnectorOptions, DataFormat, DataNodeContent, EdgeAnchors, GridLayout, LabellingStyle,
+        NodeOptions, NodeValues, Scene, SceneTitleOptions, Selection, Side, ToolbarOptions,
     },
 };
+
+/// The labels of the rows of `A Bytes`: the flat positions of the 5 elements each row holds.
+const ROW_LABELS: &[&str] = &["0-4", "5-9", "10-14", "15-19", "20-24"];
 
 thread_local! {
     // The parent Scene, the nested ThetaC child Scene, and the container NodeId that owns it — kept alive for the
@@ -113,7 +116,8 @@ pub(crate) fn build_scene(
             Point::new(20.0, TOP_Y),
             "A Bytes",
             DataNodeContent::new(NodeValues::U64(a.iter().flatten().copied().collect()), DataFormat::Hexadecimal)
-                .with_layout(GridLayout::Rows(5)),
+                .with_layout(GridLayout::Rows(5))
+                .with_labelling_style(LabellingStyle::Text(ROW_LABELS)),
         )
         .map_err(stringify)?;
     if let Some(n) = n {
