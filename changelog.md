@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.30] - 2026-10-12
 
 ## Added
@@ -35,8 +37,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Expose signedness of result in operator nodes (`8c23a43`)
 - Simplify decimal width calculation (`1f0da0e`)
 - Fix `clippy::type-complexity` error (``)
-
-# [Released]
 
 ## [0.2.29] - 2026-10-09
 
