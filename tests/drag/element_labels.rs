@@ -221,3 +221,41 @@ fn replacing_the_values_of_an_unlabelled_grid_adds_no_element_names() -> Result<
         &format!("got {names:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Text labels are sized by what they render as, not by their length
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// A two-row grid of one column, labelled with `labels`, and the width of the node it makes.
+fn width_with_text_labels(id: &str, labels: &'static [&'static str]) -> Result<f64, String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(1))
+        .with_labelling_style(LabellingStyle::Text(labels));
+    Ok(draw(id, content)?.0.width)
+}
+
+#[wasm_bindgen_test]
+fn text_labels_are_drawn_beside_their_rows() -> Result<(), String> {
+    let (_, texts) = draw(
+        "labels-text",
+        eight().with_labelling_style(LabellingStyle::Text(&["ms[n-3]", "ms[n-8]"])),
+    )?;
+    check(
+        visible(&texts) == ["ms[n-3]", "ms[n-8]", "", "", "", "", "", ""],
+        &format!("got {:?}", visible(&texts)),
+    )
+}
+
+#[wasm_bindgen_test]
+fn the_widest_text_label_sizes_the_node_whatever_its_length() -> Result<(), String> {
+    // Six wide glyphs take more room than eight narrow ones, though they are fewer characters. A label chosen by its
+    // character count would be the narrow one, and the node would be too narrow for the other.
+    const WIDE_LABEL: &str = "\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}";
+    let narrow = width_with_text_labels("labels-text-narrow", &["iiiiiiii", "i"])?;
+    let wide = width_with_text_labels("labels-text-wide", &["i", WIDE_LABEL])?;
+    let both = width_with_text_labels("labels-text-both", &["iiiiiiii", WIDE_LABEL])?;
+    check(
+        wide > narrow && (both - wide).abs() < 0.5,
+        &format!("narrow {narrow}, wide {wide}, both {both}: the node should be as wide as the widest label needs"),
+    )
+}

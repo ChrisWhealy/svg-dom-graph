@@ -36,6 +36,9 @@ const DISABLED_OPACITY: &str = "0.4";
 const BUTTON_WIDTH: f64 = 64.0;
 /// A stride button's own width — wider, since its label (`Next Round`) is longer than `Restart`.
 const STRIDE_BUTTON_WIDTH: f64 = 104.0;
+/// The clear space kept between a button's label and its left and right edges, when the label is wider than the
+/// button's natural width allows for.
+const LABEL_PADDING: f64 = 8.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a `SelectionTransition` reports: a change to the managed node's own flat position, never which button caused
@@ -86,17 +89,12 @@ impl SelectionToolbar {
 /// Writes the position of `toolbar`'s own bar and every one of its buttons, for `area`.
 fn place(toolbar: &SelectionToolbar, area: svg_dom::root::utils::Rect, scratch: &mut String) -> Result<(), Error> {
     let options = toolbar.options;
-    // One size per button, in the same order as `toolbar.buttons`: a stride button is wider than the other three.
+    // One size per button, in the same order as `toolbar.buttons`. A stride button is wider than the other three, and
+    // any button is wider still if its label needs it.
     let sizes: Vec<_> = toolbar
         .buttons
         .iter()
-        .map(|button| {
-            let width = match button.action {
-                SelectionToolbarAction::PrevStride | SelectionToolbarAction::NextStride => STRIDE_BUTTON_WIDTH,
-                _ => BUTTON_WIDTH,
-            };
-            svg_dom::root::utils::Size::new(width, options.button_height)
-        })
+        .map(|button| svg_dom::root::utils::Size::new(button.width, options.button_height))
         .collect();
     let laid_out = layout(options.edge, area, &sizes, options.gap, options.margin);
 
@@ -148,11 +146,11 @@ fn build_button(
     group.set_attr("aria-label", &action.aria_label(stride_label))?;
     group.set_attr("style", BUTTON_STYLE)?;
 
-    let width = match action {
+    let natural_width = match action {
         SelectionToolbarAction::PrevStride | SelectionToolbarAction::NextStride => STRIDE_BUTTON_WIDTH,
         _ => BUTTON_WIDTH,
     };
-    let rect = svg.rect(Point::origin(), svg_dom::root::utils::Size::new(width, height))?;
+    let rect = svg.rect(Point::origin(), svg_dom::root::utils::Size::new(natural_width, height))?;
     group.append(&rect)?;
     rect.set_fill(PLAIN_BOX_FILL)?;
     rect.set_stroke(BOX_STROKE)?;
@@ -165,6 +163,9 @@ fn build_button(
     label.set_dominant_baseline(DominantBaseline::Middle)?;
     label.set_font_size(height * 0.5)?;
     label.set_fill(TEXT_FILL)?;
+    // The label's rendered width decides whether the natural width is enough. Counting its characters would not: a stride
+    // label is the caller's own text, and a glyph of one script is wider than one of another.
+    let width = natural_width.max(label.bounding_box()?.size.width + 2.0 * LABEL_PADDING);
 
     // Keyboard focus must be obvious — same reasoning and shape as `toolbar::build_button`'s own focus ring.
     let focused_rect = rect.downgrade();
@@ -205,6 +206,7 @@ fn build_button(
         group,
         rect,
         label,
+        width,
         enabled: std::cell::Cell::new(None),
     })
 }

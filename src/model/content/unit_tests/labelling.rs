@@ -64,19 +64,23 @@ fn a_text_label_belongs_to_a_row_not_an_element() -> Result<(), String> {
 }
 
 #[test]
-fn the_widest_text_label_is_found_in_any_row() -> Result<(), String> {
-    let style = LabellingStyle::Text(&["a", "ms[n-14]", "bb"]);
-    let mut out = String::new();
-    style.widest_label_into(3, 1, &mut out);
-    check_eq(out.as_str(), "ms[n-14]")
+fn text_labels_offers_every_rows_label_to_be_measured() -> Result<(), String> {
+    // Character count is no guide to width: the second label has fewer characters but wider glyphs.
+    let style = LabellingStyle::Text(&["iiii", "\u{754c}\u{754c}\u{754c}", "z"]);
+    check_eq(style.text_labels(3), &["iiii", "\u{754c}\u{754c}\u{754c}", "z"][..])
 }
 
 #[test]
-fn a_text_label_for_a_row_the_grid_does_not_have_is_not_a_candidate_for_the_widest() -> Result<(), String> {
+fn text_labels_stops_at_the_last_row_the_grid_has() -> Result<(), String> {
     let style = LabellingStyle::Text(&["a", "bb", "a label for a third row"]);
-    let mut out = String::new();
-    style.widest_label_into(2, 3, &mut out);
-    check_eq(out.as_str(), "bb")
+    check_eq(style.text_labels(2), &["a", "bb"][..])?;
+    check_eq(style.text_labels(10).len(), 3)
+}
+
+#[test]
+fn a_generated_style_has_no_text_labels_to_measure() -> Result<(), String> {
+    check_eq(LabellingStyle::Numeric.text_labels(5).len(), 0)?;
+    check_eq(LabellingStyle::Alphabetic.text_labels(5).len(), 0)
 }
 
 #[test]

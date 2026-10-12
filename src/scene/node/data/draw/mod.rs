@@ -220,8 +220,9 @@ impl GridLayoutMetrics {
         measure_el.remove();
         guard.release();
 
-        // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. It grows to fit the
-        // widest label of any row.
+        // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. A generated
+        // label never gets shorter as its index grows, so the last row's own is the widest. A caller's own text could be
+        // any width, whatever its length, so each one is measured and the widest wins.
         let (rows, cols) = content.shape();
         let mut left_pad = OUTER_PADDING;
         if let Some(style) = content.labelling() {
@@ -230,7 +231,12 @@ impl GridLayoutMetrics {
             guard.track(label_el.clone());
             label_el.set_font_family(GRID_FONT_FAMILY)?;
             label_el.set_font_size(GRID_FONT_SIZE)?;
-            left_pad = left_pad.max(label_el.bounding_box()?.size.width + 2.0 * ELEMENT_LABEL_MARGIN);
+            let mut label_width = label_el.bounding_box()?.size.width;
+            for label in style.text_labels(rows) {
+                label_el.set_text(label);
+                label_width = label_width.max(label_el.bounding_box()?.size.width);
+            }
+            left_pad = left_pad.max(label_width + 2.0 * ELEMENT_LABEL_MARGIN);
             label_el.remove();
             guard.release();
         }

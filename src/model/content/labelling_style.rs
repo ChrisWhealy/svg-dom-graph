@@ -49,18 +49,22 @@ impl LabellingStyle {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the longest label a grid of `rows` rows of `cols` columns draws into `out`, replacing what it held. A
     /// label is drawn beside the first element of each row. A numeric or alphabetic label never gets shorter as its
-    /// index grows, so the last row's own is the longest. A text label has no such order, so every row's own is
-    /// compared, and the first of the longest wins.
+    /// index grows, so the last row's own is the longest. That holds for the narrow set of characters they use, in a
+    /// monospace font. A text label has no such order, and may use any characters, so this is no guide to the widest of
+    /// those: see [`text_labels`](Self::text_labels), whose candidates a caller must measure one by one.
     pub(crate) fn widest_label_into(self, rows: usize, cols: usize, out: &mut String) {
+        self.label_into(rows.saturating_sub(1) * cols, cols, out);
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The labels a grid of `rows` rows draws, if they are a caller's own text: one for each row, in order. Empty for a
+    /// style that generates its labels. Text may use any characters, and the character count says nothing reliable about
+    /// the rendered width: a CJK glyph is about twice as wide as a Latin one, even in a monospace font. So a caller sizing
+    /// the label column measures every one of these, rather than picking one by length.
+    pub(crate) fn text_labels(self, rows: usize) -> &'static [&'static str] {
         match self {
-            Self::Text(labels) => {
-                let widest = labels.iter().take(rows).fold("", |widest, label| {
-                    if label.chars().count() > widest.chars().count() { label } else { widest }
-                });
-                out.clear();
-                out.push_str(widest);
-            },
-            _ => self.label_into(rows.saturating_sub(1) * cols, cols, out),
+            Self::Text(labels) => &labels[..rows.min(labels.len())],
+            _ => &[],
         }
     }
 

@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - SHA1 demo implementation (`89fb10d`)
 - Add labelling style to selection demos (`8d818bc`)
 
+## Fixed
+
+- Ensure text width calculation is based on rendered widt, not character count (``)
+
 # [Released]
 
 ## [0.2.29] - 2026-10-09

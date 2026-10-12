@@ -9,6 +9,9 @@ pub(crate) struct SelectionToolbarButton {
     pub group: SvgNode,
     pub rect: SvgNode,
     pub label: SvgNode,
+    /// The button's own width: its natural width, or wider if its label's rendered text needs more room. The label of a
+    /// stride button is the caller's own text, in any script, so no fixed width is certain to hold it.
+    pub width: f64,
     /// Whether the button was last drawn enabled, or `None` if it has not been drawn yet.
     ///
     /// Same reasoning as [`crate::scene::toolbar`]'s own `ToolbarButton::enabled`: remembered here so a

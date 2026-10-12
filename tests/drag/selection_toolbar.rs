@@ -567,3 +567,39 @@ fn a_zero_stride_is_rejected() -> Result<(), String> {
     )?;
     check(!scene.has_selection_toolbar(), "nothing was installed")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A stride button is as wide as its label's own rendered text needs, whatever script the label is in. A label of wide
+/// glyphs needs more room than a fixed width gives it, however few characters it has.
+#[wasm_bindgen_test]
+fn a_stride_button_is_wide_enough_for_the_rendered_width_of_its_label() -> Result<(), String> {
+    let scene = new_scene("st-stride-wide")?;
+    let node = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::U8((0..20).collect()), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let mut options = SelectionToolbarOptions::default();
+    options.stride = Some(SelectionStride::new(
+        5,
+        "\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}",
+    ));
+    scene.show_selection_toolbar(node, options, no_op).map_err(|e| e.to_string())?;
+
+    let next_stride = button("st-stride-wide", 3)?;
+    let rect = next_stride
+        .query_selector("rect")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no rect")?;
+    let text = next_stride
+        .query_selector("text")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no text")?;
+    // The scene's `<svg>` is drawn at its own view box's size, so client pixels are scene units.
+    let (rect_width, text_width) = (rect.get_bounding_client_rect().width(), text.get_bounding_client_rect().width());
+    check(
+        text_width <= rect_width,
+        &format!("the label is {text_width} wide, but its button is {rect_width}"),
+    )
+}
