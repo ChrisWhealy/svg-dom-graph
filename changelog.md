@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Doc only: Update docs and images (``)
+- Doc only: Update docs and images (`e5e8ddb`)
+- Doc only: Minor doc corrections (``)
 
 ## Fixed
 

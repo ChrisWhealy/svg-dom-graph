@@ -53,4 +53,4 @@ It checks that observable contract, and does not repeat the width algorithm, and
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 
-Needs a local Chrome/Chromium binary to be installed.
+Needs the latest version of the Chrome/Chromium binary to be locally installed.

@@ -10,7 +10,15 @@ Runs the native, DOM-free unit tests.
 These sit beside the code they test, in a `unit_tests.rs` file or a `unit_tests/` folder, throughout `src/`.
 They cover the geometry in `src/geometry/`, the topology and the node content types in `src/model/`, the error type in `src/error/`, and the pure parts of `src/scene/`.
 
-The node content tests in `src/model/content/unit_tests/` are split by topic: formatting, text formats, grid shape, selection, operators, and labelling.
+The node content tests in `src/model/content/unit_tests/` are split by topic:
+
+* formatting
+* text formats
+* grid shape
+* selection
+* operators, and
+* labelling
+
 The labelling tests cover each `LabellingStyle`, and `Text` in particular: a string belongs to a row and not an element, a row with no string has no label, and the candidates offered for measuring are only those rows that hold a cell.
 `populated_rows` is tested here too, because a layout can ask for more rows than there are values.
 

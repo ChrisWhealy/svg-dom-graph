@@ -40,7 +40,8 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 
 - `add_unary_operator_node`/`_with`, `add_binary_operator_node`/`_with`, and `add_arithmetic_operator_node`/`_with` each draw a node labelled with the operation name that produced the value it displays.
 
-   ***IMPORTANT*** The displayed value is **never** computed by this crate — it must be calculated and supplied by the caller!
+   ***IMPORTANT***<br>
+   The displayed value is **never** computed by this crate — it must be calculated and supplied by the caller!
 
    Each operator node also auto-wires its own incoming operand edge(s).
    See `UnaryOperator`, `BinaryOperator`, and `ArithmeticOperator`.

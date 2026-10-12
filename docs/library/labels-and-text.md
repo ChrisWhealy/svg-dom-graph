@@ -2,7 +2,7 @@
 
 This page describes the labels a data node can draw beside the rows of its grid, and how this crate sizes anything that contains text.
 
-- **Row labels.**
+- **Row labels.**<br>
   `DataNodeContent::with_labels` and `with_labelling_style` draw a label beside each row of a grid, in the grid box's own left padding.
 
   `LabellingStyle` is one of three:
@@ -19,7 +19,7 @@ This page describes the labels a data node can draw beside the rows of its grid,
   The label column is as wide as the widest label of a row that actually holds a cell.
   A row the layout asks for but has no value for takes no room.
 
-- **Text is measured, never counted.**
+- **Text is measured, never counted.**<br>
   Every width this crate derives from text is taken from the rendered text, through `getBBox()`, and never from a character count.
   That covers a plain node's label, a data node's name and row labels, an operator node's label, the scene title, and the label of a selection toolbar button.
   A label may therefore use any script: a CJK glyph, or a letter with combining marks, takes the room it really renders at, whichever fonts the browser has.

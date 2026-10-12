@@ -15,27 +15,20 @@ SHA-1 hashes a message in 64-byte blocks, and this demo needs only one.
 
 The diagram draws only the stage in progress.
 
-* **The message schedule.**
+* **The message schedule.**<br>
   The message, shown as plain text, sits above its block of 16 words.
   The block feeds an 80-word schedule, shown as a grid.
   Each word after the 16th is the XOR of four earlier words rotated left by one bit.
   While a word is being built, the "XOR" node shows the four words it reads, labelled `ms[n-3]`, `ms[n-8]`, `ms[n-14]` and `ms[n-16]` by `LabellingStyle::Text`, and their XOR.
   The node below it is that XOR rotated left by one bit, which is the new schedule word.
   The word being built is the one in focus in the schedule, and the four it reads are marked as secondary cells.
-* **Compression.**
+* **Compression.**<br>
   The 80 rounds are drawn in four sections of 20, because every round in a section uses the same round function and the same round constant, and the diagram names them.
   Crossing into the next section draws the diagram again.
   Each round takes the working variables `a` to `e`, and adds `ROTL(a, 5)`, the round function of `b`, `c` and `d`, `e`, the round constant and the schedule word `W`.
   `W` is the word marked in the schedule above, which is named as such.
   The initial hash is fixed by the standard and is not worked out from the message, which the node's name says.
   After the last round, the digest is each working variable added to its initial hash word, and the last step writes it out as the 40-digit hash.
-
-The layout follows four rules:
-
-1. Data flows along a single axis wherever it can.
-2. A flow that would make the diagram too tall or too wide snakes instead: the next row runs in the opposite direction, directly beneath the end of the last.
-3. Connectors are straight lines, not elbows.
-4. A connector joins neighbouring nodes by the most direct path, so no connector crosses another or passes over a node.
 
 ## SHA2-256
 
