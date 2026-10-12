@@ -220,12 +220,12 @@ impl GridLayoutMetrics {
         measure_el.remove();
         guard.release();
 
-        // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. A label never gets
-        // shorter as its index grows, so the last row's own is the longest.
+        // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. It grows to fit the
+        // widest label of any row.
         let (rows, cols) = content.shape();
         let mut left_pad = OUTER_PADDING;
         if let Some(style) = content.labelling() {
-            style.label_into((rows - 1) * cols, &mut widest);
+            style.widest_label_into(rows, cols, &mut widest);
             let label_el = svg.text(Point::origin(), &widest)?;
             guard.track(label_el.clone());
             label_el.set_font_family(GRID_FONT_FAMILY)?;

@@ -46,6 +46,36 @@ fn alphabetic_labels_are_unique() -> Result<(), String> {
 }
 
 #[test]
+fn text_labels_are_the_strings_given() -> Result<(), String> {
+    let style = LabellingStyle::Text(&["ms[n-3]", "ms[n-8]"]);
+    check_eq([0, 1, 2].map(|i| style.label(i)), ["ms[n-3]", "ms[n-8]", ""].map(String::from))
+}
+
+#[test]
+fn the_widest_text_label_is_found_in_any_row() -> Result<(), String> {
+    let style = LabellingStyle::Text(&["a", "ms[n-14]", "bb"]);
+    let mut out = String::new();
+    style.widest_label_into(3, 1, &mut out);
+    check_eq(out.as_str(), "ms[n-14]")
+}
+
+#[test]
+fn only_the_first_element_of_each_row_is_a_candidate_for_the_widest_text_label() -> Result<(), String> {
+    // With two columns, labels are drawn for elements 0 and 2. Element 1's own label is never drawn.
+    let style = LabellingStyle::Text(&["a", "a very long label", "bb"]);
+    let mut out = String::new();
+    style.widest_label_into(2, 2, &mut out);
+    check_eq(out.as_str(), "bb")
+}
+
+#[test]
+fn the_widest_numeric_label_is_the_last_rows() -> Result<(), String> {
+    let mut out = String::new();
+    LabellingStyle::Numeric.widest_label_into(11, 1, &mut out);
+    check_eq(out.as_str(), "10")
+}
+
+#[test]
 fn labelling_is_off_unless_asked_for() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal);
     check_eq(content.labelling(), None)

@@ -17,17 +17,23 @@ pub enum LabellingStyle {
     /// This is base 26 with no zero digit, so `a` never acts as a leading zero. Without that, `a` would be both `0` and
     /// the empty prefix of `aa`, and two elements could share a label.
     Alphabetic,
+    /// Text chosen by the caller: element `i` is labelled with the `i`th string. An element past the end of the list
+    /// has an empty label. Meant for a grid whose elements have names of their own, such as the operands of a formula.
+    ///
+    /// The list is a `'static` slice, so that this style stays [`Copy`] like the others. Consequently, a label that
+    /// needs to be built at run time cannot be used here.
+    Text(&'static [&'static str]),
 }
 
 impl LabellingStyle {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the label of element `index` into `out`, replacing what it held.
     pub(crate) fn label_into(self, index: usize, out: &mut String) {
         out.clear();
         self.append_label(index, out);
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Appends the label of element `index` to `out`, keeping what it held. Allocates only if `out` must grow.
     pub(crate) fn append_label(self, index: usize, out: &mut String) {
         use std::fmt::Write;
@@ -36,10 +42,32 @@ impl LabellingStyle {
                 let _ = write!(out, "{index}");
             },
             Self::Alphabetic => write_alphabetic(index, out),
+            Self::Text(labels) => out.push_str(labels.get(index).copied().unwrap_or("")),
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Writes the longest label a grid of `rows` rows of `cols` columns draws into `out`, replacing what it held. A
+    /// label is drawn beside the first element of each row. A numeric or alphabetic label never gets shorter as its
+    /// index grows, so the last row's own is the longest. A text label has no such order, so every row's own is
+    /// compared, and the first of the longest wins.
+    pub(crate) fn widest_label_into(self, rows: usize, cols: usize, out: &mut String) {
+        match self {
+            Self::Text(labels) => {
+                let widest = (0..rows)
+                    .filter_map(|row| labels.get(row * cols).copied())
+                    .fold(
+                        "",
+                        |widest, label| if label.chars().count() > widest.chars().count() { label } else { widest },
+                    );
+                out.clear();
+                out.push_str(widest);
+            },
+            _ => self.label_into(rows.saturating_sub(1) * cols, out),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The label of element `index`.
     #[cfg(test)]
     pub(crate) fn label(self, index: usize) -> String {
