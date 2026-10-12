@@ -271,8 +271,16 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// places or significant digits, in plain or scientific notation, and [`DataFormat::Decimal`] writes their shortest
 /// digits. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show their IEEE-754 bits, in the selected [`ByteOrder`].
 /// Unlike an integer, a float has `NaN`, the infinities and a negative zero, and its text takes a number of characters
-/// that depends on far more than its size. See [`FloatFormat`] for each of those. Floats are not `Eq`, so neither is
-/// `NodeValues`.
+/// that depends on far more than its size. See [`FloatFormat`] for each of those.
+///
+/// # Equality
+///
+/// Two `NodeValues` are equal when they are the same type and hold identical stored values, and for a float that means
+/// identical bits, not IEEE-754 equality. So `F64(vec![0.0]) != F64(vec![-0.0])`, because the two are written
+/// differently and a node showing one is not showing the other. And `F64(vec![f64::NAN]) == F64(vec![f64::NAN])`,
+/// because a `NaN` that has not changed has not changed. This is the same test `Scene::set_data_values` uses to decide
+/// whether a replacement changes anything, so the two can never disagree. It also makes equality reflexive, which is
+/// what lets `NodeValues` be [`Eq`].
 ///
 /// # Deliberately one width per node
 ///
@@ -286,7 +294,7 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// A heterogeneous node — `Vec<NodeValue>` with one width per value, à la a tagged-union cell type — is a legitimate,
 /// larger feature in its own right. It is not an incremental change to this one. Building it later, should a real
 /// caller need it, is expected to sit alongside this type rather than replace it.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone)]
 #[non_exhaustive]
 pub enum NodeValues {
     U8(Vec<u8>),
@@ -300,6 +308,15 @@ pub enum NodeValues {
     F32(Vec<f32>),
     F64(Vec<f64>),
 }
+
+impl PartialEq for NodeValues {
+    /// Same type, and identical values: bit for bit, for a float. See "Equality" in [`NodeValues`]'s own doc comment.
+    fn eq(&self, other: &Self) -> bool {
+        self.same_as(other)
+    }
+}
+
+impl Eq for NodeValues {}
 
 impl NodeValues {
     /// How many values this holds, regardless of width — what [`grid_shape`] arranges into a grid.
@@ -326,8 +343,8 @@ impl NodeValues {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` if `other` is the same type and holds the very same values. A float is the same only if it has the same
-    /// bits, which is not what `==` says: `-0.0 == 0.0`, but they are written differently, and `NaN != NaN`, but a
-    /// `NaN` that is still a `NaN` has not changed.
+    /// bits, which is not what IEEE-754 `==` says: `-0.0 == 0.0`, but they are written differently, and `NaN != NaN`, but
+    /// a `NaN` that is still a `NaN` has not changed. This is [`NodeValues`]'s own `PartialEq`.
     pub(super) fn same_as(&self, other: &Self) -> bool {
         fn same<T: Cell>(a: &[T], b: &[T]) -> bool {
             a.len() == b.len() && a.iter().zip(b).all(|(&x, &y)| x.same_as(y))

@@ -433,3 +433,47 @@ fn floats_are_named_and_coloured_apart_from_every_integer() -> Result<(), String
     unique.dedup();
     check_eq(unique.len(), every.len())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Equality
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn node_values_and_content_are_eq() {
+    fn is_eq<T: Eq>() {}
+    is_eq::<NodeValues>();
+    is_eq::<DataNodeContent>();
+}
+
+#[test]
+fn equality_is_by_bits_so_a_negative_zero_is_not_a_zero() -> Result<(), String> {
+    check_eq(NodeValues::F64(vec![0.0]) == NodeValues::F64(vec![-0.0]), false)?;
+    check_eq(NodeValues::F32(vec![0.0]) == NodeValues::F32(vec![-0.0]), false)?;
+    check_eq(NodeValues::F64(vec![0.0]) == NodeValues::F64(vec![0.0]), true)
+}
+
+#[test]
+fn equality_is_by_bits_so_a_nan_equals_itself() -> Result<(), String> {
+    let nan = NodeValues::F64(vec![f64::NAN, 1.0]);
+    check_eq(nan == nan.clone(), true)?;
+    check_eq(NodeValues::F32(vec![f32::NAN]) == NodeValues::F32(vec![f32::NAN]), true)
+}
+
+#[test]
+fn equality_needs_the_same_type_and_the_same_count() -> Result<(), String> {
+    check_eq(NodeValues::F32(vec![1.0]) == NodeValues::F64(vec![1.0]), false)?;
+    check_eq(NodeValues::F64(vec![1.0]) == NodeValues::F64(vec![1.0, 1.0]), false)?;
+    check_eq(NodeValues::I8(vec![1]) == NodeValues::U8(vec![1]), false)?;
+    check_eq(NodeValues::I8(vec![-1, 2]) == NodeValues::I8(vec![-1, 2]), true)
+}
+
+#[test]
+fn content_equality_follows_its_values_and_so_agrees_with_change_detection() -> Result<(), String> {
+    let zero = as_f64(vec![0.0], FloatFormat::shortest());
+    let negative_zero = as_f64(vec![-0.0], FloatFormat::shortest());
+    check_eq(zero == negative_zero, false)?;
+    check_eq(zero.differs_from(&NodeValues::F64(vec![-0.0])), true)?;
+    let nan = as_f64(vec![f64::NAN], FloatFormat::shortest());
+    check_eq(nan == nan.clone(), true)?;
+    check_eq(nan.differs_from(&NodeValues::F64(vec![f64::NAN])), false)
+}

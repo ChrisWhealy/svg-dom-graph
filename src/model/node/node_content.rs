@@ -12,7 +12,7 @@ use crate::model::content::DataNodeContent;
 /// `Container` holds only the label, never the nested `Scene` itself. A `Scene`/`SceneInner` is DOM/wasm state, and
 /// this module is kept free of that (see [`super::super::graph::Graph`]'s own doc comment). So it stays testable with a
 /// plain `cargo test`. The nested `Scene` handle instead lives on `BoxHandles::child`.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum NodeContent {
     Label(String),
     Data(DataNodeContent),

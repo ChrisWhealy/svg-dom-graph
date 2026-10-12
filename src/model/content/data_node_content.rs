@@ -7,7 +7,7 @@ use super::*;
 /// Build one with [`DataNodeContent::new`]. Unlike [`NodeOptions`](crate::scene::NodeOptions)/
 /// [`DragOptions`](crate::scene::DragOptions), there is no sensible all-default state to build one on top of, because
 /// the values are mandatory. So this is a plain constructor rather than a `default()` plus `with_*` builder.
-#[derive(Debug, Clone, PartialEq)]
+#[derive(Debug, Clone, PartialEq, Eq)]
 pub struct DataNodeContent {
     values: NodeValues,
     format: DataFormat,

@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Extend `NodeValues` enum to include floating point values (``)
 
+## Changed
+
+- Implement manual `PartialEq` for `NodeValues` (``)
+
 # [Released]
 
 ## [0.2.30] - 2026-10-12
