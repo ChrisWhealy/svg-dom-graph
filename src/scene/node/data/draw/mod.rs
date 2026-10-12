@@ -224,17 +224,17 @@ impl GridLayoutMetrics {
         // label never gets shorter as its index grows, so the last row's own is the widest. A caller's own text could be
         // any width, whatever its length, so each one is measured and the widest wins. Only a row that has a cell is
         // labelled, so a row the layout asks for but has no value for takes no room.
-        let (_, cols) = content.shape();
-        let rows = content.populated_rows();
+        let (rows, cols) = content.shape();
+        let labelled_rows = content.populated_rows();
         let mut left_pad = OUTER_PADDING;
         if let Some(style) = content.labelling() {
-            style.widest_label_into(rows, cols, &mut widest);
+            style.widest_label_into(labelled_rows, cols, &mut widest);
             let label_el = svg.text(Point::origin(), &widest)?;
             guard.track(label_el.clone());
             label_el.set_font_family(GRID_FONT_FAMILY)?;
             label_el.set_font_size(GRID_FONT_SIZE)?;
             let mut label_width = label_el.bounding_box()?.size.width;
-            for label in style.text_labels(rows) {
+            for label in style.text_labels(labelled_rows) {
                 label_el.set_text(label);
                 label_width = label_width.max(label_el.bounding_box()?.size.width);
             }

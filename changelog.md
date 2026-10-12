@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `LabellingStyle::Text` labels grid rows with caller-supplied text (`b2ac547`)
 - SHA1 demo implementation (`89fb10d`)
 - Add labelling style to selection demos (`8d818bc`)
-- Extend test coverage for label width calculations (``)
+- Extend test coverage for label width calculations (`c5bfbe1`)
 
 ## Fixed
 
@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Skip missing or empty row label when building accessible name (`392ecf1`)
 - Correct character width test that failed in CI due to CJK font not installed (`6a4b5bb`)
 - Exclude empty but labelled rows from width calculation (`34aae70`)
+- Do not conflate row count with populated row count (``)
 
 # [Released]
 

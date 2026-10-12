@@ -348,3 +348,32 @@ fn replacing_the_values_of_a_text_labelled_grid_keeps_its_row_labels() -> Result
         &format!("labels {labels:?}, names {names:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   A layout's own row count is kept, whether or not every row has a value
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// The height of a node of `values` laid out in exactly three rows, labelled in `labelling` if there is one.
+fn height_in_three_rows(id: &str, values: Vec<u8>, labelling: Option<LabellingStyle>) -> Result<f64, String> {
+    let mut content =
+        DataNodeContent::new(NodeValues::U8(values), DataFormat::Decimal).with_layout(GridLayout::Rows(3));
+    if let Some(style) = labelling {
+        content = content.with_labelling_style(style);
+    }
+    Ok(draw(id, content)?.0.height)
+}
+
+#[wasm_bindgen_test]
+fn a_grid_asked_for_three_rows_keeps_its_height_when_two_values_fill_only_two() -> Result<(), String> {
+    let full = height_in_three_rows("rows-kept-full", vec![1, 2, 3], None)?;
+    let short = height_in_three_rows("rows-kept-short", vec![1, 2], None)?;
+    check((full - short).abs() < 0.5, &format!("three values {full}, two values {short}"))
+}
+
+#[wasm_bindgen_test]
+fn a_labelled_grid_asked_for_three_rows_keeps_its_height_when_two_values_fill_only_two() -> Result<(), String> {
+    let labelling = Some(LabellingStyle::Text(&["a", "b", "c"]));
+    let full = height_in_three_rows("rows-kept-full-labelled", vec![1, 2, 3], labelling)?;
+    let short = height_in_three_rows("rows-kept-short-labelled", vec![1, 2], labelling)?;
+    check((full - short).abs() < 0.5, &format!("three values {full}, two values {short}"))
+}
