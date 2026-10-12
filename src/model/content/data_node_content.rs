@@ -83,8 +83,10 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Returns `self` with every element labelled in `style`, which also turns labelling on. See [`LabellingStyle`] for
-    /// what each style produces, and [`with_labels`](Self::with_labels) for where a label is drawn.
+    /// Returns `self` with its grid labelled in `style`, which also turns labelling on. A numeric or alphabetic style
+    /// labels every element, so a wider grid shows the label of each row's first element. [`LabellingStyle::Text`] labels
+    /// every row with a string of the caller's own choosing, by row number and not by element. See [`LabellingStyle`]
+    /// for what each style produces, and [`with_labels`](Self::with_labels) for where a label is drawn.
     #[must_use]
     pub fn with_labelling_style(mut self, style: LabellingStyle) -> Self {
         self.labelling = Some(style);

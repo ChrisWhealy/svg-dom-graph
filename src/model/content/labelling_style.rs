@@ -1,6 +1,10 @@
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How [`super::DataNodeContent::with_labelling_style`] names a grid's own elements. A label is drawn outside the cells,
-/// in the grid box's own left padding, beside the first cell of each row.
+/// How [`super::DataNodeContent::with_labelling_style`] labels a grid. A label is drawn outside the cells, in the grid
+/// box's own left padding, beside the first cell of each row.
+///
+/// [`Numeric`](Self::Numeric) and [`Alphabetic`](Self::Alphabetic) label by element: the label beside a row is that of
+/// the row's first element. [`Text`](Self::Text) labels by row: the label beside row `r` is the caller's own `r`th
+/// string, whatever the number of columns. In a grid of one column, a row is an element, so the two agree.
 ///
 /// `#[non_exhaustive]`, for the same reason as [`super::DataFormat`]. A plausible future addition — `Roman`, ... —
 /// should stay additive.
@@ -17,8 +21,14 @@ pub enum LabellingStyle {
     /// This is base 26 with no zero digit, so `a` never acts as a leading zero. Without that, `a` would be both `0` and
     /// the empty prefix of `aa`, and two elements could share a label.
     Alphabetic,
-    /// Text chosen by the caller: element `i` is labelled with the `i`th string. An element past the end of the list
-    /// has an empty label. Meant for a grid whose elements have names of their own, such as the operands of a formula.
+    /// Text chosen by the caller: string `r` labels row `r`, not element `r`. In a grid of three columns, strings `0`,
+    /// `1` and `2` label rows `0`, `1` and `2`, and so label elements `0` to `2`, `3` to `5` and `6` to `8`. A row past
+    /// the end of the list has an empty label. Meant for a grid whose rows have names of their own, such as the operands
+    /// of a formula, or the range of elements a row holds.
+    ///
+    /// The label column is made wide enough for the widest string by measuring each one as rendered. The strings may use
+    /// any characters. An element's accessible name quotes its row's string, where the other styles quote the element's
+    /// own label.
     ///
     /// The list is a `'static` slice, so that this style stays [`Copy`] like the others. Consequently, a label that
     /// needs to be built at run time cannot be used here.
