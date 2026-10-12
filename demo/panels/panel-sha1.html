@@ -1,0 +1,46 @@
+<section class="section" id="panel-sha1">
+    <h2>SHA1</h2>
+    <p>SHA-1 hashes a message in 64-byte blocks. This demo hashes one short message, so it needs only one block. Every
+        value on screen is a real result of that one calculation, worked out in plain Rust.</p>
+    <dl>
+        <dt>The message block</dt>
+        <dd>
+            <p>The message is padded out to one 64-byte block, seen as 16 big-endian 32-bit words. The byte straight
+                after the last message byte is the terminator, <code>0x80</code>. The last 64 bits hold the message's
+                length in bits, big-endian. This message is short, so only the last word, <code>w15</code>, is used.</p>
+        </dd>
+        <dt>The message schedule</dt>
+        <dd>
+            <p>The block is copied into the first 16 words of an 80-word schedule. Each of the other 64 is the XOR of
+                four earlier words, rotated left by one bit:
+                <code>ms[n] = ROTL(ms[n-3] XOR ms[n-8] XOR ms[n-14] XOR ms[n-16], 1)</code>. While a word is being built,
+                it is marked, and the four words it reads are marked as secondary.</p>
+        </dd>
+        <dt>Compression</dt>
+        <dd>
+            <p>Five working variables, <code>a</code> to <code>e</code>, start as the initial hash value. These five
+                words, <code>H0</code> to <code>H4</code>, are not worked out from the message. The standard fixes them: the
+                first four are the bytes <code>01 23 45 67 89 ab cd ef fe dc ba 98 76 54 32 10</code> read as
+                little-endian words, and the fifth is <code>c3d2e1f0</code>.</p>
+            <p>Each of the 80 rounds uses one schedule word, <code>W[i]</code>, which is the word marked in the
+                schedule, and one of four round constants <code>K</code>: one for each section of 20 rounds. The same
+                sections choose the round function <code>f</code>.</p>
+            <p><code>temp = ROTL(a, 5) + f(b, c, d) + e + K + W[i]</code>, where <code>f</code> is
+                <code>(b AND c) XOR (NOT(b) AND d)</code> for rounds 0 to 19,
+                <code>b XOR c XOR d</code> for rounds 20 to 39 and 60 to 79, and
+                <code>(b AND c) XOR (b AND d) XOR (c AND d)</code> for rounds 40 to 59.</p>
+            <p>The next working variables are <code>e=d, d=c, c=ROTL(b, 30), b=a, a=temp</code>.</p>
+        </dd>
+        <dt>The digest</dt>
+        <dd>
+            <p>After 80 rounds, each working variable is added to the initial hash word it started as. The digest is
+                those 5 words, joined. Without that last addition, the result would not be a hash of the block. The last
+                step writes the digest out as the usual 40-digit hexadecimal hash value.</p>
+        </dd>
+    </dl>
+    <p>Data flows along one axis, left to right. Where that would make the diagram too wide, the flow turns back on
+        itself and runs right to left on the row below. Press "Next" to walk through the steps. The "8" buttons step
+        eight at a time.</p>
+    <p>The scene is large, so it opens in a window of its own, sized to fit it.</p>
+    <button id="sha1-open" class="open-window" type="button">Open the demo in its own window</button>
+</section>

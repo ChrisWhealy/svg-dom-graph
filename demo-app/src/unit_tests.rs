@@ -48,3 +48,18 @@ fn the_sha2_panel_shows_the_calculation_behind_its_one_function() -> Result<(), 
         Err("the SHA-256 panel should show its algorithm and its walk".to_owned())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn the_sha1_panel_shows_the_calculation_behind_its_one_function() -> Result<(), String> {
+    let panel = DEMO_PANELS
+        .iter()
+        .find(|p| p.id == "panel-sha1")
+        .ok_or("panel-sha1 is not registered")?;
+    let shows = |needle: &str| panel.files.iter().any(|f| f.source.contains(needle));
+    if shows("fn expanded_word") && shows("fn round") && shows("pub(in crate::sha1) fn shown") {
+        Ok(())
+    } else {
+        Err("the SHA-1 panel should show its algorithm and its walk".to_owned())
+    }
+}

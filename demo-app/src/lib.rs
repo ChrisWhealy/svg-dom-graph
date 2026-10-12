@@ -59,6 +59,7 @@ mod operators_binary;
 mod operators_chained;
 mod operators_unary;
 mod selection;
+mod sha1;
 mod sha2_256;
 mod sha3_sponge;
 mod source_frame;
@@ -139,6 +140,7 @@ demo_gallery! {
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
     "panel-theta" => theta::build_theta_demo + theta::FILES,
+    "panel-sha1" => sha1::build_sha1_demo + sha1::FILES,
     "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
 }
@@ -152,11 +154,19 @@ pub fn init_sha3_sponge_window() -> Result<(), JsValue> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge scene in `sha3-sponge-window.html`/// Builds the SHA-256 scene in `sha2-256-window.html`, the window the gallery's own SHA2-256 panel opens. Call it once,
+/// Builds the SHA-256 scene in `sha2-256-window.html`, the window the gallery's own SHA2-256 panel opens. Call it once,
 /// from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
 pub fn init_sha2_256_window() -> Result<(), JsValue> {
     sha2_256::build_sha2_256_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the SHA-1 scene in `sha1-window.html`, the window the gallery's own SHA1 panel opens. Call it once, from that
+/// page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_sha1_window() -> Result<(), JsValue> {
+    sha1::build_sha1_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

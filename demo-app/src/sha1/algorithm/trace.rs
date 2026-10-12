@@ -1,0 +1,38 @@
+use super::*;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Everything one block's hash goes through, from the padded block to the digest.
+pub(in crate::sha1) struct Trace {
+    /// The padded message block.
+    pub(in crate::sha1) block: [u32; BLOCK_WORDS],
+    /// The message schedule built from it.
+    pub(in crate::sha1) schedule: [u32; SCHEDULE_WORDS],
+    /// The 80 rounds, in order. Round `i`'s `after` is round `i + 1`'s `before`.
+    pub(in crate::sha1) rounds: [Round; ROUNDS],
+    /// The digest: each initial hash word plus its working variable after the last round, wrapping.
+    pub(in crate::sha1) digest: [u32; 5],
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Hashes `message`, keeping every step. `None` if `message` is longer than [`MAX_MESSAGE_LEN`].
+///
+/// The working variables after the last round are not the digest on their own. The standard adds each one to the
+/// initial hash word it started from, so that the compression feeds forward from the state it was given.
+pub(in crate::sha1) fn trace(message: &[u8]) -> Option<Trace> {
+    let block = message_block(message)?;
+    let schedule = message_schedule(&block);
+
+    let mut state = INITIAL_HASH;
+    let rounds: [Round; ROUNDS] = std::array::from_fn(|i| {
+        let r = round(state, i, schedule[i]);
+        state = r.after;
+        r
+    });
+    let digest = std::array::from_fn(|i| INITIAL_HASH[i].wrapping_add(state[i]));
+    Some(Trace {
+        block,
+        schedule,
+        rounds,
+        digest,
+    })
+}
