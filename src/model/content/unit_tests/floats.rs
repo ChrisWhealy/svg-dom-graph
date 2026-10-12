@@ -477,3 +477,311 @@ fn content_equality_follows_its_values_and_so_agrees_with_change_detection() -> 
     check_eq(nan == nan.clone(), true)?;
     check_eq(nan.differs_from(&NodeValues::F64(vec![f64::NAN])), false)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   The edges of the range
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// The decimal exponent of `value`, as Rust writes it in scientific notation: `-324` for the smallest `f64`.
+fn exponent_of(value: f64) -> i32 {
+    format!("{value:e}")
+        .split_once('e')
+        .and_then(|(_, e)| e.parse().ok())
+        .unwrap_or(0)
+}
+
+#[test]
+fn the_smallest_and_largest_values_read_back_as_themselves_in_the_shortest_form() -> Result<(), String> {
+    let format = FloatFormat::shortest().scientific();
+    for value in [f64::MIN_POSITIVE, f64::from_bits(1), f64::MAX, -f64::MAX, -f64::from_bits(1)] {
+        let text = one(value, format);
+        check_eq(text.parse::<f64>().ok(), Some(value)).map_err(|e| format!("{text}: {e}"))?;
+    }
+    check_eq(one(f64::MAX, format), "1.7976931348623157e308".to_owned())?;
+    check_eq(one(f64::from_bits(1), format), "5e-324".to_owned())?;
+    let single =
+        |value: f32| cells(&DataNodeContent::new(NodeValues::F32(vec![value]), DataFormat::Float(format))).remove(0);
+    check_eq(single(f32::MAX), "3.4028235e38".to_owned())?;
+    check_eq(single(f32::from_bits(1)), "1e-45".to_owned())?;
+    check_eq(single(f32::MIN_POSITIVE).parse::<f32>().ok(), Some(f32::MIN_POSITIVE))
+}
+
+#[test]
+fn the_normal_and_subnormal_boundary_is_not_a_boundary_for_formatting() -> Result<(), String> {
+    // The largest subnormal and the smallest normal differ by one bit, and are written as neighbouring numbers.
+    let largest_subnormal = f64::from_bits(f64::MIN_POSITIVE.to_bits() - 1);
+    for value in [largest_subnormal, f64::MIN_POSITIVE] {
+        let text = one(value, FloatFormat::shortest().scientific());
+        check_eq(text.parse::<f64>().ok(), Some(value)).map_err(|e| format!("{text}: {e}"))?;
+        check_eq(exponent_of(value), -308)?;
+    }
+    Ok(())
+}
+
+#[test]
+fn plain_notation_expands_the_largest_and_smallest_values_in_full() -> Result<(), String> {
+    // `f64::MAX` is a 309-digit number, so it takes 309 characters with 3 significant digits, and 312 with 2 decimal
+    // places.
+    let digits = one(f64::MAX, FloatFormat::significant_digits(3));
+    check_eq(digits.len(), 309)?;
+    check_eq(digits.starts_with("180"), true)?;
+    check_eq(digits[3..].bytes().all(|b| b == b'0'), true)?;
+    let places = one(f64::MAX, FloatFormat::decimal_places(2));
+    check_eq(places.len(), 312)?;
+    check_eq(places.starts_with("17976931348623157"), true)?;
+    check_eq(places.ends_with(".00"), true)?;
+    // The smallest subnormal has 323 leading zeros after its point.
+    let tiny = one(f64::from_bits(1), FloatFormat::significant_digits(3));
+    check_eq(tiny.len(), 2 + 323 + 3)?;
+    check_eq(tiny.starts_with("0.000"), true)?;
+    check_eq(tiny.ends_with("494"), true)?;
+    check_eq(one(f64::from_bits(1), FloatFormat::decimal_places(2)), "0.00".to_owned())
+}
+
+#[test]
+fn the_widest_cell_of_the_extremes_follows_their_exponents() -> Result<(), String> {
+    let format = FloatFormat::significant_digits(3);
+    // The tiniest value has the most leading zeros, and `f64::MAX` the most trailing ones. The tiniest is wider.
+    let widest_text = widest(vec![f64::MAX, f64::from_bits(1), 1.0], format);
+    check_eq(widest_text.len(), 2 + 323 + 3)?;
+    check_eq(widest(vec![f64::MAX, 1.0], format).len(), 309)?;
+    check_eq(widest(vec![-f64::MAX, f64::MAX], FloatFormat::decimal_places(0)).len(), 310)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   The most digits
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn forty_significant_digits_fit_and_read_back_exactly() -> Result<(), String> {
+    let format = FloatFormat::significant_digits(MAX_FLOAT_DIGITS);
+    for value in [std::f64::consts::PI, 1.0 / 3.0, 1e-7, 123_456.789, f64::MAX, -2.5] {
+        let text = one(value, format);
+        check_eq(text.bytes().filter(u8::is_ascii_digit).count() >= 40, true).map_err(|e| format!("{text}: {e}"))?;
+        check_eq(text.parse::<f64>().ok(), Some(value)).map_err(|e| format!("{text}: {e}"))?;
+    }
+    // Pi is `3.141592653589793115997963468544185161590576171875` exactly, so its 40 digits end by rounding up.
+    check_eq(
+        one(std::f64::consts::PI, format),
+        "3.141592653589793115997963468544185161591".to_owned(),
+    )?;
+    check_eq(one(5.0, format), format!("5.{}", "0".repeat(39)))
+}
+
+#[test]
+fn forty_decimal_places_fit_and_read_back_exactly() -> Result<(), String> {
+    let format = FloatFormat::decimal_places(MAX_FLOAT_DIGITS);
+    check_eq(one(0.5, format), format!("0.5{}", "0".repeat(39)))?;
+    let pi = one(std::f64::consts::PI, format);
+    check_eq(pi, "3.1415926535897931159979634685441851615906".to_owned())?;
+    check_eq(one(-1.0, format), format!("-1.{}", "0".repeat(40)))?;
+    check_eq(one(1e-7, format).parse::<f64>().ok(), Some(1e-7))
+}
+
+#[test]
+fn forty_scientific_digits_fit() -> Result<(), String> {
+    let digits = one(
+        std::f64::consts::PI,
+        FloatFormat::significant_digits(MAX_FLOAT_DIGITS).scientific(),
+    );
+    check_eq(digits, "3.141592653589793115997963468544185161591e0".to_owned())?;
+    let places = one(-1234.5, FloatFormat::decimal_places(MAX_FLOAT_DIGITS).scientific());
+    check_eq(places, format!("-1.2345{}e3", "0".repeat(36)))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Rounding at a power of ten
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn rounding_up_to_a_power_of_ten_lengthens_the_integer_part_and_the_exponent() -> Result<(), String> {
+    check_eq(one(9.96, FloatFormat::decimal_places(1)), "10.0".to_owned())?;
+    check_eq(one(99.96, FloatFormat::decimal_places(1)), "100.0".to_owned())?;
+    check_eq(one(999.5, FloatFormat::decimal_places(0)).len(), 4)?;
+    check_eq(one(9.96, FloatFormat::decimal_places(1).scientific()), "1.0e1".to_owned())?;
+    check_eq(one(9.9999, FloatFormat::significant_digits(2).scientific()), "1.0e1".to_owned())?;
+    check_eq(
+        one(9.9999e99, FloatFormat::significant_digits(2).scientific()),
+        "1.0e100".to_owned(),
+    )?;
+    check_eq(
+        one(9.9999e-101, FloatFormat::significant_digits(2).scientific()),
+        "1.0e-100".to_owned(),
+    )?;
+    // Rounding down at the other end keeps the shorter form.
+    check_eq(
+        one(1.00001e100, FloatFormat::significant_digits(2).scientific()),
+        "1.0e100".to_owned(),
+    )?;
+    check_eq(one(0.0999, FloatFormat::significant_digits(1)), "0.1".to_owned())
+}
+
+/// Values just either side of a power of ten, and of the point where rounding carries into it, for every power in a
+/// range wide enough to cross the lengths of one, two and three exponent digits, and both signs.
+fn values_around_powers_of_ten() -> Vec<f64> {
+    let mut values = vec![0.0, -0.0];
+    for power in [
+        -101, -100, -99, -12, -11, -10, -9, -4, -3, -2, -1, 0, 1, 2, 3, 4, 9, 10, 11, 12, 99, 100, 101,
+    ] {
+        let ten = 10_f64.powi(power);
+        for factor in [
+            0.5, 0.95, 0.995, 0.9995, 0.99999999, 1.0, 1.0000001, 1.5, 9.5, 9.95, 9.9995, 9.99999999,
+        ] {
+            values.push(ten * factor);
+            values.push(-ten * factor);
+        }
+    }
+    values.extend([
+        f64::MIN_POSITIVE,
+        f64::from_bits(1),
+        f64::MAX,
+        -f64::MAX,
+        f64::NAN,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+    ]);
+    values
+}
+
+fn every_format() -> Vec<FloatFormat> {
+    let mut formats = vec![FloatFormat::shortest(), FloatFormat::shortest().scientific()];
+    for n in [0, 1, 2, 5, MAX_FLOAT_DIGITS] {
+        formats.push(FloatFormat::decimal_places(n));
+        formats.push(FloatFormat::decimal_places(n).scientific());
+    }
+    for n in [1, 2, 3, 6, MAX_FLOAT_DIGITS] {
+        formats.push(FloatFormat::significant_digits(n));
+        formats.push(FloatFormat::significant_digits(n).scientific());
+    }
+    formats
+}
+
+#[test]
+fn the_widest_cell_of_every_value_around_every_power_of_ten_is_never_beaten() -> Result<(), String> {
+    // One node holding the whole range: if a value in the middle were ever wider than the extremes the shortcut looks
+    // at, it would beat the cell here. Checked against formatting every value, for every format.
+    let values = values_around_powers_of_ten();
+    for format in every_format() {
+        let longest = values.iter().map(|&v| one(v, format).len()).max().unwrap_or(0);
+        check_eq(widest(values.clone(), format).len(), longest).map_err(|e| format!("{format:?}: {e}"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn sets_of_values_around_powers_of_ten_never_beat_their_widest_cell() -> Result<(), String> {
+    // Many small sets, drawn deterministically, so that a value which is not an extreme of the whole range is the middle
+    // of a set it could beat.
+    let pool = values_around_powers_of_ten();
+    let mut state: u64 = 0x9E37_79B9_7F4A_7C15;
+    let mut next = move || {
+        state ^= state << 13;
+        state ^= state >> 7;
+        state ^= state << 17;
+        usize::try_from(state % pool.len() as u64).unwrap_or(0)
+    };
+    let pool = values_around_powers_of_ten();
+    for format in every_format() {
+        for _ in 0..400 {
+            let size = 2 + next() % 4;
+            let values: Vec<f64> = (0..size).map(|_| pool[next()]).collect();
+            let longest = values.iter().map(|&v| one(v, format).len()).max().unwrap_or(0);
+            check_eq(widest(values.clone(), format).len(), longest)
+                .map_err(|e| format!("{values:?} under {format:?}: {e}"))?;
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn the_same_holds_for_f32_around_its_own_limits() -> Result<(), String> {
+    let values: Vec<f32> = vec![
+        f32::MIN_POSITIVE,
+        f32::from_bits(1),
+        f32::MAX,
+        -f32::MAX,
+        9.5e-5,
+        -9.9999e30,
+        1.0,
+        0.0,
+        -0.0,
+        f32::NAN,
+        f32::NEG_INFINITY,
+    ];
+    for format in every_format() {
+        let content = DataNodeContent::new(NodeValues::F32(values.clone()), DataFormat::Float(format));
+        let longest = cells(&content).iter().map(String::len).max().unwrap_or(0);
+        let mut out = String::new();
+        content.widest_cell_string(&mut out);
+        check_eq(out.len(), longest).map_err(|e| format!("{format:?}: {e}"))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   NaN payloads and signs
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn two_nans_with_different_bits_are_different_values_though_both_read_nan() -> Result<(), String> {
+    let quiet = f64::from_bits(0x7FF8_0000_0000_0000);
+    let payload = f64::from_bits(0x7FF8_0000_0000_0001);
+    check_eq(quiet.is_nan() && payload.is_nan(), true)?;
+    check_eq(NodeValues::F64(vec![quiet]) == NodeValues::F64(vec![payload]), false)?;
+    check_eq(NodeValues::F64(vec![payload]) == NodeValues::F64(vec![payload]), true)?;
+    check_eq(one(payload, FloatFormat::decimal_places(2)), "NaN".to_owned())?;
+    let hex = |v: f64| cells(&DataNodeContent::new(NodeValues::F64(vec![v]), DataFormat::Hexadecimal)).remove(0);
+    check_eq(hex(quiet), "7F F8 00 00 00 00 00 00".to_owned())?;
+    check_eq(hex(payload), "7F F8 00 00 00 00 00 01".to_owned())
+}
+
+#[test]
+fn replacing_one_nan_with_another_of_different_bits_is_a_change() -> Result<(), String> {
+    let quiet = f64::from_bits(0x7FF8_0000_0000_0000);
+    let payload = f64::from_bits(0x7FF8_0000_0000_0001);
+    let mut content = DataNodeContent::new(NodeValues::F64(vec![quiet]), DataFormat::Hexadecimal);
+    check_eq(content.differs_from(&NodeValues::F64(vec![payload])), true)?;
+    let mut written = Vec::new();
+    content.try_replace_values(NodeValues::F64(vec![payload]), &mut String::new(), |_, text| {
+        written.push(text.to_owned());
+        Ok::<(), String>(())
+    })?;
+    check_eq(written, vec!["7F F8 00 00 00 00 00 01".to_owned()])?;
+    // Under a format that reads both as `NaN`, the replacement is still a change, though its text is the same.
+    let mut shown = DataNodeContent::new(NodeValues::F64(vec![quiet]), DataFormat::Decimal);
+    check_eq(shown.differs_from(&NodeValues::F64(vec![payload])), true)?;
+    let mut calls = 0;
+    shown.try_replace_values(NodeValues::F64(vec![payload]), &mut String::new(), |_, text| {
+        check_eq(text, "NaN").map_err(|e| e.to_string())?;
+        calls += 1;
+        Ok::<(), String>(())
+    })?;
+    check_eq(calls, 1)
+}
+
+#[test]
+fn a_negative_nan_has_no_sign_in_its_text_but_keeps_it_in_its_bits() -> Result<(), String> {
+    let negative = f64::from_bits(0xFFF8_0000_0000_0000);
+    check_eq(negative.is_nan() && negative.is_sign_negative(), true)?;
+    for format in [
+        FloatFormat::shortest(),
+        FloatFormat::decimal_places(2),
+        FloatFormat::significant_digits(3).scientific(),
+    ] {
+        check_eq(one(negative, format), "NaN".to_owned())?;
+    }
+    let hex = DataNodeContent::new(NodeValues::F64(vec![negative]), DataFormat::Hexadecimal);
+    check_eq(cells(&hex), vec!["FF F8 00 00 00 00 00 00".to_owned()])?;
+    let single = DataNodeContent::new(NodeValues::F32(vec![f32::from_bits(0xFFC0_0000)]), DataFormat::Hexadecimal);
+    check_eq(cells(&single), vec!["FF C0 00 00".to_owned()])?;
+    check_eq(
+        NodeValues::F64(vec![negative]) == NodeValues::F64(vec![f64::NAN]),
+        negative.to_bits() == f64::NAN.to_bits(),
+    )
+}
+
+#[test]
+fn a_negative_nan_is_no_wider_than_a_positive_one() -> Result<(), String> {
+    let negative = f64::from_bits(0xFFF8_0000_0000_0000);
+    check_eq(widest(vec![negative, 0.5], FloatFormat::decimal_places(0)), "NaN".to_owned())
+}

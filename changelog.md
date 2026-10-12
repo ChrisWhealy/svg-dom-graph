@@ -11,11 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Extend `NodeValues` enum to include floating point values (`3b5a7ff`)
+- Extend numerical boundary tests (``)
 
 ## Changed
 
 - Implement manual `PartialEq` for `NodeValues` (`a48885b`)
-- Bitwise operators reject floating point values (``)
+- Bitwise operators reject floating point values (`4346028`)
 
 # [Released]
 
