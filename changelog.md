@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.31] - 2026-10-12
 
 ## Added
@@ -18,8 +20,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement manual `PartialEq` for `NodeValues` (`a48885b`)
 - Bitwise operators reject floating point values (`4346028`)
 - Doc only: Update stale docs (`9856e25`)
-
-# [Released]
 
 ## [0.2.30] - 2026-10-12
 
