@@ -24,3 +24,5 @@ This page describes the labels a data node can draw beside the rows of its grid,
   That covers a plain node's label, a data node's name and row labels, an operator node's label, the scene title, and the label of a selection toolbar button.
   A label may therefore use any script: a CJK glyph, or a letter with combining marks, takes the room it really renders at, whichever fonts the browser has.
   The values in a grid are digits or printable ASCII, so for them the widest cell is found from the values and then measured once.
+  For an integer that is the largest value or, for a signed one, the most negative.
+  A float's width depends on far more than its size, so its widest cell is found from a few extremes, or by measuring every value: see [Floating Point Values](floating-point.md).

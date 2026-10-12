@@ -92,6 +92,10 @@ pub enum Error {
     /// `0x20..=0x7E`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene unchanged.
     InvalidPlainText,
+    /// `DataFormat::Float` content that is not `f32` or `f64`, or whose [`crate::scene::FloatFormat`] asks for more than
+    /// [`crate::scene::MAX_FLOAT_DIGITS`] digits, or for no significant digits at all. Rejected before drawing anything
+    /// or touching the graph's model, so a rejected call leaves the scene unchanged.
+    InvalidFloatFormat,
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
@@ -244,6 +248,13 @@ impl fmt::Display for Error {
                 write!(
                     f,
                     "PlainText content must be u8 values in the printable ASCII range 0x20..=0x7E"
+                )
+            },
+            Error::InvalidFloatFormat => {
+                write!(
+                    f,
+                    "a float format needs f32 or f64 values, from 1 to {max} significant digits, or from 0 to {max} decimal places",
+                    max = crate::scene::MAX_FLOAT_DIGITS
                 )
             },
             Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),

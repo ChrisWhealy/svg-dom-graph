@@ -38,6 +38,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-elbow", "Connector routing"),
     ("panel-edge-anchors", "Fixing points"),
     ("panel-data", "Data node"),
+    ("panel-float", "Floating point"),
     ("panel-operators-unary", "Unary operators"),
     ("panel-operators-binary", "Binary operators"),
     ("panel-operators-arithmetic", "Arithmetic operators"),

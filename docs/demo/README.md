@@ -6,6 +6,7 @@
 - [Connector Routing](connector-routing.md)
 - [Fixing points](fixing-points.md)
 - [Data Node](data-node.md)
+- [Floating Point](floating-point.md)
 - [Operator Nodes](operator-nodes.md)
 - [Cell Selection](cell-selection.md)
 - [Nested Scenes](nested-scenes.md)

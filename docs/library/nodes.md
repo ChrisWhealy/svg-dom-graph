@@ -17,13 +17,13 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
    A value then reads as a variable, not just a bare type — `"B: u64 = ..."` rather than `"u64 = ..."`.
   `name` must not be empty or hold only whitespace.
 
-  A `DataNodeContent` holds the values, in one of eight types: four unsigned widths (`NodeValues::U8`, `U16`, `U32` or `U64`) and their signed equivalents (`I8`, `I16`, `I32` or `I64`).
+  A `DataNodeContent` holds the values, in one of ten types: four unsigned widths (`NodeValues::U8`, `U16`, `U32` or `U64`), their signed equivalents (`I8`, `I16`, `I32` or `I64`), and floating point (`F32` or `F64`, described in [Floating Point Values](floating-point.md)).
   Every value in a node shares one type, so an operator's operands and result must too, and a signed type is a different type from its unsigned equivalent.
   A signed value shows a sign only when it is negative, and hexadecimal, binary and `Ascii` show its two's-complement representation in the selected byte order.
 
   How the values are drawn is set by:
 
-  - `DataFormat` is `Decimal`, `Hexadecimal`, `Binary`, `Ascii` or `PlainText`.
+  - `DataFormat` is `Decimal`, `Hexadecimal`, `Binary`, `Ascii`, `PlainText` or, for floating point only, `Float`.
     `Ascii` draws each byte as one character, with a visible mark for a space or an unprintable byte.
     `PlainText` draws a whole run of printable ASCII in one box and counts as a single value.
   - `GridLayout` is `Automatic`, `Columns(n)`, `Rows(n)` or `MaxColumns(n)`.

@@ -7,7 +7,7 @@ use super::*;
 /// Build one with [`DataNodeContent::new`]. Unlike [`NodeOptions`](crate::scene::NodeOptions)/
 /// [`DragOptions`](crate::scene::DragOptions), there is no sensible all-default state to build one on top of, because
 /// the values are mandatory. So this is a plain constructor rather than a `default()` plus `with_*` builder.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 pub struct DataNodeContent {
     values: NodeValues,
     format: DataFormat,
@@ -160,7 +160,7 @@ impl DataNodeContent {
     /// `true` unless `values` is exactly what this content holds now. A caller can skip formatting anything for a
     /// replacement that changes nothing.
     pub(crate) fn differs_from(&self, values: &NodeValues) -> bool {
-        self.values != *values
+        !self.values.same_as(values)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -190,6 +190,16 @@ impl DataNodeContent {
     /// content is valid here.
     pub(crate) fn plain_text_is_valid(&self) -> bool {
         !self.is_plain_text() || is_printable_ascii(&self.values)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::Float`] content whose values are not `f32` or `f64`, or whose format asks for more digits
+    /// than [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) or for no significant digits. Every other content is valid.
+    pub(crate) fn float_format_is_valid(&self) -> bool {
+        match self.format {
+            DataFormat::Float(float_format) => self.values.is_float() && float_format.is_valid(),
+            _ => true,
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -291,7 +301,7 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// This content's own type name ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64") — see [`NodeValues::type_name`].
+    /// This content's own type name ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64"/"f32"/"f64") — see [`NodeValues::type_name`].
     pub(crate) fn type_name(&self) -> &'static str {
         if self.is_plain_text() {
             return "text";

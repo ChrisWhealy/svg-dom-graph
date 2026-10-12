@@ -13,6 +13,8 @@
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`edge_anchors::build_edge_anchors_demo`]: a parent with a
 //!   growing and shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own
 //!   doc comment for what it demonstrates.
+//! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
+//!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-data` / `#data-diagram` — [`data::build_data_demo`]. It shows draggable nodes whose content is a
 //!   [`DataNodeContent`](svg_dom_graph::scene::DataNodeContent) grid of values rather than a plain text label. There is
 //!   one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`). The multi-value counts are
@@ -53,6 +55,7 @@
 mod data;
 mod edge_anchors;
 mod elbow;
+mod floats;
 mod highlight;
 mod operators_arithmetic;
 mod operators_binary;
@@ -134,6 +137,7 @@ demo_gallery! {
     "panel-elbow" => elbow::build_elbow_demo,
     "panel-edge-anchors" => edge_anchors::build_edge_anchors_demo,
     "panel-data" => data::build_data_demo,
+    "panel-float" => floats::build_float_demo,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,

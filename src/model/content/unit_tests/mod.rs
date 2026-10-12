@@ -6,6 +6,7 @@
 //!   `best_power_of_two_rows`.
 //! - [`formatting`] — hexadecimal, binary and decimal digits, `ByteOrder`, `for_each_cell_string` and
 //!   `widest_cell_string`.
+//! - [`floats`] — `F32`/`F64`: every `FloatFormat`, special values, IEEE-754 bits, and the width of a cell.
 //! - [`content`] — the default and overridden layout, the value count, a single value, and the type colour and name.
 //! - [`selection`] — `resolve_selection` (including incomplete grids), `ResolvedBand::contains`,
 //!   `Selection::describe_into`, and `natural_selection`/`flat_index`.
@@ -14,6 +15,7 @@
 //! - [`labelling`] — `LabellingStyle` and `with_labels`/`with_labelling_style`.
 
 mod content;
+mod floats;
 mod formatting;
 mod grid_shape;
 mod labelling;

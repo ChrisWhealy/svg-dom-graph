@@ -17,6 +17,13 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a data node combined with custom `EdgeAnchors`
   - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
   - ordinary connector routing to and from a data node
+- floating point values (`NodeValues::F32`/`F64`, `DataFormat::Float`):
+  - decimal places and significant digits being written as asked, and scientific notation, `NaN`, the infinities and negative zero
+  - hexadecimal showing the IEEE-754 bits
+  - every cell being wide enough for its widest value, in five formats with five different widest values: a tiny value under significant digits, a many-digit negative value under decimal places, a long exponent, `-inf` among short numbers, and an awkward sum under the shortest form
+  - an invalid float format being rejected before anything is drawn
+  - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
+  - an `f32` and an `f64` being different types for replacement and for an operator
 - signed values (`NodeValues::I8`/`I16`/`I32`/`I64`):
   - a sign being shown only for a negative value, and never a `+`
   - hexadecimal and binary showing the two's-complement bytes of a negative value

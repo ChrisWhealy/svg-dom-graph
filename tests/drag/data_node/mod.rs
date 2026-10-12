@@ -5,6 +5,8 @@
 //!   cell shares one width.
 //! - [`grid_layout`] — rows and columns, an incomplete last row, `GridLayout` overrides and column groups.
 //! - [`accessibility`] — the type named as text, and each cell's own row and column.
+//! - [`floats`] — `NodeValues::F32`/`F64` and `DataFormat::Float`: decimal places, significant digits, scientific
+//!   notation, special values, IEEE-754 bits, and cells wide enough for the widest value.
 //! - [`signed`] — `NodeValues::I8`/`I16`/`I32`/`I64`: a sign only when negative, two's complement bytes, and a type of
 //!   their own.
 //! - [`validation`] — empty content, a zero grid layout and a blank name are rejected before anything is drawn.
@@ -16,6 +18,7 @@
 mod accessibility;
 mod cell_rect;
 mod dragging_and_connectors;
+mod floats;
 mod grid_layout;
 mod named;
 mod plain_text;

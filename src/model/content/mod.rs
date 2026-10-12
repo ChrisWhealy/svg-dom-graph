@@ -55,7 +55,10 @@
 //! - [`DataFormat::PlainText`]: the whole `u8` list as one string of printable ASCII (`0x20..=0x7E`), with real spaces.
 //!   It is drawn in one text box with no grid, and counts as one value. Anything else is rejected with
 //!   [`Error::InvalidPlainText`](crate::error::Error::InvalidPlainText).
-//! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. Decimal has no natural byte boundary to
+//! - [`DataFormat::Float`]: a floating point value as [`FloatFormat`] says, with a number of decimal places, or of
+//!   significant digits, in plain or scientific notation. `NaN` and the infinities read `NaN`, `inf` and `-inf`. On
+//!   `f32` and `f64` only. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show a float's IEEE-754 bits.
+//! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal has no natural byte boundary to
 //!   split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect under `Decimal`: the same number
 //!   reads the same regardless of which byte order produced it.
 //!
@@ -90,6 +93,7 @@
 mod byte_order;
 mod data_format;
 mod data_node_content;
+mod float_format;
 mod grid_layout;
 mod labelling_style;
 mod node_values;
@@ -99,6 +103,7 @@ mod selection;
 pub use byte_order::ByteOrder;
 pub use data_format::DataFormat;
 pub use data_node_content::DataNodeContent;
+pub use float_format::{FloatFormat, FloatNotation, FloatPrecision, MAX_FLOAT_DIGITS};
 pub use grid_layout::GridLayout;
 pub use labelling_style::LabellingStyle;
 pub use node_values::NodeValues;

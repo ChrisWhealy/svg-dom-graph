@@ -21,6 +21,7 @@
 | Page | What it covers |
 |---|---|
 | [Nodes](nodes.md) | Plain, data, named data and operator nodes, and measuring, placing and changing them |
+| [Floating Point Values](floating-point.md) | `F32` and `F64`, `FloatFormat`, decimal places against significant digits, special values and widths |
 | [Row Labels and Text Measurement](labels-and-text.md) | `LabellingStyle`, and how this crate sizes anything that contains text |
 | [Selection and Marking Cells](selection.md) | `Selection`, secondary cells, unreached cells, a ring around a whole node, and the selection toolbar |
 | [Connectors](connectors.md) | `add_edge`, connector types, forced sides, fixing points, and `Side` |

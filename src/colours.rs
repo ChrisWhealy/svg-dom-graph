@@ -89,3 +89,11 @@ pub(crate) const TYPE_COLOUR_I32: &str = "#cdb8ec";
 
 /// The `i64` shade — a deeper rose than [`TYPE_COLOUR_U64`].
 pub(crate) const TYPE_COLOUR_I64: &str = "#efb9cb";
+
+/// The `f32` shade — a pastel sky blue. Floating point has no unsigned or signed pairing to echo, so it takes a hue of
+/// its own, away from the apricot, mint, lavender and rose of the integers, and from the yellow, orange and teal of a
+/// selection. The `f64` shade is the deeper of the two, as a signed integer's is.
+pub(crate) const TYPE_COLOUR_F32: &str = "#d0e3fb";
+
+/// The `f64` shade — a deeper sky blue than [`TYPE_COLOUR_F32`].
+pub(crate) const TYPE_COLOUR_F64: &str = "#a8c8f2";

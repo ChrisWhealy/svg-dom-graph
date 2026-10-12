@@ -1,7 +1,11 @@
-use super::{ByteOrder, DataFormat, format_ascii_into, format_binary_into, format_decimal_into, format_hex_into};
+use super::{
+    ByteOrder, DataFormat, FloatFormat,
+    float_format::{FloatLike, format_float_into, widest_float},
+    format_ascii_into, format_binary_into, format_decimal_into, format_hex_into,
+};
 use crate::colours::{
-    TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_U8, TYPE_COLOUR_U16,
-    TYPE_COLOUR_U32, TYPE_COLOUR_U64,
+    TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32, TYPE_COLOUR_I64,
+    TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -36,14 +40,14 @@ fn decimal_len<T: Word>(value: T) -> usize {
 /// counts are made, not one for every value.
 fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
-        DataFormat::Decimal if T::SIGNED => {
+        DataFormat::Decimal | DataFormat::Float(_) if T::SIGNED => {
             let (lowest, highest) = values.iter().copied().fold(None, |extremes, value| match extremes {
                 None => Some((value, value)),
                 Some((lowest, highest)) => Some((lowest.min(value), highest.max(value))),
             })?;
             Some(if decimal_len(lowest) > decimal_len(highest) { lowest } else { highest })
         },
-        DataFormat::Decimal => values.iter().copied().max(),
+        DataFormat::Decimal | DataFormat::Float(_) => values.iter().copied().max(),
         DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
             values.first().copied()
         },
@@ -89,9 +93,11 @@ impl_magnitude_unsigned!(u8, u16, u32, u64);
 impl_magnitude_signed!(i8, i16, i32, i64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An integer width, signed or unsigned, a [`NodeValues`] variant can hold. One implementation per width, from
-/// [`impl_word`], replaces what was once the same `match format` repeated for every variant of every method.
-trait Word: Ord + Copy + Magnitude {
+/// A type a [`NodeValues`] variant can hold: one cell's worth of value. Everything that formats or compares a node's
+/// values is written once against this, and serves every width, integer or float. One implementation per type, from
+/// [`impl_word`] and [`impl_float_cell`], replaces what was once the same `match format` repeated for every variant of
+/// every method.
+trait Cell: Copy {
     /// Formats this value into `out` per `format` and `byte_order`.
     ///
     /// [`DataFormat::Decimal`] never computes `to_be_bytes()`/[`order_bytes`] at all, since [`format_decimal_into`] only
@@ -100,16 +106,28 @@ trait Word: Ord + Copy + Magnitude {
     ///
     /// A signed value's bytes are its two's-complement representation, in the selected `byte_order`, so `-1_i8` is
     /// `FF` in hexadecimal and `1111 1111` in binary. `-2_i16` is `FF FE` big-endian, the default, and `FE FF`
-    /// little-endian. Neither depends on the host's own byte order.
+    /// little-endian. Neither depends on the host's own byte order. A float's bytes are its IEEE-754 representation.
     fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String);
+
+    /// Whether `other` is the very same value, so that a replacement that changes nothing writes nothing. For a float
+    /// that is the same bits: `-0.0` and `0.0` compare equal but are written differently, and `NaN` is not equal to
+    /// itself but is unchanged.
+    fn same_as(self, other: Self) -> bool;
 }
+
+/// An integer width, signed or unsigned, a [`NodeValues`] variant can hold.
+trait Word: Cell + Ord + Magnitude {}
+
+impl<T: Cell + Ord + Magnitude> Word for T {}
 
 macro_rules! impl_word {
     ($($width:ty),+) => {$(
-        impl Word for $width {
+        impl Cell for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    DataFormat::Decimal => {
+                    // A float format means nothing for an integer, and is rejected before one is ever drawn. It reads as
+                    // the plain decimal number if it does get here.
+                    DataFormat::Decimal | DataFormat::Float(_) => {
                         let (magnitude, negative) = self.split_sign();
                         format_decimal_into(magnitude, negative, out);
                     },
@@ -120,16 +138,44 @@ macro_rules! impl_word {
                     },
                 }
             }
+
+            fn same_as(self, other: Self) -> bool {
+                self == other
+            }
         }
     )+};
 }
 
 impl_word!(u8, u16, u32, u64, i8, i16, i32, i64);
 
+macro_rules! impl_float_cell {
+    ($($width:ty),+) => {$(
+        impl Cell for $width {
+            fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+                match format {
+                    DataFormat::Decimal => format_float_into(self, FloatFormat::shortest(), out),
+                    DataFormat::Float(float_format) => format_float_into(self, float_format, out),
+                    DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
+                    DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
+                    DataFormat::Ascii | DataFormat::PlainText => {
+                        format_ascii_into(order_bytes(self.to_be_bytes(), byte_order), out);
+                    },
+                }
+            }
+
+            fn same_as(self, other: Self) -> bool {
+                self.to_bits() == other.to_bits()
+            }
+        }
+    )+};
+}
+
+impl_float_cell!(f32, f64);
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Calls `f(index, formatted)` for every value of `values`, reusing `scratch` for the text. See
 /// [`NodeValues::for_each_cell_string`].
-fn for_each_formatted<T: Word>(
+fn for_each_formatted<T: Cell>(
     values: &[T],
     format: DataFormat,
     byte_order: ByteOrder,
@@ -146,7 +192,7 @@ fn for_each_formatted<T: Word>(
 /// Calls `f(index, formatted)` for every value of `values` that differs from the value at the same index of `old`, and
 /// formats no other. `old` holds the same number of values. Stops at, and returns, the first error `f` gives. See
 /// [`NodeValues::try_for_each_changed_cell_string`].
-fn try_for_each_changed<T: Word, E>(
+fn try_for_each_changed<T: Cell, E>(
     values: &[T],
     old: &[T],
     format: DataFormat,
@@ -155,7 +201,7 @@ fn try_for_each_changed<T: Word, E>(
     mut f: impl FnMut(usize, &str) -> Result<(), E>,
 ) -> Result<(), E> {
     for (i, (&x, &was)) in values.iter().zip(old).enumerate() {
-        if x != was {
+        if !x.same_as(was) {
             x.format_into(format, byte_order, scratch);
             f(i, scratch)?;
         }
@@ -172,10 +218,30 @@ fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrde
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats into `out` the text of whichever float of `values` renders widest under `format`, and nothing if there are
+/// none. See [`NodeValues::widest_cell_string`].
+///
+/// A float is not an integer in one respect that matters here: under a float format its width does not follow its size.
+/// It follows its sign, its integer digits, its leading zeros, its exponent, and whether it is `NaN` or infinite, so
+/// the largest value is not always the widest. See [`widest_float`] for how the widest is found. The hexadecimal,
+/// binary and `Ascii` formats show a fixed number of bytes, so the first value is as wide as any.
+fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+    match format {
+        DataFormat::Decimal => widest_float(values, FloatFormat::shortest(), out),
+        DataFormat::Float(float_format) => widest_float(values, float_format, out),
+        DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
+            if let Some(&first) = values.first() {
+                first.format_into(format, byte_order, out);
+            }
+        },
+    }
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats the first value of `values` into `out`. `false`, leaving `out` untouched, if there is none. See
 /// [`NodeValues::single_cell_string_into`].
-fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
+fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) -> bool {
     values.first().is_some_and(|&x| {
         x.format_into(format, byte_order, out);
         true
@@ -199,6 +265,15 @@ fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// as `FF FE`, or `FE FF` if little-endian. A signed width is coloured with a deeper shade of its unsigned
 /// equivalent's colour, and its type name is `i8`, `i16`, `i32` or `i64`.
 ///
+/// # Floating point values
+///
+/// `F32` and `F64` hold IEEE-754 floating point values. [`DataFormat::Float`] writes them with a chosen number of decimal
+/// places or significant digits, in plain or scientific notation, and [`DataFormat::Decimal`] writes their shortest
+/// digits. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show their IEEE-754 bits, in the selected [`ByteOrder`].
+/// Unlike an integer, a float has `NaN`, the infinities and a negative zero, and its text takes a number of characters
+/// that depends on far more than its size. See [`FloatFormat`] for each of those. Floats are not `Eq`, so neither is
+/// `NodeValues`.
+///
 /// # Deliberately one width per node
 ///
 /// A `NodeValues` holds exactly one variant. So every value in a given [`super::DataNodeContent`] shares the same
@@ -211,7 +286,7 @@ fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// A heterogeneous node — `Vec<NodeValue>` with one width per value, à la a tagged-union cell type — is a legitimate,
 /// larger feature in its own right. It is not an incremental change to this one. Building it later, should a real
 /// caller need it, is expected to sit alongside this type rather than replace it.
-#[derive(Debug, Clone, PartialEq, Eq)]
+#[derive(Debug, Clone, PartialEq)]
 #[non_exhaustive]
 pub enum NodeValues {
     U8(Vec<u8>),
@@ -222,6 +297,8 @@ pub enum NodeValues {
     I16(Vec<i16>),
     I32(Vec<i32>),
     I64(Vec<i64>),
+    F32(Vec<f32>),
+    F64(Vec<f64>),
 }
 
 impl NodeValues {
@@ -236,6 +313,37 @@ impl NodeValues {
             Self::I16(v) => v.len(),
             Self::I32(v) => v.len(),
             Self::I64(v) => v.len(),
+            Self::F32(v) => v.len(),
+            Self::F64(v) => v.len(),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`NodeValues::F32`] and [`NodeValues::F64`], the only values a [`DataFormat::Float`] can format.
+    pub(super) fn is_float(&self) -> bool {
+        matches!(self, Self::F32(_) | Self::F64(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if `other` is the same type and holds the very same values. A float is the same only if it has the same
+    /// bits, which is not what `==` says: `-0.0 == 0.0`, but they are written differently, and `NaN != NaN`, but a
+    /// `NaN` that is still a `NaN` has not changed.
+    pub(super) fn same_as(&self, other: &Self) -> bool {
+        fn same<T: Cell>(a: &[T], b: &[T]) -> bool {
+            a.len() == b.len() && a.iter().zip(b).all(|(&x, &y)| x.same_as(y))
+        }
+        match (self, other) {
+            (Self::U8(a), Self::U8(b)) => same(a, b),
+            (Self::U16(a), Self::U16(b)) => same(a, b),
+            (Self::U32(a), Self::U32(b)) => same(a, b),
+            (Self::U64(a), Self::U64(b)) => same(a, b),
+            (Self::I8(a), Self::I8(b)) => same(a, b),
+            (Self::I16(a), Self::I16(b)) => same(a, b),
+            (Self::I32(a), Self::I32(b)) => same(a, b),
+            (Self::I64(a), Self::I64(b)) => same(a, b),
+            (Self::F32(a), Self::F32(b)) => same(a, b),
+            (Self::F64(a), Self::F64(b)) => same(a, b),
+            _ => false,
         }
     }
 
@@ -266,6 +374,8 @@ impl NodeValues {
             Self::I16(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::F32(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::F64(v) => for_each_formatted(v, format, byte_order, scratch, f),
         }
     }
 
@@ -292,6 +402,8 @@ impl NodeValues {
             (Self::I16(v), Self::I16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I32(v), Self::I32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I64(v), Self::I64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::F32(v), Self::F32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             _ => Ok(()),
         }
     }
@@ -315,6 +427,8 @@ impl NodeValues {
             Self::I16(v) => format_widest(v, format, byte_order, out),
             Self::I32(v) => format_widest(v, format, byte_order, out),
             Self::I64(v) => format_widest(v, format, byte_order, out),
+            Self::F32(v) => widest_float_cell(v, format, byte_order, out),
+            Self::F64(v) => widest_float_cell(v, format, byte_order, out),
         }
     }
 
@@ -337,6 +451,8 @@ impl NodeValues {
             Self::I16(v) => format_first(v, format, byte_order, out),
             Self::I32(v) => format_first(v, format, byte_order, out),
             Self::I64(v) => format_first(v, format, byte_order, out),
+            Self::F32(v) => format_first(v, format, byte_order, out),
+            Self::F64(v) => format_first(v, format, byte_order, out),
         }
     }
 
@@ -358,11 +474,13 @@ impl NodeValues {
             Self::I16(_) => TYPE_COLOUR_I16,
             Self::I32(_) => TYPE_COLOUR_I32,
             Self::I64(_) => TYPE_COLOUR_I64,
+            Self::F32(_) => TYPE_COLOUR_F32,
+            Self::F64(_) => TYPE_COLOUR_F64,
         }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64").
+    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64"/"f32"/"f64").
     ///
     /// [`type_colour`](Self::type_colour) is the only visual cue distinguishing one width from another. A caller who
     /// cannot distinguish colours has no other way to recover the type. Assistive technology does not perceive fill
@@ -378,6 +496,8 @@ impl NodeValues {
             Self::I16(_) => "i16",
             Self::I32(_) => "i32",
             Self::I64(_) => "i64",
+            Self::F32(_) => "f32",
+            Self::F64(_) => "f64",
         }
     }
 }

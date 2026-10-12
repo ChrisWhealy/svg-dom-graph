@@ -1,3 +1,5 @@
+use super::FloatFormat;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`super::DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
 /// variant produces.
@@ -7,6 +9,8 @@
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 #[non_exhaustive]
 pub enum DataFormat {
+    /// An integer as an ordinary decimal number, a sign shown only if it is negative. A float is shown with its shortest
+    /// digits that read back as the same value, the same as [`FloatFormat::shortest`].
     Decimal,
     Hexadecimal,
     Binary,
@@ -23,4 +27,13 @@ pub enum DataFormat {
     ///
     /// The node counts as a single value, so `Selection::Cell(0)` marks the whole box.
     PlainText,
+    /// A floating point value written as the [`FloatFormat`] says: plain or scientific notation, and a number of decimal
+    /// places, a number of significant digits, or the shortest digits that read back as the same value.
+    ///
+    /// Only for [`NodeValues::F32`](super::NodeValues::F32) and [`NodeValues::F64`](super::NodeValues::F64). Any other
+    /// content, and a format asking for more than [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) digits, is rejected with
+    /// [`Error::InvalidFloatFormat`](crate::error::Error::InvalidFloatFormat).
+    ///
+    /// [`Hexadecimal`](Self::Hexadecimal) and [`Binary`](Self::Binary) show a float's IEEE-754 bits.
+    Float(FloatFormat),
 }

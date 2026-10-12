@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.31] - 2026-10-12
+
+## Added
+
+- Extend `NodeValues` enum to include floating point values (``)
+
 # [Released]
 
 ## [0.2.30] - 2026-10-12

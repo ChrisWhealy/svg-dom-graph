@@ -4,7 +4,7 @@
 
 Demonstrates the idea that rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
-At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64` and their signed equivalents `i8`/`i16`/`i32`/`i64`.
+At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`, their signed equivalents `i8`/`i16`/`i32`/`i64`, and floating point `f32`/`f64` (see [Floating Point](floating-point.md)).
 They can be formatted as decimal, hexadecimal, or binary, and `u8` values that are text can also be drawn as `DataFormat::Ascii`, one character to a cell, or as `DataFormat::PlainText`, one box holding the whole string.
 
 If `DataNodeContent` is an array, the data will be presented in the form of a grid having a particular type of `GridLayout`.

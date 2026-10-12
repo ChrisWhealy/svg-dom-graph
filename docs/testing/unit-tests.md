@@ -20,6 +20,10 @@ The node content tests in `src/model/content/unit_tests/` are split by topic:
 * labelling
 
 The labelling tests cover each `LabellingStyle`, and `Text` in particular: a string belongs to a row and not an element, a row with no string has no label, and the candidates offered for measuring are only those rows that hold a cell.
+The float tests in `floats.rs` cover every `FloatFormat`: shortest digits, decimal places, significant digits (including rounding up to a new power of ten and padding a huge or tiny value with zeros), scientific notation, `NaN`, the infinities, negative zero, and the IEEE-754 bits in either byte order.
+They also check the width of a cell: the widest value of a node, found from a few extremes, is as wide as the widest value formatted by brute force, for every format over every triple of values from a set of every size, sign and kind.
+They cover replacing `0.0` with `-0.0` and `NaN` with `NaN`, and the validity of a float format.
+
 The formatting tests cover the signed types: a minus sign only for a negative value, the most negative value of every width, two's-complement hexadecimal and binary, little-endian, the widest decimal cell counting the sign, and a signed type's own name and colour.
 `populated_rows` is tested here too, because a layout can ask for more rows than there are values.
 
