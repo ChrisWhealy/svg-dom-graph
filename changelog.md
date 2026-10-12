@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Entirely skip label drawing when `label_scratch.is_empty()` (`b10fb31`)
 - Expose signedness of result in operator nodes (`8c23a43`)
 - Simplify decimal width calculation (`1f0da0e`)
+- Fix `clippy::type-complexity` error (``)
 
 # [Released]
 

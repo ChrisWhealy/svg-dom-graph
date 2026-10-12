@@ -170,15 +170,9 @@ fn a_single_value_replaced_across_zero_follows_its_sign_in_text_title_and_name()
         DataNodeContent::new(NodeValues::I16(vec![123]), DataFormat::Decimal),
     )?;
     let group = nth_group("signed-across-zero", 0)?;
-    let state = || -> Result<(Vec<String>, Option<String>, Option<String>), String> {
-        Ok((
-            texts_of("signed-across-zero")?,
-            title_of(&group)?,
-            group.get_attribute("aria-label"),
-        ))
-    };
     let expect = |value: &str| -> Result<(), String> {
-        let (texts, title, label) = state()?;
+        let texts = texts_of("signed-across-zero")?;
+        let (title, label) = (title_of(&group)?, group.get_attribute("aria-label"));
         let name = format!("i16 = {value}");
         check(
             texts == [value] && title.as_deref() == Some(name.as_str()) && label.as_deref() == Some(name.as_str()),
