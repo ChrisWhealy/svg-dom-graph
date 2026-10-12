@@ -27,8 +27,8 @@ pub enum LabellingStyle {
     /// of a formula, or the range of elements a row holds.
     ///
     /// The label column is made wide enough for the widest string by measuring each one as rendered. The strings may use
-    /// any characters. An element's accessible name quotes its row's string, where the other styles quote the element's
-    /// own label.
+    /// any characters. An element's accessible name introduces its row's string as "row label", where the other styles
+    /// introduce the element's own label as "element". A row with an empty string, or none, has no such phrase.
     ///
     /// The list is a `'static` slice, so that this style stays [`Copy`] like the others. Consequently, a label that
     /// needs to be built at run time cannot be used here.

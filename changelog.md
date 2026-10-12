@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Ensure text width calculation is based on rendered widt, not character count (`0e13f70`)
-- Doc only: Update stale docs about row labelling (``)
+- Doc only: Update stale docs about row labelling (`6cf3be8`)
+- Skip missing or empty row label when building accessible name (``)
 
 # [Released]
 

@@ -100,6 +100,19 @@ fn a_numeric_cell_name_starts_with_its_index() -> Result<(), String> {
 }
 
 #[test]
+fn a_text_cell_name_introduces_its_label_as_a_row_label() -> Result<(), String> {
+    let style = crate::scene::LabellingStyle::Text(&["0-3", "4-7"]);
+    check_eq(name(Some(style), 5, 4, "x"), "row label 4-7, row 1, column 1: x".to_owned())
+}
+
+#[test]
+fn a_text_cell_name_has_no_label_phrase_for_a_row_with_no_text() -> Result<(), String> {
+    let style = crate::scene::LabellingStyle::Text(&["0-3", ""]);
+    check_eq(name(Some(style), 5, 4, "x"), "row 1, column 1: x".to_owned())?;
+    check_eq(name(Some(style), 9, 4, "x"), "row 2, column 1: x".to_owned())
+}
+
+#[test]
 fn a_cell_name_reuses_the_buffer_it_is_given() -> Result<(), String> {
     let mut out = String::with_capacity(64);
     let before = out.as_ptr();

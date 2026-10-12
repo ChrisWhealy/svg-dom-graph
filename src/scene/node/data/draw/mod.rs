@@ -556,16 +556,33 @@ fn draw_cells(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the accessible name of grid cell `i`, in a grid of `cols` columns, showing `text`, into `out`, replacing what
-/// it held. It names the cell's row and column, and its element label first if `labelling` is on, as in "element a, row
-/// 0, column 0: 6A 09 E6 67". Drawing a cell and rewriting its value both build the name here, so the two cannot
+/// it held. It names the cell's row and column, and its label first if `labelling` is on, as in "element a, row
+/// 0, column 0: 6A 09 E6 67". A [`LabellingStyle::Text`] label names a row, so it reads "row label ms[n-3], row 0, column
+/// 0: 6A 09 E6 67", and is left out altogether for a row it gives no text. Drawing a cell and rewriting its value both build the name here, so the two cannot
 /// disagree. A caller reuses one `out` for every cell, so a name allocates only if it outgrows the buffer.
 pub(super) fn cell_name_into(labelling: Option<LabellingStyle>, i: usize, cols: usize, text: &str, out: &mut String) {
     use std::fmt::Write;
     out.clear();
-    if let Some(style) = labelling {
-        out.push_str("element ");
-        style.append_label(i, cols, out);
-        out.push_str(", ");
+    match labelling {
+        // A caller's own text names the cell's row, not the cell, so it is introduced as a row label. A row it gives no
+        // text for has nothing to quote, and the name goes without it, rather than read "row label , row 2".
+        Some(style @ LabellingStyle::Text(_)) => {
+            let start = out.len();
+            out.push_str("row label ");
+            let text_start = out.len();
+            style.append_label(i, cols, out);
+            if out.len() == text_start {
+                out.truncate(start);
+            } else {
+                out.push_str(", ");
+            }
+        },
+        Some(style) => {
+            out.push_str("element ");
+            style.append_label(i, cols, out);
+            out.push_str(", ");
+        },
+        None => {},
     }
     let _ = write!(out, "row {}, column {}: {text}", i / cols, i % cols);
 }

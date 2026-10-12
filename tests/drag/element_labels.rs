@@ -259,3 +259,16 @@ fn the_widest_text_label_sizes_the_node_whatever_its_length() -> Result<(), Stri
         &format!("narrow {narrow}, wide {wide}, both {both}: the node should be as wide as the widest label needs"),
     )
 }
+
+#[wasm_bindgen_test]
+fn a_text_label_names_its_row_in_the_cell_s_accessible_name_and_a_missing_one_is_left_out() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(1))
+        .with_labelling_style(LabellingStyle::Text(&["first"]));
+    let (_, texts) = draw("labels-text-names", content)?;
+    let names: Vec<String> = texts.iter().filter_map(|t| t.get_attribute("aria-label")).collect();
+    check(
+        names == ["row label first, row 0, column 0: 1", "row 1, column 0: 2"],
+        &format!("got {names:?}"),
+    )
+}
