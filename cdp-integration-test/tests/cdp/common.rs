@@ -44,7 +44,7 @@ fn shared() -> Result<&'static Shared, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Opens a fresh tab on the shared fixture page and waits for the last node (`named_value`, the eighth and final one
+/// Opens a fresh tab on the shared fixture page and waits for the last node (`labelled`, the ninth and final one
 /// added by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence
 /// proves the whole scene finished building.
 pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
@@ -55,7 +55,7 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
     tab.bring_to_front().map_err(|e| format!("failed to bring tab to front: {e}"))?;
     tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
     tab.wait_for_element_with_custom_timeout(
-        "#diagram > g.svg-dom-graph-content > g:nth-of-type(8)",
+        "#diagram > g.svg-dom-graph-content > g:nth-of-type(9)",
         Duration::from_secs(10),
     )
     .map_err(|e| format!("fixture did not finish building in time: {e}"))?;

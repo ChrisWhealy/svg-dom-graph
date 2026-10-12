@@ -13,14 +13,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - `LabellingStyle::Text` labels grid rows with caller-supplied text (`b2ac547`)
 - SHA1 demo implementation (`89fb10d`)
 - Add labelling style to selection demos (`8d818bc`)
+- Extend test coverage for label width calculations (``)
 
 ## Fixed
 
-- Ensure text width calculation is based on rendered widt, not character count (`0e13f70`)
+- Ensure text width calculation is based on rendered width, not character count (`0e13f70`)
 - Doc only: Update stale docs about row labelling (`6cf3be8`)
 - Skip missing or empty row label when building accessible name (`392ecf1`)
 - Correct character width test that failed in CI due to CJK font not installed (`6a4b5bb`)
-- Exclude empty but labelled rows from width calculation (``)
+- Exclude empty but labelled rows from width calculation (`34aae70`)
 
 # [Released]
 

@@ -26,6 +26,9 @@
 //!    browser-computed accessibility tree via CDP's own `Accessibility` domain. That goes beyond the rendered DOM
 //!    `wasm-pack test`'s own suite already checks. It checks `named_value`'s own role/name, and the selection toolbar's
 //!    role, name, each button's own name, and disabled state.
+//! 9. `labelled` — not draggable, a data node whose rows carry `LabellingStyle::Text` labels in scripts of unequal
+//!    glyph width: Latin, CJK, and a letter with combining marks. Used by `row_labels.rs` to prove, in a real browser,
+//!    that no row label spills out of the node's own box. Placed off-canvas, like `named_value`, for the same reasons.
 //!
 //! Panning and wheel zoom are switched on (`InputMode::On`), with no toolbar, so dragging empty background pans the
 //! whole scene and Ctrl plus the wheel zooms it. The background is clear of every node and connector at, for example,
@@ -59,8 +62,8 @@ use svg_dom::{
 use svg_dom_graph::{
     Error,
     scene::{
-        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, InputMode, NodeOptions,
-        NodeValues, Scene, SelectionToolbarOptions,
+        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout, InputMode,
+        LabellingStyle, NodeOptions, NodeValues, Scene, SelectionToolbarOptions,
     },
 };
 use wasm_bindgen::prelude::*;
@@ -129,6 +132,22 @@ fn build() -> Result<(), Error> {
         Point::new(2000.0, 2000.0),
         "B",
         DataNodeContent::new(NodeValues::U64(vec![0xABCD_EF01_2345_6789]), DataFormat::Hexadecimal),
+    )?;
+
+    // Row labels of unequal glyph width: the number of characters in a label is no guide to how wide it renders. The
+    // fixture's own fonts decide which of these is the widest, which is the point: the node's box must hold all of
+    // them. Off-canvas, for the same reasons as `named_value`.
+    scene.add_named_data_node(
+        Point::new(2000.0, 2300.0),
+        "Labelled",
+        DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4]), DataFormat::Decimal)
+            .with_layout(GridLayout::Columns(1))
+            .with_labelling_style(LabellingStyle::Text(&[
+                "iiiiiiii",
+                "\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}",
+                "e\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}",
+                "z",
+            ])),
     )?;
 
     // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it. That is

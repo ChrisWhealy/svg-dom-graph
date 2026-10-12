@@ -22,8 +22,9 @@
 //!   capture is held during either and released afterwards.
 //! - [`accessibility_tree`] — `Accessibility.getPartialAXTree`: a named data node's own `role`/`name` reach Chrome's
 //!   own computed accessibility tree, and its own descendant value text stays exposed alongside them.
+//! - [`row_labels`] — every row label of a node labelled in scripts of unequal glyph width stays inside the node's box.
 //!
-//! All eight drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
+//! All nine drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
 //!
 //! # Why this lives in its own on-demand workspace member
@@ -45,5 +46,6 @@ mod connectors;
 mod edge_anchors;
 mod overlap_resolution;
 mod pan;
+mod row_labels;
 mod small_drag;
 mod text_selection;

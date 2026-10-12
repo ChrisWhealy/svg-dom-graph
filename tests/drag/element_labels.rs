@@ -323,3 +323,28 @@ fn a_text_label_for_a_row_with_no_cell_takes_no_room() -> Result<(), String> {
     let long = width("labels-unused-long", &["a", "b", "A very long unused label"])?;
     check((short - long).abs() < 0.5, &format!("short {short}, long {long}"))
 }
+
+#[wasm_bindgen_test]
+fn an_empty_text_label_list_leaves_every_accessible_name_meaningful() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(1))
+        .with_labelling_style(LabellingStyle::Text(&[]));
+    let (_, texts) = draw("labels-text-empty", content)?;
+    let names: Vec<String> = texts.iter().filter_map(|t| t.get_attribute("aria-label")).collect();
+    check(names == ["row 0, column 0: 1", "row 1, column 0: 2"], &format!("got {names:?}"))
+}
+
+#[wasm_bindgen_test]
+fn replacing_the_values_of_a_text_labelled_grid_keeps_its_row_labels() -> Result<(), String> {
+    const LABELS: &[&str] = &["0-3", "4-7", "8-11"];
+    let (names, labels) = names_after_replacing(
+        "labels-replace-text",
+        twelve().with_labelling_style(LabellingStyle::Text(LABELS)),
+    )?;
+    check(
+        labels == ["0-3", "4-7", "8-11"]
+            && names.get(5).map(String::as_str) == Some("row label 4-7, row 1, column 1: 6")
+            && names.get(11).map(String::as_str) == Some("row label 8-11, row 2, column 3: 12"),
+        &format!("labels {labels:?}, names {names:?}"),
+    )
+}
