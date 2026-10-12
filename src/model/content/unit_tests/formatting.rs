@@ -170,3 +170,122 @@ fn widest_cell_string_leaves_out_empty_for_content_with_no_values() -> Result<()
     content.widest_cell_string(&mut out);
     check_eq(out, String::new())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Signed values
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn a_negative_decimal_shows_a_minus_sign() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::I32(vec![-1_234_567]), DataFormat::Decimal);
+    check_eq(cells(&content), vec!["-1234567".to_owned()])
+}
+
+#[test]
+fn a_positive_or_zero_decimal_shows_no_sign() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::I16(vec![42, 0, i16::MAX]), DataFormat::Decimal);
+    check_eq(cells(&content), vec!["42".to_owned(), "0".to_owned(), "32767".to_owned()])
+}
+
+#[test]
+fn the_most_negative_value_of_every_width_is_formatted_without_overflow() -> Result<(), String> {
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I8(vec![i8::MIN]), DataFormat::Decimal)),
+        vec!["-128".to_owned()],
+    )?;
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I16(vec![i16::MIN]), DataFormat::Decimal)),
+        vec!["-32768".to_owned()],
+    )?;
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I32(vec![i32::MIN]), DataFormat::Decimal)),
+        vec!["-2147483648".to_owned()],
+    )?;
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I64(vec![i64::MIN]), DataFormat::Decimal)),
+        vec!["-9223372036854775808".to_owned()],
+    )
+}
+
+#[test]
+fn a_negative_hexadecimal_shows_its_twos_complement_bytes() -> Result<(), String> {
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I8(vec![-1]), DataFormat::Hexadecimal)),
+        vec!["FF".to_owned()],
+    )?;
+    check_eq(
+        cells(&DataNodeContent::new(NodeValues::I16(vec![-2]), DataFormat::Hexadecimal)),
+        vec!["FF FE".to_owned()],
+    )
+}
+
+#[test]
+fn a_negative_binary_shows_its_twos_complement_bits() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::I8(vec![-128]), DataFormat::Binary);
+    check_eq(cells(&content), vec!["1000 0000".to_owned()])
+}
+
+#[test]
+fn a_signed_value_honours_little_endian() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::I16(vec![-2]), DataFormat::Hexadecimal)
+        .with_byte_order(ByteOrder::LittleEndian);
+    check_eq(cells(&content), vec!["FE FF".to_owned()])
+}
+
+#[test]
+fn signed_types_are_named_and_coloured_apart_from_their_unsigned_equivalents() -> Result<(), String> {
+    let names = [
+        NodeValues::I8(vec![0]),
+        NodeValues::I16(vec![0]),
+        NodeValues::I32(vec![0]),
+        NodeValues::I64(vec![0]),
+    ]
+    .map(|v| v.type_name());
+    check_eq(names, ["i8", "i16", "i32", "i64"])?;
+    let signed = [
+        NodeValues::I8(vec![0]).type_colour(),
+        NodeValues::I16(vec![0]).type_colour(),
+        NodeValues::I32(vec![0]).type_colour(),
+        NodeValues::I64(vec![0]).type_colour(),
+    ];
+    let unsigned = [
+        NodeValues::U8(vec![0]).type_colour(),
+        NodeValues::U16(vec![0]).type_colour(),
+        NodeValues::U32(vec![0]).type_colour(),
+        NodeValues::U64(vec![0]).type_colour(),
+    ];
+    let mut every: Vec<&str> = signed.iter().chain(&unsigned).copied().collect();
+    every.sort_unstable();
+    every.dedup();
+    check_eq(every.len(), 8)
+}
+
+#[test]
+fn the_widest_decimal_cell_of_a_signed_node_counts_the_minus_sign() -> Result<(), String> {
+    let widest = |values: Vec<i8>| {
+        let mut out = String::new();
+        DataNodeContent::new(NodeValues::I8(values), DataFormat::Decimal).widest_cell_string(&mut out);
+        out
+    };
+    // Only the width matters: which of two equally wide values is picked does not.
+    check_eq(widest(vec![7, 99, -9]).len(), 2)?;
+    check_eq(widest(vec![99, -99]), "-99".to_owned())?;
+    check_eq(widest(vec![100, -99]).len(), 3)?;
+    check_eq(widest(vec![50, -100, 99]), "-100".to_owned())?;
+    check_eq(widest(vec![-9, -10, 5]), "-10".to_owned())
+}
+
+#[test]
+fn replacing_signed_values_needs_the_same_signed_width() -> Result<(), String> {
+    let mut content = DataNodeContent::new(NodeValues::I16(vec![1, 2]), DataFormat::Decimal);
+    let mut scratch = String::new();
+    let mut written = Vec::new();
+    let replaced = content.try_replace_values(NodeValues::I16(vec![-1, 2]), &mut scratch, |i, text| {
+        written.push((i, text.to_owned()));
+        Ok::<(), String>(())
+    })?;
+    check_eq(replaced, true)?;
+    check_eq(written, vec![(0, "-1".to_owned())])?;
+    let refused = content.try_replace_values(NodeValues::U16(vec![1, 2]), &mut scratch, |_, _| Ok::<(), String>(()))?;
+    check_eq(refused, false)
+}

@@ -20,6 +20,7 @@ The node content tests in `src/model/content/unit_tests/` are split by topic:
 * labelling
 
 The labelling tests cover each `LabellingStyle`, and `Text` in particular: a string belongs to a row and not an element, a row with no string has no label, and the candidates offered for measuring are only those rows that hold a cell.
+The formatting tests cover the signed types: a minus sign only for a negative value, the most negative value of every width, two's-complement hexadecimal and binary, little-endian, the widest decimal cell counting the sign, and a signed type's own name and colour.
 `populated_rows` is tested here too, because a layout can ask for more rows than there are values.
 
 `src/scene/node/data/draw/unit_tests.rs` covers the accessible name of a cell: an unlabelled cell, a numeric or alphabetic one, a `Text` one introduced as a "row label", and one whose row has no text and so no label phrase.

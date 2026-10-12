@@ -17,6 +17,13 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a data node combined with custom `EdgeAnchors`
   - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
   - ordinary connector routing to and from a data node
+- signed values (`NodeValues::I8`/`I16`/`I32`/`I64`):
+  - a sign being shown only for a negative value, and never a `+`
+  - hexadecimal and binary showing the two's-complement bytes of a negative value
+  - a signed node naming its own type as text, and having a colour of its own
+  - every cell being wide enough for a minus sign
+  - replacing values needing the same signed width, and rejecting the unsigned equivalent
+  - an operator rejecting an operand and result of signed and unsigned widths
 - operator nodes (`UnaryOperator`/`BinaryOperator`/`ArithmeticOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`):
   - a unary node's two-row label/value rendering, and a binary or arithmetic node's own two auto-wired input edges
   - rejecting mismatched operand widths, duplicate operands, a non-data operand, and a multi-value result, all before drawing anything

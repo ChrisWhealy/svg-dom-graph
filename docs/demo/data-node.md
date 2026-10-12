@@ -4,7 +4,7 @@
 
 Demonstrates the idea that rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
-At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`.
+At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64` and their signed equivalents `i8`/`i16`/`i32`/`i64`.
 They can be formatted as decimal, hexadecimal, or binary, and `u8` values that are text can also be drawn as `DataFormat::Ascii`, one character to a cell, or as `DataFormat::PlainText`, one box holding the whole string.
 
 If `DataNodeContent` is an array, the data will be presented in the form of a grid having a particular type of `GridLayout`.
@@ -28,7 +28,7 @@ Nodes in this panel are draggable and have built-in connector routing and drag-c
 
 ***Displaying Binary or Hexadecimal Values***<br>
 Displaying successive byte-groups as a long string would make the end of one string and the start of the next indistinguishable.
-Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, or `u64`.
+Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, or `u64`, or a deeper shade of the same colour for the signed `i8`, `i16`, `i32` or `i64`.
 
 As far as assistive technology is concerned, colour alone does not convey any useful information.
 Therefore, the node's type name is attached both as an SVG `<title>` (shown as a browser tooltip) and as an `aria-label`.
@@ -45,3 +45,9 @@ Binary format further splits each byte into its own upper and lower nybble, so `
 
 This can be reversed by setting `DataNodeContent::with_byte_order(ByteOrder::LittleEndian)`.
 This will visualise the actual in-memory byte layout, rather than the network byte order.
+
+***Signed Values***<br>
+A signed value shows a sign only when it is negative: `-5` has one, and `42` has none, not even a `+`.
+Hexadecimal, binary and `Ascii` show the bytes the value occupies in memory, which for a negative value is its two's complement.
+So `-2_i16` reads `FF FE` in hexadecimal.
+The demo's sixth row shows both.

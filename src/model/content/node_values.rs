@@ -1,5 +1,8 @@
 use super::{ByteOrder, DataFormat, format_ascii_into, format_binary_into, format_decimal_into, format_hex_into};
-use crate::colours::{TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64};
+use crate::colours::{
+    TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_U8, TYPE_COLOUR_U16,
+    TYPE_COLOUR_U32, TYPE_COLOUR_U64,
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
@@ -13,18 +16,26 @@ fn order_bytes<const N: usize>(mut bytes: [u8; N], order: ByteOrder) -> [u8; N] 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many characters `value` takes to write in decimal: its digits, and a leading `-` if it is negative.
+fn decimal_len<T: Word>(value: T) -> usize {
+    let (magnitude, negative) = value.split_sign();
+    magnitude.checked_ilog10().map_or(1, |digits| digits as usize + 1) + usize::from(negative)
+}
+
 /// The one value among `values`, if any, that [`format`](DataFormat) is guaranteed to render widest — without
 /// formatting any of them.
 ///
 /// [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`]/[`DataFormat::Ascii`] give every value the same rendered width
 /// regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all `values` here share one
 /// integer width already (see [`NodeValues`]'s own "Deliberately one width per node" doc section). So the first value
-/// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude, and
-/// these are all unsigned. So the numerically largest value is always the widest one to render. It is found here by a
-/// plain comparison, `Ord::max`, not by formatting every value just to compare the resulting text lengths.
-fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
+/// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude. For an
+/// unsigned width, that makes the numerically largest value the widest. A signed width also shows a `-` for a negative
+/// value, so the widest may be the largest or the most negative, whichever takes more characters. It is found here by
+/// counting each value's characters arithmetically, not by formatting every value just to compare the resulting text
+/// lengths.
+fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
-        DataFormat::Decimal => values.iter().max().copied(),
+        DataFormat::Decimal => values.iter().copied().max_by_key(|&value| decimal_len(value)),
         DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
             values.first().copied()
         },
@@ -32,14 +43,48 @@ fn pick_widest<T: Ord + Copy>(values: &[T], format: DataFormat) -> Option<T> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An unsigned integer width a [`NodeValues`] variant can hold. One implementation per width, from [`impl_word`],
-/// replaces what was once the same `match format` repeated for every variant of every method.
-trait Word: Ord + Copy {
+/// A value's magnitude, and whether it is negative: the two things [`format_decimal_into`] needs to write it.
+trait Magnitude {
+    /// This value's absolute value, widened to `u128`, and `true` if it is negative. An unsigned value is never
+    /// negative.
+    fn split_sign(self) -> (u128, bool);
+}
+
+macro_rules! impl_magnitude_unsigned {
+    ($($width:ty),+) => {$(
+        impl Magnitude for $width {
+            fn split_sign(self) -> (u128, bool) {
+                (u128::from(self), false)
+            }
+        }
+    )+};
+}
+
+macro_rules! impl_magnitude_signed {
+    ($($width:ty),+) => {$(
+        impl Magnitude for $width {
+            fn split_sign(self) -> (u128, bool) {
+                (i128::from(self).unsigned_abs(), self < 0)
+            }
+        }
+    )+};
+}
+
+impl_magnitude_unsigned!(u8, u16, u32, u64);
+impl_magnitude_signed!(i8, i16, i32, i64);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An integer width, signed or unsigned, a [`NodeValues`] variant can hold. One implementation per width, from
+/// [`impl_word`], replaces what was once the same `match format` repeated for every variant of every method.
+trait Word: Ord + Copy + Magnitude {
     /// Formats this value into `out` per `format` and `byte_order`.
     ///
     /// [`DataFormat::Decimal`] never computes `to_be_bytes()`/[`order_bytes`] at all, since [`format_decimal_into`] only
-    /// ever needs the value's own numeric magnitude. Computing and reordering a value's bytes only to have `Decimal`
+    /// ever needs the value's own magnitude and sign. Computing and reordering a value's bytes only to have `Decimal`
     /// discard them unused would be wasted work on every value, so the bytes are only built in the arms that use them.
+    ///
+    /// A signed value's bytes are its two's-complement representation, the same bits it holds in memory, so `-1_i8`
+    /// is `FF` in hexadecimal and `1111 1111` in binary.
     fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String);
 }
 
@@ -48,7 +93,10 @@ macro_rules! impl_word {
         impl Word for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    DataFormat::Decimal => format_decimal_into(u128::from(self), out),
+                    DataFormat::Decimal => {
+                        let (magnitude, negative) = self.split_sign();
+                        format_decimal_into(magnitude, negative, out);
+                    },
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
                     DataFormat::Ascii | DataFormat::PlainText => {
@@ -60,7 +108,7 @@ macro_rules! impl_word {
     )+};
 }
 
-impl_word!(u8, u16, u32, u64);
+impl_word!(u8, u16, u32, u64, i8, i16, i32, i64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Calls `f(index, formatted)` for every value of `values`, reusing `scratch` for the text. See
@@ -123,8 +171,17 @@ fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// as. This determines how many bytes [`super::DataFormat::Hexadecimal`]/[`super::DataFormat::Binary`] split each value
 /// into. It also determines which colour is assigned (`super::NodeValues::type_colour`, crate-private).
 ///
-/// Only the widths a caller is actually likely to inspect byte-by-byte are supported. A wider type — for example `u128`
-/// — can be added the same way later, additively, if it turns out to be needed.
+/// Each unsigned width has a signed equivalent: `I8`, `I16`, `I32` and `I64`. Only the widths a caller is actually
+/// likely to inspect byte-by-byte are supported. A wider type — for example `u128` — can be added the same way later,
+/// additively, if it turns out to be needed.
+///
+/// # Signed values
+///
+/// A signed value is shown with a sign only when it is negative: `-5` in [`DataFormat::Decimal`], and `5` for the
+/// positive value, with no `+`. [`DataFormat::Hexadecimal`], [`DataFormat::Binary`] and [`DataFormat::Ascii`] show the
+/// bytes the value occupies in memory, which for a negative value is its two's complement, so `-1_i8` reads as `FF`
+/// and `-2_i16` as `FF FE`. A signed width is coloured with a deeper shade of its unsigned equivalent's colour, and its
+/// type name is `i8`, `i16`, `i32` or `i64`.
 ///
 /// # Deliberately one width per node
 ///
@@ -145,6 +202,10 @@ pub enum NodeValues {
     U16(Vec<u16>),
     U32(Vec<u32>),
     U64(Vec<u64>),
+    I8(Vec<i8>),
+    I16(Vec<i16>),
+    I32(Vec<i32>),
+    I64(Vec<i64>),
 }
 
 impl NodeValues {
@@ -155,6 +216,10 @@ impl NodeValues {
             Self::U16(v) => v.len(),
             Self::U32(v) => v.len(),
             Self::U64(v) => v.len(),
+            Self::I8(v) => v.len(),
+            Self::I16(v) => v.len(),
+            Self::I32(v) => v.len(),
+            Self::I64(v) => v.len(),
         }
     }
 
@@ -181,6 +246,10 @@ impl NodeValues {
             Self::U16(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::I8(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::I16(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::I32(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::I64(v) => for_each_formatted(v, format, byte_order, scratch, f),
         }
     }
 
@@ -203,6 +272,10 @@ impl NodeValues {
             (Self::U16(v), Self::U16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::U32(v), Self::U32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::U64(v), Self::U64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::I8(v), Self::I8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::I16(v), Self::I16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::I32(v), Self::I32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::I64(v), Self::I64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             _ => Ok(()),
         }
     }
@@ -222,6 +295,10 @@ impl NodeValues {
             Self::U16(v) => format_widest(v, format, byte_order, out),
             Self::U32(v) => format_widest(v, format, byte_order, out),
             Self::U64(v) => format_widest(v, format, byte_order, out),
+            Self::I8(v) => format_widest(v, format, byte_order, out),
+            Self::I16(v) => format_widest(v, format, byte_order, out),
+            Self::I32(v) => format_widest(v, format, byte_order, out),
+            Self::I64(v) => format_widest(v, format, byte_order, out),
         }
     }
 
@@ -240,6 +317,10 @@ impl NodeValues {
             Self::U16(v) => format_first(v, format, byte_order, out),
             Self::U32(v) => format_first(v, format, byte_order, out),
             Self::U64(v) => format_first(v, format, byte_order, out),
+            Self::I8(v) => format_first(v, format, byte_order, out),
+            Self::I16(v) => format_first(v, format, byte_order, out),
+            Self::I32(v) => format_first(v, format, byte_order, out),
+            Self::I64(v) => format_first(v, format, byte_order, out),
         }
     }
 
@@ -257,11 +338,15 @@ impl NodeValues {
             Self::U16(_) => TYPE_COLOUR_U16,
             Self::U32(_) => TYPE_COLOUR_U32,
             Self::U64(_) => TYPE_COLOUR_U64,
+            Self::I8(_) => TYPE_COLOUR_I8,
+            Self::I16(_) => TYPE_COLOUR_I16,
+            Self::I32(_) => TYPE_COLOUR_I32,
+            Self::I64(_) => TYPE_COLOUR_I64,
         }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64").
+    /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64").
     ///
     /// [`type_colour`](Self::type_colour) is the only visual cue distinguishing one width from another. A caller who
     /// cannot distinguish colours has no other way to recover the type. Assistive technology does not perceive fill
@@ -273,6 +358,10 @@ impl NodeValues {
             Self::U16(_) => "u16",
             Self::U32(_) => "u32",
             Self::U64(_) => "u64",
+            Self::I8(_) => "i8",
+            Self::I16(_) => "i16",
+            Self::I32(_) => "i32",
+            Self::I64(_) => "i64",
         }
     }
 }

@@ -28,9 +28,10 @@ pub(crate) const PLAIN_BOX_FILL: &str = "#eef4ff";
 
 /// A named data node's own outer box background, a pastel teal. It is deliberately distinct from [`PLAIN_BOX_FILL`],
 /// which an operator node's own outer box and an unnamed data node's own outer box both already use. It is also
-/// distinct from every [`TYPE_COLOUR_U8`]/[`TYPE_COLOUR_U16`]/[`TYPE_COLOUR_U32`]/[`TYPE_COLOUR_U64`] pastel the
-/// content box it wraps could show. So the outer "this is named" box, an operator's own "this is computed" box, and the
-/// inner "this value's own type" box each read as a distinct kind of box. They never blend into one another.
+/// distinct from every [`TYPE_COLOUR_U8`]/[`TYPE_COLOUR_U16`]/[`TYPE_COLOUR_U32`]/[`TYPE_COLOUR_U64`] pastel, and from
+/// each of their signed equivalents, the content box it wraps could show. So the outer "this is named" box, an
+/// operator's own "this is computed" box, and the inner "this value's own type" box each read as a distinct kind of
+/// box. They never blend into one another.
 pub(crate) const NAMED_BOX_FILL: &str = "#d6f2ee";
 
 /// A connector's own `<path>` stroke colour — a muted grey, deliberately quiet next to the pastel boxes it connects.
@@ -75,3 +76,16 @@ pub(crate) const TYPE_COLOUR_U32: &str = "#e6dcf5";
 
 /// [`NodeValues::type_colour`](crate::model::content::NodeValues::type_colour)'s own `u64` shade — pastel rose.
 pub(crate) const TYPE_COLOUR_U64: &str = "#f5dce4";
+
+/// [`NodeValues::type_colour`](crate::model::content::NodeValues::type_colour)'s own `i8` shade — a deeper apricot than
+/// its unsigned equivalent's, so a signed width reads as the same family as its unsigned one.
+pub(crate) const TYPE_COLOUR_I8: &str = "#f8d3a8";
+
+/// The `i16` shade — a deeper mint than [`TYPE_COLOUR_U16`].
+pub(crate) const TYPE_COLOUR_I16: &str = "#bfe3bf";
+
+/// The `i32` shade — a deeper lavender than [`TYPE_COLOUR_U32`].
+pub(crate) const TYPE_COLOUR_I32: &str = "#cdb8ec";
+
+/// The `i64` shade — a deeper rose than [`TYPE_COLOUR_U64`].
+pub(crate) const TYPE_COLOUR_I64: &str = "#efb9cb";

@@ -291,7 +291,7 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// This content's own type name ("u8"/"u16"/"u32"/"u64") — see [`NodeValues::type_name`].
+    /// This content's own type name ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64") — see [`NodeValues::type_name`].
     pub(crate) fn type_name(&self) -> &'static str {
         if self.is_plain_text() {
             return "text";

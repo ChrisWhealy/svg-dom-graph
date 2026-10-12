@@ -1,6 +1,6 @@
 //! `panel-data` / `#data-diagram` holds draggable nodes whose content is a [`DataNodeContent`] grid of values rather
 //! than a plain text label. There is one single-value and one multi-value node per integer width
-//! (`u8`/`u16`/`u32`/`u64`). The multi-value counts are chosen to cover every combination the grid layout rule can
+//! (`u8`/`u16`/`u32`/`u64`), and one more row for the signed widths. The multi-value counts are chosen to cover every combination the grid layout rule can
 //! produce. See [`build_data_demo`]'s own doc comment for exactly which.
 
 use crate::util::{stringify, view_box_rect};
@@ -32,6 +32,10 @@ thread_local! {
 /// - `u64`, 4 values: both a perfect square and evenly divisible by a power of two (`2`) — the two rules agree, landing
 ///   on the same 2×2 shape either way.
 ///
+/// A sixth row shows the signed widths: a single `i16` of `-2` in hexadecimal, which reads as its two's complement,
+/// `FF FE`, and four `i32` values in decimal. A sign is shown only for a value that is negative. A positive value, and
+/// zero, show none.
+///
 /// A fifth, standalone row below those four shows a single `u64` value under [`DataFormat::Binary`] — 64 digits,
 /// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a
 /// grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
@@ -46,7 +50,7 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         &crate::util::document()?,
         "data-diagram-stage",
         "data-diagram",
-        svg_dom::root::utils::Size::new(750.0, 700.0),
+        svg_dom::root::utils::Size::new(750.0, 810.0),
     )?;
     let svg = SvgRoot::attach("data-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
@@ -142,6 +146,19 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         X_SINGLE,
         590.0,
         DataNodeContent::new(NodeValues::U64(vec![0x0102030405060708]), DataFormat::Binary),
+    )?;
+
+    // The signed widths: a sign shows only for a negative value, and hexadecimal shows the two's-complement bytes. A
+    // single `i16`, and four `i32`s in decimal, one of them negative, one zero and one positive.
+    place(
+        X_SINGLE,
+        680.0,
+        DataNodeContent::new(NodeValues::I16(vec![-2]), DataFormat::Hexadecimal),
+    )?;
+    place(
+        X_MULTI,
+        680.0,
+        DataNodeContent::new(NodeValues::I32(vec![-5, 0, 42, -1_234_567]), DataFormat::Decimal),
     )?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.

@@ -78,7 +78,7 @@
 //!
 //! `type_colour` distinguishes datatypes visually, using colour. But colour alone is invisible to assistive technology,
 //! and unreliable for a colour-blind reader. This crate offers no caller-facing way to map a colour back to a type name
-//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64" — as
+//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64", or "i8"/"i16"/"i32"/"i64" — as
 //! an SVG `<title>` on the node's own `<g>`. This gives a native browser tooltip when the mouse pointer hovers over any
 //! child: the rect or the rendered digits alike.
 //!
@@ -107,8 +107,9 @@ pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Formats `decimal` as a plain base-10 number into `out` — the [`DataFormat::Decimal`] case, which needs a value's own
-/// numeric magnitude directly, never a byte representation. Clears `out` first, then writes into it — the same
+/// Formats a value of `magnitude`, negative if `negative`, as a plain base-10 number into `out` — the
+/// [`DataFormat::Decimal`] case, which needs a value's own numeric magnitude and sign directly, never a byte
+/// representation. Clears `out` first, then writes into it — the same
 /// reused-buffer shape [`crate::geometry::elbow_path_into`] already uses for a per-frame `d` attribute.
 ///
 /// A separate function from [`format_hex_into`]/[`format_binary_into`], rather than one function matching on
@@ -117,10 +118,14 @@ pub use selection::Selection;
 /// always ignore whichever byte array the caller computed to get there. [`NodeValues::for_each_cell_string`] is the
 /// caller this matters most for. Reordering a value's own bytes via [`super::byte_order`] for a `Decimal` cell, only to
 /// have this discard them unused, would be wasted work on every single one.
-fn format_decimal_into(decimal: u128, out: &mut String) {
+fn format_decimal_into(magnitude: u128, negative: bool, out: &mut String) {
     use std::fmt::Write as _;
     out.clear();
-    let _ = write!(out, "{decimal}");
+    // A sign is only shown if the value is negative. A positive value has no `+`.
+    if negative {
+        out.push('-');
+    }
+    let _ = write!(out, "{magnitude}");
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

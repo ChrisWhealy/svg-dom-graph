@@ -7,7 +7,8 @@
     </p>
     <p>A byte-group string alone cannot say where one value ends and the next begins, so each value gets its own
         small box, coloured by its own type — a pastel shade per <code>u8</code>/<code>u16</code>/<code>u32</code>/
-        <code>u64</code>. With a single value, that colour is applied straight to the node's own box instead, since
+        <code>u64</code>, and a deeper shade of the same colour for each signed equivalent, <code>i8</code>/<code>i16</code>/
+        <code>i32</code>/<code>i64</code>. With a single value, that colour is applied straight to the node's own box instead, since
         there is no sibling value to tell it apart from.
     </p>
     <p>Each of the first four rows below shows one integer width as both a single value (left) and several values
@@ -25,6 +26,10 @@
         byte-separated. The grid layout rule sizes a row by cell <em>count</em>, not physical width, so a single very
         long value like this one renders far wider than it is tall. This is the extreme case
         <code>GridLayout::MaxColumns</code> exists to let a caller cap.
+    </p>
+    <p>The sixth row shows the signed widths. A sign is shown only when a value is negative, so <code>-5</code> has one
+        and <code>42</code> has none. Hexadecimal and binary show the bytes a value occupies in memory, which for a
+        negative value is its two's complement: <code>-2</code> as an <code>i16</code> reads <code>FF FE</code>.
     </p>
     <div class="canvas" id="data-diagram-stage" style="margin-top: 1.5rem;">
     </div>
