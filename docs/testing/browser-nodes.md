@@ -24,6 +24,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - an invalid float format being rejected before anything is drawn
   - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
   - an `f32` and an `f64` being different types for replacement and for an operator
+  - a unary or binary operator refusing floating point operands, and drawing nothing, while an arithmetic operator accepts them
 - signed values (`NodeValues::I8`/`I16`/`I32`/`I64`):
   - a sign being shown only for a negative value, and never a `+`
   - hexadecimal and binary showing the two's-complement bytes of a negative value

@@ -70,6 +70,13 @@ So the widest value is one of a few extremes: the largest and smallest magnitude
 One pass over the values finds them, and only those few are formatted.
 The shortest form has no such order, because a short value such as `0.5` can be bigger than a long one such as `0.30000000000000004`, so every value is measured.
 
+## Operator nodes
+
+The unary and binary operators (`NOT`, the shifts and rotations, `AND`, `OR`, `XOR` and their negations) act on the bits of an integer.
+They have no meaning for a float in ordinary arithmetic, so `add_unary_operator_node` and `add_binary_operator_node` reject floating point operands with `Error::OperatorNeedsIntegers`, even when the operands and the result are all the same float type.
+The arithmetic operators (`ADD`, `SUB`, `MUL`, `DIV`, `MOD`) mean something for a float, and accept one.
+As ever, the library never computes anything: the caller works out the result.
+
 ## Replacing values
 
 `Scene::set_data_values` works as it does for the integers: the new values must be the same type and count.

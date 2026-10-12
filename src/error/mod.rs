@@ -126,6 +126,12 @@ pub enum Error {
     /// An operator always produces one value, never a grid of them. Rejected before drawing anything or touching the
     /// graph's model, so a rejected call leaves the scene unchanged.
     OperatorResultNotSingleValue(usize),
+    /// A unary or binary operator node was given floating point operands.
+    ///
+    /// `NOT`, `AND`, `XOR`, the shifts and the rotations act on the bits of an integer, and have no meaning for a float
+    /// in ordinary arithmetic. An arithmetic operator node accepts floats. Rejected before drawing anything or touching
+    /// the graph's model, so a rejected call leaves the scene unchanged.
+    OperatorNeedsIntegers { operator: String, found: &'static str },
     /// A two-input operator constructor — `Scene::add_binary_operator_node`/`_with`, or
     /// `Scene::add_arithmetic_operator_node`/`_with` — was given the same node as both of `inputs`.
     ///
@@ -264,6 +270,12 @@ impl fmt::Display for Error {
             Error::OperandNotData(id) => write!(f, "node {id:?} is a plain label, not a DataNodeContent"),
             Error::OperatorTypeMismatch { expected, found } => {
                 write!(f, "operator type mismatch: expected {expected}, found {found}")
+            },
+            Error::OperatorNeedsIntegers { operator, found } => {
+                write!(
+                    f,
+                    "{operator} acts on the bits of an integer, so its operands cannot be {found}. An arithmetic operator takes floats"
+                )
             },
             Error::OperatorResultNotSingleValue(len) => {
                 write!(f, "operator result must hold exactly one value, found {len}")

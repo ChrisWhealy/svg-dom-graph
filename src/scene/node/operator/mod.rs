@@ -99,6 +99,38 @@ fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeCont
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What distinguishes one two-input operator from another, once its operator enum has been resolved: how it is labelled,
+/// whether swapping its operands changes nothing, and whether it acts on the bits of an integer, as a binary operator
+/// does, or on numbers, as an arithmetic one does.
+struct TwoInputKind {
+    label: &'static str,
+    commutes: bool,
+    /// `true` for a binary (bitwise) operator, which needs integer operands.
+    bitwise: bool,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::OperatorNeedsIntegers`] if any of `operands` holds floating point values. A unary or binary operator
+/// acts on the bits of an integer: there is no `NOT`, `AND`, `XOR` or rotation of a float in ordinary arithmetic, and a
+/// result drawn for one would claim a meaning it does not have. An arithmetic operator has no such restriction. Also
+/// returns [`Error::UnknownNode`]/[`Error::OperandNotData`] for an operand that is not a data node.
+///
+/// Whether the `result` is a float needs no check of its own. [`check_operand_types`] has already made it the same type
+/// as the operands.
+fn check_integer_operands(graph: &Graph, operands: &[NodeId], operator: &str) -> Result<(), Error> {
+    for &operand in operands {
+        let content = operand_content(graph, operand)?;
+        if content.holds_floats() {
+            return Err(Error::OperatorNeedsIntegers {
+                operator: operator.to_owned(),
+                found: content.type_name(),
+            });
+        }
+    }
+    Ok(())
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator box, attaches it, and adds it to the graph, returning its id and rectangle. `inputs` is the two
 /// operands of a two-input operator, recorded on the box's own handles, or `None` for a unary operator.
@@ -469,6 +501,9 @@ impl Scene {
     /// `result`'s own value width does not match theirs. Both operands and the result must share one
     /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
+    /// Returns [`Error::OperatorNeedsIntegers`] if `input` holds floating point values. A unary operator acts on the bits
+    /// of an integer, and means nothing for a float.
+    ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
     ///
@@ -487,7 +522,9 @@ impl Scene {
         let id = {
             let mut inner = self.inner.borrow_mut();
             check_operand_types(&inner.graph, &[input], &result)?;
-            insert_operator_node(&mut inner, top_left, &operator.label(), result, options, None)?.0
+            let label = operator.label();
+            check_integer_operands(&inner.graph, &[input], &label)?;
+            insert_operator_node(&mut inner, top_left, &label, result, options, None)?.0
         };
 
         let mut guard = OperatorConstructionGuard::new(self.clone(), id);
@@ -545,6 +582,9 @@ impl Scene {
     /// [`NodeValues`](crate::scene::NodeValues) width. Both operands, and the result, must share one
     /// [`NodeValues`](crate::scene::NodeValues) width.
     ///
+    /// Returns [`Error::OperatorNeedsIntegers`] if the operands hold floating point values. A binary operator acts on
+    /// the bits of integers, and means nothing for floats. Use an arithmetic operator for those.
+    ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
     ///
@@ -559,7 +599,12 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options, operator.commutes())
+        let kind = TwoInputKind {
+            label: operator.label(),
+            commutes: operator.commutes(),
+            bitwise: true,
+        };
+        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -612,7 +657,8 @@ impl Scene {
     ///
     /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
     /// `result`'s own value width does not match theirs. Both operands and the result must share one
-    /// [`NodeValues`](crate::scene::NodeValues) width.
+    /// [`NodeValues`](crate::scene::NodeValues) width. Unlike the unary and binary operators, an arithmetic operator
+    /// accepts floating point operands, since addition, division and the rest mean something for a float.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
@@ -628,7 +674,12 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        self.add_two_input_operator_node_with(top_left, operator.label(), inputs, result, options, operator.commutes())
+        let kind = TwoInputKind {
+            label: operator.label(),
+            commutes: operator.commutes(),
+            bitwise: false,
+        };
+        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -641,12 +692,12 @@ impl Scene {
     fn add_two_input_operator_node_with(
         &self,
         top_left: Point,
-        label: &str,
+        kind: TwoInputKind,
         inputs: (NodeId, NodeId),
         result: DataNodeContent,
         options: NodeOptions,
-        commutes: bool,
     ) -> Result<NodeId, Error> {
+        let TwoInputKind { label, commutes, bitwise } = kind;
         validate_new_operator(top_left, &result, options)?;
         if inputs.0 == inputs.1 {
             return Err(Error::DuplicateOperands(inputs.0));
@@ -655,6 +706,9 @@ impl Scene {
         let (id, rect) = {
             let mut inner = self.inner.borrow_mut();
             check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
+            if bitwise {
+                check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+            }
             insert_operator_node(&mut inner, top_left, label, result, options, Some(inputs))?
         };
 

@@ -6,7 +6,10 @@ use crate::common::{check, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DataFormat, DataNodeContent, FloatFormat, GridLayout, MAX_FLOAT_DIGITS, NodeValues, Scene, UnaryOperator},
+    scene::{
+        ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, FloatFormat, GridLayout, MAX_FLOAT_DIGITS,
+        NodeValues, Scene, UnaryOperator,
+    },
 };
 use wasm_bindgen_test::wasm_bindgen_test;
 
@@ -211,5 +214,75 @@ fn an_f32_is_not_an_f64_for_replacement_or_for_an_operator() -> Result<(), Strin
     check(
         matches!(outcome, Err(Error::OperatorTypeMismatch { .. })),
         &format!("expected OperatorTypeMismatch, got {outcome:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Unary and binary operators act on the bits of an integer, and are refused floating point operands, even when the
+/// operands and result are all of one float type. Nothing is drawn for a rejected call.
+#[wasm_bindgen_test]
+fn a_bitwise_operator_is_refused_floating_point_operands() -> Result<(), String> {
+    let svg = make_svg("float-bitwise", Size::new(600.0, 300.0), Size::new(600.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::F32(vec![1.0]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(
+            Point::new(10.0, 120.0),
+            DataNodeContent::new(NodeValues::F32(vec![2.0]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let float_result = || DataNodeContent::new(NodeValues::F32(vec![1.0]), DataFormat::Decimal);
+
+    let unary = scene.add_unary_operator_node(Point::new(200.0, 10.0), UnaryOperator::Not, a, float_result());
+    check(
+        matches!(&unary, Err(Error::OperatorNeedsIntegers { operator, found }) if operator == "NOT" && *found == "f32"),
+        &format!("expected OperatorNeedsIntegers for NOT, got {unary:?}"),
+    )?;
+    let binary = scene.add_binary_operator_node(Point::new(200.0, 60.0), BinaryOperator::Xor, (a, b), float_result());
+    check(
+        matches!(&binary, Err(Error::OperatorNeedsIntegers { operator, .. }) if operator == "XOR"),
+        &format!("expected OperatorNeedsIntegers for XOR, got {binary:?}"),
+    )?;
+    // Only the two operands were drawn, and no edge was left behind.
+    check(
+        nth_group("float-bitwise", 2).is_err(),
+        "a rejected operator should draw nothing",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An arithmetic operator means something for a float, and accepts it. The accessible name of its result names the
+/// float type.
+#[wasm_bindgen_test]
+fn an_arithmetic_operator_accepts_floating_point_operands() -> Result<(), String> {
+    let svg = make_svg("float-arithmetic", Size::new(600.0, 300.0), Size::new(600.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let float = |y: f64, v: f64| {
+        scene
+            .add_data_node(
+                Point::new(10.0, y),
+                DataNodeContent::new(NodeValues::F64(vec![v]), DataFormat::Float(FloatFormat::decimal_places(1))),
+            )
+            .map_err(|e| e.to_string())
+    };
+    let (a, b) = (float(10.0, 1.5)?, float(120.0, 2.0)?);
+    scene
+        .add_arithmetic_operator_node(
+            Point::new(200.0, 60.0),
+            ArithmeticOperator::Divide,
+            (a, b),
+            DataNodeContent::new(NodeValues::F64(vec![0.75]), DataFormat::Float(FloatFormat::decimal_places(2))),
+        )
+        .map_err(|e| e.to_string())?;
+    let operator = nth_group("float-arithmetic", 2)?;
+    let label = operator.get_attribute("aria-label");
+    check(
+        label.as_deref().is_some_and(|l| l.starts_with("DIV result: f64 = 0.75")),
+        &format!("aria-label {label:?}"),
     )
 }

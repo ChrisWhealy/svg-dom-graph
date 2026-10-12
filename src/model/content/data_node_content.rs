@@ -193,6 +193,12 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if this content holds `f32` or `f64` values.
+    pub(crate) fn holds_floats(&self) -> bool {
+        self.values.is_float()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `false` for [`DataFormat::Float`] content whose values are not `f32` or `f64`, or whose format asks for more digits
     /// than [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) or for no significant digits. Every other content is valid.
     pub(crate) fn float_format_is_valid(&self) -> bool {

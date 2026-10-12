@@ -127,3 +127,50 @@ fn an_unknown_operand_is_reported_as_such() -> Result<(), String> {
         "an id from another graph is unknown",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   check_integer_operands: a unary or binary operator needs integer operands.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn integer_operands_are_accepted_by_a_bitwise_operator() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(rect(), content(NodeValues::I16(vec![1])));
+    let b = graph.add_node(rect(), content(NodeValues::U64(vec![2])));
+    check(
+        check_integer_operands(&graph, &[a, b], "XOR").is_ok(),
+        "signed and unsigned integers are integers",
+    )
+}
+
+#[test]
+fn a_float_operand_is_rejected_by_a_bitwise_operator_and_named() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(rect(), content(NodeValues::U8(vec![1])));
+    let b = graph.add_node(rect(), content(NodeValues::F64(vec![2.0])));
+    check(
+        matches!(
+            check_integer_operands(&graph, &[a, b], "AND"),
+            Err(Error::OperatorNeedsIntegers { ref operator, found: "f64" }) if operator == "AND"
+        ),
+        "expected OperatorNeedsIntegers naming AND and f64",
+    )?;
+    check(
+        matches!(
+            check_integer_operands(&graph, &[b], "ROTL 3"),
+            Err(Error::OperatorNeedsIntegers { found: "f64", .. })
+        ),
+        "a unary operator is checked too",
+    )
+}
+
+#[test]
+fn an_unknown_operand_is_still_reported_as_unknown_by_the_integer_check() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let a = graph.add_node(rect(), content(NodeValues::U8(vec![1])));
+    let other = Graph::new().add_node(rect(), content(NodeValues::U8(vec![1])));
+    check(
+        matches!(check_integer_operands(&graph, &[a, other], "NOT"), Err(Error::UnknownNode(_))),
+        "an id from another graph is unknown",
+    )
+}
