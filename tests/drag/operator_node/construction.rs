@@ -84,8 +84,9 @@ fn title_of(element: &web_sys::Element) -> Result<Option<String>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An operator node's own `aria-label` reads `"{label} result = {value}"` — the operator that produced it, and its own
-/// real formatted result value as text, rather than just the result's own type. Its `<title>`, the browser's own
+/// An operator node's own `aria-label` reads `"{label} result: {type} = {value}"` — the operator that produced it, the
+/// result's own type, and its real formatted result value as text. The type is there because colour alone cannot tell a
+/// signed width from its unsigned equivalent. Its `<title>`, the browser's own
 /// mouse-hover tooltip, carries that exact same text. So hovering over the node with the mouse pointer shows the same
 /// thing a screen reader announces.
 #[wasm_bindgen_test]
@@ -105,11 +106,11 @@ fn an_operator_nodes_own_aria_label_names_the_operator_and_the_real_result_value
 
     let group = nth_group("operator-aria-label", 1)?;
     check(
-        group.get_attribute("aria-label").as_deref() == Some("NOT result = F0 F0 F0 F0. Input from u32."),
+        group.get_attribute("aria-label").as_deref() == Some("NOT result: u32 = F0 F0 F0 F0. Input from u32."),
         &format!("unexpected aria-label: {:?}", group.get_attribute("aria-label")),
     )?;
     check(
-        title_of(&group)?.as_deref() == Some("NOT result = F0 F0 F0 F0. Input from u32."),
+        title_of(&group)?.as_deref() == Some("NOT result: u32 = F0 F0 F0 F0. Input from u32."),
         &format!("unexpected <title>: {:?}", title_of(&group)?),
     )
 }
@@ -381,5 +382,58 @@ fn add_binary_operator_node_rejects_a_multi_value_result() -> Result<(), String>
     check(
         matches!(outcome, Err(Error::OperatorResultNotSingleValue(2))),
         &format!("expected Err(Error::OperatorResultNotSingleValue(2)), got {outcome:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Two operator nodes whose results differ only in being signed or unsigned have different accessible names and
+/// tooltips, because the colour that tells them apart is invisible to assistive technology.
+#[wasm_bindgen_test]
+fn an_operator_nodes_accessible_name_tells_a_signed_result_from_an_unsigned_one() -> Result<(), String> {
+    let svg = make_svg("operator-signedness", Size::new(500.0, 300.0), Size::new(500.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let signed_operand = scene
+        .add_data_node(
+            Point::new(10.0, 10.0),
+            DataNodeContent::new(NodeValues::I8(vec![-43]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    scene
+        .add_unary_operator_node(
+            Point::new(200.0, 10.0),
+            UnaryOperator::Not,
+            signed_operand,
+            DataNodeContent::new(NodeValues::I8(vec![42]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    let unsigned_operand = scene
+        .add_data_node(
+            Point::new(10.0, 150.0),
+            DataNodeContent::new(NodeValues::U8(vec![213]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+    scene
+        .add_unary_operator_node(
+            Point::new(200.0, 150.0),
+            UnaryOperator::Not,
+            unsigned_operand,
+            DataNodeContent::new(NodeValues::U8(vec![42]), DataFormat::Decimal),
+        )
+        .map_err(|e| e.to_string())?;
+
+    let signed = nth_group("operator-signedness", 1)?;
+    let unsigned = nth_group("operator-signedness", 3)?;
+    let (signed_label, unsigned_label) = (signed.get_attribute("aria-label"), unsigned.get_attribute("aria-label"));
+    check(
+        signed_label.as_deref() == Some("NOT result: i8 = 42. Input from i8."),
+        &format!("signed aria-label: {signed_label:?}"),
+    )?;
+    check(
+        unsigned_label.as_deref() == Some("NOT result: u8 = 42. Input from u8."),
+        &format!("unsigned aria-label: {unsigned_label:?}"),
+    )?;
+    check(
+        title_of(&signed)? == signed_label && title_of(&unsigned)? == unsigned_label,
+        "each tooltip should match its aria-label",
     )
 }

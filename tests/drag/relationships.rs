@@ -103,7 +103,7 @@ fn a_binary_operators_own_two_auto_wired_inputs_each_append_their_own_clause() -
 
     let group_op = nth_group("relationships-operator", 2)?;
     check(
-        group_op.get_attribute("aria-label").as_deref() == Some("SUB result = 6. Input from A. Input from B."),
+        group_op.get_attribute("aria-label").as_deref() == Some("SUB result: u8 = 6. Input from A. Input from B."),
         &format!("unexpected operator aria-label: {:?}", group_op.get_attribute("aria-label")),
     )
 }

@@ -24,6 +24,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - every cell being wide enough for a minus sign
   - replacing values needing the same signed width, and rejecting the unsigned equivalent
   - an operator rejecting an operand and result of signed and unsigned widths
+  - an operator node's accessible name and tooltip naming its result's type, so that a signed result reads differently from an unsigned one
 - operator nodes (`UnaryOperator`/`BinaryOperator`/`ArithmeticOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`):
   - a unary node's two-row label/value rendering, and a binary or arithmetic node's own two auto-wired input edges
   - rejecting mismatched operand widths, duplicate operands, a non-data operand, and a multi-value result, all before drawing anything

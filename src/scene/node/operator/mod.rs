@@ -165,10 +165,11 @@ fn draw_operator_box(
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
 
     // Same reasoning as `draw_content_box`'s own `<title>`/`aria-label` pair: colour alone conveys the result's own
-    // type to neither assistive technology nor a colour-blind reader. The label names the operator and shows its own
-    // real result value. `value_text` is the same formatted text `value_el` itself renders. So the result is available
-    // as text even without visiting the value cell directly.
-    let node_label = format!("{label} result = {value_text}");
+    // type to neither assistive technology nor a colour-blind reader. The label names the operator, the result's own
+    // type, and its real result value. The type matters most for the signed widths, whose colours are a deeper shade of
+    // their unsigned equivalents'. `value_text` is the same formatted text `value_el` itself renders. So the result is
+    // available as text even without visiting the value cell directly.
+    let node_label = format!("{label} result: {} = {value_text}", result.type_name());
     label_group(&group, &node_label)?;
 
     guard.disarm();
