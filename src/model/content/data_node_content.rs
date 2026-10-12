@@ -227,6 +227,14 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How many rows of [`shape`](Self::shape) hold at least one value. A layout can ask for more rows than there are
+    /// values to fill, and a row with no cell is drawn with no label, so it has no bearing on how much room labels need.
+    pub(crate) fn populated_rows(&self) -> usize {
+        let (rows, cols) = self.shape();
+        self.len().div_ceil(cols.max(1)).min(rows)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Calls `f(index, formatted)` once for every value, in order, formatted per this content's own `format`/
     /// `byte_order` — one cell per value, not yet arranged into a grid (see [`shape`](Self::shape) for that).
     ///

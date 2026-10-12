@@ -309,3 +309,17 @@ fn a_text_label_names_its_row_in_the_cell_s_accessible_name_and_a_missing_one_is
         &format!("got {names:?}"),
     )
 }
+
+#[wasm_bindgen_test]
+fn a_text_label_for_a_row_with_no_cell_takes_no_room() -> Result<(), String> {
+    // Three rows are asked for, but two values fill only two of them, so the third label is never drawn.
+    let width = |id: &str, labels: &'static [&'static str]| -> Result<f64, String> {
+        let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal)
+            .with_layout(GridLayout::Rows(3))
+            .with_labelling_style(LabellingStyle::Text(labels));
+        Ok(draw(id, content)?.0.width)
+    };
+    let short = width("labels-unused-short", &["a", "b", "c"])?;
+    let long = width("labels-unused-long", &["a", "b", "A very long unused label"])?;
+    check((short - long).abs() < 0.5, &format!("short {short}, long {long}"))
+}

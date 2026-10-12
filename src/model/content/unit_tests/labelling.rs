@@ -131,3 +131,30 @@ fn alphabetic_label_into_reuses_the_buffer_it_is_given() -> Result<(), String> {
     check_eq(out.as_ptr(), before)?;
     check_eq(out.capacity(), 16)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   populated_rows: only a row with a cell is labelled
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fn two_values_in(layout: GridLayout) -> DataNodeContent {
+    DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal).with_layout(layout)
+}
+
+#[test]
+fn a_layout_with_more_rows_than_values_has_no_populated_row_for_the_extra() -> Result<(), String> {
+    check_eq(two_values_in(GridLayout::Rows(3)).populated_rows(), 2)
+}
+
+#[test]
+fn every_row_of_a_full_grid_is_populated() -> Result<(), String> {
+    let content =
+        DataNodeContent::new(NodeValues::U8((0..8).collect()), DataFormat::Decimal).with_layout(GridLayout::Columns(4));
+    check_eq(content.populated_rows(), 2)
+}
+
+#[test]
+fn a_short_last_row_is_still_populated() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8((0..10).collect()), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(4));
+    check_eq(content.populated_rows(), 3)
+}

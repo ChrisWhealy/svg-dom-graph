@@ -222,8 +222,10 @@ impl GridLayoutMetrics {
 
         // Row labels sit in the grid box's own left padding, so it grows if they need more than it has. A generated
         // label never gets shorter as its index grows, so the last row's own is the widest. A caller's own text could be
-        // any width, whatever its length, so each one is measured and the widest wins.
-        let (rows, cols) = content.shape();
+        // any width, whatever its length, so each one is measured and the widest wins. Only a row that has a cell is
+        // labelled, so a row the layout asks for but has no value for takes no room.
+        let (_, cols) = content.shape();
+        let rows = content.populated_rows();
         let mut left_pad = OUTER_PADDING;
         if let Some(style) = content.labelling() {
             style.widest_label_into(rows, cols, &mut widest);
