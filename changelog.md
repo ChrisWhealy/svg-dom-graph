@@ -15,6 +15,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add labelling style to selection demos (`8d818bc`)
 - Extend test coverage for label width calculations (`c5bfbe1`)
 
+## Changed
+
+- Doc only: Update docs and images (``)
+
 ## Fixed
 
 - Ensure text width calculation is based on rendered width, not character count (`0e13f70`)

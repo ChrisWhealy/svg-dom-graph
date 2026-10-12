@@ -47,6 +47,8 @@ An application that builds a `Scene` from externally supplied data must impose i
 A data node's grid can hold an arbitrarily large number of cells, and each multi-value cell creates DOM elements.
 A crafted description can therefore produce a very large DOM tree, with a correspondingly high CPU and memory cost.
 
+Replacing the values of a node with `set_data_values` rewrites every cell that changed, so a node of a very large number of cells is also expensive to update repeatedly.
+
 The same applies to the total number of nodes and edges in the scene.
 
 ### Node Degree
@@ -72,9 +74,14 @@ A node's degree matters separately from the total edge count, for two reasons.
 
 ### String Lengths
 
-Plain-node labels are unrestricted strings.
+Plain-node labels are unrestricted strings, and so are the `name` of a named data node, the label of a container node, and the text of the scene title.
 Each one becomes DOM text, is retained as the node's `ref_name`, and is measured by the browser with `getBBox()`.
 The same names are then copied into the accessibility relationship strings described above.
+Text is always taken from the rendered width, so a label in any script is handled, but a very long one costs a very wide measurement and box.
+
+`LabellingStyle::Text` and the label of a `SelectionStride` take `&'static str`, so they can only be text compiled into the application.
+They cannot be built from untrusted input without deliberately leaking it.
+Each `Text` label is measured once when the node is drawn, so the cost grows with the number of rows.
 
 Limit string lengths as well as node counts.
 

@@ -8,12 +8,12 @@
 Draws graphs with dynamically re-routable connectors between SVG boxes.
 Each connector routes as a straight line or an elbow, with a configurable corner radius.
 
-![Array Operator Chain](img/array_operator_chain.png)
+![Array Operator Chain](img/sha3_sponge_demo.png)
 
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 
 `svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what the graph a caller builds.
-See [`library.md`](docs/library.md) for more details.
+See [`library/README.md`](docs/library/README.md) for more details.
 
 ***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
 
@@ -30,11 +30,12 @@ A list of the significant commits making up each release.
 
 ## Documentation
 
-- [`docs/library.md`](docs/library.md) — the crate's own module layout, and `Scene`'s public API grouped by area.
-- [`docs/demo-scope.md`](docs/demo-scope.md) — what each demo panel shows, and why.
-- [`docs/demo.md`](docs/demo.md) — how the demo server works, and how `demo-app`/`demo-server` are put together.
-- [`docs/testing.md`](docs/testing.md) — the test suite: native unit tests, browser integration tests, and the CDP tests.
-- [`docs/security.md`](docs/security.md) — resource limits to impose when building a graph from untrusted input.
+| File | Description
+|---|---
+| [`library/README.md`](docs/library/README.md) | The crate's own module layout, and `Scene`'s public API grouped by area.
+| [`demo/README.md`](docs/demo/README.md) | What the demo shows, how the demo server works and how `demo-app`/`demo-server` are put together.
+| [`testing/README.md`](docs/testing/README.md) | The test suite: native unit tests, browser integration tests, and the CDP tests.
+| [`security.md`](docs/security.md) | Resource limits to impose when building a graph from untrusted input.
 
 ## Running the demo
 

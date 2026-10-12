@@ -1,0 +1,37 @@
+# Browser Tests: Nodes
+
+These tests belong to the browser integration tests in `tests/drag/`; see [Browser Integration Tests](browser-tests.md) for how they are run.
+
+- data nodes (`DataNodeContent`/`Scene::add_data_node`/`Scene::add_named_data_node`):
+  - correct colour-coded cell rendering and auto-sizing for one, two, and five values, proving a non-complete final row renders correctly
+  - an extreme-aspect-ratio `u64` binary cell
+  - `GridLayout::MaxColumns` overriding the default shape
+  - rejecting a `GridLayout`/`DataNodeContent` combination whose column or row count is zero
+  - empty-content and non-finite-coordinate rejection before touching the scene
+  - a `<title>`/`aria-label` naming a data node's own type as text, not only as colour, without corrupting the rendered digits' own text content
+  - a named data node's own `aria-label` including both its given `name` and its real value, e.g. `"B: u64 = AB CD EF 01 23 45 67 89"`
+  - rejecting an empty or whitespace-only `name` before touching the scene, while still accepting one merely padded with whitespace, unchanged
+  - a multi-value grid's own `aria-label` spelling out its row/column shape, e.g. `"2 rows by 3 columns"`, not just its flat value count
+  - each cell's own `<text>` carrying its own `aria-label`, e.g. `"row 1, column 2: 6"`, naming its row and column directly rather than leaving that relationship implicit in its `x`/`y` position
+  - dragging a data node moves its own `<g>` transform; every cell's local coordinates stay unchanged
+  - a data node combined with custom `EdgeAnchors`
+  - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
+  - ordinary connector routing to and from a data node
+- operator nodes (`UnaryOperator`/`BinaryOperator`/`ArithmeticOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`):
+  - a unary node's two-row label/value rendering, and a binary or arithmetic node's own two auto-wired input edges
+  - rejecting mismatched operand widths, duplicate operands, a non-data operand, and a multi-value result, all before drawing anything
+  - dragging an operator node reroutes its input connector; dragging either operand of a same-side pair re-splits both connectors live, without either ever crossing back through its own dragged source box
+  - same-side operand collision handling: splitting to distinct anchor points, including an exact-crossing tie between two distinct operands, and honouring a configured `EdgeAnchors` count instead of the unconfigured default's fixed three-way split
+  - operands on different sides of the operator keep the plain single-anchor midpoint, unaffected by the same-side split logic
+  - a non-commutative binary or arithmetic operator's own two operand connectors carry labelled "L"/"R" port markers, preserving each operand's own identity even after a drag re-splits both connectors
+  - a commutative operator draws no port markers at all, since neither operand side carries meaning
+  - operator-to-operator chaining: dragging any one node in a chain reroutes only its own incident connectors, leaving the rest of the chain untouched
+- measuring and placing nodes (`Scene::node_rect`, `move_node`, `measure_data_node`, `measure_named_data_node`, `measure_operator_box`):
+  - a measurement being exactly the size the equivalent `add_*` call then draws, for a plain node, a grid, a named data node, and every kind of operator node
+  - a measurement leaving no residual DOM and not accumulating over repeated calls
+  - `move_node` rerouting every connector already attached, including an operator node's own auto-wired inputs
+  - none of a drag's bounds clamping or collision handling being applied to `move_node`
+- changing a data node in place (`Scene::set_data_values`):
+  - the cells' text and accessible names following the new values, for a grid and for a single value
+  - rejecting a different width, a different count, an operator node's result, and a node of another kind
+  - the accessible names, including a row or element label, surviving the replacement
