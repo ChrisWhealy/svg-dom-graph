@@ -125,7 +125,7 @@ impl DataNodeContent {
     /// returned and this content still holds its old values. A caller that retries with the same `values` therefore sees
     /// every cell that was not yet confirmed as changed again, including those it had already written.
     ///
-    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same integer width and holds the
+    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned integer or float, and holds the
     /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
     /// content also needs printable ASCII, and counts as one cell, whole.
     pub(crate) fn try_replace_values<E>(

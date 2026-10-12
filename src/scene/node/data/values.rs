@@ -46,11 +46,13 @@ impl Scene {
     /// holds does nothing to the document, so a caller can pass the whole state each step without the unchanged part
     /// costing anything.
     ///
-    /// `values` must be the same width of integer, and the same number of values, as the node was drawn with. The grid
+    /// `values` must be the same type, and the same number of values, as the node was drawn with. An `I16` node cannot
+    /// be given `U16` or `F32` values, nor an `F32` node `F64` ones. The grid
     /// then keeps exactly the size, shape and position it already has, and so does every connector attached to it. The
     /// node's own selection, secondary cells and colours are untouched. Each cell keeps the width it was drawn with. So
-    /// a [`crate::model::content::DataFormat::Decimal`] value with more digits than any value shown when the node was
-    /// drawn will overflow its cell. [`crate::model::content::DataFormat::Hexadecimal`] and
+    /// a [`crate::model::content::DataFormat::Decimal`] integer with more digits than any value shown when the node was
+    /// drawn will overflow its cell. So will a float that needs more characters under its format: more integer digits, a
+    /// longer exponent, a minus sign, or `-inf`. [`crate::model::content::DataFormat::Hexadecimal`] and
     /// [`crate::model::content::DataFormat::Binary`] values never change width.
     ///
     /// For a node drawn via [`add_data_node`](Self::add_data_node) or [`add_named_data_node`](Self::add_named_data_node)
@@ -64,7 +66,7 @@ impl Scene {
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
     /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node drawn with cells of its own, or if `values`
-    /// has a different integer width or a different number of values. Checked before changing anything.
+    /// has a different type or a different number of values. Checked before changing anything.
     ///
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
     /// already rewritten. The node's own values stay as they were then, so calling this again with the same `values`

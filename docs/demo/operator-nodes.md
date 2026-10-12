@@ -98,7 +98,7 @@ scene.add_unary_operator_node(
 ```
 
 The binary operator nodes (`AND`, `OR`, `XOR`, `NAND`, `NOR`, `XNOR`) take two operands and draw two incoming connectors the same way, via `Scene::add_binary_operator_node`.
-Both operands must share one `NodeValues` width, and must be two distinct nodes; if this is not the case, either will be rejected before anything is drawn.
+Both operands must share one `NodeValues` type, and must be two distinct nodes; if this is not the case, either will be rejected before anything is drawn.
 
 ```rust
 let value_a = 0xFF00_FF00u32;
@@ -129,7 +129,7 @@ scene.add_binary_operator_node(
 `operand_a` and `operand_b` must each hold the value they are actually declared to hold.
 The result passed to `add_binary_operator_node` must be that same operator correctly applied to both of them.
 
-`svg-dom-graph` makes no attempt to check this: it only checks that `operand_a`, `operand_b`, and the result share one `NodeValues` width, not that the result is arithmetically correct.
+`svg-dom-graph` makes no attempt to check this: it only checks that `operand_a`, `operand_b`, and the result share one `NodeValues` type, not that the result is arithmetically correct.
 
 ***IMPORTANT***<br>
 Supplying some inncorrect value (instead of the correct `value_a & value_b`) will draw a node whose displayed value is silently wrong!

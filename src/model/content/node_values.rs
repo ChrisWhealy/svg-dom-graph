@@ -31,7 +31,7 @@ fn decimal_len<T: Word>(value: T) -> usize {
 ///
 /// [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`]/[`DataFormat::Ascii`] give every value the same rendered width
 /// regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all `values` here share one
-/// integer width already (see [`NodeValues`]'s own "Deliberately one width per node" doc section). So the first value
+/// type already (see [`NodeValues`]'s own "Deliberately one type per node" doc section). So the first value
 /// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude. For an
 /// unsigned width, that makes the numerically largest value the widest, found by comparing the values and never by
 /// formatting them. A signed width also shows a `-` for a negative value, so the widest is either the largest value or
@@ -282,16 +282,17 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// whether a replacement changes anything, so the two can never disagree. It also makes equality reflexive, which is
 /// what lets `NodeValues` be [`Eq`].
 ///
-/// # Deliberately one width per node
+/// # Deliberately one type per node
 ///
 /// A `NodeValues` holds exactly one variant. So every value in a given [`super::DataNodeContent`] shares the same
-/// integer width. A node can display `[u32, u32, u32, u32]`, never `[u8, u16, u32, u64]`. This is a deliberate scope
+/// type, whether an unsigned or signed integer of one width, or a float of one. A node can display `[u32, u32, u32,
+/// u32]`, never `[u8, u16, u32, u64]`, and never `[i32, u32]` or `[f32, f64]`. This is a deliberate scope
 /// decision, not a limitation to lift later. The intended abstraction here is "display an array/vector of homogeneous
 /// numeric values" — a memory dump, a register bank, a typed buffer — not a general, per-cell-typed data inspector.
 /// Every value in one node sharing the same `type_colour` follows directly from that: colour identifies the node's own
 /// type, not each individual cell's.
 ///
-/// A heterogeneous node — `Vec<NodeValue>` with one width per value, à la a tagged-union cell type — is a legitimate,
+/// A heterogeneous node — `Vec<NodeValue>` with one type per value, à la a tagged-union cell type — is a legitimate,
 /// larger feature in its own right. It is not an incremental change to this one. Building it later, should a real
 /// caller need it, is expected to sit alongside this type rather than replace it.
 #[derive(Debug, Clone)]
@@ -400,7 +401,7 @@ impl NodeValues {
     /// Calls `f(index, formatted)` for every value of `self` that differs from the value at the same index of `old`,
     /// reusing `scratch` for the text. A value that has not changed is neither formatted nor reported.
     ///
-    /// `old` must be the same integer width and hold the same number of values. If it is not, `f` is never called.
+    /// `old` must be the same type and hold the same number of values. If it is not, `f` is never called.
     /// Stops at, and returns, the first error `f` gives.
     pub(super) fn try_for_each_changed_cell_string<E>(
         &self,
@@ -499,7 +500,7 @@ impl NodeValues {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A short, human-readable name for this content's own Rust type ("u8"/"u16"/"u32"/"u64"/"i8"/"i16"/"i32"/"i64"/"f32"/"f64").
     ///
-    /// [`type_colour`](Self::type_colour) is the only visual cue distinguishing one width from another. A caller who
+    /// [`type_colour`](Self::type_colour) is the only visual cue distinguishing one type from another. A caller who
     /// cannot distinguish colours has no other way to recover the type. Assistive technology does not perceive fill
     /// colour at all either. `scene::node` attaches this as the node's own `<g>`'s `<title>`, and as its `aria-label`.
     /// That way the type exists as text somewhere, not only as colour.

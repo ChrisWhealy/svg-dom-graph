@@ -4,6 +4,9 @@
 /// This crate never evaluates the operation itself — see this module's parent doc comment. Each variant exists purely
 /// to drive the rendered node's own label; a caller supplies the already-computed result separately.
 ///
+/// A binary operator acts on the bits of an integer, so its operands must be integers: a floating point operand is
+/// rejected with [`crate::error::Error::OperatorNeedsIntegers`].
+///
 /// Covers all six non-trivial two-input Boolean functions bitwise operators commonly name: `And`/`Or`/`Xor` and their
 /// own negations `Nand`/`Nor`/`Xnor`. Deliberately excludes the degenerate functions a truth table also admits. These
 /// are constant true/false, either operand alone or negated, and the two "ignores one operand" implications. None of

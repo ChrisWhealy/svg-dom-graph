@@ -77,7 +77,7 @@ fn validate_new_operator(top_left: Point, result: &DataNodeContent, options: Nod
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Returns [`Error::OperatorTypeMismatch`] unless every operand and the `result` share one integer width. Each is
+/// Returns [`Error::OperatorTypeMismatch`] unless every operand and the `result` share one type, whichever integer or float type that is. Each is
 /// compared against the first operand, in order, so the error names the first one that disagrees. Also returns
 /// [`Error::UnknownNode`]/[`Error::OperandNotData`] for an operand that is not a data node.
 fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeContent) -> Result<(), Error> {
@@ -497,9 +497,9 @@ impl Scene {
     /// Returns [`Error::UnknownNode`] if `input` does not name a node in this scene, or [`Error::OperandNotData`] if it
     /// names a plain label node rather than a [`DataNodeContent`] one.
     ///
-    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
-    /// `result`'s own value width does not match theirs. Both operands and the result must share one
-    /// [`NodeValues`](crate::scene::NodeValues) width.
+    /// Returns [`Error::OperatorTypeMismatch`] if `result`'s own type does not match `input`'s. The operand and the result
+    /// must share one [`NodeValues`](crate::scene::NodeValues) type, so a signed type and its unsigned equivalent do not
+    /// match.
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if `input` holds floating point values. A unary operator acts on the bits
     /// of an integer, and means nothing for a float.
@@ -577,10 +577,9 @@ impl Scene {
     /// [`Error::OperandNotData`] if it names a plain label node rather than a [`DataNodeContent`] one. `inputs.0` is
     /// checked first.
     ///
-    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
-    /// `result`'s own value width does not match theirs. Both operands and the result must share one
-    /// [`NodeValues`](crate::scene::NodeValues) width. Both operands, and the result, must share one
-    /// [`NodeValues`](crate::scene::NodeValues) width.
+    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value type, or if
+    /// `result`'s own type does not match theirs. Both operands and the result must share one
+    /// [`NodeValues`](crate::scene::NodeValues) type, so a signed type and its unsigned equivalent do not match.
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if the operands hold floating point values. A binary operator acts on
     /// the bits of integers, and means nothing for floats. Use an arithmetic operator for those.
@@ -655,9 +654,9 @@ impl Scene {
     /// [`Error::OperandNotData`] if it names a plain label node rather than a [`DataNodeContent`] one. `inputs.0` is
     /// checked first.
     ///
-    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value width, or if
-    /// `result`'s own value width does not match theirs. Both operands and the result must share one
-    /// [`NodeValues`](crate::scene::NodeValues) width. Unlike the unary and binary operators, an arithmetic operator
+    /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value type, or if
+    /// `result`'s own type does not match theirs. Both operands and the result must share one
+    /// [`NodeValues`](crate::scene::NodeValues) type. Unlike the unary and binary operators, an arithmetic operator
     /// accepts floating point operands, since addition, division and the rest mean something for a float.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the

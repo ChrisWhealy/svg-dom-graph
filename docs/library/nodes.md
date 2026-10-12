@@ -38,7 +38,7 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
   `move_node` redraws the connectors attached to the node, but applies none of the bounds clamping or collision handling a drag does.
 
 - `set_data_values` replaces the values of an existing data node without redrawing it.
-  The new values must have the same width and count as the node was drawn with, so its size, shape, connectors, selection and marks are all unchanged.
+  The new values must have the same type and count as the node was drawn with, so its size, shape, connectors, selection and marks are all unchanged.
   Its accessible name is rewritten to quote the new values, and a value with more decimal digits than the node was drawn with overflows its cell.
   An operator node's own result cannot be replaced, because the caller supplied it as part of the node.
   This is what lets a stepping demo update a diagram in place instead of drawing it again.

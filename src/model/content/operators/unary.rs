@@ -4,10 +4,13 @@
 /// This crate never evaluates the operation itself — see this module's parent doc comment. Each variant exists purely
 /// to drive the rendered node's own label; a caller supplies the already-computed result separately.
 ///
-/// Covers every same-width bitwise transform a single unsigned operand supports: complement, shift, rotate, bit
+/// A unary operator acts on the bits of an integer, so its operand must be an integer: a floating point operand is
+/// rejected with [`crate::error::Error::OperatorNeedsIntegers`].
+///
+/// Covers every same-width bitwise transform a single integer operand supports: complement, shift, rotate, bit
 /// reversal, and byte-order reversal. Deliberately excludes a bit-counting operation such as population count or
 /// leading/trailing zero count. Those produce a small count, not a same-width value. So they would not fit this crate's
-/// own "operand, result, and every input share one `NodeValues` width" contract, which
+/// own "operand, result, and every input share one `NodeValues` type" contract, which
 /// [`crate::model::content::data_node_content::DataNodeContent`] enforces.
 ///
 /// `#[non_exhaustive]`, for the same reason as [`crate::model::content::data_format::DataFormat`].

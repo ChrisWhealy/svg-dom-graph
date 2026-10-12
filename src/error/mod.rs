@@ -112,12 +112,13 @@ pub enum Error {
     InvalidGridLayout(crate::scene::GridLayout),
     /// An operator node's operand names a node whose content is a plain label, not a [`crate::scene::DataNodeContent`].
     ///
-    /// Only typed data has a width an operator could plausibly act on. Rejected before drawing anything or touching the
+    /// Only typed data has a value an operator could plausibly act on. Rejected before drawing anything or touching the
     /// graph's model, so a rejected call leaves the scene unchanged.
     OperandNotData(NodeId),
-    /// An operator node's own operand(s) and result did not all share one [`crate::scene::NodeValues`] width.
+    /// An operator node's own operand(s) and result did not all share one [`crate::scene::NodeValues`] type.
     ///
-    /// Both of the operands to a two-input operator, and the supplied result must all share the same width — see
+    /// Both of the operands to a two-input operator, and the supplied result must all share the same type. A signed
+    /// integer is not the same type as its unsigned equivalent, and an `f32` is not an `f64` — see
     /// `Scene::add_binary_operator_node_with`'s / `Scene::add_arithmetic_operator_node_with`'s own doc comments.
     /// Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     OperatorTypeMismatch { expected: &'static str, found: &'static str },
@@ -147,7 +148,7 @@ pub enum Error {
     /// Rejected before recolouring any cell, so a rejected call leaves every cell's own colour exactly as it was.
     InvalidSelection(NodeId, crate::scene::Selection),
     /// `Scene::set_data_values` was given values that cannot be shown in this node. The node may not be a data node
-    /// with cells of its own, as an operator node's result is not. The values may have a different integer width. They
+    /// with cells of its own, as an operator node's result is not. The values may have a different type, such as `U16` for an `I16` node or `F64` for an `F32` one. They
     /// may also have a different number of values than the node was drawn with.
     ///
     /// Rejected before changing anything, so a rejected call leaves every cell exactly as it was.
@@ -285,7 +286,7 @@ impl fmt::Display for Error {
             },
             Error::IncompatibleNodeValues(id) => write!(
                 f,
-                "node {id:?} cannot show those values: it must be a data node with cells of its own, and they must be the same width and count"
+                "node {id:?} cannot show those values: it must be a data node with cells of its own, and they must be the same type and count"
             ),
             Error::InvalidSelection(id, selection) => {
                 write!(f, "selection {selection:?} cannot be applied to node {id:?}")

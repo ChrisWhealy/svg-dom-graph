@@ -6,16 +6,18 @@
 /// This crate never calculates the result of the operation. See this module's parent doc comment. Each variant exists
 /// purely to drive the rendered node's own label; the caller must supply the correctly-calculated result.
 ///
-/// This `enum` covers the five plain arithmetic operators on unsigned integers: addition, subtraction, multiplication,
-/// division and modulus.
+/// This `enum` covers the five plain arithmetic operators: addition, subtraction, multiplication, division and
+/// modulus. They apply to integers, signed or unsigned, and to floating point values, which is unlike the unary and
+/// binary operators, whose operands must be integers.
 ///
 /// Unlike all of the [`super::binary::BinaryOperator`]s, the operands for the arithmetic operators `subtract`, `divide`
 /// and `modulo` are not commutative. When passing the `input` tuple to
 /// [`crate::scene::Scene::add_arithmetic_operator_node_with`], `inputs.0` is always the left-hand operand and
 /// `inputs.1` always the right-hand one.
 ///
-/// Division and modulus by zero panic in plain Rust arithmetic. Like computing every other operator's result, avoiding
-/// division-by-zero is the caller's responsibility.
+/// Division and modulus of an integer by zero panic in plain Rust arithmetic, and an overflowing integer operation
+/// panics in a debug build. Like computing every other operator's result, avoiding them is the caller's responsibility.
+/// A float divided by zero is an infinity, or `NaN`, which a float node can show.
 ///
 /// `#[non_exhaustive]`, for the same reason as [`crate::model::content::data_format::DataFormat`].
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
