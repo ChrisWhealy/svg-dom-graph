@@ -48,6 +48,7 @@ This will visualise the actual in-memory byte layout, rather than the network by
 
 ***Signed Values***<br>
 A signed value shows a sign only when it is negative: `-5` has one, and `42` has none, not even a `+`.
-Hexadecimal, binary and `Ascii` show the bytes the value occupies in memory, which for a negative value is its two's complement.
-So `-2_i16` reads `FF FE` in hexadecimal.
+Hexadecimal, binary and `Ascii` show the value's two's-complement representation, in the selected byte order.
+So `-2_i16` reads `FF FE` in hexadecimal, big-endian by default, and `FE FF` if little-endian.
+Neither depends on the byte order of the machine the browser runs on.
 The demo's sixth row shows both.

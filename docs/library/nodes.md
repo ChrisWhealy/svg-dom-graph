@@ -19,7 +19,7 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 
   A `DataNodeContent` holds the values, in one of eight types: four unsigned widths (`NodeValues::U8`, `U16`, `U32` or `U64`) and their signed equivalents (`I8`, `I16`, `I32` or `I64`).
   Every value in a node shares one type, so an operator's operands and result must too, and a signed type is a different type from its unsigned equivalent.
-  A signed value shows a sign only when it is negative, and hexadecimal, binary and `Ascii` show its two's-complement bytes.
+  A signed value shows a sign only when it is negative, and hexadecimal, binary and `Ascii` show its two's-complement representation in the selected byte order.
 
   How the values are drawn is set by:
 

@@ -40,8 +40,7 @@ fn a_sign_is_shown_only_for_a_negative_value() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Hexadecimal and binary show the bytes the value occupies in memory, which for a negative value is its two's
-/// complement.
+/// Hexadecimal and binary show the value's two's-complement representation, in the selected byte order.
 #[wasm_bindgen_test]
 fn hexadecimal_and_binary_show_the_twos_complement_of_a_negative_value() -> Result<(), String> {
     let (_a, _) = scene_with(

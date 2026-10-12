@@ -6,10 +6,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## Added
-
-- `NodeValues::I8`/`I16`/`I32`/`I64`, the signed equivalents of the unsigned widths. A sign is shown only for a negative value
-
 ## [0.2.30] - 2026-10-12
 
 ## Added
@@ -18,12 +14,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - SHA1 demo implementation (`89fb10d`)
 - Add labelling style to selection demos (`8d818bc`)
 - Extend test coverage for label width calculations (`c5bfbe1`)
-- Extend `NodeValues` enum to include signed integers (``)
+- Extend `NodeValues` enum to include signed integers (`1f99bee`)
 
 ## Changed
 
 - Doc only: Update docs and images (`e5e8ddb`)
 - Doc only: Minor doc corrections (`84b25b3`)
+- Doc only: Clarify byte-order documentation (``)
 
 ## Fixed
 
@@ -35,7 +32,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Do not conflate row count with populated row count (`0576771`)
 - Entirely skip label drawing when `label_scratch.is_empty()` (`b10fb31`)
 - Expose signedness of result in operator nodes (`8c23a43`)
-- Simplify decimal width calculation (``)
+- Simplify decimal width calculation (`1f0da0e`)
 
 # [Released]
 

@@ -98,8 +98,9 @@ trait Word: Ord + Copy + Magnitude {
     /// ever needs the value's own magnitude and sign. Computing and reordering a value's bytes only to have `Decimal`
     /// discard them unused would be wasted work on every value, so the bytes are only built in the arms that use them.
     ///
-    /// A signed value's bytes are its two's-complement representation, the same bits it holds in memory, so `-1_i8`
-    /// is `FF` in hexadecimal and `1111 1111` in binary.
+    /// A signed value's bytes are its two's-complement representation, in the selected `byte_order`, so `-1_i8` is
+    /// `FF` in hexadecimal and `1111 1111` in binary. `-2_i16` is `FF FE` big-endian, the default, and `FE FF`
+    /// little-endian. Neither depends on the host's own byte order.
     fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String);
 }
 
@@ -194,9 +195,9 @@ fn format_first<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrder
 ///
 /// A signed value is shown with a sign only when it is negative: `-5` in [`DataFormat::Decimal`], and `5` for the
 /// positive value, with no `+`. [`DataFormat::Hexadecimal`], [`DataFormat::Binary`] and [`DataFormat::Ascii`] show the
-/// bytes the value occupies in memory, which for a negative value is its two's complement, so `-1_i8` reads as `FF`
-/// and `-2_i16` as `FF FE`. A signed width is coloured with a deeper shade of its unsigned equivalent's colour, and its
-/// type name is `i8`, `i16`, `i32` or `i64`.
+/// two's-complement representation of the value, in the selected [`ByteOrder`], so `-1_i8` reads as `FF` and `-2_i16`
+/// as `FF FE`, or `FE FF` if little-endian. A signed width is coloured with a deeper shade of its unsigned
+/// equivalent's colour, and its type name is `i8`, `i16`, `i32` or `i64`.
 ///
 /// # Deliberately one width per node
 ///

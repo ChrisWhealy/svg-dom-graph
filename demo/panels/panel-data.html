@@ -28,8 +28,8 @@
         <code>GridLayout::MaxColumns</code> exists to let a caller cap.
     </p>
     <p>The sixth row shows the signed widths. A sign is shown only when a value is negative, so <code>-5</code> has one
-        and <code>42</code> has none. Hexadecimal and binary show the bytes a value occupies in memory, which for a
-        negative value is its two's complement: <code>-2</code> as an <code>i16</code> reads <code>FF FE</code>.
+        and <code>42</code> has none. Hexadecimal and binary show the value's two's-complement representation, so
+        <code>-2</code> as an <code>i16</code> reads <code>FF FE</code>, in the default big-endian byte order.
     </p>
     <div class="canvas" id="data-diagram-stage" style="margin-top: 1.5rem;">
     </div>
