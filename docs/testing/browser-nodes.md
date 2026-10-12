@@ -23,6 +23,8 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a signed node naming its own type as text, and having a colour of its own
   - every cell being wide enough for a minus sign
   - replacing values needing the same signed width, and rejecting the unsigned equivalent
+  - a single value replaced from positive to negative and back, with the rendered text, tooltip and accessible name following each change
+  - `PlainText` rejecting signed bytes, on construction and on replacement, even when every value is a printable ASCII code
   - an operator rejecting an operand and result of signed and unsigned widths
   - an operator node's accessible name and tooltip naming its result's type, so that a signed result reads differently from an unsigned one
 - operator nodes (`UnaryOperator`/`BinaryOperator`/`ArithmeticOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`):

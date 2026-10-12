@@ -158,3 +158,82 @@ fn an_operator_rejects_an_operand_and_result_of_signed_and_unsigned_widths() -> 
         &format!("a matching signed result should be accepted: {matched:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A single signed value is replaced across zero, from positive to negative and back, with a new value that formats to
+/// the same number of characters. The rendered text, the tooltip and the accessible name must each follow every
+/// replacement, so the sign is written and then removed again.
+#[wasm_bindgen_test]
+fn a_single_value_replaced_across_zero_follows_its_sign_in_text_title_and_name() -> Result<(), String> {
+    let (scene, node) = scene_with(
+        "signed-across-zero",
+        DataNodeContent::new(NodeValues::I16(vec![123]), DataFormat::Decimal),
+    )?;
+    let group = nth_group("signed-across-zero", 0)?;
+    let state = || -> Result<(Vec<String>, Option<String>, Option<String>), String> {
+        Ok((
+            texts_of("signed-across-zero")?,
+            title_of(&group)?,
+            group.get_attribute("aria-label"),
+        ))
+    };
+    let expect = |value: &str| -> Result<(), String> {
+        let (texts, title, label) = state()?;
+        let name = format!("i16 = {value}");
+        check(
+            texts == [value] && title.as_deref() == Some(name.as_str()) && label.as_deref() == Some(name.as_str()),
+            &format!("expected {value:?}, got text {texts:?}, title {title:?}, aria-label {label:?}"),
+        )
+    };
+
+    expect("123")?;
+    // `-12` is as many characters as `123`.
+    scene
+        .set_data_values(node, NodeValues::I16(vec![-12]))
+        .map_err(|e| e.to_string())?;
+    expect("-12")?;
+    scene
+        .set_data_values(node, NodeValues::I16(vec![456]))
+        .map_err(|e| e.to_string())?;
+    expect("456")?;
+    scene
+        .set_data_values(node, NodeValues::I16(vec![-99]))
+        .map_err(|e| e.to_string())?;
+    expect("-99")?;
+    scene
+        .set_data_values(node, NodeValues::I16(vec![0]))
+        .map_err(|e| e.to_string())?;
+    expect("0")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `PlainText` is for `u8` bytes only. Signed bytes are rejected even when every value is positive and happens to be a
+/// printable ASCII code, so this restriction is deliberate and not an accident of the values chosen.
+#[wasm_bindgen_test]
+fn plain_text_rejects_signed_input_even_for_printable_values() -> Result<(), String> {
+    let svg = make_svg("signed-plain-text", Size::new(400.0, 200.0), Size::new(400.0, 200.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let outcome = scene.add_data_node(
+        Point::new(10.0, 10.0),
+        DataNodeContent::new(NodeValues::I8(vec![65, 66]), DataFormat::PlainText),
+    );
+    check(
+        matches!(outcome, Err(Error::InvalidPlainText)),
+        &format!("expected InvalidPlainText, got {outcome:?}"),
+    )?;
+    let drawn = nth_group("signed-plain-text", 0).is_ok();
+    check(!drawn, "a rejected call should draw nothing")?;
+
+    // Replacing the bytes of a plain-text node with signed ones is refused too.
+    let (scene, node) = scene_with(
+        "signed-plain-text-replace",
+        DataNodeContent::new(NodeValues::U8(b"AB".to_vec()), DataFormat::PlainText),
+    )?;
+    let refused = scene.set_data_values(node, NodeValues::I8(vec![65, 66]));
+    check(
+        matches!(refused, Err(Error::IncompatibleNodeValues(_))),
+        &format!("expected IncompatibleNodeValues, got {refused:?}"),
+    )?;
+    let texts = texts_of("signed-plain-text-replace")?;
+    check(texts == ["AB"], &format!("the text should be unchanged, got {texts:?}"))
+}

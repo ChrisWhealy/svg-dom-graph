@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add labelling style to selection demos (`8d818bc`)
 - Extend test coverage for label width calculations (`c5bfbe1`)
 - Extend `NodeValues` enum to include signed integers (`1f99bee`)
+- Extend test coverage for signed/unsigned values during node value updates (``)
 
 ## Changed
 
