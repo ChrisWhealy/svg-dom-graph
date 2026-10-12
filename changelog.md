@@ -12,7 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - `LabellingStyle::Text` labels grid rows with caller-supplied text (`b2ac547`)
 - SHA1 demo implementation (`89fb10d`)
-- Add labelling style to selection demos (``)
+- Add labelling style to selection demos (`8d818bc`)
 
 # [Released]
 
