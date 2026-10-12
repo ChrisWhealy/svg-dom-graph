@@ -29,13 +29,21 @@ fn decimal_len<T: Word>(value: T) -> usize {
 /// regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all `values` here share one
 /// integer width already (see [`NodeValues`]'s own "Deliberately one width per node" doc section). So the first value
 /// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude. For an
-/// unsigned width, that makes the numerically largest value the widest. A signed width also shows a `-` for a negative
-/// value, so the widest may be the largest or the most negative, whichever takes more characters. It is found here by
-/// counting each value's characters arithmetically, not by formatting every value just to compare the resulting text
-/// lengths.
+/// unsigned width, that makes the numerically largest value the widest, found by comparing the values and never by
+/// formatting them. A signed width also shows a `-` for a negative value, so the widest is either the largest value or
+/// the most negative one, whichever takes more characters. A decimal value only gets wider as it moves away from zero in
+/// either direction, so no value between those two can beat both. One pass finds the extremes, and at most two digit
+/// counts are made, not one for every value.
 fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
-        DataFormat::Decimal => values.iter().copied().max_by_key(|&value| decimal_len(value)),
+        DataFormat::Decimal if T::SIGNED => {
+            let (lowest, highest) = values.iter().copied().fold(None, |extremes, value| match extremes {
+                None => Some((value, value)),
+                Some((lowest, highest)) => Some((lowest.min(value), highest.max(value))),
+            })?;
+            Some(if decimal_len(lowest) > decimal_len(highest) { lowest } else { highest })
+        },
+        DataFormat::Decimal => values.iter().copied().max(),
         DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
             values.first().copied()
         },
@@ -45,6 +53,9 @@ fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A value's magnitude, and whether it is negative: the two things [`format_decimal_into`] needs to write it.
 trait Magnitude {
+    /// Whether this width can hold a negative value.
+    const SIGNED: bool;
+
     /// This value's absolute value, widened to `u128`, and `true` if it is negative. An unsigned value is never
     /// negative.
     fn split_sign(self) -> (u128, bool);
@@ -53,6 +64,8 @@ trait Magnitude {
 macro_rules! impl_magnitude_unsigned {
     ($($width:ty),+) => {$(
         impl Magnitude for $width {
+            const SIGNED: bool = false;
+
             fn split_sign(self) -> (u128, bool) {
                 (u128::from(self), false)
             }
@@ -63,6 +76,8 @@ macro_rules! impl_magnitude_unsigned {
 macro_rules! impl_magnitude_signed {
     ($($width:ty),+) => {$(
         impl Magnitude for $width {
+            const SIGNED: bool = true;
+
             fn split_sign(self) -> (u128, bool) {
                 (i128::from(self).unsigned_abs(), self < 0)
             }

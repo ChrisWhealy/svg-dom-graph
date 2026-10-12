@@ -289,3 +289,30 @@ fn replacing_signed_values_needs_the_same_signed_width() -> Result<(), String> {
     let refused = content.try_replace_values(NodeValues::U16(vec![1, 2]), &mut scratch, |_, _| Ok::<(), String>(()))?;
     check_eq(refused, false)
 }
+
+#[test]
+fn the_widest_signed_decimal_cell_is_never_beaten_by_any_value_of_the_node() -> Result<(), String> {
+    // Brute force against the real formatting, over every triple drawn from values either side of each power of ten.
+    let samples: [i16; 14] = [-10_000, -999, -100, -99, -10, -9, 0, 9, 10, 99, 100, 999, 10_000, i16::MIN];
+    let width = |text: &str| text.chars().count();
+    for a in samples {
+        for b in samples {
+            for c in samples {
+                let values = vec![a, b, c];
+                let mut widest = String::new();
+                DataNodeContent::new(NodeValues::I16(values.clone()), DataFormat::Decimal)
+                    .widest_cell_string(&mut widest);
+                let longest = values.iter().map(|v| width(&v.to_string())).max().unwrap_or(0);
+                check_eq(width(&widest), longest)?;
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn the_widest_unsigned_decimal_cell_is_the_largest_value() -> Result<(), String> {
+    let mut widest = String::new();
+    DataNodeContent::new(NodeValues::U16(vec![7, 65_535, 300]), DataFormat::Decimal).widest_cell_string(&mut widest);
+    check_eq(widest, "65535".to_owned())
+}
