@@ -246,17 +246,54 @@ fn text_labels_are_drawn_beside_their_rows() -> Result<(), String> {
     )
 }
 
+/// Checks that a node labelled with `long` (more characters) and `short` (fewer) is as wide as the wider of the two
+/// needs, whichever that is. How wide each renders depends on the fonts the browser has, so nothing here assumes which
+/// is wider. All that is asserted is that the node follows the rendered widths and not the character counts.
+fn the_node_follows_the_wider_rendering(
+    id: &str,
+    long: &'static str,
+    short: &'static str,
+    long_only: &'static [&'static str],
+    short_only: &'static [&'static str],
+    both: &'static [&'static str],
+) -> Result<(), String> {
+    let long_width = width_with_text_labels(&format!("{id}-long"), long_only)?;
+    let short_width = width_with_text_labels(&format!("{id}-short"), short_only)?;
+    let both_width = width_with_text_labels(&format!("{id}-both"), both)?;
+    check(
+        (both_width - long_width.max(short_width)).abs() < 0.5,
+        &format!(
+            "{long:?} alone gives {long_width}, {short:?} alone gives {short_width}, and both give {both_width}: \
+             the node should be as wide as the wider label needs"
+        ),
+    )
+}
+
 #[wasm_bindgen_test]
 fn the_widest_text_label_sizes_the_node_whatever_its_length() -> Result<(), String> {
-    // Six wide glyphs take more room than eight narrow ones, though they are fewer characters. A label chosen by its
-    // character count would be the narrow one, and the node would be too narrow for the other.
-    const WIDE_LABEL: &str = "\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}";
-    let narrow = width_with_text_labels("labels-text-narrow", &["iiiiiiii", "i"])?;
-    let wide = width_with_text_labels("labels-text-wide", &["i", WIDE_LABEL])?;
-    let both = width_with_text_labels("labels-text-both", &["iiiiiiii", WIDE_LABEL])?;
-    check(
-        wide > narrow && (both - wide).abs() < 0.5,
-        &format!("narrow {narrow}, wide {wide}, both {both}: the node should be as wide as the widest label needs"),
+    // Six wide glyphs against eight narrow ones: fewer characters, but normally more room.
+    const WIDE: &str = "\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}\u{754c}";
+    the_node_follows_the_wider_rendering(
+        "labels-text-cjk",
+        "iiiiiiii",
+        WIDE,
+        &["iiiiiiii", "i"],
+        &["i", WIDE],
+        &["iiiiiiii", WIDE],
+    )
+}
+
+#[wasm_bindgen_test]
+fn combining_marks_add_characters_but_not_width() -> Result<(), String> {
+    // Eleven characters that normally take the room of one, against six that take six.
+    const MARKED: &str = "e\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}\u{301}";
+    the_node_follows_the_wider_rendering(
+        "labels-text-marks",
+        "iiiiii",
+        MARKED,
+        &["iiiiii", "i"],
+        &["i", MARKED],
+        &["iiiiii", MARKED],
     )
 }
 
