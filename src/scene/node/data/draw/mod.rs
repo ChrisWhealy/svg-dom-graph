@@ -535,7 +535,11 @@ fn draw_cells(
                 let col = i % layout.cols;
                 if let (Some(style), 0) = (content.labelling(), col) {
                     style.label_into(i, layout.cols, &mut label_scratch);
-                    draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
+                    // A caller's own text can leave a row without a label. There is nothing to draw for it, so no
+                    // element is made.
+                    if !label_scratch.is_empty() {
+                        draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
+                    }
                 }
                 cell_name_into(content.labelling(), i, layout.cols, cell_text, &mut name_scratch);
                 text.set_attr("aria-label", &name_scratch)?;

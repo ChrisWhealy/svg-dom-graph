@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Skip missing or empty row label when building accessible name (`392ecf1`)
 - Correct character width test that failed in CI due to CJK font not installed (`6a4b5bb`)
 - Exclude empty but labelled rows from width calculation (`34aae70`)
-- Do not conflate row count with populated row count (``)
+- Do not conflate row count with populated row count (`0576771`)
+- Entirely skip label drawing when `label_scratch.is_empty()` (``)
 
 # [Released]
 

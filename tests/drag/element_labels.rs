@@ -240,10 +240,7 @@ fn text_labels_are_drawn_beside_their_rows() -> Result<(), String> {
         "labels-text",
         eight().with_labelling_style(LabellingStyle::Text(&["ms[n-3]", "ms[n-8]"])),
     )?;
-    check(
-        visible(&texts) == ["ms[n-3]", "ms[n-8]", "", "", "", "", "", ""],
-        &format!("got {:?}", visible(&texts)),
-    )
+    check(visible(&texts) == ["ms[n-3]", "ms[n-8]"], &format!("got {:?}", visible(&texts)))
 }
 
 /// Checks that a node labelled with `long` (more characters) and `short` (fewer) is as wide as the wider of the two
@@ -376,4 +373,20 @@ fn a_labelled_grid_asked_for_three_rows_keeps_its_height_when_two_values_fill_on
     let full = height_in_three_rows("rows-kept-full-labelled", vec![1, 2, 3], labelling)?;
     let short = height_in_three_rows("rows-kept-short-labelled", vec![1, 2], labelling)?;
     check((full - short).abs() < 0.5, &format!("three values {full}, two values {short}"))
+}
+
+#[wasm_bindgen_test]
+fn a_row_with_no_text_label_gets_no_label_element() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8((0..20).collect()), DataFormat::Decimal)
+        .with_layout(GridLayout::Columns(1))
+        .with_labelling_style(LabellingStyle::Text(&["first"]));
+    let (_, texts) = draw("labels-text-sparse", content)?;
+    check(
+        visible(&texts) == ["first"] && texts.len() == 21,
+        &format!(
+            "expected one label text among 21, got {:?} among {}",
+            visible(&texts),
+            texts.len()
+        ),
+    )
 }
