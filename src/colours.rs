@@ -90,6 +90,15 @@ pub(crate) const TYPE_COLOUR_I32: &str = "#cdb8ec";
 /// The `i64` shade — a deeper rose than [`TYPE_COLOUR_U64`].
 pub(crate) const TYPE_COLOUR_I64: &str = "#efb9cb";
 
+/// The `u128` shade — pastel orchid. The 128-bit widths take a hue of their own, away from the integers below them.
+pub(crate) const TYPE_COLOUR_U128: &str = "#f3d6f1";
+
+/// The `i128` shade — a deeper orchid than [`TYPE_COLOUR_U128`].
+pub(crate) const TYPE_COLOUR_I128: &str = "#e5b4e1";
+
+/// The `Uuid` shade — pastel lime. A UUID is not a number, so it takes a hue that no integer or float has.
+pub(crate) const TYPE_COLOUR_UUID: &str = "#dfeab4";
+
 /// The `f32` shade — a pastel sky blue. Floating point has no unsigned or signed pairing to echo, so it takes a hue of
 /// its own, away from the apricot, mint, lavender and rose of the integers, and from the yellow, orange and teal of a
 /// selection. The `f64` shade is the deeper of the two, as a signed integer's is.

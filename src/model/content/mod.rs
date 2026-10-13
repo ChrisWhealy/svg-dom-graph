@@ -58,6 +58,8 @@
 //! - [`DataFormat::Float`]: a floating point value as [`FloatFormat`] says, with a number of decimal places, or of
 //!   significant digits, in plain or scientific notation. `NaN` and the infinities read `NaN`, `inf` and `-inf`. On
 //!   `f32` and `f64` only. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show a float's IEEE-754 bits.
+//! - [`DataFormat::Uuid`]: a [`Uuid`] as grouped hexadecimal digits, hyphenated, braced or as a URN, as [`UuidFormat`]
+//!   says. On `Uuid` values only. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show a UUID's sixteen bytes.
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal has no natural byte boundary to
 //!   split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect under `Decimal`: the same number
 //!   reads the same regardless of which byte order produced it.
@@ -81,7 +83,7 @@
 //!
 //! `type_colour` distinguishes datatypes visually, using colour. But colour alone is invisible to assistive technology,
 //! and unreliable for a colour-blind reader. This crate offers no caller-facing way to map a colour back to a type name
-//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64", or "i8"/"i16"/"i32"/"i64" — as
+//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64"/"u128", "i8"/"i16"/"i32"/"i64"/"i128", or "uuid" — as
 //! an SVG `<title>` on the node's own `<g>`. This gives a native browser tooltip when the mouse pointer hovers over any
 //! child: the rect or the rendered digits alike.
 //!
@@ -99,6 +101,7 @@ mod labelling_style;
 mod node_values;
 mod operators;
 mod selection;
+mod uuid_format;
 
 pub use byte_order::ByteOrder;
 pub use data_format::DataFormat;
@@ -110,6 +113,7 @@ pub use node_values::NodeValues;
 pub use operators::{arithmetic::ArithmeticOperator, binary::BinaryOperator, unary::UnaryOperator};
 pub(crate) use selection::ResolvedBand;
 pub use selection::Selection;
+pub use uuid_format::{Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats a value of `magnitude`, negative if `negative`, as a plain base-10 number into `out` — the

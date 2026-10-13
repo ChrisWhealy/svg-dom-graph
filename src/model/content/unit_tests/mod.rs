@@ -7,6 +7,7 @@
 //! - [`formatting`] — hexadecimal, binary and decimal digits, `ByteOrder`, `for_each_cell_string` and
 //!   `widest_cell_string`.
 //! - [`floats`] — `F32`/`F64`: every `FloatFormat`, special values, IEEE-754 bits, and the width of a cell.
+//! - [`wide`] — `U128`, `I128` and `Uuid`: the whole range, every `UuidFormat`, and the width of a cell.
 //! - [`content`] — the default and overridden layout, the value count, a single value, and the type colour and name.
 //! - [`selection`] — `resolve_selection` (including incomplete grids), `ResolvedBand::contains`,
 //!   `Selection::describe_into`, and `natural_selection`/`flat_index`.
@@ -23,3 +24,4 @@ mod operators;
 mod selection;
 mod support;
 mod text_formats;
+mod wide;

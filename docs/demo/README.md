@@ -7,6 +7,7 @@
 - [Fixing points](fixing-points.md)
 - [Data Node](data-node.md)
 - [Floating Point](floating-point.md)
+- [128-bit Values and UUIDs](wide-values.md)
 - [Operator Nodes](operator-nodes.md)
 - [Cell Selection](cell-selection.md)
 - [Nested Scenes](nested-scenes.md)

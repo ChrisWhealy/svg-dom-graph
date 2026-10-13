@@ -4,7 +4,7 @@
 
 Demonstrates the idea that rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
-At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`, their signed equivalents `i8`/`i16`/`i32`/`i64`, and floating point `f32`/`f64` (see [Floating Point](floating-point.md)).
+At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`, their signed equivalents `i8`/`i16`/`i32`/`i64`, the 128-bit `u128`/`i128`, `Uuid` (see [128-bit Values and UUIDs](wide-values.md)), and floating point `f32`/`f64` (see [Floating Point](floating-point.md)).
 They can be formatted as decimal, hexadecimal, or binary, and `u8` values that are text can also be drawn as `DataFormat::Ascii`, one character to a cell, or as `DataFormat::PlainText`, one box holding the whole string.
 
 If `DataNodeContent` is an array, the data will be presented in the form of a grid having a particular type of `GridLayout`.
@@ -28,7 +28,7 @@ Nodes in this panel are draggable and have built-in connector routing and drag-c
 
 ***Displaying Binary or Hexadecimal Values***<br>
 Displaying successive byte-groups as a long string would make the end of one string and the start of the next indistinguishable.
-Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, or `u64`, or a deeper shade of the same colour for the signed `i8`, `i16`, `i32` or `i64`.
+Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, `u64` or `u128`, or a deeper shade of the same colour for the signed `i8`, `i16`, `i32`, `i64` or `i128`.
 
 As far as assistive technology is concerned, colour alone does not convey any useful information.
 Therefore, the node's type name is attached both as an SVG `<title>` (shown as a browser tooltip) and as an `aria-label`.

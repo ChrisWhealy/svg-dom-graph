@@ -40,7 +40,8 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 /// Returns:
 /// * [`Error::EmptyNodeContent`] if `content` holds no values,
 /// * [`Error::InvalidPlainText`] if `PlainText` content is not printable ASCII,
-/// * [`Error::InvalidFloatFormat`] if `Float` content is not `f32` or `f64`, or asks for too many digits, or
+/// * [`Error::InvalidFloatFormat`] if `Float` content is not `f32` or `f64`, or asks for too many digits,
+/// * [`Error::InvalidUuidFormat`] if `Uuid` content is not `Uuid` values, or
 /// * [`Error::InvalidGridLayout`] if a non-`PlainText` grid layout wraps `0`.
 ///
 /// `PlainText` content has no grid, so specifying a layout has no effect and is never checked.
@@ -60,6 +61,9 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     }
     if !content.float_format_is_valid() {
         return Err(Error::InvalidFloatFormat);
+    }
+    if !content.uuid_format_is_valid() {
+        return Err(Error::InvalidUuidFormat);
     }
     if !content.is_plain_text() && !content.layout().is_valid() {
         return Err(Error::InvalidGridLayout(content.layout()));

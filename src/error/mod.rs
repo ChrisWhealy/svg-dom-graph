@@ -96,6 +96,9 @@ pub enum Error {
     /// [`crate::scene::MAX_FLOAT_DIGITS`] digits, or for no significant digits at all. Rejected before drawing anything
     /// or touching the graph's model, so a rejected call leaves the scene unchanged.
     InvalidFloatFormat,
+    /// `DataFormat::Uuid` content that is not `Uuid` values. Rejected before drawing anything or touching the graph's
+    /// model, so a rejected call leaves the scene unchanged.
+    InvalidUuidFormat,
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
@@ -133,6 +136,12 @@ pub enum Error {
     /// in ordinary arithmetic. An arithmetic operator node accepts floats. Rejected before drawing anything or touching
     /// the graph's model, so a rejected call leaves the scene unchanged.
     OperatorNeedsIntegers { operator: String, found: &'static str },
+    /// An operator node of any kind was given UUIDs as operands.
+    ///
+    /// A UUID is an identifier, not a number, so no operator has a meaning for one. A 128-bit number is `U128` or
+    /// `I128`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene
+    /// unchanged.
+    OperatorOnUuid { operator: String },
     /// A two-input operator constructor — `Scene::add_binary_operator_node`/`_with`, or
     /// `Scene::add_arithmetic_operator_node`/`_with` — was given the same node as both of `inputs`.
     ///
@@ -264,6 +273,7 @@ impl fmt::Display for Error {
                     max = crate::scene::MAX_FLOAT_DIGITS
                 )
             },
+            Error::InvalidUuidFormat => write!(f, "a UUID format needs Uuid values"),
             Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
@@ -277,6 +287,9 @@ impl fmt::Display for Error {
                     f,
                     "{operator} acts on the bits of an integer, so its operands cannot be {found}. An arithmetic operator takes floats"
                 )
+            },
+            Error::OperatorOnUuid { operator } => {
+                write!(f, "{operator} cannot act on UUIDs: a UUID is an identifier, not a number")
             },
             Error::OperatorResultNotSingleValue(len) => {
                 write!(f, "operator result must hold exactly one value, found {len}")

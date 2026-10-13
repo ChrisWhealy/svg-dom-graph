@@ -55,7 +55,7 @@ impl DataNodeContent {
         self
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with a slightly wider gap after every `columns` columns, so the grid reads as groups of `columns`
     /// cells. A hex-dump style `16` bytes per row with a wider gap after the eighth is, for example, `Columns(16)` plus
     /// `with_column_groups(8)`.
@@ -69,7 +69,7 @@ impl DataNodeContent {
         self
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with every element labelled by its own index, `0` to `N - 1`: [`LabellingStyle::Numeric`].
     ///
     /// Labelling is off unless this or [`with_labelling_style`](Self::with_labelling_style) is called, so existing
@@ -82,7 +82,7 @@ impl DataNodeContent {
         self.with_labelling_style(LabellingStyle::default())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with its grid labelled in `style`, which also turns labelling on. A numeric or alphabetic style
     /// labels every element, so a wider grid shows the label of each row's first element. [`LabellingStyle::Text`] labels
     /// every row with a string of the caller's own choosing, by row number and not by element. See [`LabellingStyle`]
@@ -93,20 +93,20 @@ impl DataNodeContent {
         self
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The style to label each element in, or `None` for no labels. Always `None` for a node with one value, which has
     /// no grid to label.
     pub(crate) fn labelling(&self) -> Option<LabellingStyle> {
         if self.is_single_value() { None } else { self.labelling }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many columns make up one group — see [`with_column_groups`](Self::with_column_groups); `0` for none.
     pub(crate) fn column_group(&self) -> usize {
         self.column_group
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with `byte_order` overriding [`ByteOrder::BigEndian`]'s own default. See [`ByteOrder`]'s own doc
     /// comment for what each variant does. See this module's own doc comment ("Formatting") for when `LittleEndian` is
     /// the right choice.
@@ -173,32 +173,32 @@ impl DataNodeContent {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`DataFormat::Ascii`] content.
     pub(crate) fn is_ascii(&self) -> bool {
         self.format == DataFormat::Ascii
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`DataFormat::PlainText`] content.
     pub(crate) fn is_plain_text(&self) -> bool {
         self.format == DataFormat::PlainText
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `false` for [`DataFormat::PlainText`] content that is not `u8` or holds a byte outside `0x20..=0x7E`. Every other
     /// content is valid here.
     pub(crate) fn plain_text_is_valid(&self) -> bool {
         !self.is_plain_text() || is_printable_ascii(&self.values)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` if this content holds `f32` or `f64` values.
     pub(crate) fn holds_floats(&self) -> bool {
         self.values.is_float()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `false` for [`DataFormat::Float`] content whose values are not `f32` or `f64`, or whose format asks for more digits
     /// than [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) or for no significant digits. Every other content is valid.
     pub(crate) fn float_format_is_valid(&self) -> bool {
@@ -208,7 +208,19 @@ impl DataNodeContent {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if this content holds `Uuid` values.
+    pub(crate) fn holds_uuids(&self) -> bool {
+        self.values.is_uuid()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::Uuid`] content whose values are not `Uuid`. Every other content is valid.
+    pub(crate) fn uuid_format_is_valid(&self) -> bool {
+        !matches!(self.format, DataFormat::Uuid(_)) || self.values.is_uuid()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the bytes of `PlainText` content into `out` as characters.
     fn plain_text_into(&self, out: &mut String) {
         out.clear();

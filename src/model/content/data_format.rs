@@ -1,4 +1,4 @@
-use super::FloatFormat;
+use super::{FloatFormat, UuidFormat};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`super::DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
@@ -36,4 +36,14 @@ pub enum DataFormat {
     ///
     /// [`Hexadecimal`](Self::Hexadecimal) and [`Binary`](Self::Binary) show a float's IEEE-754 bits.
     Float(FloatFormat),
+    /// A UUID written as the [`UuidFormat`] says: hyphenated, as a simple run of digits, in braces or as a URN, in
+    /// lowercase or uppercase, and read from RFC 9562 byte order or from that of a Microsoft GUID in memory.
+    ///
+    /// Only for [`NodeValues::Uuid`](super::NodeValues::Uuid). Any other content is rejected with
+    /// [`Error::InvalidUuidFormat`](crate::error::Error::InvalidUuidFormat). Every UUID written in one format has the
+    /// same number of characters. [`ByteOrder`](super::ByteOrder) has no effect on it, since the format names the byte
+    /// layout itself.
+    ///
+    /// [`Hexadecimal`](Self::Hexadecimal) and [`Binary`](Self::Binary) show a UUID's sixteen bytes as they are held.
+    Uuid(UuidFormat),
 }

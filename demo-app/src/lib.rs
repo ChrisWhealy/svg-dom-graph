@@ -20,6 +20,9 @@
 //!   one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`). The multi-value counts are
 //!   chosen to cover every combination the grid layout rule can produce. See that function's own doc comment for
 //!   exactly which.
+//! - `panel-128-bit` / `#wide-diagram` — [`wide_values::build_wide_demo`]: a `u128` and an `i128` across their whole
+//!   range, and a `Uuid` of every version written in every way a `UuidFormat` can write it, including the two byte
+//!   layouts a UUID can be stored in.
 //! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one operand
 //!   node feeding an operator node, for every unary operator this crate names.
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
@@ -68,6 +71,7 @@ mod sha3_sponge;
 mod source_frame;
 mod tree;
 mod util;
+mod wide_values;
 
 // `theta` is `sha3_sponge`'s own child module; `panel-theta` is still its own gallery entry.
 use sha3_sponge::theta;
@@ -138,6 +142,7 @@ demo_gallery! {
     "panel-edge-anchors" => edge_anchors::build_edge_anchors_demo,
     "panel-data" => data::build_data_demo,
     "panel-float" => floats::build_float_demo,
+    "panel-128-bit" => wide_values::build_wide_demo,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,

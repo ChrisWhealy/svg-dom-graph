@@ -9,6 +9,8 @@
 //!   notation, special values, IEEE-754 bits, and cells wide enough for the widest value.
 //! - [`signed`] — `NodeValues::I8`/`I16`/`I32`/`I64`: a sign only when negative, two's complement bytes, and a type of
 //!   their own.
+//! - [`wide`] — `NodeValues::U128`/`I128`/`Uuid` and `DataFormat::Uuid`: every style, case and layout, cells that fit,
+//!   and no operator accepting a UUID.
 //! - [`validation`] — empty content, a zero grid layout and a blank name are rejected before anything is drawn.
 //! - [`dragging_and_connectors`] — dragging every cell, and ordinary connector routing, including `EdgeAnchors`.
 //! - [`named`] — `Scene::add_named_data_node`: the labelled outer box and its anchoring.
@@ -26,3 +28,4 @@ mod rendering;
 mod signed;
 mod support;
 mod validation;
+mod wide;

@@ -132,6 +132,19 @@ fn check_integer_operands(graph: &Graph, operands: &[NodeId], operator: &str) ->
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::OperatorOnUuid`] if any of `operands` holds UUIDs. A UUID is an identifier, not a number: it has no
+/// sum, no remainder and no meaningful rotation, so an operator node over one would claim a meaning it does not have.
+/// This applies to every kind of operator, bitwise or arithmetic. A 128-bit number is `U128` or `I128` instead.
+fn check_not_uuid_operands(graph: &Graph, operands: &[NodeId], operator: &str) -> Result<(), Error> {
+    for &operand in operands {
+        if operand_content(graph, operand)?.holds_uuids() {
+            return Err(Error::OperatorOnUuid { operator: operator.to_owned() });
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator box, attaches it, and adds it to the graph, returning its id and rectangle. `inputs` is the two
 /// operands of a two-input operator, recorded on the box's own handles, or `None` for a unary operator.
 ///
@@ -502,7 +515,8 @@ impl Scene {
     /// match.
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if `input` holds floating point values. A unary operator acts on the bits
-    /// of an integer, and means nothing for a float.
+    /// of an integer, and means nothing for a float. Returns [`Error::OperatorOnUuid`] if `input` holds UUIDs, which no
+    /// operator accepts.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
@@ -523,6 +537,7 @@ impl Scene {
             let mut inner = self.inner.borrow_mut();
             check_operand_types(&inner.graph, &[input], &result)?;
             let label = operator.label();
+            check_not_uuid_operands(&inner.graph, &[input], &label)?;
             check_integer_operands(&inner.graph, &[input], &label)?;
             insert_operator_node(&mut inner, top_left, &label, result, options, None)?.0
         };
@@ -582,7 +597,8 @@ impl Scene {
     /// [`NodeValues`](crate::scene::NodeValues) type, so a signed type and its unsigned equivalent do not match.
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if the operands hold floating point values. A binary operator acts on
-    /// the bits of integers, and means nothing for floats. Use an arithmetic operator for those.
+    /// the bits of integers, and means nothing for floats. Use an arithmetic operator for those. Returns
+    /// [`Error::OperatorOnUuid`] if the operands hold UUIDs, which no operator accepts.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
@@ -657,7 +673,8 @@ impl Scene {
     /// Returns [`Error::OperatorTypeMismatch`] if `inputs.0` and `inputs.1` do not share one value type, or if
     /// `result`'s own type does not match theirs. Both operands and the result must share one
     /// [`NodeValues`](crate::scene::NodeValues) type. Unlike the unary and binary operators, an arithmetic operator
-    /// accepts floating point operands, since addition, division and the rest mean something for a float.
+    /// accepts floating point operands, since addition, division and the rest mean something for a float. It does not
+    /// accept UUIDs, which no operator does: that is [`Error::OperatorOnUuid`].
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene exactly as it was.
@@ -705,6 +722,7 @@ impl Scene {
         let (id, rect) = {
             let mut inner = self.inner.borrow_mut();
             check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
+            check_not_uuid_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             if bitwise {
                 check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             }

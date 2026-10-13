@@ -2,10 +2,12 @@ use super::{
     ByteOrder, DataFormat, FloatFormat,
     float_format::{FloatLike, format_float_into, widest_float},
     format_ascii_into, format_binary_into, format_decimal_into, format_hex_into,
+    uuid_format::{Uuid, format_uuid_into},
 };
 use crate::colours::{
     TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32, TYPE_COLOUR_I64,
-    TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64,
+    TYPE_COLOUR_I128, TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128,
+    TYPE_COLOUR_UUID,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -29,15 +31,15 @@ fn decimal_len<T: Word>(value: T) -> usize {
 /// The one value among `values`, if any, that [`format`](DataFormat) is guaranteed to render widest — without
 /// formatting any of them.
 ///
-/// [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`]/[`DataFormat::Ascii`] give every value the same rendered width
-/// regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all `values` here share one
-/// type already (see [`NodeValues`]'s own "Deliberately one type per node" doc section). So the first value
-/// is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with magnitude. For an
-/// unsigned width, that makes the numerically largest value the widest, found by comparing the values and never by
-/// formatting them. A signed width also shows a `-` for a negative value, so the widest is either the largest value or
-/// the most negative one, whichever takes more characters. A decimal value only gets wider as it moves away from zero in
-/// either direction, so no value between those two can beat both. One pass finds the extremes, and at most two digit
-/// counts are made, not one for every value.
+/// [`DataFormat::Hexadecimal`]/[`DataFormat::Binary`]/[`DataFormat::Ascii`]/[`DataFormat::Uuid`] give every value the
+/// same rendered width regardless of magnitude. That width is a fixed number of bytes' worth of digits, since all
+/// `values` here share one type already (see [`NodeValues`]'s own "Deliberately one type per node" doc section). So the
+/// first value is exactly as representative as any other. [`DataFormat::Decimal`]'s own width instead grows with
+/// magnitude. For an unsigned width, that makes the numerically largest value the widest, found by comparing the values
+/// and never by formatting them. A signed width also shows a `-` for a negative value, so the widest is either the
+/// largest value or the most negative one, whichever takes more characters. A decimal value only gets wider as it moves
+/// away from zero in either direction, so no value between those two can beat both. One pass finds the extremes, and at
+/// most two digit counts are made, not one for every value.
 fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
     match format {
         DataFormat::Decimal | DataFormat::Float(_) if T::SIGNED => {
@@ -48,9 +50,11 @@ fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
             Some(if decimal_len(lowest) > decimal_len(highest) { lowest } else { highest })
         },
         DataFormat::Decimal | DataFormat::Float(_) => values.iter().copied().max(),
-        DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
-            values.first().copied()
-        },
+        DataFormat::Hexadecimal
+        | DataFormat::Binary
+        | DataFormat::Ascii
+        | DataFormat::PlainText
+        | DataFormat::Uuid(_) => values.first().copied(),
     }
 }
 
@@ -89,10 +93,18 @@ macro_rules! impl_magnitude_signed {
     )+};
 }
 
-impl_magnitude_unsigned!(u8, u16, u32, u64);
-impl_magnitude_signed!(i8, i16, i32, i64);
+impl_magnitude_unsigned!(u8, u16, u32, u64, u128);
+impl_magnitude_signed!(i8, i16, i32, i64, i128);
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl Magnitude for Uuid {
+    const SIGNED: bool = false;
+
+    fn split_sign(self) -> (u128, bool) {
+        (self.as_u128(), false)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A type a [`NodeValues`] variant can hold: one cell's worth of value. Everything that formats or compares a node's
 /// values is written once against this, and serves every width, integer or float. One implementation per type, from
 /// [`impl_word`] and [`impl_float_cell`], replaces what was once the same `match format` repeated for every variant of
@@ -125,9 +137,9 @@ macro_rules! impl_word {
         impl Cell for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    // A float format means nothing for an integer, and is rejected before one is ever drawn. It reads as
-                    // the plain decimal number if it does get here.
-                    DataFormat::Decimal | DataFormat::Float(_) => {
+                    // A float or UUID format means nothing for an integer, and is rejected before one is ever drawn. It
+                    // reads as the plain decimal number if it does get here.
+                    DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) => {
                         let (magnitude, negative) = self.split_sign();
                         format_decimal_into(magnitude, negative, out);
                     },
@@ -146,14 +158,36 @@ macro_rules! impl_word {
     )+};
 }
 
-impl_word!(u8, u16, u32, u64, i8, i16, i32, i64);
+impl_word!(u8, u16, u32, u64, u128, i8, i16, i32, i64, i128);
+
+impl Cell for Uuid {
+    fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+        match format {
+            // A UUID is written as its own text under `Uuid`. Every other format reads its 128 bits as a number or as
+            // bytes, as a `u128` would, and the default text is what a node that is given no format says reads best.
+            DataFormat::Uuid(uuid_format) => format_uuid_into(self, uuid_format, out),
+            DataFormat::Decimal | DataFormat::Float(_) => {
+                format_decimal_into(self.as_u128(), false, out);
+            },
+            DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_bytes(), byte_order), out),
+            DataFormat::Binary => format_binary_into(order_bytes(self.to_bytes(), byte_order), out),
+            DataFormat::Ascii | DataFormat::PlainText => {
+                format_ascii_into(order_bytes(self.to_bytes(), byte_order), out);
+            },
+        }
+    }
+
+    fn same_as(self, other: Self) -> bool {
+        self == other
+    }
+}
 
 macro_rules! impl_float_cell {
     ($($width:ty),+) => {$(
         impl Cell for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    DataFormat::Decimal => format_float_into(self, FloatFormat::shortest(), out),
+                    DataFormat::Decimal | DataFormat::Uuid(_) => format_float_into(self, FloatFormat::shortest(), out),
                     DataFormat::Float(float_format) => format_float_into(self, float_format, out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
@@ -218,7 +252,7 @@ fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrde
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats into `out` the text of whichever float of `values` renders widest under `format`, and nothing if there are
 /// none. See [`NodeValues::widest_cell_string`].
 ///
@@ -228,7 +262,7 @@ fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrde
 /// binary and `Ascii` formats show a fixed number of bytes, so the first value is as wide as any.
 fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
     match format {
-        DataFormat::Decimal => widest_float(values, FloatFormat::shortest(), out),
+        DataFormat::Decimal | DataFormat::Uuid(_) => widest_float(values, FloatFormat::shortest(), out),
         DataFormat::Float(float_format) => widest_float(values, float_format, out),
         DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
             if let Some(&first) = values.first() {
@@ -253,9 +287,9 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// as. This determines how many bytes [`super::DataFormat::Hexadecimal`]/[`super::DataFormat::Binary`] split each value
 /// into. It also determines which colour is assigned (`super::NodeValues::type_colour`, crate-private).
 ///
-/// Each unsigned width has a signed equivalent: `I8`, `I16`, `I32` and `I64`. Only the widths a caller is actually
-/// likely to inspect byte-by-byte are supported. A wider type — for example `u128` — can be added the same way later,
-/// additively, if it turns out to be needed.
+/// Each unsigned width has a signed equivalent: `I8`, `I16`, `I32` and `I64`. The widest, 128 bits, is `U128` and
+/// `I128`. A 128-bit value that is a UUID is `Uuid`, a type of its own so that a node says what it holds. See
+/// "UUIDs" below.
 ///
 /// # Signed values
 ///
@@ -263,7 +297,7 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// positive value, with no `+`. [`DataFormat::Hexadecimal`], [`DataFormat::Binary`] and [`DataFormat::Ascii`] show the
 /// two's-complement representation of the value, in the selected [`ByteOrder`], so `-1_i8` reads as `FF` and `-2_i16`
 /// as `FF FE`, or `FE FF` if little-endian. A signed width is coloured with a deeper shade of its unsigned
-/// equivalent's colour, and its type name is `i8`, `i16`, `i32` or `i64`.
+/// equivalent's colour, and its type name is `i8`, `i16`, `i32`, `i64` or `i128`.
 ///
 /// # Floating point values
 ///
@@ -272,6 +306,16 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// digits. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show their IEEE-754 bits, in the selected [`ByteOrder`].
 /// Unlike an integer, a float has `NaN`, the infinities and a negative zero, and its text takes a number of characters
 /// that depends on far more than its size. See [`FloatFormat`] for each of those.
+///
+/// # UUIDs
+///
+/// `Uuid` holds [`Uuid`] values, each of which is 128 bits. They are shown by [`DataFormat::Uuid`], whose
+/// [`UuidFormat`](super::UuidFormat) chooses the punctuation (hyphens, braces or a URN prefix), the case of the digits,
+/// and the byte layout that the sixteen bytes are read from: that of RFC 9562, or of a Microsoft GUID in memory. Every
+/// other format shows the same 128 bits as a `u128` would. The default format of a node that holds UUIDs is
+/// [`DataFormat::Uuid`] with the default [`UuidFormat`](super::UuidFormat), though it is the caller who chooses a
+/// format for every node. A UUID is as wide as any other in the same format, since every one has the same number of
+/// characters. Nothing checks that its bits describe a valid UUID.
 ///
 /// # Equality
 ///
@@ -302,12 +346,16 @@ pub enum NodeValues {
     U16(Vec<u16>),
     U32(Vec<u32>),
     U64(Vec<u64>),
+    U128(Vec<u128>),
     I8(Vec<i8>),
     I16(Vec<i16>),
     I32(Vec<i32>),
     I64(Vec<i64>),
+    I128(Vec<i128>),
     F32(Vec<f32>),
     F64(Vec<f64>),
+    /// 128-bit values shown as UUIDs. See [`Uuid`] and [`UuidFormat`](super::UuidFormat).
+    Uuid(Vec<Uuid>),
 }
 
 impl PartialEq for NodeValues {
@@ -327,22 +375,31 @@ impl NodeValues {
             Self::U16(v) => v.len(),
             Self::U32(v) => v.len(),
             Self::U64(v) => v.len(),
+            Self::U128(v) => v.len(),
             Self::I8(v) => v.len(),
             Self::I16(v) => v.len(),
             Self::I32(v) => v.len(),
             Self::I64(v) => v.len(),
+            Self::I128(v) => v.len(),
             Self::F32(v) => v.len(),
             Self::F64(v) => v.len(),
+            Self::Uuid(v) => v.len(),
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`NodeValues::F32`] and [`NodeValues::F64`], the only values a [`DataFormat::Float`] can format.
     pub(super) fn is_float(&self) -> bool {
         matches!(self, Self::F32(_) | Self::F64(_))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`NodeValues::Uuid`], the only values a [`DataFormat::Uuid`] can format.
+    pub(super) fn is_uuid(&self) -> bool {
+        matches!(self, Self::Uuid(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` if `other` is the same type and holds the very same values. A float is the same only if it has the same
     /// bits, which is not what IEEE-754 `==` says: `-0.0 == 0.0`, but they are written differently, and `NaN != NaN`, but
     /// a `NaN` that is still a `NaN` has not changed. This is [`NodeValues`]'s own `PartialEq`.
@@ -355,12 +412,15 @@ impl NodeValues {
             (Self::U16(a), Self::U16(b)) => same(a, b),
             (Self::U32(a), Self::U32(b)) => same(a, b),
             (Self::U64(a), Self::U64(b)) => same(a, b),
+            (Self::U128(a), Self::U128(b)) => same(a, b),
             (Self::I8(a), Self::I8(b)) => same(a, b),
             (Self::I16(a), Self::I16(b)) => same(a, b),
             (Self::I32(a), Self::I32(b)) => same(a, b),
             (Self::I64(a), Self::I64(b)) => same(a, b),
+            (Self::I128(a), Self::I128(b)) => same(a, b),
             (Self::F32(a), Self::F32(b)) => same(a, b),
             (Self::F64(a), Self::F64(b)) => same(a, b),
+            (Self::Uuid(a), Self::Uuid(b)) => same(a, b),
             _ => false,
         }
     }
@@ -388,12 +448,15 @@ impl NodeValues {
             Self::U16(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::U64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::U128(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I8(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I16(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::I64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::I128(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::F32(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::F64(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::Uuid(v) => for_each_formatted(v, format, byte_order, scratch, f),
         }
     }
 
@@ -416,12 +479,15 @@ impl NodeValues {
             (Self::U16(v), Self::U16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::U32(v), Self::U32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::U64(v), Self::U64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::U128(v), Self::U128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I8(v), Self::I8(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I16(v), Self::I16(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I32(v), Self::I32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::I64(v), Self::I64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::I128(v), Self::I128(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::F32(v), Self::F32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::Uuid(v), Self::Uuid(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             _ => Ok(()),
         }
     }
@@ -441,12 +507,15 @@ impl NodeValues {
             Self::U16(v) => format_widest(v, format, byte_order, out),
             Self::U32(v) => format_widest(v, format, byte_order, out),
             Self::U64(v) => format_widest(v, format, byte_order, out),
+            Self::U128(v) => format_widest(v, format, byte_order, out),
             Self::I8(v) => format_widest(v, format, byte_order, out),
             Self::I16(v) => format_widest(v, format, byte_order, out),
             Self::I32(v) => format_widest(v, format, byte_order, out),
             Self::I64(v) => format_widest(v, format, byte_order, out),
+            Self::I128(v) => format_widest(v, format, byte_order, out),
             Self::F32(v) => widest_float_cell(v, format, byte_order, out),
             Self::F64(v) => widest_float_cell(v, format, byte_order, out),
+            Self::Uuid(v) => format_widest(v, format, byte_order, out),
         }
     }
 
@@ -465,12 +534,15 @@ impl NodeValues {
             Self::U16(v) => format_first(v, format, byte_order, out),
             Self::U32(v) => format_first(v, format, byte_order, out),
             Self::U64(v) => format_first(v, format, byte_order, out),
+            Self::U128(v) => format_first(v, format, byte_order, out),
             Self::I8(v) => format_first(v, format, byte_order, out),
             Self::I16(v) => format_first(v, format, byte_order, out),
             Self::I32(v) => format_first(v, format, byte_order, out),
             Self::I64(v) => format_first(v, format, byte_order, out),
+            Self::I128(v) => format_first(v, format, byte_order, out),
             Self::F32(v) => format_first(v, format, byte_order, out),
             Self::F64(v) => format_first(v, format, byte_order, out),
+            Self::Uuid(v) => format_first(v, format, byte_order, out),
         }
     }
 
@@ -488,12 +560,15 @@ impl NodeValues {
             Self::U16(_) => TYPE_COLOUR_U16,
             Self::U32(_) => TYPE_COLOUR_U32,
             Self::U64(_) => TYPE_COLOUR_U64,
+            Self::U128(_) => TYPE_COLOUR_U128,
             Self::I8(_) => TYPE_COLOUR_I8,
             Self::I16(_) => TYPE_COLOUR_I16,
             Self::I32(_) => TYPE_COLOUR_I32,
             Self::I64(_) => TYPE_COLOUR_I64,
+            Self::I128(_) => TYPE_COLOUR_I128,
             Self::F32(_) => TYPE_COLOUR_F32,
             Self::F64(_) => TYPE_COLOUR_F64,
+            Self::Uuid(_) => TYPE_COLOUR_UUID,
         }
     }
 
@@ -510,12 +585,15 @@ impl NodeValues {
             Self::U16(_) => "u16",
             Self::U32(_) => "u32",
             Self::U64(_) => "u64",
+            Self::U128(_) => "u128",
             Self::I8(_) => "i8",
             Self::I16(_) => "i16",
             Self::I32(_) => "i32",
             Self::I64(_) => "i64",
+            Self::I128(_) => "i128",
             Self::F32(_) => "f32",
             Self::F64(_) => "f64",
+            Self::Uuid(_) => "uuid",
         }
     }
 }

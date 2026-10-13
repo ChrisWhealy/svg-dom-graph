@@ -1,0 +1,49 @@
+<section class="section" id="panel-128-bit">
+    <h2>128-bit values and UUIDs</h2>
+    <p>A data node can hold both signed (<code>i128</code>) and unsigned (<code>u128</code>) 128-bit values. It can also
+        hold <code>Uuid</code> identifiers, which are also 128 bits wide, but are never treated as numbers.
+        Each is a type of its own, having its own colour and name for assistive technology.</p>
+    <dl>
+        <dt>Integers</dt>
+        <dd>
+            <p>A <code>u128</code> runs to 39 decimal digits, so the largest value it can hold is far wider than
+                anything a <code>u64</code> can hold. An <code>i128</code> shows a sign only when it is negative. When
+                displayed in hexadecimal, it is shown in two's complement format: <code>-1</code> is sixteen bytes of
+                <code>FF</code>.
+            </p>
+            <p>In terms of rendering width, this is the widest value a <code>i128</code> data node can
+                hold, since the minus sign makes it one character longer than the largest positive value.
+            </p>
+        </dd>
+        <dt>UUIDs</dt>
+        <dd>
+            <p>A <code>Uuid</code> is written by <code>DataFormat::Uuid</code>, as grouped hexadecimal digits. Its
+                version is the first digit of its third group, so <code>v4</code> shows a <code>4</code> there. The nil
+                and max UUIDs have no version. Under <code>DataFormat::Decimal</code> the same value would be rendered
+                as a number. </p>
+            <p><i><b>IMPORTANT</b></i>: Nothing checks that the bits being displayed represent a valid UUID. Any
+                128-bit value can be shown as if it were a UUID.</p>
+        </dd>
+        <dt>Formats</dt>
+        <dd>
+            <p>A <code>UuidFormat</code> controls the formatting. This controls both the case of the hexadecimal digits,
+                and whether the UUID grouped values are hyphenated, unhyphenated (simple), braced or shown as a URN.</p>
+            <p>A UUID cannot be supplied as the operand of any operator, since this value always function as as an
+                identifier, and not a number. If you need a number, use either a <code>u128</code> or a
+                <code>i128</code>.
+            </p>
+        </dd>
+        <dt>Byte layouts</dt>
+        <dd>
+            <p>A UUID of RFC 9562 is stored in big-endian format (most significant byte first), so its bytes layout in
+                memory is the same as the printed order of its digits.</p>
+            <p>
+                However, when held in memory, a Microsoft GUID stores the first three UUID fields the other way round
+                (little endian format), so the same UUID has different in-memory byte order.</p>
+            <p>If you are not aware of this detail and the UUID is displayed using the wrong layout, then the byte order
+                of the UUID's first three fields will be reversed, as the last line shows.</p>
+        </dd>
+    </dl>
+    <div class="canvas" id="wide-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

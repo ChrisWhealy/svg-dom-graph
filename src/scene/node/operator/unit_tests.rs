@@ -165,6 +165,32 @@ fn a_float_operand_is_rejected_by_a_bitwise_operator_and_named() -> Result<(), S
 }
 
 #[test]
+fn a_uuid_operand_is_rejected_by_every_kind_of_operator_and_a_u128_is_not() -> Result<(), String> {
+    use crate::scene::Uuid;
+    let mut graph = Graph::new();
+    let id = graph.add_node(rect(), content(NodeValues::Uuid(vec![Uuid::from_u128(1)])));
+    let number = graph.add_node(rect(), content(NodeValues::U128(vec![1])));
+    check(
+        matches!(
+            check_not_uuid_operands(&graph, &[id], "XOR"),
+            Err(Error::OperatorOnUuid { ref operator }) if operator == "XOR"
+        ),
+        "expected OperatorOnUuid naming XOR",
+    )?;
+    check(
+        matches!(
+            check_not_uuid_operands(&graph, &[number, id], "ADD"),
+            Err(Error::OperatorOnUuid { .. })
+        ),
+        "a UUID as the second operand is rejected too",
+    )?;
+    check(
+        check_not_uuid_operands(&graph, &[number], "ADD").is_ok(),
+        "a 128-bit number is an ordinary operand",
+    )
+}
+
+#[test]
 fn an_unknown_operand_is_still_reported_as_unknown_by_the_integer_check() -> Result<(), String> {
     let mut graph = Graph::new();
     let a = graph.add_node(rect(), content(NodeValues::U8(vec![1])));
