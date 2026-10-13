@@ -59,11 +59,15 @@ pub fn build_demo() -> PathBuf {
         .parent()
         .expect("the fixture lives inside the workspace")
         .to_path_buf();
+    // The same directory `demo-server` stages into, which `CARGO_TARGET_DIR` can move. It may not exist yet, and the
+    // lock has to be taken before the build that would create it. A relative path is relative to where cargo runs.
+    let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), |dir| root.join(dir));
+    std::fs::create_dir_all(&target).expect("could not create the target directory");
     let lock_file = OpenOptions::new()
         .create(true)
         .truncate(false)
         .write(true)
-        .open(root.join("target").join(".build_demo.lock"))
+        .open(target.join(".build_demo.lock"))
         .expect("could not open build_demo lock file");
     let mut lock = RwLock::new(lock_file);
     let _guard = lock.write().expect("could not acquire build_demo lock");
@@ -76,7 +80,6 @@ pub fn build_demo() -> PathBuf {
         .expect("could not run cargo to build the demo");
     assert!(status.success(), "demo-server --build-only failed");
 
-    let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), PathBuf::from);
     target.join("demo-stage")
 }
 
