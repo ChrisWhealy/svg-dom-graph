@@ -7,7 +7,8 @@ Demonstrates `NodeValues::U128`, `I128` and `Uuid`, and every way a `UuidFormat`
   A negative `i128` has a sign in decimal, and in hexadecimal it is two's complement, so `-1` is sixteen bytes of `FF`.
   The most negative value is the widest in its node, because its sign makes it a character longer than the largest.
 * **Line 3: a UUID of every version.**<br>
-  There is one of each version that RFC 9562 defines, and the nil and max UUIDs, which have no version.
+  There is one of each version that RFC 9562 defines, which is 1 and 3 to 8, and the nil and max UUIDs, which have no version.
+  Version 2 is reserved for DCE Security, and RFC 9562 does not define it.
   The first digit of the third group is the version.
   The second node is the same UUIDs under `DataFormat::Decimal`, as the numbers they are.
 * **Lines 4 and 5: every way to write one UUID.**<br>

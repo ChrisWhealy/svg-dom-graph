@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Extend demo to shown signed integers and floating point values (`1909296`)
-- Add support for `u128`, `i128` and `UUID` values (``)
+- Add support for `u128`, `i128` and `UUID` values (`8a45cdd`)
+- Add `UUIDv8` to demo (``)
 
 # [Released]
 

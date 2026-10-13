@@ -38,12 +38,13 @@ const UNSIGNED: [u128; 5] = [0, 1, 1 << 64, 1 << 127, u128::MAX];
 const SIGNED_LABELS: &[&str] = &["min", "-2^64", "-1", "zero", "max"];
 const SIGNED: [i128; 5] = [i128::MIN, -(1 << 64), -1, 0, i128::MAX];
 
-/// A UUID of each version that RFC 9562 defines, and the nil and max UUIDs, which have no version. Each is a published
+/// A UUID of each version that RFC 9562 defines, and the nil and max UUIDs, which have no version. Version 2 is not
+/// among them, since RFC 9562 reserves it for DCE Security and does not define it. Each is a published
 /// example, so each is a real UUID of its version and a reader can look it up.
 const VERSION_LABELS: &[&str] = &[
-    "nil", "v1 time", "v3 MD5", "v4 random", "v5 SHA-1", "v6 time", "v7 Unix time", "max",
+    "nil", "v1 time", "v3 MD5", "v4 random", "v5 SHA-1", "v6 time", "v7 Unix time", "v8 custom", "max",
 ];
-const VERSIONS: [(u128, Option<u8>); 8] = [
+const VERSIONS: [(u128, Option<u8>); 9] = [
     (0, None),
     (0xc232ab00_9414_11ec_b3c8_9f6bdeced846, Some(1)),
     (0x6fa459ea_ee8a_3ca4_894e_db77e160355e, Some(3)),
@@ -51,6 +52,7 @@ const VERSIONS: [(u128, Option<u8>); 8] = [
     (0x886313e1_3b8a_5372_9b90_0c9aee199e5d, Some(5)),
     (0x1ec9414c_232a_6b00_b3c8_9f6bdeced846, Some(6)),
     (0x017f22e2_79b0_7cc3_98c4_dc0c0c07398f, Some(7)),
+    (0x2489e9ad_2ee2_8e00_8ec9_32d5f69181c0, Some(8)),
     (u128::MAX, None),
 ];
 
