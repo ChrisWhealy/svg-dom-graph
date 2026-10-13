@@ -6,12 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.33] - 2026-10-13
 
 ## Added
 
 - Add support for `bool`, `usize` and `isize` values (`d0d613b`)
-- Add further regression tests for selection contracts and unnecessary fill attribute mutations (``)
+- Add further regression tests for selection contrast and unnecessary fill attribute mutations (`28be536`)
 
 ## Changed
 
@@ -20,9 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Remove unnecessary DOM writes and allocation in `set_data_values` (`4983a85`)
-- Doc only: clarify `wasm64` is not a supported build target for this crate (``)
-
-# [Released]
+- Doc only: clarify `wasm64` is not a supported build target for this crate (`3175a29`)
 
 ## [0.2.32] - 2026-10-13
 
