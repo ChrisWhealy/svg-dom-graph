@@ -11,10 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add demo implementation of ChaCha20 algorithm (`df3b2b3`)
+- Extend CDP regression tests for browser-facing state transition behaviour (``)
 
 ## Changed 
 
-- Hide the invisible SVG step node from assistive technology across all demos (``)
+- Hide the invisible SVG step node from assistive technology across all demos (`361f984`)
 
 ## Fixed 
 

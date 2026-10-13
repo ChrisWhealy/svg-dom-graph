@@ -24,7 +24,11 @@
 //!   own computed accessibility tree, and its own descendant value text stays exposed alongside them.
 //! - [`row_labels`] — every row label of a node labelled in scripts of unequal glyph width stays inside the node's box.
 //!
-//! All nine drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
+//! - [`chacha20_walk`] — the ChaCha20 demo's own stepping toolbar, driven by real clicks: the walk's boundaries, what
+//!   survives a redraw, and that nodes stay draggable inside the redrawn diagram. Unlike the rest, this one runs against
+//!   the built demo gallery (`demo-server --build-only`), not the fixture.
+//!
+//! The first nine drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
 //!
 //! # Why this lives in its own on-demand workspace member
@@ -41,6 +45,7 @@
 
 mod accessibility_tree;
 mod bounds;
+mod chacha20_walk;
 mod common;
 mod connectors;
 mod edge_anchors;

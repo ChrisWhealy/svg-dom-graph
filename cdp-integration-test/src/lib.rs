@@ -50,6 +50,37 @@ pub fn build_fixture(dir: &PathBuf) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the demo gallery with `demo-server --build-only` and returns the directory it staged, ready to serve.
+///
+/// The staged directory holds `index.html`, `style.css`, the demo's window pages and the wasm `pkg/`. The same
+/// cross-process file lock `build_fixture` takes guards against a second `cargo test` racing this build.
+pub fn build_demo() -> PathBuf {
+    let root = fixture_dir()
+        .parent()
+        .expect("the fixture lives inside the workspace")
+        .to_path_buf();
+    let lock_file = OpenOptions::new()
+        .create(true)
+        .truncate(false)
+        .write(true)
+        .open(root.join("target").join(".build_demo.lock"))
+        .expect("could not open build_demo lock file");
+    let mut lock = RwLock::new(lock_file);
+    let _guard = lock.write().expect("could not acquire build_demo lock");
+
+    let cargo = std::env::var("CARGO").unwrap_or_else(|_| "cargo".to_owned());
+    let status = Command::new(cargo)
+        .current_dir(&root)
+        .args(["run", "-p", "demo-server", "--", "--build-only"])
+        .status()
+        .expect("could not run cargo to build the demo");
+    assert!(status.success(), "demo-server --build-only failed");
+
+    let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), PathBuf::from);
+    target.join("demo-stage")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Serves `dir` on an OS-assigned local port and returns that port. The server runs for the lifetime of the test
 /// process on a background thread; there is no shutdown hook, but the process exits when the test does.
 pub fn serve(dir: PathBuf) -> u16 {
@@ -70,6 +101,8 @@ pub fn serve(dir: PathBuf) -> u16 {
                         "application/wasm"
                     } else if path.ends_with(".js") {
                         "text/javascript"
+                    } else if path.ends_with(".css") {
+                        "text/css"
                     } else {
                         "text/html"
                     };
@@ -85,6 +118,15 @@ pub fn serve(dir: PathBuf) -> u16 {
 
     port
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How long the browser may go without opening, closing or changing a tab before `headless_chrome` drops its connection.
+///
+/// The library's own default is 30 seconds, and it counts only browser-level events, not the calls a test makes inside
+/// a tab. A test that opens one tab and then works in it for longer, as a walk through all 961 positions of the ChaCha20
+/// demo does, would leave the browser idle by that count. Every test sharing the browser after it would then fail to
+/// open its own tab, with "underlying connection is closed". Ten minutes is far longer than any one test.
+const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Launches Chrome with its sandbox disabled and a generously large window.
@@ -104,6 +146,7 @@ pub fn launch_browser() -> Result<Browser, Box<dyn std::error::Error>> {
         .path(Some(path))
         .sandbox(false)
         .window_size(Some((1200, 900)))
+        .idle_browser_timeout(IDLE_TIMEOUT)
         .build()?;
     Ok(Browser::new(launch_options)?)
 }

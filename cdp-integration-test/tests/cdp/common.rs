@@ -9,10 +9,11 @@
 //! Every `#[test]` in this binary returns `Result<(), String>` — a failure prints its `String` message directly, with
 //! no panic and no stack trace.
 
-use cdp_integration_test::{build_fixture, fixture_dir, launch_browser, serve};
+use cdp_integration_test::{build_demo, build_fixture, fixture_dir, launch_browser, serve};
 use headless_chrome::{Browser, Element, Tab, protocol::cdp::Input};
 use std::{
-    sync::{Arc, OnceLock},
+    ops::Deref,
+    sync::{Arc, Mutex, MutexGuard, OnceLock},
     time::Duration,
 };
 
@@ -60,6 +61,85 @@ pub(crate) fn new_tab() -> Result<Arc<Tab>, String> {
     )
     .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
     Ok(tab)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The demo gallery, built and served once per test run, and the browser that opens its pages.
+///
+/// Kept apart from [`SHARED`], so a run that selects only fixture tests never pays for building the demo.
+struct DemoShared {
+    browser: Browser,
+    base_url: String,
+}
+
+static DEMO: OnceLock<Result<DemoShared, String>> = OnceLock::new();
+
+fn demo() -> Result<&'static DemoShared, String> {
+    DEMO.get_or_init(|| {
+        let port = serve(build_demo());
+        let browser =
+            launch_browser().map_err(|e| format!("failed to launch Chrome — is it installed locally? {e}"))?;
+        Ok(DemoShared {
+            browser,
+            base_url: format!("http://127.0.0.1:{port}"),
+        })
+    })
+    .as_ref()
+    .map_err(String::clone)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A demo tab that holds the lock every demo test shares, until it is dropped.
+///
+/// A click through the toolbar needs its tab in front, and Chrome has one foreground tab at a time. Demo tests that ran
+/// side by side would each take the front from the others and see their clicks fail. The lock makes them take turns.
+pub(crate) struct DemoTab {
+    tab: Arc<Tab>,
+    _turn: MutexGuard<'static, ()>,
+}
+
+impl Deref for DemoTab {
+    type Target = Tab;
+
+    fn deref(&self) -> &Tab {
+        &self.tab
+    }
+}
+
+static DEMO_TURN: Mutex<()> = Mutex::new(());
+
+/// Waits for its turn, then opens a fresh tab on the demo's window page `page` (for example `chacha20-window.html`) and waits until `ready`
+/// matches an element. The viewport is made `size` large, so a diagram taller than Chrome's headless window is wholly
+/// on screen and every part of it can be hit by a real mouse.
+pub(crate) fn new_demo_tab(page: &str, ready: &str, size: (u32, u32)) -> Result<DemoTab, String> {
+    // A test that failed while holding the lock poisons it, which says nothing about the next test's tab.
+    let turn = DEMO_TURN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
+    let demo = demo()?;
+    let tab = demo.browser.new_tab().map_err(|e| format!("failed to open a new tab: {e}"))?;
+    tab.call_method(headless_chrome::protocol::cdp::Emulation::SetDeviceMetricsOverride {
+        width: size.0,
+        height: size.1,
+        device_scale_factor: 1.0,
+        mobile: false,
+        scale: None,
+        screen_width: None,
+        screen_height: None,
+        position_x: None,
+        position_y: None,
+        dont_set_visible_size: None,
+        screen_orientation: None,
+        viewport: None,
+        display_feature: None,
+        device_posture: None,
+    })
+    .map_err(|e| format!("failed to size the viewport: {e}"))?;
+    tab.navigate_to(&format!("{}/{page}", demo.base_url))
+        .map_err(|e| format!("failed to navigate to {page}: {e}"))?;
+    tab.bring_to_front().map_err(|e| format!("failed to bring tab to front: {e}"))?;
+    tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
+    tab.wait_for_element_with_custom_timeout(ready, Duration::from_secs(30))
+        .map_err(|e| format!("{page} did not finish building in time: {e}"))?;
+    Ok(DemoTab { tab, _turn: turn })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
