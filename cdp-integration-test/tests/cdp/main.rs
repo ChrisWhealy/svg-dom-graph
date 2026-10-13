@@ -27,6 +27,8 @@
 //! - [`chacha20_walk`] — the ChaCha20 demo's own stepping toolbar, driven by real clicks: the walk's boundaries, what
 //!   survives a redraw, and that nodes stay draggable inside the redrawn diagram. Unlike the rest, this one runs against
 //!   the built demo gallery (`demo-server --build-only`), not the fixture.
+//! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
+//!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
 //! The first nine drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
@@ -53,4 +55,5 @@ mod overlap_resolution;
 mod pan;
 mod row_labels;
 mod small_drag;
+mod step_driver_accessibility;
 mod text_selection;

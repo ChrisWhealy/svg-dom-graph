@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add demo implementation of ChaCha20 algorithm (`df3b2b3`)
 - Extend CDP regression tests for browser-facing state transition behaviour (`c77785d`)
+- Add accessibility regression test (``)
 
 ## Changed 
 
