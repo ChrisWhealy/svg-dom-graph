@@ -1,3 +1,17 @@
+:root {
+    /* The colours this page uses more than once. A colour used once stays where it is used. */
+    --text: #c9d1d9;
+    --text-muted: #8b949e;
+    --text-dim: #6e7681;
+    --accent: #58a6ff;
+    --accent-light: #79c0ff;
+    --code-text: #ef9452;
+    --surface: #161b22;
+    --border: #21262d;
+    --border-strong: #30363d;
+    --error: #f85149;
+}
+
 *,
 *::before,
 *::after {
@@ -9,7 +23,7 @@
 body {
     font-family: ui-monospace, "Cascadia Code", "Fira Code", monospace;
     background: #0d1117;
-    color: #c9d1d9;
+    color: var(--text);
     min-height: 100vh;
 }
 
@@ -23,17 +37,17 @@ code {
 }
 
 /* Neither browsers' own default link blue nor, especially, their default *visited* purple reads clearly against
-   this page's own near-black background. `#58a6ff` is the same accent blue already used for the brand/active-menu
+   this page's own near-black background. `--accent` is the same accent blue already used for the brand/active-menu
    text below, so a link reads as "this page's own accent colour," not a mismatched default; `:visited` stays that
    same blue rather than shifting to the low-contrast purple that prompted this rule; `:hover` brightens to
-   `#79c0ff`, the lighter blue `h2` already uses, for a visible but still-coordinated hover cue. */
+   `--accent-light`, the lighter blue `h2` already uses, for a visible but still-coordinated hover cue. */
 a,
 a:visited {
-    color: #58a6ff;
+    color: var(--accent);
 }
 
 a:hover {
-    color: #79c0ff;
+    color: var(--accent-light);
 }
 
 /* App shell. The menu spans the full height on the left. The title sits above the stage on the right. */
@@ -50,14 +64,14 @@ a:hover {
 /* Menu panel */
 #menu {
     grid-area: menu;
-    border-right: 1px solid #21262d;
+    border-right: 1px solid var(--border);
     padding: 1.5rem 1rem;
     overflow-y: auto;
 }
 
 .brand {
     font-size: 1.2rem;
-    color: #58a6ff;
+    color: var(--accent);
     margin-bottom: 1rem;
 }
 
@@ -75,7 +89,7 @@ a:hover {
     display: flex;
     align-items: center;
     gap: 0.35rem;
-    color: #6e7681;
+    color: var(--text-dim);
     font-size: 0.7rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
@@ -104,7 +118,7 @@ a:hover {
 }
 
 .menu-group>summary:hover {
-    color: #8b949e;
+    color: var(--text-muted);
 }
 
 .menu-item {
@@ -113,7 +127,7 @@ a:hover {
     text-align: left;
     font: inherit;
     font-size: 0.85rem;
-    color: #c9d1d9;
+    color: var(--text);
     background: none;
     border: none;
     border-radius: 6px;
@@ -122,38 +136,38 @@ a:hover {
 }
 
 .menu-item:hover {
-    background: #161b22;
+    background: var(--surface);
 }
 
 .menu-item.active {
-    background: #161b22;
-    color: #58a6ff;
-    box-shadow: inset 2px 0 0 #58a6ff;
+    background: var(--surface);
+    color: var(--accent);
+    box-shadow: inset 2px 0 0 var(--accent);
 }
 
 /* Title panel */
 #title {
     grid-area: title;
     padding: 1.75rem 2rem;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--border);
 }
 
 #title h1 {
     font-size: 1.6rem;
-    color: #58a6ff;
+    color: var(--accent);
     margin-bottom: 0.5rem;
 }
 
 .subtitle {
-    color: #8b949e;
+    color: var(--text-muted);
     font-size: 0.85rem;
     max-width: 120ch;
     margin-bottom: 0.5rem;
 }
 
 .subtitle code {
-    color: #f0883e;
-    background: #161b22;
+    color: var(--code-text);
+    background: var(--surface);
     padding: 0.1em 0.4em;
     border-radius: 3px;
 }
@@ -176,14 +190,14 @@ a:hover {
 
 h2 {
     font-size: 1rem;
-    color: #79c0ff;
+    color: var(--accent-light);
     margin-bottom: 0.8rem;
     padding-bottom: 0.3rem;
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--border);
 }
 
 h2 code {
-    color: #f0883e;
+    color: var(--code-text);
 }
 
 /* The global box-sizing reset at the top of this file zeroes every element's own margin, h3's own default included
@@ -198,6 +212,14 @@ h3 {
    paragraphs would render with no gap between them at all. */
 .section>p {
     margin-bottom: 0.5rem;
+}
+
+/* Inline code inside a panel's own paragraphs, in the accent blue, so a name such as `Scene::set_selection` stands out
+   from the surrounding text. Scoped to `.section`, so the page's own subtitle, which has its own `code` colour, and the
+   code in a heading or a figure caption are left as they were. */
+.section li code,
+.section p code {
+    color: var(--code-text);
 }
 
 /* The same global reset zeroes an <ol>/<ul>'s own `padding-left` too, not just its margin. That padding is what a
@@ -227,7 +249,7 @@ h3 {
 .section dt {
     font-size: 1.1rem;
     font-weight: 700;
-    color: #58a6ff;
+    color: var(--accent);
     margin-top: 1.5rem;
     margin-bottom: 0.5rem;
 }
@@ -239,7 +261,7 @@ h3 {
 .section dd {
     margin-left: 0.5rem;
     padding-left: 1rem;
-    border-left: 2px solid #30363d;
+    border-left: 2px solid var(--border-strong);
 }
 
 .section dd>p {
@@ -264,7 +286,7 @@ figure {
     display: inline-block;
     border-radius: 6px;
     overflow: hidden;
-    border: 1px solid #21262d;
+    border: 1px solid var(--border);
     user-select: none;
 }
 
@@ -351,7 +373,7 @@ figure {
     visibility: hidden;
 }
 
-svg[visibility="hidden"] + .nested-scene-backdrop {
+svg[visibility="hidden"]+.nested-scene-backdrop {
     visibility: visible;
 }
 
@@ -388,7 +410,7 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
     height: var(--frame-h, calc(100% - 2 * var(--nested-scene-margin)));
     max-width: calc(100% - 2 * var(--nested-scene-min-margin));
     max-height: calc(100% - 2 * var(--nested-scene-min-margin));
-    border: 4px solid #58a6ff;
+    border: 4px solid var(--accent);
     border-radius: var(--nested-scene-radius);
     box-shadow: 0 12px 40px rgba(0, 0, 0, 0.65);
     /* Clips the <svg>'s own drawn content — its background rect included — to the rounded corners above; without
@@ -408,6 +430,7 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
 .nested-scene-depth-2 {
     --nested-scene-margin: 90px;
 }
+
 .nested-scene-depth-3 {
     --nested-scene-margin: 140px;
 }
@@ -426,6 +449,7 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
 .nested-scene-stage:has(.nested-scene-depth-2[visibility="visible"]) {
     --nested-scene-margin: 90px;
 }
+
 .nested-scene-stage:has(.nested-scene-depth-3[visibility="visible"]) {
     --nested-scene-margin: 140px;
 }
@@ -451,21 +475,15 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
     position: absolute;
     /* The frame is centred in the stage, so its corner sits half of whatever the stage has left over — beyond the
        frame's own size, already fitted to the stage by `util::frame_nested_scene` — from each edge. */
-    top: calc(
-        (100% - var(--nested-scene-frame-h, 100% - 2 * var(--nested-scene-min-margin))) / 2
-            - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
-    );
-    right: calc(
-        (100% - var(--nested-scene-frame-w, 100% - 2 * var(--nested-scene-min-margin))) / 2
-            - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289
-    );
+    top: calc((100% - var(--nested-scene-frame-h, 100% - 2 * var(--nested-scene-min-margin))) / 2 - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289);
+    right: calc((100% - var(--nested-scene-frame-w, 100% - 2 * var(--nested-scene-min-margin))) / 2 - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289);
     visibility: hidden;
     width: var(--nested-scene-close-size);
     height: var(--nested-scene-close-size);
     padding: 0;
     border: none;
     border-radius: 50%;
-    background: #21262d;
+    background: var(--border);
     color: #f0f6fc;
     font-size: 22px;
     line-height: 1;
@@ -476,7 +494,7 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
 }
 
 .nested-scene-close:hover {
-    background: #30363d;
+    background: var(--border-strong);
 }
 
 .nested-scene-stage:has(.nested-scene[visibility="visible"]) .nested-scene-close {
@@ -485,17 +503,17 @@ svg[visibility="hidden"] + .nested-scene-backdrop {
 
 figcaption {
     font-size: 0.82rem;
-    color: #6e7681;
+    color: var(--text-dim);
     margin-top: 0.6rem;
     max-width: 120ch;
 }
 
 figcaption strong {
-    color: #8b949e;
+    color: var(--text-muted);
 }
 
 figcaption code {
-    color: #f0883e;
+    color: var(--code-text);
 }
 
 /* p, ul, ol and li inside a figcaption all share the same paragraph spacing.
@@ -546,9 +564,9 @@ figcaption ol {
 #error-banner,
 .demo-error {
     background: #3d1e1e;
-    border: 1px solid #f85149;
+    border: 1px solid var(--error);
     border-radius: 6px;
-    color: #f85149;
+    color: var(--error);
     font-size: 0.85rem;
 }
 
@@ -569,25 +587,25 @@ figcaption ol {
 .source {
     margin-top: 1.25rem;
     max-width: 110ch;
-    border: 1px solid #21262d;
+    border: 1px solid var(--border);
     border-radius: 6px;
-    background: #161b22;
+    background: var(--surface);
 }
 
 .source>summary {
     cursor: pointer;
     padding: 0.5rem 0.8rem;
-    color: #8b949e;
+    color: var(--text-muted);
     font-size: 0.8rem;
     user-select: none;
 }
 
 .source>summary:hover {
-    color: #c9d1d9;
+    color: var(--text);
 }
 
 .source[open]>summary {
-    border-bottom: 1px solid #21262d;
+    border-bottom: 1px solid var(--border);
 }
 
 .source pre {
@@ -600,14 +618,14 @@ figcaption ol {
 .source code {
     font-size: 0.9rem;
     line-height: 1.5;
-    color: #c9d1d9;
+    color: var(--code-text);
     white-space: pre;
     tab-size: 4;
 }
 
 /* Syntax-highlight token colours emitted by rust_to_html (demo-app/src/highlight/mod.rs). */
 .source code .com {
-    color: #8b949e;
+    color: var(--text-muted);
     font-style: italic;
 }
 
@@ -624,7 +642,7 @@ figcaption ol {
 }
 
 .source code .num {
-    color: #79c0ff;
+    color: var(--accent-light);
 }
 
 .source code .typ {
@@ -649,7 +667,7 @@ figcaption ol {
     flex-direction: column;
     gap: 6px;
     font: 13px sans-serif;
-    color: #c9d1d9;
+    color: var(--text);
     border: none;
     margin: 0;
     padding: 0;
@@ -657,7 +675,7 @@ figcaption ol {
 
 .demo-control-group>legend {
     font-size: 11px;
-    color: #8b949e;
+    color: var(--text-muted);
     padding: 0;
     margin: 0 0 4px;
 }
@@ -692,9 +710,9 @@ label.demo-slider-container {
 .demo-select {
     width: 100%;
     font: 13px sans-serif;
-    color: #c9d1d9;
-    background: #161b22;
-    border: 1px solid #30363d;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
     border-radius: 4px;
     padding: 3px 4px;
 }
@@ -703,7 +721,7 @@ label.demo-slider-container {
    control in this file reads consistently. */
 .demo-slider-label {
     font-size: 11px;
-    color: #8b949e;
+    color: var(--text-muted);
 }
 
 /* Centres the vertical-shift slider (see .demo-slider-vertical below) within its own narrow, tall foreignObject
@@ -752,7 +770,7 @@ label.demo-slider-container {
     top: 0;
     width: 1px;
     height: 6px;
-    background: #8b949e;
+    background: var(--text-muted);
     transform: translateX(-50%);
     /* Rust sets `left` inline, per mark.
        This is the one property that is genuinely dynamic per tick.
@@ -763,7 +781,7 @@ label.demo-slider-container {
     display: flex;
     justify-content: space-between;
     font-size: 11px;
-    color: #8b949e;
+    color: var(--text-muted);
 }
 
 /* svg-dom-graph's own addition, not part of svg-dom's original stylesheet above.
@@ -794,13 +812,13 @@ label.demo-slider-container {
     margin: 0.5rem 0 1rem;
     padding: 0.5rem 1rem;
     font: inherit;
-    color: #c9d1d9;
-    background: #21262d;
-    border: 1px solid #58a6ff;
+    color: var(--text);
+    background: var(--border);
+    border: 1px solid var(--accent);
     border-radius: 6px;
     cursor: pointer;
 }
 
 .open-window:hover {
-    background: #30363d;
+    background: var(--border-strong);
 }

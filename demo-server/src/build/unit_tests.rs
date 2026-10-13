@@ -60,6 +60,11 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
     if !stage.stage_dir.join("style.css").is_file() {
         return Err("expected style.css to be staged alongside index.html".to_owned());
     }
+    for image in ["floating_point_single_precision.svg", "floating_point_double_precision.svg"] {
+        if !stage.stage_dir.join("img").join(image).is_file() {
+            return Err(format!("expected img/{image} to be staged beside index.html"));
+        }
+    }
     for page in ["sha3-sponge-window.html", "sha2-256-window.html", "sha1-window.html"] {
         if !stage.stage_dir.join(page).is_file() {
             return Err(format!("expected {page} to be staged alongside index.html"));
@@ -219,6 +224,52 @@ fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Resu
     }
     if after_style != before_style {
         return Err("a style.css copy failure changed the previously staged style.css".to_owned());
+    }
+    Ok(())
+}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every file in `demo/img/` is staged under `img/` byte for byte, whatever its name. A filename is listed nowhere, so
+/// a file that did not exist when the staging code was written must arrive too. Subdirectories are not staged.
+#[test]
+fn prepare_stage_copies_every_file_in_the_img_directory() -> Result<(), String> {
+    let real_root = workspace_root()?;
+    let temp_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    copy_minimal_source_root(&real_root, temp_root.path())?;
+
+    let img_dir = temp_root.path().join("demo").join("img");
+    fs::create_dir_all(img_dir.join("nested")).map_err(|e| format!("create img dirs: {e:?}"))?;
+    fs::write(img_dir.join("brand_new.png"), [0_u8, 1, 2, 255]).map_err(|e| format!("write brand_new.png: {e:?}"))?;
+    fs::write(img_dir.join("nested").join("deep.png"), [9_u8]).map_err(|e| format!("write deep.png: {e:?}"))?;
+
+    let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    let stage = StagePaths::new(stage_root.path());
+    prepare_stage(temp_root.path(), &stage).map_err(|e| format!("prepare_stage failed: {e}"))?;
+
+    let staged = fs::read(stage.stage_dir.join("img").join("brand_new.png"))
+        .map_err(|e| format!("read staged brand_new.png: {e:?}"))?;
+    if staged != [0_u8, 1, 2, 255] {
+        return Err(format!("staged brand_new.png differs from its source: {staged:?}"));
+    }
+    if stage.stage_dir.join("img").join("nested").exists() || stage.stage_dir.join("img").join("deep.png").exists() {
+        return Err("a subdirectory of demo/img was staged".to_owned());
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A directory with no `img/` at all stages fine and creates no `img/` — images are optional.
+#[test]
+fn prepare_stage_without_an_img_directory_stages_no_img_directory() -> Result<(), String> {
+    let real_root = workspace_root()?;
+    let temp_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    copy_minimal_source_root(&real_root, temp_root.path())?;
+
+    let stage_root = tempfile::tempdir().map_err(|e| format!("create temp dir: {e:?}"))?;
+    let stage = StagePaths::new(stage_root.path());
+    prepare_stage(temp_root.path(), &stage).map_err(|e| format!("prepare_stage failed: {e}"))?;
+
+    if stage.stage_dir.join("img").exists() {
+        return Err("an img directory was staged although demo/img does not exist".to_owned());
     }
     Ok(())
 }

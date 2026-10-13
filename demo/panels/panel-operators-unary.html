@@ -1,18 +1,21 @@
 <section class="section" id="panel-operators-unary">
     <h2>Unary operators</h2>
-    <p>An operator node names the operation that produced its own single value — <code>NOT</code>, a shift or
-        rotate, or a bit/byte reversal (<code>RBIT</code>/<code>BSWAP</code>) — without this crate ever computing
-        that value itself. Each result shown here is computed by the demo, in plain Rust, exactly the way a real
-        caller would; see <code>DataNodeContent</code>.
+    <p>An operator node is based on a data node that has been automatically labelled with the name of the operation it
+        is visualising. For example, a <code>NOT</code>, a bitwise shift or rotate, or a bit/byte reversal
+        (<code>RBIT</code> and <code>BSWAP</code>).</p>
+    <h3>IMPORTANT</h3>
+    <p>An operator node <b><i>never</i></b> calculates the the result of the operation! Instead, it simply displays the
+        value supplied by the caller. Therefore, the caller must correctly perform the calculation in plain Rust and
+        supply the result to the operator node; see <code>DataNodeContent</code>.
     </p>
     <p>A unary operator node has one incoming edge, drawn automatically when the node is created, so the rendered
         graph can never drift from the operand relationship the node claims to represent.
     </p>
-    <p>See the <a href="#panel-operators-binary">Binary operators</a> panel for <code>AND</code>/<code>OR</code>/
-        <code>XOR</code>/<code>NAND</code>/<code>NOR</code>/<code>XNOR</code>, the
-        <a href="#panel-operators-arithmetic">Arithmetic operators</a> panel for
-        <code>ADD</code>/<code>SUB</code>/<code>MUL</code>/<code>DIV</code>/<code>MOD</code>, and the
-        <a href="#panel-operators-chained">Chained operators</a> panel for an operator node's own result feeding a
+    <p>See the <a href="#panel-operators-binary">Binary operators</a> panel for <code>AND</code>, <code>OR</code>,
+        <code>XOR</code>, <code>NAND</code>, <code>NOR</code>, <code>XNOR</code>, the <a
+            href="#panel-operators-arithmetic">Arithmetic operators</a> panel for
+        <code>ADD</code>, <code>SUB</code>, <code>MUL</code>, <code>DIV</code>, <code>MOD</code>, and the <a
+            href="#panel-operators-chained">Chained operators</a> panel for an operator node's own result feeding a
         further operator node.
     </p>
     <div class="canvas" id="operators-unary-diagram-stage" style="margin-top: 1.5rem;">

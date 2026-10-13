@@ -65,6 +65,10 @@ This keeps each operand's identity visible, even after dragging swaps which side
 
 For commutative operators such as `ADD`, `MUL`, `AND` and `OR` etc, no such markers are drawn.
 
+The demo shows the five operators in three columns, one for unsigned integers, one for signed integers and one for floating point values.
+The signed column shows what a sign changes: subtraction can pass below zero, a division truncates towards zero, and a remainder takes the sign of the left-hand operand (`-17 MOD 5` is `-2`).
+The floating point column shows each result as the float arithmetic really produced it, such as `0.1 + 0.2` giving `0.30000000000000004` as an `f64`.
+
 ## Chained Operators
 
 The output of one operator can feed into another operator.

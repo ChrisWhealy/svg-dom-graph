@@ -110,7 +110,8 @@ impl From<panels::AssembleError> for BuildError {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs every phase except the wasm rebuild: validates the catalogue, assembles `index.html` (substituting
-/// `{{PANELS}}`), and copies the static assets (`style.css` and the two pop-up pages) — everything needed to stage a servable demo except `pkg/`.
+/// `{{PANELS}}`), and copies the static assets (`style.css`, the pop-up pages and the `img/` directory) — everything
+/// needed to stage a servable demo except `pkg/`.
 ///
 /// Returns as soon as any phase fails, via `?`. A stale catalogue is caught before `index.html` is ever assembled. A
 /// broken assembly is caught before it is ever written into place.
@@ -158,6 +159,19 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
         staged.push((tmp, stage.stage_dir.join(asset)));
     }
 
+    // `demo/img/` is copied file by file into `img/`, through the same temporary-then-promote path as the assets above.
+    // Its filenames are not listed anywhere, so adding an image needs no code change.
+    for (src, name) in image_files(&source_demo_dir.join(IMAGE_DIR))? {
+        let dest_dir = stage.stage_dir.join(IMAGE_DIR);
+        fs::create_dir_all(&dest_dir)
+            .map_err(|source| BuildError::CreateStageDir { path: dest_dir.clone(), source })?;
+        let mut tmp_name = name.clone();
+        tmp_name.push(".tmp");
+        let tmp = dest_dir.join(tmp_name);
+        copy_asset(&src, &tmp)?;
+        staged.push((tmp, dest_dir.join(name)));
+    }
+
     // Every temporary file is ready — promote them together.
     for (tmp, dest) in &staged {
         promote(tmp, dest)?;
@@ -173,6 +187,36 @@ const STATIC_ASSETS: [&str; 4] = [
     "sha1-window.html",
 ];
 
+/// The directory under `demo/` whose files are copied into the same-named directory beside the staged `index.html`, so
+/// that a page can refer to an image as `img/name.webp`.
+const IMAGE_DIR: &str = "img";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The files directly inside `dir`, each with its filename, sorted so the staging order is the same on every platform.
+/// Subdirectories are ignored. A `dir` that does not exist has no images, which is not an error.
+fn image_files(dir: &Path) -> Result<Vec<(PathBuf, std::ffi::OsString)>, BuildError> {
+    let read_error = |source| BuildError::CopyAsset {
+        src: dir.to_path_buf(),
+        dest: dir.to_path_buf(),
+        source,
+    };
+    let entries = match fs::read_dir(dir) {
+        Ok(entries) => entries,
+        Err(e) if e.kind() == io::ErrorKind::NotFound => return Ok(Vec::new()),
+        Err(e) => return Err(read_error(e)),
+    };
+    let mut files = Vec::new();
+    for entry in entries {
+        let entry = entry.map_err(read_error)?;
+        if entry.file_type().map_err(read_error)?.is_file() {
+            files.push((entry.path(), entry.file_name()));
+        }
+    }
+    files.sort();
+    Ok(files)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Renames `tmp` into place over `dest` — a same-directory, atomic replace. See [`prepare_stage`]'s own doc comment for
 /// why every staged file goes through a temporary file rather than being written straight onto its live destination.
 fn promote(tmp: &Path, dest: &Path) -> Result<(), BuildError> {

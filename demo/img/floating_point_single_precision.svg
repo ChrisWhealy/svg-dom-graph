@@ -1,0 +1,74 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 960 195" width="960" height="195">
+  <title>IEEE-754 single precision (binary32) layout</title>
+  <desc>1 sign bit, 8 exponent bits and 23 fraction bits</desc>
+  <style>
+    .sign { fill: #c8eef8; }
+    .exponent { fill: #8cf08c; }
+    .fraction { fill: #ffa8a8; }
+    .cell { stroke: #000; stroke-width: 1; }
+    .outline { fill: none; stroke: #000; stroke-width: 3; }
+    .label { fill: #000; text-anchor: middle; }
+    .bracket { fill: none; stroke-width: 1.5; }
+  </style>
+  <g id="bits">
+    <g id="bit-cells">
+      <rect class="cell sign" x="33" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="61" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="89" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="117" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="145" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="173" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="201" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="229" y="84" width="28" height="38"/>
+      <rect class="cell exponent" x="257" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="285" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="313" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="341" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="369" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="397" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="425" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="453" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="481" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="509" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="537" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="565" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="593" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="621" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="649" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="677" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="705" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="733" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="761" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="789" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="817" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="845" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="873" y="84" width="28" height="38"/>
+      <rect class="cell fraction" x="901" y="84" width="28" height="38"/>
+    </g>
+    <rect class="outline" x="33" y="84" width="896" height="38"/>
+  </g>
+  <g id="brackets">
+    <path id="sign-tick" class="bracket" stroke="#000" d="M47,64 V80"/>
+    <path id="exponent-bracket" class="bracket" stroke="#000" d="M62,80 V64 H284 V80"/>
+    <path id="fraction-bracket" class="bracket" stroke="#000" d="M286,80 V64 H928 V80"/>
+  </g>
+  <g id="labels" font-family="Noto Sans, DejaVu Sans, Arial, sans-serif" font-size="20">
+    <text class="label" x="47" y="53">sign</text>
+    <text class="label" x="173" y="25">exponent</text>
+    <text class="label" x="173" y="50">(8 bits)</text>
+    <text class="label" x="607" y="25">fraction</text>
+    <text class="label" x="607" y="50">(23 bits)</text>
+  </g>
+  <g id="bit-indexes" font-family="Noto Sans, DejaVu Sans, Arial, sans-serif" font-size="20">
+    <circle cx="47" cy="140" r="7" fill="#c8c8c8" stroke="#555" stroke-width="1.5"/>
+    <text class="label" x="47" y="170">31</text>
+    <circle cx="75" cy="140" r="7" fill="#c8c8c8" stroke="#555" stroke-width="1.5"/>
+    <text class="label" x="75" y="170">30</text>
+    <circle cx="271" cy="140" r="7" fill="#c8c8c8" stroke="#555" stroke-width="1.5"/>
+    <text class="label" x="271" y="170">23</text>
+    <circle cx="299" cy="140" r="7" fill="#c8c8c8" stroke="#555" stroke-width="1.5"/>
+    <text class="label" x="299" y="170">22</text>
+    <circle cx="915" cy="140" r="7" fill="#c8c8c8" stroke="#555" stroke-width="1.5"/>
+    <text class="label" x="915" y="170">0</text>
+  </g>
+</svg>

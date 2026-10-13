@@ -5,11 +5,13 @@
         Each value's bytes are shown in big-endian format (most-significant-byte first), space-separated, with no
         <code>0x</code> prefix.
     </p>
-    <p>A byte-group string alone cannot say where one value ends and the next begins, so each value gets its own
-        small box, coloured by its own type — a pastel shade per <code>u8</code>/<code>u16</code>/<code>u32</code>/
-        <code>u64</code>, and a deeper shade of the same colour for each signed equivalent, <code>i8</code>/<code>i16</code>/
-        <code>i32</code>/<code>i64</code>. With a single value, that colour is applied straight to the node's own box instead, since
-        there is no sibling value to tell it apart from.
+    <p>Without additional formatting, a string consisting of multiple bit values cannot indicate where one value ends
+        and the next begins; consequently, each value is displayed its own small box, coloured according to its type — a
+        pastel shade per <code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>. The signed equivalents
+        (<code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>) are given a deeper shade of the same
+        colour.</p>
+    <p> With a single value, the type-specific background colour is applied directly to the node's own box, since there
+        are no sibling values from which it needs to be distinguished.
     </p>
     <p>Each of the first four rows below shows one integer width as both a single value (left) and several values
         (right).</p>
@@ -19,7 +21,8 @@
         power-of-two divisor at all, so it falls back to the closest-to-square shape (3 rows of 2, one slot left blank);
         <code>u32</code> uses 9, a perfect square with no power-of-two divisor either, which that same fallback happens
         to fit exactly (3 rows of 3); and <code>u64</code> uses 4, both a perfect square and evenly divisible by a power
-        of two, where the two rules agree on the same 2×2 shape. Every box is sized to fit its own content automatically,
+        of two, where the two rules agree on the same 2×2 shape. Every box is sized to fit its own content
+        automatically,
         and every box is draggable, exactly like any other node.
     </p>
     <p>The fifth row is a single <code>u64</code> value under binary formatting: 64 digits, nybble-grouped and

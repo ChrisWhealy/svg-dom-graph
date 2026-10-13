@@ -20,6 +20,12 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
+/// Image locations
+const IMAGE_LOCATIONS: &[&str; 2] = &[
+    "img/floating_point_single_precision.svg",
+    "img/floating_point_double_precision.svg",
+];
+
 /// The values every node shows, one to a row. They are chosen to need every kind of width: a number of a few digits, a
 /// tiny negative one, a large one, a sum that has no short decimal form, the two zeros, and the three special values.
 const VALUES: [f64; 9] = [
@@ -46,8 +52,22 @@ const H_GAP: f64 = 30.0;
 const V_GAP: f64 = 36.0;
 /// Room east of the widest line for the zoom toolbar.
 const TOOLBAR_ROOM: f64 = 80.0;
+/// The space between a picture and the node below it.
+const IMAGE_GAP: f64 = 12.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The pictures of how the bits of an `f32` and an `f64` are divided, shown above the binary nodes.
+const SINGLE_PRECISION: Image = Image {
+    href: IMAGE_LOCATIONS[0],
+    width: 960.0,
+    height: 195.0,
+};
+const DOUBLE_PRECISION: Image = Image {
+    href: IMAGE_LOCATIONS[1],
+    width: 960.0,
+    height: 195.0,
+};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One node of a line: a `name`, and `values` in `format`, one to a row. The first node of a line is also labelled with
 /// what each row is.
 struct Column {
@@ -57,6 +77,16 @@ struct Column {
     /// `true` for an `f32`, which is these values rounded to the nearest `f32`.
     single: bool,
     labelled: bool,
+    /// A picture shown above this node, as wide as the node.
+    image: Option<Image>,
+}
+
+/// A picture served from `demo/img/`, with the pixel size it was made at. Only the proportions are used.
+#[derive(Clone, Copy)]
+struct Image {
+    href: &'static str,
+    width: f64,
+    height: f64,
 }
 
 impl Column {
@@ -67,6 +97,7 @@ impl Column {
             format: DataFormat::Float(format),
             single: false,
             labelled: false,
+            image: None,
         }
     }
 
@@ -77,6 +108,7 @@ impl Column {
             format,
             single: true,
             labelled: false,
+            image: None,
         }
     }
 
@@ -87,11 +119,17 @@ impl Column {
             format,
             single,
             labelled: false,
+            image: None,
         }
     }
 
     fn labelled(mut self) -> Self {
         self.labelled = true;
+        self
+    }
+
+    fn with_image(mut self, image: Image) -> Self {
+        self.image = Some(image);
         self
     }
 
@@ -111,7 +149,17 @@ impl Column {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `Scene`'s own group, which the zoom and pan transform is applied to. A picture appended there moves with the
+/// nodes, where one appended to the `<svg>` itself would stay put.
+fn content_group(document: &web_sys::Document) -> Result<web_sys::Element, String> {
+    document
+        .query_selector("#float-diagram .svg-dom-graph-content")
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or_else(|| "#float-diagram has no scene content group".to_owned())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the floating point demo: nine values, and one node for each way of writing them. Each line of nodes is read
 /// across, and the rows line up, so a row is one value written every way.
 ///
@@ -136,8 +184,9 @@ impl Column {
 pub(crate) fn build_float_demo() -> Result<(), String> {
     let document = crate::util::document()?;
     ensure_svg_in(&document, "float-diagram-stage", "float-diagram", Size::new(1400.0, 1700.0))?;
-    let svg = SvgRoot::attach("float-diagram").map_err(stringify)?;
-    let scene = Scene::new(svg).map_err(stringify)?;
+    // A second handle on the same `<svg>`, because `Scene::new` takes the first. It creates the pictures.
+    let pictures = SvgRoot::attach("float-diagram").map_err(stringify)?;
+    let scene = Scene::new(SvgRoot::attach("float-diagram").map_err(stringify)?).map_err(stringify)?;
 
     let lines = [
         vec![
@@ -165,23 +214,50 @@ pub(crate) fn build_float_demo() -> Result<(), String> {
             Column::bits("f64 bits (hexadecimal)", DataFormat::Hexadecimal, false),
         ],
         vec![
-            Column::bits("f32 bits (binary)", DataFormat::Binary, true).labelled(),
-            Column::bits("f64 bits (binary)", DataFormat::Binary, false),
+            Column::bits("f32 bits (binary)", DataFormat::Binary, true)
+                .labelled()
+                .with_image(SINGLE_PRECISION),
+            Column::bits("f64 bits (binary)", DataFormat::Binary, false).with_image(DOUBLE_PRECISION),
         ],
     ];
 
+    let content = content_group(&document)?;
     let mut y = MARGIN;
     let mut right: f64 = 0.0;
     for line in &lines {
         let mut x = MARGIN;
         let mut tallest: f64 = 0.0;
+        let mut placed = Vec::new();
         for column in line {
             let node = scene
                 .add_named_data_node(Point::new(x, y), column.name, column.content())
                 .map_err(stringify)?;
             let rect: Rect = scene.node_rect(node).map_err(stringify)?;
+            placed.push((node, column.image, x, rect.size.width));
             x += rect.size.width + H_GAP;
             tallest = tallest.max(rect.size.height);
+        }
+
+        // A picture is as wide as its node, so its height is known only now that the node's width is. The nodes of
+        // this line are then moved down to make room for the tallest picture above them.
+        let picture_room = placed
+            .iter()
+            .filter_map(|&(_, image, _, width)| image.map(|i| width * i.height / i.width))
+            .fold(0.0, f64::max);
+        if picture_room > 0.0 {
+            for &(node, image, x, width) in &placed {
+                scene
+                    .move_node(node, Point::new(x, y + picture_room + IMAGE_GAP))
+                    .map_err(stringify)?;
+                if let Some(image) = image {
+                    let size = Size::new(width, width * image.height / image.width);
+                    // Bottom-aligned, so that every picture sits directly on its own node.
+                    let top = y + picture_room - size.height;
+                    let node = pictures.image(image.href, Point::new(x, top), size).map_err(stringify)?;
+                    content.append_child(node.as_element()).map_err(|e| format!("{e:?}"))?;
+                }
+            }
+            tallest += picture_room + IMAGE_GAP;
         }
         right = right.max(x - H_GAP);
         y += tallest + V_GAP;

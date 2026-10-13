@@ -1,24 +1,25 @@
 <section class="section" id="panel-float">
     <h2>Floating point</h2>
     <p>A data node can hold <code>f32</code> and <code>f64</code> values as well as integers. Every node below shows the
-        same nine values, one to a row, written a different way, so a row can be read across to see one value in every
-        format. The labels beside the first node of each line say what each row is.</p>
+        same nine values, one per row. The labels on the left of each row describe the value, and each column formats
+        that value a different way.</p>
     <dl>
         <dt>Decimal places and significant digits</dt>
         <dd>
             <p>These are different things, and <code>FloatFormat</code> can ask for either. <em>Decimal places</em> are
                 the digits after the point, however big the value is: <code>pi</code> to 2 places is <code>3.14</code>,
-                and a tiny <code>-0.000123456</code> is just <code>-0.00</code>. <em>Significant digits</em> count from the
-                first digit that is not zero, wherever the point falls: the same tiny value to 3 significant digits is
-                <code>-0.000123</code>, and a large one such as <code>1234567.891</code> is <code>1230000</code>, its
-                unwritten digits shown as zeros. A value always shows exactly the digits asked for, so <code>0</code> to 3
-                significant digits is <code>0.00</code>.</p>
+                and a tiny <code>-0.000123456</code> is just <code>-0.00</code>. <em>Significant digits</em> count from
+                the first digit that is not zero, wherever the point falls: the same tiny value to 3 significant digits
+                is <code>-0.000123</code>, and a large one such as <code>1234567.891</code> is <code>1230000</code>, its
+                unwritten digits shown as zeros. A value always shows exactly the digits asked for, so <code>0</code> to
+                3 significant digits is <code>0.00</code>.
+            </p>
         </dd>
         <dt>Shortest</dt>
         <dd>
-            <p>The default, and what <code>DataFormat::Decimal</code> means for a float. It is the fewest digits that read
-                back as exactly the same value. So <code>0.1 + 0.2</code> is <code>0.30000000000000004</code>, which is
-                what the sum really is.</p>
+            <p>The default, and what <code>DataFormat::Decimal</code> means for a float. It is the fewest digits that
+                read back as exactly the same value. So <code>0.1 + 0.2</code> is <code>0.30000000000000004</code>,
+                which is what the sum really is.</p>
         </dd>
         <dt>Scientific notation</dt>
         <dd>
@@ -29,8 +30,8 @@
         <dt>Special values and signs</dt>
         <dd>
             <p><code>NaN</code>, <code>inf</code> and <code>-inf</code> read the same in every format. A negative zero
-                keeps its sign, <code>-0.0</code>, because the sign is part of a float's value. A sign is never shown for
-                a positive value.</p>
+                keeps its sign, <code>-0.0</code>, because the sign is part of a float's value. A sign is never shown
+                for a positive value.</p>
         </dd>
         <dt>Types and bits</dt>
         <dd>
@@ -39,8 +40,8 @@
                 bits of either, with the sign in the top bit.</p>
         </dd>
     </dl>
-    <p>Every node is exactly as wide as its widest value needs, and which value that is depends on the format. Under
-        3 significant digits it is the tiny one, whose leading zeros make it the widest. Under 2 decimal places it is the
+    <p>Every node is exactly as wide as its widest value needs, and which value that is depends on the format. Under 3
+        significant digits it is the tiny one, whose leading zeros make it the widest. Under 2 decimal places it is the
         large one. Under scientific notation the numbers are much the same width, so the sign matters. In every format,
         <code>-inf</code> is wider than a short number, and a negative number is a character wider than a positive one.
     </p>
