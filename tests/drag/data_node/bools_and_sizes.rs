@@ -2,13 +2,13 @@
 //! Boolean's cells that stay wide enough when a value flips, the logical operators, and the pointer-sized integers.
 
 use super::support::{check_fits, texts_of, title_of};
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error, NodeId,
     scene::{
         ArithmeticOperator, BinaryOperator, BoolFormat, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene,
-        UnaryOperator,
+        Selection, UnaryOperator,
     },
 };
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -300,4 +300,143 @@ fn only_icons_are_drawn_on_a_halo() -> Result<(), String> {
         check(text.get_attribute("stroke").is_none(), "a word should not have a halo")?;
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The relative luminance of a `#rrggbb` colour, as WCAG 2.2 defines it.
+fn luminance(hex: &str) -> Result<f64, String> {
+    let channel = |range: std::ops::Range<usize>| -> Result<f64, String> {
+        let part = hex.get(range).ok_or_else(|| format!("{hex:?} is not #rrggbb"))?;
+        let c = f64::from(u8::from_str_radix(part, 16).map_err(|e| format!("{hex:?}: {e}"))?) / 255.0;
+        Ok(if c <= 0.039_28 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) })
+    };
+    Ok(0.2126 * channel(1..3)? + 0.7152 * channel(3..5)? + 0.0722 * channel(5..7)?)
+}
+
+/// WCAG's contrast ratio of two `#rrggbb` colours: from 1 to 21.
+fn contrast(a: &str, b: &str) -> Result<f64, String> {
+    let (la, lb) = (luminance(a)?, luminance(b)?);
+    Ok((la.max(lb) + 0.05) / (la.min(lb) + 0.05))
+}
+
+/// The contrast between a mark and the halo it is drawn on, as the page has them now.
+fn mark_contrast(text: &web_sys::Element) -> Result<f64, String> {
+    let fill = text.get_attribute("fill").ok_or("the mark has no fill")?;
+    let halo = text.get_attribute("stroke").ok_or("the mark has no halo")?;
+    contrast(&fill, &halo)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A selected icon keeps text contrast, whatever kind of selection it has, and still does when its value changes while
+/// the selection stays on it. The mark is read against its own halo, since the halo is what is behind it, so its
+/// background does not matter. Each case also checks that the selection really did recolour the cell, since a test of a
+/// selection that did nothing would pass for nothing.
+#[wasm_bindgen_test]
+fn a_selected_icon_keeps_its_contrast_and_its_selection_when_its_value_changes() -> Result<(), String> {
+    let (scene, node) = scene_and_node("icon-selected", flags(vec![true, true, true], BoolFormat::Icon))?;
+    let group = nth_group("icon-selected", 0)?;
+    let cell_fill = |i: usize| -> Result<Option<String>, String> {
+        // The first rect is the node's own box, and each cell has one after it.
+        Ok(super::support::rect_children(&group)?
+            .get(i + 1)
+            .and_then(|r| r.get_attribute("fill")))
+    };
+    let mark = |i: usize| -> Result<web_sys::Element, String> {
+        super::support::text_children(&group)?
+            .into_iter()
+            .nth(i)
+            .ok_or_else(|| format!("no mark {i}"))
+    };
+    let unselected = cell_fill(0)?;
+
+    type Select = fn(&Scene, NodeId) -> Result<(), svg_dom_graph::Error>;
+    let cases: [(&str, usize, Select); 3] = [
+        ("focused", 0, |s, n| s.set_selection(n, Selection::Cell(0))),
+        ("banded", 1, |s, n| s.set_selection(n, Selection::Row { row: 1, col: None })),
+        ("secondary", 2, |s, n| s.set_secondary_selection(n, &[2])),
+    ];
+    for (what, i, select) in cases {
+        scene
+            .set_data_values(node, NodeValues::Bool(vec![true; 3]))
+            .map_err(|e| e.to_string())?;
+        scene.set_selection(node, Selection::None).map_err(|e| e.to_string())?;
+        scene.set_secondary_selection(node, &[]).map_err(|e| e.to_string())?;
+        select(&scene, node).map_err(|e| e.to_string())?;
+
+        check(
+            cell_fill(i)? != unselected,
+            &format!("{what}: the selection should have recoloured the cell"),
+        )?;
+        let ratio = mark_contrast(&mark(i)?)?;
+        check(ratio >= 4.5, &format!("{what} check mark: contrast {ratio:.2} to 1"))?;
+
+        // The value changes while the selection stays where it is.
+        let mut values = vec![true; 3];
+        values[i] = false;
+        scene
+            .set_data_values(node, NodeValues::Bool(values))
+            .map_err(|e| e.to_string())?;
+        let changed = mark(i)?;
+        check(
+            changed.text_content().as_deref() == Some(CROSS),
+            &format!("{what}: the mark should now be a cross"),
+        )?;
+        let ratio = mark_contrast(&changed)?;
+        check(ratio >= 4.5, &format!("{what} cross: contrast {ratio:.2} to 1"))?;
+        check(
+            cell_fill(i)? != unselected,
+            &format!("{what}: the selection was lost when the value changed"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Changing a number writes no more to the page than changing a word does, and changing an icon writes exactly one
+/// thing more: its colour. So `set_data_values`, which an animation calls for every step, pays nothing for a colour
+/// that numbers never have.
+#[wasm_bindgen_test]
+fn changing_a_number_writes_no_more_than_changing_a_word_and_an_icon_writes_one_colour_more() -> Result<(), String> {
+    let cases = [
+        (
+            "writes-number",
+            DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal),
+            NodeValues::U8(vec![1, 9]),
+        ),
+        (
+            "writes-float",
+            DataNodeContent::new(NodeValues::F32(vec![1.5, 2.5]), DataFormat::Decimal),
+            NodeValues::F32(vec![1.5, 9.5]),
+        ),
+        (
+            "writes-word",
+            flags(vec![true, true], BoolFormat::TrueFalse),
+            NodeValues::Bool(vec![true, false]),
+        ),
+        (
+            "writes-icon",
+            flags(vec![true, true], BoolFormat::Icon),
+            NodeValues::Bool(vec![true, false]),
+        ),
+    ];
+    let mut writes = Vec::new();
+    for (id, content, values) in cases {
+        let (scene, node) = scene_and_node(id, content.with_layout(GridLayout::Columns(1)))?;
+        let group = nth_group(id, 0)?;
+        writes.push(mutations_during(&group, || {
+            scene.set_data_values(node, values).map_err(|e| e.to_string())
+        })?);
+    }
+    let (number, float, word, icon) = (writes[0], writes[1], writes[2], writes[3]);
+    check(number > 0, "a changed number should have been written")?;
+    check(
+        number == word && float == word,
+        &format!(
+            "a number ({number}), a float ({float}) and a word ({word}) should each cost the same number of writes"
+        ),
+    )?;
+    check(
+        icon == word + 1,
+        &format!("an icon should cost one write more than a word, {icon} against {word}"),
+    )
 }

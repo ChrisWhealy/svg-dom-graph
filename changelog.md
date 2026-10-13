@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add support for `bool`, `usize` and `isize` values (`d0d613b`)
+- Add further regression tests for selection contracts and unnecessary fill attribute mutations (``)
 
 ## Changed
 
