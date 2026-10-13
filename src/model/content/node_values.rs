@@ -380,7 +380,9 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// `Usize` and `Isize` hold `usize` and `isize`, whose width is that of the target the code is compiled for. This crate
 /// draws in a browser, so it is 32 bits there, and the largest `usize` has ten digits and four bytes in hexadecimal.
 /// The same values on a 64-bit host have twenty digits and eight bytes. Every other property is that of the fixed
-/// widths. The `wasm64` target is not available on a stable compiler, and this crate makes no provision for it.
+/// widths. `wasm64-unknown-unknown` is a Tier 3 target, which has no precompiled standard library, so building for it
+/// needs a nightly compiler and `build-std`. This crate is built and tested for `wasm32` only. So `wasm64` is not a
+/// supported build target, though a pointer there would be 64 bits wide, as on a 64-bit host.
 ///
 /// # Booleans
 ///

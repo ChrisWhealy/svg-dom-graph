@@ -18,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Remove unnecessary DOM writes and allocation in `set_data_values` (``) 
+- Remove unnecessary DOM writes and allocation in `set_data_values` (`4983a85`)
+- Doc only: clarify `wasm64` is not a supported build target for this crate (``)
 
 # [Released]
 

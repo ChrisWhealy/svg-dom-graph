@@ -49,6 +49,8 @@ This crate draws in a browser, so that is 32 bits: the largest `usize` is `42949
 The same values on a 64-bit host have twenty digits and eight bytes.
 The width is therefore a property of the target the code is built for, and a diagram built for another target may be a different size.
 
-The `wasm64` target is not available on a stable compiler, and this crate makes no provision for it.
+`wasm64-unknown-unknown` exists as a Tier 3 Rust target, but Rust ships no precompiled standard library for it, so building for it needs a nightly compiler and `build-std`.
+This crate is built and tested for `wasm32` only, so `wasm64` is not a supported build target.
+A pointer there would be 64 bits wide, as on a 64-bit host, but that has not been tried.
 As with the fixed widths, an `isize` shows a sign only if it is negative, and in hexadecimal and binary it is shown as its two's complement.
 For an `isize`, the most negative value is the widest in a decimal node, since it has a sign.

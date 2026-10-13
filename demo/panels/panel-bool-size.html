@@ -11,7 +11,8 @@
                 different shapes, so colour is not the only thing that tells them apart, and a screen reader is told
                 <code>true</code> or <code>false</code> and never the name of a glyph. Every format gives both values a
                 cell of the same width, so a node that changes from one to the other does not outgrow its cells.
-                Under any other format a Boolean is the single byte it is held in.</p>
+                Under any other format a Boolean is the single byte it is held in.
+            </p>
         </dd>
         <dt>Logical operators</dt>
         <dd>
@@ -19,15 +20,20 @@
                 <code>NAND</code>, <code>NOR</code> and <code>XNOR</code>, as the truth table below shows, whichever way
                 each is written: each row of the table uses a different format. It cannot be
                 an operand of a shift, a rotation, a reversal or an arithmetic operator, since there is no sum of two
-                Booleans and no <code>true</code> to rotate. Use a <code>u8</code> for a one-bit number.</p>
+                Booleans and no <code>true</code> to rotate. Use a <code>u8</code> for a one-bit number.
+            </p>
         </dd>
         <dt>Pointer-sized integers</dt>
         <dd>
-            <p>The width of a <code>usize</code> or an <code>isize</code> is that of the target. This demo runs on
-                <code>wasm32</code>, where it is 32 bits, so the largest <code>usize</code> is
-                <code>4294967295</code> and its hexadecimal is four bytes. On a 64-bit host it would have twenty digits
-                and eight bytes. The <code>wasm64</code> target is not yet available on a stable compiler, so this crate
-                makes no provision for it.</p>
+            <p>The width of a <code>usize</code> or an <code>isize</code> is that of the compilation target. This demo
+                runs on <code>wasm32</code>, where it is 32 bits, so the largest <code>usize</code> value is
+                <code>4294967295</code> and its hexadecimal representation occupies four bytes.
+            </p>
+            <p>On a 64-bit host it would have twenty decimal digits and occupy eight bytes. A
+                <code>wasm64-unknown-unknown</code> target exists, but it has no precompiled standard library, so
+                building for it would require the use of a nightly compiler. This crate is built and tested for
+                <code>wasm32</code> only, so <code>wasm64</code> is not a supported build target.
+            </p>
         </dd>
     </dl>
     <div class="canvas" id="bools-sizes-diagram-stage" style="margin-top: 1.5rem;">
