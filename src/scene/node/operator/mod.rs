@@ -10,8 +10,8 @@
 
 use super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
-    NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, label_group, render_guard::RenderGuard,
-    validate_data_content, validate_edge_anchors,
+    NodeOptions, OUTER_PADDING, construction_guard::OperatorConstructionGuard, halo_icon, label_group,
+    render_guard::RenderGuard, validate_data_content, validate_edge_anchors,
 };
 use crate::{
     colours::{BOX_STROKE, CONNECTOR_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
@@ -337,6 +337,9 @@ fn measure_value(
     value_el.set_font_family(GRID_FONT_FAMILY)?;
     value_el.set_font_size(GRID_FONT_SIZE)?;
     value_el.set_fill(result.ink(&value_text))?;
+    if result.is_bool_icon() {
+        halo_icon(&value_el)?;
+    }
     let width = value_el.bounding_box()?.size.width;
     Ok((value_el, value_text, width))
 }

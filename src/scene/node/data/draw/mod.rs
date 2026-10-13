@@ -2,7 +2,7 @@
 
 use super::super::{
     CELL_HEIGHT, CELL_PADDING, EdgeAnchors, GRID_FONT_FAMILY, GRID_FONT_SIZE, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT,
-    OUTER_PADDING, label_group, render_guard::RenderGuard,
+    OUTER_PADDING, halo_icon, label_group, render_guard::RenderGuard,
 };
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
@@ -515,6 +515,9 @@ fn draw_cells(
             text.set_font_family(GRID_FONT_FAMILY)?;
             text.set_font_size(GRID_FONT_SIZE)?;
             text.set_fill(content.ink(cell_text))?;
+            if content.is_bool_icon() {
+                halo_icon(&text)?;
+            }
             if content.is_plain_text() {
                 text.set_attr("style", "white-space: pre")?;
             }

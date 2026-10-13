@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add support for `bool`, `usize` and `isize` values (``)
+- Add support for `bool`, `usize` and `isize` values (`d0d613b`)
+
+## Changed
+
+- Improve contrast when true/false icons are selected (``) 
 
 # [Released]
 

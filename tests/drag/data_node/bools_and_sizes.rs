@@ -37,6 +37,10 @@ struct Cell {
 }
 
 /// Each `<text>` of node `id`, in order.
+fn elements(id: &str) -> Result<Vec<web_sys::Element>, String> {
+    super::support::text_children(&nth_group(id, 0)?)
+}
+
 fn fills_and_names(id: &str) -> Result<Vec<Cell>, String> {
     let group = nth_group(id, 0)?;
     let texts = group.query_selector_all("text").map_err(|e| format!("{e:?}"))?;
@@ -273,4 +277,27 @@ fn a_pointer_sized_integer_can_be_replaced_and_names_its_type() -> Result<(), St
         matches!(wrong, Err(Error::IncompatibleNodeValues(_))),
         &format!("a usize is not an isize, got {wrong:?}"),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An icon is drawn on a white halo, so that it reads on every fill a cell can have, a selection's included. A word is
+/// not given one.
+#[wasm_bindgen_test]
+fn only_icons_are_drawn_on_a_halo() -> Result<(), String> {
+    let _a = scene_and_node("halo-icons", flags(vec![true, false], BoolFormat::Icon))?;
+    let _b = scene_and_node("halo-words", flags(vec![true, false], BoolFormat::TrueFalse))?;
+    for text in elements("halo-icons")? {
+        check(
+            text.get_attribute("stroke").as_deref() == Some("#ffffff"),
+            "an icon should have a white stroke",
+        )?;
+        check(
+            text.get_attribute("paint-order").as_deref() == Some("stroke"),
+            "the stroke should be painted under the mark, or it would eat into it",
+        )?;
+    }
+    for text in elements("halo-words")? {
+        check(text.get_attribute("stroke").is_none(), "a word should not have a halo")?;
+    }
+    Ok(())
 }

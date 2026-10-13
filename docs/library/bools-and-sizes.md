@@ -25,6 +25,8 @@ A mark is a picture, so a screen reader is not told its glyph.
 The accessible name of a cell says `true` or `false`, as in `row 0, column 0: true`.
 The accessible name and tooltip of a single Boolean read `bool = true`, and an operator's result reads `AND result: bool = false`.
 The two marks have different shapes, so colour is not the only thing that tells them apart.
+Each is drawn on a white halo (a white stroke painted under the mark), so it contrasts with the fill of whatever cell it is in.
+The sand of a `bool` and the yellow, orange-red and teal of a selection would each hide a green or red mark of a fixed colour, and the halo gives both marks a contrast of over 5 to 1 against whatever is behind them, above the 4.5 to 1 that WCAG asks of text this size.
 They are the Unicode characters `U+2714` (a heavy check mark) and `U+2718` (a heavy ballot X), drawn in the node's font, so check that the fonts of a machine you do not control have both.
 
 ### Other formats

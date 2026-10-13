@@ -15,9 +15,11 @@ pub enum BoolFormat {
     Bit,
     /// A green check mark for `true` and a red cross for `false`.
     ///
-    /// The two marks have different shapes, so colour is not the only thing that tells them apart. A screen reader is
-    /// not told about either of them: the cell's accessible name says `true` or `false`. A font must have both marks
-    /// (`U+2714` and `U+2718`) for them to be drawn, so check that the fonts of a machine you do not control have them.
+    /// The two marks have different shapes, so colour is not the only thing that tells them apart. Each is drawn on a
+    /// white halo, so that it reads on the fill of any cell, including a selected one, whose colour would otherwise
+    /// hide a green or red mark. A screen reader is not told about either of them: the cell's accessible name says
+    /// `true` or `false`. A font must have both marks (`U+2714` and `U+2718`) for them to be drawn, so check that the
+    /// fonts of a machine you do not control have them.
     Icon,
 }
 

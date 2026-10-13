@@ -114,6 +114,13 @@ pub(crate) const BOOL_TRUE_INK: &str = "#1a7f37";
 /// A `false` mark's colour in [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) — a red that reads on every pastel.
 pub(crate) const BOOL_FALSE_INK: &str = "#cf222e";
 
+/// The halo behind a [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) mark — white. A cell may be filled with the
+/// sand of a `bool`, or with a selection's yellow, orange-red or teal, and a green or red mark does not read on every
+/// one of them. The mark is drawn on a white outline instead, which it contrasts with whatever is behind it. White
+/// gives both [`BOOL_TRUE_INK`] and [`BOOL_FALSE_INK`] a contrast ratio of over 5 to 1, above the 4.5 to 1 that WCAG
+/// asks of text this size.
+pub(crate) const BOOL_ICON_HALO: &str = "#ffffff";
+
 /// The `f32` shade — a pastel sky blue. Floating point has no unsigned or signed pairing to echo, so it takes a hue of
 /// its own, away from the apricot, mint, lavender and rose of the integers, and from the yellow, orange and teal of a
 /// selection. The `f64` shade is the deeper of the two, as a signed integer's is.

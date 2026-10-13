@@ -114,6 +114,21 @@ const LABEL_FONT_SIZE: f64 = 14.0;
 /// size keeps a modest grid from demanding an oversized box by default.
 const GRID_FONT_SIZE: f64 = 13.0;
 
+/// The width of the halo stroke behind a Boolean icon, in user-space units. Half of it lies outside the mark, and half
+/// under it, so the mark itself is not thinned. See [`halo_icon`].
+const ICON_HALO_WIDTH: f64 = 3.0;
+
+/// Draws `text`, a Boolean icon, on a halo. The text keeps its fill, the green or red of its own value, and gains a
+/// white stroke painted underneath it. The mark then has the same contrast against whatever fill the cell has. That is
+/// the sand of its type, or any selection colour, which would otherwise hide a mark of a fixed colour.
+fn halo_icon(text: &svg_dom::SvgNode) -> Result<(), svg_dom::Error> {
+    text.set_stroke(crate::colours::BOOL_ICON_HALO)?;
+    text.set_stroke_width(ICON_HALO_WIDTH)?;
+    text.set_attr("stroke-linejoin", "round")?;
+    // `paint-order` puts the stroke under the fill. Without it, the stroke would eat into the mark.
+    text.set_attr("paint-order", "stroke")
+}
+
 /// A generic monospace font stack. Digits render at a uniform width under a monospace font — a proportional font would
 /// render `"1"` narrower than `"8"`, throwing off a byte-group's own internal alignment. Several names are offered
 /// since not every browser/OS ships the same monospace font; `monospace` itself is the universally supported fallback.

@@ -233,3 +233,42 @@ fn every_type_has_a_name_and_a_colour_of_its_own() -> Result<(), String> {
         ("usize", "isize", "bool"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Contrast
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// The relative luminance of a `#rrggbb` colour, as WCAG 2.2 defines it.
+fn luminance(hex: &str) -> f64 {
+    let channel = |range: std::ops::Range<usize>| {
+        let c = f64::from(u8::from_str_radix(&hex[range], 16).unwrap_or(0)) / 255.0;
+        if c <= 0.039_28 { c / 12.92 } else { ((c + 0.055) / 1.055).powf(2.4) }
+    };
+    0.2126 * channel(1..3) + 0.7152 * channel(3..5) + 0.0722 * channel(5..7)
+}
+
+/// WCAG's contrast ratio of two colours: from 1 to 21.
+fn contrast(a: &str, b: &str) -> f64 {
+    let (la, lb) = (luminance(a), luminance(b));
+    (la.max(lb) + 0.05) / (la.min(lb) + 0.05)
+}
+
+/// A mark is drawn on a white halo, so its contrast does not depend on the fill of its cell, which may be the sand of a
+/// `bool` or any of the colours of a selection. The text is small, so it needs 4.5 to 1, WCAG's ratio for normal text.
+#[test]
+fn each_icon_colour_has_text_contrast_against_its_halo() -> Result<(), String> {
+    use crate::colours::{BOOL_FALSE_INK, BOOL_ICON_HALO, BOOL_TRUE_INK};
+    for (what, ink) in [("true", BOOL_TRUE_INK), ("false", BOOL_FALSE_INK)] {
+        let ratio = contrast(ink, BOOL_ICON_HALO);
+        check(
+            ratio >= 4.5,
+            &format!("the {what} mark has a contrast of {ratio:.2} to 1 against its halo"),
+        )?;
+    }
+    // The helper agrees with the published extremes, so a mistake in it cannot make the check above pass for nothing.
+    check(
+        (contrast("#000000", "#ffffff") - 21.0).abs() < 1e-6,
+        "black on white is 21 to 1",
+    )?;
+    check((contrast("#ffffff", "#ffffff") - 1.0).abs() < 1e-6, "white on white is 1 to 1")
+}
