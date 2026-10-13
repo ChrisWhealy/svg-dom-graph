@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add demo implementation of ChaCha20 algorithm (``) 
+- Add demo implementation of ChaCha20 algorithm (`df3b2b3`)
+
+## Fixed 
+
+- Stop drag bounds from becoming stale after SVG resize (``)
 
 # [Released]
 

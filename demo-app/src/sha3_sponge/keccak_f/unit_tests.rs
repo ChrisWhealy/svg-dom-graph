@@ -128,8 +128,9 @@ fn states() -> Vec<[u64; 25]> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_round_constant_table_matches_the_specs_own_lfsr() {
-    for round in 0..ROUND_COUNT {
-        assert_eq!(ROUND_CONSTANTS[round], reference_round_constant(round), "RC[{round}]");
+    assert_eq!(ROUND_CONSTANTS.len(), ROUND_COUNT);
+    for (round, &constant) in ROUND_CONSTANTS.iter().enumerate() {
+        assert_eq!(constant, reference_round_constant(round), "RC[{round}]");
     }
 }
 

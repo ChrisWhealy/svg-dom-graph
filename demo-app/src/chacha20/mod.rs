@@ -155,6 +155,17 @@ struct Nodes {
     every_node: Vec<NodeId>,
 }
 
+impl Nodes {
+    /// Every node the viewer may drag. The step list and the operators' operands are all among them.
+    fn movable(&self) -> Vec<NodeId> {
+        let mut all = vec![self.before, self.after, self.list];
+        all.extend(&self.inputs);
+        all.extend(&self.steps);
+        all.extend(&self.outputs);
+        all
+    }
+}
+
 /// Everything the walk needs to move the diagram on one step.
 struct Demo {
     scene: Scene,
@@ -178,11 +189,7 @@ thread_local! {
 ///
 /// Every operator node is drawn with a zero result, which [`apply`] replaces as the walk reaches it. The layout does not
 /// depend on the values, since a hexadecimal word is always as wide as any other.
-fn draw_quarter_round(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Result<(Nodes, NodeId), String> {
-    let draggable = |node: NodeId| -> Result<NodeId, String> {
-        scene.make_draggable_with(node, drag).map_err(stringify)?;
-        Ok(node)
-    };
+fn draw_quarter_round(scene: &Scene, rounds: &Rounds) -> Result<(Nodes, NodeId), String> {
     let column_x = |word: Word| X_MARGIN + COLUMN_PITCH * word.index() as f64;
     let first = &rounds.stages[0];
     let state = state_content(&first.before);
@@ -198,7 +205,7 @@ fn draw_quarter_round(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Resu
     let after_top = outputs_top + word_size.height + STATE_GAP;
 
     let named = |name: &str, content: DataNodeContent, at: Point| -> Result<NodeId, String> {
-        draggable(scene.add_named_data_node(at, name, content).map_err(stringify)?)
+        scene.add_named_data_node(at, name, content).map_err(stringify)
     };
     let fan = |from: NodeId, to: NodeId, index: usize, outward: bool| -> Result<(), String> {
         let options = ConnectorOptions::default()
@@ -263,7 +270,7 @@ fn draw_quarter_round(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Resu
             },
         }
         .map_err(stringify)?;
-        latest[word.index()] = draggable(node)?;
+        latest[word.index()] = node;
         latest_row[word.index()] = Some(row);
 
         operands.push(node);
@@ -317,12 +324,11 @@ fn draw_quarter_round(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Resu
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the keystream block diagram: the state after 20 rounds and the initial state, which are added word by word to
-/// make the block. Returns the node that drives its toolbar.
-fn draw_keystream(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Result<NodeId, String> {
+/// make the block. Returns its three data nodes, which the caller makes draggable, and the node that drives its
+/// toolbar.
+fn draw_keystream(scene: &Scene, rounds: &Rounds) -> Result<(Vec<NodeId>, NodeId), String> {
     let named = |name: &str, content: DataNodeContent, at: Point| -> Result<NodeId, String> {
-        let node = scene.add_named_data_node(at, name, content).map_err(stringify)?;
-        scene.make_draggable_with(node, drag).map_err(stringify)?;
-        Ok(node)
+        scene.add_named_data_node(at, name, content).map_err(stringify)
     };
     let mixed = state_content(&rounds.mixed);
     let size = scene
@@ -362,7 +368,7 @@ fn draw_keystream(scene: &Scene, drag: DragOptions, rounds: &Rounds) -> Result<N
         block_rect.origin.y + block_rect.size.height,
         false,
     )?;
-    driver(scene)
+    Ok((vec![initial, after, block], driver(scene)?))
 }
 
 /// The node whose cells the stepping toolbar walks along, one cell for each position. It is far off-canvas, since it
@@ -458,17 +464,26 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(FIRST_SIZE.0, FIRST_SIZE.1))?;
     crate::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
     let svg = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
-    let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
-    let drag = DragOptions::default().with_bounds(Some(bounds));
 
-    let (nodes, driver) = match stage {
+    let (nodes, driver, movable) = match stage {
         Stage::QuarterRound => {
-            let (nodes, driver) = draw_quarter_round(&scene, drag, &rounds)?;
-            (Some(nodes), driver)
+            let (nodes, driver) = draw_quarter_round(&scene, &rounds)?;
+            let movable = nodes.movable();
+            (Some(nodes), driver, movable)
         },
-        Stage::Keystream => (None, draw_keystream(&scene, drag, &rounds)?),
+        Stage::Keystream => {
+            let (movable, driver) = draw_keystream(&scene, &rounds)?;
+            (None, driver, movable)
+        },
     };
+    // Drawing resized the `<svg>` to fit its content, so the bounds are read only now. A drag handler keeps the bounds
+    // it was given, and cannot be installed twice on the same node.
+    let svg = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
+    let drag = DragOptions::default().with_bounds(Some(view_box_rect(&svg)?));
+    for node in movable {
+        scene.make_draggable_with(node, drag).map_err(stringify)?;
+    }
     scene
         .show_scene_title(walk::title(&rounds, position), SceneTitleOptions::default())
         .map_err(stringify)?;
