@@ -99,6 +99,21 @@ pub(crate) const TYPE_COLOUR_I128: &str = "#e5b4e1";
 /// The `Uuid` shade — pastel lime. A UUID is not a number, so it takes a hue that no integer or float has.
 pub(crate) const TYPE_COLOUR_UUID: &str = "#dfeab4";
 
+/// The `usize` shade — pastel aqua. The pointer-sized widths take a hue of their own, away from the fixed ones.
+pub(crate) const TYPE_COLOUR_USIZE: &str = "#cdeee8";
+
+/// The `isize` shade — a deeper aqua than [`TYPE_COLOUR_USIZE`].
+pub(crate) const TYPE_COLOUR_ISIZE: &str = "#a6dcd2";
+
+/// The `bool` shade — pastel sand, a hue that no number or UUID has, and that is far from the yellow of a selection.
+pub(crate) const TYPE_COLOUR_BOOL: &str = "#f1e6c9";
+
+/// A `true` mark's colour in [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) — a green that reads on every pastel.
+pub(crate) const BOOL_TRUE_INK: &str = "#1a7f37";
+
+/// A `false` mark's colour in [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) — a red that reads on every pastel.
+pub(crate) const BOOL_FALSE_INK: &str = "#cf222e";
+
 /// The `f32` shade — a pastel sky blue. Floating point has no unsigned or signed pairing to echo, so it takes a hue of
 /// its own, away from the apricot, mint, lavender and rose of the integers, and from the yellow, orange and teal of a
 /// selection. The `f64` shade is the deeper of the two, as a signed integer's is.

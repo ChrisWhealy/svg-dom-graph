@@ -11,6 +11,8 @@
 //!   their own.
 //! - [`wide`] — `NodeValues::U128`/`I128`/`Uuid` and `DataFormat::Uuid`: every style, case and layout, cells that fit,
 //!   and no operator accepting a UUID.
+//! - [`bools_and_sizes`] — `NodeValues::Bool`, `Usize` and `Isize`: each `BoolFormat`, icons spoken as words, cells
+//!   that stay wide enough when a value flips, and the logical operators.
 //! - [`validation`] — empty content, a zero grid layout and a blank name are rejected before anything is drawn.
 //! - [`dragging_and_connectors`] — dragging every cell, and ordinary connector routing, including `EdgeAnchors`.
 //! - [`named`] — `Scene::add_named_data_node`: the labelled outer box and its anchoring.
@@ -18,6 +20,7 @@
 //! - [`cell_rect`] — `Scene::cell_rect`.
 
 mod accessibility;
+mod bools_and_sizes;
 mod cell_rect;
 mod dragging_and_connectors;
 mod floats;

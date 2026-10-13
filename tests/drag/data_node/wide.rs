@@ -2,7 +2,7 @@
 //! should, every cell is wide enough for its text, a UUID format is rejected for anything but UUIDs, and no operator
 //! accepts a UUID.
 
-use super::support::{rect_children, text_children, title_of};
+use super::support::{check_fits, texts_of, title_of};
 use crate::common::{check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -23,35 +23,6 @@ fn scene_with(id: &str, content: DataNodeContent) -> Result<Scene, String> {
         .add_data_node(Point::new(10.0, 10.0), content)
         .map_err(|e| e.to_string())?;
     Ok(scene)
-}
-
-fn texts_of(id: &str) -> Result<Vec<String>, String> {
-    let group = nth_group(id, 0)?;
-    Ok(text_children(&group)?
-        .iter()
-        .map(|t| t.text_content().unwrap_or_default())
-        .collect())
-}
-
-/// Every text of node `id` is inside its own cell, which is inside the node.
-fn check_fits(id: &str) -> Result<(), String> {
-    let group = nth_group(id, 0)?;
-    let texts = text_children(&group)?;
-    let rects = rect_children(&group)?;
-    // A single value has one box, and several have an outer box and one for each cell.
-    let cells = if rects.len() == texts.len() { &rects[..] } else { &rects[1..] };
-    check(
-        cells.len() == texts.len(),
-        &format!("{id}: {} rects for {} texts", rects.len(), texts.len()),
-    )?;
-    for (text, rect) in texts.iter().zip(cells) {
-        let (needed, available) = (text.get_bounding_client_rect().width(), rect.get_bounding_client_rect().width());
-        check(
-            needed <= available,
-            &format!("{id}: {:?} needs {needed} but its cell is {available}", text.text_content()),
-        )?;
-    }
-    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

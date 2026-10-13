@@ -1,4 +1,8 @@
-use super::*;
+use super::{
+    bool_format::{ICON_FALSE, ICON_TRUE},
+    *,
+};
+use crate::colours::{BOOL_FALSE_INK, BOOL_TRUE_INK, TEXT_FILL};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A node's content: a set of typed numeric values, displayed as a grid as close to square as the value count allows.
@@ -218,6 +222,64 @@ impl DataNodeContent {
     /// `false` for [`DataFormat::Uuid`] content whose values are not `Uuid`. Every other content is valid.
     pub(crate) fn uuid_format_is_valid(&self) -> bool {
         !matches!(self.format, DataFormat::Uuid(_)) || self.values.is_uuid()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if this content holds `Bool` values.
+    pub(crate) fn holds_bools(&self) -> bool {
+        self.values.is_bool()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::Bool`] content whose values are not `Bool`. Every other content is valid.
+    pub(crate) fn bool_format_is_valid(&self) -> bool {
+        !matches!(self.format, DataFormat::Bool(_)) || self.values.is_bool()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`BoolFormat::Icon`] content, which draws a mark and not a word.
+    pub(crate) fn is_bool_icon(&self) -> bool {
+        self.format == DataFormat::Bool(BoolFormat::Icon)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The fill of a cell that shows `text`: green for a check mark, red for a cross, and the usual text colour for
+    /// every other cell. `text` is what [`for_each_cell_string`](Self::for_each_cell_string) gave that cell.
+    pub(crate) fn ink(&self, text: &str) -> &'static str {
+        Self::ink_for(self.is_bool_icon(), text)
+    }
+
+    /// [`ink`](Self::ink) for a caller that only knows whether the content is [`BoolFormat::Icon`], and so cannot
+    /// borrow the content itself.
+    pub(crate) fn ink_for(icon: bool, text: &str) -> &'static str {
+        match text {
+            ICON_TRUE if icon => BOOL_TRUE_INK,
+            ICON_FALSE if icon => BOOL_FALSE_INK,
+            _ => TEXT_FILL,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// What a screen reader should be told for a cell that shows `text`: `true` or `false` for a mark, and `text`
+    /// itself for every other cell. A mark is a picture, and its glyph would be read out as its Unicode name.
+    pub(crate) fn spoken<'a>(&self, text: &'a str) -> &'a str {
+        Self::spoken_for(self.is_bool_icon(), text)
+    }
+
+    /// [`spoken`](Self::spoken) for a caller that only knows whether the content is [`BoolFormat::Icon`].
+    pub(crate) fn spoken_for(icon: bool, text: &str) -> &str {
+        match text {
+            ICON_TRUE if icon => "true",
+            ICON_FALSE if icon => "false",
+            _ => text,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Both marks of [`BoolFormat::Icon`] content, and `None` for any other content. A cell is drawn as wide as the
+    /// wider of the two, since the node may be asked to change from either to the other.
+    pub(crate) fn bool_icon_marks(&self) -> Option<[&'static str; 2]> {
+        self.is_bool_icon().then_some([ICON_TRUE, ICON_FALSE])
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

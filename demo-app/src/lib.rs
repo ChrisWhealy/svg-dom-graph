@@ -23,6 +23,8 @@
 //! - `panel-128-bit` / `#wide-diagram` — [`wide_values::build_wide_demo`]: a `u128` and an `i128` across their whole
 //!   range, and a `Uuid` of every version written in every way a `UuidFormat` can write it, including the two byte
 //!   layouts a UUID can be stored in.
+//! - `panel-bool-size` / `#bools-sizes-diagram` — [`bools_and_sizes::build_bools_and_sizes_demo`]: a Boolean in every
+//!   `BoolFormat`, `usize` and `isize` at the width of the target, and a truth table of `AND`, `OR` and `XOR` nodes.
 //! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one operand
 //!   node feeding an operator node, for every unary operator this crate names.
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
@@ -55,6 +57,7 @@
 //! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
 //! [`report_panel_error`]) instead of trapping.
 
+mod bools_and_sizes;
 mod data;
 mod edge_anchors;
 mod elbow;
@@ -143,6 +146,7 @@ demo_gallery! {
     "panel-data" => data::build_data_demo,
     "panel-float" => floats::build_float_demo,
     "panel-128-bit" => wide_values::build_wide_demo,
+    "panel-bool-size" => bools_and_sizes::build_bools_and_sizes_demo,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,

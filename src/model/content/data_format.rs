@@ -1,4 +1,4 @@
-use super::{FloatFormat, UuidFormat};
+use super::{BoolFormat, FloatFormat, UuidFormat};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`super::DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
@@ -46,4 +46,14 @@ pub enum DataFormat {
     ///
     /// [`Hexadecimal`](Self::Hexadecimal) and [`Binary`](Self::Binary) show a UUID's sixteen bytes as they are held.
     Uuid(UuidFormat),
+    /// A Boolean written as the [`BoolFormat`] says: the words `true` and `false`, the bits `1` and `0`, or a green
+    /// check mark and a red cross.
+    ///
+    /// Only for [`NodeValues::Bool`](super::NodeValues::Bool). Any other content is rejected with
+    /// [`Error::InvalidBoolFormat`](crate::error::Error::InvalidBoolFormat). Every Boolean has the same width in one
+    /// format, so a node does not outgrow its cells when a value changes.
+    ///
+    /// Every other format reads a Boolean as the single byte it is held in: [`Decimal`](Self::Decimal) is `1` or `0`,
+    /// [`Hexadecimal`](Self::Hexadecimal) is `01` or `00`, and [`Binary`](Self::Binary) is `0000 0001` or `0000 0000`.
+    Bool(BoolFormat),
 }

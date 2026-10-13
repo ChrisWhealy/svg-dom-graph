@@ -40,6 +40,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-data", "Data node"),
     ("panel-float", "Floating point"),
     ("panel-128-bit", "128-bit values and UUIDs"),
+    ("panel-bool-size", "Booleans and sizes"),
     ("panel-operators-unary", "Unary operators"),
     ("panel-operators-binary", "Binary operators"),
     ("panel-operators-arithmetic", "Arithmetic operators"),

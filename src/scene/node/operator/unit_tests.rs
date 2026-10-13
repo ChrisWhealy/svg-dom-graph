@@ -191,6 +191,35 @@ fn a_uuid_operand_is_rejected_by_every_kind_of_operator_and_a_u128_is_not() -> R
 }
 
 #[test]
+fn a_bool_operand_is_accepted_by_a_logical_operator_and_refused_by_any_other() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let flag = graph.add_node(rect(), content(NodeValues::Bool(vec![true])));
+    let number = graph.add_node(rect(), content(NodeValues::U8(vec![1])));
+    check(
+        check_bool_operands(&graph, &[flag], "AND", true).is_ok(),
+        "a logical operator accepts a Boolean",
+    )?;
+    check(
+        matches!(
+            check_bool_operands(&graph, &[flag], "SHL 3", false),
+            Err(Error::OperatorOnBool { ref operator }) if operator == "SHL 3"
+        ),
+        "expected OperatorOnBool naming SHL 3",
+    )?;
+    check(
+        matches!(
+            check_bool_operands(&graph, &[number, flag], "ADD", false),
+            Err(Error::OperatorOnBool { .. })
+        ),
+        "a Boolean as the second operand is refused too",
+    )?;
+    check(
+        check_bool_operands(&graph, &[number], "ADD", false).is_ok(),
+        "a number is an ordinary operand",
+    )
+}
+
+#[test]
 fn an_unknown_operand_is_still_reported_as_unknown_by_the_integer_check() -> Result<(), String> {
     let mut graph = Graph::new();
     let a = graph.add_node(rect(), content(NodeValues::U8(vec![1])));

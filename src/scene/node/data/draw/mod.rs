@@ -217,6 +217,15 @@ impl GridLayoutMetrics {
                 max_width = max_width.max(measure_el.bounding_box()?.size.width);
             }
         }
+        // Edge case: a check mark and a cross come from a symbol font that may not give them the same advance width.
+        // The cell is wide enough for the wider of the two, because a Boolean node is meant to change from either to
+        // the other.
+        if let Some(marks) = content.bool_icon_marks() {
+            for mark in marks {
+                measure_el.set_text(mark);
+                max_width = max_width.max(measure_el.bounding_box()?.size.width);
+            }
+        }
         measure_el.remove();
         guard.release();
 
@@ -505,14 +514,14 @@ fn draw_cells(
             text.set_dominant_baseline(DominantBaseline::Middle)?;
             text.set_font_family(GRID_FONT_FAMILY)?;
             text.set_font_size(GRID_FONT_SIZE)?;
-            text.set_fill(TEXT_FILL)?;
+            text.set_fill(content.ink(cell_text))?;
             if content.is_plain_text() {
                 text.set_attr("style", "white-space: pre")?;
             }
             cells.texts.push(text.clone());
 
             if single_value {
-                cells.single_value_text.push_str(cell_text);
+                cells.single_value_text.push_str(content.spoken(cell_text));
                 text.set_attr_display(scratch, "x", content_origin.x + layout.cell.width / 2.0)?;
                 text.set_attr_display(scratch, "y", content_origin.y + layout.cell.height / 2.0)?;
                 group.append(&text)?;
@@ -541,7 +550,13 @@ fn draw_cells(
                         draw_row_label(svg, scratch, group, guard, &label_scratch, cell_origin, layout.cell)?;
                     }
                 }
-                cell_name_into(content.labelling(), i, layout.cols, cell_text, &mut name_scratch);
+                cell_name_into(
+                    content.labelling(),
+                    i,
+                    layout.cols,
+                    content.spoken(cell_text),
+                    &mut name_scratch,
+                );
                 text.set_attr("aria-label", &name_scratch)?;
                 group.append(&text)?;
                 guard.release();

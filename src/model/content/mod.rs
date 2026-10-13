@@ -60,9 +60,12 @@
 //!   `f32` and `f64` only. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show a float's IEEE-754 bits.
 //! - [`DataFormat::Uuid`]: a [`Uuid`] as grouped hexadecimal digits, hyphenated, braced or as a URN, as [`UuidFormat`]
 //!   says. On `Uuid` values only. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show a UUID's sixteen bytes.
-//! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal has no natural byte boundary to
-//!   split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect under `Decimal`: the same number
-//!   reads the same regardless of which byte order produced it.
+//! - [`DataFormat::Bool`]: a Boolean as [`BoolFormat`] says: the words `true` and `false`, the bits `1` and `0`, or a
+//!   green check mark and a red cross. On `Bool` values only. Every other format reads a Boolean as the one byte it is
+//!   held in.
+//! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal
+//!   has no natural byte boundary to split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect
+//!   under `Decimal`: the same number reads the same regardless of which byte order produced it.
 //!
 //! [`ByteOrder::BigEndian`]'s determinism, independent of host endianness, suits register/value display. A reader there
 //! expects the digits to read the same way a number is normally written down. A caller visualising an actual in-memory
@@ -83,15 +86,17 @@
 //!
 //! `type_colour` distinguishes datatypes visually, using colour. But colour alone is invisible to assistive technology,
 //! and unreliable for a colour-blind reader. This crate offers no caller-facing way to map a colour back to a type name
-//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g. "u8"/"u16"/"u32"/"u64"/"u128", "i8"/"i16"/"i32"/"i64"/"i128", or "uuid" — as
-//! an SVG `<title>` on the node's own `<g>`. This gives a native browser tooltip when the mouse pointer hovers over any
-//! child: the rect or the rendered digits alike.
+//! either. So `scene::node::draw_content_box` also attaches the node's own type name — e.g.
+//! "u8"/"u16"/"u32"/"u64"/"u128"/"usize", "i8"/"i16"/"i32"/"i64"/"i128"/"isize", "bool" or "uuid" — as an SVG `<title>`
+//! on the node's own `<g>`. This gives a native browser tooltip when the mouse pointer hovers over any child: the rect
+//! or the rendered digits alike.
 //!
 //! Neither clutters the rendered digits themselves: the type stays discoverable, not displayed. This is deliberately
 //! not attached to each rect/text individually. A `<title>` names only its own direct parent, not a sibling. So a
 //! `<title>` on a value's own rect would not produce a tooltip over that same value's own text — a sibling element, not
 //! a descendant. And a `<title>` as a child of the `<text>` element itself would leak its own text into
 //! `text.textContent`, corrupting the rendered digits read back from the DOM.
+mod bool_format;
 mod byte_order;
 mod data_format;
 mod data_node_content;
@@ -103,6 +108,7 @@ mod operators;
 mod selection;
 mod uuid_format;
 
+pub use bool_format::BoolFormat;
 pub use byte_order::ByteOrder;
 pub use data_format::DataFormat;
 pub use data_node_content::DataNodeContent;

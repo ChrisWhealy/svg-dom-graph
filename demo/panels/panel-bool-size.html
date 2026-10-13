@@ -1,0 +1,35 @@
+<section class="section" id="panel-bool-size">
+    <h2>Booleans and pointer-sized integers</h2>
+    <p>A data node can hold <code>bool</code> values, and <code>usize</code> and <code>isize</code>, the integers that
+        are as wide as a pointer. Each is a type of its own, with its own colour and its own name for assistive
+        technology.</p>
+    <dl>
+        <dt>Booleans</dt>
+        <dd>
+            <p>A <code>BoolFormat</code> chooses how <code>true</code> and <code>false</code> are written: as the words,
+                as the bits <code>1</code> and <code>0</code>, or as a green check mark and a red cross. The marks have
+                different shapes, so colour is not the only thing that tells them apart, and a screen reader is told
+                <code>true</code> or <code>false</code> and never the name of a glyph. Every format gives both values a
+                cell of the same width, so a node that changes from one to the other does not outgrow its cells.
+                Under any other format a Boolean is the single byte it is held in.</p>
+        </dd>
+        <dt>Logical operators</dt>
+        <dd>
+            <p>A Boolean can be an operand of <code>NOT</code>, <code>AND</code>, <code>OR</code>, <code>XOR</code>,
+                <code>NAND</code>, <code>NOR</code> and <code>XNOR</code>, as the truth table below shows, whichever way
+                each is written: each row of the table uses a different format. It cannot be
+                an operand of a shift, a rotation, a reversal or an arithmetic operator, since there is no sum of two
+                Booleans and no <code>true</code> to rotate. Use a <code>u8</code> for a one-bit number.</p>
+        </dd>
+        <dt>Pointer-sized integers</dt>
+        <dd>
+            <p>The width of a <code>usize</code> or an <code>isize</code> is that of the target. This demo runs on
+                <code>wasm32</code>, where it is 32 bits, so the largest <code>usize</code> is
+                <code>4294967295</code> and its hexadecimal is four bytes. On a 64-bit host it would have twenty digits
+                and eight bytes. The <code>wasm64</code> target is not yet available on a stable compiler, so this crate
+                makes no provision for it.</p>
+        </dd>
+    </dl>
+    <div class="canvas" id="bools-sizes-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

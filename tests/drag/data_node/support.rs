@@ -1,5 +1,6 @@
 //! Shared DOM query helpers for every scenario module in this test group.
 
+use crate::common::{check, nth_group};
 use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -35,4 +36,35 @@ pub(super) fn title_of(element: &web_sys::Element) -> Result<Option<String>, Str
         .query_selector(":scope > title")
         .map_err(|e| format!("{e:?}"))?
         .map(|title| title.text_content().unwrap_or_default()))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text of every cell of the first node in `id`, in document order.
+pub(super) fn texts_of(id: &str) -> Result<Vec<String>, String> {
+    let group = nth_group(id, 0)?;
+    Ok(text_children(&group)?
+        .iter()
+        .map(|t| t.text_content().unwrap_or_default())
+        .collect())
+}
+
+/// Every text of node `id` is inside its own cell, which is inside the node.
+pub(super) fn check_fits(id: &str) -> Result<(), String> {
+    let group = nth_group(id, 0)?;
+    let texts = text_children(&group)?;
+    let rects = rect_children(&group)?;
+    // A single value has one box, and several have an outer box and one for each cell.
+    let cells = if rects.len() == texts.len() { &rects[..] } else { &rects[1..] };
+    check(
+        cells.len() == texts.len(),
+        &format!("{id}: {} rects for {} texts", rects.len(), texts.len()),
+    )?;
+    for (text, rect) in texts.iter().zip(cells) {
+        let (needed, available) = (text.get_bounding_client_rect().width(), rect.get_bounding_client_rect().width());
+        check(
+            needed <= available,
+            &format!("{id}: {:?} needs {needed} but its cell is {available}", text.text_content()),
+        )?;
+    }
+    Ok(())
 }

@@ -99,6 +99,9 @@ pub enum Error {
     /// `DataFormat::Uuid` content that is not `Uuid` values. Rejected before drawing anything or touching the graph's
     /// model, so a rejected call leaves the scene unchanged.
     InvalidUuidFormat,
+    /// `DataFormat::Bool` content that is not `Bool` values. Rejected before drawing anything or touching the graph's
+    /// model, so a rejected call leaves the scene unchanged.
+    InvalidBoolFormat,
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
@@ -142,6 +145,12 @@ pub enum Error {
     /// `I128`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene
     /// unchanged.
     OperatorOnUuid { operator: String },
+    /// An operator node was given Booleans as operands, and it is not one that a Boolean has a meaning under.
+    ///
+    /// `NOT`, `AND`, `OR`, `XOR`, `NAND`, `NOR` and `XNOR` are accepted. A shift, a rotation, a bit or byte reversal
+    /// and every arithmetic operator are not, since there is no sum of two Booleans and no `true` to rotate. Rejected
+    /// before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
+    OperatorOnBool { operator: String },
     /// A two-input operator constructor — `Scene::add_binary_operator_node`/`_with`, or
     /// `Scene::add_arithmetic_operator_node`/`_with` — was given the same node as both of `inputs`.
     ///
@@ -274,6 +283,7 @@ impl fmt::Display for Error {
                 )
             },
             Error::InvalidUuidFormat => write!(f, "a UUID format needs Uuid values"),
+            Error::InvalidBoolFormat => write!(f, "a Boolean format needs Bool values"),
             Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
@@ -290,6 +300,12 @@ impl fmt::Display for Error {
             },
             Error::OperatorOnUuid { operator } => {
                 write!(f, "{operator} cannot act on UUIDs: a UUID is an identifier, not a number")
+            },
+            Error::OperatorOnBool { operator } => {
+                write!(
+                    f,
+                    "{operator} cannot act on bool: only NOT, AND, OR, XOR, NAND, NOR and XNOR can"
+                )
             },
             Error::OperatorResultNotSingleValue(len) => {
                 write!(f, "operator result must hold exactly one value, found {len}")
