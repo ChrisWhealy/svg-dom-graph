@@ -324,6 +324,28 @@ pub fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many times the attribute `name` is written (set to anything, even to the value it already has) anywhere under
+/// `group` while `act` runs.
+pub fn attribute_writes_during(
+    group: &web_sys::Element,
+    name: &str,
+    act: impl FnOnce() -> Result<(), String>,
+) -> Result<u32, String> {
+    let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})
+        as Box<dyn FnMut(js_sys::Array, web_sys::MutationObserver)>);
+    let observer = web_sys::MutationObserver::new(ignore.as_ref().unchecked_ref()).map_err(|e| format!("{e:?}"))?;
+    let options = web_sys::MutationObserverInit::new();
+    options.set_subtree(true);
+    options.set_attributes(true);
+    options.set_attribute_filter(&js_sys::Array::of1(&name.into()));
+    observer.observe_with_options(group, &options).map_err(|e| format!("{e:?}"))?;
+    act()?;
+    let seen = observer.take_records().length();
+    observer.disconnect();
+    Ok(seen)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes `Element.setAttribute` throw for the named attributes while it is alive, and puts the real one back when
 /// dropped. For a test that needs a DOM write to fail on purpose and then succeed on a retry.
 pub struct FailingWrites;

@@ -2,11 +2,11 @@
 //! The cells keep their size, shape, selection and colours. Each cell's own text and accessible name follow the new
 //! values, and so does a single value's own accessible name and tooltip.
 
-use crate::common::{check, make_svg, mutations_during, nth_group};
+use crate::common::{attribute_writes_during, check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error,
-    scene::{DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, UnaryOperator},
+    scene::{BoolFormat, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, Selection, UnaryOperator},
 };
 use wasm_bindgen::JsCast;
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -335,4 +335,46 @@ fn a_single_value_is_rewritten_only_when_it_changes() -> Result<(), String> {
         .map_err(|e| e.to_string())?;
     let label = group.get_attribute("aria-label").unwrap_or_default();
     check(label.contains("u8 = 9"), &format!("got {label:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Only a Boolean icon ever changes colour. Replacing a number, a float or a UUID writes no `fill`, which matters since
+/// `set_data_values` is called for every step of an animation. A replaced icon does write one.
+#[wasm_bindgen_test]
+fn only_a_boolean_icon_has_its_fill_rewritten() -> Result<(), String> {
+    let svg = make_svg("set-values-fill", Size::new(600.0, 300.0), Size::new(600.0, 300.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let add =
+        |x: f64, content: DataNodeContent| scene.add_data_node(Point::new(x, 10.0), content).map_err(|e| e.to_string());
+    let integers = add(10.0, DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal))?;
+    let single = add(150.0, DataNodeContent::new(NodeValues::I32(vec![-5]), DataFormat::Decimal))?;
+    let floats = add(
+        250.0,
+        DataNodeContent::new(NodeValues::F64(vec![1.5, 2.5]), DataFormat::Decimal),
+    )?;
+    let icons = add(
+        400.0,
+        DataNodeContent::new(NodeValues::Bool(vec![true, true]), DataFormat::Bool(BoolFormat::Icon)),
+    )?;
+    let fill_writes = |index: u32, node, values: NodeValues| -> Result<u32, String> {
+        attribute_writes_during(&nth_group("set-values-fill", index)?, "fill", || {
+            scene.set_data_values(node, values).map_err(|e| e.to_string())
+        })
+    };
+    check(
+        fill_writes(0, integers, NodeValues::U8(vec![1, 9]))? == 0,
+        "an integer cell should not be given a fill",
+    )?;
+    check(
+        fill_writes(1, single, NodeValues::I32(vec![7]))? == 0,
+        "a single number should not be given a fill",
+    )?;
+    check(
+        fill_writes(2, floats, NodeValues::F64(vec![1.5, 9.5]))? == 0,
+        "a float cell should not be given a fill",
+    )?;
+    check(
+        fill_writes(3, icons, NodeValues::Bool(vec![true, false]))? == 1,
+        "the one icon that changed should be given a fill, and only it",
+    )
 }

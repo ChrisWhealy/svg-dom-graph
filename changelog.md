@@ -14,7 +14,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Improve contrast when true/false icons are selected (``) 
+- Improve contrast when true/false icons are selected (`0c34e47`) 
+
+## Fixed
+
+- Remove unnecessary DOM writes and allocation in `set_data_values` (``) 
 
 # [Released]
 
