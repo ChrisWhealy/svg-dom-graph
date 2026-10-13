@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.34] - 2026-10-14
+# [Released]
+
+## [0.2.34] - 2026-10-13
 
 ## Added
 
@@ -14,17 +16,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Extend CDP regression tests for browser-facing state transition behaviour (`c77785d`)
 - Add accessibility regression test (`4369eab`)
 
-## Changed 
+## Changed
 
 - Hide the invisible SVG step node from assistive technology across all demos (`361f984`)
-- Derive lock file directory from resolved target directory (``)
+- Derive lock file directory from resolved target directory (`16f5a7e`)
 
-## Fixed 
+## Fixed
 
 - Stop drag bounds from becoming stale after SVG resize (`0bff5c9`)
 - Prevent block counter wraparound (`05a58cd`)
-
-# [Released]
 
 ## [0.2.33] - 2026-10-13
 
