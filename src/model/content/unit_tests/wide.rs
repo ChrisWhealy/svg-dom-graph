@@ -10,7 +10,7 @@ fn uuid_text(value: u128, format: UuidFormat) -> String {
     cells(&content).remove(0)
 }
 
-/// The UUID of RFC 9562's own examples.
+/// An illustrative UUID value, with no specific meaning of its own.
 const EXAMPLE: u128 = 0x123e4567_e89b_12d3_a456_426614174000;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

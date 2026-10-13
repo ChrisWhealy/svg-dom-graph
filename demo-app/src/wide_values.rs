@@ -56,7 +56,7 @@ const VERSIONS: [(u128, Option<u8>); 9] = [
     (u128::MAX, None),
 ];
 
-/// The UUID that every format below writes, which is the example RFC 9562 itself uses.
+/// The UUID that every format below writes. It is an illustrative value, with no specific meaning of its own.
 const EXAMPLE: u128 = 0x123e4567_e89b_12d3_a456_426614174000;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
