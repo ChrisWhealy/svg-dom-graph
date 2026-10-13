@@ -76,11 +76,11 @@ pub(crate) struct BoxHandles {
     pub(crate) cell_rects: Vec<SvgNode>,
     /// Every cell's own `<text>`, flat, in the same order as [`cell_rects`](Self::cell_rects). `Scene::set_data_values`
     /// rewrites them, and `Scene::set_unreached_cells` dims them along with their boxes. Empty for a plain label node.
-    /// An operator node has its one result text here too, though [`replaceable`](Self::replaceable) is `false` for it.
+    /// An operator node has its one result text here too.
     pub(crate) cell_texts: Vec<SvgNode>,
     /// Whether `Scene::set_data_values` may replace this node's values. `true` for a node drawn from a
-    /// `DataNodeContent`, `false` for a plain label node and for an operator node, whose result the caller works out
-    /// once, when it adds the node.
+    /// `DataNodeContent` and for an operator node, whose result is a `DataNodeContent` too. `false` for a plain label
+    /// node.
     pub(crate) replaceable: bool,
     /// Where every data-node cell sits, in the node's own local coordinates, as one small [`CellGrid`] and not a
     /// rectangle per cell. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. `None` for

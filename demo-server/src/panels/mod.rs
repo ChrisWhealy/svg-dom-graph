@@ -50,6 +50,7 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-sha1", "SHA1"),
     ("panel-sha2-256", "SHA2-256"),
     ("panel-sha3-sponge", "SHA3 Sponge"),
+    ("panel-chacha20", "ChaCha20"),
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

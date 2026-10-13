@@ -18,7 +18,7 @@ Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is
 * `panels/*.html` one fragment per demo panel
 * `style.css` the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share a common visual style
 * `img/` images for the panels. Every file directly inside it is staged as `img/<name>`, so an SVG `<image>` can refer to `img/<name>` by a relative URL. Adding a file needs no code change, but the server picks its media type from the file extension, so a file must be named for its real format (a WebP file called `.svg` will not display)
-* `sha1-window.html`, `sha2-256-window.html` and `sha3-sponge-window.html` the pages that the large hash demos open in a window of their own
+* `sha1-window.html`, `sha2-256-window.html`, `sha3-sponge-window.html` and `chacha20-window.html` the pages that the large demos open in a window of their own
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 

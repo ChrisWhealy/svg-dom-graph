@@ -28,6 +28,7 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo/sha3-sponge-window.html")?;
     copy("demo/sha2-256-window.html")?;
     copy("demo/sha1-window.html")?;
+    copy("demo/chacha20-window.html")?;
     for id in panels::panel_ids() {
         copy(&format!("demo/panels/{id}.html"))?;
     }
@@ -65,7 +66,12 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
             return Err(format!("expected img/{image} to be staged beside index.html"));
         }
     }
-    for page in ["sha3-sponge-window.html", "sha2-256-window.html", "sha1-window.html"] {
+    for page in [
+        "sha3-sponge-window.html",
+        "sha2-256-window.html",
+        "sha1-window.html",
+        "chacha20-window.html",
+    ] {
         if !stage.stage_dir.join(page).is_file() {
             return Err(format!("expected {page} to be staged alongside index.html"));
         }

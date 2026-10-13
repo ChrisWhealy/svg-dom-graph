@@ -13,6 +13,7 @@
 - [Cell Selection](cell-selection.md)
 - [Nested Scenes](nested-scenes.md)
 - [Hash Algorithms](hash-algorithms.md)
+- [ChaCha20](chacha20.md)
 - [Internal Workings of the Demo Server](demo-internals.md)
 
 ## Running the Demo

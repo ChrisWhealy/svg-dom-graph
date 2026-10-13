@@ -1,0 +1,31 @@
+<section class="section" id="panel-chacha20">
+    <h2>ChaCha20</h2>
+    <p>ChaCha20 is a stream cipher. It turns a 256-bit key, a 96-bit nonce and a block counter into a stream of
+        pseudo-random bytes, and XORs that keystream into the message. Decrypting is the same operation.</p>
+    <p>The keystream comes from a state of sixteen 32-bit words, drawn at the top as a 4 by 4 matrix. The first four
+        words are fixed constants, the next eight are the key, then comes the counter, and the last three are the
+        nonce. Twenty rounds mix the state, and each round applies the <em>quarter round</em> to four of its words.</p>
+    <p>The quarter round takes four words, <code>a</code>, <code>b</code>, <code>c</code> and <code>d</code>, and
+        mixes them with three operations: addition, XOR and rotation. It has 12 steps:</p>
+    <pre style="margin-bottom: 1rem;"><code>a += b;  d ^= a;  d &lt;&lt;&lt;= 16;
+c += d;  b ^= c;  b &lt;&lt;&lt;= 12;
+a += b;  d ^= a;  d &lt;&lt;&lt;= 8;
+c += d;  b ^= c;  b &lt;&lt;&lt;= 7;</code></pre>
+    <p>Each word runs down a column of its own. Every step is an operator node in the column of the word it updates:
+        <code>ADD</code> for <code>+=</code>, <code>XOR</code> for <code>^=</code> and <code>ROTL</code> for
+        <code>&lt;&lt;&lt;=</code>. An <code>ADD</code> or <code>XOR</code> takes the latest value of a second word,
+        so its connector crosses from that word's column.</p>
+    <p>Odd rounds apply the quarter round to the four columns of the state, and even rounds apply it to the four
+        diagonals. The demo walks through all 20 rounds, one quarter round at a time. At the top is the state before the
+        quarter round, with the four words it mixes marked, and its rows are labelled <code>a</code> to
+        <code>d</code>. Those four words feed the columns. The four words that come out make up the state below. The
+        state of RFC 8439, section 2.3.2, is the first. After the 80th quarter round, one more step shows the keystream
+        block, which is the state after 20 rounds added word by word to the initial state.</p>
+    <p>Every value shown is a real result, worked out in plain Rust. The demo's own tests check the quarter round, the
+        whole block function and a complete encryption against the RFC's published values.</p>
+    <p>"Next" and "Prev" move one step, and the "Round" buttons move one whole round. The current step and the values it
+        reads are highlighted. Anything the walk has not reached yet shows zero and is drawn faint, and "Restart" returns
+        every node to that state.</p>
+    <p>The scene is large, so it opens in a window of its own, sized to fit it.</p>
+    <button id="chacha20-open" class="open-window" type="button">Open the demo in its own window</button>
+</section>

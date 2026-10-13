@@ -99,10 +99,35 @@ fn incompatible_values_are_rejected_and_change_nothing() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An operator node's own result and a plain label node are rejected, and a rejected call changes nothing.
+/// A plain label node is rejected, and a rejected call changes nothing.
 #[wasm_bindgen_test]
-fn operator_results_and_label_nodes_are_rejected() -> Result<(), String> {
+fn a_label_node_is_rejected() -> Result<(), String> {
     let svg = make_svg("set-values-rejected", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let label = scene
+        .add_node(Point::new(10.0, 150.0), Size::new(60.0, 30.0), "plain")
+        .map_err(|e| e.to_string())?;
+    let before = nth_group("set-values-rejected", 0)?.get_attribute("aria-label");
+
+    check(
+        matches!(
+            scene.set_data_values(label, NodeValues::U32(vec![2])),
+            Err(Error::IncompatibleNodeValues(_))
+        ),
+        "a plain label node was accepted",
+    )?;
+    check(
+        nth_group("set-values-rejected", 0)?.get_attribute("aria-label") == before,
+        "a rejected call changed the label node",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An operator node's own result is replaced in place, like a data node's. Its text and accessible name quote the new
+/// value, its operand and its selection are untouched, and a value of another type is rejected without a change.
+#[wasm_bindgen_test]
+fn an_operator_result_is_replaced_in_place() -> Result<(), String> {
+    let svg = make_svg("set-values-operator", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
     let operand = scene
         .add_data_node(
@@ -115,30 +140,39 @@ fn operator_results_and_label_nodes_are_rejected() -> Result<(), String> {
             Point::new(200.0, 10.0),
             UnaryOperator::Not,
             operand,
-            DataNodeContent::new(NodeValues::U32(vec![!1]), DataFormat::Hexadecimal),
+            DataNodeContent::new(NodeValues::U32(vec![0]), DataFormat::Hexadecimal),
         )
         .map_err(|e| e.to_string())?;
-    let label = scene
-        .add_node(Point::new(10.0, 150.0), Size::new(60.0, 30.0), "plain")
-        .map_err(|e| e.to_string())?;
-    let before = nth_group("set-values-rejected", 1)?.get_attribute("aria-label");
+    scene.set_selection(operator, Selection::Cell(0)).map_err(|e| e.to_string())?;
 
-    for (name, node) in [("an operator node", operator), ("a plain label node", label)] {
-        check(
-            matches!(
-                scene.set_data_values(node, NodeValues::U32(vec![2])),
-                Err(Error::IncompatibleNodeValues(_))
-            ),
-            &format!("{name} was accepted"),
-        )?;
-    }
+    scene
+        .set_data_values(operator, NodeValues::U32(vec![0xFFFF_FFFE]))
+        .map_err(|e| e.to_string())?;
+    let group = nth_group("set-values-operator", 1)?;
+    // The operator's own label comes first, then its result.
+    let texts = cell_texts(&group)?;
     check(
-        nth_group("set-values-rejected", 1)?.get_attribute("aria-label") == before,
-        "a rejected call changed the operator node",
+        texts == ["NOT", "FF FF FF FE"],
+        &format!("the operator's own result text was not rewritten: {texts:?}"),
     )?;
-    // The rejected call must not have half-applied: it checked the node before touching its content, so selecting a cell
-    // of the operator, which reads that content, still succeeds.
-    scene.set_selection(operator, Selection::Cell(0)).map_err(|e| e.to_string())
+    let label = group.get_attribute("aria-label").unwrap_or_default();
+    check(
+        label.contains("u32 = FF FF FF FE") && !label.contains("u32 = 00 00 00 00"),
+        &format!("the operator's accessible name was not rewritten: {label}"),
+    )?;
+    check(label.contains("cell 0"), &format!("the selection was lost: {label}"))?;
+
+    check(
+        matches!(
+            scene.set_data_values(operator, NodeValues::U16(vec![1])),
+            Err(Error::IncompatibleNodeValues(_))
+        ),
+        "a value of another type was accepted",
+    )?;
+    check(
+        cell_texts(&group)? == ["NOT", "FF FF FF FE"],
+        "a rejected call changed the operator's result",
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

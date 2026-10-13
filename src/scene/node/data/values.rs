@@ -58,14 +58,15 @@ impl Scene {
     /// For a node drawn via [`add_data_node`](Self::add_data_node) or [`add_named_data_node`](Self::add_named_data_node)
     /// and their `_with` variants. A single-value node is replaced too. Its own accessible name and tooltip quote the
     /// value, so those are rewritten as well, keeping every relationship and selection clause after it. An operator
-    /// node's own result is rejected. Its value is computed by the caller when the node is added, and there is no cell
-    /// of its own to rewrite.
+    /// node's own result is replaced the same way. The library never evaluates an operator, so the caller works out
+    /// the new result just as it did when it added the node. Nothing downstream of the node is changed: a node that
+    /// takes this one as an operand keeps the result it was given.
     ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
-    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node drawn with cells of its own, or if `values`
+    /// Returns [`Error::IncompatibleNodeValues`] if `id` is not a data node or an operator node, or if `values`
     /// has a different type or a different number of values. Checked before changing anything.
     ///
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
@@ -75,8 +76,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
 
         // Everything that can reject the call is checked before anything changes. Only a node drawn from a
-        // `DataNodeContent` can be replaced. An operator node's own result is worked out by the caller when the node is
-        // added.
+        // `DataNodeContent`, or an operator node, whose result is one too, can be replaced.
         //
         // `graph` and `node_handles` are separate fields, so the content and the cells' own `<text>` elements are
         // borrowed side by side. Each cell is then rewritten as it is formatted, with no list of texts built first.

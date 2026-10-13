@@ -49,6 +49,10 @@
 //!   construction, computing SHA3-256 of one short message. "Keccak f(1600)" is a genuine container node, nesting all
 //!   24 real rounds of the permutation, and each round nests its five real functions. Every value is derived from the
 //!   one upstream of it — see `sha3_sponge`'s own module doc comment.
+//! - `panel-chacha20` / `#chacha20-diagram` — [`chacha20::build_chacha20_demo`]: all 20 rounds of ChaCha20, one quarter
+//!   round at a time, drawn as the four columns `a`, `b`, `c` and `d`. Each of the 12 steps of a quarter round is an
+//!   operator node in the column of the word it updates, and every value is a real result, worked out in plain Rust.
+//!   The scene is large, so it opens in a window of its own, as the hash demos' do.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
@@ -58,6 +62,7 @@
 //! [`report_panel_error`]) instead of trapping.
 
 mod bools_and_sizes;
+mod chacha20;
 mod data;
 mod edge_anchors;
 mod elbow;
@@ -156,6 +161,7 @@ demo_gallery! {
     "panel-sha1" => sha1::build_sha1_demo + sha1::FILES,
     "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
+    "panel-chacha20" => chacha20::build_chacha20_demo + chacha20::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -172,6 +178,14 @@ pub fn init_sha3_sponge_window() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn init_sha2_256_window() -> Result<(), JsValue> {
     sha2_256::build_sha2_256_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the ChaCha20 scene in `chacha20-window.html`, the window the gallery's own ChaCha20 panel opens. Call it
+/// once, from that page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_chacha20_window() -> Result<(), JsValue> {
+    chacha20::build_chacha20_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

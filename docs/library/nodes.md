@@ -40,7 +40,8 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 - `set_data_values` replaces the values of an existing data node without redrawing it.
   The new values must have the same type and count as the node was drawn with, so its size, shape, connectors, selection and marks are all unchanged.
   Its accessible name is rewritten to quote the new values, and a value with more decimal digits than the node was drawn with overflows its cell.
-  An operator node's own result cannot be replaced, because the caller supplied it as part of the node.
+  An operator node's own result can be replaced in the same way, and the caller works out the new result, as it did when it added the node.
+  Nothing downstream of that node changes, so a node that takes it as an operand keeps the result it was given.
   This is what lets a stepping demo update a diagram in place instead of drawing it again.
 
 - `add_unary_operator_node`/`_with`, `add_binary_operator_node`/`_with`, and `add_arithmetic_operator_node`/`_with` each draw a node labelled with the operation name that produced the value it displays.
