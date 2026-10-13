@@ -13,10 +13,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Extend demo to shown signed integers and floating point values (`1909296`)
 - Add support for `u128`, `i128` and `UUID` values (`8a45cdd`)
 - Add `UUIDv8` to demo (`79a7b51`)
+- Extend test coverage to include extreme `u128`/`i128` values (``)
 
 ## Fixed
 
-- Doc only: Clarify example `UUID` value (``)
+- Doc only: Clarify example `UUID` value (`06f1e49`)
 
 # [Released]
 

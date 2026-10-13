@@ -3,10 +3,10 @@
 //! accepts a UUID.
 
 use super::support::{rect_children, text_children, title_of};
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{check, make_svg, mutations_during, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
-    Error,
+    Error, NodeId,
     scene::{
         ArithmeticOperator, BinaryOperator, DataFormat, DataNodeContent, GridLayout, NodeValues, Scene, UnaryOperator,
         Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle,
@@ -217,4 +217,169 @@ fn operators_accept_128_bit_numbers_and_refuse_uuids() -> Result<(), String> {
         &format!("expected OperatorOnUuid for NOT, got {unary:?}"),
     )?;
     check(!drawn(5), "a rejected operator should draw nothing")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A node of `content`, drawn alone, and the node it is.
+fn scene_and_node(id: &str, content: DataNodeContent) -> Result<(Scene, NodeId), String> {
+    let svg = make_svg(id, Size::new(900.0, 400.0), Size::new(900.0, 400.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_data_node(Point::new(10.0, 10.0), content)
+        .map_err(|e| e.to_string())?;
+    Ok((scene, node))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Replacing `u128` values with the smallest and then the largest keeps the node's size, rewrites every cell, and no
+/// text overflows its cell, since the node was drawn wide enough for the largest.
+#[wasm_bindgen_test]
+fn extreme_u128_values_replace_in_place_and_still_fit() -> Result<(), String> {
+    let (scene, node) = scene_and_node(
+        "set-u128",
+        DataNodeContent::new(NodeValues::U128(vec![u128::MAX, 1]), DataFormat::Decimal)
+            .with_layout(GridLayout::Columns(1)),
+    )?;
+    let rect_before = scene.node_rect(node).map_err(|e| e.to_string())?;
+    for (values, expected) in [
+        (vec![0, u128::MAX], ["0", "340282366920938463463374607431768211455"]),
+        (vec![u128::MAX, 0], ["340282366920938463463374607431768211455", "0"]),
+        (
+            vec![1 << 64, 1 << 127],
+            ["18446744073709551616", "170141183460469231731687303715884105728"],
+        ),
+    ] {
+        scene
+            .set_data_values(node, NodeValues::U128(values))
+            .map_err(|e| e.to_string())?;
+        let texts = texts_of("set-u128")?;
+        check(texts == expected, &format!("expected {expected:?}, got {texts:?}"))?;
+        check_fits("set-u128")?;
+        check(
+            scene.node_rect(node).map_err(|e| e.to_string())? == rect_before,
+            "the node's own rect changed",
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An `i128` crosses zero and both extremes, and the sign is written only when the value is negative. The node was
+/// drawn for the most negative value, which is the widest, so every replacement fits.
+#[wasm_bindgen_test]
+fn extreme_i128_values_replace_across_zero_and_still_fit() -> Result<(), String> {
+    let (scene, node) = scene_and_node(
+        "set-i128",
+        DataNodeContent::new(NodeValues::I128(vec![i128::MIN, i128::MAX]), DataFormat::Decimal)
+            .with_layout(GridLayout::Columns(1)),
+    )?;
+    for (values, expected) in [
+        (
+            vec![i128::MAX, i128::MIN],
+            [
+                "170141183460469231731687303715884105727",
+                "-170141183460469231731687303715884105728",
+            ],
+        ),
+        (vec![-1, 0], ["-1", "0"]),
+        (vec![0, 1], ["0", "1"]),
+    ] {
+        scene
+            .set_data_values(node, NodeValues::I128(values))
+            .map_err(|e| e.to_string())?;
+        let texts = texts_of("set-i128")?;
+        check(texts == expected, &format!("expected {expected:?}, got {texts:?}"))?;
+        check_fits("set-i128")?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A single `i128` is replaced in place across zero and both extremes, and its accessible name and tooltip follow it.
+#[wasm_bindgen_test]
+fn a_single_i128_follows_its_value_in_text_name_and_tooltip() -> Result<(), String> {
+    let (scene, node) = scene_and_node(
+        "set-i128-single",
+        DataNodeContent::new(NodeValues::I128(vec![i128::MIN]), DataFormat::Decimal),
+    )?;
+    let group = nth_group("set-i128-single", 0)?;
+    for value in [i128::MAX, 0, -1, i128::MIN] {
+        scene
+            .set_data_values(node, NodeValues::I128(vec![value]))
+            .map_err(|e| e.to_string())?;
+        let expected = format!("i128 = {value}");
+        check(
+            texts_of("set-i128-single")? == [value.to_string()],
+            &format!("text for {value}"),
+        )?;
+        check(
+            group.get_attribute("aria-label").as_deref() == Some(expected.as_str()),
+            &format!("aria-label {:?}, expected {expected:?}", group.get_attribute("aria-label")),
+        )?;
+        check(
+            title_of(&group)?.as_deref() == Some(expected.as_str()),
+            "the tooltip should match",
+        )?;
+    }
+    check_fits("set-i128-single")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A node of UUIDs is replaced by others, and the text of every cell is as wide as before, whatever the UUID. That is
+/// what lets one measurement serve a node's every UUID. Unchanged UUIDs are not rewritten, and values of another type
+/// are rejected.
+#[wasm_bindgen_test]
+fn replacing_uuids_rewrites_only_what_changed_and_never_changes_the_width() -> Result<(), String> {
+    let first = Uuid::from_u128(EXAMPLE);
+    let (scene, node) = scene_and_node(
+        "set-uuid",
+        DataNodeContent::new(
+            NodeValues::Uuid(vec![first, Uuid::from_u128(0)]),
+            DataFormat::Uuid(UuidFormat::new()),
+        )
+        .with_layout(GridLayout::Columns(1)),
+    )?;
+    let group = nth_group("set-uuid", 0)?;
+    let rect_before = scene.node_rect(node).map_err(|e| e.to_string())?;
+
+    // The first UUID is unchanged, so only the second cell is written.
+    let seen = mutations_during(&group, || {
+        scene
+            .set_data_values(node, NodeValues::Uuid(vec![first, Uuid::from_u128(u128::MAX)]))
+            .map_err(|e| e.to_string())
+    })?;
+    check(seen > 0, "the changed UUID should have been written")?;
+    check(
+        texts_of("set-uuid")? == ["123e4567-e89b-12d3-a456-426614174000", "ffffffff-ffff-ffff-ffff-ffffffffffff"],
+        &format!("{:?}", texts_of("set-uuid")?),
+    )?;
+
+    let seen = mutations_during(&group, || {
+        scene
+            .set_data_values(node, NodeValues::Uuid(vec![first, Uuid::from_u128(u128::MAX)]))
+            .map_err(|e| e.to_string())
+    })?;
+    check(
+        seen == 0,
+        &format!("identical UUIDs should change nothing, saw {seen} mutations"),
+    )?;
+
+    scene
+        .set_data_values(node, NodeValues::Uuid(vec![Uuid::from_u128(0), Uuid::from_u128(1)]))
+        .map_err(|e| e.to_string())?;
+    check_fits("set-uuid")?;
+    check(
+        scene.node_rect(node).map_err(|e| e.to_string())? == rect_before,
+        "the node's own rect changed",
+    )?;
+
+    let rejected = scene.set_data_values(node, NodeValues::U128(vec![1, 2]));
+    check(
+        matches!(rejected, Err(Error::IncompatibleNodeValues(_))),
+        &format!("a u128 is not a UUID, got {rejected:?}"),
+    )?;
+    check(
+        texts_of("set-uuid")? == ["00000000-0000-0000-0000-000000000000", "00000000-0000-0000-0000-000000000001"],
+        "a rejected replacement should change nothing",
+    )
 }
