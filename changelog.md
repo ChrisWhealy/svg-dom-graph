@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed 
 
-- Stop drag bounds from becoming stale after SVG resize (``)
+- Stop drag bounds from becoming stale after SVG resize (`0bff5c9`)
+- Prevent block counter wraparound (``)
 
 # [Released]
 

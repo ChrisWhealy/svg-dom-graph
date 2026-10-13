@@ -8,8 +8,8 @@
 //!
 //! # Scope
 //!
-//! The 256-bit key and 96-bit nonce of RFC 8439, with a 32-bit block counter. The original ChaCha of Bernstein, with its
-//! 64-bit nonce and 64-bit counter, is not covered.
+//! The 256-bit key and 96-bit nonce of RFC 8439, with a 32-bit block counter. The original ChaCha of Bernstein, with
+//! its 64-bit nonce and 64-bit counter, is not covered.
 
 /// The four words that start every ChaCha20 state: the ASCII text `expand 32-byte k`, as little-endian words.
 pub(super) const CONSTANTS: [u32; 4] = [0x6170_7865, 0x3320_646e, 0x7962_2d32, 0x6b20_6574];
@@ -77,6 +77,7 @@ pub(super) enum Operation {
     RotateLeft(u8),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The 12 steps of a quarter round, in order: the word each updates, and how.
 ///
 /// The RFC writes them as `a += b; d ^= a; d <<<= 16; c += d; b ^= c; b <<<= 12; a += b; d ^= a; d <<<= 8; c += d;
@@ -108,6 +109,7 @@ pub(super) struct Step {
     pub(super) result: u32,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every step of one quarter round.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct QuarterRoundTrace {
@@ -119,6 +121,7 @@ pub(super) struct QuarterRoundTrace {
     pub(super) output: [u32; 4],
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs one quarter round on `input`, which holds `a`, `b`, `c` and `d` in that order, recording each step.
 pub(super) fn quarter_round_trace(input: [u32; 4]) -> QuarterRoundTrace {
     let mut words = input;
@@ -149,6 +152,7 @@ pub(super) const COLUMNS: [[usize; 4]; 4] = [[0, 4, 8, 12], [1, 5, 9, 13], [2, 6
 /// The words of a state that each of the four diagonal rounds mixes: the four diagonals of the 4 by 4 matrix.
 pub(super) const DIAGONALS: [[usize; 4]; 4] = [[0, 5, 10, 15], [1, 6, 11, 12], [2, 7, 8, 13], [3, 4, 9, 14]];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads `bytes` as little-endian 32-bit words.
 fn le_words<const N: usize>(bytes: &[u8]) -> [u32; N] {
     let mut words = [0_u32; N];
@@ -158,6 +162,7 @@ fn le_words<const N: usize>(bytes: &[u8]) -> [u32; N] {
     words
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The state before any round has run: the constants, the key, the block counter and the nonce.
 pub(super) fn initial_state(key: &[u8; KEY_LEN], counter: u32, nonce: &[u8; NONCE_LEN]) -> [u32; STATE_WORDS] {
     let key_words: [u32; 8] = le_words(key);
@@ -171,12 +176,14 @@ pub(super) fn initial_state(key: &[u8; KEY_LEN], counter: u32, nonce: &[u8; NONC
     state
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The state after 20 rounds, before the initial state is added back in.
 #[cfg_attr(not(test), allow(dead_code))]
 pub(super) fn run_rounds(initial: &[u32; STATE_WORDS]) -> [u32; STATE_WORDS] {
     rounds(initial).mixed
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The block function: 20 rounds, then each word added to the word it started as.
 ///
 /// Without that last addition, the rounds alone could be run backwards, and the key recovered.
@@ -195,6 +202,7 @@ pub(super) enum RoundKind {
     Diagonal,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One quarter round of the 20 rounds: which state it mixes and what it does to it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct QuarterRoundStage {
@@ -214,6 +222,7 @@ pub(super) struct QuarterRoundStage {
     pub(super) after: [u32; STATE_WORDS],
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every quarter round of ChaCha20, in order, and the state they lead to.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) struct Rounds {
@@ -227,6 +236,7 @@ pub(super) struct Rounds {
     pub(super) keystream: [u32; STATE_WORDS],
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The 20 rounds of ChaCha20.
 pub(super) const ROUNDS: usize = DOUBLE_ROUNDS * 2;
 
@@ -236,6 +246,7 @@ pub(super) const QUARTER_ROUNDS_PER_ROUND: usize = 4;
 /// The quarter rounds in all 20 rounds.
 pub(super) const QUARTER_ROUNDS: usize = ROUNDS * QUARTER_ROUNDS_PER_ROUND;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs all 20 rounds on `initial`, recording each quarter round.
 ///
 /// This is the one place the rounds are run. [`run_rounds`] and [`block`] read their results from it.
@@ -280,6 +291,7 @@ pub(super) fn rounds(initial: &[u32; STATE_WORDS]) -> Rounds {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One block of keystream: the block function's words, written as little-endian bytes.
 ///
 /// The demo draws the block function's words, not these bytes, so only the tests call it.
@@ -292,21 +304,26 @@ pub(super) fn keystream_block(initial: &[u32; STATE_WORDS]) -> [u8; BLOCK_LEN] {
     bytes
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Encrypts, or decrypts, `data`: each byte is XOR'ed with the keystream, which starts at block `counter`.
 ///
 /// Both directions are the same operation, because XOR'ing the same keystream in twice restores the original.
 ///
+/// Returns `None` if `data` needs a block whose counter would pass `u32::MAX`. RFC 8439 allows a key and nonce no more
+/// than 2^32 blocks, and wrapping to zero would repeat a keystream block.
+///
 /// The demo draws one quarter round, not the XOR with a message, so only the tests call this.
 #[cfg_attr(not(test), allow(dead_code))]
-pub(super) fn encrypt(key: &[u8; KEY_LEN], counter: u32, nonce: &[u8; NONCE_LEN], data: &[u8]) -> Vec<u8> {
+pub(super) fn encrypt(key: &[u8; KEY_LEN], counter: u32, nonce: &[u8; NONCE_LEN], data: &[u8]) -> Option<Vec<u8>> {
     let mut out = Vec::with_capacity(data.len());
     for (index, chunk) in data.chunks(BLOCK_LEN).enumerate() {
-        let block_counter = counter.wrapping_add(index as u32);
+        let block_counter = u32::try_from(index).ok().and_then(|offset| counter.checked_add(offset))?;
         let keystream = keystream_block(&initial_state(key, block_counter, nonce));
         out.extend(chunk.iter().zip(keystream).map(|(byte, key_byte)| byte ^ key_byte));
     }
-    out
+    Some(out)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

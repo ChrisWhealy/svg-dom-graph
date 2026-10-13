@@ -123,10 +123,12 @@ const NONCE: [u8; algorithm::NONCE_LEN] = [0, 0, 0, 9, 0, 0, 0, 0x4a, 0, 0, 0, 0
 /// The block counter of that example.
 const COUNTER: u32 = 1;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn hex_word(value: u32) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U32(vec![value]), DataFormat::Hexadecimal)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A state: 16 words in a 4 by 4 matrix, its rows labelled `a` to `d`.
 fn state_content(words: &[u32; STATE_WORDS]) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U32(words.to_vec()), DataFormat::Hexadecimal)
@@ -166,6 +168,7 @@ impl Nodes {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything the walk needs to move the diagram on one step.
 struct Demo {
     scene: Scene,
@@ -371,6 +374,7 @@ fn draw_keystream(scene: &Scene, rounds: &Rounds) -> Result<(Vec<NodeId>, NodeId
     Ok((vec![initial, after, block], driver(scene)?))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The node whose cells the stepping toolbar walks along, one cell for each position. It is far off-canvas, since it
 /// only drives the toolbar.
 fn driver(scene: &Scene) -> Result<NodeId, String> {
@@ -533,6 +537,7 @@ fn go(position: Option<usize>) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The work of [`go`].
 fn step_to(position: Option<usize>) -> Result<(), String> {
     let wanted = walk::stage(position);

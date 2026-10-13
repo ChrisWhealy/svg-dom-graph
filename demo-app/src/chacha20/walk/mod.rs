@@ -9,9 +9,6 @@
 
 use super::algorithm::{QUARTER_ROUNDS, QuarterRoundStage, RoundKind, Rounds, STATE_WORDS, STEPS};
 
-#[cfg(test)]
-mod unit_tests;
-
 /// Steps in one quarter round.
 pub(super) const STEPS_PER_QUARTER_ROUND: usize = STEPS.len();
 
@@ -28,6 +25,7 @@ pub(super) enum Stage {
     Keystream,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The diagram `position` belongs to. The unstarted walk is shown on the first quarter round.
 pub(super) fn stage(position: Option<usize>) -> Stage {
     match position {
@@ -36,6 +34,7 @@ pub(super) fn stage(position: Option<usize>) -> Stage {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The quarter round, from 0, and the step within it, from 0, that `position` is at. `None` for the unstarted walk and
 /// for the keystream block, neither of which is a step.
 pub(super) fn locate(position: Option<usize>) -> Option<(usize, usize)> {
@@ -44,6 +43,7 @@ pub(super) fn locate(position: Option<usize>) -> Option<(usize, usize)> {
         .then_some((position / STEPS_PER_QUARTER_ROUND, position % STEPS_PER_QUARTER_ROUND))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The title of the diagram for `position`.
 pub(super) fn title(rounds: &Rounds, position: Option<usize>) -> String {
     let Some(stage) = rounds
@@ -123,6 +123,7 @@ impl Shown {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the quarter round diagram shows at `position`. The unstarted walk (`None`) shows the first quarter round with
 /// nothing reached.
 pub(super) fn shown(rounds: &Rounds, position: Option<usize>) -> Shown {
@@ -158,3 +159,7 @@ pub(super) fn shown(rounds: &Rounds, position: Option<usize>) -> Shown {
         current,
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

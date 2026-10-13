@@ -136,11 +136,12 @@ fn the_columns_and_diagonals_each_cover_every_word_once() -> Result<(), String> 
 /// RFC 8439 section 2.4.2.
 const PLAINTEXT: &[u8] = b"Ladies and Gentlemen of the class of '99: If I could offer you only one tip for the \
 future, sunscreen would be it.";
+const OVERFLOW: &str = "the counter overflowed";
 const ENCRYPTION_NONCE: [u8; NONCE_LEN] = [0, 0, 0, 0, 0, 0, 0, 0x4a, 0, 0, 0, 0];
 
 #[test]
 fn encryption_matches_the_rfcs_example() -> Result<(), String> {
-    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, PLAINTEXT);
+    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, PLAINTEXT).ok_or(OVERFLOW)?;
     check_eq(
         hex(&cipher),
         "6e2e359a2568f98041ba0728dd0d6981e97e7aec1d4360c20a27afccfd9fae0bf91b65c5524733ab8f593dabcd62b3571639d624e65152ab\
@@ -151,19 +152,28 @@ fn encryption_matches_the_rfcs_example() -> Result<(), String> {
 
 #[test]
 fn decryption_is_the_same_operation() -> Result<(), String> {
-    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, PLAINTEXT);
-    check_eq(encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &cipher), PLAINTEXT.to_vec())
+    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, PLAINTEXT).ok_or(OVERFLOW)?;
+    check_eq(encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &cipher), Some(PLAINTEXT.to_vec()))
 }
 
 #[test]
 fn a_message_of_no_bytes_encrypts_to_no_bytes() -> Result<(), String> {
-    check_eq(encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &[]), Vec::new())
+    check_eq(encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &[]), Some(Vec::new()))
+}
+
+#[test]
+fn the_counter_is_never_allowed_to_wrap_to_a_block_already_used() -> Result<(), String> {
+    let two_blocks = [0_u8; BLOCK_LEN + 1];
+    check_eq(encrypt(&rfc_key(), u32::MAX, &ENCRYPTION_NONCE, &two_blocks), None)?;
+    let last = encrypt(&rfc_key(), u32::MAX, &ENCRYPTION_NONCE, &two_blocks[..BLOCK_LEN]).ok_or(OVERFLOW)?;
+    let expected = keystream_block(&initial_state(&rfc_key(), u32::MAX, &ENCRYPTION_NONCE));
+    check_eq(last, expected.to_vec())
 }
 
 #[test]
 fn the_second_block_of_a_long_message_uses_the_next_counter() -> Result<(), String> {
     let zeros = [0_u8; BLOCK_LEN + 3];
-    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &zeros);
+    let cipher = encrypt(&rfc_key(), 1, &ENCRYPTION_NONCE, &zeros).ok_or(OVERFLOW)?;
     let second = keystream_block(&initial_state(&rfc_key(), 2, &ENCRYPTION_NONCE));
     check_eq(cipher[BLOCK_LEN..].to_vec(), second[..3].to_vec())
 }
