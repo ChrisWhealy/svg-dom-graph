@@ -570,6 +570,7 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
+    crate::util::hide_step_driver(DIAGRAM_ID)?;
 
     // Fit this diagram's own `<svg>` to what it draws. The stepping toolbar is at the top, inside `TOP`, so no room is
     // left below for it.

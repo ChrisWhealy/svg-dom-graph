@@ -376,16 +376,18 @@ fn draw_keystream(scene: &Scene, rounds: &Rounds) -> Result<(Vec<NodeId>, NodeId
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The node whose cells the stepping toolbar walks along, one cell for each position. It is far off-canvas, since it
-/// only drives the toolbar.
+/// only drives the toolbar, and it is hidden from assistive technology. See [`crate::util::hide_step_driver`].
 fn driver(scene: &Scene) -> Result<NodeId, String> {
     let cells: Vec<u16> = (1..=POSITIONS as u16).collect();
-    scene
+    let node = scene
         .add_named_data_node(
             Point::new(-10_000.0, -10_000.0),
             "Step",
             DataNodeContent::new(NodeValues::U16(cells), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
-        .map_err(stringify)
+        .map_err(stringify)?;
+    crate::util::hide_step_driver(DIAGRAM_ID)?;
+    Ok(node)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

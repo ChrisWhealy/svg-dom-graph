@@ -299,6 +299,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
+    crate::util::hide_step_driver(svg_id)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself. `svg_id` is not the shallowest

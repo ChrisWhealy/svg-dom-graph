@@ -12,10 +12,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add demo implementation of ChaCha20 algorithm (`df3b2b3`)
 
+## Changed 
+
+- Hide the invisible SVG step node from assistive technology across all demos (``)
+
 ## Fixed 
 
 - Stop drag bounds from becoming stale after SVG resize (`0bff5c9`)
-- Prevent block counter wraparound (``)
+- Prevent block counter wraparound (`05a58cd`)
 
 # [Released]
 

@@ -526,6 +526,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
+    crate::util::hide_step_driver("sha3-sponge-diagram")?;
 
     let stage_nodes = StageNodes {
         message,

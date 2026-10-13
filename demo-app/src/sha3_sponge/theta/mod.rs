@@ -302,6 +302,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
             DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
+    crate::util::hide_step_driver(svg_id)?;
     // "Theta Output" holds zeros until the walk reaches `XOR loop`, the last function. At that point it shows the real
     // result, whether or not the user ever stepped inside any of the three. The nested scenes show the same values when
     // entered, since all of them are computed from `a_grid`.

@@ -456,6 +456,26 @@ pub(crate) fn document() -> Result<web_sys::Document, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Hides the stepping driver node named "Step" in `#svg_id` from assistive technology.
+///
+/// The driver is a row of one numbered cell for each walk position, placed far off-canvas to drive a selection toolbar.
+/// Being off-canvas does not remove it from the accessibility tree, so a screen reader would read every number. The
+/// toolbar's own buttons announce the position instead. Call this after adding the node.
+///
+/// # Errors
+///
+/// Returns `Err` if `#svg_id` holds no node named "Step".
+pub(crate) fn hide_step_driver(svg_id: &str) -> Result<(), String> {
+    let selector = format!("#{svg_id} g[aria-label^=\"Step:\"]");
+    document()?
+        .query_selector(&selector)
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or_else(|| format!("no element matches {selector}"))?
+        .set_attribute("aria-hidden", "true")
+        .map_err(|e| format!("{e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Looks up `id` in `document`, or `Err` if `index.html` does not define it.
 pub(crate) fn required_element(document: &web_sys::Document, id: &str) -> Result<web_sys::Element, String> {
     document
