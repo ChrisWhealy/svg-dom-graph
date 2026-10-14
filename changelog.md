@@ -19,7 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Avoid potential `u32` overflow (`247c237`)
-- Correct `find_closer()` logic when searching for a closing emphasis marker (``)
+- Correct `find_closer()` logic when searching for a closing emphasis marker (`987c27b`)
+- Prevent indented list markers become new list items (``)
 
 # [Released]
 

@@ -13,7 +13,8 @@
 //!   line that ends in two spaces or a backslash is a hard break, which starts a new line inside the same paragraph.
 //! - A **heading** is one to three `#` followed by a space. Four or more `#` are drawn as a level 3 heading.
 //! - A **list** is a run of lines that start with `-`, `*` or `+` and a space, or with a number, a `.` or `)`, and a
-//!   space. A line indented after an item continues that item. A numbered list counts up from its first number.
+//!   space. A line indented by two spaces or more after an item continues that item, even if it starts with a marker.
+//!   So a nested list is drawn as text in its parent's item. A numbered list counts up from its first number.
 //!
 //! Inline:
 //!
@@ -103,6 +104,17 @@ fn list_marker(line: &str) -> Option<Marker<'_>> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many spaces of indent make a line carry on the list item above it. A marker indented by less is a sibling item.
+const CONTINUATION_INDENT: usize = 2;
+
+/// The indent of `line`, in spaces. A tab counts as four.
+fn indent(line: &str) -> usize {
+    line.chars()
+        .take_while(|c| matches!(c, ' ' | '\t'))
+        .map(|c| if c == '\t' { 4 } else { 1 })
+        .sum()
+}
+
 /// The level and text of `line` if it is a heading.
 fn heading(line: &str) -> Option<(u8, &str)> {
     let line = line.trim_start();
@@ -172,6 +184,15 @@ pub(crate) fn parse(source: &str) -> Vec<Block> {
         if line.is_empty() {
             pending.flush(&mut blocks);
             after_break = false;
+        } else if pending.list.is_some() && indent(raw) >= CONTINUATION_INDENT {
+            // An indented line carries on the item before it, whatever it starts with. This is decided before a marker or
+            // a `#` is looked for, so an indented marker is text and not a nested list, which is not supported.
+            if let Some((_, items)) = &mut pending.list {
+                if let Some(last) = items.last_mut() {
+                    last.push(' ');
+                    last.push_str(line);
+                }
+            }
         } else if let Some((level, text)) = heading(raw) {
             pending.flush(&mut blocks);
             blocks.push(Block::Heading {
@@ -194,7 +215,7 @@ pub(crate) fn parse(source: &str) -> Vec<Block> {
             let (_, items) = pending.list.get_or_insert_with(|| (marker.start, Vec::new()));
             items.push(marker.rest.trim().to_owned());
         } else if raw.starts_with([' ', '\t']) && pending.list.is_some() {
-            // An indented line carries on the item before it.
+            // A line indented by a single space that is not a marker carries on the item too.
             if let Some((_, items)) = &mut pending.list {
                 if let Some(last) = items.last_mut() {
                     last.push(' ');

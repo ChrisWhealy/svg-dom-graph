@@ -258,6 +258,53 @@ fn an_indented_line_carries_on_the_list_item_before_it() -> Result<(), String> {
 }
 
 #[test]
+fn an_indented_marker_continues_the_item_as_literal_text_and_is_not_a_nested_list() -> Result<(), String> {
+    // Nested lists are not supported, so the indented marker stays text in the item above it.
+    let one_item = |text: &str| Block::List {
+        start: None,
+        items: vec![vec![span(text, PLAIN)]],
+    };
+    check_eq(parse("- parent\n  - child"), vec![one_item("parent - child")])?;
+    check_eq(parse("- parent\n    - child"), vec![one_item("parent - child")])?;
+    check_eq(parse("- parent\n\t- child"), vec![one_item("parent - child")])?;
+    check_eq(parse("- parent\n  * child\n  + more"), vec![one_item("parent * child + more")])?;
+    // A numbered marker and a heading, indented under an item, are text too.
+    check_eq(parse("- parent\n  1. child"), vec![one_item("parent 1. child")])?;
+    check_eq(parse("- parent\n  # child"), vec![one_item("parent # child")])
+}
+
+#[test]
+fn a_marker_indented_by_one_space_is_still_a_sibling_and_so_is_the_first_item_of_a_list() -> Result<(), String> {
+    check_eq(
+        parse("- a\n - b"),
+        vec![Block::List {
+            start: None,
+            items: vec![vec![span("a", PLAIN)], vec![span("b", PLAIN)]],
+        }],
+    )?;
+    // With no list yet, up to three spaces of indent before a marker still start one.
+    check_eq(
+        parse("  - a\n- b"),
+        vec![Block::List {
+            start: None,
+            items: vec![vec![span("a", PLAIN)], vec![span("b", PLAIN)]],
+        }],
+    )
+}
+
+#[test]
+fn a_continuation_ends_at_the_next_line_that_is_not_indented() -> Result<(), String> {
+    let blocks = parse("- one\n  - not nested\n- two");
+    check_eq(
+        blocks,
+        vec![Block::List {
+            start: None,
+            items: vec![vec![span("one - not nested", PLAIN)], vec![span("two", PLAIN)]],
+        }],
+    )
+}
+
+#[test]
 fn a_list_can_interrupt_a_paragraph_and_the_other_kind_of_list_starts_a_new_one() -> Result<(), String> {
     let blocks = parse("intro\n- a\n1. b");
     check_eq(blocks.len(), 3)?;
