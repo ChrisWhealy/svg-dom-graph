@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Extend tests to include arbitrary values, byte-aligned output and maximally skewed input (`fac5530`)
 - Unit test `decode()` helper uses `u64` not `u32` to prevent potential wrap errors (`cdaaaf7`)
 - Added `TextInput` and `Markdown` nodes for receiving text input from the user, and displaying a monospaced, formatted block of text (`ec6bbba`)
+- Doc only: Measurement can differ between hidden and visible scenes (``)
 
 ## Fixed
 
@@ -24,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Preserve whitespace within `Style::code` and fix doc errors (`795470b`)
 - Preserve trailing hashes (`153e392`)
 - Prevent text input labels from overflowing available width (`096cf07`)
-- Prevent numbered lists from exceeding available width (``)
+- Prevent numbered lists from exceeding available width (`4b10f61`)
 
 # [Released]
 

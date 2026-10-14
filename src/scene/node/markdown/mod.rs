@@ -303,6 +303,14 @@ impl Scene {
     /// [`add_markdown_node`](Self::add_markdown_node) followed by [`node_rect`](Self::node_rect) would report, and it is
     /// the way to find where to put whatever sits below the node.
     ///
+    /// # Measurement
+    ///
+    /// The width of a character is measured in the browser, and is taken as 0.6 of the font size when the browser cannot
+    /// report one, as when the `<svg>` is not displayed. Lines break by character count, so a difference in that width
+    /// between this call and the later one that draws the node can move a line break, and so change the height by a
+    /// whole line. Measure and draw while the scene is displayed in the same way, and read the drawn node's real size
+    /// from [`node_rect`](Self::node_rect) when exactness matters.
+    ///
     /// # Errors
     ///
     /// As [`add_markdown_node`](Self::add_markdown_node), except for the check of `top_left`, which there is none of.
