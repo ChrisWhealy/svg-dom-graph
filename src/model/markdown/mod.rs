@@ -47,7 +47,7 @@ mod inline;
 mod layout;
 
 pub(crate) use inline::parse_inline;
-pub(crate) use layout::{Layout, Line, Metrics, layout};
+pub(crate) use layout::{Layout, Line, Metrics, layout, minimum_width};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How a run of text is drawn.

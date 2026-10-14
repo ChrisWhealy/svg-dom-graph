@@ -248,6 +248,32 @@ pub(crate) fn wrap(spans: &[Span], cols: usize) -> Vec<Vec<Span>> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The marker of item `index` of a list that starts at `start`, or a bullet if it is not numbered.
+fn list_marker(start: Option<u32>, index: usize) -> String {
+    start.map_or_else(|| "•".to_owned(), |n| format!("{}.", u64::from(n) + index as u64))
+}
+
+/// The marker, and a space after it, are the hanging indent every line of the item keeps.
+fn hanging_indent(marker: &str, metrics: Metrics) -> f64 {
+    (marker.chars().count() + 1) as f64 * metrics.char_width
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The narrowest column `blocks` fit in without a list marker running into its own text: the widest hanging indent of
+/// any list item, plus room for one character of text. It is 0 if there is no list.
+pub(crate) fn minimum_width(blocks: &[Block], metrics: Metrics) -> f64 {
+    blocks
+        .iter()
+        .filter_map(|block| match block {
+            Block::List { start, items } => (0..items.len())
+                .map(|i| hanging_indent(&list_marker(*start, i), metrics) + metrics.char_width)
+                .reduce(f64::max),
+            _ => None,
+        })
+        .fold(0.0, f64::max)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Places `blocks` in a column `width` wide. `width` is the width of the text itself, with no padding.
 pub(crate) fn layout(blocks: &[Block], width: f64, metrics: Metrics) -> Layout {
     let mut lines: Vec<Line> = Vec::new();
@@ -294,9 +320,8 @@ pub(crate) fn layout(blocks: &[Block], width: f64, metrics: Metrics) -> Layout {
             },
             Block::List { start, items } => {
                 for (i, item) in items.iter().enumerate() {
-                    let marker = start.map_or_else(|| "•".to_owned(), |n| format!("{}.", u64::from(n) + i as u64));
-                    // The marker, and a space after it, are the hanging indent every line of the item keeps.
-                    let indent = (marker.chars().count() + 1) as f64 * metrics.char_width;
+                    let marker = list_marker(*start, i);
+                    let indent = hanging_indent(&marker, metrics);
                     add(
                         body,
                         if i == 0 { body * BLOCK_GAP } else { 0.0 },

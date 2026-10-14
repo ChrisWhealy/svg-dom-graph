@@ -70,7 +70,8 @@ struct Plan {
 ///
 /// # Errors
 ///
-/// Returns [`Error::InvalidNodeGeometry`] if `width` is not finite or leaves less than [`MIN_TEXT_WIDTH`] for the text.
+/// Returns [`Error::InvalidNodeGeometry`] if `width` is not finite, leaves less than [`MIN_TEXT_WIDTH`] for the text,
+/// or leaves less than the widest list marker in `source` needs, with one character beside it.
 /// Returns [`Error::EmptyMarkdown`] if `source` has nothing to draw. Returns an error if measuring fails.
 fn plan(svg: &SvgRoot, width: f64, source: &str) -> Result<Plan, Error> {
     if !width.is_finite() || width < 2.0 * OUTER_PADDING + MIN_TEXT_WIDTH {
@@ -87,6 +88,13 @@ fn plan(svg: &SvgRoot, width: f64, source: &str) -> Result<Plan, Error> {
         char_width: measure_char_width(svg)?,
         font_size: BODY_FONT_SIZE,
     };
+    // A numbered list can have a marker wider than the minimum, and then neither it nor its text would fit.
+    if width - 2.0 * OUTER_PADDING < markdown::minimum_width(&blocks, metrics) {
+        return Err(Error::InvalidNodeGeometry(Rect {
+            origin: Point::origin(),
+            size: Size::new(width, 0.0),
+        }));
+    }
     let layout = markdown::layout(&blocks, width - 2.0 * OUTER_PADDING, metrics);
     let size = Size::new(width, layout.height + 2.0 * OUTER_PADDING);
     Ok(Plan { layout, size })
@@ -241,7 +249,8 @@ impl Scene {
     /// # Errors
     ///
     /// Returns [`Error::EmptyMarkdown`] if `markdown` holds nothing to draw. Returns [`Error::InvalidNodeGeometry`] if
-    /// `top_left` is not finite, or `width` is not finite or is too narrow to hold a few characters of text.
+    /// `top_left` is not finite, or `width` is not finite or is too narrow to hold a few characters of text, or the widest list marker in
+    /// `markdown` and one character of text beside it.
     pub fn add_markdown_node(&self, top_left: Point, width: f64, markdown: &str) -> Result<NodeId, Error> {
         self.add_markdown_node_with(top_left, width, markdown, NodeOptions::default())
     }

@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent indented list markers become new list items (`4021210`)
 - Preserve whitespace within `Style::code` and fix doc errors (`795470b`)
 - Preserve trailing hashes (`153e392`)
-- Prevent text input labels from overflowing available width (``)
+- Prevent text input labels from overflowing available width (`096cf07`)
+- Prevent numbered lists from exceeding available width (``)
 
 # [Released]
 

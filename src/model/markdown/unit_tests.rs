@@ -529,6 +529,16 @@ fn a_list_item_hangs_its_continuation_lines_under_its_text() -> Result<(), Strin
 }
 
 #[test]
+fn the_minimum_width_holds_the_widest_marker_and_a_character_beside_it() -> Result<(), String> {
+    // "999999999." is 10 characters, then a space, then one character of text: 12 columns of 8 pixels.
+    check_eq(minimum_width(&parse("999999999. item"), METRICS), 96.0)?;
+    // A later item can have the wider marker: "9." then "10.", so 3 + 1 + 1 columns.
+    check_eq(minimum_width(&parse("9. a\n10. b"), METRICS), 40.0)?;
+    check_eq(minimum_width(&parse("- a"), METRICS), 24.0)?;
+    check_eq(minimum_width(&parse("no list here"), METRICS), 0.0)
+}
+
+#[test]
 fn numbered_items_are_numbered_and_the_indent_follows_the_marker_width() -> Result<(), String> {
     let laid = layout(&parse("9. a\n10. b"), 400.0, METRICS);
     check_eq(laid.lines[0].marker.clone(), Some("9.".to_owned()))?;
