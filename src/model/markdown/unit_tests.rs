@@ -108,6 +108,44 @@ fn a_marker_with_no_closer_is_literal() -> Result<(), String> {
 }
 
 #[test]
+fn emphasis_markers_inside_inline_code_do_not_close_the_emphasis_around_it() -> Result<(), String> {
+    let both = Style {
+        bold: true,
+        italic: false,
+        code: true,
+    };
+    // The `**` inside the code is code, so the bold run goes on past it to the real closer.
+    check_eq(
+        runs("**before `**` after**"),
+        vec![run("before ", BOLD), run("**", both), run(" after", BOLD)],
+    )?;
+    let italic_code = Style {
+        italic: true,
+        code: true,
+        bold: false,
+    };
+    check_eq(
+        runs("*a `*` b*"),
+        vec![run("a ", ITALIC), run("*", italic_code), run(" b", ITALIC)],
+    )?;
+    check_eq(
+        runs("_a `_` b_"),
+        vec![run("a ", ITALIC), run("_", italic_code), run(" b", ITALIC)],
+    )?;
+    // Two backticks hold a single one, and the markers inside are still code.
+    check_eq(
+        runs("**x ``a ` ** b`` y**"),
+        vec![run("x ", BOLD), run("a ` ** b", both), run(" y", BOLD)],
+    )
+}
+
+#[test]
+fn a_backtick_with_no_closer_does_not_hide_the_emphasis_closer_after_it() -> Result<(), String> {
+    // The lone backtick is literal, so the `**` after it still closes the bold run.
+    check_eq(runs("**a ` b**"), vec![run("a ` b", BOLD)])
+}
+
+#[test]
 fn an_underscore_inside_a_word_is_left_alone() -> Result<(), String> {
     check_eq(runs("snake_case_name"), vec![run("snake_case_name", PLAIN)])?;
     check_eq(runs("(_word_)"), vec![run("(", PLAIN), run("word", ITALIC), run(")", PLAIN)])

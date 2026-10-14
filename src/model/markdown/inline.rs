@@ -36,12 +36,20 @@ fn is_word_char(c: char) -> bool {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The index of the closing run of `n` copies of `marker` for an opening run that ends just before `from`. The closer
 /// must be exactly `n` long, must not follow whitespace, and for an underscore must end a word. A longer run is
-/// skipped whole, since it is a different kind of emphasis. `None` if there is no closer.
+/// skipped whole, since it is a different kind of emphasis, and so is a whole code span, since nothing inside code
+/// is emphasis. `None` if there is no closer.
 fn find_closer(chars: &[char], from: usize, marker: char, n: usize) -> Option<usize> {
     let mut i = from;
     while i < chars.len() {
         if chars[i] == '\\' {
             i += 2;
+            continue;
+        }
+        // A code span is skipped whole, so a marker inside it is code and cannot close anything. A backtick run with no
+        // closer is only text, so the search carries on just past it.
+        if chars[i] == '`' {
+            let ticks = run_length(chars, i, '`');
+            i = find_code_end(chars, i + ticks, ticks).map_or(i + ticks, |end| end + ticks);
             continue;
         }
         if chars[i] == marker {

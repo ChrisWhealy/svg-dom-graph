@@ -14,11 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Test to derive final flush from last step (`6a5db8a`)
 - Extend tests to include arbitrary values, byte-aligned output and maximally skewed input (`fac5530`)
 - Unit test `decode()` helper uses `u64` not `u32` to prevent potential wrap errors (`cdaaaf7`)
-- Added `TextInput` and `Markdown` nodes for receiving text input from the user, and displaying a monospaced, formatted block of text (``)
+- Added `TextInput` and `Markdown` nodes for receiving text input from the user, and displaying a monospaced, formatted block of text (`ec6bbba`)
 
 ## Fixed
 
 - Avoid potential `u32` overflow (`247c237`)
+- Correct `find_closer()` logic when searching for a closing emphasis marker (``)
 
 # [Released]
 
