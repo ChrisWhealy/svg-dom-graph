@@ -1,0 +1,35 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Huffman encoding — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- The Huffman scene in a window of its own. The gallery's own panel keeps the description and opens this page
+     (see `build_huffman_demo`). `init_huffman_window` builds the scene here, then resizes this window to fit it. -->
+
+<body>
+    <section class="section active scene-window" id="huffman-window">
+        <div class="canvas" id="huffman-diagram-stage">
+        </div>
+        <p id="huffman-window-error" class="demo-error" hidden></p>
+    </section>
+
+    <script type="module">
+        import init, { init_huffman_window } from "./pkg/svg_dom_graph_demo.js"
+
+        try {
+            await init()
+            init_huffman_window()
+        } catch (err) {
+            const banner = document.getElementById('huffman-window-error')
+            banner.textContent = `This demo failed to build: ${err}`
+            banner.hidden = false
+        }
+    </script>
+</body>
+
+</html>

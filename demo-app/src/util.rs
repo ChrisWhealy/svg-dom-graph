@@ -599,9 +599,12 @@ pub(crate) fn wire_open_window(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Resizes this browser window so its viewport is exactly as large as the stage holding `#diagram_id`, plus the page's own
+/// Resizes this browser window so its viewport is as large as `#diagram_id` at its own size, plus the page's own
 /// padding around it. The window's own frame (title bar, borders) is measured as the difference between its outer and
 /// inner size, so it is not guessed.
+///
+/// A scene larger than the window it opened in is therefore not left scaled down to that window's size. The browser
+/// limits the result to what the screen has room for.
 ///
 /// Does nothing visible in a window the script cannot resize, such as an ordinary tab. The resize is best-effort.
 ///
@@ -611,14 +614,22 @@ pub(crate) fn wire_open_window(
 pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
     let document = document()?;
     let window = web_sys::window().ok_or("no window")?;
-    let stage = required_element(&document, diagram_id)?
-        .parent_element()
-        .ok_or_else(|| format!("#{diagram_id} has no stage"))?;
+    let diagram = required_element(&document, diagram_id)?;
+    let stage = diagram.parent_element().ok_or_else(|| format!("#{diagram_id} has no stage"))?;
+
+    // The window opens smaller than the scene, so the stage is squeezed to fit it and scales the diagram down with it.
+    // Fitting the window to that squeezed stage would keep the diagram scaled down. So the window is fitted to the
+    // diagram's own size instead, which the browser then limits to what the screen has room for.
+    let attribute = |name: &str| diagram.get_attribute(name).and_then(|v| v.parse::<f64>().ok());
+    let drawn = diagram.get_bounding_client_rect();
+    let natural_w = attribute("width").unwrap_or(drawn.width()).max(drawn.width());
+    let natural_h = attribute("height").unwrap_or(drawn.height()).max(drawn.height());
 
     // The page's own padding is the same on every side, so the stage's offset from the top-left corner is also what is
-    // needed past its far edge.
+    // needed past its far edge. Anything else in the stage besides the diagram is kept as it is.
     let rect = stage.get_bounding_client_rect();
-    let (content_w, content_h) = (rect.right() + rect.left(), rect.bottom() + rect.top());
+    let extra_h = (rect.height() - drawn.height()).max(0.0);
+    let (content_w, content_h) = (natural_w + 2.0 * rect.left(), natural_h + extra_h + 2.0 * rect.top());
 
     let pixels = |value: Result<JsValue, JsValue>| value.ok().and_then(|v| v.as_f64());
     let (Some(outer_w), Some(outer_h), Some(inner_w), Some(inner_h)) = (

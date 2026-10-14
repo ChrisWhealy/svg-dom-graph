@@ -41,6 +41,8 @@
 //!   one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
 //!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's own
 //!   doc comment for what each demonstrates.
+//! - `panel-text-nodes` / `#text-nodes-diagram` — [`text_nodes::build_text_nodes_demo`]: a Markdown node using every
+//!   construct it supports, and a text input node whose text is echoed below the diagram as it is typed.
 //! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]. It shows SHA3's `Theta` function as a parent
 //!   `Scene`. Its `ThetaC`, `ThetaD`, and `XOR loop` nodes are all genuine container nodes, each owning its own nested
 //!   `Scene`. They are click-to-enter and &times;-to-exit, stepped by its own Next/Prev buttons. All three are real;
@@ -53,6 +55,12 @@
 //!   round at a time, drawn as the four columns `a`, `b`, `c` and `d`. Each of the 12 steps of a quarter round is an
 //!   operator node in the column of the word it updates, and every value is a real result, worked out in plain Rust.
 //!   The scene is large, so it opens in a window of its own, as the hash demos' do.
+//! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: pass one of Huffman encoding, over a
+//!   pre-filled text typed into the scene's own text input node. It counts the bytes, builds the tree one merge at a
+//!   time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths beside
+//!   them, and the route to each byte is marked in the tree. Each step is explained in a Markdown node. Every step draws
+//!   the scene again, and every value is a real result, worked out in plain Rust. The scene is large, so it opens in a
+//!   window of its own, as the hash demos' do.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
@@ -78,6 +86,7 @@ mod sha1;
 mod sha2_256;
 mod sha3_sponge;
 mod source_frame;
+mod text_nodes;
 mod tree;
 mod util;
 mod wide_values;
@@ -158,11 +167,13 @@ demo_gallery! {
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-selection" => selection::build_selection_demo,
+    "panel-text-nodes" => text_nodes::build_text_nodes_demo,
     "panel-theta" => theta::build_theta_demo + theta::FILES,
     "panel-sha1" => sha1::build_sha1_demo + sha1::FILES,
     "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
     "panel-chacha20" => chacha20::build_chacha20_demo + chacha20::FILES,
+    "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -187,6 +198,14 @@ pub fn init_sha2_256_window() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn init_chacha20_window() -> Result<(), JsValue> {
     chacha20::build_chacha20_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the Huffman scene in `huffman-window.html`, the window the gallery's own Huffman panel opens. Call it once,
+/// from that page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_huffman_window() -> Result<(), JsValue> {
+    huffman::build_huffman_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

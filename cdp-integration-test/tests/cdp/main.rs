@@ -27,6 +27,11 @@
 //! - [`chacha20_walk`] — the ChaCha20 demo's own stepping toolbar, driven by real clicks: the walk's boundaries, what
 //!   survives a redraw, and that nodes stay draggable inside the redrawn diagram. Unlike the rest, this one runs against
 //!   the built demo gallery (`demo-server --build-only`), not the fixture.
+//! - [`huffman_walk`] — the Huffman demo's own stepping toolbar and text box: what each position shows, that stepping
+//!   back restores it, that editing the text starts the walk again, and what a redraw keeps. Also runs against the built
+//!   demo gallery.
+//! - [`text_nodes`] — the Markdown node and the text input node in the built demo gallery: lines inside the box, runs
+//!   drawn as bold, italic and code, real typing reaching the callback without panning or zooming, and a drag.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
 //!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -51,9 +56,11 @@ mod chacha20_walk;
 mod common;
 mod connectors;
 mod edge_anchors;
+mod huffman_walk;
 mod overlap_resolution;
 mod pan;
 mod row_labels;
 mod small_drag;
 mod step_driver_accessibility;
+mod text_nodes;
 mod text_selection;

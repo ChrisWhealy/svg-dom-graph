@@ -822,3 +822,14 @@ label.demo-slider-container {
 .open-window:hover {
     background: var(--border-strong);
 }
+
+/* The tree for a long text is wider than the page. The Huffman diagram scales down to fit, and the diagram's own zoom
+   controls take it back up. Its aspect ratio is kept by its viewBox. */
+#huffman-diagram-stage {
+    max-width: 100%;
+}
+
+#huffman-diagram {
+    max-width: 100%;
+    height: auto;
+}

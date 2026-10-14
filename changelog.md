@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Unit test `decode()` helper uses `u64` not `u32` to prevent potential wrap errors (`cdaaaf7`)
 - Added `TextInput` and `Markdown` nodes for receiving text input from the user, and displaying a monospaced, formatted block of text (`ec6bbba`)
 - Doc only: Measurement can differ between hidden and visible scenes (`abede35`)
+- Add demo scene for phase 1 of Huffman encoding (``)
 
 ## Fixed
 
@@ -26,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Preserve trailing hashes (`153e392`)
 - Prevent text input labels from overflowing available width (`096cf07`)
 - Prevent numbered lists from exceeding available width (`4b10f61`)
-- Remove parser inefficiency when scanning forward for close markers (``)
+- Remove parser inefficiency when scanning forward for close markers (`7430516`)
 
 # [Released]
 

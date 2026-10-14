@@ -150,8 +150,9 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
     panels::assemble(&source_demo_dir, &tmp_index)?;
 
     // The static assets are not generated. `index.html` references `style.css` by a plain relative path, and the SHA3
-    // Sponge, SHA2-256, SHA1 and ChaCha20 panels' buttons open `sha3-sponge-window.html`, `sha2-256-window.html`,
-    // `sha1-window.html` and `chacha20-window.html` by one. So all four need to sit alongside the assembled file in the staging directory too.
+    // Sponge, SHA2-256, SHA1, ChaCha20 and Huffman panels' buttons open `sha3-sponge-window.html`,
+    // `sha2-256-window.html`, `sha1-window.html`, `chacha20-window.html` and `huffman-window.html` by one. So all five need to sit alongside the
+    // assembled file in the staging directory too.
     let mut staged = vec![(tmp_index, stage.stage_dir.join("index.html"))];
     for asset in STATIC_ASSETS {
         let tmp = stage.stage_dir.join(format!("{asset}.tmp"));
@@ -180,12 +181,13 @@ pub fn prepare_stage(root: &Path, stage: &StagePaths) -> Result<(), BuildError> 
 }
 
 /// The files under `demo/` copied unchanged into the staging directory beside the assembled `index.html`.
-const STATIC_ASSETS: [&str; 5] = [
+const STATIC_ASSETS: [&str; 6] = [
     "style.css",
     "sha3-sponge-window.html",
     "sha2-256-window.html",
     "sha1-window.html",
     "chacha20-window.html",
+    "huffman-window.html",
 ];
 
 /// The directory under `demo/` whose files are copied into the same-named directory beside the staged `index.html`, so

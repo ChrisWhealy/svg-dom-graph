@@ -137,6 +137,26 @@ fn codes_of_the_longest_length_survive_packing_and_decoding() -> Result<(), Stri
 }
 
 #[test]
+fn the_route_to_a_byte_runs_from_the_root_down_to_its_leaf() -> Result<(), String> {
+    let t = trace_of(b"abracadabra")?;
+    // Leaves a=0 b=1 c=2 d=3 r=4, then c+d = 5, b+r = 6, 5+6 = 7, and a+7 = the root, 8.
+    check_eq(t.tree.route_to(b'a'), vec![8, 0])?;
+    check_eq(t.tree.route_to(b'c'), vec![8, 7, 5, 2])?;
+    check_eq(t.tree.route_to(b'r'), vec![8, 7, 6, 4])?;
+    // The route's length is the depth plus one, and its links read the tree path.
+    for (symbol, depth) in t.tree.leaf_depths() {
+        check_eq(t.tree.route_to(symbol).len(), usize::from(depth) + 1)?;
+    }
+    check_eq(t.tree.route_to(b'z'), Vec::<usize>::new())
+}
+
+#[test]
+fn the_route_in_a_tree_of_one_leaf_is_that_leaf() -> Result<(), String> {
+    let t = trace_of(b"aaaa")?;
+    check_eq(t.tree.route_to(b'a'), vec![0])
+}
+
+#[test]
 fn the_codes_are_prefix_free_and_fill_the_code_space() -> Result<(), String> {
     for input in [
         &b"abracadabra"[..],
@@ -318,20 +338,20 @@ fn output_that_fills_whole_bytes_needs_no_padding() -> Result<(), String> {
 }
 
 #[test]
-fn the_deepest_tree_the_input_limit_allows_has_codes_of_seven_bits() -> Result<(), String> {
-    // Fibonacci counts make the deepest tree. A ninth distinct byte would need 88 bytes, so 7 is the most possible.
-    let counts = [1usize, 1, 2, 3, 5, 8, 13, 31];
+fn the_deepest_tree_the_input_limit_allows_has_codes_of_eight_bits() -> Result<(), String> {
+    // Fibonacci counts make the deepest tree. A tenth distinct byte would need 143 bytes, so 8 is the most possible.
+    let counts = [1usize, 1, 2, 3, 5, 8, 13, 21, 74];
     let input: Vec<u8> = counts.iter().enumerate().flat_map(|(i, &n)| vec![b'a' + i as u8; n]).collect();
     check_eq(input.len(), MAX_INPUT_LEN)?;
 
     let t = trace_of(&input)?;
-    check_eq(t.codebook.entries.iter().map(|e| e.code.len).max(), Some(7))?;
+    check_eq(t.codebook.entries.iter().map(|e| e.code.len).max(), Some(8))?;
     check_eq(decode(&lengths_of(&t), &t.packed.bytes, t.packed.bit_len)?, input)
 }
 
 #[test]
 fn the_bit_length_is_the_sum_of_every_symbols_code_length() -> Result<(), String> {
-    let fibonacci: Vec<u8> = [1usize, 1, 2, 3, 5, 8, 13, 31]
+    let fibonacci: Vec<u8> = [1usize, 1, 2, 3, 5, 8, 13, 21, 74]
         .iter()
         .enumerate()
         .flat_map(|(i, &n)| vec![b'a' + i as u8; n])
@@ -355,6 +375,20 @@ fn the_bit_length_is_the_sum_of_every_symbols_code_length() -> Result<(), String
         check_eq(t.packed.bytes.len(), total.div_ceil(8))?;
     }
     Ok(())
+}
+
+#[test]
+fn the_opening_sentence_of_pride_and_prejudice_round_trips() -> Result<(), String> {
+    let text = b"It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife.";
+    check_eq(text.len(), 116)?;
+    let t = trace_of(text)?;
+    // 26 distinct bytes, among them the comma, the full stop and a capital letter.
+    check_eq(t.frequencies.len(), 26)?;
+    check_eq(t.tree.merges.len(), 25)?;
+    // The space is by far the commonest byte, so it gets the shortest code.
+    let shortest = t.codebook.entries.first().map(|e| e.symbol);
+    check_eq(shortest, Some(b' '))?;
+    check_eq(decode(&lengths_of(&t), &t.packed.bytes, t.packed.bit_len)?, text.to_vec())
 }
 
 #[test]

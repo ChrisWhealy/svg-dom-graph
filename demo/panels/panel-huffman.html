@@ -1,0 +1,68 @@
+<section class="section" id="panel-huffman">
+    <h2>Huffman encoding</h2>
+    <p>Huffman encoding replaces each byte of a text with a shorter or longer bit sequence, so that the bytes that occur
+        most often get the shortest codes. It takes two passes over the text. The first counts the bytes and builds the
+        codes. The second, which comes later, replaces every byte with its code and packs the result into whole bytes.
+        This demo shows the first pass. Every value on screen is a real result, worked out in plain Rust.</p>
+    <dl>
+        <dt>Counting</dt>
+        <dd>
+            <p>Each distinct byte becomes a tree of one node, weighted by how many times it occurs. The symbols are
+                bytes, not characters, so a character that takes several bytes in UTF-8 is counted as those separate
+                bytes. A byte that is not printable ASCII is shown in hexadecimal.</p>
+        </dd>
+        <dt>Building the tree</dt>
+        <dd>
+            <p>A tree's weight is the number of times its bytes occur. The trees are kept in order of weight, lightest on
+                the left. Each step takes the two lightest trees and joins them under a new branch, whose weight is the sum
+                of theirs. It does this again and again, until only one tree is left.</p>
+            <p>The lighter of the two goes on the left, and the other on the right. A link that goes left is labelled
+                <code>0</code> and one that goes right is labelled <code>1</code>. Every merge puts one more link above
+                every byte inside the two trees, which gives each of those bytes a code one bit longer.</p>
+            <p>This is why the rarest bytes end up with the longest codes. They are the first to be merged, so they sit
+                the deepest, with the most links above them. The commonest bytes are not merged until the end, so they
+                stay close to the root with few links above them, and so get short codes.</p>
+            <p>Where two trees weigh the same, the one made first goes first. A text therefore always gives the same
+                tree. The step says so when a tie decided which tree was taken.</p>
+            <p>Each step shows three lines of explanation above the diagram: what the step did, what that means for the
+                codes, and what is left to do. The branch the step made is ringed, together with the two trees it
+                joined.</p>
+        </dd>
+        <dt>Code lengths</dt>
+        <dd>
+            <p>The length of a byte's code is the depth of its leaf, which is how many links lead down to it. That is the
+                last thing the tree is used for. A text of one distinct byte has a tree of one node, whose depth of 0
+                would be an empty code, so it is given length 1.</p>
+        </dd>
+        <dt>Canonical codes</dt>
+        <dd>
+            <p>The path down the tree is one valid code for each byte, but this demo uses the <em>canonical</em> codes
+                instead. They keep every length, and are handed out shortest first, and by byte value among bytes of one
+                length. Each is the previous code plus 1, shifted left by however many bits longer it is. So the table
+                can show different bits in "Tree path" and "Code" for the same byte, and both are right. A decoder can
+                rebuild the canonical codes from the lengths alone, so only the lengths ever need to be sent.</p>
+        </dd>
+        <dt>The code table</dt>
+        <dd>
+            <p>Below the tree is a table with a row for each distinct byte, the commonest first, under a heading row of
+                its own colour. Bytes that occur as often as each other are in byte order.</p>
+        </dd>
+        <dt>Following a code through the tree</dt>
+        <dd>
+            <p>As each canonical code is assigned, the route from the root down to that byte's leaf is marked in the tree
+                with the library's secondary selection: every box on it, and the <code>0</code> or <code>1</code> label of
+                every link. Reading the labels down the route spells the byte's tree path. The ringed row of the table
+                holds the same byte, with its path and its code side by side.</p>
+        </dd>
+        <dt>The text</dt>
+        <dd>
+            <p>The text to encode is typed into a text box that is part of the diagram. It starts as the first sentence of
+                Jane Austen's <em>Pride and Prejudice</em>, and can be up to 128 bytes. Each change draws the diagram
+                again, from the first step. A text that cannot be encoded says why in the line below the text box, and
+                leaves the diagram showing the last text that could be.</p>
+        </dd>
+    </dl>
+    <p>Press "Next" in the diagram to step through it, and "Prev" to step back.</p>
+    <p>The scene is large, so it opens in a window of its own, sized to fit it.</p>
+    <button id="huffman-open" class="open-window" type="button">Open the demo in its own window</button>
+</section>

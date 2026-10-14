@@ -11,9 +11,13 @@ Since neither is a data node, it is not possible for either to have cells and co
 
   `node_rect` reports the height, so whatever sits below the node can be spaced correctly.
   `measure_markdown_node` returns the rendered size without adding the node to the DOM.
+  The width of a character is measured in the browser, and is taken as 0.6 of the font size when the `<svg>` is not displayed.
+  So a measurement made while the scene is hidden can differ from the drawn size once it is visible, by a whole line if a line break moves.
+  Measure and draw under the same conditions, and read `node_rect` when the exact height matters.
   When creating a text node:
   * it must contain at least one, non-whitespace character, or the call returns `Error::EmptyMarkdown`, and
-  * `width` must provide enough space for at least a few characters.
+  * `width` must provide enough space for at least a few characters, and for the widest list marker in the text with one character beside it.
+    A numbered list starting at `999999999.` needs a wider node than a bulleted one, and a narrower node returns `Error::InvalidNodeGeometry`.
 
 ## Supported Markdown Syntax
 
@@ -21,11 +25,13 @@ Only a subset of the full markdown syntax is available here:
 
 Blocks:
 
-- A heading is one to three `#`, then a space. Four or more are drawn as a level 3 heading.
+- A heading is one to three `#`, a space, and some text. Four or more `#` are drawn as a level 3 heading.
+  A run of `#` after the text is decoration only if it follows a space, so `# Title ##` is `Title` and `# C#` is `C#`.
+  A `#` alone is text.
 - A paragraph runs until a blank line, and its lines join with a space.
   A line that ends in two spaces or a backslash breaks the line.
 - List items start either with `-`, `*` or `+` folloed by a space, or with a number followed by a `.` or `)` and a space.
-  An indented line carries on the item before it.
+  A line indented by two spaces or more carries on the item before it, even if it starts with a marker, so a nested list is drawn as text in its parent's item.
   A numbered list counts up from its first number.
 
 Inline:
@@ -59,6 +65,9 @@ Every line is wrapped at a width measured from a real element, so the wrapping i
 A bold or italic character is as wide as a regular one in a monospace font, so a run's width is its character count multiplied by a single number.
 All characters are counted as one column, so text that is wider than a column, such as some East Asian characters, can overrun its line.
 A word longer than a whole line is split.
+Between two words of prose one space is drawn, however much whitespace was written.
+Whitespace inside a code span is kept exactly as written, so `A  B` is not drawn as `A B`, and it counts toward the width of the line.
+Where a line breaks, the whitespace there is dropped.
 A heading is larger, so fewer of its characters fit a line, and a list item keeps its text under its first word.
 
 The node is named `Text` for assistive technology, and the text itself is exposed as it is drawn.

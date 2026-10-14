@@ -46,11 +46,13 @@ const MANIFEST: &[(&str, &str)] = &[
     ("panel-operators-arithmetic", "Arithmetic operators"),
     ("panel-operators-chained", "Chained operators"),
     ("panel-selection", "Cell selection"),
+    ("panel-text-nodes", "Text nodes"),
     ("panel-theta", "Nested Scenes (SHA3 Theta)"),
     ("panel-sha1", "SHA1"),
     ("panel-sha2-256", "SHA2-256"),
     ("panel-sha3-sponge", "SHA3 Sponge"),
     ("panel-chacha20", "ChaCha20"),
+    ("panel-huffman", "Huffman encoding"),
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -11,9 +11,11 @@
 - [Booleans and Pointer-sized Integers](bools-and-sizes.md)
 - [Operator Nodes](operator-nodes.md)
 - [Cell Selection](cell-selection.md)
+- [Text Nodes](text-nodes.md)
 - [Nested Scenes](nested-scenes.md)
 - [Hash Algorithms](hash-algorithms.md)
 - [ChaCha20](chacha20.md)
+- [Huffman Encoding](huffman.md)
 - [Internal Workings of the Demo Server](demo-internals.md)
 
 ## Running the Demo

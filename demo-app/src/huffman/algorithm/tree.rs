@@ -67,29 +67,68 @@ impl Tree {
         self.nodes.len() - 1
     }
 
-    /// The depth of each leaf, as `(symbol, depth)` in byte order.
+    /// The route from the root to each leaf, as `(symbol, path)` in byte order. A left branch is `0` and a right one
+    /// is `1`.
     ///
-    /// A tree with a single leaf has depth 0, which would give that byte an empty code. It is given length 1 instead.
-    pub(in crate::huffman) fn leaf_depths(&self) -> Vec<(u8, u8)> {
-        let mut depths = Vec::new();
-        let mut pending = vec![(self.root(), 0u8)];
+    /// These are the bit patterns the tree itself gives, which are not the canonical codes. A tree with a single leaf
+    /// has an empty path.
+    pub(in crate::huffman) fn leaf_paths(&self) -> Vec<(u8, String)> {
+        let mut paths = Vec::new();
+        let mut pending = vec![(self.root(), String::new())];
 
-        while let Some((index, depth)) = pending.pop() {
+        while let Some((index, path)) = pending.pop() {
             match self.nodes[index] {
-                Node::Leaf { symbol, .. } => depths.push((symbol, depth.max(1))),
+                Node::Leaf { symbol, .. } => paths.push((symbol, path)),
                 Node::Branch { left, right, .. } => {
-                    pending.push((left, depth + 1));
-                    pending.push((right, depth + 1));
+                    pending.push((left, format!("{path}0")));
+                    pending.push((right, format!("{path}1")));
                 },
             }
         }
 
-        depths.sort_unstable();
-        depths
+        paths.sort_unstable();
+        paths
+    }
+
+    /// The nodes on the route from the root down to the leaf of `symbol`, root first and leaf last. Empty if no leaf
+    /// holds `symbol`. A tree of one leaf has a route of that one node.
+    pub(in crate::huffman) fn route_to(&self, symbol: u8) -> Vec<usize> {
+        let Some(leaf) = self
+            .nodes
+            .iter()
+            .position(|n| matches!(n, Node::Leaf { symbol: s, .. } if *s == symbol))
+        else {
+            return Vec::new();
+        };
+
+        // Every node but the root has one parent, so the route is found by climbing from the leaf.
+        let mut parent: Vec<Option<usize>> = vec![None; self.nodes.len()];
+        for (index, node) in self.nodes.iter().enumerate() {
+            if let Node::Branch { left, right, .. } = *node {
+                parent[left] = Some(index);
+                parent[right] = Some(index);
+            }
+        }
+        let mut route = vec![leaf];
+        while let Some(up) = parent[*route.last().unwrap_or(&leaf)] {
+            route.push(up);
+        }
+        route.reverse();
+        route
+    }
+
+    /// The depth of each leaf, as `(symbol, depth)` in byte order.
+    ///
+    /// A tree with a single leaf has depth 0, which would give that byte an empty code. It is given length 1 instead.
+    /// A depth never exceeds 255, because a tree has at most 256 leaves.
+    pub(in crate::huffman) fn leaf_depths(&self) -> Vec<(u8, u8)> {
+        self.leaf_paths()
+            .into_iter()
+            .map(|(symbol, path)| (symbol, path.len().max(1) as u8))
+            .collect()
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the tree by repeatedly merging the two lightest nodes.
 ///
 /// Ties on weight go to the node created first, so the same input always gives the same tree. `frequencies` must not be

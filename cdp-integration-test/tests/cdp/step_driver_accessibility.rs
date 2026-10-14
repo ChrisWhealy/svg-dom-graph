@@ -19,11 +19,12 @@ use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
 /// The demo window pages with a stepping driver.
-const PAGES: [&str; 4] = [
+const PAGES: [&str; 5] = [
     "sha1-window.html",
     "sha2-256-window.html",
     "sha3-sponge-window.html",
     "chacha20-window.html",
+    "huffman-window.html",
 ];
 const DRIVER: &str = "g[aria-label^=\"Step:\"]";
 const VIEWPORT: (u32, u32) = (1800, 1800);

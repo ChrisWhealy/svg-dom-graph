@@ -11,17 +11,19 @@
 //! That limit keeps every code well inside [`MAX_CODE_LEN`], so no length limiting is needed.
 
 mod codes;
+#[allow(dead_code)] // Pass two is not drawn yet
 mod pack;
 mod tree;
 
 #[allow(unused_imports)] // `Entry` is for the walk module
 pub(super) use codes::{Code, Codebook, Entry, codebook};
+#[allow(unused_imports)] // `PackStep` is for pass two's scene
 pub(super) use pack::{PackStep, Packed, pack};
-#[allow(unused_imports)] // `Node` is for the walk module
+#[allow(unused_imports)] // `Merge` is named by the tests
 pub(super) use tree::{Frequency, Merge, Node, Tree, frequencies, tree};
 
 /// The longest input accepted, in bytes.
-pub(super) const MAX_INPUT_LEN: usize = 64;
+pub(super) const MAX_INPUT_LEN: usize = 128;
 /// The longest code the packer can hold, in bits.
 pub(super) const MAX_CODE_LEN: u8 = 32;
 
@@ -35,6 +37,7 @@ pub(super) struct Trace {
     /// The canonical code for each distinct byte.
     pub(super) codebook: Codebook,
     /// The second pass: the packed output and the step that produced each part of it.
+    #[allow(dead_code)] // Pass two is not drawn yet
     pub(super) packed: Packed,
 }
 

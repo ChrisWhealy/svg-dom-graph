@@ -1,0 +1,29 @@
+<section class="section" id="panel-text-nodes">
+    <h2>Text nodes</h2>
+    <p>Two nodes hold text rather than values. A <em>Markdown node</em> explains something in prose, next to the thing it
+        explains. A <em>text input node</em> holds a text box the user types into.</p>
+    <dl>
+        <dt>The Markdown node</dt>
+        <dd>
+            <p>It draws headings, paragraphs, bulleted and numbered lists, and bold, italic and code runs. Its width is
+                chosen by the caller, and its height is whatever the text needs. Text that is too long for a line wraps
+                between words. This crate has no Markdown dependency. The node's text is drawn as SVG that the crate lays
+                out itself, in a monospace font, so a general parser that produces HTML would give it nothing it could
+                use. See the docs for the subset it understands.</p>
+        </dd>
+        <dt>The text input node</dt>
+        <dd>
+            <p>The text box is an ordinary HTML <code>&lt;input&gt;</code> inside the node. So the caret, selection, the
+                clipboard and input methods are the browser's own, and the box is named for assistive technology by the
+                node's label. Typing in it never pans or zooms the diagram.</p>
+            <p>A callback is given the text each time it changes. Here it writes the text to the line below the diagram.</p>
+        </dd>
+    </dl>
+    <p>Both nodes can be dragged, like any other node, and the connector follows.</p>
+    <p class="controls">Text typed in the node: <output id="text-nodes-echo"></output></p>
+    <p class="controls">Calls the callback has received: <output id="text-nodes-calls"></output>
+        <button id="text-nodes-replace" type="button">Replace the text from code</button></p>
+    <p class="controls">Size of the Markdown node: <output id="text-nodes-measure"></output></p>
+    <div class="canvas" id="text-nodes-diagram-stage">
+    </div>
+</section>
