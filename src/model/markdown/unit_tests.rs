@@ -273,6 +273,25 @@ fn a_bulleted_list_takes_any_of_three_markers() -> Result<(), String> {
 }
 
 #[test]
+fn a_long_run_of_openers_with_no_closer_is_parsed_in_linear_time() -> Result<(), String> {
+    // Searched afresh from each opener, this is some 10^10 steps, and would not finish in any reasonable time.
+    let text = "*a ".repeat(100_000);
+    let spans = parse_inline(&text);
+    check_eq(spans.len(), 1)?;
+    check(!spans[0].style.italic, "never closed, so never italic")?;
+    check_eq(spans[0].text.chars().count(), text.chars().count())
+}
+
+#[test]
+fn an_opener_before_a_failed_search_is_still_closed_by_a_later_closer() -> Result<(), String> {
+    // The first `*b` has no closer after it, but the later opener's search must not be affected by that memory.
+    let spans = parse_inline("*a *b c");
+    check_eq(spans.len(), 1)?;
+    let spans = parse_inline("*x* *y *z");
+    check(spans.iter().any(|s| s.text == "x" && s.style.italic), "x is italic")
+}
+
+#[test]
 fn a_numbered_list_counts_up_from_its_first_number() -> Result<(), String> {
     check_eq(
         parse("3. c\n4) d"),

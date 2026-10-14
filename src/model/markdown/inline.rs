@@ -99,6 +99,11 @@ fn parse_into(chars: &[char], style: Style, out: &mut Vec<Span>) {
         }
     };
 
+    // Where a search for a closer, by marker and length, last came back empty. Any search that starts later in the same
+    // text must too, since it looks at a subset of what that one did. Remembering this keeps a run of openers that are
+    // never closed from each scanning the whole of the rest of the text.
+    let mut no_closer_from: Vec<(char, usize, usize)> = Vec::new();
+
     let mut i = 0;
     while i < chars.len() {
         let c = chars[i];
@@ -131,7 +136,13 @@ fn parse_into(chars: &[char], style: Style, out: &mut Vec<Span>) {
                 let n = run.min(3);
                 let opens = chars.get(i + run).is_some_and(|x| !x.is_whitespace())
                     && (c == '*' || i == 0 || !is_word_char(chars[i - 1]));
-                let closer = (run == n && opens).then(|| find_closer(chars, i + n, c, n)).flatten();
+                let known_empty = no_closer_from.iter().any(|&(m, len, from)| m == c && len == n && from <= i + n);
+                let closer = (run == n && opens && !known_empty)
+                    .then(|| find_closer(chars, i + n, c, n))
+                    .flatten();
+                if closer.is_none() && run == n && opens && !known_empty {
+                    no_closer_from.push((c, n, i + n));
+                }
                 match closer {
                     Some(end) => {
                         flush(&mut literal, out);
