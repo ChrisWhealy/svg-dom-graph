@@ -10,7 +10,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add algorithm for demo of Huffman encoding (``)
+- Add algorithm for demo of Huffman encoding (`97b2ad5`)
+- Test to derive final flush from last step (``)
+
 
 # [Released]
 

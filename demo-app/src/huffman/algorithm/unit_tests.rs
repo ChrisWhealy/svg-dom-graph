@@ -200,6 +200,30 @@ fn every_step_carries_the_accumulator_forward() -> Result<(), String> {
     check_eq(emitted.len(), t.packed.bytes.len() - usize::from(t.packed.padding() > 0))
 }
 
+#[test]
+fn the_final_flush_can_be_derived_from_the_last_step() -> Result<(), String> {
+    // The padded byte has no step of its own. The walk rebuilds it from the last step and the padding count.
+    for input in [
+        &b"abracadabra"[..],
+        b"hello, huffman world",
+        b"aaaaaaaaa",
+        b"the quick brown fox",
+    ] {
+        let t = trace_of(input)?;
+        let last = t.packed.steps.last().ok_or("at least one step")?;
+        let padding = t.packed.padding();
+
+        check_eq(padding, if last.nbits_after > 0 { 8 - last.nbits_after } else { 0 })?;
+        if last.nbits_after > 0 {
+            check_eq(t.packed.bytes.last().copied(), Some((last.acc_after << padding) as u8))?;
+        } else {
+            let emitted: usize = t.packed.steps.iter().map(|s| s.emitted.len()).sum();
+            check_eq(emitted, t.packed.bytes.len())?;
+        }
+    }
+    Ok(())
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Edge cases
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
