@@ -32,10 +32,14 @@
 //!
 //! # Layout
 //!
-//! [`layout`] wraps every line at a width given in user-space units, using one measured character width. Under a
+//! [`layout()`] wraps every line at a width given in user-space units, using one measured character width. Under a
 //! monospace font a bold or italic run is as wide as a regular one, so every run's width is its character count times
 //! that one number. A character is counted as one column, whatever it is, so text that is wider than a column, such as
 //! some East Asian characters, can overrun its line.
+//!
+//! Between two words of prose, however much whitespace was written, one space is drawn. Whitespace inside a code span
+//! is kept exactly as written, since a gap in code is information, and its width counts toward the line. A tab in code
+//! is drawn as one space. Where a line breaks, the whitespace there is dropped, as it is at either end of a line.
 
 mod inline;
 mod layout;
@@ -185,8 +189,9 @@ pub(crate) fn parse(source: &str) -> Vec<Block> {
             pending.flush(&mut blocks);
             after_break = false;
         } else if pending.list.is_some() && indent(raw) >= CONTINUATION_INDENT {
-            // An indented line carries on the item before it, whatever it starts with. This is decided before a marker or
-            // a `#` is looked for, so an indented marker is text and not a nested list, which is not supported.
+            // An indented line carries on the item before it, whatever it starts with. This is decided before a
+            // marker or a `#` is looked for, so an indented marker is text and not a nested list, which is not
+            // supported.
             if let Some((_, items)) = &mut pending.list {
                 if let Some(last) = items.last_mut() {
                     last.push(' ');
@@ -242,8 +247,8 @@ fn spans_text(spans: &[Span]) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `blocks` as plain text: one line for each heading, paragraph line and list item, with a `•` or a number before each
-/// list item. This is what assistive technology and a copy of the node's own text should read.
+/// `blocks` as plain text: one line for each heading, paragraph line and list item, with a `•` or a number before
+/// each list item. This is what assistive technology and a copy of the node's own text should read.
 pub(crate) fn plain_text(blocks: &[Block]) -> String {
     let mut lines = Vec::new();
     for block in blocks {

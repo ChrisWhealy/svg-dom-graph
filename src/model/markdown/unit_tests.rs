@@ -377,6 +377,50 @@ fn wrapping_keeps_each_runs_style() -> Result<(), String> {
 }
 
 #[test]
+fn whitespace_inside_a_code_span_is_kept_exactly() -> Result<(), String> {
+    check_eq(wrapped("`A  B`", 80), vec!["A  B".to_owned()])?;
+    check_eq(wrapped("`A     B`", 80), vec!["A     B".to_owned()])?;
+    // The run is code, in the same run as the words either side of it.
+    let lines = wrap(&parse_inline("`A  B`"), 80);
+    check_eq(lines, vec![vec![span("A  B", CODE)]])?;
+    // Prose around it still has its own single spaces, and the code keeps its own.
+    check_eq(
+        wrap(&parse_inline("x `A   B` y"), 80),
+        vec![vec![span("x ", PLAIN), span("A   B", CODE), span(" y", PLAIN)]],
+    )
+}
+
+#[test]
+fn whitespace_outside_code_still_collapses_to_one_space() -> Result<(), String> {
+    check_eq(wrapped("a      b", 80), vec!["a b".to_owned()])?;
+    check_eq(wrapped("a \t b", 80), vec!["a b".to_owned()])
+}
+
+#[test]
+fn a_run_of_spaces_in_code_counts_toward_the_line_width() -> Result<(), String> {
+    // "aaaa  bbbb" is ten columns. It fits ten, and does not fit nine.
+    check_eq(wrapped("`aaaa  bbbb`", 10), vec!["aaaa  bbbb".to_owned()])?;
+    check_eq(wrapped("`aaaa  bbbb`", 9), ["aaaa", "bbbb"].map(str::to_owned).to_vec())
+}
+
+#[test]
+fn a_run_of_spaces_in_code_is_dropped_where_the_line_breaks_and_not_carried_to_the_next_line() -> Result<(), String> {
+    check_eq(wrapped("`aaaa     bbbb`", 6), ["aaaa", "bbbb"].map(str::to_owned).to_vec())
+}
+
+#[test]
+fn a_tab_in_code_is_drawn_as_one_space_so_the_columns_stay_true() -> Result<(), String> {
+    check_eq(wrapped("`a\tb`", 80), vec!["a b".to_owned()])
+}
+
+#[test]
+fn code_spaces_at_the_two_ends_of_a_line_are_not_kept() -> Result<(), String> {
+    // A line starts and ends at a word. Padding spaces inside the span are removed by the parser, not by the wrapper,
+    // and any that remain at an end are dropped as the whitespace at a line break is.
+    check_eq(wrapped("`  a  `", 80), vec!["a".to_owned()])
+}
+
+#[test]
 fn zero_columns_and_empty_text_do_not_loop_or_panic() -> Result<(), String> {
     check_eq(wrapped("ab", 0), ["a", "b"].map(str::to_owned).to_vec())?;
     check_eq(wrapped("", 10), vec![String::new()])?;

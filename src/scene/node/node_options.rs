@@ -20,8 +20,9 @@ pub struct NodeOptions {
     pub edge_anchors: Option<EdgeAnchors>,
     /// The fill of a plain node's box, as any SVG paint, such as `"#d6f2ee"` or `"lightsteelblue"`.
     ///
-    /// `None` (the default) keeps the usual light blue. It is read by [`Scene::add_node_with`](crate::scene::Scene::
-    /// add_node_with) only. A data node's own fill says what type it holds, so it is not changed by this.
+    /// `None` (the default) keeps the usual light blue. Only
+    /// [`Scene::add_node_with`](crate::scene::Scene::add_node_with) reads it. A data node's own fill says what type it
+    /// holds, so it is not changed by this.
     pub fill: Option<&'static str>,
 }
 

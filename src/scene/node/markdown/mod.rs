@@ -221,9 +221,9 @@ impl Scene {
     /// Adds a node of Markdown text, `width` wide, and returns its id. The box grows downward to hold the text, so its
     /// height is whatever the text needs. [`node_rect`](Self::node_rect) reports it.
     ///
-    /// Headings, paragraphs, bulleted and numbered lists, and bold, italic and code runs are drawn. See
-    /// [`crate::model::markdown`]'s own module documentation, summarised under "Supported Markdown" below. Anything
-    /// else is drawn as the characters it was typed with, so text that is not Markdown at all is a plain paragraph.
+    /// Headings, paragraphs, bulleted and numbered lists, and bold, italic and code runs are drawn. The Markdown that is
+    /// understood is listed under "Supported Markdown" below. Anything else is drawn as the characters it was typed
+    /// with, so text that is not Markdown at all is a plain paragraph.
     ///
     /// Equivalent to [`add_markdown_node_with`](Self::add_markdown_node_with) with [`NodeOptions::default`].
     ///
