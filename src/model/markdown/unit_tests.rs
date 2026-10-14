@@ -224,6 +224,44 @@ fn a_heading_drops_its_closing_hashes_and_keeps_its_inline_styles() -> Result<()
 }
 
 #[test]
+fn a_trailing_hash_that_is_part_of_the_text_is_kept() -> Result<(), String> {
+    let heading_text = |source: &str| match parse(source).as_slice() {
+        [Block::Heading { spans, .. }] => Some(spans.iter().map(|s| s.text.as_str()).collect::<String>()),
+        _ => None,
+    };
+    check_eq(heading_text("# C#"), Some("C#".to_owned()))?;
+    check_eq(heading_text("## F## "), Some("F##".to_owned()))?;
+    check_eq(heading_text("# C# and C#"), Some("C# and C#".to_owned()))?;
+    // A hash after a backslash is escaped, so it is text and not the start of a closing run.
+    check_eq(heading_text("# C\\#"), Some("C#".to_owned()))
+}
+
+#[test]
+fn a_closing_run_of_hashes_after_a_space_is_decoration() -> Result<(), String> {
+    let heading_text = |source: &str| match parse(source).as_slice() {
+        [Block::Heading { spans, .. }] => Some(spans.iter().map(|s| s.text.as_str()).collect::<String>()),
+        _ => None,
+    };
+    check_eq(heading_text("# C# #"), Some("C#".to_owned()))?;
+    check_eq(heading_text("### Title ###   "), Some("Title".to_owned()))?;
+    check_eq(heading_text("# a # b #"), Some("a # b".to_owned()))
+}
+
+#[test]
+fn a_heading_needs_a_space_after_its_marker_and_some_text() -> Result<(), String> {
+    // Each of these is a paragraph that holds the characters as they were typed.
+    for source in ["#", "# ", "##", "# #", "## ##", "#hashtag"] {
+        let blocks = parse(source);
+        check(
+            matches!(blocks.as_slice(), [Block::Paragraph { .. }]),
+            &format!("{source:?} should be a paragraph, got {blocks:?}"),
+        )?;
+        check_eq(plain_text(&blocks), source.trim().to_owned())?;
+    }
+    Ok(())
+}
+
+#[test]
 fn a_bulleted_list_takes_any_of_three_markers() -> Result<(), String> {
     check_eq(
         parse("- a\n* b\n+ c"),

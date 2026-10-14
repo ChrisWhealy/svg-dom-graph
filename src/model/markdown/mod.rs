@@ -11,7 +11,9 @@
 //!
 //! - A **paragraph** is one or more lines. A blank line ends it, and the lines inside it join with a single space. A
 //!   line that ends in two spaces or a backslash is a hard break, which starts a new line inside the same paragraph.
-//! - A **heading** is one to three `#` followed by a space. Four or more `#` are drawn as a level 3 heading.
+//! - A **heading** is one to three `#`, a space, and some text. Four or more `#` are drawn as a level 3 heading. A run
+//!   of `#` after the text is decoration only if it follows a space, so `# Title ##` is `Title` and `# C#` is `C#`.
+//!   A `#` alone is text.
 //! - A **list** is a run of lines that start with `-`, `*` or `+` and a space, or with a number, a `.` or `)`, and a
 //!   space. A line indented by two spaces or more after an item continues that item, even if it starts with a marker.
 //!   So a nested list is drawn as text in its parent's item. A numbered list counts up from its first number.
@@ -119,20 +121,32 @@ fn indent(line: &str) -> usize {
         .sum()
 }
 
-/// The level and text of `line` if it is a heading.
+/// `text` without a closing run of `#`, if it has one.
+///
+/// A closing run is decoration only when it is the whole of the text or follows whitespace, as in `# Title ##`. A `#`
+/// that is part of the last word, as in `# C#`, is text, and so is one after a backslash, which is an escaped `#`.
+fn without_closing_hashes(text: &str) -> &str {
+    let stripped = text.trim_end_matches('#');
+    if stripped.len() == text.len() || stripped.ends_with('\\') {
+        return text;
+    }
+    if stripped.is_empty() || stripped.ends_with([' ', '\t']) {
+        return stripped.trim_end();
+    }
+    text
+}
+
+/// The level and text of `line` if it is a heading: one or more `#`, a space, and some text.
+///
+/// A line of `#` alone, or with nothing but a closing run after it, is not a heading. It is text.
 fn heading(line: &str) -> Option<(u8, &str)> {
     let line = line.trim_start();
     let hashes = line.bytes().take_while(|&b| b == b'#').count();
     if hashes == 0 {
         return None;
     }
-    let rest = &line[hashes..];
-    if !rest.is_empty() && !rest.starts_with(' ') {
-        return None;
-    }
-    // A closing run of `#` is decoration.
-    let text = rest.trim().trim_end_matches('#').trim_end();
-    Some((hashes.min(3) as u8, text))
+    let text = without_closing_hashes(line[hashes..].strip_prefix(' ')?.trim());
+    (!text.is_empty()).then_some((hashes.min(3) as u8, text))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
