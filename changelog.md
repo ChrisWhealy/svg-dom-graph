@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add algorithm for demo of Huffman encoding (`97b2ad5`)
 - Test to derive final flush from last step (`6a5db8a`)
 - Extend tests to include arbitrary values, byte-aligned output and maximally skewed input (`fac5530`)
+- Unit test `decode()` helper uses `u64` not `u32` to prevent potential wrap errors (``)
 
 ## Fixed
 

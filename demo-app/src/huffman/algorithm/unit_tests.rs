@@ -26,7 +26,7 @@ fn decode(lengths: &[(u8, u8)], bytes: &[u8], bit_len: usize) -> Result<Vec<u8>,
     sorted.sort_unstable_by_key(|&(symbol, len)| (len, symbol));
 
     let mut table = std::collections::HashMap::new();
-    let (mut next, mut prev_len) = (0u32, sorted[0].1);
+    let (mut next, mut prev_len) = (0u64, sorted[0].1);
     for &(symbol, len) in &sorted {
         next <<= len - prev_len;
         prev_len = len;
@@ -34,9 +34,9 @@ fn decode(lengths: &[(u8, u8)], bytes: &[u8], bit_len: usize) -> Result<Vec<u8>,
         next += 1;
     }
 
-    let (mut out, mut bits, mut len) = (Vec::new(), 0u32, 0u8);
+    let (mut out, mut bits, mut len) = (Vec::new(), 0u64, 0u8);
     for i in 0..bit_len {
-        bits = bits << 1 | u32::from(bytes[i / 8] >> (7 - i % 8) & 1);
+        bits = bits << 1 | u64::from(bytes[i / 8] >> (7 - i % 8) & 1);
         len += 1;
         if let Some(&symbol) = table.get(&(len, bits)) {
             out.push(symbol);
@@ -123,6 +123,17 @@ fn a_code_of_the_longest_length_does_not_overflow_assignment() -> Result<(), Str
 
     // One leaf more makes a 33-bit code, which the packer cannot hold.
     check(codebook(&chain_tree(34)).is_none(), "33-bit codes are refused")
+}
+
+#[test]
+fn codes_of_the_longest_length_survive_packing_and_decoding() -> Result<(), String> {
+    // The same chain tree as above, so the output holds 32-bit codes. Each byte appears once, in descending order.
+    let book = codebook(&chain_tree(33)).ok_or("32-bit codes are allowed")?;
+    let input: Vec<u8> = (0..33u8).rev().collect();
+    let packed = pack(&input, &book).ok_or("every byte has a code")?;
+
+    let lengths: Vec<(u8, u8)> = book.entries.iter().map(|e| (e.symbol, e.code.len)).collect();
+    check_eq(decode(&lengths, &packed.bytes, packed.bit_len)?, input)
 }
 
 #[test]
