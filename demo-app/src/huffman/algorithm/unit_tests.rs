@@ -90,6 +90,41 @@ fn canonical_codes_follow_length_then_byte_order() -> Result<(), String> {
     )
 }
 
+/// A tree shaped as a chain, with `leaves` leaves, so the deepest two sit `leaves - 1` levels down.
+fn chain_tree(leaves: usize) -> Tree {
+    let mut nodes: Vec<Node> = (0..leaves).map(|i| Node::Leaf { symbol: i as u8, weight: 1 }).collect();
+    let mut merges = Vec::new();
+    let mut spine = 0;
+
+    for leaf in 1..leaves {
+        let parent = nodes.len();
+        let weight = nodes[spine].weight() + 1;
+        nodes.push(Node::Branch {
+            left: spine,
+            right: leaf,
+            weight,
+        });
+        merges.push(Merge {
+            left: spine,
+            right: leaf,
+            parent,
+        });
+        spine = parent;
+    }
+    Tree { nodes, merges }
+}
+
+#[test]
+fn a_code_of_the_longest_length_does_not_overflow_assignment() -> Result<(), String> {
+    // 33 leaves in a chain give a longest code of 32 bits, and the last canonical code is then all ones.
+    let book = codebook(&chain_tree(33)).ok_or("32-bit codes are allowed")?;
+    let last = book.entries.last().ok_or("at least one entry")?;
+    check_eq((last.code.len, last.code.bits), (32, 0xffff_ffff))?;
+
+    // One leaf more makes a 33-bit code, which the packer cannot hold.
+    check(codebook(&chain_tree(34)).is_none(), "33-bit codes are refused")
+}
+
 #[test]
 fn the_codes_are_prefix_free_and_fill_the_code_space() -> Result<(), String> {
     for input in [

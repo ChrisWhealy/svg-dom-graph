@@ -50,14 +50,18 @@ pub(in crate::huffman) fn codebook(tree: &Tree) -> Option<Codebook> {
 
     let mut entries = Vec::with_capacity(lengths.len());
     let mut by_symbol = [None; 256];
-    let mut next = 0u32;
+    // One wider than a code, because the last code of a complete set is all ones and the step past it must not wrap.
+    let mut next = 0u64;
     let mut prev_len = lengths[0].1;
 
     for (symbol, len) in lengths {
         next <<= len - prev_len;
         prev_len = len;
 
-        let code = Code { bits: next, len };
+        let code = Code {
+            bits: u32::try_from(next).ok()?,
+            len,
+        };
         entries.push(Entry { symbol, code });
         by_symbol[symbol as usize] = Some(code);
         next += 1;

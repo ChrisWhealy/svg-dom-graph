@@ -11,8 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add algorithm for demo of Huffman encoding (`97b2ad5`)
-- Test to derive final flush from last step (``)
+- Test to derive final flush from last step (`6a5db8a`)
 
+## Fixed
+
+- Avoid potential `u32` overflow (``)
 
 # [Released]
 
