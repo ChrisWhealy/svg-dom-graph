@@ -68,6 +68,7 @@ mod edge_anchors;
 mod elbow;
 mod floats;
 mod highlight;
+mod huffman;
 mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;

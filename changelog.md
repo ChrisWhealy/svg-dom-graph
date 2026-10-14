@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.35] - 2026-10-14
+
+## Added
+
+- Add algorithm for demo of Huffman encoding (``)
+
 # [Released]
 
 ## [0.2.34] - 2026-10-13
