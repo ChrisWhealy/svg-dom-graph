@@ -116,6 +116,12 @@ pub enum Error {
     /// Zero columns (or rows) has no meaning: there is nowhere to place any value. Rejected before drawing anything or
     /// touching the graph's model, so a rejected call leaves the scene unchanged.
     InvalidGridLayout(crate::scene::GridLayout),
+    /// `Scene::add_markdown_node`/`Scene::add_markdown_node_with` was given text with nothing to draw: it is empty, or
+    /// holds only whitespace. Rejected before drawing anything or touching the graph's model, so a rejected call leaves
+    /// the scene unchanged.
+    EmptyMarkdown,
+    /// `Scene::text_input_value` or `Scene::set_text_input_value` was given a node that is not a text input node.
+    NotATextInput(NodeId),
     /// An operator node's operand names a node whose content is a plain label, not a [`crate::scene::DataNodeContent`].
     ///
     /// Only typed data has a value an operator could plausibly act on. Rejected before drawing anything or touching the
@@ -288,6 +294,8 @@ impl fmt::Display for Error {
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
             },
+            Error::EmptyMarkdown => write!(f, "markdown must hold at least one heading, paragraph or list item"),
+            Error::NotATextInput(id) => write!(f, "node {id:?} is not a text input node"),
             Error::OperandNotData(id) => write!(f, "node {id:?} is a plain label, not a DataNodeContent"),
             Error::OperatorTypeMismatch { expected, found } => {
                 write!(f, "operator type mismatch: expected {expected}, found {found}")

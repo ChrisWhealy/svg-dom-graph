@@ -128,3 +128,7 @@ pub(crate) const TYPE_COLOUR_F32: &str = "#d0e3fb";
 
 /// The `f64` shade — a deeper sky blue than [`TYPE_COLOUR_F32`].
 pub(crate) const TYPE_COLOUR_F64: &str = "#a8c8f2";
+
+/// The ink of inline code in a Markdown node, a dark orange that stays legible on [`PLAIN_BOX_FILL`] and sets code apart
+/// from prose without relying on the font alone.
+pub(crate) const MARKDOWN_CODE_INK: &str = "#a4380b";

@@ -118,7 +118,7 @@ impl Scene {
         // in two conflicting ways at once. See `SceneInner::scratch`'s own doc comment for why this, rather than a
         // fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors);
+        let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors, None);
         inner.scratch = scratch;
         let mut handles = result?;
 

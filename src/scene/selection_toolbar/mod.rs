@@ -390,7 +390,10 @@ impl Scene {
             let inner = self.inner.borrow();
             match &inner.graph.node(node).ok_or(Error::UnknownNode(node))?.content {
                 NodeContent::Data(_) => {},
-                NodeContent::Label(_) | NodeContent::Container(_) => {
+                NodeContent::Label(_)
+                | NodeContent::Container(_)
+                | NodeContent::Markdown(_)
+                | NodeContent::TextInput(_) => {
                     return Err(Error::InvalidSelection(node, Selection::None));
                 },
             }

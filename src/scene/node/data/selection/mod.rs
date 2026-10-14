@@ -62,7 +62,10 @@ impl Scene {
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
-            NodeContent::Label(_) | NodeContent::Container(_) => return Err(Error::InvalidSelection(id, selection)),
+            NodeContent::Label(_)
+            | NodeContent::Container(_)
+            | NodeContent::Markdown(_)
+            | NodeContent::TextInput(_) => return Err(Error::InvalidSelection(id, selection)),
         };
         let new = Highlight::resolve(content, selection).ok_or(Error::InvalidSelection(id, selection))?;
         let base_colour = content.type_colour();
@@ -163,7 +166,10 @@ impl Scene {
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
-            NodeContent::Label(_) | NodeContent::Container(_) => {
+            NodeContent::Label(_)
+            | NodeContent::Container(_)
+            | NodeContent::Markdown(_)
+            | NodeContent::TextInput(_) => {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };

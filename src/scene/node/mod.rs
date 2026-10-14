@@ -10,10 +10,12 @@ mod construction_guard;
 mod container;
 mod data;
 mod edge_anchors;
+mod markdown;
 mod node_options;
 mod operator;
 mod plain;
 mod render_guard;
+mod text_input;
 
 use super::Scene;
 use crate::{

@@ -3,8 +3,8 @@ use super::EdgeAnchors;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures how [Scene::add_node_with](crate::scene::Scene::add_node_with) anchors connectors to a node.
 ///
-/// Build one either with [`NodeOptions::default`] or with [`with_edge_anchors`](Self::with_edge_anchors). A struct
-/// literal does not compile outside this crate.
+/// Build one either with [`NodeOptions::default`] or with [`with_edge_anchors`](Self::with_edge_anchors) and
+/// [`with_fill`](Self::with_fill). A struct literal does not compile outside this crate.
 ///
 /// ***A note on `Copy`***
 ///
@@ -18,6 +18,11 @@ pub struct NodeOptions {
     ///
     /// `None` (the default) keeps each connector's own default anchor rule.
     pub edge_anchors: Option<EdgeAnchors>,
+    /// The fill of a plain node's box, as any SVG paint, such as `"#d6f2ee"` or `"lightsteelblue"`.
+    ///
+    /// `None` (the default) keeps the usual light blue. It is read by [`Scene::add_node_with`](crate::scene::Scene::
+    /// add_node_with) only. A data node's own fill says what type it holds, so it is not changed by this.
+    pub fill: Option<&'static str>,
 }
 
 impl NodeOptions {
@@ -31,6 +36,25 @@ impl NodeOptions {
     #[must_use]
     pub fn with_edge_anchors(mut self, edge_anchors: Option<EdgeAnchors>) -> Self {
         self.edge_anchors = edge_anchors;
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with `fill` set to `fill`. This is how a plain node is told apart from its neighbours: a heading
+    /// row of a table drawn from plain nodes, for example.
+    ///
+    /// Only [`Scene::add_node_with`](crate::scene::Scene::add_node_with) uses it. Colour alone does not tell a reader
+    /// anything that assistive technology can use, so a node that is different in a way that matters should say so in
+    /// its label too.
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::NodeOptions;
+    /// let options = NodeOptions::default().with_fill(Some("#d6f2ee"));
+    /// assert_eq!(options.fill, Some("#d6f2ee"));
+    /// ```
+    #[must_use]
+    pub fn with_fill(mut self, fill: Option<&'static str>) -> Self {
+        self.fill = fill;
         self
     }
 }

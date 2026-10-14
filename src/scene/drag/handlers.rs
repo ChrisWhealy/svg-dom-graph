@@ -28,6 +28,16 @@ use svg_dom::{
 use web_sys::PointerEvent;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Whether `evt` went down on, or inside, a form control: an `<input>`, `<textarea>` or `<select>`.
+fn is_on_form_control(evt: &PointerEvent) -> bool {
+    use wasm_bindgen::JsCast;
+    evt.target()
+        .and_then(|target| target.dyn_into::<web_sys::Element>().ok())
+        .and_then(|element| element.closest("input, textarea, select").ok().flatten())
+        .is_some()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Starts a drag, if this is the primary button and no drag is already active.
 pub(super) fn pointerdown(
     id: NodeId,
@@ -42,6 +52,12 @@ pub(super) fn pointerdown(
         // `button() == 0` is left mouse, touch, or ordinary pen contact. 1 is middle mouse and 2 is right
         // mouse, neither of which should start a drag.
         if drag_start.get().is_some() || evt.button() != 0 {
+            return;
+        }
+        // A pointer that goes down on a form control, such as a text input node's text box, belongs to that control.
+        // Capturing it, or cancelling its default action below, would stop the control taking the focus or placing its
+        // caret. The rest of the node, its label and its padding, still drags it.
+        if is_on_form_control(&evt) {
             return;
         }
         // Stops the browser starting its own text-selection drag from this pointerdown — see `GRAB_STYLE`.

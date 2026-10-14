@@ -51,7 +51,10 @@ impl Scene {
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
-            NodeContent::Label(_) | NodeContent::Container(_) => {
+            NodeContent::Label(_)
+            | NodeContent::Container(_)
+            | NodeContent::Markdown(_)
+            | NodeContent::TextInput(_) => {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };

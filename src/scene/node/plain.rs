@@ -63,6 +63,7 @@ pub(super) fn draw_box(
     rect: Rect,
     label: &str,
     edge_anchors: Option<EdgeAnchors>,
+    fill: Option<&str>,
 ) -> Result<BoxHandles, Error> {
     let group = svg.group()?;
     let mut guard = RenderGuard::new(group.clone());
@@ -73,7 +74,7 @@ pub(super) fn draw_box(
 
     let rect_el = svg.rect(local_rect.origin, local_rect.size)?;
     guard.track(rect_el.clone());
-    rect_el.set_fill(PLAIN_BOX_FILL)?;
+    rect_el.set_fill(fill.unwrap_or(PLAIN_BOX_FILL))?;
     rect_el.set_stroke(BOX_STROKE)?;
     rect_el.set_stroke_width(1.5)?;
 
@@ -173,7 +174,7 @@ impl Scene {
         // in two conflicting ways at once. See `SceneInner::scratch`'s own doc comment for why this, rather than a
         // fresh `String` per call.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors);
+        let result = draw_box(&inner.svg, &mut scratch, rect, &label, options.edge_anchors, options.fill);
         inner.scratch = scratch;
         let handles = result?;
         inner.attach(&handles.group)?;

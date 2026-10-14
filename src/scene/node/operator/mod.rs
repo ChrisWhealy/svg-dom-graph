@@ -40,7 +40,9 @@ use svg_dom::{
 fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error> {
     match &graph.node(id).ok_or(Error::UnknownNode(id))?.content {
         NodeContent::Data(content) => Ok(content),
-        NodeContent::Label(_) | NodeContent::Container(_) => Err(Error::OperandNotData(id)),
+        NodeContent::Label(_) | NodeContent::Container(_) | NodeContent::Markdown(_) | NodeContent::TextInput(_) => {
+            Err(Error::OperandNotData(id))
+        },
     }
 }
 

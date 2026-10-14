@@ -4,7 +4,9 @@ use crate::model::content::DataNodeContent;
 /// A node's semantic content holds one of:
 ///  - the plain text label of an ordinary node,
 ///  - the typed numeric values of a data node,
-///  - the label of a container node that owns a nested `Scene`.
+///  - the label of a container node that owns a nested `Scene`,
+///  - the Markdown source of a text node, or
+///  - the label of a text input node, whose current text lives in the DOM and not here.
 ///
 /// The graph model retains this regardless of how a node was rendered. So a reader need not parse the generated SVG to
 /// recover the node's actual content.
@@ -17,6 +19,8 @@ pub(crate) enum NodeContent {
     Label(String),
     Data(DataNodeContent),
     Container(String),
+    Markdown(String),
+    TextInput(String),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

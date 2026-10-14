@@ -2,11 +2,15 @@
 
 A node is a labelled box in the graph.
 This page covers plain nodes, data nodes, named data nodes and operator nodes, and changing the values of a data node in place.
+Nodes that hold text, a Markdown node and a text input node, are described in [Text Nodes](text-nodes.md).
 Labels beside the rows of a grid are described in [Row Labels and Text Measurement](labels-and-text.md), and nodes that own a nested scene in [Nested Scenes](nested-scenes.md).
 
 - `add_node`/`add_node_with` draw a box with a single text label.
 
    `NodeOptions`/`EdgeAnchors` configure how many connector fixing points a node's own sides offer.
+
+   `NodeOptions::with_fill` gives a plain node a fill of its own, which is how a heading row of a table made of plain nodes is told apart from the rows below it.
+   A data node's fill says what type it holds, so it is not changed by this.
 
 - `add_data_node`/`add_data_node_with` draw a node whose content is a grid of `DataNodeContent` values instead of a plain label, self-sizing to fit.
 
