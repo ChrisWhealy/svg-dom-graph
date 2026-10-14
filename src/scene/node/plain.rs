@@ -29,7 +29,7 @@ const LABEL_MARGIN: f64 = 5.0;
 /// character widths. So this stays correct for whatever font the browser actually substitutes, with no per-glyph
 /// metrics table to keep in sync. Only ever shrinks — a label that already fits at [`LABEL_FONT_SIZE`] keeps that size
 /// exactly, rather than being nudged to fill the available room.
-fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
+pub(super) fn shrink_label_to_fit(label: &SvgNode, size: Size) -> Result<(), Error> {
     let bbox = label.bounding_box()?;
     let max_width = (size.width - 2.0 * LABEL_MARGIN).max(0.0);
     let max_height = (size.height - 2.0 * LABEL_MARGIN).max(0.0);

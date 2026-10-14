@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct `find_closer()` logic when searching for a closing emphasis marker (`987c27b`)
 - Prevent indented list markers become new list items (`4021210`)
 - Preserve whitespace within `Style::code` and fix doc errors (`795470b`)
-- Preserve trailing hashes (``)
+- Preserve trailing hashes (`153e392`)
+- Prevent text input labels from overflowing available width (``)
 
 # [Released]
 

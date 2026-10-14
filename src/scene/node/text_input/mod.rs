@@ -19,7 +19,7 @@
 
 use super::{
     EdgeAnchors, LABEL_FONT_SIZE, LABEL_ROW_HEIGHT, NodeOptions, OUTER_PADDING, data::validate_node_name,
-    render_guard::RenderGuard, validate_edge_anchors,
+    plain::shrink_label_to_fit, render_guard::RenderGuard, validate_edge_anchors,
 };
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, TEXT_FILL},
@@ -61,7 +61,7 @@ fn find_input(group: &svg_dom::SvgNode) -> Option<HtmlInputElement> {
         .and_then(|el| el.dyn_into::<HtmlInputElement>().ok())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a text input node, and attaches `listener` to its `input` event.
 ///
 /// The outer box has the label in a row above the text box, as a named data node does. A [`RenderGuard`] removes
@@ -95,6 +95,9 @@ fn draw_text_input_box(
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
     label_el.set_font_size(LABEL_FONT_SIZE)?;
     label_el.set_fill(TEXT_FILL)?;
+    // Width only: the label row has no height to spare for the plain node's vertical margin, and only the width can
+    // overflow, since the node is `width` wide whatever the label says.
+    shrink_label_to_fit(&label_el, Size::new(width, f64::INFINITY))?;
     group.append(&label_el)?;
     guard.release();
 
@@ -169,7 +172,7 @@ fn draw_text_input_box(
     ))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Adds a node holding a one-line text box the user can type into, and returns its id. The node is `width` wide,
     /// with `label` above the text box, which starts holding `value`.
