@@ -289,6 +289,64 @@ fn the_worst_case_input_stays_inside_the_code_length_limit() -> Result<(), Strin
 }
 
 #[test]
+fn arbitrary_binary_data_including_zero_and_ff_round_trips() -> Result<(), String> {
+    let input = [0x00, 0xff, 0x00, 0xff, 0x80, 0x7f, 0x00, 0x00, 0xff, 0x01, 0xfe, 0x00];
+    let t = trace_of(&input)?;
+    check(t.codebook.code_for(0x00).is_some(), "byte 0x00 has a code")?;
+    check(t.codebook.code_for(0xff).is_some(), "byte 0xff has a code")?;
+    check_eq(decode(&lengths_of(&t), &t.packed.bytes, t.packed.bit_len)?, input.to_vec())
+}
+
+#[test]
+fn output_that_fills_whole_bytes_needs_no_padding() -> Result<(), String> {
+    // Two equally common bytes get 1-bit codes 0 and 1, so eight symbols make exactly one byte.
+    let t = trace_of(b"abababab")?;
+    check_eq(t.packed.bytes.clone(), vec![0b0101_0101])?;
+    check_eq((t.packed.bit_len, t.packed.padding()), (8, 0))?;
+    check_eq(t.packed.steps.last().map(|s| s.nbits_after), Some(0))
+}
+
+#[test]
+fn the_deepest_tree_the_input_limit_allows_has_codes_of_seven_bits() -> Result<(), String> {
+    // Fibonacci counts make the deepest tree. A ninth distinct byte would need 88 bytes, so 7 is the most possible.
+    let counts = [1usize, 1, 2, 3, 5, 8, 13, 31];
+    let input: Vec<u8> = counts.iter().enumerate().flat_map(|(i, &n)| vec![b'a' + i as u8; n]).collect();
+    check_eq(input.len(), MAX_INPUT_LEN)?;
+
+    let t = trace_of(&input)?;
+    check_eq(t.codebook.entries.iter().map(|e| e.code.len).max(), Some(7))?;
+    check_eq(decode(&lengths_of(&t), &t.packed.bytes, t.packed.bit_len)?, input)
+}
+
+#[test]
+fn the_bit_length_is_the_sum_of_every_symbols_code_length() -> Result<(), String> {
+    let fibonacci: Vec<u8> = [1usize, 1, 2, 3, 5, 8, 13, 31]
+        .iter()
+        .enumerate()
+        .flat_map(|(i, &n)| vec![b'a' + i as u8; n])
+        .collect();
+
+    for input in [
+        &b"abracadabra"[..],
+        b"aaaaaaaaa",
+        b"abababab",
+        b"the quick brown fox",
+        &[0, 255, 0, 255, 7],
+        &fibonacci,
+    ] {
+        let t = trace_of(input)?;
+        let total: usize = input
+            .iter()
+            .filter_map(|&b| t.codebook.code_for(b))
+            .map(|c| usize::from(c.len))
+            .sum();
+        check_eq(t.packed.bit_len, total)?;
+        check_eq(t.packed.bytes.len(), total.div_ceil(8))?;
+    }
+    Ok(())
+}
+
+#[test]
 fn non_ascii_text_is_encoded_as_its_utf8_bytes() -> Result<(), String> {
     let text = "héllo wörld ✓";
     let t = trace_of(text.as_bytes())?;
