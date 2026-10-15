@@ -570,7 +570,7 @@ fn the_output_after_every_step_is_a_prefix_of_the_packed_bytes() -> Result<(), S
 
 #[test]
 fn only_the_flush_has_a_summary_and_it_compares_the_sizes() -> Result<(), String> {
-    // 11 input bytes become 3, so the ratio is 11 to 3 = 3.67 and the output is 27.2% of the original.
+    // 11 input bytes become 3, so the ratio is 11 to 3 = 3.67 and the output is 27.3% of the original.
     let t = abracadabra()?;
     check((0..11).all(|i| packing(&t, i).summary.is_none()), "no summary before the flush")?;
     let summary = packing(&t, 11).summary.ok_or("the flush has a summary")?;
@@ -580,7 +580,7 @@ fn only_the_flush_has_a_summary_and_it_compares_the_sizes() -> Result<(), String
         &summary,
     )?;
     check(summary.contains("3.67 to 1"), &summary)?;
-    check(summary.contains("27.2% of the original size, a saving of 72.8%"), &summary)
+    check(summary.contains("27.3% of the original size, a saving of 72.7%"), &summary)
 }
 
 #[test]

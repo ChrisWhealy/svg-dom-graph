@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.35] - 2026-10-14
+## [0.2.35] - 2026-10-15
 
 ## Added
 
@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Added `TextInput` and `Markdown` nodes for receiving text input from the user, and displaying a monospaced, formatted block of text (`ec6bbba`)
 - Doc only: Measurement can differ between hidden and visible scenes (`abede35`)
 - Add demo scene for phase 1 of Huffman encoding (`0b2f235`)
-- Add demo scene for phase 2 of Huffman encoding (``)
+- Add demo scene for phase 2 of Huffman encoding (`7f88ac5`)
 
 ## Fixed
 
@@ -29,6 +29,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent text input labels from overflowing available width (`096cf07`)
 - Prevent numbered lists from exceeding available width (`4b10f61`)
 - Remove parser inefficiency when scanning forward for close markers (`7430516`)
+
+## Changed
+
+- Round compression ratio rather than truncating (``)
 
 # [Released]
 
