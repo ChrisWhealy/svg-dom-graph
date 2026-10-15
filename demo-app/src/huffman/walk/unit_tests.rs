@@ -476,3 +476,117 @@ fn every_step_explains_itself_in_one_to_three_paragraphs_none_of_them_empty() ->
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Pass two
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to 0100 1110 1010 1100 1001 110 and a
+// single bit of padding: the bytes 0x4E, 0xAC and 0x9C.
+
+#[test]
+fn pass_two_has_one_step_for_each_input_byte_and_a_flush() -> Result<(), String> {
+    check_eq(pack_steps(&abracadabra()?), 12)
+}
+
+#[test]
+fn a_step_appends_the_code_after_the_pending_bits_and_marks_only_the_code() -> Result<(), String> {
+    // Step 0 packs 'a' = 0, and step 1 packs 'b' = 100 after the one pending bit.
+    let t = abracadabra()?;
+    let first = packing(&t, 0);
+    check_eq(first.appended, vec![false])?;
+    check_eq(first.marked, vec![0])?;
+    check_eq(first.pending, vec![false])?;
+    let second = packing(&t, 1);
+    check_eq(second.appended, vec![false, true, false, false])?;
+    check_eq(second.marked, vec![1, 2, 3])?;
+    check_eq(second.symbol, Some(b'b'))
+}
+
+#[test]
+fn a_step_writes_a_byte_as_soon_as_eight_bits_are_ready() -> Result<(), String> {
+    // After 'a' 'b' 'r' there are 7 bits, and the next 'a' makes the eighth.
+    let t = abracadabra()?;
+    check_eq(packing(&t, 2).output, vec![])?;
+    let fourth = packing(&t, 3);
+    check_eq(fourth.output, vec![0x4E])?;
+    check_eq(fourth.new_bytes, vec![0])?;
+    check_eq(fourth.pending, vec![])
+}
+
+#[test]
+fn the_flush_pads_the_last_byte_with_zeros_and_ends_on_the_packed_output() -> Result<(), String> {
+    let t = abracadabra()?;
+    let flush = packing(&t, 11);
+    check_eq(flush.symbol, None)?;
+    check_eq(flush.output.clone(), vec![0x4E, 0xAC, 0x9C])?;
+    check_eq(flush.output, t.packed.bytes.clone())?;
+    // The last 7 bits are pending, and the eighth is padding.
+    check_eq(flush.appended.len(), 8)?;
+    check_eq(flush.marked, vec![7])?;
+    check_eq(flush.new_bytes, vec![2])?;
+    check_eq(flush.pending, vec![])
+}
+
+#[test]
+fn a_position_past_the_flush_is_the_flush() -> Result<(), String> {
+    let t = abracadabra()?;
+    check_eq(packing(&t, 99), packing(&t, 11))
+}
+
+#[test]
+fn an_exact_multiple_of_eight_bits_needs_no_padding() -> Result<(), String> {
+    // One distinct byte has a code of 1 bit, so 8 of them fill a byte.
+    let t = trace(b"aaaaaaaa").ok_or("encodable")?;
+    let flush = packing(&t, 8);
+    check_eq(flush.appended, vec![])?;
+    check_eq(flush.new_bytes, vec![])?;
+    check_eq(flush.output, vec![0])?;
+    check(
+        flush.caption[0].contains("no padding is needed"),
+        "the flush says no padding is needed",
+    )
+}
+
+#[test]
+fn every_pass_two_step_explains_itself_in_three_lines_none_of_them_empty() -> Result<(), String> {
+    let t = trace(b"It is a truth universally acknowledged").ok_or("encodable")?;
+    for index in 0..pack_steps(&t) {
+        let caption = packing(&t, index).caption;
+        check_eq(caption.len(), 3)?;
+        check(caption.iter().all(|l| !l.is_empty()), "no line is empty")?;
+    }
+    Ok(())
+}
+
+#[test]
+fn the_output_after_every_step_is_a_prefix_of_the_packed_bytes() -> Result<(), String> {
+    let t = trace(b"It is a truth universally acknowledged, that a single man").ok_or("encodable")?;
+    for index in 0..pack_steps(&t) {
+        let output = packing(&t, index).output;
+        check(t.packed.bytes.starts_with(&output), &format!("step {index} output is a prefix"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn only_the_flush_has_a_summary_and_it_compares_the_sizes() -> Result<(), String> {
+    // 11 input bytes become 3, so the ratio is 11 to 3 = 3.67 and the output is 27.2% of the original.
+    let t = abracadabra()?;
+    check((0..11).all(|i| packing(&t, i).summary.is_none()), "no summary before the flush")?;
+    let summary = packing(&t, 11).summary.ok_or("the flush has a summary")?;
+    check(summary.contains("**Original**: 11 bytes (88 bits)"), &summary)?;
+    check(
+        summary.contains("**Encoded**: 3 bytes, which is 23 bits of code and 1 of padding"),
+        &summary,
+    )?;
+    check(summary.contains("3.67 to 1"), &summary)?;
+    check(summary.contains("27.2% of the original size, a saving of 72.8%"), &summary)
+}
+
+#[test]
+fn a_summary_of_output_as_large_as_the_input_saves_nothing() -> Result<(), String> {
+    // One byte of input has a 1-bit code and is padded to one byte, so nothing is saved.
+    let t = trace(&[7]).ok_or("encodable")?;
+    let summary = packing(&t, 1).summary.ok_or("the flush has a summary")?;
+    check(summary.contains("100.0% of the original size, a saving of 0.0%"), &summary)
+}

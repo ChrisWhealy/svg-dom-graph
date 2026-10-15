@@ -1,15 +1,15 @@
-//! `panel-huffman` / `#huffman-diagram`: pass one of Huffman encoding, which counts the bytes of a text, builds the code
-//! tree and gives every byte its canonical code. See [`build_scene`]'s own doc comment for what the diagram shows. The
-//! scene is large, so it runs in a window of its own. The gallery's panel keeps the description and opens that window:
-//! see [`build_huffman_demo`].
+//! `panel-huffman` / `#huffman-diagram`: Huffman encoding, which counts the bytes of a text, builds the code tree, gives
+//! every byte its canonical code and then packs the codes into bytes. See [`build_scene`]'s own doc comment for what
+//! the diagram shows. The scene is large, so it runs in a window of its own. The gallery's panel keeps the description
+//! and opens that window: see [`build_huffman_demo`].
 //!
-//! Huffman encoding takes two passes over the text. The first, shown here, counts how often each byte occurs and builds
-//! the tree. The second replaces each byte with its code and packs the odd-length bit sequences into whole bytes. This
-//! file draws pass one only, and the second pass and the decoder come later.
+//! Huffman encoding takes two passes over the text. The first counts how often each byte occurs and builds the tree.
+//! The second replaces each byte with its code and packs the odd-length bit sequences into whole bytes. This file draws
+//! both as one walk, and the decoder comes later.
 //!
 //! # One scene per step
 //!
-//! A node or edge cannot be removed once drawn, and every step of pass one changes which nodes exist. So each step
+//! A node or edge cannot be removed once drawn, and every step changes which nodes exist. So each step
 //! draws the whole scene again, from [`walk::shown`] alone, and keeps the zoom and pan and the keyboard focus the old
 //! one had. Stepping backwards is the same work as stepping forwards.
 //!
@@ -22,7 +22,7 @@
 //! # What is real
 //!
 //! All of it. [`algorithm::trace`] encodes the text in plain Rust, and every value on screen is a piece of that one
-//! calculation: the counts, the merges, the tree's paths and the canonical codes. Symbols are bytes, so a multi-byte
+//! calculation: the counts, the merges, the tree's paths, the canonical codes, the pending bits and the output. Symbols are bytes, so a multi-byte
 //! character is counted as its separate bytes, as real Huffman encoders do.
 
 mod algorithm;
@@ -43,7 +43,7 @@ use svg_dom_graph::{
         SceneTitleOptions, Selection, Side, ToolbarOptions,
     },
 };
-use walk::{Row, Shown, Spacing, leaf_label, steps, symbol_label};
+use walk::{Packing, Row, Shown, Spacing, leaf_label, pack_steps, packing, steps, symbol_label};
 use wasm_bindgen::JsCast;
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
@@ -58,6 +58,7 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
     source_file!("huffman/algorithm/pack.rs", "algorithm/pack.rs"),
     source_file!("huffman/walk/mod.rs", "walk/mod.rs"),
     source_file!("huffman/walk/shown.rs", "walk/shown.rs"),
+    source_file!("huffman/walk/packing.rs", "walk/packing.rs"),
     source_file!("huffman/walk/layout.rs", "walk/layout.rs"),
     source_file!("huffman/mod.rs", "mod.rs"),
 ];
@@ -88,8 +89,8 @@ const LEFT: f64 = 20.0;
 /// The space between one block of the scene and the next below it, and between the closely stacked nodes at the top.
 const V_GAP: f64 = 36.0;
 const GAP: f64 = 12.0;
-/// The width of the text box and of the two Markdown nodes. It is wide enough for their longest line.
-const PANEL_WIDTH: f64 = 1000.0;
+/// The width of the text box and of the two Markdown nodes. Longer lines wrap.
+const PANEL_WIDTH: f64 = 560.0;
 /// The fill of the code table's heading row. The rows below it keep the usual light blue.
 const HEADER_FILL: &str = "#bdd3f5";
 /// The code table's columns: symbol, count, tree path, length, canonical code. Each is a box wide enough for its widest
@@ -105,6 +106,12 @@ const COLUMNS: [(&str, f64); 5] = [
 const TABLE_GAP: f64 = 40.0;
 /// The height of a row of the code table.
 const ROW_HEIGHT: f64 = 26.0;
+/// How many input bytes pass two draws in a row.
+const INPUT_COLUMNS: usize = 16;
+/// How many output bytes pass two draws in a row.
+const OUTPUT_COLUMNS: usize = 6;
+/// The width of the plain box that stands in for a row of bits or bytes that is empty, since a data node cannot be.
+const EMPTY_WIDTH: f64 = 240.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A text that has been encoded, and what is worked out once from it and kept.
@@ -337,12 +344,12 @@ fn highlight_route(scene: &Scene, forest: &Forest, route: &[usize]) -> Result<()
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the code table with its top left at `(left, top)`, one row for each distinct byte, the commonest first, and returns the
-/// lowest edge. The first row holds the headings, and has a fill of its own. The row the last step wrote to is ringed.
+/// lowest edge. The first row holds the headings, and has a fill of its own. The row `focus_row` is ringed.
 ///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails.
-fn draw_table(scene: &Scene, shown: &Shown, left: f64, top: f64) -> Result<f64, String> {
+fn draw_table(scene: &Scene, shown: &Shown, focus_row: Option<usize>, left: f64, top: f64) -> Result<f64, String> {
     let headings = COLUMNS.map(|(heading, _)| heading.to_owned());
     let rows =
         std::iter::once((headings, None)).chain(shown.rows.iter().enumerate().map(|(i, r)| (row_cells(r), Some(i))));
@@ -359,7 +366,7 @@ fn draw_table(scene: &Scene, shown: &Shown, left: f64, top: f64) -> Result<f64, 
             let id = scene
                 .add_node_with(Point::new(x, y), Size::new(width, ROW_HEIGHT), text, options)
                 .map_err(stringify)?;
-            if index.is_some() && index == shown.focus_row {
+            if index.is_some() && index == focus_row {
                 scene.set_focus(id, true).map_err(stringify)?;
             }
             x += width;
@@ -370,7 +377,126 @@ fn draw_table(scene: &Scene, shown: &Shown, left: f64, top: f64) -> Result<f64, 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The height the explanation needs at its tallest step, which every step reserves.
+/// Draws one named row of data at `(left, top)` and returns its lowest edge. `marked` cells get the secondary selection.
+/// `content` is `None` for a row with nothing in it, which is drawn as a plain box saying so.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+fn draw_row(
+    scene: &Scene,
+    name: &str,
+    content: Option<DataNodeContent>,
+    marked: &[usize],
+    left: f64,
+    top: f64,
+) -> Result<Extent, String> {
+    let Some(content) = content else {
+        scene
+            .add_node(
+                Point::new(left, top),
+                Size::new(EMPTY_WIDTH, ROW_HEIGHT),
+                format!("{name}: none"),
+            )
+            .map_err(stringify)?;
+        return Ok((left + EMPTY_WIDTH, top + ROW_HEIGHT));
+    };
+    let id = scene
+        .add_named_data_node(Point::new(left, top), name, content)
+        .map_err(stringify)?;
+    if !marked.is_empty() {
+        scene.set_secondary_selection(id, marked).map_err(stringify)?;
+    }
+    let rect = scene.node_rect(id).map_err(stringify)?;
+    Ok((rect.origin.x + rect.size.width, rect.origin.y + rect.size.height))
+}
+
+/// Draws the input of pass two as an array with one cell for each byte, with its top left at `(left, top)`, and returns its
+/// lowest edge. The byte whose code is being packed at step `index` is marked, and no byte is at the flush.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+fn draw_input_array(scene: &Scene, trace: &Trace, index: usize, left: f64, top: f64) -> Result<f64, String> {
+    let bytes: Vec<u8> = trace.packed.steps.iter().map(|s| s.symbol).collect();
+    let content =
+        DataNodeContent::new(NodeValues::U8(bytes), DataFormat::Ascii).with_layout(GridLayout::Columns(INPUT_COLUMNS));
+    let id = scene
+        .add_named_data_node(Point::new(left, top), "Input bytes", content)
+        .map_err(stringify)?;
+    if index < trace.packed.steps.len() {
+        scene.set_secondary_selection(id, &[index]).map_err(stringify)?;
+    }
+    let rect = scene.node_rect(id).map_err(stringify)?;
+    Ok(rect.origin.y + rect.size.height)
+}
+
+/// The right and bottom edges of something drawn.
+type Extent = (f64, f64);
+
+/// The bytes of one hexadecimal row of the result, and the grid of the finished output in hexadecimal.
+const RESULT_COLUMNS: usize = 16;
+
+/// A row of data of `bytes`, `columns` wide.
+fn bytes_content(bytes: Vec<u8>, format: DataFormat, columns: usize) -> DataNodeContent {
+    DataNodeContent::new(NodeValues::U8(bytes), format).with_layout(GridLayout::Columns(columns))
+}
+
+/// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
+/// widest of a full row of the output in binary and of the result in hexadecimal.
+///
+/// # Errors
+///
+/// Returns `Err` if measuring fails.
+fn packing_width(scene: &Scene) -> Result<f64, String> {
+    let binary = bytes_content(vec![0; OUTPUT_COLUMNS], DataFormat::Binary, OUTPUT_COLUMNS);
+    let hex = bytes_content(vec![0; RESULT_COLUMNS], DataFormat::Hexadecimal, RESULT_COLUMNS);
+    let widths = [binary, hex].map(|c| scene.measure_data_node(&c).map(|s| s.width));
+    let [binary, hex] = widths;
+    Ok(binary.map_err(stringify)?.max(hex.map_err(stringify)?))
+}
+
+/// Draws what pass two shows at one step, with its top left at `(left, top)` and `width` wide, and returns the lowest
+/// edge: the bits being appended, the bits left pending, and the bytes written so far. What the step added to each is
+/// marked. At the flush it adds the finished output in hexadecimal, and its size against the input's.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+fn draw_packing(scene: &Scene, packing: &Packing, left: f64, top: f64, width: f64) -> Result<f64, String> {
+    let bits = |bits: &[bool]| {
+        (!bits.is_empty()).then(|| {
+            DataNodeContent::new(NodeValues::Bool(bits.to_vec()), DataFormat::Bool(BoolFormat::Bit))
+                .with_layout(GridLayout::Rows(1))
+        })
+    };
+    let bytes =
+        (!packing.output.is_empty()).then(|| bytes_content(packing.output.clone(), DataFormat::Binary, OUTPUT_COLUMNS));
+
+    let mut y = draw_row(scene, "Bits to pack", bits(&packing.appended), &packing.marked, left, top)?.1 + V_GAP;
+    y = draw_row(scene, "Pending bits", bits(&packing.pending), &[], left, y)?.1 + V_GAP;
+    y = draw_row(scene, "Output bytes", bytes, &packing.new_bytes, left, y)?.1;
+
+    if let Some(summary) = &packing.summary {
+        let hex = bytes_content(packing.output.clone(), DataFormat::Hexadecimal, RESULT_COLUMNS);
+        y = draw_row(scene, "Result in hexadecimal", Some(hex), &[], left, y + V_GAP)?.1 + V_GAP;
+        let id = scene
+            .add_markdown_node(Point::new(left, y), width, summary)
+            .map_err(stringify)?;
+        let rect = scene.node_rect(id).map_err(stringify)?;
+        y = rect.origin.y + rect.size.height;
+    }
+    Ok(y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many positions the whole walk has: pass one, then pass two.
+fn total_steps(trace: &Trace) -> usize {
+    steps(trace) + pack_steps(trace)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The height the explanation needs at its tallest step of either pass, which every step reserves.
 ///
 /// Measured once for each text, since it only depends on the walk, and kept in `encoding`.
 ///
@@ -382,8 +508,11 @@ fn explanation_height(scene: &Scene, encoding: &Encoding) -> Result<f64, String>
         return Ok(height);
     }
     let mut tallest: f64 = 0.0;
-    for position in 0..steps(&encoding.trace) {
-        let text = walk::shown(&encoding.trace, position).caption.join("\n\n");
+    let captions = (0..steps(&encoding.trace))
+        .map(|position| walk::shown(&encoding.trace, position).caption)
+        .chain((0..pack_steps(&encoding.trace)).map(|index| packing(&encoding.trace, index).caption));
+    for caption in captions {
+        let text = caption.join("\n\n");
         tallest = tallest.max(scene.measure_markdown_node(PANEL_WIDTH, &text).map_err(stringify)?.height);
     }
     encoding.explanation_height.set(Some(tallest));
@@ -406,9 +535,11 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 ///
 /// # What this draws
 ///
-/// From the top: the text input node holding the text to encode, a status line, an explanation of the current step, the
-/// forest of trees, and the code table. The explanation and the status line are Markdown nodes, and the room for each
-/// is kept at the height of its tallest text, so nothing below them moves as the walk steps.
+/// **Down the right-hand column**: the text input node holding the text to encode, a status line, an explanation of the
+/// current step, and the code table. The explanation and the status line are Markdown nodes, and the room for each is
+/// kept at the height of its tallest text, so nothing below them moves as the walk steps. The forest of trees fills the
+/// room to the left, from the top. In pass two the text input is replaced by an array of the input's bytes, with the byte
+/// being packed marked, and the room to the left holds the packing instead of the forest.
 ///
 /// **The forest** starts as one tree of one node for each distinct byte, lightest first. Each step merges the two
 /// lightest into a new tree whose weight is their sum, and the merge is ringed. The smaller of the two goes on the left.
@@ -436,8 +567,10 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing, or if any library call fails.
-fn build_scene(model: &Model) -> Result<(Scene, NodeId, NodeId), String> {
+fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String> {
     let trace = &model.encoding.trace;
+    // Pass two follows the last position of pass one. Its table is the finished one, so `shown` stays at pass one's end.
+    let pass_two = model.position.checked_sub(steps(trace)).map(|index| packing(trace, index));
     let shown = walk::shown(trace, model.position);
 
     let document = crate::util::document()?;
@@ -446,28 +579,14 @@ fn build_scene(model: &Model) -> Result<(Scene, NodeId, NodeId), String> {
     let svg = svg_dom::SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
     scene
-        .show_scene_title("Huffman encoding: pass one", SceneTitleOptions::default())
-        .map_err(stringify)?;
-
-    // The text box, then the status line and the explanation each in the room kept for them.
-    let input = scene
-        .add_text_input_node(
-            Point::new(LEFT, CONTENT_TOP),
-            PANEL_WIDTH,
-            "Text to encode",
-            &model.text,
-            |_, id, text| typed(id, text),
+        .show_scene_title(
+            if pass_two.is_some() {
+                "Huffman Encoding: Phase 1"
+            } else {
+                "Huffman Encoding: Phase 2"
+            },
+            SceneTitleOptions::default(),
         )
-        .map_err(stringify)?;
-    let input_rect = scene.node_rect(input).map_err(stringify)?;
-
-    let status_top = input_rect.origin.y + input_rect.size.height + GAP;
-    scene
-        .add_markdown_node(Point::new(LEFT, status_top), PANEL_WIDTH, &model.status_text())
-        .map_err(stringify)?;
-    let explanation_top = status_top + status_height(&scene, model)? + GAP;
-    scene
-        .add_markdown_node(Point::new(LEFT, explanation_top), PANEL_WIDTH, &shown.caption.join("\n\n"))
         .map_err(stringify)?;
 
     // The forest is sized for the finished tree, whose root is the tallest, and the leaves sit on one line below it.
@@ -478,32 +597,81 @@ fn build_scene(model: &Model) -> Result<(Scene, NodeId, NodeId), String> {
     };
     let (finished, _) = walk::layout(&trace.tree.nodes, &[trace.tree.root()]);
     let levels = finished.iter().map(|p| p.height).max().unwrap_or(0);
-    let forest_top = explanation_top + explanation_height(&scene, &model.encoding)? + V_GAP;
+    let forest_top = CONTENT_TOP;
     let leaf_y = forest_top + levels as f64 * spacing.level();
     let leaves: Vec<usize> = (0..trace.frequencies.len()).collect();
     let (_, widest) = walk::layout(&trace.tree.nodes, &leaves);
+    let table_width: f64 = COLUMNS.iter().map(|&(_, w)| w).sum();
 
-    let forest = draw_forest(&scene, trace, &shown, leaf_y, spacing)?;
-    highlight_route(&scene, &forest, &shown.route)?;
-    // The table stands to the right of the forest, level with its top. That makes the scene wide rather than tall, so it
-    // is scaled down less to fit a window.
-    let table_left = LEFT + widest + TABLE_GAP;
-    let table_bottom = draw_table(&scene, &shown, table_left, forest_top)?;
-    let bottom = table_bottom.max(leaf_y + spacing.box_height);
+    // The right-hand column, which is the same in both passes: the text, the status line, the explanation, and under them
+    // the code table. The forest, or pass two's packing, takes the room to its left.
+    let packing_width = packing_width(&scene)?;
+    let column = LEFT + if pass_two.is_some() { packing_width } else { widest } + TABLE_GAP;
+    let (input, input_bottom) = match model.position.checked_sub(steps(trace)) {
+        None => {
+            let id = scene
+                .add_text_input_node(
+                    Point::new(column, CONTENT_TOP),
+                    PANEL_WIDTH,
+                    "Text to encode",
+                    &model.text,
+                    |_, id, text| typed(id, text),
+                )
+                .map_err(stringify)?;
+            let rect = scene.node_rect(id).map_err(stringify)?;
+            (Some(id), rect.origin.y + rect.size.height)
+        },
+        Some(index) => (None, draw_input_array(&scene, trace, index, column, CONTENT_TOP)?),
+    };
+
+    // The status line and the explanation each get the room kept for them.
+    let status_top = input_bottom + GAP;
+    scene
+        .add_markdown_node(Point::new(column, status_top), PANEL_WIDTH, &model.status_text())
+        .map_err(stringify)?;
+    let explanation_top = status_top + status_height(&scene, model)? + GAP;
+    scene
+        .add_markdown_node(
+            Point::new(column, explanation_top),
+            PANEL_WIDTH,
+            &pass_two.as_ref().map_or(&shown.caption, |p| &p.caption).join("\n\n"),
+        )
+        .map_err(stringify)?;
+    let table_top = explanation_top + explanation_height(&scene, &model.encoding)? + V_GAP;
+
+    // Pass two has no forest, and puts its packing in the forest's place instead.
+    let (table_bottom, left_bottom) = match &pass_two {
+        None => {
+            let forest = draw_forest(&scene, trace, &shown, leaf_y, spacing)?;
+            highlight_route(&scene, &forest, &shown.route)?;
+            (
+                draw_table(&scene, &shown, shown.focus_row, column, table_top)?,
+                leaf_y + spacing.box_height,
+            )
+        },
+        Some(packing) => {
+            let focus_row = packing.symbol.and_then(|s| shown.rows.iter().position(|r| r.symbol == s));
+            (
+                draw_table(&scene, &shown, focus_row, column, table_top)?,
+                draw_packing(&scene, packing, LEFT, forest_top, packing_width)?,
+            )
+        },
+    };
+    let bottom = table_bottom.max(left_bottom);
 
     // "Step": see this function's own doc comment, "Stepping through it".
-    let step_values: Vec<u8> = (1..=steps(trace).min(usize::from(u8::MAX)) as u8).collect();
+    let step_values: Vec<u16> = (1..=total_steps(trace)).map(|n| n as u16).collect();
     let step = scene
         .add_named_data_node(
             Point::new(-10_000.0, -10_000.0),
             "Step",
-            DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
+            DataNodeContent::new(NodeValues::U16(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
     crate::util::hide_step_driver(DIAGRAM_ID)?;
 
     // The widest the forest ever is is every byte in a row of its own, before any merge.
-    let right = table_left + COLUMNS.iter().map(|&(_, w)| w).sum::<f64>();
+    let right = column + table_width.max(PANEL_WIDTH);
     fit_nested_size(&scene, DIAGRAM_ID, right, bottom, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, input, step))
@@ -511,15 +679,19 @@ fn build_scene(model: &Model) -> Result<(Scene, NodeId, NodeId), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the scene for `model`, wires its stepping toolbar, and replaces whatever scene was there. It keeps the zoom and
-/// pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node.
+/// pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node, which pass two
+/// does not have.
 ///
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing, or if any library call fails.
-fn build(model: Model) -> Result<NodeId, String> {
+fn build(model: Model) -> Result<Option<NodeId>, String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.scene.view()));
+    let was_pass_two =
+        DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.model.position >= steps(&d.model.encoding.trace)));
     let focused = focused_button();
 
+    let (model_position, pass_one_steps) = (model.position, steps(&model.encoding.trace));
     let (scene, input, step) = build_scene(&model)?;
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
@@ -536,6 +708,11 @@ fn build(model: Model) -> Result<NodeId, String> {
     DEMO.with_borrow_mut(|slot| *slot = Some(Demo { scene, model }));
     if let Some(label) = focused {
         focus_button(&label);
+    }
+    // The two passes are different sizes, so the window is fitted again when the walk crosses from one to the other. Not
+    // at every step, since a window that kept changing size would be hard to use.
+    if was_pass_two.is_some_and(|was| was != (model_position >= pass_one_steps)) {
+        crate::util::fit_window_to_stage(DIAGRAM_ID)?;
     }
     Ok(input)
 }
@@ -560,9 +737,9 @@ fn typed(id: NodeId, text: &str) {
     let model = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.model.with_text(text)));
     let result = model.ok_or_else(|| "the diagram is not built".to_owned()).and_then(|model| {
         let input = build(model)?;
-        DEMO.with_borrow(|slot| match slot {
-            Some(demo) => demo.scene.focus_text_input(input, caret).map_err(stringify),
-            None => Ok(()),
+        DEMO.with_borrow(|slot| match (slot, input) {
+            (Some(demo), Some(input)) => demo.scene.focus_text_input(input, caret).map_err(stringify),
+            _ => Ok(()),
         })
     });
     report(result, "Could not draw the text");

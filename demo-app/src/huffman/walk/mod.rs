@@ -1,8 +1,8 @@
-//! The walk through pass one: which step the demo is on, and what the scene shows at it. Pure, so none of it needs a
-//! browser.
+//! The walk through both passes: which step the demo is on, and what the scene shows at it. Pure, so none of it needs
+//! a browser.
 //!
 //! One flat position counts every step, so a selection toolbar can step through all of them. With `M` merges and `N`
-//! distinct bytes, the steps are:
+//! distinct bytes, the steps of pass one are:
 //!
 //! | Positions | Step |
 //! |---|---|
@@ -11,18 +11,23 @@
 //! | `M + 1` | Each byte's code length is read from the depth of its leaf. |
 //! | `M + 2..=M + N + 1` | Canonical code `n`, one for each byte in canonical order. |
 //!
-//! The scene is drawn again at every position, from [`shown`] alone. So stepping backwards is the same work as stepping
-//! forwards, and nothing needs undoing.
+//! Pass two continues the walk after the last of these, one position for each input byte and a last one for the flush
+//! that pads the output. [`steps`] counts pass one only, and [`pack_steps`] counts pass two.
+//!
+//! The scene is drawn again at every position, from [`shown`] or [`packing`] alone. So stepping backwards is the same
+//! work as stepping forwards, and nothing needs undoing.
 
 mod layout;
+mod packing;
 mod shown;
 
 pub(super) use layout::{Spacing, layout};
+pub(super) use packing::{Packing, pack_steps, packing};
 pub(super) use shown::{Row, Shown, shown};
 
 use super::algorithm::Trace;
 
-/// How many positions the walk has: the counting step, every merge, the lengths, and one step for each canonical code.
+/// How many positions pass one has: the counting step, every merge, the lengths, and one step for each canonical code.
 pub(super) fn steps(trace: &Trace) -> usize {
     trace.tree.merges.len() + trace.codebook.entries.len() + 2
 }
