@@ -116,8 +116,8 @@ impl Scene {
         });
         result?;
 
-        if let (Some(marks), Some(grid)) = (&handles.decor.hex_marks, handles.cell_grid) {
-            marks.show(&mut String::new(), &grid, hex_selected)?;
+        if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
+            marks.show(&grid, hex_selected)?;
         }
 
         handles.selection = selection;
@@ -222,7 +222,7 @@ impl Scene {
                 return Ok(handles.resync_label()?);
             }
             if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
-                marks.show_secondary(&inner.svg, &mut String::new(), &grid, bytes, &new_secondary)?;
+                marks.show_secondary(&inner.svg, &grid, bytes, &new_secondary)?;
                 handles.secondary = new_secondary;
                 handles.refresh_label()?;
                 return Ok(());

@@ -28,6 +28,8 @@ pub(crate) struct HexMarks {
     pub(crate) format: HexDumpFormat,
     /// The group the marks are drawn in.
     pub(crate) group: SvgNode,
+    /// The buffer every number written to an attribute is formatted in, kept so a selection change allocates nothing.
+    pub(crate) scratch: String,
     /// The marks of the secondary bytes, each a hex mark and a character mark. They are drawn when first needed and
     /// then reused, and the ones past `secondary_shown` are hidden.
     pub(crate) secondary: Vec<(Mark, Mark)>,
@@ -46,16 +48,13 @@ impl HexMarks {
 
     /// Marks byte `selected`, a `(byte, line, place in line)`, or hides every mark if it is `None`. `grid` says where
     /// the lines are.
-    pub(crate) fn show(
-        &self,
-        scratch: &mut String,
-        grid: &CellGrid,
-        selected: Option<(u8, usize, usize)>,
-    ) -> Result<(), svg_dom::Error> {
+    pub(crate) fn show(&mut self, grid: &CellGrid, selected: Option<(u8, usize, usize)>) -> Result<(), svg_dom::Error> {
         let Some(byte) = selected else {
             return self.set_visible(false);
         };
-        let shown = self.place(scratch, grid, byte, &self.hex, &self.ascii)?;
+        let mut scratch = std::mem::take(&mut self.scratch);
+        let shown = self.place(&mut scratch, grid, byte, &self.hex, &self.ascii)?;
+        self.scratch = scratch;
         for el in [&self.hex.0, &self.hex.1, &self.ascii.0, &self.ascii.1] {
             el.set_attr("visibility", if shown { "visible" } else { "hidden" })?;
         }
@@ -78,23 +77,25 @@ impl HexMarks {
         };
         let Size { height, .. } = line_rect.size;
 
-        let mut digits = String::new();
-        hex_digits(byte, &mut digits);
-        let character = ascii_char(byte).to_string();
         let hex_at = hex_column(place, self.format);
         let ascii_at = ascii_column(place, self.format);
 
-        let marks = [(hex, hex_at, digits.as_str(), 2.0), (ascii, ascii_at, character.as_str(), 1.0)];
-        for ((block, ink), column, text, width) in marks {
+        for (is_hex, (block, ink), column, width) in [(true, hex, hex_at, 2.0), (false, ascii, ascii_at, 1.0)] {
             #[allow(clippy::cast_precision_loss)]
             let x = line_rect.origin.x + column as f64 * self.char_width;
             block.set_attr_display(scratch, "x", x)?;
             block.set_attr_display(scratch, "y", line_rect.origin.y)?;
             block.set_attr_display(scratch, "width", width * self.char_width)?;
             block.set_attr_display(scratch, "height", height)?;
-            ink.set_text(text);
             ink.set_attr_display(scratch, "x", x)?;
             ink.set_attr_display(scratch, "y", line_rect.origin.y + height / 2.0)?;
+            // The text is written last, so that `scratch` is free for it. It is copied to the element at once.
+            if is_hex {
+                hex_digits(byte, scratch);
+                ink.set_text(scratch);
+            } else {
+                ink.set_text(ascii_char(byte).encode_utf8(&mut [0; 4]));
+            }
         }
         Ok(true)
     }
@@ -105,11 +106,11 @@ impl HexMarks {
     pub(crate) fn show_secondary(
         &mut self,
         svg: &SvgRoot,
-        scratch: &mut String,
         grid: &CellGrid,
         bytes: &[u8],
         indices: &[usize],
     ) -> Result<(), svg_dom::Error> {
+        let mut scratch = std::mem::take(&mut self.scratch);
         let mut used = 0;
         for &i in indices {
             let Some(&byte) = bytes.get(i) else { continue };
@@ -123,7 +124,7 @@ impl HexMarks {
             }
             let (hex, ascii) = &self.secondary[used];
             let at = (byte, i / BYTES_PER_LINE, i % BYTES_PER_LINE);
-            let shown = self.place(scratch, grid, at, hex, ascii)?;
+            let shown = self.place(&mut scratch, grid, at, hex, ascii)?;
             for el in [&hex.0, &hex.1, &ascii.0, &ascii.1] {
                 el.set_attr("visibility", if shown { "visible" } else { "hidden" })?;
             }
@@ -135,6 +136,7 @@ impl HexMarks {
             }
         }
         self.secondary_shown = used;
+        self.scratch = scratch;
         Ok(())
     }
 
@@ -144,12 +146,12 @@ impl HexMarks {
     pub(crate) fn show_unreached(
         &mut self,
         svg: &SvgRoot,
-        scratch: &mut String,
         grid: &CellGrid,
         len: usize,
         indices: &[usize],
         fill: &str,
     ) -> Result<(), svg_dom::Error> {
+        let mut scratch = std::mem::take(&mut self.scratch);
         let mut used = 0;
         for &i in indices.iter().filter(|&&i| i < len) {
             if used == self.unreached.len() {
@@ -167,10 +169,10 @@ impl HexMarks {
                     ] {
                         #[allow(clippy::cast_precision_loss)]
                         let x = line_rect.origin.x + column as f64 * self.char_width;
-                        block.set_attr_display(scratch, "x", x)?;
-                        block.set_attr_display(scratch, "y", line_rect.origin.y)?;
-                        block.set_attr_display(scratch, "width", width * self.char_width)?;
-                        block.set_attr_display(scratch, "height", line_rect.size.height)?;
+                        block.set_attr_display(&mut scratch, "x", x)?;
+                        block.set_attr_display(&mut scratch, "y", line_rect.origin.y)?;
+                        block.set_attr_display(&mut scratch, "width", width * self.char_width)?;
+                        block.set_attr_display(&mut scratch, "height", line_rect.size.height)?;
                     }
                     true
                 },
@@ -187,6 +189,7 @@ impl HexMarks {
             }
         }
         self.unreached_shown = used;
+        self.scratch = scratch;
         Ok(())
     }
 

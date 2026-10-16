@@ -569,6 +569,7 @@ fn draw_hex_marks(
         char_width,
         format,
         group: group.clone(),
+        scratch: String::new(),
         secondary: Vec::new(),
         secondary_shown: 0,
         unreached: Vec::new(),

@@ -136,13 +136,12 @@ impl Scene {
         }
         // The marks over a selected byte of a hex dump show what the byte was, so they are written again.
         if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
-            let mut scratch = String::new();
             if let Selection::Cell(i) = handles.selection {
-                marks.show(&mut scratch, &grid, content.hex_dump_byte(i))?;
+                marks.show(&grid, content.hex_dump_byte(i))?;
             }
-            marks.show_secondary(svg, &mut scratch, &grid, content.bytes(), &handles.secondary)?;
+            marks.show_secondary(svg, &grid, content.bytes(), &handles.secondary)?;
             let (len, colour) = (content.selectable_len(), content.type_colour());
-            marks.show_unreached(svg, &mut scratch, &grid, len, &handles.unreached, colour)?;
+            marks.show_unreached(svg, &grid, len, &handles.unreached, colour)?;
         }
         Ok(())
     }

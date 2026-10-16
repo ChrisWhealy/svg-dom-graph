@@ -95,7 +95,7 @@ impl Scene {
                 return Ok(handles.resync_label()?);
             }
             if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
-                marks.show_unreached(&inner.svg, &mut String::new(), &grid, len, &new_unreached, base_colour)?;
+                marks.show_unreached(&inner.svg, &grid, len, &new_unreached, base_colour)?;
                 handles.unreached = new_unreached;
                 handles.refresh_label()?;
                 return Ok(());
