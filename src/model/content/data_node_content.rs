@@ -191,12 +191,12 @@ impl DataNodeContent {
             return Ok(false);
         }
         if let (Some(format), NodeValues::U8(new)) = (self.hex_dump(), &values) {
-            // The values have the same count, so the dump has the same lines. Only a line whose bytes changed is written.
-            let mut old_line = String::new();
-            for index in 0..self.len() {
-                hex_dump_format::format_line(self.bytes(), format, index, &mut old_line);
-                hex_dump_format::format_line(new, format, index, scratch);
-                if *scratch != old_line {
+            // The values have the same count, so the dump has the same lines, and the line holding the total length, if
+            // shown, cannot differ. A line is formatted only if its 16 bytes changed.
+            let per_line = hex_dump_format::BYTES_PER_LINE;
+            for (index, (old, new_chunk)) in self.bytes().chunks(per_line).zip(new.chunks(per_line)).enumerate() {
+                if old != new_chunk {
+                    hex_dump_format::format_line(new, format, index, scratch);
                     update(index, scratch)?;
                 }
             }

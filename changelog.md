@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- A hex dump's accessible name describes its lines as cells and give selected byte number (``)
+- A hex dump's accessible name describes its lines as cells and give selected byte number (`2f682e4`)
+- Avoid reformatting entire hexdump when one byte changes (``)
 
 # [Released]
 
