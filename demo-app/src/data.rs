@@ -6,7 +6,7 @@
 use crate::util::{stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{SvgRoot, root::utils::Point};
-use svg_dom_graph::scene::{DataFormat, DataNodeContent, DragOptions, NodeValues, Scene};
+use svg_dom_graph::scene::{DataFormat, DataNodeContent, DragOptions, HexDumpFormat, NodeValues, Scene};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("data.rs");
@@ -36,6 +36,9 @@ thread_local! {
 /// `FF FE`, and four `i32` values in decimal. A sign is shown only for a value that is negative. A positive value, and
 /// zero, show none.
 ///
+/// Two more standalone rows, below the signed ones, show the same bytes as a hex dump in the format of `hexdump -C`. The
+/// first leaves each line's offset hidden, as it is by default, and the second shows it. See [`HexDumpFormat`].
+///
 /// A fifth, standalone row below those four shows a single `u64` value under [`DataFormat::Binary`] — 64 digits,
 /// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a
 /// grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
@@ -50,7 +53,7 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         &crate::util::document()?,
         "data-diagram-stage",
         "data-diagram",
-        svg_dom::root::utils::Size::new(750.0, 810.0),
+        svg_dom::root::utils::Size::new(750.0, 1130.0),
     )?;
     let svg = SvgRoot::attach("data-diagram").map_err(stringify)?;
     let bounds = view_box_rect(&svg)?;
@@ -160,6 +163,28 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
         680.0,
         DataNodeContent::new(NodeValues::I32(vec![-5, 0, 42, -1_234_567]), DataFormat::Decimal),
     )?;
+
+    // The same bytes as a hex dump, in the format of `hexdump -C`, with one cell for each line of sixteen bytes. The first
+    // hides each line's offset, which is the default. The second shows it, along with the line that ends the dump with the
+    // total length. Each is a standalone row, since a line is wider than half the diagram.
+    const DUMPED: &[u8] = b"Hello, World!\n\x00\x01\x02\xFE\xFF Huffman codes";
+    place(
+        X_SINGLE,
+        790.0,
+        DataNodeContent::new(NodeValues::U8(DUMPED.to_vec()), DataFormat::HexDump(HexDumpFormat::new())),
+    )?;
+    // The second has a label, so it sits in a bordered box with its name over the black.
+    let labelled = scene
+        .add_named_data_node(
+            Point::new(X_SINGLE, 920.0),
+            "hexdump -C, with offsets",
+            DataNodeContent::new(
+                NodeValues::U8(DUMPED.to_vec()),
+                DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+            ),
+        )
+        .map_err(stringify)?;
+    scene.make_draggable_with(labelled, drag_options).map_err(stringify)?;
 
     // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));

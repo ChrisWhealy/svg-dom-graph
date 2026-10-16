@@ -29,6 +29,7 @@ fn decimal_len<T: Word>(value: T) -> usize {
     magnitude.checked_ilog10().map_or(1, |digits| digits as usize + 1) + usize::from(negative)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The one value among `values`, if any, that [`format`](DataFormat) is guaranteed to render widest — without
 /// formatting any of them.
 ///
@@ -55,6 +56,7 @@ fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
         | DataFormat::Binary
         | DataFormat::Ascii
         | DataFormat::PlainText
+        | DataFormat::HexDump(_)
         | DataFormat::Uuid(_)
         | DataFormat::Bool(_) => values.first().copied(),
     }
@@ -98,6 +100,7 @@ macro_rules! impl_magnitude_signed {
 impl_magnitude_unsigned!(u8, u16, u32, u64, u128);
 impl_magnitude_signed!(i8, i16, i32, i64, i128);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Magnitude for usize {
     const SIGNED: bool = false;
 
@@ -146,6 +149,7 @@ trait Cell: Copy {
     fn same_as(self, other: Self) -> bool;
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An integer width, signed or unsigned, a [`NodeValues`] variant can hold.
 trait Word: Cell + Ord + Magnitude {}
 
@@ -164,7 +168,7 @@ macro_rules! impl_word {
                     },
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
+                    DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => {
                         format_ascii_into(order_bytes(self.to_be_bytes(), byte_order), out);
                     },
                 }
@@ -179,6 +183,7 @@ macro_rules! impl_word {
 
 impl_word!(u8, u16, u32, u64, u128, usize, i8, i16, i32, i64, i128, isize);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Cell for Uuid {
     fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
         match format {
@@ -190,7 +195,7 @@ impl Cell for Uuid {
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_bytes(), byte_order), out),
             DataFormat::Binary => format_binary_into(order_bytes(self.to_bytes(), byte_order), out),
-            DataFormat::Ascii | DataFormat::PlainText => {
+            DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => {
                 format_ascii_into(order_bytes(self.to_bytes(), byte_order), out);
             },
         }
@@ -201,6 +206,7 @@ impl Cell for Uuid {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Cell for bool {
     fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
         let byte = u8::from(self);
@@ -212,7 +218,9 @@ impl Cell for bool {
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes([byte], byte_order), out),
             DataFormat::Binary => format_binary_into(order_bytes([byte], byte_order), out),
-            DataFormat::Ascii | DataFormat::PlainText => format_ascii_into(order_bytes([byte], byte_order), out),
+            DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => {
+                format_ascii_into(order_bytes([byte], byte_order), out)
+            },
         }
     }
 
@@ -232,7 +240,7 @@ macro_rules! impl_float_cell {
                     DataFormat::Float(float_format) => format_float_into(self, float_format, out),
                     DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_be_bytes(), byte_order), out),
                     DataFormat::Binary => format_binary_into(order_bytes(self.to_be_bytes(), byte_order), out),
-                    DataFormat::Ascii | DataFormat::PlainText => {
+                    DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => {
                         format_ascii_into(order_bytes(self.to_be_bytes(), byte_order), out);
                     },
                 }
@@ -307,7 +315,11 @@ fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte
             widest_float(values, FloatFormat::shortest(), out)
         },
         DataFormat::Float(float_format) => widest_float(values, float_format, out),
-        DataFormat::Hexadecimal | DataFormat::Binary | DataFormat::Ascii | DataFormat::PlainText => {
+        DataFormat::Hexadecimal
+        | DataFormat::Binary
+        | DataFormat::Ascii
+        | DataFormat::PlainText
+        | DataFormat::HexDump(_) => {
             if let Some(&first) = values.first() {
                 first.format_into(format, byte_order, out);
             }

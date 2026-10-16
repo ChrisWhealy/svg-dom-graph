@@ -7,7 +7,7 @@ use crate::{
     colours::{BOX_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     model::node::NodeId,
-    scene::{BoxHandles, Scene, Selection, box_centre},
+    scene::{BoxHandles, DataDecor, Scene, Selection, box_centre},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -109,6 +109,7 @@ pub(super) fn draw_box(
         cell_texts: Vec::new(),
         replaceable: false,
         cell_grid: None,
+        decor: DataDecor::default(),
         cell_stroke_width: "",
         selection: Selection::None,
         secondary: Vec::new(),

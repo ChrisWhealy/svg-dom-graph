@@ -1,4 +1,5 @@
 mod cell_grid;
+mod hex_marks;
 
 use super::SceneInner;
 use crate::{
@@ -6,8 +7,9 @@ use crate::{
     scene::node::EdgeAnchors,
 };
 pub(crate) use cell_grid::{CellGrid, group_gaps};
+pub(crate) use hex_marks::HexMarks;
 use std::{cell::RefCell, rc::Rc};
-use svg_dom::SvgNode;
+use svg_dom::{SvgNode, root::utils::Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rendered elements that make up one box, kept so a drag handler can reposition them.
@@ -86,6 +88,9 @@ pub(crate) struct BoxHandles {
     /// rectangle per cell. Add the node's own origin for scene coordinates. What `Scene::cell_rect` reports. `None` for
     /// a plain label node and for an operator node.
     pub(crate) cell_grid: Option<CellGrid>,
+    /// The marks over a hex dump's own lines that show its selected byte, and the row reserved for a selection toolbar
+    /// in a named data node's own box. Both `None` for every node that has neither. See [`DataDecor`].
+    pub(crate) decor: DataDecor,
     /// Every entry in `cell_rects`' own stroke width, as drawn. It is `"1.5"` for a single-value node's own outer box,
     /// and `"1"` for a multi-value grid's inner cells or an operator's own result row. Unused (`""`) for a plain label
     /// node, which has no `cell_rects` to begin with.
@@ -322,3 +327,14 @@ pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What only some data nodes have, kept together so that every other kind of box need not name each part.
+#[derive(Default)]
+pub(crate) struct DataDecor {
+    /// A hex dump's marks for its selected byte.
+    pub(crate) hex_marks: Option<HexMarks>,
+    /// Where a selection toolbar docks, local to the node's group: the row under the name, across the node's whole
+    /// width. `None` unless the node is named and asked for a row by `DataNodeContent::with_toolbar`.
+    pub(crate) toolbar_slot: Option<Rect>,
+}

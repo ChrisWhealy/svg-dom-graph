@@ -92,6 +92,9 @@ pub enum Error {
     /// `0x20..=0x7E`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the
     /// scene unchanged.
     InvalidPlainText,
+    /// `DataFormat::HexDump` content that is not `u8`. Rejected before drawing anything or touching the graph's model,
+    /// so a rejected call leaves the scene unchanged.
+    InvalidHexDumpFormat,
     /// `DataFormat::Float` content that is not `f32` or `f64`, or whose [`crate::scene::FloatFormat`] asks for more than
     /// [`crate::scene::MAX_FLOAT_DIGITS`] digits, or for no significant digits at all. Rejected before drawing anything
     /// or touching the graph's model, so a rejected call leaves the scene unchanged.
@@ -281,6 +284,7 @@ impl fmt::Display for Error {
                     "PlainText content must be u8 values in the printable ASCII range 0x20..=0x7E"
                 )
             },
+            Error::InvalidHexDumpFormat => write!(f, "a hex dump format needs u8 values"),
             Error::InvalidFloatFormat => {
                 write!(
                     f,

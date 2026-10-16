@@ -134,6 +134,12 @@ impl Scene {
         if !accepted {
             return Err(Error::IncompatibleNodeValues(id));
         }
+        // The marks over a selected byte of a hex dump show what the byte was, so they are written again.
+        if let (Some(marks), Some(grid), Selection::Cell(i)) =
+            (&handles.decor.hex_marks, handles.cell_grid, handles.selection)
+        {
+            marks.show(&mut String::new(), &grid, content.hex_dump_byte(i))?;
+        }
         Ok(())
     }
 }

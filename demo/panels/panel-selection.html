@@ -37,6 +37,19 @@
             </div>
         </div>
     </div>
+    <h3>Hex dump</h3>
+    <p>A <code>DataFormat::HexDump</code> node shows its <code>u8</code> values as <code>hexdump -C</code> does, on a
+        black background like a terminal's. It is selected a byte at a time. The byte's two hex digits are marked in the
+        primary selection colour, and the character that stands for it in the right-hand column in the secondary one, so
+        that a reader can find the same byte in both. A byte that is not printable shows as <code>.</code>.</p>
+    <p>This node also has a name, and its content asked for a row for a toolbar with
+        <code>DataNodeContent::with_toolbar</code>. So <code>Scene::show_selection_toolbar</code> draws the bar inside the
+        node's own box, under its name, instead of at the edge of the canvas.</p>
+    <p class="controls">
+        <span>Selected: <output id="selection-hexdump-index">not started</output></span>
+    </p>
+    <div class="canvas" id="selection-hexdump-diagram-stage">
+    </div>
     <h3>Operator chain over an array (SHA3's <code>ThetaC</code>) Function</h3>
     <p>On each step, an operator chain is supplied with a fresh set of values from successive rows of an input array,
         with the final result written to successive elements of an output array.</p>

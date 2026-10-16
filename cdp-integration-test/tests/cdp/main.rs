@@ -56,6 +56,7 @@ mod chacha20_walk;
 mod common;
 mod connectors;
 mod edge_anchors;
+mod hex_dump_selection;
 mod huffman_walk;
 mod overlap_resolution;
 mod pan;

@@ -15,6 +15,7 @@
 //!   `Selection::describe_into`, and `natural_selection`/`flat_index`.
 //! - [`operators`] — operator labels and commutativity.
 //! - [`text_formats`] — `DataFormat::Ascii` and `DataFormat::PlainText`.
+//! - [`hex_dump`] — `DataFormat::HexDump`: the lines of `hexdump -C`, the optional offset, and the cells.
 //! - [`labelling`] — `LabellingStyle` and `with_labels`/`with_labelling_style`.
 
 mod bools_and_sizes;
@@ -22,6 +23,7 @@ mod content;
 mod floats;
 mod formatting;
 mod grid_shape;
+mod hex_dump;
 mod labelling;
 mod operators;
 mod selection;

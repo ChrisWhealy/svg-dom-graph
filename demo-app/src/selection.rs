@@ -1,5 +1,5 @@
-//! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, `#selection-2d-labelled-diagram` and
-//! `#selection-thetac-diagram`: four examples, each stepping through an array's values via its own in-canvas
+//! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, `#selection-2d-labelled-diagram`,
+//! `#selection-hexdump-diagram` and `#selection-thetac-diagram`: five examples, each stepping through an array's values via its own in-canvas
 //! [`Scene::show_selection_toolbar`] bar — no external HTML buttons. See [`build_selection_demo`]'s own doc comment for
 //! what each demonstrates. The second and third are two-dimensional arrays, side by side. The third has three values,
 //! each in a row labelled alphabetically.
@@ -10,7 +10,8 @@ use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{
-        DataFormat, DataNodeContent, GridLayout, LabellingStyle, NodeValues, Scene, Selection, SelectionToolbarOptions,
+        DataFormat, DataNodeContent, GridLayout, HexDumpFormat, LabellingStyle, NodeValues, Scene, Selection,
+        SelectionToolbarOptions,
     },
 };
 
@@ -29,7 +30,14 @@ thread_local! {
     // The third example's own canvas has a `Scene` too, replaced by each step's own rebuild — see
     // [`rebuild_theta_c_diagram`]'s own doc comment for why it must be kept.
     static THETA_C_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+
+    // The hex dump example's own `Scene`, kept alive for the same reason as `SCENE`'s.
+    static HEX_DUMP_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
+
+/// The bytes the hex dump example steps through: some text, then a few bytes that are not printable, so that the
+/// character column shows both what a byte is and what a dump shows in its place.
+const HEX_DUMP_BYTES: &[u8] = b"Selecting a byte marks it twice.\x00\x01\x02\x7f\xfe\xff Hex digits and characters.";
 
 /// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_demo`])
 /// deliberately does not divide evenly by this, so the grid's own last row renders short.
@@ -101,7 +109,7 @@ struct ThetaCDemo {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the cell-selection demo: four examples stepping through an array's values, each via its own in-canvas
+/// Builds the cell-selection demo: five examples stepping through an array's values, each via its own in-canvas
 /// [`Scene::show_selection_toolbar`] bar — Prev, Next, Restart — rather than any external HTML button. The first two
 /// bind the toolbar directly to their own already-drawn array. On a step they update nothing else but the selection and
 /// a status line. The third needs a fresh toolbar on every step instead, since its own diagram is redrawn from scratch
@@ -135,6 +143,10 @@ struct ThetaCDemo {
 ///    rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing for `None` — see
 ///    [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own current position on
 ///    every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one.
+///
+/// 6. The hex dump example steps through the bytes of a [`HexDumpFormat`] node, a byte at a time. See
+///    [`build_hex_dump_demo`]. Its toolbar is drawn inside the node's own box, under its name, and not at the edge of the
+///    canvas.
 ///
 /// None of the three wrap. [`Scene::show_selection_toolbar`]'s own Next/Prev clamp at both ends instead. Stepping
 /// "Next" past the last value, or "Previous" before the first, simply disables that button rather than cycling around.
@@ -207,7 +219,72 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let input = THETA_C_INPUT;
     let outputs = theta_c_outputs(input);
     let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs, input }));
-    rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
+    rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)?;
+
+    build_hex_dump_demo(&document)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text `#selection-hexdump-index` shows for the selected byte `to` of [`HEX_DUMP_BYTES`]: its position, in decimal and
+/// in hexadecimal, as the offset column of a dump shows it, and the byte itself. "not started" is the state before byte
+/// `0`.
+fn hex_dump_status(to: Option<usize>) -> String {
+    match to.and_then(|i| HEX_DUMP_BYTES.get(i).map(|&b| (i, b))) {
+        Some((i, byte)) => format!("byte {i} (offset {i:08x}), value {byte:02x}"),
+        None => "not started".to_string(),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the hex dump example: [`HEX_DUMP_BYTES`] as `hexdump -C` shows them, with the offset of every line, in a node
+/// that has a name and a row for its own selection toolbar. The toolbar is drawn inside the node's box, under the name,
+/// and not at the edge of the canvas.
+///
+/// Stepping goes a byte at a time. Each step marks the byte's two hex digits with the primary selection colour, and its
+/// character in the character column with the secondary one, so that a reader can find the same byte in both. See
+/// [`HexDumpFormat`]. The status line says which byte it is.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#selection-hexdump-index` or `#selection-hexdump-diagram-stage`, or if any
+/// library call fails.
+fn build_hex_dump_demo(document: &web_sys::Document) -> Result<(), String> {
+    ensure_svg_in(
+        document,
+        "selection-hexdump-diagram-stage",
+        "selection-hexdump-diagram",
+        Size::new(640.0, 260.0),
+    )?;
+    let svg = svg_dom::SvgRoot::attach("selection-hexdump-diagram").map_err(stringify)?;
+    let scene = Scene::new(svg).map_err(stringify)?;
+    let node = scene
+        .add_named_data_node(
+            Point::new(20.0, 20.0),
+            "hexdump -C",
+            DataNodeContent::new(
+                NodeValues::U8(HEX_DUMP_BYTES.to_vec()),
+                DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+            )
+            .with_toolbar(),
+        )
+        .map_err(stringify)?;
+    let rect = scene.node_rect(node).map_err(stringify)?;
+    resize_svg(
+        document,
+        "selection-hexdump-diagram",
+        Size::new(2.0 * rect.origin.x + rect.size.width, 2.0 * rect.origin.y + rect.size.height),
+    )?;
+
+    let output = required_element(document, "selection-hexdump-index")?;
+    output.set_text_content(Some(&hex_dump_status(None)));
+    scene
+        .show_selection_toolbar(node, SelectionToolbarOptions::default(), move |_scene, _node, transition| {
+            output.set_text_content(Some(&hex_dump_status(transition.to)));
+        })
+        .map_err(stringify)?;
+
+    HEX_DUMP_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

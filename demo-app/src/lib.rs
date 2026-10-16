@@ -40,7 +40,8 @@
 //! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]: a
 //!   one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
 //!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's own
-//!   doc comment for what each demonstrates.
+//!   doc comment for what each demonstrates. A hex dump of some bytes is stepped a byte at a time too. Each step marks
+//!   the byte's hex digits and its character, and its toolbar is drawn inside the node's own box.
 //! - `panel-text-nodes` / `#text-nodes-diagram` — [`text_nodes::build_text_nodes_demo`]: a Markdown node using every
 //!   construct it supports, and a text input node whose text is echoed below the diagram as it is typed.
 //! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]. It shows SHA3's `Theta` function as a parent

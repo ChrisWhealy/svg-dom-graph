@@ -1,4 +1,4 @@
-use super::{BoolFormat, FloatFormat, UuidFormat};
+use super::{BoolFormat, FloatFormat, HexDumpFormat, UuidFormat};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`super::DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
@@ -56,4 +56,13 @@ pub enum DataFormat {
     /// Every other format reads a Boolean as the single byte it is held in: [`Decimal`](Self::Decimal) is `1` or `0`,
     /// [`Hexadecimal`](Self::Hexadecimal) is `01` or `00`, and [`Binary`](Self::Binary) is `0000 0001` or `0000 0000`.
     Bool(BoolFormat),
+    /// `u8` values written as `hexdump -C` writes them, with a cell for each line of sixteen bytes, and with the offset
+    /// of each line shown or hidden as the [`HexDumpFormat`] says. It is hidden by default.
+    ///
+    /// Only for [`NodeValues::U8`](super::NodeValues::U8). Any other content is rejected with
+    /// [`Error::InvalidHexDumpFormat`](crate::error::Error::InvalidHexDumpFormat). The cells are one column wide, and any
+    /// [`GridLayout`](super::GridLayout) is ignored. It is drawn as a terminal draws one: white text, 90% bright, in a
+    /// monospaced font on a black background, with no box or gap round each line. Every line is the same width, so a
+    /// node that is changed to other bytes of the same count does not outgrow its box.
+    HexDump(HexDumpFormat),
 }

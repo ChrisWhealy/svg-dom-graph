@@ -6,6 +6,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.36] - 2026-10-16
+
+## Added
+
+- Add data node to display text in `hexdump -C` format (``)
+
 # [Released]
 
 ## [0.2.35] - 2026-10-16
@@ -127,7 +133,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Entirely skip label drawing when `label_scratch.is_empty()` (`b10fb31`)
 - Expose signedness of result in operator nodes (`8c23a43`)
 - Simplify decimal width calculation (`1f0da0e`)
-- Fix `clippy::type-complexity` error (``)
+- Fix `clippy::type-complexity` error (`2a369ea`)
 
 ## [0.2.29] - 2026-10-09
 

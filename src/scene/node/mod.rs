@@ -42,6 +42,7 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 /// Returns:
 /// * [`Error::EmptyNodeContent`] if `content` holds no values,
 /// * [`Error::InvalidPlainText`] if `PlainText` content is not printable ASCII,
+/// * [`Error::InvalidHexDumpFormat`] if `HexDump` content is not `u8` values,
 /// * [`Error::InvalidFloatFormat`] if `Float` content is not `f32` or `f64`, or asks for too many digits,
 /// * [`Error::InvalidUuidFormat`] if `Uuid` content is not `Uuid` values,
 /// * [`Error::InvalidBoolFormat`] if `Bool` content is not `Bool` values, or
@@ -62,6 +63,9 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     if !content.plain_text_is_valid() {
         return Err(Error::InvalidPlainText);
     }
+    if !content.hex_dump_is_valid() {
+        return Err(Error::InvalidHexDumpFormat);
+    }
     if !content.float_format_is_valid() {
         return Err(Error::InvalidFloatFormat);
     }
@@ -71,7 +75,7 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     if !content.bool_format_is_valid() {
         return Err(Error::InvalidBoolFormat);
     }
-    if !content.is_plain_text() && !content.layout().is_valid() {
+    if !content.keeps_spaces() && !content.layout().is_valid() {
         return Err(Error::InvalidGridLayout(content.layout()));
     }
     Ok(())

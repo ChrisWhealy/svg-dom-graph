@@ -13,13 +13,20 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 
 /// A 20 x 10 cell in a 2 x 3 grid, with `column_group` columns per group.
 fn grid(column_group: usize) -> GridLayoutMetrics {
-    GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (2, 3), column_group, false)
+    GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (2, 3), column_group, false, CELL_GAP)
 }
 
 #[test]
 fn a_single_value_is_exactly_one_cell() -> Result<(), String> {
-    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (1, 1), 0, true);
+    let layout = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (1, 1), 0, true, CELL_GAP);
     check_eq(layout.content_size(), Size::new(20.0, 10.0))
+}
+
+#[test]
+fn the_lines_of_a_hex_dump_touch_so_it_adds_only_the_padding_all_round() -> Result<(), String> {
+    // 3 lines of 20 x 10 with no gap between them, and the padding of 10 on every side.
+    let dump = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING, (3, 1), 0, false, 0.0);
+    check_eq(dump.content_size(), Size::new(40.0, 50.0))
 }
 
 #[test]
@@ -50,7 +57,7 @@ fn a_single_values_name_gives_its_type_and_text() -> Result<(), String> {
 
 #[test]
 fn extra_left_padding_widens_the_grid_by_exactly_that_much() -> Result<(), String> {
-    let wide = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING + 4.0, (2, 3), 0, false);
+    let wide = GridLayoutMetrics::new(Size::new(20.0, 10.0), OUTER_PADDING + 4.0, (2, 3), 0, false, CELL_GAP);
     check_eq(wide.content_size().width, grid(0).content_size().width + 4.0)?;
     check_eq(
         wide.grid(Point::origin(), 6).cell_rect(0).map(|r| r.origin.x),
@@ -120,4 +127,23 @@ fn a_cell_name_reuses_the_buffer_it_is_given() -> Result<(), String> {
         cell_name_into(Some(crate::scene::LabellingStyle::Alphabetic), i, 4, "00 11 22 33", &mut out);
     }
     check_eq(out.as_ptr(), before)
+}
+
+#[test]
+fn a_toolbar_row_adds_its_height_under_the_name_and_a_width_the_bar_fits() -> Result<(), String> {
+    let content = Size::new(40.0, 30.0);
+    let without = named_frame_size(10.0, content, 0.0);
+    let with = named_frame_size(10.0, content, TOOLBAR_ROW_HEIGHT);
+    check_eq(with.height, without.height + TOOLBAR_ROW_HEIGHT)?;
+    check_eq(without.width, 60.0)?;
+    check_eq(with.width, TOOLBAR_MIN_WIDTH)
+}
+
+#[test]
+fn only_a_named_node_holds_a_toolbar_row() -> Result<(), String> {
+    let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal).with_toolbar();
+    check_eq(toolbar_row(Some("name"), &content), TOOLBAR_ROW_HEIGHT)?;
+    check_eq(toolbar_row(None, &content), 0.0)?;
+    let plain = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
+    check_eq(toolbar_row(Some("name"), &plain), 0.0)
 }

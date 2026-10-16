@@ -164,6 +164,11 @@ fn flush(trace: &Trace) -> Packing {
     }
 }
 
+/// `n` and a noun, with the noun made plural unless `n` is 1: `1 byte` and `3 bytes`.
+fn count(n: usize, noun: &str) -> String {
+    if n == 1 { format!("{n} {noun}") } else { format!("{n} {noun}s") }
+}
+
 /// The finished output's size against the input's, and the compression ratio that makes of them. Two lines, each a
 /// Markdown paragraph.
 ///
@@ -182,11 +187,13 @@ fn summary(trace: &Trace) -> String {
         format!("{}.{}% larger", (permille - 1000) / 10, (permille - 1000) % 10)
     };
     format!(
-        "**Original**: {original} bytes ({} bits)\n\n**Encoded**: {encoded} bytes, which is {} bits of code and {} of \
+        "**Original**: {} ({})\n\n**Encoded**: {}, which is {} of code and {} of \
          padding\n\n**Compression ratio**: {ratio:.2} to 1. The output is {}.{}% of the original size, {change}. The \
          code lengths a decoder needs are not counted.",
-        original * 8,
-        packed.bit_len,
+        count(original, "byte"),
+        count(original * 8, "bit"),
+        count(encoded, "byte"),
+        count(packed.bit_len, "bit"),
         packed.padding(),
         permille / 10,
         permille % 10,

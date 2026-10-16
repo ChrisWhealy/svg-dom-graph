@@ -19,6 +19,7 @@ pub struct DataNodeContent {
     byte_order: ByteOrder,
     column_group: usize,
     labelling: Option<LabellingStyle>,
+    toolbar: bool,
 }
 
 impl DataNodeContent {
@@ -41,7 +42,51 @@ impl DataNodeContent {
             byte_order: ByteOrder::default(),
             column_group: 0,
             labelling: None,
+            toolbar: false,
         }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with a row reserved under its name for a selection toolbar, inside the node's own box.
+    ///
+    /// Only a named node (see [`Scene::add_named_data_node`](crate::scene::Scene::add_named_data_node)) has a box
+    /// round its content to hold one, so this has no effect on an unnamed node. The row is empty until
+    /// [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar) is called for the node. That
+    /// call then puts its bar in the row, where it moves, scales and is hidden with the node, and not at the edge of the
+    /// scene as it otherwise would be.
+    #[must_use]
+    pub fn with_toolbar(mut self) -> Self {
+        self.toolbar = true;
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Whether [`with_toolbar`](Self::with_toolbar) reserved a row for a selection toolbar.
+    pub(crate) fn has_toolbar_row(&self) -> bool {
+        self.toolbar
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How many positions a selection walks through. Every cell, except that a [`DataFormat::HexDump`] is walked a byte
+    /// at a time, and not a line.
+    pub(crate) fn selectable_len(&self) -> usize {
+        match (self.hex_dump(), &self.values) {
+            (Some(_), NodeValues::U8(bytes)) => bytes.len(),
+            _ => self.len(),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Byte `index` of a [`DataFormat::HexDump`], and its line and place in that line. `None` for any other content, or
+    /// past the last byte.
+    pub(crate) fn hex_dump_byte(&self, index: usize) -> Option<(u8, usize, usize)> {
+        self.hex_dump()?;
+        let byte = *self.bytes().get(index)?;
+        Some((
+            byte,
+            index / hex_dump_format::BYTES_PER_LINE,
+            index % hex_dump_format::BYTES_PER_LINE,
+        ))
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -145,7 +190,17 @@ impl DataNodeContent {
         if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {
             return Ok(false);
         }
-        if self.is_plain_text() {
+        if let (Some(format), NodeValues::U8(new)) = (self.hex_dump(), &values) {
+            // The values have the same count, so the dump has the same lines. Only a line whose bytes changed is written.
+            let mut old_line = String::new();
+            for index in 0..self.len() {
+                hex_dump_format::format_line(self.bytes(), format, index, &mut old_line);
+                hex_dump_format::format_line(new, format, index, scratch);
+                if *scratch != old_line {
+                    update(index, scratch)?;
+                }
+            }
+        } else if self.is_plain_text() {
             if values != self.values && self.len() == 1 {
                 scratch.clear();
                 if let NodeValues::U8(v) = &values {
@@ -172,6 +227,8 @@ impl DataNodeContent {
     pub(crate) fn len(&self) -> usize {
         if self.is_plain_text() {
             usize::from(self.values.len() > 0)
+        } else if let (Some(format), NodeValues::U8(bytes)) = (self.hex_dump(), &self.values) {
+            hex_dump_format::line_count(bytes.len(), format)
         } else {
             self.values.len()
         }
@@ -181,6 +238,37 @@ impl DataNodeContent {
     /// `true` for [`DataFormat::Ascii`] content.
     pub(crate) fn is_ascii(&self) -> bool {
         self.format == DataFormat::Ascii
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How a [`DataFormat::HexDump`] writes its bytes, and `None` for any other content.
+    pub(crate) fn hex_dump(&self) -> Option<HexDumpFormat> {
+        match self.format {
+            DataFormat::HexDump(format) => Some(format),
+            _ => None,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The bytes of `u8` content, and none for any other.
+    fn bytes(&self) -> &[u8] {
+        match &self.values {
+            NodeValues::U8(bytes) => bytes,
+            _ => &[],
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::HexDump`] content that is not `u8`. Every other content is valid here.
+    pub(crate) fn hex_dump_is_valid(&self) -> bool {
+        self.hex_dump().is_none() || matches!(self.values, NodeValues::U8(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for content whose text has runs of spaces that must be drawn as they are: [`DataFormat::PlainText`] and
+    /// [`DataFormat::HexDump`].
+    pub(crate) fn keeps_spaces(&self) -> bool {
+        self.is_plain_text() || self.hex_dump().is_some()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -246,6 +334,9 @@ impl DataNodeContent {
     /// The fill of a cell that shows `text`: green for a check mark, red for a cross, and the usual text colour for
     /// every other cell. `text` is what [`for_each_cell_string`](Self::for_each_cell_string) gave that cell.
     pub(crate) fn ink(&self, text: &str) -> &'static str {
+        if self.hex_dump().is_some() {
+            return crate::colours::TERMINAL_INK;
+        }
         Self::ink_for(self.is_bool_icon(), text)
     }
 
@@ -297,8 +388,11 @@ impl DataNodeContent {
     /// A single value has no sibling to be told apart from. So `draw_content_box` skips the per-value inner box
     /// [`NodeValues::type_colour`] would otherwise use. It applies that colour straight to the node's own single box
     /// instead. That gives one box, one colour, and no redundant box-within-a-box.
+    ///
+    /// A [`DataFormat::HexDump`] is never one, even if it is a single line. It is always drawn as a terminal screen of
+    /// lines, and a line is not a value that stands alone.
     pub(crate) fn is_single_value(&self) -> bool {
-        self.len() == 1
+        self.len() == 1 && self.hex_dump().is_none()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -312,6 +406,9 @@ impl DataNodeContent {
     pub(crate) fn shape(&self) -> (usize, usize) {
         if self.is_plain_text() {
             return (1, 1);
+        }
+        if self.hex_dump().is_some() {
+            return (self.len(), 1);
         }
         grid_shape(self.len(), self.layout)
     }
@@ -340,6 +437,13 @@ impl DataNodeContent {
             }
             return;
         }
+        if let Some(format) = self.hex_dump() {
+            for index in 0..self.len() {
+                hex_dump_format::format_line(self.bytes(), format, index, scratch);
+                f(index, scratch);
+            }
+            return;
+        }
         self.values.for_each_cell_string(self.format, self.byte_order, scratch, f);
     }
 
@@ -356,6 +460,10 @@ impl DataNodeContent {
             self.plain_text_into(out);
             return self.len() == 1;
         }
+        if let Some(format) = self.hex_dump() {
+            hex_dump_format::format_line(self.bytes(), format, 0, out);
+            return self.len() > 0;
+        }
         self.values.single_cell_string_into(self.format, self.byte_order, out)
     }
 
@@ -368,12 +476,23 @@ impl DataNodeContent {
             self.plain_text_into(out);
             return;
         }
+        // Every line is padded to the same width, so the first is as wide as any.
+        if let Some(format) = self.hex_dump() {
+            out.clear();
+            if self.len() > 0 {
+                hex_dump_format::format_line(self.bytes(), format, 0, out);
+            }
+            return;
+        }
         self.values.widest_cell_string(self.format, self.byte_order, out);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The pastel colour identifying this content's own value type — see [`NodeValues::type_colour`].
     pub(crate) fn type_colour(&self) -> &'static str {
+        if self.hex_dump().is_some() {
+            return crate::colours::TERMINAL_BG;
+        }
         if self.is_plain_text() {
             return crate::colours::PLAIN_BOX_FILL;
         }
@@ -409,6 +528,14 @@ impl DataNodeContent {
     /// *shape*. `band`'s own arithmetic membership test never needs the same check. `Scene::set_selection` only ever
     /// queries it with a flat index already known to be real. See [`ResolvedBand`]'s own doc comment for why.
     pub(crate) fn resolve_selection(&self, selection: Selection) -> Option<(ResolvedBand, Option<usize>)> {
+        // A hex dump is selected a byte at a time, so only nothing, or one byte, can be selected in it.
+        if self.hex_dump().is_some() {
+            return match selection {
+                Selection::None => Some((ResolvedBand::None, None)),
+                Selection::Cell(i) => (i < self.selectable_len()).then_some((ResolvedBand::None, Some(i))),
+                Selection::Row { .. } | Selection::Column { .. } => None,
+            };
+        }
         let len = self.len();
         let (rows, cols) = self.shape();
 
@@ -449,7 +576,7 @@ impl DataNodeContent {
     /// comment for why "over the selections it can produce" rather than "over `Selection`'s whole domain."
     #[must_use]
     pub fn natural_selection(&self, flat_index: usize) -> Option<Selection> {
-        if flat_index >= self.len() {
+        if flat_index >= self.selectable_len() {
             return None;
         }
         let (rows, cols) = self.shape();
@@ -482,7 +609,7 @@ impl DataNodeContent {
             (Selection::Row { row, col: Some(col) }, false) => row * cols + col,
             _ => return None,
         };
-        (index < self.len()).then_some(index)
+        (index < self.selectable_len()).then_some(index)
     }
 }
 

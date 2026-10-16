@@ -34,6 +34,12 @@
         and <code>42</code> has none. Hexadecimal and binary show the value's two's-complement representation, so
         <code>-2</code> as an <code>i16</code> reads <code>FF FE</code>, in the default big-endian byte order.
     </p>
+    <p>The last two rows show the same <code>u8</code> bytes as a hex dump, in the format of <code>hexdump -C</code>: the
+        bytes in hexadecimal, eight to a group, and then as characters, with anything that is not printable shown as
+        <code>.</code>. Each line holds sixteen bytes and is a cell of its own. The first row hides each line's offset,
+        which is the default. The second shows it, together with the line that ends the dump with its total length, and
+        has a label, so that it sits in a labelled box.
+    </p>
     <div class="canvas" id="data-diagram-stage" style="margin-top: 1.5rem;">
     </div>
 </section>

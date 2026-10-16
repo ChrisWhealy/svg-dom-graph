@@ -7,7 +7,8 @@ use super::super::{
 use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
-    scene::{BoxHandles, CellGrid, DataNodeContent, LabellingStyle, Selection, group_gaps},
+    model::content::{HexDumpFormat, full_width},
+    scene::{BoxHandles, CellGrid, DataDecor, DataNodeContent, HexMarks, LabellingStyle, Selection, group_gaps},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -29,6 +30,18 @@ const GROUP_GAP: f64 = 8.0;
 
 /// Clear space on each side of a row label, in the grid box's own left padding.
 const ELEMENT_LABEL_MARGIN: f64 = 4.0;
+
+/// The height of the row a named data node reserves under its name for a selection toolbar, when its content asks for
+/// one with `DataNodeContent::with_toolbar`: the tallest button a docked bar draws, with a margin above and below.
+pub(crate) const TOOLBAR_ROW_HEIGHT: f64 = 36.0;
+
+/// The narrowest a named data node with a toolbar row is drawn, so that the bar of Prev, Next and Restart fits. A wider
+/// bar, one with the stride buttons, is the caller's to make room for.
+const TOOLBAR_MIN_WIDTH: f64 = 220.0;
+
+/// The height of one line of a hex dump, which a terminal sets close: with no box or gap around it, the lines of a
+/// dump are as tall as their text, plus a little leading.
+const TERMINAL_LINE_HEIGHT: f64 = GRID_FONT_SIZE * 1.25;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a data node's rectangle and its grid of value cells, grouped under one `<g>`. Returns their handles alongside
@@ -114,7 +127,7 @@ pub(super) fn draw_content_box(
 
     let layout = GridLayoutMetrics::measure(svg, &mut guard, content)?;
     let content_size = layout.content_size();
-    let frame = draw_name_frame(svg, scratch, &group, &mut guard, name, content_size)?;
+    let frame = draw_name_frame(svg, scratch, &group, &mut guard, name, content, content_size)?;
     let content_rect_el = draw_content_rect(svg, &group, &mut guard, content, frame.content_origin, content_size)?;
     let cells = draw_cells(
         svg,
@@ -126,6 +139,11 @@ pub(super) fn draw_content_box(
         frame.content_origin,
         &content_rect_el,
     )?;
+
+    let hex_marks = match content.hex_dump() {
+        Some(format) => Some(draw_hex_marks(svg, &group, &mut guard, format, layout.cell.width)?),
+        None => None,
+    };
 
     // See `draw_box`'s own comment on its matching call for why `set_transform_fmt`, not `set_translate`.
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", top_left.x, top_left.y))?;
@@ -149,7 +167,16 @@ pub(super) fn draw_content_box(
             cell_texts: cells.texts,
             replaceable: true,
             cell_grid: Some(cells.grid),
-            cell_stroke_width: if content.is_single_value() { "1.5" } else { "1" },
+            decor: DataDecor {
+                hex_marks,
+                toolbar_slot: frame.toolbar_slot,
+            },
+            cell_stroke_width: match (content.is_single_value(), content.hex_dump()) {
+                (true, _) => "1.5",
+                // A line of a dump has no border, until a selection draws one.
+                (_, Some(_)) => "0",
+                _ => "1",
+            },
             selection: Selection::None,
             secondary: Vec::new(),
             unreached: Vec::new(),
@@ -183,6 +210,8 @@ struct GridLayoutMetrics {
     /// How many columns make up one group, or `0` for none. See `DataNodeContent::with_column_groups`.
     column_group: usize,
     single_value: bool,
+    /// The gap between one cell and the next, [`CELL_GAP`], or none for a hex dump, whose lines touch.
+    gap: f64,
 }
 
 impl GridLayoutMetrics {
@@ -196,12 +225,19 @@ impl GridLayoutMetrics {
     fn measure(svg: &SvgRoot, guard: &mut RenderGuard, content: &DataNodeContent) -> Result<Self, Error> {
         let mut widest = String::new();
         content.widest_cell_string(&mut widest);
+        // A hex dump is measured as a run of characters that are not spaces, whose width is that of a full line, because
+        // a line ends in spaces that a measurement might leave out. Under a monospace font every character is as wide
+        // as any other, so it also gives the width of one character, which places the marks of a selected byte.
+        if let Some(format) = content.hex_dump() {
+            widest.clear();
+            widest.extend(std::iter::repeat_n('0', full_width(format)));
+        }
 
         let measure_el = svg.text(Point::origin(), &widest)?;
         guard.track(measure_el.clone());
         measure_el.set_font_family(GRID_FONT_FAMILY)?;
         measure_el.set_font_size(GRID_FONT_SIZE)?;
-        if content.is_plain_text() {
+        if content.keeps_spaces() {
             measure_el.set_attr("style", "white-space: pre")?;
         }
         let mut max_width = measure_el.bounding_box()?.size.width;
@@ -252,16 +288,34 @@ impl GridLayoutMetrics {
             guard.release();
         }
 
+        // A hex dump is a screen of text, so a line is as wide as its text and as tall as the terminal sets it, with
+        // nothing round it and nothing between it and the next. The node's own padding is the screen's margin.
+        let (cell, gap) = if content.hex_dump().is_some() {
+            (Size::new(max_width, TERMINAL_LINE_HEIGHT), 0.0)
+        } else {
+            (
+                Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING),
+                CELL_GAP,
+            )
+        };
         Ok(Self::new(
-            Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING),
+            cell,
             left_pad,
             (rows, cols),
             content.column_group(),
             content.is_single_value(),
+            gap,
         ))
     }
 
-    fn new(cell: Size, left_pad: f64, (rows, cols): (usize, usize), column_group: usize, single_value: bool) -> Self {
+    fn new(
+        cell: Size,
+        left_pad: f64,
+        (rows, cols): (usize, usize),
+        column_group: usize,
+        single_value: bool,
+        gap: f64,
+    ) -> Self {
         Self {
             cell,
             left_pad,
@@ -269,6 +323,7 @@ impl GridLayoutMetrics {
             cols,
             column_group,
             single_value,
+            gap,
         }
     }
 
@@ -281,11 +336,11 @@ impl GridLayoutMetrics {
         }
         Size::new(
             self.cols as f64 * self.cell.width
-                + (self.cols as f64 - 1.0) * CELL_GAP
+                + (self.cols as f64 - 1.0) * self.gap
                 + group_gaps(self.column_group, self.cols) as f64 * GROUP_GAP
                 + self.left_pad
                 + OUTER_PADDING,
-            self.rows as f64 * self.cell.height + (self.rows as f64 - 1.0) * CELL_GAP + 2.0 * OUTER_PADDING,
+            self.rows as f64 * self.cell.height + (self.rows as f64 - 1.0) * self.gap + 2.0 * OUTER_PADDING,
         )
     }
 
@@ -297,7 +352,7 @@ impl GridLayoutMetrics {
             cell: self.cell,
             left_pad: self.left_pad,
             top_pad: OUTER_PADDING,
-            gap: CELL_GAP,
+            gap: self.gap,
             group_gap: GROUP_GAP,
             cols: self.cols,
             column_group: self.column_group,
@@ -318,6 +373,8 @@ struct NameFrame {
     size: Size,
     /// The wrapping box's own `<rect>`, `Some` only when `name` draws one.
     outer_el: Option<SvgNode>,
+    /// The row held for a selection toolbar, local to the group, if the node has one.
+    toolbar_slot: Option<Rect>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -336,12 +393,25 @@ fn name_label(svg: &SvgRoot, guard: &mut RenderGuard, name: &str) -> Result<SvgN
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the named wrapper around a content box of `content_size`, given the measured width of the name. Whichever
 /// is wider sets the box: the name plus [`CELL_PADDING`] each side, or the content box plus [`OUTER_PADDING`] each side.
-/// The height adds the label row above and [`OUTER_PADDING`] below.
-fn named_frame_size(label_width: f64, content_size: Size) -> Size {
+/// The height adds the label row above, the `toolbar_row` under it, if the node has one, and [`OUTER_PADDING`] below.
+fn named_frame_size(label_width: f64, content_size: Size, toolbar_row: f64) -> Size {
+    let toolbar_width = if toolbar_row > 0.0 { TOOLBAR_MIN_WIDTH } else { 0.0 };
     Size::new(
-        (label_width + 2.0 * CELL_PADDING).max(content_size.width + 2.0 * OUTER_PADDING),
-        LABEL_ROW_HEIGHT + content_size.height + OUTER_PADDING,
+        (label_width + 2.0 * CELL_PADDING)
+            .max(content_size.width + 2.0 * OUTER_PADDING)
+            .max(toolbar_width),
+        LABEL_ROW_HEIGHT + toolbar_row + content_size.height + OUTER_PADDING,
     )
+}
+
+/// The height of the row a named node holds for a selection toolbar: [`TOOLBAR_ROW_HEIGHT`] if `content` asked for one
+/// and the node has a name, and nothing otherwise.
+fn toolbar_row(name: Option<&str>, content: &DataNodeContent) -> f64 {
+    if name.is_some() && content.has_toolbar_row() {
+        TOOLBAR_ROW_HEIGHT
+    } else {
+        0.0
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -372,7 +442,7 @@ pub(super) fn measure_content_box(svg: &SvgRoot, name: Option<&str>, content: &D
             let label_width = label_el.bounding_box()?.size.width;
             label_el.remove();
             guard.release();
-            named_frame_size(label_width, content_size)
+            named_frame_size(label_width, content_size, toolbar_row(Some(name), content))
         },
         None => content_size,
     };
@@ -394,6 +464,7 @@ fn draw_name_frame(
     group: &SvgNode,
     guard: &mut RenderGuard,
     name: Option<&str>,
+    content: &DataNodeContent,
     content_size: Size,
 ) -> Result<NameFrame, Error> {
     let origin = Point::origin();
@@ -402,13 +473,15 @@ fn draw_name_frame(
             content_origin: origin,
             size: content_size,
             outer_el: None,
+            toolbar_slot: None,
         });
     };
+    let toolbar_row = toolbar_row(Some(name), content);
 
     let label_el = name_label(svg, guard, name)?;
     let label_width = label_el.bounding_box()?.size.width;
 
-    let box_size = named_frame_size(label_width, content_size);
+    let box_size = named_frame_size(label_width, content_size, toolbar_row);
     let box_width = box_size.width;
 
     let outer_el = svg.rect(origin, box_size)?;
@@ -425,9 +498,13 @@ fn draw_name_frame(
     guard.release();
 
     Ok(NameFrame {
-        content_origin: Point::new((box_width - content_size.width) / 2.0, LABEL_ROW_HEIGHT),
+        content_origin: Point::new((box_width - content_size.width) / 2.0, LABEL_ROW_HEIGHT + toolbar_row),
         size: box_size,
         outer_el: Some(outer_el),
+        toolbar_slot: (toolbar_row > 0.0).then(|| Rect {
+            origin: Point::new(0.0, LABEL_ROW_HEIGHT),
+            size: Size::new(box_width, toolbar_row),
+        }),
     })
 }
 
@@ -444,12 +521,62 @@ fn draw_content_rect(
 ) -> Result<SvgNode, Error> {
     let rect_el = svg.rect(content_origin, content_size)?;
     guard.track(rect_el.clone());
-    rect_el.set_fill(if content.is_single_value() { content.type_colour() } else { PLAIN_BOX_FILL })?;
+    rect_el.set_fill(if content.is_single_value() || content.hex_dump().is_some() {
+        content.type_colour()
+    } else {
+        PLAIN_BOX_FILL
+    })?;
     rect_el.set_stroke(BOX_STROKE)?;
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
     guard.release();
     Ok(rect_el)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the marks a hex dump shows its selected byte with, over its lines, hidden until a byte is selected. A light block
+/// and a dark copy of the characters on it, for the hex digits and again for the character, so that a mark reads as
+/// inverse video does in a terminal. `line_width` is the width of a full line, which is `full_width(format)` characters.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+fn draw_hex_marks(
+    svg: &SvgRoot,
+    group: &SvgNode,
+    guard: &mut RenderGuard,
+    format: HexDumpFormat,
+    line_width: f64,
+) -> Result<HexMarks, Error> {
+    let mut mark = |fill: &str| -> Result<(SvgNode, SvgNode), Error> {
+        let block = svg.rect(Point::origin(), Size::new(0.0, 0.0))?;
+        guard.track(block.clone());
+        block.set_fill(fill)?;
+        block.set_attr("pointer-events", "none")?;
+        block.set_attr("visibility", "hidden")?;
+        group.append(&block)?;
+        guard.release();
+
+        let ink = svg.text(Point::origin(), "")?;
+        guard.track(ink.clone());
+        ink.set_dominant_baseline(DominantBaseline::Middle)?;
+        ink.set_font_family(GRID_FONT_FAMILY)?;
+        ink.set_font_size(GRID_FONT_SIZE)?;
+        ink.set_fill(HexMarks::INK)?;
+        ink.set_attr("style", "white-space: pre")?;
+        ink.set_attr("pointer-events", "none")?;
+        ink.set_attr("aria-hidden", "true")?;
+        ink.set_attr("visibility", "hidden")?;
+        group.append(&ink)?;
+        guard.release();
+        Ok((block, ink))
+    };
+    let [hex_fill, ascii_fill] = HexMarks::FILLS;
+    let hex = mark(hex_fill)?;
+    let ascii = mark(ascii_fill)?;
+    #[allow(clippy::cast_precision_loss)]
+    let char_width = line_width / full_width(format) as f64;
+    Ok(HexMarks { hex, ascii, char_width, format })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -518,7 +645,7 @@ fn draw_cells(
             if content.is_bool_icon() {
                 halo_icon(&text)?;
             }
-            if content.is_plain_text() {
+            if content.keeps_spaces() {
                 text.set_attr("style", "white-space: pre")?;
             }
             cells.texts.push(text.clone());
@@ -538,7 +665,7 @@ fn draw_cells(
                 guard.track(cell_rect.clone());
                 cell_rect.set_fill(type_colour)?;
                 cell_rect.set_stroke(BOX_STROKE)?;
-                cell_rect.set_stroke_width(1.0)?;
+                cell_rect.set_stroke_width(if content.hex_dump().is_some() { 0.0 } else { 1.0 })?;
                 group.append(&cell_rect)?;
                 guard.release();
 

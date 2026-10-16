@@ -69,6 +69,12 @@ impl Scene {
         };
         let new = Highlight::resolve(content, selection).ok_or(Error::InvalidSelection(id, selection))?;
         let base_colour = content.type_colour();
+        // A hex dump marks the one byte that is selected, over its lines. What it needs of the byte is read here, while
+        // the content is at hand.
+        let hex_selected = match selection {
+            Selection::Cell(i) => content.hex_dump_byte(i),
+            _ => None,
+        };
 
         let old_selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
         if old_selection == selection {
@@ -109,6 +115,10 @@ impl Scene {
             result = new_style.apply_from(old_style, single_value, cell, cell_texts.get(i));
         });
         result?;
+
+        if let (Some(marks), Some(grid)) = (&handles.decor.hex_marks, handles.cell_grid) {
+            marks.show(&mut String::new(), &grid, hex_selected)?;
+        }
 
         handles.selection = selection;
         handles.refresh_label()?;
@@ -240,6 +250,11 @@ impl Highlight {
     /// Resolves `selection` against `content`. `None` if it names a row, column or cell the content does not have.
     pub(super) fn resolve(content: &DataNodeContent, selection: Selection) -> Option<Self> {
         let (band, focus) = content.resolve_selection(selection)?;
+        // A hex dump is selected a byte at a time, which no cell is. The byte is marked over its lines, and no cell is
+        // styled for it. See `HexMarks`.
+        if content.hex_dump().is_some() {
+            return Some(Self::default());
+        }
         Some(Self { band, focus })
     }
 

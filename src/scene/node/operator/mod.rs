@@ -23,7 +23,7 @@ use crate::{
         node::{NodeContent, NodeId},
     },
     scene::{
-        ArithmeticOperator, BinaryOperator, BoxHandles, DataNodeContent, Scene, Selection, UnaryOperator,
+        ArithmeticOperator, BinaryOperator, BoxHandles, DataDecor, DataNodeContent, Scene, Selection, UnaryOperator,
         scene_inner::SceneInner,
     },
 };
@@ -251,6 +251,7 @@ fn draw_operator_box(
             cell_texts: vec![value_el],
             replaceable: true,
             cell_grid: None,
+            decor: DataDecor::default(),
             cell_stroke_width: "1",
             selection: Selection::None,
             secondary: Vec::new(),

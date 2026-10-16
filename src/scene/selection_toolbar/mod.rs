@@ -30,6 +30,8 @@ use svg_dom::{DominantBaseline, SvgNode, SvgRoot, TextAnchor, root::utils::Point
 const BUTTON_STYLE: &str = "cursor: pointer; user-select: none; -webkit-user-select: none;";
 const BUTTON_STROKE_WIDTH: f64 = 1.0;
 const FOCUS_STROKE_WIDTH: f64 = 3.0;
+/// The tallest a button of a docked bar is drawn, so that it fits the row its node's box holds for it.
+const DOCKED_BUTTON_HEIGHT: f64 = 28.0;
 /// The opacity of a disabled button
 const DISABLED_OPACITY: &str = "0.4";
 /// Every button's own natural size — a fixed-width word, not square like the zoom toolbar's "+"/"−".
@@ -70,6 +72,10 @@ pub(super) struct SelectionToolbar {
     /// The one data node this toolbar steps. Fixed for as long as this toolbar is shown — replacing it means calling
     /// [`Scene::show_selection_toolbar`] again, which replaces the whole toolbar.
     pub node: NodeId,
+    /// The row inside `node`'s own box that this bar is docked in, local to the node's group, or `None` for a bar that
+    /// is fixed to an edge of the scene's visible area instead. See [`Scene::show_selection_toolbar`]'s own doc comment,
+    /// "Docked in its node".
+    pub dock: Option<svg_dom::root::utils::Rect>,
     /// The host's own callback, shared by all three buttons. Not stored anywhere else — see
     /// [`Scene::show_selection_toolbar`]'s own doc comment ("Ownership") for why keeping it out of `SceneInner` itself
     /// matters.
@@ -88,6 +94,9 @@ impl SelectionToolbar {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the position of `toolbar`'s own bar and every one of its buttons, for `area`.
 fn place(toolbar: &SelectionToolbar, area: svg_dom::root::utils::Rect, scratch: &mut String) -> Result<(), Error> {
+    if let Some(slot) = toolbar.dock {
+        return place_docked(toolbar, slot, scratch);
+    }
     let options = toolbar.options;
     // One size per button, in the same order as `toolbar.buttons`. A stride button is wider than the other three, and
     // any button is wider still if its label needs it.
@@ -120,6 +129,42 @@ fn place(toolbar: &SelectionToolbar, area: svg_dom::root::utils::Rect, scratch: 
         });
         button.label.set_attr_display(scratch, "x", text_at.x)?;
         button.label.set_attr_display(scratch, "y", text_at.y)?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes the position of a bar docked in `slot`, a row of its node's own box, and of its buttons. They sit side by
+/// side, centred across the row and down it, in the node's own coordinates. The bar is a child of the node's group, so
+/// moving, zooming or hiding the node does all three to it too, and nothing here depends on the visible area.
+fn place_docked(
+    toolbar: &SelectionToolbar,
+    slot: svg_dom::root::utils::Rect,
+    scratch: &mut String,
+) -> Result<(), Error> {
+    let options = toolbar.options;
+    #[allow(clippy::cast_precision_loss)]
+    let gaps = toolbar.buttons.len().saturating_sub(1) as f64 * options.gap;
+    let total: f64 = toolbar.buttons.iter().map(|button| button.width).sum::<f64>() + gaps;
+    let origin = Point::new(
+        slot.origin.x + (slot.size.width - total) / 2.0,
+        slot.origin.y + (slot.size.height - options.button_height) / 2.0,
+    );
+    toolbar
+        .group
+        .set_transform_fmt(scratch, format_args!("translate({}, {})", origin.x, origin.y))?;
+    toolbar.group.set_attr("aria-orientation", "horizontal")?;
+
+    let mut x = 0.0;
+    for button in &toolbar.buttons {
+        let size = svg_dom::root::utils::Size::new(button.width, options.button_height);
+        button.group.set_transform_fmt(scratch, format_args!("translate({x}, 0)"))?;
+        button.rect.set_attr_display(scratch, "width", size.width)?;
+        button.rect.set_attr_display(scratch, "height", size.height)?;
+        let text_at = crate::geometry::centre(svg_dom::root::utils::Rect { origin: Point::origin(), size });
+        button.label.set_attr_display(scratch, "x", text_at.x)?;
+        button.label.set_attr_display(scratch, "y", text_at.y)?;
+        x += button.width + options.gap;
     }
     Ok(())
 }
@@ -238,7 +283,8 @@ fn apply(
         let NodeContent::Data(content) = &node_data.content else { return };
         let Some(handles) = borrowed.node_handle(node) else { return };
         let from = content.flat_index(&handles.selection);
-        let Some(to) = action.next_position(from, content.len(), stride.map_or(1, |stride| stride.step)) else {
+        let Some(to) = action.next_position(from, content.selectable_len(), stride.map_or(1, |stride| stride.step))
+        else {
             return;
         };
         let new_selection = match to {
@@ -274,7 +320,7 @@ impl SceneInner {
         let NodeContent::Data(content) = &node_data.content else { return Ok(()) };
         let Some(handles) = self.node_handle(toolbar.node) else { return Ok(()) };
         let current = content.flat_index(&handles.selection);
-        let len = content.len();
+        let len = content.selectable_len();
         let stride_step = toolbar.options.stride.map_or(1, |stride| stride.step);
 
         for button in &toolbar.buttons {
@@ -325,6 +371,17 @@ impl Scene {
     /// Showing the toolbar resets `node` to [`Selection::None`] — "unstarted", before element `0` is ever processed —
     /// as its own first *committed* act, regardless of whatever `Selection` `node` already held. See "Failure
     /// guarantee" below for why "first committed act" is not the same as "first thing this call does."
+    ///
+    /// # Docked in its node
+    ///
+    /// A named data node whose content called [`DataNodeContent::with_toolbar`](crate::scene::DataNodeContent::with_toolbar)
+    /// holds a row for the bar, under its name and above its content. The bar is then drawn there, inside the node's own
+    /// box and not at an edge of the scene. It is a child of the node, so it moves, scales and is hidden with it. Its
+    /// buttons are no taller than the row, whatever [`SelectionToolbarOptions::button_height`] says, and
+    /// [`SelectionToolbarOptions::edge`] and [`SelectionToolbarOptions::margin`] have no effect on it. Any other node
+    /// has its bar at the edge of the scene, as before.
+    ///
+    /// A [`DataFormat::HexDump`](crate::scene::DataFormat::HexDump) is stepped a byte at a time, and not a line.
     ///
     /// # An optional stride
     ///
@@ -403,8 +460,20 @@ impl Scene {
         let weak = Rc::downgrade(&self.inner);
 
         let mut inner = self.inner.borrow_mut();
+        // A node whose box holds a row for a toolbar has the bar docked in it. Its buttons are then no taller than the
+        // row allows for.
+        let dock = inner
+            .node_handle(node)
+            .and_then(|handles| handles.decor.toolbar_slot.map(|slot| (handles.group.clone(), slot)));
+        let mut options = options;
+        if dock.is_some() {
+            options.button_height = options.button_height.min(DOCKED_BUTTON_HEIGHT);
+        }
         let group = inner.svg.group()?;
         let built = (|| {
+            if let Some((node_group, _)) = &dock {
+                node_group.append(&group)?;
+            }
             group.set_attr("role", "toolbar")?;
             group.set_attr("aria-label", "Selection controls")?;
             let buttons = SelectionToolbarAction::buttons(options.stride.is_some())
@@ -426,6 +495,7 @@ impl Scene {
             group,
             options,
             node,
+            dock: dock.map(|(_, slot)| slot),
             on_step,
             buttons,
         };

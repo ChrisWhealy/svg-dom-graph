@@ -19,7 +19,7 @@ use crate::{
         markdown::{self, Layout, Metrics},
         node::{NodeContent, NodeId},
     },
-    scene::{BoxHandles, Scene, Selection},
+    scene::{BoxHandles, DataDecor, Scene, Selection},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -193,6 +193,7 @@ fn draw_markdown_box(
             cell_texts: Vec::new(),
             replaceable: false,
             cell_grid: None,
+            decor: DataDecor::default(),
             cell_stroke_width: "",
             selection: Selection::None,
             secondary: Vec::new(),

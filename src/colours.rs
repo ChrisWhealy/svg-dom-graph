@@ -22,6 +22,12 @@ pub(crate) const BOX_STROKE: &str = "#2a5db0";
 /// looking harsh.
 pub(crate) const TEXT_FILL: &str = "#1b1b1b";
 
+/// The background of a hex dump, which is drawn as a terminal shows one: black, with no box around each line.
+pub(crate) const TERMINAL_BG: &str = "#000000";
+
+/// The ink of a hex dump, 90% white as a terminal's own text is, so it does not glare against [`TERMINAL_BG`].
+pub(crate) const TERMINAL_INK: &str = "#e6e6e6";
+
 /// The default (unnamed) box background — a light pastel blue. Shared by a plain label node's own box, an operator
 /// node's own outer box, and an unnamed data node's own outer box — single-value or multi-value grid alike.
 pub(crate) const PLAIN_BOX_FILL: &str = "#eef4ff";

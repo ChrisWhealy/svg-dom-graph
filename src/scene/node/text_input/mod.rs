@@ -25,7 +25,7 @@ use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, TEXT_FILL},
     error::Error,
     model::node::{NodeContent, NodeId},
-    scene::{BoxHandles, Scene, Selection},
+    scene::{BoxHandles, DataDecor, Scene, Selection},
 };
 use std::{cell::Cell, rc::Rc};
 use svg_dom::{
@@ -157,6 +157,7 @@ fn draw_text_input_box(
             cell_texts: Vec::new(),
             replaceable: false,
             cell_grid: None,
+            decor: DataDecor::default(),
             cell_stroke_width: "",
             selection: Selection::None,
             secondary: Vec::new(),
