@@ -819,7 +819,16 @@ fn describe(name: Option<&str>, content: &DataNodeContent, single_value_text: &s
     let (rows, cols) = content.shape();
     let row_word = if rows == 1 { "row" } else { "rows" };
     let col_word = if cols == 1 { "column" } else { "columns" };
-    let value = if content.is_single_value() {
+    let value = if let Some(bytes) = content.hex_dump().map(|_| content.selectable_len()) {
+        // A dump's cells are its lines, which says nothing about its data, so it is described by its bytes. The line
+        // that holds the total length, when shown, is not data and is not counted.
+        let lines = bytes.div_ceil(crate::model::content::BYTES_PER_LINE);
+        let (byte_word, line_word) = (
+            if bytes == 1 { "byte" } else { "bytes" },
+            if lines == 1 { "line" } else { "lines" },
+        );
+        format!("hex dump, {bytes} {byte_word} across {lines} data {line_word}")
+    } else if content.is_single_value() {
         format!("{type_name} = {single_value_text}")
     } else {
         format!(

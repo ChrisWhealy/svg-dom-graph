@@ -172,18 +172,28 @@ impl BoxHandles {
     /// The secondary cells read as `", also highlighted: cells 3, 4"`, appended after the primary selection's own
     /// description. A run of three or more consecutive cells is written as a range, such as `cells 0 to 7`. Colour and
     /// dash alone convey nothing to assistive technology. Cells not yet computed read as `", not yet computed: cells 16
-    /// to 63"`, after that, for the same reason. See [`unreached_clause_into`].
+    /// to 63"`, after that, for the same reason. See [`unreached_clause_with`].
     pub(crate) fn refresh_label(&mut self) -> Result<(), svg_dom::Error> {
         use std::fmt::Write as _;
         self.label_stale = true;
         self.aria_label.truncate(self.base_label_len);
-        self.selection.describe_into(&mut self.aria_label);
+        // A hex dump's cells are its lines, but everything it selects or marks is a byte, so that is what it says.
+        let dump = self.decor.hex_marks.is_some();
+        match (dump, self.selection) {
+            (true, Selection::Cell(i)) => {
+                let _ = write!(self.aria_label, ", byte {i} selected");
+            },
+            _ => self.selection.describe_into(&mut self.aria_label),
+        }
+        let unit = if dump { "byte" } else { "cell" };
         if !self.secondary.is_empty() {
-            let noun = if self.secondary.len() == 1 { "cell" } else { "cells" };
-            let _ = write!(self.aria_label, ", also highlighted: {noun} ");
+            let plural = if self.secondary.len() == 1 { "" } else { "s" };
+            let _ = write!(self.aria_label, ", also highlighted: {unit}{plural} ");
             append_cell_list(&self.secondary, &mut self.aria_label);
         }
-        unreached_clause_into(&self.unreached, self.cell_rects.len(), &mut self.aria_label);
+        // A dump is never "a single cell", whatever its number of lines, since it is described by its bytes.
+        let total = if dump { usize::MAX } else { self.cell_rects.len() };
+        unreached_clause_with(&self.unreached, total, unit, &mut self.aria_label);
         self.group.set_attr("aria-label", &self.aria_label)?;
         // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
         // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
@@ -269,7 +279,9 @@ fn find_value(label: &str, type_name: &str, old: &str) -> Option<usize> {
 /// of three or more consecutive cells is written as a range, so a schedule that is nearly all unreached does not read
 /// out dozens of numbers. Shorter runs are listed. Everything is written straight into `out`, so a label rebuilt on
 /// every selection change allocates only if `out` must grow.
-pub(crate) fn unreached_clause_into(cells: &[usize], total: usize, out: &mut String) {
+///
+/// `unit` is `cell` for a grid and `byte` for a hex dump, whose cells are lines.
+fn unreached_clause_with(cells: &[usize], total: usize, unit: &str, out: &mut String) {
     use std::fmt::Write as _;
     if cells.is_empty() {
         return;
@@ -278,8 +290,8 @@ pub(crate) fn unreached_clause_into(cells: &[usize], total: usize, out: &mut Str
         out.push_str(", not yet computed");
         return;
     }
-    let noun = if cells.len() == 1 { "cell" } else { "cells" };
-    let _ = write!(out, ", not yet computed: {noun} ");
+    let plural = if cells.len() == 1 { "" } else { "s" };
+    let _ = write!(out, ", not yet computed: {unit}{plural} ");
     append_cell_list(cells, out);
 }
 
@@ -316,11 +328,11 @@ fn append_cell_list(cells: &[usize], out: &mut String) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`unreached_clause_into`] as an owned `String`, for the tests that only read the finished text.
+/// [`unreached_clause_with`] as an owned `String`, for the tests that only read the finished text.
 #[cfg(test)]
 pub(crate) fn unreached_clause(cells: &[usize], total: usize) -> String {
     let mut out = String::new();
-    unreached_clause_into(cells, total, &mut out);
+    unreached_clause_with(cells, total, "cell", &mut out);
     out
 }
 

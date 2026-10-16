@@ -147,3 +147,19 @@ fn only_a_named_node_holds_a_toolbar_row() -> Result<(), String> {
     let plain = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
     check_eq(toolbar_row(Some("name"), &plain), 0.0)
 }
+
+#[test]
+fn a_hex_dump_is_described_by_its_bytes_and_data_lines_and_not_by_its_cells() -> Result<(), String> {
+    use crate::scene::HexDumpFormat;
+    let dump = |len: usize, format| DataNodeContent::new(NodeValues::U8(vec![0; len]), DataFormat::HexDump(format));
+    // The line of the total length is a cell, but it is not a data line.
+    let format = HexDumpFormat::new().with_offset(true).with_total_length(true);
+    check_eq(
+        describe(None, &dump(40, format), ""),
+        "hex dump, 40 bytes across 3 data lines".to_owned(),
+    )?;
+    check_eq(
+        describe(Some("D"), &dump(1, format), ""),
+        "D: hex dump, 1 byte across 1 data line".to_owned(),
+    )
+}

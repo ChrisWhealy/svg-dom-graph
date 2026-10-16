@@ -50,14 +50,14 @@ fn separate_runs_are_each_written_out() -> Result<(), String> {
 #[test]
 fn the_clause_is_appended_to_what_the_buffer_already_holds() -> Result<(), String> {
     let mut out = String::from("u8 data grid");
-    super::unreached_clause_into(&[1, 2], 8, &mut out);
+    super::unreached_clause_with(&[1, 2], 8, "cell", &mut out);
     check_eq(out, "u8 data grid, not yet computed: cells 1, 2")
 }
 
 #[test]
 fn an_empty_set_appends_nothing() -> Result<(), String> {
     let mut out = String::from("unchanged");
-    super::unreached_clause_into(&[], 8, &mut out);
+    super::unreached_clause_with(&[], 8, "cell", &mut out);
     check_eq(out, "unchanged")
 }
 
@@ -65,7 +65,7 @@ fn an_empty_set_appends_nothing() -> Result<(), String> {
 fn the_clause_reuses_a_buffer_with_room() -> Result<(), String> {
     let mut out = String::with_capacity(128);
     let before = out.as_ptr();
-    super::unreached_clause_into(&[0, 2, 3, 4, 9, 20, 21, 22, 23], 64, &mut out);
+    super::unreached_clause_with(&[0, 2, 3, 4, 9, 20, 21, 22, 23], 64, "cell", &mut out);
     check(out.as_ptr() == before, "the clause should fit the buffer it was given")
 }
 

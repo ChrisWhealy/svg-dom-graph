@@ -821,7 +821,7 @@ fn output(tab: &Tab) -> Result<Vec<String>, String> {
         .collect())
 }
 
-/// What the accessible name of the node called `name` says is highlighted, such as `cell 0`, or `None` if nothing is.
+/// What the accessible name of the node called `name` says is highlighted, such as `byte 0`, or `None` if nothing is.
 fn highlight(tab: &Tab, name: &str) -> Result<Option<String>, String> {
     let label = text(
         tab,
@@ -915,7 +915,7 @@ fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
     check_eq(output(&tab)?, Vec::<String>::new())?;
     goto(&tab, PASS_TWO + 3)?;
     check_eq(output(&tab)?, vec!["4e".to_owned()])?;
-    check_eq(highlight(&tab, "Output bytes")?, Some("cell 0".to_owned()))?;
+    check_eq(highlight(&tab, "Output bytes")?, Some("byte 0".to_owned()))?;
     // The byte is marked in the hex dump, over its two hex digits and over its character.
     check_eq(secondary_marks(&tab)?, ["4e", "N"].map(str::to_owned).to_vec())?;
     // The next step writes nothing, so the byte is no longer marked.

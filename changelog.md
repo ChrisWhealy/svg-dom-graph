@@ -15,7 +15,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Adjust layout of Huffman phase 2 scene to use HexDump text node (`7a5d0ea`)
-- `Scene::set_secondary_selection` and `Scene::set_unreached_cells` follow `set_selection`, addressing a hex dump a byte at a time (``)
+- `Scene::set_secondary_selection` and `Scene::set_unreached_cells` follow `set_selection`, addressing a hex dump a byte at a time (`77e64ba`)
+- Add `HexDumpFormat::with_total_length`. The final line of `hexdump -C` is now shown only when asked for, and no longer follows `with_offset` (`77e64ba`)
+
+## Fixed
+
+- A hex dump's accessible name describes its lines as cells and give selected byte number (``)
 
 # [Released]
 
