@@ -244,3 +244,16 @@ fn a_toolbar_row_is_only_asked_for_with_with_toolbar() -> Result<(), String> {
     check(!dump(b"abc", HexDumpFormat::new()).has_toolbar_row(), "none by default")?;
     check(dump(b"abc", HexDumpFormat::new()).with_toolbar().has_toolbar_row(), "asked for")
 }
+
+#[test]
+fn identical_lines_are_all_written_and_never_collapsed_to_a_star() -> Result<(), String> {
+    // `hexdump -C` would write the second and third of these as `*`. Each line is a cell, so each is written in full.
+    let content = dump(&[0xAA; 64], HexDumpFormat::new());
+    let lines = cells(&content);
+    check_eq(lines.len(), 4)?;
+    for line in &lines {
+        check_eq(visible(line), visible(&lines[0]))?;
+        check(!line.contains('*'), "a line is never a star")?;
+    }
+    Ok(())
+}

@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add data node to display text in `hexdump -C` format (`6bf117a`)
+- Extend test coverage for functionality used in the Huffman demo (``)
 
 ## Changed
 

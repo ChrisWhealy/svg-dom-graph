@@ -127,3 +127,39 @@ fn stepping_back_and_restarting_move_and_clear_the_marks() -> Result<(), String>
     check_eq(status(&tab)?.as_str(), "not started")?;
     check_eq(marks(&tab)?, Vec::<String>::new())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The marks sit over the glyphs they name, wherever the byte is in its line: at the ends of a line, on either side of the
+/// extra gap after the eighth byte, and across the change of line. This is measured against where the browser draws each
+/// character, and not against the library's own idea of the columns.
+#[test]
+fn the_marks_sit_over_the_right_glyphs_at_the_edges_of_a_group_and_of_a_line() -> Result<(), String> {
+    use crate::common::{ascii_column, dump_marks, hex_column};
+    let tab = open()?;
+    let scope = format!("{DIAGRAM} g[aria-label^=\"hexdump\"]");
+    // The example has 65 bytes: four full lines and a line of one byte.
+    let mut at = 0;
+    for byte in [0, 7, 8, 15, 16, 31, 32, 64] {
+        press(&tab, "Next selection", byte + 1 - at)?;
+        at = byte + 1;
+        let (line, place) = (byte / 16, byte % 16);
+        let marks = dump_marks(&tab, &scope)?;
+        let hex = marks
+            .iter()
+            .find(|m| m.text.len() == 2)
+            .ok_or(format!("byte {byte} has no hex mark"))?;
+        let ascii = marks
+            .iter()
+            .find(|m| m.text.len() == 1)
+            .ok_or(format!("byte {byte} has no character mark"))?;
+        check_eq(
+            (hex.column, hex.line, hex.over_its_glyphs),
+            (hex_column(place, true), line, true),
+        )?;
+        check_eq(
+            (ascii.column, ascii.line, ascii.over_its_glyphs),
+            (ascii_column(place, true), line, true),
+        )?;
+    }
+    Ok(())
+}

@@ -583,6 +583,7 @@ fn make_mark(svg: &SvgRoot, fill: &str) -> Result<(SvgNode, SvgNode), Error> {
     let block = svg.rect(Point::origin(), Size::new(0.0, 0.0))?;
     block.set_fill(fill)?;
     block.set_attr("pointer-events", "none")?;
+    block.set_attr("aria-hidden", "true")?;
     block.set_attr("visibility", "hidden")?;
 
     let ink = svg.text(Point::origin(), "")?;
@@ -613,6 +614,7 @@ pub(crate) fn new_dim_block(svg: &SvgRoot, group: &SvgNode, fill: &str) -> Resul
     block.set_fill(fill)?;
     block.set_attr("opacity", "0.65")?;
     block.set_attr("pointer-events", "none")?;
+    block.set_attr("aria-hidden", "true")?;
     block.set_attr("visibility", "hidden")?;
     group.append(&block)?;
     Ok(block)

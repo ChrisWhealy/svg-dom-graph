@@ -271,3 +271,69 @@ pub(crate) fn mouse_event(
     std::thread::sleep(SETTLE);
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One mark a hex dump draws over a selected byte, as found in the browser.
+#[derive(Debug, PartialEq, Eq)]
+pub(crate) struct DumpMark {
+    /// The text the mark shows: two hex digits, or one character.
+    pub(crate) text: String,
+    /// The character column of the line's own text that the mark's left edge sits on, counted from its start.
+    pub(crate) column: usize,
+    /// Which line of the dump the mark is on, counting from 0.
+    pub(crate) line: usize,
+    /// Whether the line's text really has `text` at that column. A mark in the wrong place covers other glyphs.
+    pub(crate) over_its_glyphs: bool,
+}
+
+/// The visible marks over the hex dump node `scope` selects, with where each really sits.
+///
+/// Where a mark is is measured, and not computed: the browser says where it draws each character of a line
+/// (`getStartPositionOfChar`), and the mark's left edge is matched to the character it starts at. So this checks the
+/// marks against the glyphs, whatever the library believes the columns are.
+pub(crate) fn dump_marks(tab: &Tab, scope: &str) -> Result<Vec<DumpMark>, String> {
+    let js = format!(
+        "JSON.stringify((() => {{ const g = document.querySelector({scope:?}); if (!g) return []; \
+         const lines = [...g.querySelectorAll('text')].filter(t => t.textContent.includes('|')); \
+         const out = []; \
+         for (const r of g.querySelectorAll('rect')) {{ \
+           const fill = r.getAttribute('fill'); \
+           if (r.getAttribute('visibility') !== 'visible' || (fill !== '#ff6b4a' && fill !== '#7fd8be')) continue; \
+           const text = r.nextElementSibling.textContent; \
+           const x = +r.getAttribute('x'); const mid = +r.getAttribute('y') + +r.getAttribute('height') / 2; \
+           const line = lines.findIndex(l => {{ const b = l.getBBox(); return mid >= b.y && mid <= b.y + b.height; }}); \
+           let column = -1; \
+           if (line >= 0) {{ const n = lines[line].getNumberOfChars(); \
+             for (let c = 0; c < n; c++) {{ if (Math.abs(lines[line].getStartPositionOfChar(c).x - x) < 0.6) {{ column = c; break; }} }} }} \
+           const over = line >= 0 && column >= 0 && lines[line].textContent.substr(column, text.length) === text; \
+           out.push([text, column, line, over]); }} \
+         return out; }})())"
+    );
+    let json = tab
+        .evaluate(&js, false)
+        .map_err(|e| format!("could not measure the marks: {e}"))?
+        .value
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .ok_or("the marks were not returned")?;
+    let rows: Vec<(String, i64, i64, bool)> = serde_json::from_str(&json).map_err(|e| format!("bad marks: {e}"))?;
+    Ok(rows
+        .into_iter()
+        .map(|(text, column, line, over)| DumpMark {
+            text,
+            column: usize::try_from(column).unwrap_or(usize::MAX),
+            line: usize::try_from(line).unwrap_or(usize::MAX),
+            over_its_glyphs: over,
+        })
+        .collect())
+}
+
+/// The character column where byte `place` of a dump line has its two hex digits. A dump with offsets starts 10 columns
+/// in, and each byte takes 3, with one more column after the eighth.
+pub(crate) fn hex_column(place: usize, offsets: bool) -> usize {
+    10 * usize::from(offsets) + 3 * place + usize::from(place >= 8)
+}
+
+/// The character column of byte `place`'s character: after the 48 columns of hex, the 2 spaces, and the `|`.
+pub(crate) fn ascii_column(place: usize, offsets: bool) -> usize {
+    10 * usize::from(offsets) + 51 + place
+}

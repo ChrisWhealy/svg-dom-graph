@@ -1049,3 +1049,44 @@ fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<()
     check_eq(position(&tab)?, Some(8))?;
     check(!in_pass_two(&tab)?, "position 8 is in pass one")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A dump without offsets marks each byte a step writes over the glyphs it names, in every place of a line and on more
+/// than one line. Identical lines are never collapsed, so a line is always where the output's byte count says it is.
+#[test]
+fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Result<(), String> {
+    use crate::common::{ascii_column, dump_marks, hex_column};
+    let tab = open_default()?;
+    let scope = format!("{DIAGRAM} g[aria-label^=\"Output bytes\"]");
+    let (mut hex_places, mut ascii_places, mut lines) = (
+        std::collections::BTreeSet::new(),
+        std::collections::BTreeSet::new(),
+        std::collections::BTreeSet::new(),
+    );
+    // Walk to the end, looking at the marks after every step of pass two.
+    for _ in 0..400 {
+        let before = position(&tab)?;
+        click(&tab, "Next selection")?;
+        if position(&tab)? == before {
+            break;
+        }
+        if !in_pass_two(&tab)? {
+            continue;
+        }
+        for mark in dump_marks(&tab, &scope)? {
+            check(mark.over_its_glyphs, &format!("{mark:?} is not over its own glyphs"))?;
+            lines.insert(mark.line);
+            if mark.text.len() == 2 {
+                let place = (0..16).find(|&p| hex_column(p, false) == mark.column);
+                hex_places.insert(place.ok_or(format!("{mark:?} is not on a byte's hex digits"))?);
+            } else {
+                let place = (0..16).find(|&p| ascii_column(p, false) == mark.column);
+                ascii_places.insert(place.ok_or(format!("{mark:?} is not on a byte's character"))?);
+            }
+        }
+    }
+    // Every place in a line is written at some step, including both sides of the gap, and more than one line.
+    check_eq(hex_places.len(), 16)?;
+    check_eq(ascii_places.len(), 16)?;
+    check(lines.len() >= 2, &format!("only lines {lines:?} were marked"))
+}
