@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - A hex dump's accessible name describes its lines as cells and give selected byte number (`2f682e4`)
 - Avoid reformatting entire hexdump when one byte changes (`b8c99f0`)
 - Avoid creating new `String` for each selection overlay (`a4f6de6`)
+- Correct overlay paint order. Extend CDP test coverage (`95b1f5d`)
+- Prevent secondary selection from copying entire byte array (``)
 
 # [Released]
 
@@ -53,7 +55,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent numbered lists from exceeding available width (`4b10f61`)
 - Remove parser inefficiency when scanning forward for close markers (`7430516`)
 - Correct minor typos (`1d10fee`)
-- Correct overlay paint order. Extend CDP test coverage (``)
 
 ## Changed
 

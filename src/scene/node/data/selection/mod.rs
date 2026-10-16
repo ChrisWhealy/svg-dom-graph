@@ -7,7 +7,7 @@ use crate::{
         content::ResolvedBand,
         node::{NodeContent, NodeId},
     },
-    scene::{DataNodeContent, Scene, Selection},
+    scene::{DataNodeContent, Scene, Selection, scene_inner::SceneInner},
 };
 
 impl Scene {
@@ -195,7 +195,7 @@ impl Scene {
         if let Some(&bad) = cells.iter().find(|&&i| i >= len) {
             return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
         }
-        let dumped = content.hex_dump().map(|_| content.bytes().to_vec());
+        let is_dump = content.hex_dump().is_some();
         let base_colour = content.type_colour();
         let highlight = {
             let selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
@@ -215,14 +215,19 @@ impl Scene {
         new_secondary.dedup();
 
         // A dump has no cell for a byte, so its marks are drawn over its lines instead. See `HexMarks`.
-        if let Some(bytes) = &dumped {
-            let inner = &mut *inner;
-            let handles = inner.node_handles.get_mut(id.index).ok_or(Error::UnknownNode(id))?;
+        if is_dump {
+            // The graph and the node handles are separate fields, so the bytes are borrowed from the model as they are,
+            // and only the few that are marked are ever read.
+            let SceneInner { graph, node_handles, svg, .. } = &mut *inner;
+            let Some(NodeContent::Data(content)) = graph.node(id).map(|node| &node.content) else {
+                return Err(Error::UnknownNode(id));
+            };
+            let handles = node_handles.get_mut(id.index).ok_or(Error::UnknownNode(id))?;
             if handles.secondary == new_secondary {
                 return Ok(handles.resync_label()?);
             }
             if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
-                marks.show_secondary(&inner.svg, &grid, bytes, &new_secondary)?;
+                marks.show_secondary(svg, &grid, content.bytes(), &new_secondary)?;
                 handles.secondary = new_secondary;
                 handles.refresh_label()?;
                 return Ok(());
