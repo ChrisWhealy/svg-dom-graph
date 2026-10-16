@@ -62,8 +62,8 @@ use svg_dom::{
 use svg_dom_graph::{
     Error,
     scene::{
-        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout, InputMode,
-        LabellingStyle, NodeOptions, NodeValues, Scene, SelectionToolbarOptions,
+        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout,
+        HexDumpFormat, InputMode, LabellingStyle, NodeOptions, NodeValues, Scene, Selection, SelectionToolbarOptions,
     },
 };
 use wasm_bindgen::prelude::*;
@@ -149,6 +149,22 @@ fn build() -> Result<(), Error> {
                 "z",
             ])),
     )?;
+
+    // Three hex dumps with the same byte unreached, secondary and, in the third, selected, set in different orders.
+    // `hex_dump_paint_order.rs` reads where each mark is in the document, to prove that the order of the calls makes no
+    // difference to which is painted over which. Off-canvas, for the same reasons as `named_value`.
+    let dump_content =
+        || DataNodeContent::new(NodeValues::U8((0..32).collect()), DataFormat::HexDump(HexDumpFormat::new()));
+    let first = scene.add_named_data_node(Point::new(2000.0, 2600.0), "dump_a", dump_content())?;
+    scene.set_secondary_selection(first, &[3])?;
+    scene.set_unreached_cells(first, &[3])?;
+    let second = scene.add_named_data_node(Point::new(2000.0, 2900.0), "dump_b", dump_content())?;
+    scene.set_unreached_cells(second, &[3])?;
+    scene.set_secondary_selection(second, &[3])?;
+    let third = scene.add_named_data_node(Point::new(2000.0, 3200.0), "dump_c", dump_content())?;
+    scene.set_selection(third, Selection::Cell(3))?;
+    scene.set_secondary_selection(third, &[3])?;
+    scene.set_unreached_cells(third, &[3])?;
 
     // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it. That is
     // the ordinary case for a freshly built data node. `accessibility_tree.rs` uses it to prove Chrome's own computed

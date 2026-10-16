@@ -111,7 +111,7 @@ impl HexMarks {
         indices: &[usize],
     ) -> Result<(), svg_dom::Error> {
         let mut scratch = std::mem::take(&mut self.scratch);
-        let mut used = 0;
+        let (mut used, mut grew) = (0, false);
         for &i in indices {
             let Some(&byte) = bytes.get(i) else { continue };
             if used == self.secondary.len() {
@@ -120,7 +120,7 @@ impl HexMarks {
                     new_mark(svg, &self.group, SELECTION_SECONDARY)?,
                 );
                 self.secondary.push(pair);
-                self.raise_selected()?;
+                grew = true;
             }
             let (hex, ascii) = &self.secondary[used];
             let at = (byte, i / BYTES_PER_LINE, i % BYTES_PER_LINE);
@@ -137,6 +137,9 @@ impl HexMarks {
         }
         self.secondary_shown = used;
         self.scratch = scratch;
+        if grew {
+            self.restack()?;
+        }
         Ok(())
     }
 
@@ -152,12 +155,12 @@ impl HexMarks {
         fill: &str,
     ) -> Result<(), svg_dom::Error> {
         let mut scratch = std::mem::take(&mut self.scratch);
-        let mut used = 0;
+        let (mut used, mut grew) = (0, false);
         for &i in indices.iter().filter(|&&i| i < len) {
             if used == self.unreached.len() {
                 let pair = (new_dim_block(svg, &self.group, fill)?, new_dim_block(svg, &self.group, fill)?);
                 self.unreached.push(pair);
-                self.raise_selected()?;
+                grew = true;
             }
             let (hex, ascii) = &self.unreached[used];
             let (line, place) = (i / BYTES_PER_LINE, i % BYTES_PER_LINE);
@@ -190,13 +193,28 @@ impl HexMarks {
         }
         self.unreached_shown = used;
         self.scratch = scratch;
+        if grew {
+            self.restack()?;
+        }
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Appends the selected byte's own marks again, so that they stay over the secondary and the dimmed ones. Moving an
-    /// element that is already in the group changes only its place in the paint order.
-    fn raise_selected(&self) -> Result<(), svg_dom::Error> {
+    /// Puts every mark in its paint order, from the bottom: the characters of the dump, the blocks that dim unreached
+    /// bytes, the secondary marks, and last the selected byte's. A mark is drawn over those before it, whichever of the
+    /// selection calls made it, so the order in which a caller makes them changes nothing. It is done when a pool has
+    /// grown, since a mark made later is otherwise on top of those made before it. Moving an element that is already in
+    /// the group changes only its place in the paint order.
+    fn restack(&self) -> Result<(), svg_dom::Error> {
+        for (hex, ascii) in &self.unreached {
+            self.group.append(hex)?;
+            self.group.append(ascii)?;
+        }
+        for (hex, ascii) in &self.secondary {
+            for el in [&hex.0, &hex.1, &ascii.0, &ascii.1] {
+                self.group.append(el)?;
+            }
+        }
         for el in [&self.hex.0, &self.hex.1, &self.ascii.0, &self.ascii.1] {
             self.group.append(el)?;
         }

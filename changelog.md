@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add data node to display text in `hexdump -C` format (`6bf117a`)
-- Extend geometry test coverage for functionality used in the Huffman demo (`f8f407e`)
+- Extend test coverage for functionality used in the Huffman demo (`f8f407e`)
+- Extend geometry test coverage for functionality used in the Huffman demo (`5729788`)
 
 ## Changed
 
@@ -52,6 +53,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent numbered lists from exceeding available width (`4b10f61`)
 - Remove parser inefficiency when scanning forward for close markers (`7430516`)
 - Correct minor typos (`1d10fee`)
+- Correct overlay paint order. Extend CDP test coverage (``)
 
 ## Changed
 
