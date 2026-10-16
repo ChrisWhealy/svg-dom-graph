@@ -128,8 +128,8 @@ pub fn serve(dir: PathBuf) -> u16 {
 /// The library's own default is 30 seconds, and it counts only browser-level events, not the calls a test makes inside
 /// a tab. A test that opens one tab and then works in it for longer, as a walk through all 961 positions of the ChaCha20
 /// demo does, would leave the browser idle by that count. Every test sharing the browser after it would then fail to
-/// open its own tab, with "underlying connection is closed". Ten minutes is far longer than any one test.
-const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(600);
+/// open its own tab, with "underlying connection is closed". An hour is far longer than the whole run, which takes the demo tests in turn and so can leave the fixture's browser unused for many minutes.
+const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3600);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Launches Chrome with its sandbox disabled and a generously large window.

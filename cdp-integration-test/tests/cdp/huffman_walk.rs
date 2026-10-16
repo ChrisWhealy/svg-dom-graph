@@ -1056,7 +1056,10 @@ fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<()
 #[test]
 fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Result<(), String> {
     use crate::common::{ascii_column, dump_marks, hex_column};
+    // Eight bytes that are equally common get 3-bit codes, so 48 of them make 18 output bytes: a whole second line, and
+    // every place in a line, from a walk short enough to be quick.
     let tab = open_default()?;
+    set_text(&tab, &"abcdefgh".repeat(6))?;
     let scope = format!("{DIAGRAM} g[aria-label^=\"Output bytes\"]");
     let (mut hex_places, mut ascii_places, mut lines) = (
         std::collections::BTreeSet::new(),
@@ -1064,7 +1067,7 @@ fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Resul
         std::collections::BTreeSet::new(),
     );
     // Walk to the end, looking at the marks after every step of pass two.
-    for _ in 0..400 {
+    for _ in 0..100 {
         click(&tab, "Next selection")?;
         if !in_pass_two(&tab)? {
             continue;
