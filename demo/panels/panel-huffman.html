@@ -10,7 +10,8 @@
             whole bytes.</li>
     </ol>
 
-    <p>This demo shows both passes, one after the other. Every value on screen is a real result, worked out in plain Rust.</p>
+    <p>This demo shows both passes, one after the other. Every value on screen is a real result, worked out in plain
+        Rust.</p>
     <dl>
         <dt>Counting</dt>
         <dd>
@@ -74,16 +75,17 @@
             <p>After the last code is assigned, the demo steps through the second pass, one input byte at a time. The
                 byte's code is appended to the bits still pending from earlier bytes. Whenever eight bits are ready,
                 they are written to the output. Fewer than eight bits are ever left pending between steps.</p>
-            <p>The text box is replaced by an array of the input's bytes, with the byte being packed marked. To edit the
-                text, step back to pass one.</p>
-            <p>The code table stays on screen with the current byte's row ringed. To its left, "Bits to pack" shows the
+            <p>The text box is replaced by two arrays of the input's bytes, as characters and in hexadecimal, with the
+                byte being packed marked in both. The hexadecimal one tells apart the bytes of a multi-byte character,
+                which show as dots in the first. To edit the text, step back to pass one.</p>
+            <p>The code table stays on screen with the current byte's row ringed. To its right, "Bits to pack" shows the
                 pending bits followed by the new code, which is marked. "Pending bits" shows what is left once the
                 completed bytes are written, and "Output bytes" shows every byte written so far in binary.</p>
             <p>The last step pads whatever is still pending with zero bits to make a whole byte. A decoder is given the
                 number of meaningful bits, so that it can ignore the padding.</p>
         </dd>
     </dl>
-    <p>Press "Next" in the diagram to step through it, and "Prev" to step back.</p>
+    <p>Press "Next" in the diagram to step through it, and "Prev" to step back. "Next 8" and "Prev 8" move eight steps at a time.</p>
     <p>The scene is large, so it opens in a window of its own, sized to fit it.</p>
     <button id="huffman-open" class="open-window" type="button">Open the demo in its own window</button>
 </section>

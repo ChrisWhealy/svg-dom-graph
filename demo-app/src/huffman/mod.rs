@@ -40,7 +40,7 @@ use svg_dom_graph::{
     NodeId,
     scene::{
         BoolFormat, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeOptions, NodeValues, Scene,
-        SceneTitleOptions, Selection, Side, ToolbarOptions,
+        SceneTitleOptions, Selection, SelectionStride, Side, ToolbarOptions,
     },
 };
 use walk::{Packing, Row, Shown, Spacing, leaf_label, pack_steps, packing, steps, symbol_label};
@@ -106,8 +106,13 @@ const COLUMNS: [(&str, f64); 5] = [
 const TABLE_GAP: f64 = 40.0;
 /// The height of a row of the code table.
 const ROW_HEIGHT: f64 = 26.0;
+/// How many positions the toolbar's `Prev 8` and `Next 8` buttons move.
+const STRIDE: usize = 8;
 /// How many input bytes pass two draws in a row.
 const INPUT_COLUMNS: usize = 16;
+/// What a named data node adds to the width of its own grid: the frame and the room for its name. The measured width of
+/// a grid does not include it.
+const NAMED_FRAME: f64 = 40.0;
 /// How many output bytes pass two draws in a row.
 const OUTPUT_COLUMNS: usize = 6;
 /// The width of the plain box that stands in for a row of bits or bytes that is empty, since a data node cannot be.
@@ -411,24 +416,26 @@ fn draw_row(
     Ok((rect.origin.x + rect.size.width, rect.origin.y + rect.size.height))
 }
 
-/// Draws the input of pass two as an array with one cell for each byte, with its top left at `(left, top)`, and returns its
-/// lowest edge. The byte whose code is being packed at step `index` is marked, and no byte is at the flush.
+/// Draws the input of pass two as two arrays with one cell for each byte, with their top left at `(left, top)`, and returns
+/// the lowest edge. The first shows each byte as a character, and the second shows the same bytes in hexadecimal, since
+/// a byte that is not printable ASCII, such as one of a multi-byte character, is only a dot in the first. The byte whose
+/// code is being packed at step `index` is marked in both, and no byte is at the flush.
 ///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails.
 fn draw_input_array(scene: &Scene, trace: &Trace, index: usize, left: f64, top: f64) -> Result<f64, String> {
     let bytes: Vec<u8> = trace.packed.steps.iter().map(|s| s.symbol).collect();
-    let content =
-        DataNodeContent::new(NodeValues::U8(bytes), DataFormat::Ascii).with_layout(GridLayout::Columns(INPUT_COLUMNS));
-    let id = scene
-        .add_named_data_node(Point::new(left, top), "Input bytes", content)
-        .map_err(stringify)?;
-    if index < trace.packed.steps.len() {
-        scene.set_secondary_selection(id, &[index]).map_err(stringify)?;
+    let marked: &[usize] = if index < bytes.len() { &[index] } else { &[] };
+    let mut y = top;
+    for (name, format) in [
+        ("Input bytes", DataFormat::Ascii),
+        ("Input bytes in hexadecimal", DataFormat::Hexadecimal),
+    ] {
+        let content = bytes_content(bytes.clone(), format, INPUT_COLUMNS);
+        y = draw_row(scene, name, Some(content), marked, left, y)?.1 + GAP;
     }
-    let rect = scene.node_rect(id).map_err(stringify)?;
-    Ok(rect.origin.y + rect.size.height)
+    Ok(y - GAP)
 }
 
 /// The right and bottom edges of something drawn.
@@ -538,8 +545,9 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 /// **Down the right-hand column**: the text input node holding the text to encode, a status line, an explanation of the
 /// current step, and the code table. The explanation and the status line are Markdown nodes, and the room for each is
 /// kept at the height of its tallest text, so nothing below them moves as the walk steps. The forest of trees fills the
-/// room to the left, from the top. In pass two the text input is replaced by an array of the input's bytes, with the byte
-/// being packed marked, and the room to the left holds the packing instead of the forest.
+/// room to the left, from the top. In pass two the text input is replaced by two arrays of the input's bytes, with the
+/// byte being packed marked. The text, the code table and the packing then stand in a row, so that the data reads from
+/// left to right and the scene is wide rather than tall.
 ///
 /// **The forest** starts as one tree of one node for each distinct byte, lightest first. Each step merges the two
 /// lightest into a new tree whose weight is their sum, and the merge is ringed. The smaller of the two goes on the left.
@@ -606,7 +614,9 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
     // The right-hand column, which is the same in both passes: the text, the status line, the explanation, and under them
     // the code table. The forest, or pass two's packing, takes the room to its left.
     let packing_width = packing_width(&scene)?;
-    let column = LEFT + if pass_two.is_some() { packing_width } else { widest } + TABLE_GAP;
+    let column = if pass_two.is_some() { LEFT } else { LEFT + widest + TABLE_GAP };
+    let table_left = column + PANEL_WIDTH + TABLE_GAP;
+    let packing_left = table_left + table_width + TABLE_GAP;
     let (input, input_bottom) = match model.position.checked_sub(steps(trace)) {
         None => {
             let id = scene
@@ -652,12 +662,12 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
         Some(packing) => {
             let focus_row = packing.symbol.and_then(|s| shown.rows.iter().position(|r| r.symbol == s));
             (
-                draw_table(&scene, &shown, focus_row, column, table_top)?,
-                draw_packing(&scene, packing, LEFT, forest_top, packing_width)?,
+                draw_table(&scene, &shown, focus_row, table_left, CONTENT_TOP)?,
+                draw_packing(&scene, packing, packing_left, forest_top, packing_width)?,
             )
         },
     };
-    let bottom = table_bottom.max(left_bottom);
+    let bottom = table_bottom.max(left_bottom).max(table_top - V_GAP);
 
     // "Step": see this function's own doc comment, "Stepping through it".
     let step_values: Vec<u16> = (1..=total_steps(trace)).map(|n| n as u16).collect();
@@ -671,7 +681,12 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
     crate::util::hide_step_driver(DIAGRAM_ID)?;
 
     // The widest the forest ever is is every byte in a row of its own, before any merge.
-    let right = column + table_width.max(PANEL_WIDTH);
+    // Pass two reads from left to right: the text, then the table, then the packing.
+    let right = if pass_two.is_some() {
+        packing_left + packing_width + NAMED_FRAME
+    } else {
+        column + table_width.max(PANEL_WIDTH)
+    };
     fit_nested_size(&scene, DIAGRAM_ID, right, bottom, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, input, step))
@@ -698,9 +713,13 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     }
 
     scene
-        .show_selection_toolbar(step, crate::util::step_toolbar_options(), |_scene, _node, transition| {
-            go(transition.to.unwrap_or(0));
-        })
+        .show_selection_toolbar(
+            step,
+            crate::util::step_toolbar_options().with_stride(SelectionStride::new(STRIDE, "8")),
+            |_scene, _node, transition| {
+                go(transition.to.unwrap_or(0));
+            },
+        )
         .map_err(stringify)?;
     // `show_selection_toolbar` always resets "Step" to unstarted as its first committed act. Reapply the position.
     scene.set_selection(step, Selection::Cell(model.position)).map_err(stringify)?;
@@ -782,7 +801,7 @@ fn focus_button(label: &str) {
 /// Builds the Huffman scene at its first step, wires its stepping toolbar, and resizes the window it runs in to fit the
 /// scene. Runs in `huffman-window.html`, not in the gallery.
 ///
-/// Demonstrates:
+/// The walk has two passes. Pass one demonstrates:
 ///
 /// 1. Counting the bytes, then building the tree by repeatedly merging the two lightest trees. A merge is one step, and
 ///    every link is labelled `0` or `1`.
@@ -790,6 +809,17 @@ fn focus_button(label: &str) {
 /// 3. Assigning canonical codes from those lengths, one byte at a time, with the route to the byte marked in the tree.
 ///    The table keeps the tree's own paths beside the codes, so it shows that the two differ, with the lengths unchanged.
 /// 4. Editing the text in the scene's own text input node, which draws everything again from the first step.
+///
+/// Pass two follows the last canonical code, and demonstrates:
+///
+/// 5. Packing the codes into bytes, one input byte at a time. The text box is replaced by two arrays of the input's
+///    bytes, as characters and in hexadecimal, with the byte being packed marked. Beside them are the pending bits with
+///    the new code appended, the bits left pending, and the bytes written so far. A byte is written as soon as eight
+///    bits are ready, and the step marks the bytes it wrote.
+/// 6. The flush, which pads the last byte with zero bits. It shows the result in hexadecimal and its size against the
+///    input's, with the compression ratio.
+///
+/// Crossing from one pass to the other fits the window to the scene again, since the two are different sizes.
 ///
 /// # Errors
 ///

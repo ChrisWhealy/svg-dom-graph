@@ -55,12 +55,13 @@
 //!   round at a time, drawn as the four columns `a`, `b`, `c` and `d`. Each of the 12 steps of a quarter round is an
 //!   operator node in the column of the word it updates, and every value is a real result, worked out in plain Rust.
 //!   The scene is large, so it opens in a window of its own, as the hash demos' do.
-//! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: pass one of Huffman encoding, over a
-//!   pre-filled text typed into the scene's own text input node. It counts the bytes, builds the tree one merge at a
-//!   time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths beside
-//!   them, and the route to each byte is marked in the tree. Each step is explained in a Markdown node. Every step draws
-//!   the scene again, and every value is a real result, worked out in plain Rust. The scene is large, so it opens in a
-//!   window of its own, as the hash demos' do.
+//! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
+//!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
+//!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
+//!   beside them, and the route to each byte is marked in the tree. Pass two packs the codes into bytes, one input byte
+//!   at a time, then pads the last byte and shows the result in hexadecimal with its compression ratio. Each step is
+//!   explained in a Markdown node. Every step draws the scene again, and every value is a real result, worked out in
+//!   plain Rust. The scene is large, so it opens in a window of its own, as the hash demos' do.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.

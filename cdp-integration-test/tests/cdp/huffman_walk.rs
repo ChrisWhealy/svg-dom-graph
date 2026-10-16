@@ -971,6 +971,11 @@ fn the_input_array_has_a_cell_for_each_byte_not_each_character() -> Result<(), S
     // 5 positions of pass one: counting, 1 merge, the lengths and 2 codes.
     goto(&tab, 5)?;
     check_eq(after(&tab, "Input bytes", |t| t == "·")?, vec!["·".to_owned(), "·".to_owned()])?;
+    // The hexadecimal array tells the two bytes apart.
+    check_eq(
+        after(&tab, "Input bytes in hexadecimal", is_hex_byte)?,
+        vec!["C3".to_owned(), "A9".to_owned()],
+    )?;
     check(
         explanation(&tab)?.starts_with("Byte 1 of 2: '0xC3'"),
         &format!("unexpected explanation {:?}", explanation(&tab)?),
@@ -1014,4 +1019,19 @@ fn keyboard_focus_survives_the_change_of_pass() -> Result<(), String> {
         text(&tab, "document.activeElement?.getAttribute('aria-label') ?? ''")?,
         "Next selection".to_owned(),
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// "Next 8" and "Previous 8" move eight positions, across the change of pass, and stop at the ends.
+#[test]
+fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<(), String> {
+    let tab = open()?;
+    click(&tab, "Next 8")?;
+    check_eq(position(&tab)?, Some(8))?;
+    click(&tab, "Next 8")?;
+    check_eq(position(&tab)?, Some(16))?;
+    check(in_pass_two(&tab)?, "position 16 is in pass two")?;
+    click(&tab, "Previous 8")?;
+    check_eq(position(&tab)?, Some(8))?;
+    check(!in_pass_two(&tab)?, "position 8 is in pass one")
 }
