@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add data node to display text in `hexdump -C` format (`6bf117a`)
-- Extend test coverage for functionality used in the Huffman demo (``)
+- Extend geometry test coverage for functionality used in the Huffman demo (`f8f407e`)
 
 ## Changed
 
@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - A hex dump's accessible name describes its lines as cells and give selected byte number (`2f682e4`)
 - Avoid reformatting entire hexdump when one byte changes (`b8c99f0`)
-- Avoid creating new `String` for each selection overlay (``)
+- Avoid creating new `String` for each selection overlay (`a4f6de6`)
 
 # [Released]
 

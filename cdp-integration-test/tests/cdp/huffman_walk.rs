@@ -1065,11 +1065,7 @@ fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Resul
     );
     // Walk to the end, looking at the marks after every step of pass two.
     for _ in 0..400 {
-        let before = position(&tab)?;
         click(&tab, "Next selection")?;
-        if position(&tab)? == before {
-            break;
-        }
         if !in_pass_two(&tab)? {
             continue;
         }
@@ -1083,6 +1079,10 @@ fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Resul
                 let place = (0..16).find(|&p| ascii_column(p, false) == mark.column);
                 ascii_places.insert(place.ok_or(format!("{mark:?} is not on a byte's character"))?);
             }
+        }
+        // The flush is the last step, and the toolbar cannot step past it.
+        if explanation(&tab)?.starts_with("Flush") {
+            break;
         }
     }
     // Every place in a line is written at some step, including both sides of the gap, and more than one line.

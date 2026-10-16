@@ -116,7 +116,7 @@ const NAMED_FRAME: f64 = 40.0;
 /// The width of the plain box that stands in for a row of bits or bytes that is empty, since a data node cannot be.
 const EMPTY_WIDTH: f64 = 240.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A text that has been encoded, and what is worked out once from it and kept.
 struct Encoding {
     trace: Trace,
@@ -125,6 +125,7 @@ struct Encoding {
     explanation_height: Cell<Option<f64>>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the status line says.
 #[derive(Clone)]
 enum Status {
@@ -135,6 +136,7 @@ enum Status {
     TooLong(usize),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything a scene is drawn from, so that stepping and typing each only have to change one part of it.
 #[derive(Clone)]
 struct Model {
@@ -201,26 +203,31 @@ fn downward() -> ConnectorOptions {
         .with_to_side(Some(Side::North))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A leaf's content: its byte and its count as one run of text.
 fn leaf_content(symbol: u8, weight: u32) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U8(leaf_label(symbol, weight).into_bytes()), DataFormat::PlainText)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A branch's content: its weight. The weight is at most [`MAX_INPUT_LEN`], so it fits a `u16`.
 fn branch_content(weight: u32) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U16(vec![weight as u16]), DataFormat::Decimal)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The content of the small box that labels a link: a bit, written `0` or `1`.
 fn bit_content(bit: bool) -> DataNodeContent {
     DataNodeContent::new(NodeValues::Bool(vec![bit]), DataFormat::Bool(BoolFormat::Bit))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A table cell's text, or a dash for one the walk has not reached.
 fn cell(text: Option<String>) -> String {
     text.unwrap_or_else(|| "–".to_owned())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text of each column of `row`, in the order of [`COLUMNS`].
 fn row_cells(row: &Row) -> [String; 5] {
     [
@@ -246,12 +253,13 @@ struct Forest {
     bits: Vec<Option<NodeId>>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the forest `shown` names, with its leaves on the line `leaf_y`, and returns its nodes.
 ///
 /// A leaf is a data node of its byte and count, and a branch a data node of its weight. A branch's two links are each
-/// drawn through a small box that reads `0` for the left child and `1` for the right, so the paths in the code table can
-/// be read off the tree. Each box is centred on the middle the layout gives it. The branch the last merge made, and the
-/// two trees it joined, are ringed.
+/// drawn through a small box that reads `0` for the left child and `1` for the right, so the paths in the code table
+/// can be read off the tree. Each box is centred on the middle the layout gives it. The branch the last merge made, and
+/// the two trees it joined, are ringed.
 ///
 /// # Errors
 ///
@@ -324,9 +332,10 @@ fn draw_forest(scene: &Scene, trace: &Trace, shown: &Shown, leaf_y: f64, spacing
     Ok(forest)
 }
 
-/// Marks the route from the root to the leaf of the byte that has just been given its canonical code, with the library's
-/// secondary selection: every box on it, and every link's label. A node with no box in the forest, which is only
-/// possible for a route that names a node not drawn yet, is left alone.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Marks the route from the root to the leaf of the byte that has just been given its canonical code, with the
+/// library's secondary selection: every box on it, and every link's label. A node with no box in the forest, which is
+/// only possible for a route that names a node not drawn yet, is left alone.
 ///
 /// # Errors
 ///
@@ -346,8 +355,9 @@ fn highlight_route(scene: &Scene, forest: &Forest, route: &[usize]) -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the code table with its top left at `(left, top)`, one row for each distinct byte, the commonest first, and returns the
-/// lowest edge. The first row holds the headings, and has a fill of its own. The row `focus_row` is ringed.
+/// Draws the code table with its top left at `(left, top)`, one row for each distinct byte, the commonest first, and
+/// returns the lowest edge. The first row holds the headings, and has a fill of its own. The row `focus_row` is
+/// ringed.
 ///
 /// # Errors
 ///
@@ -380,8 +390,8 @@ fn draw_table(scene: &Scene, shown: &Shown, focus_row: Option<usize>, left: f64,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws one named row of data at `(left, top)` and returns its lowest edge. `marked` cells get the secondary selection.
-/// `content` is `None` for a row with nothing in it, which is drawn as a plain box saying so.
+/// Draws one named row of data at `(left, top)` and returns its lowest edge. `marked` cells get the secondary
+/// selection. `content` is `None` for a row with nothing in it, which is drawn as a plain box saying so.
 ///
 /// # Errors
 ///
@@ -414,10 +424,11 @@ fn draw_row(
     Ok((rect.origin.x + rect.size.width, rect.origin.y + rect.size.height))
 }
 
-/// Draws the input of pass two as two arrays with one cell for each byte, with their top left at `(left, top)`, and returns
-/// the lowest edge. The first shows each byte as a character, and the second shows the same bytes in hexadecimal, since
-/// a byte that is not printable ASCII, such as one of a multi-byte character, is only a dot in the first. The byte whose
-/// code is being packed at step `index` is marked in both, and no byte is at the flush.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the input of pass two as two arrays with one cell for each byte, with their top left at `(left, top)`, and
+/// returns the lowest edge. The first shows each byte as a character, and the second shows the same bytes in
+/// hexadecimal, since a byte that is not printable ASCII, such as one of a multi-byte character, is only a dot in the
+/// first. The byte whose code is being packed at step `index` is marked in both, and no byte is at the flush.
 ///
 /// # Errors
 ///
@@ -436,27 +447,32 @@ fn draw_input_array(scene: &Scene, trace: &Trace, index: usize, left: f64, top: 
     Ok(y - GAP)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The right and bottom edges of something drawn.
 type Extent = (f64, f64);
 
 /// The bytes of one hexadecimal row of the result, and the grid of the finished output in hexadecimal.
 const RESULT_COLUMNS: usize = 16;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A row of data of `bytes`, `columns` wide.
 fn bytes_content(bytes: Vec<u8>, format: DataFormat, columns: usize) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U8(bytes), format).with_layout(GridLayout::Columns(columns))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The output of pass two as a hex dump in the format of `hexdump -C`, with one cell for each line of sixteen bytes.
 fn output_content(bytes: Vec<u8>) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U8(bytes), DataFormat::HexDump(HexDumpFormat::new()))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A row of `count` bits, which is drawn on one line.
 fn bits_content(bits: Vec<bool>) -> DataNodeContent {
     DataNodeContent::new(NodeValues::Bool(bits), DataFormat::Bool(BoolFormat::Bit)).with_layout(GridLayout::Rows(1))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How wide the bits to pack can get at any step of pass two, so that the pending bits beside them do not move as the
 /// walk steps.
 ///
@@ -475,6 +491,7 @@ fn bits_to_pack_width(scene: &Scene, trace: &Trace) -> Result<f64, String> {
         + NAMED_FRAME)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
 /// widest of a full line of the output as a hex dump, of the result in hexadecimal, and of the bits to pack beside the
 /// pending bits, which are at most seven.
@@ -491,9 +508,11 @@ fn packing_width(scene: &Scene, bits_width: f64) -> Result<f64, String> {
     Ok(dump.map_err(stringify)?.max(hex.map_err(stringify)?).max(pair))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws what pass two shows at one step, with its top left at `(left, top)` and `width` wide, and returns the lowest
 /// edge: the bits being appended with the bits left pending beside them, and under those the bytes written so far
-/// as a hex dump. What the step added to the bits being appended is marked. At the flush it adds the finished output in hexadecimal, and its size against the input's.
+/// as a hex dump. What the step added to the bits being appended is marked. At the flush it adds the finished output in
+/// hexadecimal, and its size against the input's.
 ///
 /// # Errors
 ///
@@ -527,13 +546,13 @@ fn draw_packing(
     Ok(y)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many positions the whole walk has: pass one, then pass two.
 fn total_steps(trace: &Trace) -> usize {
     steps(trace) + pack_steps(trace)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The height the explanation needs at its tallest step of either pass, which every step reserves.
 ///
 /// Measured once for each text, since it only depends on the walk, and kept in `encoding`.
@@ -557,6 +576,7 @@ fn explanation_height(scene: &Scene, encoding: &Encoding) -> Result<f64, String>
     Ok(tallest)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The height the status line needs at its tallest, so that it can say any of its things without moving what is below.
 fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
     let mut tallest: f64 = 0.0;
@@ -567,7 +587,7 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
     Ok(tallest)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the whole scene for `model` and returns it with the text input node and the "Step" node that drives its
 /// stepping toolbar.
 ///
@@ -588,10 +608,10 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 ///
 /// **The code table** has a row for each distinct byte, the commonest first, under a heading row of its own colour. Its
 /// "Tree path" column is the route from the root to the byte's leaf, and its "Length" is the length of that path.
-/// "Code" is the byte's *canonical* code, which is assigned after all the lengths are known. The canonical codes are not
-/// the paths: they only keep each length. They are handed out shortest first, and by byte value within a length, each
-/// being the previous code plus 1, shifted left by however many bits longer it is. A decoder can rebuild them from the
-/// lengths alone, so no tree ever has to be sent.
+/// "Code" is the byte's *canonical* code, which is assigned after all the lengths are known. The canonical codes are
+/// not the paths: they only keep each length. They are handed out shortest first, and by byte value within a length,
+/// each being the previous code plus 1, shifted left by however many bits longer it is. A decoder can rebuild them from
+/// the lengths alone, so no tree ever has to be sent.
 ///
 /// As each canonical code is assigned, the route from the root to that byte's leaf is marked with the library's
 /// secondary selection, so the tree path in the table can be followed through the tree.
@@ -608,7 +628,8 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 /// Returns `Err` if the stage is missing, or if any library call fails.
 fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String> {
     let trace = &model.encoding.trace;
-    // Pass two follows the last position of pass one. Its table is the finished one, so `shown` stays at pass one's end.
+    // Pass two follows the last position of pass one. Its table is the finished one, so `shown` stays at pass one's
+    // end.
     let pass_two = model.position.checked_sub(steps(trace)).map(|index| packing(trace, index));
     let shown = walk::shown(trace, model.position);
 
@@ -642,8 +663,8 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
     let (_, widest) = walk::layout(&trace.tree.nodes, &leaves);
     let table_width: f64 = COLUMNS.iter().map(|&(_, w)| w).sum();
 
-    // The right-hand column, which is the same in both passes: the text, the status line, the explanation, and under them
-    // the code table. The forest, or pass two's packing, takes the room to its left.
+    // The right-hand column, which is the same in both passes: the text, the status line, the explanation, and under
+    // them the code table. The forest, or pass two's packing, takes the room to its left.
     let bits_width = bits_to_pack_width(&scene, trace)?;
     let packing_width = packing_width(&scene, bits_width)?;
     let column = if pass_two.is_some() { LEFT } else { LEFT + widest + TABLE_GAP };
@@ -725,9 +746,9 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the scene for `model`, wires its stepping toolbar, and replaces whatever scene was there. It keeps the zoom and
-/// pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node, which pass two
-/// does not have.
+/// Draws the scene for `model`, wires its stepping toolbar, and replaces whatever scene was there. It keeps the zoom
+/// and pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node, which
+/// pass two does not have.
 ///
 /// # Errors
 ///
@@ -769,8 +790,8 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves the diagram to walk position `position`. A failure is shown in the window's own error banner, and logged, since
-/// the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
+/// Moves the diagram to walk position `position`. A failure is shown in the window's own error banner, and logged,
+/// since the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
     let model = DEMO.with_borrow(|slot| slot.as_ref().map(|d| Model { position, ..d.model.clone() }));
     report(
@@ -781,8 +802,9 @@ fn go(position: usize) {
     );
 }
 
-/// The text box now holds `text`. Draws the scene again for it, then gives the new text box the keyboard focus, with the
-/// caret where it was, so that typing carries on in it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text box now holds `text`. Draws the scene again for it, then gives the new text box the keyboard focus, with
+/// the caret where it was, so that typing carries on in it.
 fn typed(id: NodeId, text: &str) {
     let caret = DEMO.with_borrow(|slot| slot.as_ref().and_then(|d| d.scene.text_input_caret(id).ok()));
     let model = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.model.with_text(text)));
@@ -796,6 +818,7 @@ fn typed(id: NodeId, text: &str) {
     report(result, "Could not draw the text");
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows a failure in the window's own error banner, or clears the banner after a success.
 fn report(result: Result<(), String>, what: &str) {
     match result {
@@ -817,6 +840,7 @@ fn focused_button() -> Option<String> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
 /// that is disabled now is left alone.
 fn focus_button(label: &str) {

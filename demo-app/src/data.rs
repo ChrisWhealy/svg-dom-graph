@@ -177,10 +177,10 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
     let labelled = scene
         .add_named_data_node(
             Point::new(X_SINGLE, 920.0),
-            "hexdump -C, with offsets",
+            "hexdump -C, with offsets and total length",
             DataNodeContent::new(
                 NodeValues::U8(DUMPED.to_vec()),
-                DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+                DataFormat::HexDump(HexDumpFormat::new().with_offset(true).with_total_length(true)),
             ),
         )
         .map_err(stringify)?;
