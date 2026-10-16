@@ -13,7 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add data node to display text in `hexdump -C` format (`6bf117a`)
 - Extend test coverage for functionality used in the Huffman demo (`f8f407e`)
 - Extend geometry test coverage for functionality used in the Huffman demo (`5729788`)
-- Extend CDP test coverage (``)
+- Extend CDP test coverage (`9fcc8eb`)
 
 ## Changed
 
