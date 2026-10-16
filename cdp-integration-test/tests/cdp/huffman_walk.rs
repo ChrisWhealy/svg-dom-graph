@@ -991,7 +991,7 @@ fn a_short_text_still_shows_its_summary_inside_the_diagram() -> Result<(), Strin
     // 3 positions of pass one, 1 of packing, and the flush.
     goto(&tab, 4)?;
     let summary = markdown(&tab, 2)?;
-    check(summary.contains("Original: 1 bytes (8 bits)"), &summary)?;
+    check(summary.contains("Original: 1 byte (8 bits)"), &summary)?;
     let inside = text(
         &tab,
         &format!(

@@ -591,7 +591,7 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
             if pass_two.is_some() {
                 "Huffman Encoding: Phase 2 - Encode input text"
             } else {
-                "Huffman Encoding: Phase 1 - Count character frequency & build encoding tree"
+                "Huffman Encoding: Phase 1 - Count byte frequency & build encoding tree"
             },
             SceneTitleOptions::default(),
         )

@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent text input labels from overflowing available width (`096cf07`)
 - Prevent numbered lists from exceeding available width (`4b10f61`)
 - Remove parser inefficiency when scanning forward for close markers (`7430516`)
+- Correct minor typos (``)
 
 ## Changed
 
