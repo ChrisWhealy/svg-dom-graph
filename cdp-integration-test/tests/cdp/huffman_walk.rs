@@ -9,7 +9,8 @@
 //!
 //! Most scenarios set the text to "abracadabra", which is small enough to work by hand. It has 4 merges and 5 distinct
 //! bytes, so its walk has 11 positions: `0` counts, `1..=4` merge, `5` reads the lengths and `6..=10` assign the
-//! canonical codes. The demo's own default text is the first sentence of *Pride and Prejudice*, which has its own
+//! canonical codes. Pass two continues from there, with one position for each input byte and a last one for the
+//! flush. The demo's own default text is the first sentence of *Pride and Prejudice*, which has its own
 //! scenarios below.
 //!
 //! Like [`crate::chacha20_walk`], these run against the built demo gallery's window page, not the fixture.
@@ -21,6 +22,8 @@ use std::time::{Duration, Instant};
 const DIAGRAM: &str = "#huffman-diagram";
 const VIEWPORT: (u32, u32) = (1800, 2400);
 const LAST: usize = 10;
+/// "abracadabra" has 11 bytes, so pass two has 11 positions of packing and a last one for the flush.
+const FLUSH: usize = LAST + 12;
 /// The fill the library gives a cell marked by a secondary selection.
 const SECONDARY_FILL: &str = "#7fd8be";
 
@@ -312,10 +315,9 @@ fn the_last_step_has_every_canonical_code_and_shows_where_they_differ_from_the_t
             row("d", "1", "101", "3", "110"),
         ],
     )?;
-    // Next does nothing at the end: the walk clamps.
-    button(&tab, "Next selection")?.click().map_err(|e| format!("{e}"))?;
-    std::thread::sleep(Duration::from_millis(300));
-    check_eq(position(&tab)?, Some(LAST))
+    // Pass one ends here, but the walk goes on into pass two.
+    click(&tab, "Next selection")?;
+    check_eq(position(&tab)?, Some(LAST + 1))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -781,5 +783,235 @@ fn the_caret_survives_a_redraw_after_a_character_of_two_utf16_units() -> Result<
     check_eq(
         text(&tab, &format!("document.querySelector('{DIAGRAM} input').value"))?.as_str(),
         "a\u{1F600}!b",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Pass two
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to the bytes 0x4E, 0xAC and 0x9C with a
+// bit of padding. The 'a' that is the fourth input byte completes the first byte.
+
+/// The texts that follow the box titled `heading`, for as long as `keep` accepts them.
+fn after(tab: &Tab, heading: &str, keep: impl Fn(&str) -> bool) -> Result<Vec<String>, String> {
+    let all = texts(tab)?;
+    let start = all
+        .iter()
+        .position(|t| t == heading)
+        .ok_or_else(|| format!("there is no {heading:?} box"))?;
+    Ok(all[start + 1..].iter().take_while(|t| keep(t)).cloned().collect())
+}
+
+fn is_binary_byte(t: &str) -> bool {
+    t.len() == 9
+        && t.bytes()
+            .enumerate()
+            .all(|(i, b)| if i == 4 { b == b' ' } else { b == b'0' || b == b'1' })
+}
+
+fn is_hex_byte(t: &str) -> bool {
+    t.len() == 2 && t.bytes().all(|b| b.is_ascii_digit() || (b'A'..=b'F').contains(&b))
+}
+
+/// The bytes written so far, in binary. Before the first, the scene says so in a plain box instead.
+fn output(tab: &Tab) -> Result<Vec<String>, String> {
+    if texts(tab)?.iter().any(|t| t == "Output bytes: none") {
+        return Ok(Vec::new());
+    }
+    after(tab, "Output bytes", is_binary_byte)
+}
+
+/// What the accessible name of the node called `name` says is highlighted, such as `cell 0`, or `None` if nothing is.
+fn highlight(tab: &Tab, name: &str) -> Result<Option<String>, String> {
+    let label = text(
+        tab,
+        &format!(
+            "([...document.querySelectorAll('{DIAGRAM} g[aria-label]')] \
+             .find(g => g.getAttribute('aria-label').startsWith('{name}'))?.getAttribute('aria-label') ?? '')"
+        ),
+    )?;
+    Ok(label.split_once("also highlighted: ").map(|(_, cell)| cell.to_owned()))
+}
+
+/// Whether the scene's title names pass two.
+fn in_pass_two(tab: &Tab) -> Result<bool, String> {
+    let all = texts(tab)?;
+    Ok(all.iter().any(|t| t.contains("Phase 2")))
+}
+
+/// How many text input nodes the scene has.
+fn text_inputs(tab: &Tab) -> Result<usize, String> {
+    text(tab, &format!("String(document.querySelectorAll('{DIAGRAM} input').length)"))?
+        .parse()
+        .map_err(|e| format!("{e}"))
+}
+
+/// The first position of pass two.
+const PASS_TWO: usize = LAST + 1;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Pass two opens with its own title, and the text box becomes an array of the input's bytes with the first marked.
+#[test]
+fn pass_two_replaces_the_text_box_with_the_input_bytes_and_marks_the_first() -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, LAST)?;
+    check(!in_pass_two(&tab)?, "pass one has the pass one title")?;
+    check_eq(text_inputs(&tab)?, 1)?;
+
+    click(&tab, "Next selection")?;
+    check_eq(position(&tab)?, Some(PASS_TWO))?;
+    check(in_pass_two(&tab)?, "pass two has the pass two title")?;
+    check_eq(text_inputs(&tab)?, 0)?;
+    check(
+        explanation(&tab)?.starts_with("Byte 1 of 11: 'a' has the code 0"),
+        &format!("unexpected explanation {:?}", explanation(&tab)?),
+    )?;
+    check_eq(output(&tab)?, Vec::<String>::new())?;
+    // The table is complete, and its row for 'a' is the one ringed.
+    check_eq(table(&tab)?.remove(0), row("a", "5", "0", "1", "0"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Stepping across the boundary, in both directions, visits every position once, and the scene follows.
+#[test]
+fn stepping_across_the_boundary_skips_and_repeats_no_position() -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, LAST - 1)?;
+    for expected in LAST..=PASS_TWO + 1 {
+        click(&tab, "Next selection")?;
+        check_eq(position(&tab)?, Some(expected))?;
+        check_eq(in_pass_two(&tab)?, expected >= PASS_TWO)?;
+    }
+    for expected in (LAST - 1..=PASS_TWO).rev() {
+        click(&tab, "Previous selection")?;
+        check_eq(position(&tab)?, Some(expected))?;
+        check_eq(in_pass_two(&tab)?, expected >= PASS_TWO)?;
+        check_eq(text_inputs(&tab)?, usize::from(expected < PASS_TWO))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A step writes a byte only when eight bits are ready, and marks exactly the bytes it wrote.
+#[test]
+fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
+    let tab = open()?;
+    // The first three input bytes leave 7 bits pending, and the fourth completes 0100 1110.
+    goto(&tab, PASS_TWO + 2)?;
+    check_eq(output(&tab)?, Vec::<String>::new())?;
+    goto(&tab, PASS_TWO + 3)?;
+    check_eq(output(&tab)?, vec!["0100 1110".to_owned()])?;
+    check_eq(highlight(&tab, "Output bytes")?, Some("cell 0".to_owned()))?;
+    // The next step writes nothing, so the byte is no longer marked.
+    goto(&tab, PASS_TWO + 4)?;
+    check_eq(output(&tab)?, vec!["0100 1110".to_owned()])?;
+    check_eq(highlight(&tab, "Output bytes")?, None)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The flush pads the last byte with zeros, shows the result in hexadecimal and compares its size with the input's.
+#[test]
+fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, FLUSH)?;
+    check(
+        explanation(&tab)?.starts_with("Flush: 7 pending bits cannot fill a byte, so 1 zero bit pad it out: 10011100."),
+        &format!("unexpected explanation {:?}", explanation(&tab)?),
+    )?;
+    check_eq(
+        output(&tab)?,
+        vec!["0100 1110".to_owned(), "1010 1100".to_owned(), "1001 1100".to_owned()],
+    )?;
+    check_eq(
+        after(&tab, "Result in hexadecimal", is_hex_byte)?,
+        ["4E", "AC", "9C"].map(str::to_owned).to_vec(),
+    )?;
+
+    let summary = markdown(&tab, 2)?;
+    check(summary.contains("Original: 11 bytes (88 bits)"), &summary)?;
+    check(
+        summary.contains("Encoded: 3 bytes, which is 23 bits of code and 1 of padding"),
+        &summary,
+    )?;
+    check(summary.contains("3.67 to 1"), &summary)?;
+    check(summary.contains("27.3%"), &summary)?;
+
+    // Next does nothing at the end: the walk clamps.
+    button(&tab, "Next selection")?.click().map_err(|e| format!("{e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    check_eq(position(&tab)?, Some(FLUSH))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A text whose codes fill whole bytes needs no padding, and the flush writes no byte of its own.
+#[test]
+fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "aaaaaaaa")?;
+    // 3 positions of pass one, 8 of packing, and the flush.
+    goto(&tab, 11)?;
+    check(
+        explanation(&tab)?.contains("no padding is needed"),
+        &format!("unexpected explanation {:?}", explanation(&tab)?),
+    )?;
+    check_eq(output(&tab)?, vec!["0000 0000".to_owned()])?;
+    check_eq(after(&tab, "Result in hexadecimal", is_hex_byte)?, vec!["00".to_owned()])?;
+    check(
+        markdown(&tab, 2)?.contains("which is 8 bits of code and 0 of padding"),
+        "the summary counts no padding",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every byte of a multi-byte character is its own cell of the input array.
+#[test]
+fn the_input_array_has_a_cell_for_each_byte_not_each_character() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "é")?;
+    // 5 positions of pass one: counting, 1 merge, the lengths and 2 codes.
+    goto(&tab, 5)?;
+    check_eq(after(&tab, "Input bytes", |t| t == "·")?, vec!["·".to_owned(), "·".to_owned()])?;
+    check(
+        explanation(&tab)?.starts_with("Byte 1 of 2: '0xC3'"),
+        &format!("unexpected explanation {:?}", explanation(&tab)?),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A one-byte text still shows its whole summary, inside the diagram.
+#[test]
+fn a_short_text_still_shows_its_summary_inside_the_diagram() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "a")?;
+    // 3 positions of pass one, 1 of packing, and the flush.
+    goto(&tab, 4)?;
+    let summary = markdown(&tab, 2)?;
+    check(summary.contains("Original: 1 bytes (8 bits)"), &summary)?;
+    let inside = text(
+        &tab,
+        &format!(
+            "(() => {{ const d = document.querySelector('{DIAGRAM}').getBoundingClientRect(); \
+             const t = [...document.querySelectorAll('{DIAGRAM} text')].find(t => t.textContent.startsWith('Compression')); \
+             if (!t) return 'missing'; const r = t.getBoundingClientRect(); \
+             return r.bottom <= d.bottom && r.right <= d.right ? 'inside' : 'outside'; }})()"
+        ),
+    )?;
+    check_eq(inside.as_str(), "inside")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The keyboard focus stays on the "Next selection" button as the walk crosses from pass one into pass two.
+#[test]
+fn keyboard_focus_survives_the_change_of_pass() -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, LAST)?;
+    button(&tab, "Next selection")?.focus().map_err(|e| format!("{e}"))?;
+    let from = position(&tab)?;
+    tab.press_key("Enter").map_err(|e| format!("{e}"))?;
+    wait_for_move(&tab, from)?;
+    check_eq(position(&tab)?, Some(PASS_TWO))?;
+    check_eq(
+        text(&tab, "document.activeElement?.getAttribute('aria-label') ?? ''")?,
+        "Next selection".to_owned(),
     )
 }

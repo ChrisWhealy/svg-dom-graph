@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.35] - 2026-10-15
+## [0.2.35] - 2026-10-16
 
 ## Added
 
@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Measurement can differ between hidden and visible scenes (`abede35`)
 - Add demo scene for phase 1 of Huffman encoding (`0b2f235`)
 - Add demo scene for phase 2 of Huffman encoding (`7f88ac5`)
+- Extend CDP tests for Huffman demo (``)
 
 ## Fixed
 
@@ -32,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Round compression ratio rather than truncating (``)
+- Round compression ratio rather than truncating (`4a7c206`)
 
 # [Released]
 
