@@ -26,7 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid reformatting entire hexdump when one byte changes (`b8c99f0`)
 - Avoid creating new `String` for each selection overlay (`a4f6de6`)
 - Correct overlay paint order. Extend CDP test coverage (`95b1f5d`)
-- Prevent secondary selection from copying entire byte array (``)
+- Prevent secondary selection from copying entire byte array (`165642b`)
+- Extend hexdump overlay to use delta-update (``)
 
 # [Released]
 

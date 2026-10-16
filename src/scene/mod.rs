@@ -25,7 +25,7 @@ pub use crate::model::content::{
     FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle, MAX_FLOAT_DIGITS, NodeValues, Selection, UnaryOperator,
     Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle,
 };
-pub(crate) use box_handles::{BoxHandles, CellGrid, DataDecor, HexMarks, group_gaps};
+pub(crate) use box_handles::{BoxHandles, CellGrid, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, NodeOptions};

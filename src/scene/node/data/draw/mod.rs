@@ -8,7 +8,7 @@ use crate::{
     colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
     model::content::{HexDumpFormat, full_width},
-    scene::{BoxHandles, CellGrid, DataDecor, DataNodeContent, HexMarks, LabellingStyle, Selection, group_gaps},
+    scene::{BoxHandles, CellGrid, DataDecor, DataNodeContent, HexMarks, LabellingStyle, Pool, Selection, group_gaps},
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -570,10 +570,8 @@ fn draw_hex_marks(
         format,
         group: group.clone(),
         scratch: String::new(),
-        secondary: Vec::new(),
-        secondary_shown: 0,
-        unreached: Vec::new(),
-        unreached_shown: 0,
+        secondary: Pool::default(),
+        unreached: Pool::default(),
     })
 }
 

@@ -7,7 +7,7 @@ use crate::{
     scene::node::EdgeAnchors,
 };
 pub(crate) use cell_grid::{CellGrid, group_gaps};
-pub(crate) use hex_marks::HexMarks;
+pub(crate) use hex_marks::{HexMarks, Pool};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{SvgNode, root::utils::Rect};
 

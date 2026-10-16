@@ -80,7 +80,7 @@ impl Scene {
         //
         // `graph` and `node_handles` are separate fields, so the content and the cells' own `<text>` elements are
         // borrowed side by side. Each cell is then rewritten as it is formatted, with no list of texts built first.
-        let SceneInner { graph, node_handles, svg, .. } = &mut *inner;
+        let SceneInner { graph, node_handles, .. } = &mut *inner;
         let node = graph.node_mut(id).ok_or(Error::UnknownNode(id))?;
         let NodeContent::Data(content) = &mut node.content else {
             return Err(Error::IncompatibleNodeValues(id));
@@ -139,9 +139,7 @@ impl Scene {
             if let Selection::Cell(i) = handles.selection {
                 marks.show(&grid, content.hex_dump_byte(i))?;
             }
-            marks.show_secondary(svg, &grid, content.bytes(), &handles.secondary)?;
-            let (len, colour) = (content.selectable_len(), content.type_colour());
-            marks.show_unreached(svg, &grid, len, &handles.unreached, colour)?;
+            marks.refresh_secondary(&grid, content.bytes())?;
         }
         Ok(())
     }
