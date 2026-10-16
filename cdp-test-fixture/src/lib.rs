@@ -54,13 +54,13 @@
 //! `SCENE` below keeps this fixture's only `Scene` handle alive for the page's whole lifetime, the same pattern
 //! `demo-app` now uses.
 
-use std::cell::RefCell;
+use std::{cell::RefCell, collections::HashMap};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
 use svg_dom_graph::{
-    Error,
+    Error, NodeId,
     scene::{
         ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout,
         HexDumpFormat, InputMode, LabellingStyle, NodeOptions, NodeValues, Scene, Selection, SelectionToolbarOptions,
@@ -71,7 +71,43 @@ use wasm_bindgen::prelude::*;
 thread_local! {
     // Keeps this fixture's `Scene` alive for as long as the page lives — see the module doc comment above.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    // The hex dumps the tests drive from the page, by name. See `select_dump_byte` and `unreach_all_but_the_first`.
+    static DUMPS: RefCell<HashMap<&'static str, NodeId>> = RefCell::new(HashMap::new());
 }
+
+/// Selects byte `byte` of the hex dump called `name`, which is `dump_off` or `dump_on`: the same 65 bytes without and
+/// with offsets. `hex_dump_geometry.rs` calls it for each byte it measures.
+#[wasm_bindgen]
+pub fn select_dump_byte(name: &str, byte: usize) -> Result<(), JsValue> {
+    let id = DUMPS
+        .with_borrow(|dumps| dumps.get(name).copied())
+        .ok_or_else(|| JsValue::from_str("no such dump"))?;
+    SCENE.with_borrow(|scene| {
+        let scene = scene.as_ref().ok_or_else(|| JsValue::from_str("no scene"))?;
+        scene
+            .set_selection(id, Selection::Cell(byte))
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    })
+}
+
+/// Marks every byte of `dump_big` unreached except the first, which is how a walk reaches byte 0. It was unreached
+/// along with all the others when the page was built. `hex_dump_paint_order.rs` watches what the page changes.
+#[wasm_bindgen]
+pub fn reach_the_first_byte_of_the_big_dump() -> Result<(), JsValue> {
+    let id = DUMPS
+        .with_borrow(|dumps| dumps.get("dump_big").copied())
+        .ok_or_else(|| JsValue::from_str("no dump"))?;
+    let rest: Vec<usize> = (1..BIG_DUMP_LEN).collect();
+    SCENE.with_borrow(|scene| {
+        let scene = scene.as_ref().ok_or_else(|| JsValue::from_str("no scene"))?;
+        scene
+            .set_unreached_cells(id, &rest)
+            .map_err(|e| JsValue::from_str(&e.to_string()))
+    })
+}
+
+/// How many bytes `dump_big` has.
+const BIG_DUMP_LEN: usize = 256;
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
@@ -165,6 +201,33 @@ fn build() -> Result<(), Error> {
     scene.set_selection(third, Selection::Cell(3))?;
     scene.set_secondary_selection(third, &[3])?;
     scene.set_unreached_cells(third, &[3])?;
+
+    // The same 65 bytes as a dump without offsets and with them, for `hex_dump_geometry.rs`, and a large dump with every
+    // byte unreached, for the test that removes one from the set. Off-canvas.
+    let dump_off = scene.add_named_data_node(
+        Point::new(2000.0, 3600.0),
+        "dump_off",
+        DataNodeContent::new(NodeValues::U8((0..65).collect()), DataFormat::HexDump(HexDumpFormat::new())),
+    )?;
+    let dump_on = scene.add_named_data_node(
+        Point::new(2000.0, 4000.0),
+        "dump_on",
+        DataNodeContent::new(
+            NodeValues::U8((0..65).collect()),
+            DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+        ),
+    )?;
+    let dump_big = scene.add_named_data_node(
+        Point::new(2000.0, 4400.0),
+        "dump_big",
+        DataNodeContent::new(NodeValues::U8((0..=255).collect()), DataFormat::HexDump(HexDumpFormat::new())),
+    )?;
+    scene.set_unreached_cells(dump_big, &(0..BIG_DUMP_LEN).collect::<Vec<_>>())?;
+    DUMPS.with_borrow_mut(|dumps| {
+        dumps.insert("dump_off", dump_off);
+        dumps.insert("dump_on", dump_on);
+        dumps.insert("dump_big", dump_big);
+    });
 
     // A selection toolbar bound to `named_value`, shown with no prior `Scene::set_selection` call against it. That is
     // the ordinary case for a freshly built data node. `accessibility_tree.rs` uses it to prove Chrome's own computed

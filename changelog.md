@@ -13,6 +13,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add data node to display text in `hexdump -C` format (`6bf117a`)
 - Extend test coverage for functionality used in the Huffman demo (`f8f407e`)
 - Extend geometry test coverage for functionality used in the Huffman demo (`5729788`)
+- Extend CDP test coverage (``)
 
 ## Changed
 
@@ -27,7 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid creating new `String` for each selection overlay (`a4f6de6`)
 - Correct overlay paint order. Extend CDP test coverage (`95b1f5d`)
 - Prevent secondary selection from copying entire byte array (`165642b`)
-- Extend hexdump overlay to use delta-update (``)
+- Extend hexdump overlay to use delta-update (`ce53699`)
 
 # [Released]
 

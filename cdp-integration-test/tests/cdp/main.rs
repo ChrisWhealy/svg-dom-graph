@@ -56,6 +56,7 @@ mod chacha20_walk;
 mod common;
 mod connectors;
 mod edge_anchors;
+mod hex_dump_geometry;
 mod hex_dump_paint_order;
 mod hex_dump_selection;
 mod huffman_walk;
