@@ -44,16 +44,34 @@ fn the_offset_when_shown_is_eight_lowercase_hex_digits_and_two_spaces() -> Resul
         visible(&lines[0]),
         "00000000  30 31 32 33 34 35 36 37  38 39 61 62 63 64 65 66  |0123456789abcdef|",
     )?;
-    // `hexdump -C` ends with a line holding the total length.
-    check_eq(visible(&lines[1]), "00000010")?;
-    check_eq(lines.len(), 2)
+    // The line of the total length is not part of the dump unless it is asked for.
+    check_eq(lines.len(), 1)
+}
+
+#[test]
+fn the_total_length_line_is_shown_only_when_asked_for_and_needs_no_offsets() -> Result<(), String> {
+    check(!HexDumpFormat::new().shows_total_length(), "hidden by default")?;
+    for offsets in [false, true] {
+        let format = HexDumpFormat::new().with_offset(offsets).with_total_length(true);
+        check(format.shows_total_length(), "shown when asked for")?;
+        let content = dump(b"0123456789abcdef", format);
+        let lines = cells(&content);
+        // `hexdump -C` ends with a line holding the total length.
+        check_eq(visible(&lines[1]), "00000010")?;
+        check_eq(lines.len(), 2)?;
+        check_eq(content.selectable_len(), 16)?;
+    }
+    Ok(())
 }
 
 #[test]
 fn a_short_last_line_keeps_the_characters_lined_up_and_non_printable_bytes_are_dots() -> Result<(), String> {
     // `printf 'Hello, World!\n' | hexdump -C` gives
     // 00000000  48 65 6c 6c 6f 2c 20 57  6f 72 6c 64 21 0a        |Hello, World!.|
-    let content = dump(b"Hello, World!\n", HexDumpFormat::new().with_offset(true));
+    let content = dump(
+        b"Hello, World!\n",
+        HexDumpFormat::new().with_offset(true).with_total_length(true),
+    );
     let lines = cells(&content);
     check_eq(
         visible(&lines[0]),
@@ -95,7 +113,8 @@ fn every_line_is_the_same_width_so_the_cells_line_up() -> Result<(), String> {
 #[test]
 fn the_cells_are_one_column_of_lines_whatever_layout_is_asked_for() -> Result<(), String> {
     let bytes = vec![0u8; 50];
-    let content = dump(&bytes, HexDumpFormat::new().with_offset(true)).with_layout(GridLayout::Columns(4));
+    let format = HexDumpFormat::new().with_offset(true).with_total_length(true);
+    let content = dump(&bytes, format).with_layout(GridLayout::Columns(4));
     // 4 lines of bytes and the line of the length.
     check_eq(content.len(), 5)?;
     check_eq(content.shape(), (5, 1))
@@ -110,7 +129,10 @@ fn one_line_is_still_a_screen_of_lines_and_not_a_single_value() -> Result<(), St
 
 #[test]
 fn no_bytes_make_no_cells() -> Result<(), String> {
-    check_eq(dump(b"", HexDumpFormat::new().with_offset(true)).len(), 0)
+    check_eq(
+        dump(b"", HexDumpFormat::new().with_offset(true).with_total_length(true)).len(),
+        0,
+    )
 }
 
 #[test]
@@ -170,7 +192,7 @@ fn the_columns_of_a_byte_are_where_its_digits_and_its_character_are_written() ->
 
 #[test]
 fn a_hex_dump_is_selected_a_byte_at_a_time_and_not_a_line() -> Result<(), String> {
-    let content = dump(&[0u8; 40], HexDumpFormat::new().with_offset(true));
+    let content = dump(&[0u8; 40], HexDumpFormat::new().with_offset(true).with_total_length(true));
     // 3 lines and the line of the length, but 40 bytes.
     check_eq(content.len(), 4)?;
     check_eq(content.selectable_len(), 40)?;

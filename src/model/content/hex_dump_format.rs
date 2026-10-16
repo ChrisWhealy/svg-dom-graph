@@ -18,12 +18,13 @@ pub(crate) const BYTES_PER_LINE: usize = 16;
 ///
 /// Two things differ from the command, which are both the way `hexdump -v -C` behaves. A run of identical lines is
 /// never replaced by a `*`, because every line is a cell of its own and the cell count must not depend on the bytes.
-/// And the offset line `hexdump -C` ends with, which holds just the total length, is written only if the offsets are
-/// shown, since it says nothing without them.
+/// And the line `hexdump -C` ends with, which holds just the total length as eight hex digits, is left out unless
+/// [`with_total_length`](Self::with_total_length) turns it on. It is not a byte of the data, and is one more cell.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
 pub struct HexDumpFormat {
     show_offset: bool,
+    show_total_length: bool,
 }
 
 impl HexDumpFormat {
@@ -33,7 +34,7 @@ impl HexDumpFormat {
         Self::default()
     }
 
-    /// This format with each line's offset, and the line holding the total length, shown if `show` and hidden if not.
+    /// This format with each line's offset shown if `show` and hidden if not.
     #[must_use]
     pub fn with_offset(mut self, show: bool) -> Self {
         self.show_offset = show;
@@ -45,16 +46,31 @@ impl HexDumpFormat {
     pub fn shows_offset(&self) -> bool {
         self.show_offset
     }
+
+    /// This format with the line that ends `hexdump -C`'s output shown if `show` and hidden if not. It holds only the
+    /// total number of bytes, as eight hex digits, and is a cell of its own. It is not a byte of the data, so it can
+    /// never be selected, and it does not need the offsets to be shown.
+    #[must_use]
+    pub fn with_total_length(mut self, show: bool) -> Self {
+        self.show_total_length = show;
+        self
+    }
+
+    /// Whether the line holding the total length is shown.
+    #[must_use]
+    pub fn shows_total_length(&self) -> bool {
+        self.show_total_length
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// How many lines, and so cells, `byte_len` bytes make. None for no bytes. The offset line that ends a dump with its
-/// offsets shown is one more.
+/// How many lines, and so cells, `byte_len` bytes make. None for no bytes. The line holding the total length, if shown,
+/// is one more.
 pub(crate) fn line_count(byte_len: usize, format: HexDumpFormat) -> usize {
     if byte_len == 0 {
         return 0;
     }
-    byte_len.div_ceil(BYTES_PER_LINE) + usize::from(format.show_offset)
+    byte_len.div_ceil(BYTES_PER_LINE) + usize::from(format.show_total_length)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -66,7 +82,7 @@ pub(crate) fn format_line(bytes: &[u8], format: HexDumpFormat, index: usize, out
     let start = index * BYTES_PER_LINE;
 
     if start >= bytes.len() {
-        // The line that ends a dump with offsets: the total length.
+        // The line that ends a dump: the total length.
         let _ = write!(out, "{:08x}", bytes.len());
     } else {
         let line = &bytes[start..bytes.len().min(start + BYTES_PER_LINE)];

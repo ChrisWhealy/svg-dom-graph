@@ -165,8 +165,8 @@ pub(crate) fn build_data_demo() -> Result<(), String> {
     )?;
 
     // The same bytes as a hex dump, in the format of `hexdump -C`, with one cell for each line of sixteen bytes. The first
-    // hides each line's offset, which is the default. The second shows it, along with the line that ends the dump with the
-    // total length. Each is a standalone row, since a line is wider than half the diagram.
+    // hides each line's offset, which is the default. The second shows it. Neither shows the line that ends `hexdump -C` with the
+    // total length, which `HexDumpFormat::with_total_length` turns on. Each is a standalone row, since a line is wider than half the diagram.
     const DUMPED: &[u8] = b"Hello, World!\n\x00\x01\x02\xFE\xFF Huffman codes";
     place(
         X_SINGLE,

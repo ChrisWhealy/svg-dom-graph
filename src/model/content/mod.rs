@@ -56,7 +56,8 @@
 //!   It is drawn in one text box with no grid, and counts as one value. Anything else is rejected with
 //!   [`Error::InvalidPlainText`](crate::error::Error::InvalidPlainText).
 //! - [`DataFormat::HexDump`]: `u8` values written as `hexdump -C` writes them, one cell for each line of sixteen bytes. The
-//!   offset that begins each line is hidden unless [`HexDumpFormat::with_offset`] shows it. Anything else is rejected with
+//!   offset that begins each line is hidden unless [`HexDumpFormat::with_offset`] shows it, and so is the final line of the total
+//!   length unless [`HexDumpFormat::with_total_length`] shows it. Anything else is rejected with
 //!   [`Error::InvalidHexDumpFormat`](crate::error::Error::InvalidHexDumpFormat).
 //! - [`DataFormat::Float`]: a floating point value as [`FloatFormat`] says, with a number of decimal places, or of
 //!   significant digits, in plain or scientific notation. `NaN` and the infinities read `NaN`, `inf` and `-inf`. On
@@ -119,7 +120,7 @@ pub use data_node_content::DataNodeContent;
 pub use float_format::{FloatFormat, FloatNotation, FloatPrecision, MAX_FLOAT_DIGITS};
 pub use grid_layout::GridLayout;
 pub use hex_dump_format::HexDumpFormat;
-pub(crate) use hex_dump_format::{ascii_char, ascii_column, full_width, hex_column, hex_digits};
+pub(crate) use hex_dump_format::{BYTES_PER_LINE, ascii_char, ascii_column, full_width, hex_column, hex_digits};
 pub use labelling_style::LabellingStyle;
 pub use node_values::NodeValues;
 pub use operators::{arithmetic::ArithmeticOperator, binary::BinaryOperator, unary::UnaryOperator};

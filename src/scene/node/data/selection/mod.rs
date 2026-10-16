@@ -161,6 +161,13 @@ impl Scene {
     /// There is no limit on how many cells can be secondary beyond the node's own value count. An identical set to the
     /// current one is an immediate no-op, and otherwise only the cells that enter or leave the set are recoloured.
     ///
+    /// # Hex dumps
+    ///
+    /// A [`DataFormat::HexDump`](crate::scene::DataFormat::HexDump) has a cell for each line, but `cells` names its
+    /// *bytes*, as [`Selection::Cell`] does. Each byte named is marked over its two hex digits and over its character,
+    /// in the secondary colour, and the offset line is never one. An index past the last byte is out of range, however
+    /// many lines the dump has.
+    ///
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
@@ -183,10 +190,12 @@ impl Scene {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };
-        let len = content.len();
+        // A hex dump is marked a byte at a time, as it is selected.
+        let len = content.selectable_len();
         if let Some(&bad) = cells.iter().find(|&&i| i >= len) {
             return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
         }
+        let dumped = content.hex_dump().map(|_| content.bytes().to_vec());
         let base_colour = content.type_colour();
         let highlight = {
             let selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
@@ -204,6 +213,21 @@ impl Scene {
         let mut new_secondary = cells.to_vec();
         new_secondary.sort_unstable();
         new_secondary.dedup();
+
+        // A dump has no cell for a byte, so its marks are drawn over its lines instead. See `HexMarks`.
+        if let Some(bytes) = &dumped {
+            let inner = &mut *inner;
+            let handles = inner.node_handles.get_mut(id.index).ok_or(Error::UnknownNode(id))?;
+            if handles.secondary == new_secondary {
+                return Ok(handles.resync_label()?);
+            }
+            if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
+                marks.show_secondary(&inner.svg, &mut String::new(), &grid, bytes, &new_secondary)?;
+                handles.secondary = new_secondary;
+                handles.refresh_label()?;
+                return Ok(());
+            }
+        }
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         if handles.secondary == new_secondary {

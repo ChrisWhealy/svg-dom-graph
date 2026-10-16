@@ -549,24 +549,11 @@ fn draw_hex_marks(
     line_width: f64,
 ) -> Result<HexMarks, Error> {
     let mut mark = |fill: &str| -> Result<(SvgNode, SvgNode), Error> {
-        let block = svg.rect(Point::origin(), Size::new(0.0, 0.0))?;
+        let (block, ink) = make_mark(svg, fill)?;
         guard.track(block.clone());
-        block.set_fill(fill)?;
-        block.set_attr("pointer-events", "none")?;
-        block.set_attr("visibility", "hidden")?;
         group.append(&block)?;
         guard.release();
-
-        let ink = svg.text(Point::origin(), "")?;
         guard.track(ink.clone());
-        ink.set_dominant_baseline(DominantBaseline::Middle)?;
-        ink.set_font_family(GRID_FONT_FAMILY)?;
-        ink.set_font_size(GRID_FONT_SIZE)?;
-        ink.set_fill(HexMarks::INK)?;
-        ink.set_attr("style", "white-space: pre")?;
-        ink.set_attr("pointer-events", "none")?;
-        ink.set_attr("aria-hidden", "true")?;
-        ink.set_attr("visibility", "hidden")?;
         group.append(&ink)?;
         guard.release();
         Ok((block, ink))
@@ -576,7 +563,58 @@ fn draw_hex_marks(
     let ascii = mark(ascii_fill)?;
     #[allow(clippy::cast_precision_loss)]
     let char_width = line_width / full_width(format) as f64;
-    Ok(HexMarks { hex, ascii, char_width, format })
+    Ok(HexMarks {
+        hex,
+        ascii,
+        char_width,
+        format,
+        group: group.clone(),
+        secondary: Vec::new(),
+        secondary_shown: 0,
+        unreached: Vec::new(),
+        unreached_shown: 0,
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A hidden block of `fill` and the hidden dark text that goes over it, neither yet in the document.
+fn make_mark(svg: &SvgRoot, fill: &str) -> Result<(SvgNode, SvgNode), Error> {
+    let block = svg.rect(Point::origin(), Size::new(0.0, 0.0))?;
+    block.set_fill(fill)?;
+    block.set_attr("pointer-events", "none")?;
+    block.set_attr("visibility", "hidden")?;
+
+    let ink = svg.text(Point::origin(), "")?;
+    ink.set_dominant_baseline(DominantBaseline::Middle)?;
+    ink.set_font_family(GRID_FONT_FAMILY)?;
+    ink.set_font_size(GRID_FONT_SIZE)?;
+    ink.set_fill(HexMarks::INK)?;
+    ink.set_attr("style", "white-space: pre")?;
+    ink.set_attr("pointer-events", "none")?;
+    ink.set_attr("aria-hidden", "true")?;
+    ink.set_attr("visibility", "hidden")?;
+    Ok((block, ink))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A block and its text, appended to `group`, for a hex dump's secondary byte. Used when the marks drawn so far run out.
+pub(crate) fn new_mark(svg: &SvgRoot, group: &SvgNode, fill: &str) -> Result<(SvgNode, SvgNode), svg_dom::Error> {
+    let (block, ink) = make_mark(svg, fill).map_err(|e| svg_dom::Error::Dom(e.to_string()))?;
+    group.append(&block)?;
+    group.append(&ink)?;
+    Ok((block, ink))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A hidden block of `fill` at the opacity of an unreached cell, appended to `group`, which dims what it is drawn over.
+pub(crate) fn new_dim_block(svg: &SvgRoot, group: &SvgNode, fill: &str) -> Result<SvgNode, svg_dom::Error> {
+    let block = svg.rect(Point::origin(), Size::new(0.0, 0.0))?;
+    block.set_fill(fill)?;
+    block.set_attr("opacity", "0.65")?;
+    block.set_attr("pointer-events", "none")?;
+    block.set_attr("visibility", "hidden")?;
+    group.append(&block)?;
+    Ok(block)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

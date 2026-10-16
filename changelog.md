@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Adjust layout of Huffman phase 2 scene to use HexDump text node (``)
+- Adjust layout of Huffman phase 2 scene to use HexDump text node (`7a5d0ea`)
+- `Scene::set_secondary_selection` and `Scene::set_unreached_cells` follow `set_selection`, addressing a hex dump a byte at a time (``)
 
 # [Released]
 

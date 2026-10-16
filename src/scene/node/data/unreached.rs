@@ -30,6 +30,11 @@ impl Scene {
     /// cells 16 to 63"`. A run of three or more consecutive cells reads as a range. A node with a single cell reads just
     /// `", not yet computed"`.
     ///
+    /// # Hex dumps
+    ///
+    /// A [`DataFormat::HexDump`](crate::scene::DataFormat::HexDump) has a cell for each line, but `cells` names its
+    /// *bytes*, as [`Selection::Cell`] does. An unreached byte is dimmed over its two hex digits and over its character.
+    ///
     /// # Replacement
     ///
     /// `cells` replaces whatever was marked before. An empty slice clears it. Order and duplicates do not matter. An
@@ -58,10 +63,12 @@ impl Scene {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };
-        let len = content.len();
+        // A hex dump is marked a byte at a time, as it is selected.
+        let len = content.selectable_len();
         if let Some(&bad) = cells.iter().find(|&&i| i >= len) {
             return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
         }
+        let dumped = content.hex_dump().map(|_| len);
         let base_colour = content.type_colour();
         let highlight = {
             let selection = inner.node_handle(id).ok_or(Error::UnknownNode(id))?.selection;
@@ -79,6 +86,21 @@ impl Scene {
         let mut new_unreached = cells.to_vec();
         new_unreached.sort_unstable();
         new_unreached.dedup();
+
+        // A dump has no cell for a byte, so its bytes are dimmed by blocks drawn over its lines. See `HexMarks`.
+        if let Some(len) = dumped {
+            let inner = &mut *inner;
+            let handles = inner.node_handles.get_mut(id.index).ok_or(Error::UnknownNode(id))?;
+            if handles.unreached == new_unreached {
+                return Ok(handles.resync_label()?);
+            }
+            if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {
+                marks.show_unreached(&inner.svg, &mut String::new(), &grid, len, &new_unreached, base_colour)?;
+                handles.unreached = new_unreached;
+                handles.refresh_label()?;
+                return Ok(());
+            }
+        }
 
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         if handles.unreached == new_unreached {

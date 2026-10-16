@@ -513,7 +513,7 @@ fn draw_packing(
     let pack = draw_row(scene, "Bits to pack", bits(&packing.appended), &packing.marked, left, top)?;
     let pending = draw_row(scene, "Pending bits", bits(&packing.pending), &[], left + bits_width + GAP, top)?;
     let mut y = pack.1.max(pending.1) + V_GAP;
-    y = draw_row(scene, "Output bytes", bytes, &[], left, y)?.1;
+    y = draw_row(scene, "Output bytes", bytes, &packing.new_bytes, left, y)?.1;
 
     if let Some(summary) = &packing.summary {
         let hex = bytes_content(packing.output.clone(), DataFormat::Hexadecimal, RESULT_COLUMNS);

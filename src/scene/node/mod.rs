@@ -8,7 +8,7 @@
 
 mod construction_guard;
 mod container;
-mod data;
+pub(in crate::scene) mod data;
 mod edge_anchors;
 mod markdown;
 mod node_options;

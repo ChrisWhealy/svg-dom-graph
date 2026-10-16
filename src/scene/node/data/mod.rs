@@ -14,7 +14,7 @@
 use crate::error::Error;
 
 mod construct;
-mod draw;
+pub(in crate::scene) mod draw;
 mod selection;
 mod style;
 mod unreached;

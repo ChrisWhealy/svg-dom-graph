@@ -79,8 +79,8 @@
                 byte being packed marked in both. The hexadecimal one tells apart the bytes of a multi-byte character,
                 which show as dots in the first. To edit the text, step back to pass one.</p>
             <p>The code table stays on screen with the current byte's row ringed. To its right, "Bits to pack" shows the
-                pending bits followed by the new code, which is marked. "Pending bits" shows what is left once the
-                completed bytes are written, and "Output bytes" shows every byte written so far in binary.</p>
+                pending bits followed by the new code, which is marked. "Pending bits", beside it, shows what is left
+                once the completed bytes are written, and "Output bytes" shows every byte written so far as a hex dump.</p>
             <p>The last step pads whatever is still pending with zero bits to make a whole byte. A decoder is given the
                 number of meaningful bits, so that it can ignore the padding.</p>
         </dd>

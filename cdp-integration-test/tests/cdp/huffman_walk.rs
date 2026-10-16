@@ -802,23 +802,23 @@ fn after(tab: &Tab, heading: &str, keep: impl Fn(&str) -> bool) -> Result<Vec<St
     Ok(all[start + 1..].iter().take_while(|t| keep(t)).cloned().collect())
 }
 
-fn is_binary_byte(t: &str) -> bool {
-    t.len() == 9
-        && t.bytes()
-            .enumerate()
-            .all(|(i, b)| if i == 4 { b == b' ' } else { b == b'0' || b == b'1' })
-}
-
 fn is_hex_byte(t: &str) -> bool {
     t.len() == 2 && t.bytes().all(|b| b.is_ascii_digit() || (b'A'..=b'F').contains(&b))
 }
 
-/// The bytes written so far, in binary. Before the first, the scene says so in a plain box instead.
+/// The bytes written so far, as the two hex digits the hex dump shows for each. Before the first, the scene says so in a
+/// plain box instead.
 fn output(tab: &Tab) -> Result<Vec<String>, String> {
     if texts(tab)?.iter().any(|t| t == "Output bytes: none") {
         return Ok(Vec::new());
     }
-    after(tab, "Output bytes", is_binary_byte)
+    // A line of the dump holds its characters between `|` marks. The marks over a selected byte are texts too, but they
+    // come after the lines.
+    let lines = after(tab, "Output bytes", |t| t.contains('|'))?;
+    Ok(lines
+        .iter()
+        .flat_map(|line| line.split('|').next().unwrap_or("").split_whitespace().map(str::to_owned))
+        .collect())
 }
 
 /// What the accessible name of the node called `name` says is highlighted, such as `cell 0`, or `None` if nothing is.
@@ -831,6 +831,20 @@ fn highlight(tab: &Tab, name: &str) -> Result<Option<String>, String> {
         ),
     )?;
     Ok(label.split_once("also highlighted: ").map(|(_, cell)| cell.to_owned()))
+}
+
+/// The text of each visible mark the hex dump draws over its secondary bytes: the two hex digits, or the character. The
+/// mark's block has the secondary selection colour.
+fn secondary_marks(tab: &Tab) -> Result<Vec<String>, String> {
+    let json = text(
+        tab,
+        &format!(
+            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"Output bytes\"] rect')] \
+             .filter(r => r.getAttribute('visibility') === 'visible' && r.getAttribute('fill') === '#7fd8be') \
+             .map(r => r.nextElementSibling.textContent))"
+        ),
+    )?;
+    serde_json::from_str(&json).map_err(|e| format!("could not read the marks: {e}"))
 }
 
 /// Whether the scene's title names pass two.
@@ -896,16 +910,19 @@ fn stepping_across_the_boundary_skips_and_repeats_no_position() -> Result<(), St
 #[test]
 fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
     let tab = open()?;
-    // The first three input bytes leave 7 bits pending, and the fourth completes 0100 1110.
+    // The first three input bytes leave 7 bits pending, and the fourth completes 0100 1110, which is 4e.
     goto(&tab, PASS_TWO + 2)?;
     check_eq(output(&tab)?, Vec::<String>::new())?;
     goto(&tab, PASS_TWO + 3)?;
-    check_eq(output(&tab)?, vec!["0100 1110".to_owned()])?;
+    check_eq(output(&tab)?, vec!["4e".to_owned()])?;
     check_eq(highlight(&tab, "Output bytes")?, Some("cell 0".to_owned()))?;
+    // The byte is marked in the hex dump, over its two hex digits and over its character.
+    check_eq(secondary_marks(&tab)?, ["4e", "N"].map(str::to_owned).to_vec())?;
     // The next step writes nothing, so the byte is no longer marked.
     goto(&tab, PASS_TWO + 4)?;
-    check_eq(output(&tab)?, vec!["0100 1110".to_owned()])?;
-    check_eq(highlight(&tab, "Output bytes")?, None)
+    check_eq(output(&tab)?, vec!["4e".to_owned()])?;
+    check_eq(highlight(&tab, "Output bytes")?, None)?;
+    check_eq(secondary_marks(&tab)?, Vec::<String>::new())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -918,10 +935,7 @@ fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<()
         explanation(&tab)?.starts_with("Flush: 7 pending bits cannot fill a byte, so 1 zero bit pad it out: 10011100."),
         &format!("unexpected explanation {:?}", explanation(&tab)?),
     )?;
-    check_eq(
-        output(&tab)?,
-        vec!["0100 1110".to_owned(), "1010 1100".to_owned(), "1001 1100".to_owned()],
-    )?;
+    check_eq(output(&tab)?, ["4e", "ac", "9c"].map(str::to_owned).to_vec())?;
     check_eq(
         after(&tab, "Result in hexadecimal", is_hex_byte)?,
         ["4E", "AC", "9C"].map(str::to_owned).to_vec(),
@@ -954,7 +968,7 @@ fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
         explanation(&tab)?.contains("no padding is needed"),
         &format!("unexpected explanation {:?}", explanation(&tab)?),
     )?;
-    check_eq(output(&tab)?, vec!["0000 0000".to_owned()])?;
+    check_eq(output(&tab)?, vec!["00".to_owned()])?;
     check_eq(after(&tab, "Result in hexadecimal", is_hex_byte)?, vec!["00".to_owned()])?;
     check(
         markdown(&tab, 2)?.contains("which is 8 bits of code and 0 of padding"),

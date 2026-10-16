@@ -250,8 +250,8 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// The bytes of `u8` content, and none for any other.
-    fn bytes(&self) -> &[u8] {
+    /// Returns the bytes of `u8` content, and none for any other.
+    pub(crate) fn bytes(&self) -> &[u8] {
         match &self.values {
             NodeValues::U8(bytes) => bytes,
             _ => &[],
