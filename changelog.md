@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add data node to display text in `hexdump -C` format (``)
+- Add data node to display text in `hexdump -C` format (`6bf117a`)
+
+## Changed
+
+- Adjust layout of Huffman phase 2 scene to use HexDump text node (``)
 
 # [Released]
 

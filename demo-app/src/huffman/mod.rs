@@ -39,8 +39,8 @@ use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{
-        BoolFormat, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, NodeOptions, NodeValues, Scene,
-        SceneTitleOptions, Selection, SelectionStride, Side, ToolbarOptions,
+        BoolFormat, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, HexDumpFormat, NodeOptions, NodeValues,
+        Scene, SceneTitleOptions, Selection, SelectionStride, Side, ToolbarOptions,
     },
 };
 use walk::{Packing, Row, Shown, Spacing, leaf_label, pack_steps, packing, steps, symbol_label};
@@ -113,8 +113,6 @@ const INPUT_COLUMNS: usize = 16;
 /// What a named data node adds to the width of its own grid: the frame and the room for its name. The measured width of
 /// a grid does not include it.
 const NAMED_FRAME: f64 = 40.0;
-/// How many output bytes pass two draws in a row.
-const OUTPUT_COLUMNS: usize = 6;
 /// The width of the plain box that stands in for a row of bits or bytes that is empty, since a data node cannot be.
 const EMPTY_WIDTH: f64 = 240.0;
 
@@ -449,40 +447,73 @@ fn bytes_content(bytes: Vec<u8>, format: DataFormat, columns: usize) -> DataNode
     DataNodeContent::new(NodeValues::U8(bytes), format).with_layout(GridLayout::Columns(columns))
 }
 
-/// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
-/// widest of a full row of the output in binary and of the result in hexadecimal.
+/// The output of pass two as a hex dump in the format of `hexdump -C`, with one cell for each line of sixteen bytes.
+fn output_content(bytes: Vec<u8>) -> DataNodeContent {
+    DataNodeContent::new(NodeValues::U8(bytes), DataFormat::HexDump(HexDumpFormat::new()))
+}
+
+/// A row of `count` bits, which is drawn on one line.
+fn bits_content(bits: Vec<bool>) -> DataNodeContent {
+    DataNodeContent::new(NodeValues::Bool(bits), DataFormat::Bool(BoolFormat::Bit)).with_layout(GridLayout::Rows(1))
+}
+
+/// How wide the bits to pack can get at any step of pass two, so that the pending bits beside them do not move as the
+/// walk steps.
 ///
 /// # Errors
 ///
 /// Returns `Err` if measuring fails.
-fn packing_width(scene: &Scene) -> Result<f64, String> {
-    let binary = bytes_content(vec![0; OUTPUT_COLUMNS], DataFormat::Binary, OUTPUT_COLUMNS);
+fn bits_to_pack_width(scene: &Scene, trace: &Trace) -> Result<f64, String> {
+    let longest = (0..pack_steps(trace))
+        .map(|i| packing(trace, i).appended.len())
+        .max()
+        .unwrap_or(0);
+    Ok(scene
+        .measure_data_node(&bits_content(vec![false; longest.max(1)]))
+        .map_err(stringify)?
+        .width
+        + NAMED_FRAME)
+}
+
+/// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
+/// widest of a full line of the output as a hex dump, of the result in hexadecimal, and of the bits to pack beside the
+/// pending bits, which are at most seven.
+///
+/// # Errors
+///
+/// Returns `Err` if measuring fails.
+fn packing_width(scene: &Scene, bits_width: f64) -> Result<f64, String> {
+    let dump = output_content(vec![0; RESULT_COLUMNS]);
     let hex = bytes_content(vec![0; RESULT_COLUMNS], DataFormat::Hexadecimal, RESULT_COLUMNS);
-    let widths = [binary, hex].map(|c| scene.measure_data_node(&c).map(|s| s.width));
-    let [binary, hex] = widths;
-    Ok(binary.map_err(stringify)?.max(hex.map_err(stringify)?))
+    let pending = bits_content(vec![false; 7]);
+    let [dump, hex, pending] = [dump, hex, pending].map(|c| scene.measure_data_node(&c).map(|s| s.width));
+    let pair = bits_width + GAP + pending.map_err(stringify)? + NAMED_FRAME;
+    Ok(dump.map_err(stringify)?.max(hex.map_err(stringify)?).max(pair))
 }
 
 /// Draws what pass two shows at one step, with its top left at `(left, top)` and `width` wide, and returns the lowest
-/// edge: the bits being appended, the bits left pending, and the bytes written so far. What the step added to each is
-/// marked. At the flush it adds the finished output in hexadecimal, and its size against the input's.
+/// edge: the bits being appended with the bits left pending beside them, and under those the bytes written so far
+/// as a hex dump. What the step added to the bits being appended is marked. At the flush it adds the finished output in hexadecimal, and its size against the input's.
 ///
 /// # Errors
 ///
 /// Returns `Err` if any library call fails.
-fn draw_packing(scene: &Scene, packing: &Packing, left: f64, top: f64, width: f64) -> Result<f64, String> {
-    let bits = |bits: &[bool]| {
-        (!bits.is_empty()).then(|| {
-            DataNodeContent::new(NodeValues::Bool(bits.to_vec()), DataFormat::Bool(BoolFormat::Bit))
-                .with_layout(GridLayout::Rows(1))
-        })
-    };
-    let bytes =
-        (!packing.output.is_empty()).then(|| bytes_content(packing.output.clone(), DataFormat::Binary, OUTPUT_COLUMNS));
+fn draw_packing(
+    scene: &Scene,
+    packing: &Packing,
+    left: f64,
+    top: f64,
+    width: f64,
+    bits_width: f64,
+) -> Result<f64, String> {
+    let bits = |bits: &[bool]| (!bits.is_empty()).then(|| bits_content(bits.to_vec()));
+    let bytes = (!packing.output.is_empty()).then(|| output_content(packing.output.clone()));
 
-    let mut y = draw_row(scene, "Bits to pack", bits(&packing.appended), &packing.marked, left, top)?.1 + V_GAP;
-    y = draw_row(scene, "Pending bits", bits(&packing.pending), &[], left, y)?.1 + V_GAP;
-    y = draw_row(scene, "Output bytes", bytes, &packing.new_bytes, left, y)?.1;
+    // The bits to pack are a whole byte or more, and the pending bits are what did not fit, so they stand beside them.
+    let pack = draw_row(scene, "Bits to pack", bits(&packing.appended), &packing.marked, left, top)?;
+    let pending = draw_row(scene, "Pending bits", bits(&packing.pending), &[], left + bits_width + GAP, top)?;
+    let mut y = pack.1.max(pending.1) + V_GAP;
+    y = draw_row(scene, "Output bytes", bytes, &[], left, y)?.1;
 
     if let Some(summary) = &packing.summary {
         let hex = bytes_content(packing.output.clone(), DataFormat::Hexadecimal, RESULT_COLUMNS);
@@ -613,7 +644,8 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
 
     // The right-hand column, which is the same in both passes: the text, the status line, the explanation, and under them
     // the code table. The forest, or pass two's packing, takes the room to its left.
-    let packing_width = packing_width(&scene)?;
+    let bits_width = bits_to_pack_width(&scene, trace)?;
+    let packing_width = packing_width(&scene, bits_width)?;
     let column = if pass_two.is_some() { LEFT } else { LEFT + widest + TABLE_GAP };
     let table_left = column + PANEL_WIDTH + TABLE_GAP;
     let packing_left = table_left + table_width + TABLE_GAP;
@@ -663,7 +695,7 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
             let focus_row = packing.symbol.and_then(|s| shown.rows.iter().position(|r| r.symbol == s));
             (
                 draw_table(&scene, &shown, focus_row, table_left, CONTENT_TOP)?,
-                draw_packing(&scene, packing, packing_left, forest_top, packing_width)?,
+                draw_packing(&scene, packing, packing_left, forest_top, packing_width, bits_width)?,
             )
         },
     };
