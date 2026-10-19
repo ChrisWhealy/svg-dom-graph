@@ -15,7 +15,7 @@ const SECONDARY: &str = "#7fd8be";
 
 fn open() -> Result<DemoTab, String> {
     new_demo_tab(
-        "index.html#panel-selection",
+        "index.html#panel-selection-hexdump",
         &format!("{DIAGRAM} g[aria-label^=\"hexdump\"]"),
         (1400, 3000),
     )

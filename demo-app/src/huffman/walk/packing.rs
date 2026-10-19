@@ -144,7 +144,7 @@ fn flush(trace: &Trace) -> Packing {
         )
     };
     let second = format!(
-        "The {input_len} input bytes ({} bits) are now {} bits in {} bytes. The result is shown below in hexadecimal.",
+        "The {input_len} input bytes ({} bits) are now {} bits in {} bytes. The result is shown above in hexadecimal.",
         input_len * 8,
         packed.bit_len,
         packed.bytes.len(),

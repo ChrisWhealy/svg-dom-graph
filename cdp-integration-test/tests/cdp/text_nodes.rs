@@ -1,4 +1,4 @@
-//! The Markdown node and the text input node, in the built demo gallery's "Text nodes" panel.
+//! The Markdown node and the text input node, in the built demo gallery's "Markdown node" and "Text input node" panels.
 //!
 //! The Markdown parser and its layout are covered by native unit tests. What they cannot reach is the browser: that the
 //! lines are drawn inside the box, that bold, italic and code runs are drawn as such, that real typing reaches the text
@@ -8,11 +8,22 @@ use crate::common::{DemoTab, drag, new_demo_tab};
 use headless_chrome::Tab;
 use std::time::Duration;
 
-const DIAGRAM: &str = "#text-nodes-diagram";
+const MARKDOWN_DIAGRAM: &str = "#markdown-diagram";
+const DIAGRAM: &str = "#text-input-diagram";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The Markdown panel, once its node is drawn.
+fn open_markdown() -> Result<DemoTab, String> {
+    new_demo_tab(
+        "index.html#panel-markdown",
+        &format!("{MARKDOWN_DIAGRAM} g[aria-label^=\"Text. \"]"),
+        (1400, 1400),
+    )
+}
+
+/// The text input panel, once its text box is drawn.
 fn open() -> Result<DemoTab, String> {
-    new_demo_tab("index.html#panel-text-nodes", &format!("{DIAGRAM} input"), (1400, 1400))
+    new_demo_tab("index.html#panel-text-input", &format!("{DIAGRAM} input"), (1400, 1400))
 }
 
 fn check(condition: bool, message: &str) -> Result<(), String> {
@@ -40,7 +51,7 @@ fn view(tab: &Tab) -> Result<String, String> {
 }
 
 fn echo(tab: &Tab) -> Result<String, String> {
-    text(tab, "document.getElementById('text-nodes-echo').textContent")
+    text(tab, "document.getElementById('text-input-echo').textContent")
 }
 
 /// The Markdown node's `<g>`: the first node group, which is the one holding the headings.
@@ -50,11 +61,11 @@ const MARKDOWN_GROUP: &str = "g[aria-label^=\"Text. \"]";
 /// Every line is drawn inside the box, whatever its length, and the box is as tall as its text.
 #[test]
 fn every_line_of_the_markdown_is_drawn_inside_its_box() -> Result<(), String> {
-    let tab = open()?;
+    let tab = open_markdown()?;
     let json = text(
         &tab,
         &format!(
-            "(() => {{ const g = document.querySelector('{DIAGRAM} {MARKDOWN_GROUP}'); \
+            "(() => {{ const g = document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP}'); \
                 const box = g.querySelector('rect').getBBox(); \
                 const lines = [...g.querySelectorAll('text')].map(t => {{ const b = t.getBBox(); \
                     return [t.textContent, b.x, b.y, b.x + b.width, b.y + b.height]; }}); \
@@ -105,11 +116,11 @@ fn a_label_wider_than_its_text_input_node_shrinks_to_fit() -> Result<(), String>
 /// Bold, italic and code runs are drawn as tspans with the matching weight, slant and colour, and headings are larger.
 #[test]
 fn bold_italic_and_code_are_drawn_as_such_and_headings_are_larger() -> Result<(), String> {
-    let tab = open()?;
+    let tab = open_markdown()?;
     let json = text(
         &tab,
         &format!(
-            "(() => {{ const g = document.querySelector('{DIAGRAM} {MARKDOWN_GROUP}'); \
+            "(() => {{ const g = document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP}'); \
                 const run = (s) => [...g.querySelectorAll(s)].map(t => t.textContent); \
                 const sizes = [...g.querySelectorAll('text')].map(t => [t.textContent.slice(0, 12), t.getAttribute('font-size')]); \
                 return JSON.stringify({{ bold: run('tspan[font-weight=bold]'), italic: run('tspan[font-style=italic]'), \
@@ -161,11 +172,11 @@ fn bold_italic_and_code_are_drawn_as_such_and_headings_are_larger() -> Result<()
 /// An escaped marker is literal, and a word with no spaces that is longer than a line is split across lines.
 #[test]
 fn escapes_are_literal_and_a_too_long_word_is_split() -> Result<(), String> {
-    let tab = open()?;
+    let tab = open_markdown()?;
     let json = text(
         &tab,
         &format!(
-            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} {MARKDOWN_GROUP} text')].map(t => t.textContent))"
+            "JSON.stringify([...document.querySelectorAll('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP} text')].map(t => t.textContent))"
         ),
     )?;
     let lines: Vec<String> = serde_json::from_str(&json).map_err(|e| format!("{e}"))?;
@@ -213,9 +224,9 @@ fn real_typing_reaches_the_callback_and_never_pans_or_zooms() -> Result<(), Stri
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The text box is named for assistive technology by the node's label, and the Markdown node is a labelled group.
+/// The text box is named for assistive technology by the node's label, and its node is a labelled group.
 #[test]
-fn the_nodes_are_named_for_assistive_technology() -> Result<(), String> {
+fn the_text_input_node_is_named_for_assistive_technology() -> Result<(), String> {
     let tab = open()?;
     check_eq(
         text(
@@ -230,25 +241,32 @@ fn the_nodes_are_named_for_assistive_technology() -> Result<(), String> {
             &format!("document.querySelector('{DIAGRAM} g[aria-label^=\"Text to echo.\"]').getAttribute('role')"),
         )?,
         "group".to_owned(),
-    )?;
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The Markdown node is a labelled group.
+#[test]
+fn the_markdown_node_is_a_labelled_group() -> Result<(), String> {
+    let tab = open_markdown()?;
     check_eq(
         text(
             &tab,
-            &format!("document.querySelector('{DIAGRAM} {MARKDOWN_GROUP}').getAttribute('role')"),
+            &format!("document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP}').getAttribute('role')"),
         )?,
         "group".to_owned(),
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A drag of the Markdown node moves it, and the text input node can still be typed in afterward.
+/// A drag of the Markdown node moves it.
 #[test]
-fn the_markdown_node_drags_and_the_input_still_works_after() -> Result<(), String> {
-    let tab = open()?;
+fn the_markdown_node_drags() -> Result<(), String> {
+    let tab = open_markdown()?;
     let transform = |tab: &Tab| {
         text(
             tab,
-            &format!("document.querySelector('{DIAGRAM} {MARKDOWN_GROUP}').getAttribute('transform')"),
+            &format!("document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP}').getAttribute('transform')"),
         )
     };
     let before = transform(&tab)?;
@@ -256,23 +274,14 @@ fn the_markdown_node_drags_and_the_input_still_works_after() -> Result<(), Strin
     let at = text(
         &tab,
         &format!(
-            "(() => {{ const r = document.querySelector('{DIAGRAM} {MARKDOWN_GROUP} rect').getBoundingClientRect(); \
+            "(() => {{ const r = document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP} rect').getBoundingClientRect(); \
                 return (r.left + 30) + ',' + (r.top + 20); }})()"
         ),
     )?;
     let (x, y) = at.split_once(',').ok_or("no point")?;
     let (x, y): (f64, f64) = (x.parse().map_err(|_| "x")?, y.parse().map_err(|_| "y")?);
     drag(&tab, &[(x, y), (x + 20.0, y + 10.0), (x + 40.0, y + 25.0)])?;
-    check(transform(&tab)? != before, "the node did not move")?;
-
-    let input = tab
-        .find_element(&format!("{DIAGRAM} input"))
-        .map_err(|e| format!("no text box: {e}"))?;
-    input.click().map_err(|e| format!("{e}"))?;
-    tab.press_key("End").map_err(|e| format!("{e}"))?;
-    tab.type_str("!").map_err(|e| format!("{e}"))?;
-    std::thread::sleep(Duration::from_millis(150));
-    check_eq(echo(&tab)?, "Edit this text!".to_owned())
+    check(transform(&tab)? != before, "the node did not move")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -310,7 +319,7 @@ fn caret(tab: &Tab) -> Result<(u32, u32), String> {
 }
 
 fn calls(tab: &Tab) -> Result<String, String> {
-    text(tab, "document.getElementById('text-nodes-calls').textContent")
+    text(tab, "document.getElementById('text-input-calls').textContent")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -320,7 +329,7 @@ fn calls(tab: &Tab) -> Result<String, String> {
 fn replacing_the_text_from_code_does_not_call_the_callback() -> Result<(), String> {
     let tab = open()?;
     check_eq(calls(&tab)?, "0".to_owned())?;
-    tab.find_element("#text-nodes-replace")
+    tab.find_element("#text-input-replace")
         .map_err(|e| format!("no button: {e}"))?
         .click()
         .map_err(|e| format!("{e}"))?;
@@ -383,8 +392,8 @@ fn a_drag_outside_the_text_box_moves_the_node_and_inside_it_selects_text() -> Re
 /// The size `measure_markdown_node` reports is the size the node is then drawn at, and is the size of its drawn box.
 #[test]
 fn the_measured_size_of_the_markdown_node_is_the_size_it_is_drawn_at() -> Result<(), String> {
-    let tab = open()?;
-    let report = text(&tab, "document.getElementById('text-nodes-measure').textContent")?;
+    let tab = open_markdown()?;
+    let report = text(&tab, "document.getElementById('markdown-measure').textContent")?;
     let (measured, drawn) = report
         .strip_prefix("measured ")
         .and_then(|r| r.split_once(", drawn "))
@@ -396,7 +405,7 @@ fn the_measured_size_of_the_markdown_node_is_the_size_it_is_drawn_at() -> Result
     let json = text(
         &tab,
         &format!(
-            "(() => {{ const b = document.querySelector('{DIAGRAM} {MARKDOWN_GROUP} rect').getBBox(); \
+            "(() => {{ const b = document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP} rect').getBBox(); \
                 return JSON.stringify([b.width, b.height]); }})()"
         ),
     )?;
@@ -411,10 +420,10 @@ fn the_measured_size_of_the_markdown_node_is_the_size_it_is_drawn_at() -> Result
 /// Assistive technology reads the Markdown node's text as it is, the markers of its lists included.
 #[test]
 fn the_markdown_nodes_text_is_there_for_assistive_technology_to_read() -> Result<(), String> {
-    let tab = open()?;
+    let tab = open_markdown()?;
     let content = text(
         &tab,
-        &format!("document.querySelector('{DIAGRAM} {MARKDOWN_GROUP}').textContent"),
+        &format!("document.querySelector('{MARKDOWN_DIAGRAM} {MARKDOWN_GROUP}').textContent"),
     )?;
     for expected in ["A Markdown node", "Lists", "Another bullet.", "1.", "2.", "\u{2022}", "Escapes"] {
         check(content.contains(expected), &format!("{expected:?} is missing from {content:?}"))?;

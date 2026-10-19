@@ -1,0 +1,29 @@
+<section class="section" id="panel-selection-thetac">
+    <h2>Cell selection: row-wise selection (SHA3's <code>ThetaC</code> function)</h2>
+    <p>On each step, an operator chain is supplied with a fresh set of values from successive rows of an input array,
+        with the final result written to successive elements of an output array.</p>
+    <p>SHA3's <code>ThetaC</code> function is a real example: for each row <code>n</code> of a 5&times;5 input array
+        <code>A</code>, <code>C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR A(n,4)</code>, written to output array
+        <code>O(n)</code>.
+    </p>
+    <p><code>svg-dom-graph</code> has no way to change an existing node's own displayed value — only its selection
+        (colour/focus). So each step clears and redraws the whole diagram from scratch with the current row's own
+        real values, rather than trying to update any node in place.
+    </p>
+    <p><code>A</code> sits at the top of the canvas, above the chain it feeds; <code>O</code> sits directly below
+        the chain's own final <code>XOR</code> node. A connector always lands on a node's own outer edge, never a
+        specific cell inside it, so putting <code>O</code> right after the chain, with nothing else in between,
+        lets a plain edge from that final node reach <code>O</code> directly — reading as "into the output," not
+        "into the input."
+    </p>
+    <p>Stepping through the elements of an array is driven by enabling a <code>Scene::show_selection_toolbar</code>.
+        This creates a toolbar inside the diagram containing the buttons Prev, Next and Restart.</p>
+    <p>The walk starts in an initialised, or "not started" state: that is, before row <code>0</code> is processed.
+        Consequently, no row of <code>A</code> is highlighted, and the output row <code>O</code> is entirely blank.</p>
+    <p>Pressing "Next" or "Previous" move <code>n</code> between the clamped value <code>0</code> and <code>4</code>
+        When <code>n = 4</code>, pressing Next will not wrap the value round to <code>0</code>; similarly, pressing
+        "Previous" enough times returns the value to <code>0</code> and does not wrap around to <code>4</code>.</p>
+    <p>In order to initialise the cell selection to its "not started" state, press "Restart".</p>
+    <div class="canvas" id="selection-thetac-diagram-stage">
+    </div>
+</section>

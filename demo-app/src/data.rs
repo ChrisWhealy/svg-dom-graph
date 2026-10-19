@@ -1,27 +1,70 @@
-//! `panel-data` / `#data-diagram` holds draggable nodes whose content is a [`DataNodeContent`] grid of values rather
-//! than a plain text label. There is one single-value and one multi-value node per integer width
-//! (`u8`/`u16`/`u32`/`u64`), and one more row for the signed widths. The multi-value counts are chosen to cover every combination the grid layout rule can
-//! produce. See [`build_data_demo`]'s own doc comment for exactly which.
+//! The four data-node panels that show whole numbers and bytes:
+//!
+//! - `panel-unsigned` / `#unsigned-diagram` — [`build_unsigned_demo`]: `u8`, `u16`, `u32` and `u64`.
+//! - `panel-signed` / `#signed-diagram` — [`build_signed_demo`]: `i8`, `i16`, `i32` and `i64`.
+//! - `panel-hexdump` / `#hexdump-diagram` — [`build_hexdump_demo`]: bytes as `hexdump -C` shows them.
+//! - `panel-ascii` / `#ascii-diagram` — [`build_ascii_demo`]: bytes as characters.
+//!
+//! Each shows draggable nodes whose content is a [`DataNodeContent`] grid of values rather than a plain text label.
 
-use crate::util::{stringify, view_box_rect};
+use crate::util::{Item, build_lines_scene, item};
 use std::cell::RefCell;
-use svg_dom::{SvgRoot, root::utils::Point};
-use svg_dom_graph::scene::{DataFormat, DataNodeContent, DragOptions, HexDumpFormat, NodeValues, Scene};
+use svg_dom_graph::scene::{DataFormat, DataNodeContent, GridLayout, HexDumpFormat, NodeValues, Scene};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("data.rs");
 
 thread_local! {
-    // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`.
-    static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    // Same reasoning as `tree::SCENE`'s own doc comment, for each demo's own, separate `Scene`.
+    static UNSIGNED_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    static SIGNED_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    static HEXDUMP_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    static ASCII_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the data-node demo: one row per integer width (`u8`, `u16`, `u32`, `u64`). Each row holds a single-value box
-/// on the left and a multi-value box on the right. Every box is draggable, and every box is sized to fit its own
-/// content automatically, unlike [`crate::tree::build_demo_tree`]'s caller-sized boxes.
+/// The three ways a whole number can be written: as decimal digits, as the hexadecimal digits of each byte, and as the
+/// binary digits of each byte. Each is named in the node that shows it.
+const FORMATS: [(&str, DataFormat); 3] = [
+    ("decimal", DataFormat::Decimal),
+    ("hexadecimal", DataFormat::Hexadecimal),
+    ("binary", DataFormat::Binary),
+];
+
+/// One node for each of [`FORMATS`], holding `values` and named `{what}, {format}`.
+fn in_every_format(what: &str, values: &NodeValues) -> Vec<Item> {
+    FORMATS
+        .iter()
+        .map(|&(name, format)| item(format!("{what}, {name}"), DataNodeContent::new(values.clone(), format)))
+        .collect()
+}
+
+/// A line for each of a single value and several, with each line's nodes one beside the next, or if `wide`, the binary
+/// one apart on a line of its own. A binary node has eight digits for every byte, so one of a 32-bit or 64-bit value
+/// is wider than a decimal or hexadecimal one beside it by a margin that would push the line off the canvas.
+fn lines_for(type_name: &str, single: NodeValues, several: NodeValues, wide: bool) -> Vec<Vec<Item>> {
+    let mut lines = Vec::new();
+    for (what, values) in [
+        (format!("{type_name}, one value"), single),
+        (format!("{type_name}, several"), several),
+    ] {
+        let mut nodes = in_every_format(&what, &values);
+        if wide {
+            let binary = nodes.split_off(2);
+            lines.push(nodes);
+            lines.push(binary);
+        } else {
+            lines.push(nodes);
+        }
+    }
+    lines
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the unsigned integer demo: for each of `u8`, `u16`, `u32` and `u64`, a single value and several values, each
+/// written in decimal, hexadecimal and binary. Every box is draggable, and every box is sized to fit its own content
+/// automatically, unlike [`crate::tree::build_demo_tree`]'s caller-sized boxes.
 ///
-/// The four multi-value counts are deliberately chosen to cover every combination
+/// The counts of several values are deliberately chosen to cover every combination
 /// [`DataNodeContent::shape`](svg_dom_graph::scene::DataNodeContent::shape)'s layout rule can produce:
 ///
 /// - `u8`, 8 values: divides evenly by a power of two (`2`) but is not itself a square — renders as 2 rows of 4.
@@ -32,162 +75,204 @@ thread_local! {
 /// - `u64`, 4 values: both a perfect square and evenly divisible by a power of two (`2`) — the two rules agree, landing
 ///   on the same 2×2 shape either way.
 ///
-/// A sixth row shows the signed widths: a single `i16` of `-2` in hexadecimal, which reads as its two's complement,
-/// `FF FE`, and four `i32` values in decimal. A sign is shown only for a value that is negative. A positive value, and
-/// zero, show none.
-///
-/// Two more standalone rows, below the signed ones, show the same bytes as a hex dump in the format of `hexdump -C`. The
-/// first leaves each line's offset hidden, as it is by default, and the second shows it. See [`HexDumpFormat`].
-///
-/// A fifth, standalone row below those four shows a single `u64` value under [`DataFormat::Binary`] — 64 digits,
-/// nybble-grouped and byte-separated. [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a
-/// grid by cell *count*, not physical width. So this is also the demo's own worked example of the extreme
-/// cell-aspect-ratio case. That case motivates [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns)
-/// — see that type's own doc comment.
+/// A single `u64` under [`DataFormat::Binary`] is 64 digits, nybble-grouped and byte-separated.
+/// [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a grid by cell *count*, not physical
+/// width. So that node is also this demo's own worked example of the extreme cell-aspect-ratio case. That case
+/// motivates [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns) — see that type's own doc comment.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if `index.html` is missing `#data-diagram`.
-pub(crate) fn build_data_demo() -> Result<(), String> {
-    crate::util::ensure_svg_in(
-        &crate::util::document()?,
-        "data-diagram-stage",
-        "data-diagram",
-        svg_dom::root::utils::Size::new(750.0, 1130.0),
-    )?;
-    let svg = SvgRoot::attach("data-diagram").map_err(stringify)?;
-    let bounds = view_box_rect(&svg)?;
-    let scene = Scene::new(svg).map_err(stringify)?;
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#unsigned-diagram-stage`.
+pub(crate) fn build_unsigned_demo() -> Result<(), String> {
+    let mut lines = Vec::new();
+    lines.extend(lines_for(
+        "u8",
+        NodeValues::U8(vec![0xAB]),
+        NodeValues::U8(vec![0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77]),
+        false,
+    ));
+    lines.extend(lines_for(
+        "u16",
+        NodeValues::U16(vec![0x1234]),
+        NodeValues::U16(vec![100, 250, 500, 1000, 65535]),
+        false,
+    ));
+    lines.extend(lines_for(
+        "u32",
+        NodeValues::U32(vec![0xDEAD_BEEF]),
+        NodeValues::U32(vec![
+            0x1111_1111, 0x2222_2222, 0x3333_3333, 0x4444_4444, 0x5555_5555, 0x6666_6666, 0x7777_7777, 0x8888_8888,
+            0x9999_9999,
+        ]),
+        true,
+    ));
+    lines.extend(lines_for(
+        "u64",
+        NodeValues::U64(vec![0xF0E1_D2C3_B4A5_9687]),
+        NodeValues::U64(vec![
+            0x0011_2233_4455_6677,
+            0x8899_AABB_CCDD_EEFF,
+            0x1234_5678_90AB_CDEF,
+            0xFEDC_BA09_8765_4321,
+        ]),
+        true,
+    ));
 
-    // Bounded to the diagram's own viewBox — see build_demo_tree's own comment for why.
-    let drag_options = DragOptions::default().with_bounds(Some(bounds));
+    let scene = build_lines_scene("unsigned-diagram", lines, true)?;
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see UNSIGNED_SCENE's own doc comment.
+    UNSIGNED_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+    Ok(())
+}
 
-    // Every row's single-value box shares this left-hand x; every row's multi-value box shares this one, to its right,
-    // regardless of how wide either box actually turns out to be.
-    const X_SINGLE: f64 = 20.0;
-    const X_MULTI: f64 = 260.0;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the signed integer demo: for each of `i8`, `i16`, `i32` and `i64`, a single value and several values, each
+/// written in decimal, hexadecimal and binary.
+///
+/// A sign is shown only for a value that is negative. A positive value, and zero, show none. Hexadecimal and binary show
+/// the value's two's-complement bytes, so an `i8` of `-2` reads `FE` in hexadecimal, and the most negative value of each
+/// width reads as a one followed by zeros. Every group of several values holds a negative, a zero and a positive value,
+/// and the extremes of its width.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#signed-diagram-stage`.
+pub(crate) fn build_signed_demo() -> Result<(), String> {
+    let mut lines = Vec::new();
+    lines.extend(lines_for(
+        "i8",
+        NodeValues::I8(vec![-2]),
+        NodeValues::I8(vec![i8::MIN, -42, -1, 0, 1, 42, 100, i8::MAX]),
+        false,
+    ));
+    lines.extend(lines_for(
+        "i16",
+        NodeValues::I16(vec![-2]),
+        NodeValues::I16(vec![i16::MIN, -1, 0, 1000, i16::MAX]),
+        false,
+    ));
+    lines.extend(lines_for(
+        "i32",
+        NodeValues::I32(vec![-1_234_567]),
+        NodeValues::I32(vec![i32::MIN, -100_000, -5, -1, 0, 5, 42, 100_000, i32::MAX]),
+        true,
+    ));
+    lines.extend(lines_for(
+        "i64",
+        NodeValues::I64(vec![-2]),
+        NodeValues::I64(vec![i64::MIN, -1, 0, i64::MAX]),
+        true,
+    ));
 
-    let place = |x: f64, y: f64, content: DataNodeContent| -> Result<(), String> {
-        let node = scene.add_data_node(Point::new(x, y), content).map_err(stringify)?;
-        scene.make_draggable_with(node, drag_options).map_err(stringify)
+    let scene = build_lines_scene("signed-diagram", lines, true)?;
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see SIGNED_SCENE's own doc comment.
+    SIGNED_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the hexdump demo: the same bytes as a hex dump in the format of `hexdump -C`, written the four ways that
+/// [`HexDumpFormat`] allows, and then a single byte and a short run of bytes. Each line of sixteen bytes is a cell of its
+/// own, and each node is a line of its own, since a dump line is wider than half the canvas.
+///
+/// - **Neither:** each line's offset is hidden, as it is by default, and the line that ends `hexdump -C` with the total
+///   length is not shown.
+/// - **With offsets:** [`HexDumpFormat::with_offset`] shows each line's offset.
+/// - **With the total length:** [`HexDumpFormat::with_total_length`] adds the final line, which holds the number of bytes.
+/// - **With both.**
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#hexdump-diagram-stage`.
+pub(crate) fn build_hexdump_demo() -> Result<(), String> {
+    const DUMPED: &[u8] = b"Hello, World!\n\x00\x01\x02\xFE\xFF Huffman codes";
+    let dump = |name: &str, bytes: &[u8], format: HexDumpFormat| {
+        item(
+            name,
+            DataNodeContent::new(NodeValues::U8(bytes.to_vec()), DataFormat::HexDump(format)),
+        )
     };
 
-    // u8: a single value, and 8 values — divides evenly by a power of two (2 rows of 4).
-    place(
-        X_SINGLE,
-        20.0,
-        DataNodeContent::new(NodeValues::U8(vec![0xAB]), DataFormat::Hexadecimal),
-    )?;
-    place(
-        X_MULTI,
-        20.0,
-        DataNodeContent::new(
-            NodeValues::U8(vec![0x00, 0x11, 0x22, 0x33, 0x44, 0x55, 0x66, 0x77]),
-            DataFormat::Binary,
-        ),
-    )?;
+    let lines = vec![
+        vec![dump("No offset, no total length (the default)", DUMPED, HexDumpFormat::new())],
+        vec![dump("With offsets", DUMPED, HexDumpFormat::new().with_offset(true))],
+        vec![dump(
+            "With the total length",
+            DUMPED,
+            HexDumpFormat::new().with_total_length(true),
+        )],
+        vec![dump(
+            "With offsets and the total length",
+            DUMPED,
+            HexDumpFormat::new().with_offset(true).with_total_length(true),
+        )],
+        vec![dump(
+            "A single byte",
+            &[0x7F],
+            HexDumpFormat::new().with_offset(true).with_total_length(true),
+        )],
+        vec![dump(
+            "Fewer than sixteen bytes",
+            b"Short line",
+            HexDumpFormat::new().with_offset(true).with_total_length(true),
+        )],
+    ];
 
-    // u16: a single value, and 5 values — no power-of-two divisor, so this falls back to the closest-to-square shape (3
-    // rows of 2, one slot blank). Decimal here, rather than hex/binary, to also show a format with no byte-group
-    // splitting.
-    place(
-        X_SINGLE,
-        140.0,
-        DataNodeContent::new(NodeValues::U16(vec![0x1234]), DataFormat::Hexadecimal),
-    )?;
-    place(
-        X_MULTI,
-        140.0,
-        DataNodeContent::new(NodeValues::U16(vec![100, 250, 500, 1000, 65535]), DataFormat::Decimal),
-    )?;
+    let scene = build_lines_scene("hexdump-diagram", lines, true)?;
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see HEXDUMP_SCENE's own doc comment.
+    HEXDUMP_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+    Ok(())
+}
 
-    // u32: a single value, and 9 values — a perfect square with no power-of-two divisor, landing on an exact 3x3 square
-    // via the same fallback rule.
-    place(
-        X_SINGLE,
-        290.0,
-        DataNodeContent::new(NodeValues::U32(vec![0xDEAD_BEEF]), DataFormat::Hexadecimal),
-    )?;
-    place(
-        X_MULTI,
-        290.0,
-        DataNodeContent::new(
-            NodeValues::U32(vec![
-                0x1111_1111, 0x2222_2222, 0x3333_3333, 0x4444_4444, 0x5555_5555, 0x6666_6666, 0x7777_7777, 0x8888_8888,
-                0x9999_9999,
-            ]),
-            DataFormat::Hexadecimal,
-        ),
-    )?;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the ASCII demo, which shows bytes as characters in the two ways [`DataFormat`] offers.
+///
+/// - **[`DataFormat::Ascii`]** writes every byte as one character in a cell of its own: a printable byte as itself, a
+///   space as `␣`, and anything else as `·`. It is shown for a single `u8`, for several, and for wider values, whose
+///   bytes are shown in byte order with no separator.
+/// - **[`DataFormat::PlainText`]** draws the whole run of bytes as one line of text in a single box with no grid. It
+///   accepts only `u8` values that are printable ASCII, and a space stays a space.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#ascii-diagram-stage`.
+pub(crate) fn build_ascii_demo() -> Result<(), String> {
+    const PLAIN: &[u8] = b"The quick brown fox jumps over the lazy dog";
 
-    // u64: a single value, and 4 values. 4 is both a perfect square and evenly divisible by a power of two. So the two
-    // layout rules agree on the same 2x2 shape.
-    place(
-        X_SINGLE,
-        440.0,
-        DataNodeContent::new(NodeValues::U64(vec![0xF0E1D2C3B4A59687]), DataFormat::Hexadecimal),
-    )?;
-    place(
-        X_MULTI,
-        440.0,
-        DataNodeContent::new(
-            NodeValues::U64(vec![
-                0x0011223344556677,
-                0x8899AABBCCDDEEFF,
-                0x1234567890ABCDEF,
-                0xFEDCBA0987654321,
-            ]),
-            DataFormat::Hexadecimal,
-        ),
-    )?;
-
-    // A single u64 under Binary: 64 digits, nybble-grouped and byte-separated. This cell renders far wider than it is
-    // tall — the extreme cell-aspect-ratio case GridLayout::Automatic's own doc comment describes. It is also the one
-    // GridLayout::MaxColumns exists to let a caller cap. A standalone row of its own, not paired with a multi-value
-    // box, since this single cell is already wide enough to need the room.
-    place(
-        X_SINGLE,
-        590.0,
-        DataNodeContent::new(NodeValues::U64(vec![0x0102030405060708]), DataFormat::Binary),
-    )?;
-
-    // The signed widths: a sign shows only for a negative value, and hexadecimal shows the two's-complement bytes. A
-    // single `i16`, and four `i32`s in decimal, one of them negative, one zero and one positive.
-    place(
-        X_SINGLE,
-        680.0,
-        DataNodeContent::new(NodeValues::I16(vec![-2]), DataFormat::Hexadecimal),
-    )?;
-    place(
-        X_MULTI,
-        680.0,
-        DataNodeContent::new(NodeValues::I32(vec![-5, 0, 42, -1_234_567]), DataFormat::Decimal),
-    )?;
-
-    // The same bytes as a hex dump, in the format of `hexdump -C`, with one cell for each line of sixteen bytes. The first
-    // hides each line's offset, which is the default. The second shows it. Neither shows the line that ends `hexdump -C` with the
-    // total length, which `HexDumpFormat::with_total_length` turns on. Each is a standalone row, since a line is wider than half the diagram.
-    const DUMPED: &[u8] = b"Hello, World!\n\x00\x01\x02\xFE\xFF Huffman codes";
-    place(
-        X_SINGLE,
-        790.0,
-        DataNodeContent::new(NodeValues::U8(DUMPED.to_vec()), DataFormat::HexDump(HexDumpFormat::new())),
-    )?;
-    // The second has a label, so it sits in a bordered box with its name over the black.
-    let labelled = scene
-        .add_named_data_node(
-            Point::new(X_SINGLE, 920.0),
-            "hexdump -C, with offsets and total length",
-            DataNodeContent::new(
-                NodeValues::U8(DUMPED.to_vec()),
-                DataFormat::HexDump(HexDumpFormat::new().with_offset(true).with_total_length(true)),
+    let lines = vec![
+        vec![
+            item(
+                "u8, one value",
+                DataNodeContent::new(NodeValues::U8(vec![b'A']), DataFormat::Ascii),
             ),
-        )
-        .map_err(stringify)?;
-    scene.make_draggable_with(labelled, drag_options).map_err(stringify)?;
+            item(
+                "u32, one value",
+                DataNodeContent::new(NodeValues::U32(vec![0x4142_4344]), DataFormat::Ascii),
+            ),
+            item(
+                "u16, several",
+                DataNodeContent::new(NodeValues::U16(vec![0x4869, 0x2074, 0x6865, 0x7265]), DataFormat::Ascii)
+                    .with_layout(GridLayout::Rows(1)),
+            ),
+        ],
+        vec![item(
+            "u8, several: a space shows as ␣ and an unprintable byte as ·",
+            DataNodeContent::new(NodeValues::U8(b"Hello, World!\n\x00\xFF".to_vec()), DataFormat::Ascii)
+                .with_layout(GridLayout::Rows(2)),
+        )],
+        vec![
+            item(
+                "Plain text, one run",
+                DataNodeContent::new(NodeValues::U8(PLAIN.to_vec()), DataFormat::PlainText),
+            ),
+            item(
+                "Plain text, short",
+                DataNodeContent::new(NodeValues::U8(b"svg-dom-graph".to_vec()), DataFormat::PlainText),
+            ),
+        ],
+    ];
 
-    // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
-    SCENE.with_borrow_mut(|slot| *slot = Some(scene));
-
+    let scene = build_lines_scene("ascii-diagram", lines, true)?;
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see ASCII_SCENE's own doc comment.
+    ASCII_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
     Ok(())
 }

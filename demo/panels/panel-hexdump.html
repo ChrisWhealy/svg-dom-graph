@@ -1,0 +1,18 @@
+<section class="section" id="panel-hexdump">
+    <h2>Hexdump</h2>
+    <p>A <code>DataFormat::HexDump</code> node shows its <code>u8</code> values as a hex dump, in the format of
+        <code>hexdump -C</code>: the bytes in hexadecimal, eight to a group, and then as characters, with anything that is
+        not printable shown as <code>.</code>. Each line holds sixteen bytes and is a cell of its own, and the node is
+        drawn on a black background like a terminal's.</p>
+    <p>Two details of the format are optional, and <code>HexDumpFormat</code> turns each on separately:</p>
+    <ul>
+        <li><code>with_offset</code> shows the offset of each line, as <code>hexdump -C</code> does. It is off by
+            default.</li>
+        <li><code>with_total_length</code> adds the final line of <code>hexdump -C</code>, which holds the number of
+            bytes in the dump. It is off by default.</li>
+    </ul>
+    <p>The first four nodes show the same bytes with neither, one and then both of these. The last two show how a dump
+        looks for a single byte, and for a run of bytes that is shorter than a line.</p>
+    <div class="canvas" id="hexdump-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

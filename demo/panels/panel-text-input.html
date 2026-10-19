@@ -1,0 +1,17 @@
+<section class="section" id="panel-text-input">
+    <h2>Text input node</h2>
+    <p>A <em>text input node</em> holds a text box the user types into. The text box is an ordinary HTML
+        <code>&lt;input&gt;</code> inside the node. So the caret, selection, the clipboard and input methods are the
+        browser's own, and the box is named for assistive technology by the node's label. Typing in it never pans or
+        zooms the diagram.</p>
+    <p>A callback is given the text each time it changes. Here it writes the text to the line below, and also gives its
+        bytes to the two nodes underneath: an ASCII node, which shows each byte as a character, and a hexdump node. Both
+        hold a buffer of 32 bytes. Text beyond that is not shown, and text shorter than that leaves the rest of the buffer
+        as zero bytes, which the ASCII node shows as <code>·</code>.</p>
+    <p>All the nodes can be dragged, like any other node, and the connectors follow.</p>
+    <p class="controls">Text typed in the node: <output id="text-input-echo"></output></p>
+    <p class="controls">Calls the callback has received: <output id="text-input-calls"></output>
+        <button id="text-input-replace" type="button">Replace the text from code</button></p>
+    <div class="canvas" id="text-input-diagram-stage">
+    </div>
+</section>

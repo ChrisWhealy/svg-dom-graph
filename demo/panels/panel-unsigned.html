@@ -1,0 +1,30 @@
+<section class="section" id="panel-unsigned">
+    <h2>Unsigned integers</h2>
+    <p>A node can display a grid of typed numeric values instead of a plain text label — see
+        <code>DataNodeContent</code>. This panel shows <code>u8</code>, <code>u16</code>, <code>u32</code> and
+        <code>u64</code>, each as a single value and as an array of several, in each of the three
+        <code>DataFormat</code>s for whole numbers: decimal, hexadecimal and binary.
+    </p>
+    <p>Hexadecimal and binary show each value's bytes in big-endian order (most-significant byte first), space-separated,
+        with no <code>0x</code> prefix. Binary groups the digits of each byte into nybbles.</p>
+    <p>Without additional formatting, a string consisting of multiple values cannot indicate where one value ends and
+        the next begins; consequently, each value in an array is displayed in its own small box, coloured according to
+        its type — a pastel shade per <code>u8</code>, <code>u16</code>, <code>u32</code> and <code>u64</code>. With a
+        single value, the type-specific background colour is applied directly to the node's own box, since there are no
+        sibling values from which it needs to be distinguished.
+    </p>
+    <p>The array lengths are deliberately varied to cover every shape the grid layout rule can produce:
+        <code>u8</code> uses 8 values, which divides evenly by a power of two (2 rows of 4); <code>u16</code> uses 5,
+        which has no power-of-two divisor at all, so it falls back to the closest-to-square shape (3 rows of 2, one slot
+        left blank); <code>u32</code> uses 9, a perfect square with no power-of-two divisor either, which that same
+        fallback happens to fit exactly (3 rows of 3); and <code>u64</code> uses 4, both a perfect square and evenly
+        divisible by a power of two, where the two rules agree on the same 2×2 shape. Every box is sized to fit its own
+        content automatically, and every box is draggable, exactly like any other node.
+    </p>
+    <p>The grid layout rule sizes a node by cell <em>count</em>, not physical width, so a single <code>u64</code> in
+        binary — 64 digits, nybble-grouped and byte-separated — renders far wider than it is tall. This is the extreme
+        case <code>GridLayout::MaxColumns</code> exists to let a caller cap.
+    </p>
+    <div class="canvas" id="unsigned-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

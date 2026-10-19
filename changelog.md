@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.37] - 2026-10-20
+
+## Changed
+
+- Rearranged panels in demo server (``)
+
+# [Released]
+
 ## [0.2.36] - 2026-10-16
 
 ## Added
@@ -30,8 +38,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct overlay paint order. Extend CDP test coverage (`95b1f5d`)
 - Prevent secondary selection from copying entire byte array (`165642b`)
 - Extend hexdump overlay to use delta-update (`ce53699`)
-
-# [Released]
 
 ## [0.2.35] - 2026-10-16
 

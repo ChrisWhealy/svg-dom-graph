@@ -78,9 +78,8 @@ a:hover {
 /* Each category is a native <details> disclosure widget.
    This makes the menu read as an expandable tree, instead of a single long list of undifferentiated items.
    See demo/index.html's nav comment for the category list.
-   All groups start collapsed. Expanding a group requires a user choice.
-   The first item of the first group is still selected on load. See the script at the bottom of index.html.
-   This happens even though that group starts closed. */
+   All groups start collapsed, except the one holding the current panel. The script at the bottom of index.html expands
+   that one, so a deep link or the first panel selected on load is never hidden. */
 .menu-group {
     margin: 1.25rem 0 0.4rem;
 }
@@ -90,7 +89,7 @@ a:hover {
     align-items: center;
     gap: 0.35rem;
     color: var(--text-dim);
-    font-size: 0.7rem;
+    font-size: 0.9rem;
     text-transform: uppercase;
     letter-spacing: 0.06em;
     cursor: pointer;
@@ -108,7 +107,7 @@ a:hover {
 .menu-group>summary::before {
     content: "▸";
     display: inline-block;
-    font-size: 0.65rem;
+    font-size: 0.95rem;
     line-height: 1;
     transition: transform 0.15s ease;
 }
@@ -126,7 +125,7 @@ a:hover {
     width: 100%;
     text-align: left;
     font: inherit;
-    font-size: 0.85rem;
+    font-size:0.85rem;
     color: var(--text);
     background: none;
     border: none;
@@ -137,6 +136,33 @@ a:hover {
 
 .menu-item:hover {
     background: var(--surface);
+}
+
+.menu-group>.menu-item {
+    margin-top: 0.15rem;
+}
+
+/* A group with only one panel has nothing to expand, so its heading is itself the menu item.
+   It is set like the other group headings, so that the menu reads as one list of headings. */
+.menu-item-top {
+    margin: 1.25rem 0 0.4rem;
+    padding: 0;
+    font-size: 0.9rem;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    color: var(--text-dim);
+    border-radius: 0;
+}
+
+.menu-item-top:hover {
+    background: none;
+    color: var(--text-muted);
+}
+
+.menu-item-top.active {
+    background: none;
+    color: var(--accent);
+    box-shadow: none;
 }
 
 .menu-item.active {
@@ -202,7 +228,8 @@ h2 code {
 
 /* The global box-sizing reset at the top of this file zeroes every element's own margin, h3's own default included
    — without this, an h3 butts straight up against whatever content precedes it, with no visible gap at all. */
-h3 {
+h3,
+h4 {
     margin-top: 1.5rem;
 }
 

@@ -1,0 +1,29 @@
+<section class="section" id="panel-selection-2d">
+    <h2>Cell selection: two-dimensional array</h2>
+    <p>A data node can highlight one of its own cells, or — for a two-dimensional grid — a whole row or column plus
+        a further cell within it, via <code>Scene::set_selection</code>. This is how a caller marks "where we
+        currently are" while stepping through an array's values, e.g. one element at a time.
+    </p>
+    <p>For a two-dimensional array, the walk highlights the whole row currently being processed in one colour. It also
+        highlights the specific cell within that row, in a second, stronger colour. Each example is stepped by its own
+        in-canvas selection toolbar.</p>
+    <p>The first array has ten values over four columns, so its last row is short by two cells. The second array has
+        three <code>u32</code> values, shown in hexadecimal, with its rows labelled alphabetically by
+        <code>LabellingStyle::Alphabetic</code>.</p>
+    <div class="canvas-row">
+        <div>
+            <p class="controls">
+                <span>Selected: <output id="selection-2d-index">not started</output></span>
+            </p>
+            <div class="canvas" id="selection-2d-diagram-stage">
+            </div>
+        </div>
+        <div>
+            <p class="controls">
+                <span>Selected: <output id="selection-2d-labelled-index">not started</output></span>
+            </p>
+            <div class="canvas" id="selection-2d-labelled-diagram-stage">
+            </div>
+        </div>
+    </div>
+</section>

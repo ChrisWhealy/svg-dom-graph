@@ -1,0 +1,14 @@
+<section class="section" id="panel-signed">
+    <h2>Signed integers</h2>
+    <p>The signed widths — <code>i8</code>, <code>i16</code>, <code>i32</code> and <code>i64</code> — are shown here as
+        a single value and as an array of several, in decimal, hexadecimal and binary. Each is given a deeper shade of
+        the colour of its unsigned equivalent.</p>
+    <p>A sign is shown only when a value is negative, so <code>-5</code> has one and <code>42</code> has none.
+        Hexadecimal and binary show the value's two's-complement representation, so <code>-2</code> as an
+        <code>i8</code> reads <code>FE</code> and as an <code>i16</code> reads <code>FF FE</code>, in the default
+        big-endian byte order.</p>
+    <p>Each array holds a negative value, zero, a positive value, and the smallest and largest value of its width. The
+        smallest is a one followed by zeros in binary, and has no positive counterpart.</p>
+    <div class="canvas" id="signed-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

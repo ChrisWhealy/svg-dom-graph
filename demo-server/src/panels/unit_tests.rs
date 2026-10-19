@@ -115,7 +115,7 @@ fn assemble_produces_the_real_projects_index_html() -> Result<(), String> {
     assemble(&source_demo_dir, &out_path).map_err(|e| format!("assemble failed against the real project: {e}"))?;
 
     let html = fs::read_to_string(&out_path).map_err(|e| format!("read assembled index.html: {e:?}"))?;
-    for &(id, _) in MANIFEST {
+    for (id, _) in manifest() {
         check(
             html.contains(&format!("id=\"{id}\"")),
             &format!("assembled index.html is missing {id:?}"),

@@ -1,0 +1,17 @@
+<section class="section" id="panel-size">
+    <h2>Pointer-sized integers</h2>
+    <p>A data node can hold <code>usize</code> and <code>isize</code>, the integers that are as wide as a pointer. Each is
+        a type of its own, with its own colour and its own name for assistive technology. They are shown here as a single
+        value and as an array of several, in decimal, hexadecimal and binary.</p>
+    <p>The width of a <code>usize</code> or an <code>isize</code> is that of the compilation target. This demo runs on
+        <code>wasm32</code>, where it is 32 bits, so the largest <code>usize</code> value is <code>4294967295</code> and
+        its hexadecimal representation occupies four bytes.
+    </p>
+    <p>On a 64-bit host it would have twenty decimal digits and occupy eight bytes. A
+        <code>wasm64-unknown-unknown</code> target exists, but it has no precompiled standard library, so building for it
+        would require the use of a nightly compiler. This crate is built and tested for <code>wasm32</code> only, so
+        <code>wasm64</code> is not a supported build target.
+    </p>
+    <div class="canvas" id="sizes-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

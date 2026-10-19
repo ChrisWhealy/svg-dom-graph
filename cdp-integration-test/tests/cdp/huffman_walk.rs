@@ -806,18 +806,15 @@ fn is_hex_byte(t: &str) -> bool {
     t.len() == 2 && t.bytes().all(|b| b.is_ascii_digit() || (b'A'..=b'F').contains(&b))
 }
 
-/// The bytes written so far, as the two hex digits the hex dump shows for each. Before the first, the scene says so in a
-/// plain box instead.
+/// The bytes written so far, as the two hex digits the hexadecimal node shows for each, in lower case. Before the first,
+/// the scene says so in a plain box instead.
 fn output(tab: &Tab) -> Result<Vec<String>, String> {
     if texts(tab)?.iter().any(|t| t == "Output bytes: none") {
         return Ok(Vec::new());
     }
-    // A line of the dump holds its characters between `|` marks. The marks over a selected byte are texts too, but they
-    // come after the lines.
-    let lines = after(tab, "Output bytes", |t| t.contains('|'))?;
-    Ok(lines
+    Ok(after(tab, "Output bytes", is_hex_byte)?
         .iter()
-        .flat_map(|line| line.split('|').next().unwrap_or("").split_whitespace().map(str::to_owned))
+        .map(|b| b.to_lowercase())
         .collect())
 }
 
@@ -831,20 +828,6 @@ fn highlight(tab: &Tab, name: &str) -> Result<Option<String>, String> {
         ),
     )?;
     Ok(label.split_once("also highlighted: ").map(|(_, cell)| cell.to_owned()))
-}
-
-/// The text of each visible mark the hex dump draws over its secondary bytes: the two hex digits, or the character. The
-/// mark's block has the secondary selection colour.
-fn secondary_marks(tab: &Tab) -> Result<Vec<String>, String> {
-    let json = text(
-        tab,
-        &format!(
-            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"Output bytes\"] rect')] \
-             .filter(r => r.getAttribute('visibility') === 'visible' && r.getAttribute('fill') === '#7fd8be') \
-             .map(r => r.nextElementSibling.textContent))"
-        ),
-    )?;
-    serde_json::from_str(&json).map_err(|e| format!("could not read the marks: {e}"))
 }
 
 /// Whether the scene's title names pass two.
@@ -916,17 +899,14 @@ fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
     goto(&tab, PASS_TWO + 3)?;
     check_eq(output(&tab)?, vec!["4e".to_owned()])?;
     check_eq(highlight(&tab, "Output bytes")?, Some("byte 0".to_owned()))?;
-    // The byte is marked in the hex dump, over its two hex digits and over its character.
-    check_eq(secondary_marks(&tab)?, ["4e", "N"].map(str::to_owned).to_vec())?;
     // The next step writes nothing, so the byte is no longer marked.
     goto(&tab, PASS_TWO + 4)?;
     check_eq(output(&tab)?, vec!["4e".to_owned()])?;
-    check_eq(highlight(&tab, "Output bytes")?, None)?;
-    check_eq(secondary_marks(&tab)?, Vec::<String>::new())
+    check_eq(highlight(&tab, "Output bytes")?, None)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The flush pads the last byte with zeros, shows the result in hexadecimal and compares its size with the input's.
+/// The flush pads the last byte with zeros, compares its size with the input's.
 #[test]
 fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<(), String> {
     let tab = open()?;
@@ -936,10 +916,6 @@ fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<()
         &format!("unexpected explanation {:?}", explanation(&tab)?),
     )?;
     check_eq(output(&tab)?, ["4e", "ac", "9c"].map(str::to_owned).to_vec())?;
-    check_eq(
-        after(&tab, "Result in hexadecimal", is_hex_byte)?,
-        ["4E", "AC", "9C"].map(str::to_owned).to_vec(),
-    )?;
 
     let summary = markdown(&tab, 2)?;
     check(summary.contains("Original: 11 bytes (88 bits)"), &summary)?;
@@ -969,7 +945,6 @@ fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
         &format!("unexpected explanation {:?}", explanation(&tab)?),
     )?;
     check_eq(output(&tab)?, vec!["00".to_owned()])?;
-    check_eq(after(&tab, "Result in hexadecimal", is_hex_byte)?, vec!["00".to_owned()])?;
     check(
         markdown(&tab, 2)?.contains("which is 8 bits of code and 0 of padding"),
         "the summary counts no padding",
@@ -977,18 +952,18 @@ fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every byte of a multi-byte character is its own cell of the input array.
+/// Every byte of a multi-byte character is its own cell of the input dump.
 #[test]
-fn the_input_array_has_a_cell_for_each_byte_not_each_character() -> Result<(), String> {
+fn the_input_dump_has_a_cell_for_each_byte_not_each_character() -> Result<(), String> {
     let tab = open()?;
     set_text(&tab, "é")?;
     // 5 positions of pass one: counting, 1 merge, the lengths and 2 codes.
     goto(&tab, 5)?;
-    check_eq(after(&tab, "Input bytes", |t| t == "·")?, vec!["·".to_owned(), "·".to_owned()])?;
-    // The hexadecimal array tells the two bytes apart.
-    check_eq(
-        after(&tab, "Input bytes in hexadecimal", is_hex_byte)?,
-        vec!["C3".to_owned(), "A9".to_owned()],
+    // The hex dump tells the two bytes apart, even though neither is printable on its own.
+    let lines = after(&tab, "Input bytes", |t| t.contains('|'))?;
+    check(
+        lines.iter().any(|l| l.to_lowercase().contains("c3 a9")),
+        &format!("the dump does not show c3 a9: {lines:?}"),
     )?;
     check(
         explanation(&tab)?.starts_with("Byte 1 of 2: '0xC3'"),

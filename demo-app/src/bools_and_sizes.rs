@@ -1,8 +1,11 @@
-//! `panel-bool-size` / `#bools-sizes-diagram`: Booleans written every way a `BoolFormat` can write them, a truth table
-//! of logical operator nodes, and the pointer-sized `usize` and `isize`. See [`build_bools_and_sizes_demo`]'s own doc
-//! comment for what each node shows.
+//! The Boolean and pointer-sized integer panels:
+//!
+//! - `panel-bool` / `#bools-diagram`, `#bools-truefalse-diagram`, `#bools-bit-diagram` and `#bools-icon-diagram` —
+//!   [`build_bools_demo`]: Booleans written every way a `BoolFormat` can write them, and a truth table of logical
+//!   operator nodes for each of the three.
+//! - `panel-size` / `#sizes-diagram` — [`build_sizes_demo`]: the pointer-sized `usize` and `isize`.
 
-use crate::util::{ensure_svg_in, resize_svg, stringify};
+use crate::util::{Item, build_lines_scene, ensure_svg_in, item, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -17,16 +20,14 @@ use svg_dom_graph::scene::{
 pub(crate) const SOURCE: &str = include_str!("bools_and_sizes.rs");
 
 thread_local! {
-    // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`.
-    static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+    // Same reasoning as `tree::SCENE`'s own doc comment, for each demo's own, separate `Scene`s.
+    static BOOLS_SCENES: RefCell<Vec<Scene>> = const { RefCell::new(Vec::new()) };
+    static SIZES_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-/// The space left of the first node and above the first line, and between one node and the next, and one line and the
-/// next.
+/// The space left of the first node and above the first line of a truth table.
 const MARGIN: f64 = 20.0;
-const H_GAP: f64 = 30.0;
-const V_GAP: f64 = 36.0;
-/// Room east of the widest line for the zoom toolbar.
+/// Room east of the widest column for the zoom toolbar.
 const TOOLBAR_ROOM: f64 = 80.0;
 
 /// The distance between the left-hand edge of one truth table column and the next, and between one row and the next.
@@ -46,29 +47,17 @@ const ISIZE_LABELS: &[&str] = &["min", "-1", "zero", "max"];
 /// What a two-input logical operator does to its operands, worked out here in plain Rust.
 type Logic = fn(bool, bool) -> bool;
 
-/// How each row of the truth table writes its operands and its result: as marks, as bits, as the byte that a Boolean is
-/// held in, and as the words. Every row has a format of its own, so that one table shows each way of writing a Boolean.
-const ROW_FORMATS: [DataFormat; 4] = [
-    DataFormat::Bool(BoolFormat::Icon),
-    DataFormat::Bool(BoolFormat::Bit),
-    DataFormat::Hexadecimal,
-    DataFormat::Bool(BoolFormat::TrueFalse),
-];
-
 /// Every pair of operands of a two-input logical operator, in the order that a truth table lists them.
 const OPERANDS: [(bool, bool); 4] = [(false, false), (false, true), (true, false), (true, true)];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One node of a line: a `name`, and its `content`.
-struct Item {
-    name: &'static str,
-    content: DataNodeContent,
-}
+/// The three ways of writing a Boolean, with the id of the canvas that shows a truth table in each.
+const TRUTH_TABLES: [(&str, BoolFormat); 3] = [
+    ("bools-truefalse-diagram", BoolFormat::TrueFalse),
+    ("bools-bit-diagram", BoolFormat::Bit),
+    ("bools-icon-diagram", BoolFormat::Icon),
+];
 
-fn item(name: &'static str, content: DataNodeContent) -> Item {
-    Item { name, content }
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A column of `values` in `format`, each labelled with the matching one of `labels`.
 fn column(values: NodeValues, format: DataFormat, labels: &'static [&'static str]) -> DataNodeContent {
     DataNodeContent::new(values, format)
@@ -76,108 +65,87 @@ fn column(values: NodeValues, format: DataFormat, labels: &'static [&'static str
         .with_labelling_style(LabellingStyle::Text(labels))
 }
 
-/// A column of `true` and `false` in `format`.
-fn flags(format: DataFormat) -> DataNodeContent {
-    column(NodeValues::Bool(vec![true, false]), format, BOOL_LABELS)
-}
-
 /// One Boolean in `format`.
 fn flag(value: bool, format: DataFormat) -> DataNodeContent {
     DataNodeContent::new(NodeValues::Bool(vec![value]), format)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the demo, one line of nodes at a time and then a truth table. Each line is read across.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the Boolean demo: a Boolean in every format, and then a truth table for each of the three `BoolFormat`s.
 ///
-/// - **Line 1: a Boolean in every format.** The words, the bits, and a green check mark and a red cross. Hexadecimal is
+/// - **Booleans in every format.**
+///
+///   One line for each of the words, the bits, and an icon (a green check mark or a red cross).
+///   A line holds `true` and `false` on their own and then both in an array. A fourth line shows hexadecimal, which is
 ///   the byte that a Boolean is held in. Every format gives `true` and `false` a cell of the same width, so a node that
-///   changes from one to the other does not outgrow its cells. A screen reader is told `true` or `false` for a mark,
-///   and not the name of its glyph.
-/// - **Line 2: `usize` and `isize`.** Their width is that of the target the demo runs on. That is 32 bits on `wasm32`,
-///   so the largest `usize` has ten digits and its hexadecimal is four bytes, where on a 64-bit host it would have
-///   twenty digits and eight bytes. The most negative `isize` is the widest in its node, since its sign makes it a
-///   character longer than the largest.
-/// - **The truth table.** One column for each of `AND`, `OR` and `XOR`, and a row for each pair of operands. The
-///   operands and the result of a row are all written one way: the first row as marks, the second as bits, the third as
-///   the byte that a Boolean is held in, and the fourth as the words. The logical operators accept Booleans in any
-///   format, and the result of each is worked out here in plain Rust, as it is for every operator node. The shifts, the
-///   rotations and the arithmetic operators do not accept a Boolean, since there is no sum of two of them and no `true`
-///   to rotate.
+///   changes from one to the other does not outgrow its cells. A screen reader is told `true` or `false` for a mark, and
+///   not the name of its glyph.
+/// - **Three truth tables.**
+///
+///   Each has a column for each of `AND`, `OR` and `XOR`, and a row for each pair of operands,
+///   and each writes its operands and its results in one `BoolFormat`: first the words, then the bits, then the marks.
+///   The logical operators accept Booleans in any format, and the result of each is worked out here in plain Rust, as
+///   it is for every operator node. The shifts, the rotations and the arithmetic operators do not accept a Boolean,
+///   since there is no sum of two of them and no `true` to rotate.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if `index.html` is missing `#bools-sizes-diagram`.
-pub(crate) fn build_bools_and_sizes_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
-    ensure_svg_in(
-        &document,
-        "bools-sizes-diagram-stage",
-        "bools-sizes-diagram",
-        Size::new(1000.0, 1200.0),
-    )?;
-    let svg = SvgRoot::attach("bools-sizes-diagram").map_err(stringify)?;
-    let scene = Scene::new(svg).map_err(stringify)?;
-
-    let lines = [
-        vec![
-            item("true and false", flags(DataFormat::Bool(BoolFormat::TrueFalse))),
-            item("As bits", flags(DataFormat::Bool(BoolFormat::Bit))),
-            item("As icons", flags(DataFormat::Bool(BoolFormat::Icon))),
-            item("As a byte", flags(DataFormat::Hexadecimal)),
-        ],
-        vec![
-            item(
-                "usize, decimal",
-                column(NodeValues::Usize(vec![0, 1, usize::MAX]), DataFormat::Decimal, USIZE_LABELS),
-            ),
-            item(
-                "usize, hexadecimal",
-                column(NodeValues::Usize(vec![0, 1, usize::MAX]), DataFormat::Hexadecimal, USIZE_LABELS),
-            ),
-            item(
-                "isize, decimal",
-                column(
-                    NodeValues::Isize(vec![isize::MIN, -1, 0, isize::MAX]),
-                    DataFormat::Decimal,
-                    ISIZE_LABELS,
-                ),
-            ),
-            item(
-                "isize, hexadecimal",
-                column(
-                    NodeValues::Isize(vec![isize::MIN, -1, 0, isize::MAX]),
-                    DataFormat::Hexadecimal,
-                    ISIZE_LABELS,
-                ),
-            ),
-        ],
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#bools-diagram-stage` or the stage of any
+/// truth table.
+pub(crate) fn build_bools_demo() -> Result<(), String> {
+    let formats: [(&str, DataFormat); 4] = [
+        ("as text", DataFormat::Bool(BoolFormat::TrueFalse)),
+        ("as bits", DataFormat::Bool(BoolFormat::Bit)),
+        ("as icons", DataFormat::Bool(BoolFormat::Icon)),
+        ("as a byte", DataFormat::Hexadecimal),
     ];
+    let lines: Vec<Vec<Item>> = formats
+        .into_iter()
+        .map(|(name, format)| {
+            vec![
+                item(format!("true, {name}"), flag(true, format)),
+                item(format!("false, {name}"), flag(false, format)),
+                item(
+                    format!("An array, {name}"),
+                    column(NodeValues::Bool(vec![true, false]), format, BOOL_LABELS),
+                ),
+            ]
+        })
+        .collect();
+    let mut scenes = vec![build_lines_scene("bools-diagram", lines, false)?];
 
-    let mut y = MARGIN;
-    let mut right: f64 = 0.0;
-    for line in lines {
-        let mut x = MARGIN;
-        let mut tallest: f64 = 0.0;
-        for Item { name, content } in line {
-            let node = scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)?;
-            let rect: Rect = scene.node_rect(node).map_err(stringify)?;
-            x += rect.size.width + H_GAP;
-            tallest = tallest.max(rect.size.height);
-        }
-        right = right.max(x - H_GAP);
-        y += tallest + V_GAP;
+    for (svg_id, format) in TRUTH_TABLES {
+        scenes.push(build_truth_table(svg_id, DataFormat::Bool(format))?);
     }
 
-    let truth_table: [(BinaryOperator, Logic); 3] = [
+    // Keeps every Scene's only strong handle alive for the page's lifetime — see BOOLS_SCENES's own doc comment.
+    BOOLS_SCENES.with_borrow_mut(|slot| *slot = scenes);
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws a truth table into `#{svg_id}` inside `#{svg_id}-stage`: one column for each of `AND`, `OR` and `XOR`, and in
+/// each a row for every pair of operands. Both operands, and the result, are written in `format`. Returns the scene.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing the stage, or if any library call fails.
+fn build_truth_table(svg_id: &str, format: DataFormat) -> Result<Scene, String> {
+    let document = crate::util::document()?;
+    ensure_svg_in(&document, &format!("{svg_id}-stage"), svg_id, Size::new(1000.0, 800.0))?;
+    let svg = SvgRoot::attach(svg_id).map_err(stringify)?;
+    let scene = Scene::new(svg).map_err(stringify)?;
+
+    let operators: [(BinaryOperator, Logic); 3] = [
         (BinaryOperator::And, |a, b| a & b),
         (BinaryOperator::Or, |a, b| a | b),
         (BinaryOperator::Xor, |a, b| a ^ b),
     ];
-    let mut bottom = y;
-    for (column, (operator, apply)) in truth_table.into_iter().enumerate() {
+    let mut bottom = MARGIN;
+    for (column, (operator, apply)) in operators.into_iter().enumerate() {
         let x = MARGIN + COLUMN_PITCH * column as f64;
-        for (row, ((a, b), format)) in OPERANDS.into_iter().zip(ROW_FORMATS).enumerate() {
-            let top = y + ROW_PITCH * row as f64;
+        for (row, (a, b)) in OPERANDS.into_iter().enumerate() {
+            let top = MARGIN + ROW_PITCH * row as f64;
             let first = scene
                 .add_named_data_node(Point::new(x, top), "A", flag(a, format))
                 .map_err(stringify)?;
@@ -196,18 +164,62 @@ pub(crate) fn build_bools_and_sizes_demo() -> Result<(), String> {
                 .map_err(stringify)?;
         }
     }
-    let table_right = MARGIN + COLUMN_PITCH * truth_table.len() as f64;
-    right = right.max(table_right);
+    let right = MARGIN + COLUMN_PITCH * operators.len() as f64;
 
-    resize_svg(
-        &document,
-        "bools-sizes-diagram",
-        Size::new(right + MARGIN + TOOLBAR_ROOM, bottom + MARGIN),
-    )?;
+    resize_svg(&document, svg_id, Size::new(right + MARGIN + TOOLBAR_ROOM, bottom + MARGIN))?;
     scene.refresh_layout().map_err(stringify)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
+    Ok(scene)
+}
 
-    // Keeps this Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
-    SCENE.with_borrow_mut(|slot| *slot = Some(scene));
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the pointer-sized integer demo: `usize` and `isize`, each as a single value and as a column of several, in
+/// decimal, hexadecimal and binary.
+///
+/// Their width is that of the target the demo runs on. That is 32 bits on `wasm32`, so the largest `usize` has ten
+/// digits and its hexadecimal is four bytes, where on a 64-bit host it would have twenty digits and eight bytes. The most
+/// negative `isize` is the widest in its node, since its sign makes it a character longer than the largest.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#sizes-diagram-stage`.
+pub(crate) fn build_sizes_demo() -> Result<(), String> {
+    let formats: [(&str, DataFormat); 3] = [
+        ("decimal", DataFormat::Decimal),
+        ("hexadecimal", DataFormat::Hexadecimal),
+        ("binary", DataFormat::Binary),
+    ];
+    let usize_one = || NodeValues::Usize(vec![255]);
+    let usize_many = || NodeValues::Usize(vec![0, 1, usize::MAX]);
+    let isize_one = || NodeValues::Isize(vec![-2]);
+    let isize_many = || NodeValues::Isize(vec![isize::MIN, -1, 0, isize::MAX]);
+
+    let line = |name: &'static str, one: bool| -> Vec<Item> {
+        formats
+            .into_iter()
+            .map(|(format_name, format)| {
+                let content = match (name, one) {
+                    ("usize", true) => DataNodeContent::new(usize_one(), format),
+                    ("usize", false) => column(usize_many(), format, USIZE_LABELS),
+                    (_, true) => DataNodeContent::new(isize_one(), format),
+                    (_, false) => column(isize_many(), format, ISIZE_LABELS),
+                };
+                item(
+                    format!("{name}, {}, {format_name}", if one { "one value" } else { "several" }),
+                    content,
+                )
+            })
+            .collect()
+    };
+    let lines = vec![
+        line("usize", true),
+        line("usize", false),
+        line("isize", true),
+        line("isize", false),
+    ];
+
+    let scene = build_lines_scene("sizes-diagram", lines, false)?;
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see SIZES_SCENE's own doc comment.
+    SIZES_SCENE.with_borrow_mut(|slot| *slot = Some(scene));
     Ok(())
 }

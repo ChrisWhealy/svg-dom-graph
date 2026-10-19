@@ -5,6 +5,10 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::{
+    NodeId,
+    scene::{DataNodeContent, DragOptions, Scene},
+};
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::HtmlInputElement;
 
@@ -737,4 +741,93 @@ pub(crate) fn all_if(unreached: bool, count: usize) -> Vec<usize> {
 pub(crate) fn after(at: Option<usize>, count: usize) -> Vec<usize> {
     let first = at.map_or(0, |n| n + 1);
     (first..count).collect()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One data node of a line in [`lay_out_lines`]: a `name` shown over its box, and its `content`.
+pub(crate) struct Item {
+    pub(crate) name: String,
+    pub(crate) content: DataNodeContent,
+}
+
+/// An [`Item`] named `name` that holds `content`.
+pub(crate) fn item(name: impl Into<String>, content: DataNodeContent) -> Item {
+    Item { name: name.into(), content }
+}
+
+/// The space left of the first node and above the first line of [`lay_out_lines`], and between one node and the next,
+/// and one line and the next.
+pub(crate) const MARGIN: f64 = 20.0;
+const H_GAP: f64 = 30.0;
+const V_GAP: f64 = 36.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Adds each item of each of `lines` to `scene` as a named data node, left to right along a line and top to bottom down
+/// the lines, starting `top` below the top of the canvas. Every box is as wide and as tall as its own content needs, so
+/// the layout is measured as it is built: a node starts where the one before it ended, and a line starts below the
+/// tallest node of the line above.
+///
+/// Returns the right-hand and bottom edges of everything placed, so the caller can size the canvas to fit, and the id of
+/// every node, in the order placed.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails.
+pub(crate) fn lay_out_lines(scene: &Scene, lines: Vec<Vec<Item>>, top: f64) -> Result<(f64, f64, Vec<NodeId>), String> {
+    let mut y = top;
+    let mut ids = Vec::new();
+    let mut right: f64 = 0.0;
+    for line in lines {
+        let mut x = MARGIN;
+        let mut tallest: f64 = 0.0;
+        for Item { name, content } in line {
+            let node = scene.add_named_data_node(Point::new(x, y), &name, content).map_err(stringify)?;
+            ids.push(node);
+            let rect: Rect = scene.node_rect(node).map_err(stringify)?;
+            x += rect.size.width + H_GAP;
+            tallest = tallest.max(rect.size.height);
+        }
+        right = right.max(x - H_GAP);
+        y += tallest + V_GAP;
+    }
+    Ok((right, y - V_GAP, ids))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the usual shape of a data-types panel: an empty `<svg id="{svg_id}">` in `{svg_id}-stage`, `lines` laid out
+/// in it by [`lay_out_lines`], and the canvas then resized to fit what was laid out, with room for the zoom toolbar on
+/// the east side. Returns the scene, for the caller to keep alive.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#{svg_id}-stage`, or if any library call fails.
+pub(crate) fn build_lines_scene(svg_id: &str, lines: Vec<Vec<Item>>, draggable: bool) -> Result<Scene, String> {
+    /// Room east of the widest line for the zoom toolbar.
+    const TOOLBAR_ROOM: f64 = 80.0;
+
+    let document = document()?;
+    ensure_svg_in(&document, &format!("{svg_id}-stage"), svg_id, Size::new(1000.0, 1000.0))?;
+    let svg = SvgRoot::attach(svg_id).map_err(stringify)?;
+    let scene = Scene::new(svg).map_err(stringify)?;
+
+    let (right, bottom, nodes) = lay_out_lines(&scene, lines, MARGIN)?;
+    let size = Size::new(right + MARGIN + TOOLBAR_ROOM, bottom + MARGIN);
+    resize_svg(&document, svg_id, size)?;
+    scene.refresh_layout().map_err(stringify)?;
+
+    if draggable {
+        // Bounded to the canvas as it is now sized, so a node cannot be dragged out of sight.
+        let bounds = Rect {
+            origin: Point::new(0.0, 0.0),
+            size,
+        };
+        let options = DragOptions::default().with_bounds(Some(bounds));
+        for node in nodes {
+            scene.make_draggable_with(node, options).map_err(stringify)?;
+        }
+    }
+    scene
+        .show_toolbar(svg_dom_graph::scene::ToolbarOptions::new(svg_dom_graph::scene::Side::East))
+        .map_err(stringify)?;
+    Ok(scene)
 }

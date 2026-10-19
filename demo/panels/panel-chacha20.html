@@ -10,10 +10,12 @@
     <p>The quarter round takes four words, <code>a</code>, <code>b</code>, <code>c</code> and <code>d</code>, and
         mixes them with three operations: addition, XOR and rotation. It has 12 steps:</p>
     <pre style="margin-bottom: 1rem;">
-        <code>a += b; d ^= a; d &lt;&lt;&lt;= 16;
+        <code>
+            a += b; d ^= a; d &lt;&lt;&lt;= 16;
             c += d; b ^= c; b &lt;&lt;&lt;= 12;
             a += b; d ^= a; d &lt;&lt;&lt;= 8;
-            c += d; b ^= c; b &lt;&lt;&lt;= 7;</code>
+            c += d; b ^= c; b &lt;&lt;&lt;= 7;
+        </code>
     </pre>
     <p>Each word runs down a column of its own. Every step is an operator node in the column of the word it updates:
         <code>ADD</code> for <code>+=</code>, <code>XOR</code> for <code>^=</code> and <code>ROTL</code> for

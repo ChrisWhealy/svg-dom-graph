@@ -1,0 +1,20 @@
+<section class="section" id="panel-ascii">
+    <h2>ASCII</h2>
+    <p>Bytes that are text can be shown as characters instead of numbers, in two ways.</p>
+    <dl>
+        <dt><code>DataFormat::Ascii</code></dt>
+        <dd>
+            <p>Every byte is one character, in a cell of its own. A printable ASCII byte is shown as itself, a space as
+                <code>␣</code>, so that a blank cell is never mistaken for a missing one, and any other byte as
+                <code>·</code>. A value wider than one byte shows its bytes in byte order with no separator, as the
+                <code>u32</code> and <code>u16</code> nodes below do.</p>
+        </dd>
+        <dt><code>DataFormat::PlainText</code></dt>
+        <dd>
+            <p>The whole run of bytes is one line of text in a single box with no grid, and the node counts as a single
+                value. The values must be <code>u8</code> and printable ASCII; a space stays a space.</p>
+        </dd>
+    </dl>
+    <div class="canvas" id="ascii-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

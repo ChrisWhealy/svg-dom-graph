@@ -15,16 +15,21 @@
 //!   doc comment for what it demonstrates.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
-//! - `panel-data` / `#data-diagram` — [`data::build_data_demo`]. It shows draggable nodes whose content is a
+//! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
+//!   [`data::build_signed_demo`]: draggable nodes whose content is a
 //!   [`DataNodeContent`](svg_dom_graph::scene::DataNodeContent) grid of values rather than a plain text label. There is
-//!   one single-value and one multi-value node per integer width (`u8`/`u16`/`u32`/`u64`). The multi-value counts are
-//!   chosen to cover every combination the grid layout rule can produce. See that function's own doc comment for
-//!   exactly which.
+//!   one single-value and one multi-value node per integer width, in decimal, hexadecimal and binary. The multi-value
+//!   counts are chosen to cover every combination the grid layout rule can produce.
+//! - `panel-hexdump` / `#hexdump-diagram` — [`data::build_hexdump_demo`]: bytes as `hexdump -C` shows them, with and
+//!   without each line's offset and the total length.
+//! - `panel-ascii` / `#ascii-diagram` — [`data::build_ascii_demo`]: bytes as characters, a cell each or as a run of text.
 //! - `panel-128-bit` / `#wide-diagram` — [`wide_values::build_wide_demo`]: a `u128` and an `i128` across their whole
 //!   range, and a `Uuid` of every version written in every way a `UuidFormat` can write it, including the two byte
 //!   layouts a UUID can be stored in.
-//! - `panel-bool-size` / `#bools-sizes-diagram` — [`bools_and_sizes::build_bools_and_sizes_demo`]: a Boolean in every
-//!   `BoolFormat`, `usize` and `isize` at the width of the target, and a truth table of `AND`, `OR` and `XOR` nodes.
+//! - `panel-size` / `#sizes-diagram` — [`bools_and_sizes::build_sizes_demo`]: `usize` and `isize` at the width of the
+//!   target, singly and in arrays, in every format.
+//! - `panel-bool` / `#bools-diagram` — [`bools_and_sizes::build_bools_demo`]: a Boolean in every `BoolFormat`, and a
+//!   truth table of `AND`, `OR` and `XOR` nodes for each of the three.
 //! - `panel-operators-unary` / `#operators-unary-diagram` — [`operators_unary::build_unary_operator_demo`]: one operand
 //!   node feeding an operator node, for every unary operator this crate names.
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
@@ -37,13 +42,15 @@
 //!   the operator-chaining example that motivated this whole family of panels. Every result any of the four operator
 //!   panels shows is computed here with plain Rust integer ops, never by the library itself — see each function's own
 //!   doc comment.
-//! - `panel-selection` / `#selection-1d-diagram` and `#selection-2d-diagram` — [`selection::build_selection_demo`]: a
-//!   one-dimensional and a two-dimensional array, each with its own "Previous"/"Next" buttons stepping
-//!   [`Scene::set_selection`](svg_dom_graph::scene::Scene::set_selection) through its values. See that function's own
-//!   doc comment for what each demonstrates. A hex dump of some bytes is stepped a byte at a time too. Each step marks
-//!   the byte's hex digits and its character, and its toolbar is drawn inside the node's own box.
-//! - `panel-text-nodes` / `#text-nodes-diagram` — [`text_nodes::build_text_nodes_demo`]: a Markdown node using every
-//!   construct it supports, and a text input node whose text is echoed below the diagram as it is typed.
+//! - `panel-selection-1d`, `panel-selection-2d`, `panel-selection-hexdump` and `panel-selection-thetac` —
+//!   [`selection::build_selection_1d_demo`], [`selection::build_selection_2d_demo`],
+//!   [`selection::build_selection_hexdump_demo`] and [`selection::build_selection_thetac_demo`]: an array stepped
+//!   through by its own in-canvas selection toolbar, in one dimension, in two, as the bytes of a hex dump, and row by row
+//!   through an operator chain.
+//! - `panel-markdown` / `#markdown-diagram` — [`text_nodes::build_markdown_demo`]: a Markdown node using every construct
+//!   it supports.
+//! - `panel-text-input` / `#text-input-diagram` — [`text_nodes::build_text_input_demo`]: a text input node, whose text
+//!   appears in an ASCII node and a hexdump node as it is typed.
 //! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]. It shows SHA3's `Theta` function as a parent
 //!   `Scene`. Its `ThetaC`, `ThetaD`, and `XOR loop` nodes are all genuine container nodes, each owning its own nested
 //!   `Scene`. They are click-to-enter and &times;-to-exit, stepped by its own Next/Prev buttons. All three are real;
@@ -160,16 +167,24 @@ demo_gallery! {
     "panel-tree" => tree::build_demo_tree,
     "panel-elbow" => elbow::build_elbow_demo,
     "panel-edge-anchors" => edge_anchors::build_edge_anchors_demo,
-    "panel-data" => data::build_data_demo,
+    "panel-unsigned" => data::build_unsigned_demo,
+    "panel-signed" => data::build_signed_demo,
+    "panel-hexdump" => data::build_hexdump_demo,
+    "panel-ascii" => data::build_ascii_demo,
     "panel-float" => floats::build_float_demo,
     "panel-128-bit" => wide_values::build_wide_demo,
-    "panel-bool-size" => bools_and_sizes::build_bools_and_sizes_demo,
+    "panel-size" => bools_and_sizes::build_sizes_demo,
+    "panel-bool" => bools_and_sizes::build_bools_demo,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
-    "panel-selection" => selection::build_selection_demo,
-    "panel-text-nodes" => text_nodes::build_text_nodes_demo,
+    "panel-selection-1d" => selection::build_selection_1d_demo,
+    "panel-selection-2d" => selection::build_selection_2d_demo,
+    "panel-selection-hexdump" => selection::build_selection_hexdump_demo,
+    "panel-selection-thetac" => selection::build_selection_thetac_demo,
+    "panel-markdown" => text_nodes::build_markdown_demo,
+    "panel-text-input" => text_nodes::build_text_input_demo,
     "panel-theta" => theta::build_theta_demo + theta::FILES,
     "panel-sha1" => sha1::build_sha1_demo + sha1::FILES,
     "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,

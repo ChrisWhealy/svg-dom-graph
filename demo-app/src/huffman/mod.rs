@@ -108,8 +108,6 @@ const TABLE_GAP: f64 = 40.0;
 const ROW_HEIGHT: f64 = 26.0;
 /// How many positions the toolbar's `Prev 8` and `Next 8` buttons move.
 const STRIDE: usize = 8;
-/// How many input bytes pass two draws in a row.
-const INPUT_COLUMNS: usize = 16;
 /// What a named data node adds to the width of its own grid: the frame and the room for its name. The measured width of
 /// a grid does not include it.
 const NAMED_FRAME: f64 = 40.0;
@@ -425,10 +423,10 @@ fn draw_row(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the input of pass two as two arrays with one cell for each byte, with their top left at `(left, top)`, and
-/// returns the lowest edge. The first shows each byte as a character, and the second shows the same bytes in
-/// hexadecimal, since a byte that is not printable ASCII, such as one of a multi-byte character, is only a dot in the
-/// first. The byte whose code is being packed at step `index` is marked in both, and no byte is at the flush.
+/// Draws the input of pass two as one hex dump with one cell for each line of sixteen bytes, with its top left at
+/// `(left, top)`, and returns the lowest edge. The dump shows each byte in hexadecimal and as a character, since a byte
+/// that is not printable ASCII, such as one of a multi-byte character, is only a dot in the character column. The byte
+/// whose code is being packed at step `index` is marked, and no byte is at the flush.
 ///
 /// # Errors
 ///
@@ -436,22 +434,14 @@ fn draw_row(
 fn draw_input_array(scene: &Scene, trace: &Trace, index: usize, left: f64, top: f64) -> Result<f64, String> {
     let bytes: Vec<u8> = trace.packed.steps.iter().map(|s| s.symbol).collect();
     let marked: &[usize] = if index < bytes.len() { &[index] } else { &[] };
-    let mut y = top;
-    for (name, format) in [
-        ("Input bytes", DataFormat::Ascii),
-        ("Input bytes in hexadecimal", DataFormat::Hexadecimal),
-    ] {
-        let content = bytes_content(bytes.clone(), format, INPUT_COLUMNS);
-        y = draw_row(scene, name, Some(content), marked, left, y)?.1 + GAP;
-    }
-    Ok(y - GAP)
+    Ok(draw_row(scene, "Input bytes", Some(dump_content(bytes)), marked, left, top)?.1)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The right and bottom edges of something drawn.
 type Extent = (f64, f64);
 
-/// The bytes of one hexadecimal row of the result, and the grid of the finished output in hexadecimal.
+/// The bytes in one hexadecimal row of the output.
 const RESULT_COLUMNS: usize = 16;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -461,8 +451,8 @@ fn bytes_content(bytes: Vec<u8>, format: DataFormat, columns: usize) -> DataNode
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The output of pass two as a hex dump in the format of `hexdump -C`, with one cell for each line of sixteen bytes.
-fn output_content(bytes: Vec<u8>) -> DataNodeContent {
+/// `bytes` as a hex dump in the format of `hexdump -C`, with one cell for each line of sixteen bytes.
+fn dump_content(bytes: Vec<u8>) -> DataNodeContent {
     DataNodeContent::new(NodeValues::U8(bytes), DataFormat::HexDump(HexDumpFormat::new()))
 }
 
@@ -493,26 +483,25 @@ fn bits_to_pack_width(scene: &Scene, trace: &Trace) -> Result<f64, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
-/// widest of a full line of the output as a hex dump, of the result in hexadecimal, and of the bits to pack beside the
+/// widest of a full row of the output in hexadecimal and of the bits to pack beside the
 /// pending bits, which are at most seven.
 ///
 /// # Errors
 ///
 /// Returns `Err` if measuring fails.
 fn packing_width(scene: &Scene, bits_width: f64) -> Result<f64, String> {
-    let dump = output_content(vec![0; RESULT_COLUMNS]);
     let hex = bytes_content(vec![0; RESULT_COLUMNS], DataFormat::Hexadecimal, RESULT_COLUMNS);
     let pending = bits_content(vec![false; 7]);
-    let [dump, hex, pending] = [dump, hex, pending].map(|c| scene.measure_data_node(&c).map(|s| s.width));
+    let [hex, pending] = [hex, pending].map(|c| scene.measure_data_node(&c).map(|s| s.width));
     let pair = bits_width + GAP + pending.map_err(stringify)? + NAMED_FRAME;
-    Ok(dump.map_err(stringify)?.max(hex.map_err(stringify)?).max(pair))
+    Ok(hex.map_err(stringify)?.max(pair))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws what pass two shows at one step, with its top left at `(left, top)` and `width` wide, and returns the lowest
 /// edge: the bits being appended with the bits left pending beside them, and under those the bytes written so far
-/// as a hex dump. What the step added to the bits being appended is marked. At the flush it adds the finished output in
-/// hexadecimal, and its size against the input's.
+/// in hexadecimal. What the step added to the bits being appended is marked. At the flush it adds its size against the
+/// input's.
 ///
 /// # Errors
 ///
@@ -526,7 +515,8 @@ fn draw_packing(
     bits_width: f64,
 ) -> Result<f64, String> {
     let bits = |bits: &[bool]| (!bits.is_empty()).then(|| bits_content(bits.to_vec()));
-    let bytes = (!packing.output.is_empty()).then(|| output_content(packing.output.clone()));
+    let bytes = (!packing.output.is_empty())
+        .then(|| bytes_content(packing.output.clone(), DataFormat::Hexadecimal, RESULT_COLUMNS));
 
     // The bits to pack are a whole byte or more, and the pending bits are what did not fit, so they stand beside them.
     let pack = draw_row(scene, "Bits to pack", bits(&packing.appended), &packing.marked, left, top)?;
@@ -535,8 +525,7 @@ fn draw_packing(
     y = draw_row(scene, "Output bytes", bytes, &packing.new_bytes, left, y)?.1;
 
     if let Some(summary) = &packing.summary {
-        let hex = bytes_content(packing.output.clone(), DataFormat::Hexadecimal, RESULT_COLUMNS);
-        y = draw_row(scene, "Result in hexadecimal", Some(hex), &[], left, y + V_GAP)?.1 + V_GAP;
+        y += V_GAP;
         let id = scene
             .add_markdown_node(Point::new(left, y), width, summary)
             .map_err(stringify)?;
@@ -868,12 +857,12 @@ fn focus_button(label: &str) {
 ///
 /// Pass two follows the last canonical code, and demonstrates:
 ///
-/// 5. Packing the codes into bytes, one input byte at a time. The text box is replaced by two arrays of the input's
-///    bytes, as characters and in hexadecimal, with the byte being packed marked. Beside them are the pending bits with
-///    the new code appended, the bits left pending, and the bytes written so far. A byte is written as soon as eight
+/// 5. Packing the codes into bytes, one input byte at a time. The text box is replaced by a hex dump of the input's
+///    bytes, with the byte being packed marked. Beside it are the pending bits with the new code appended, the bits
+///    left pending, and the bytes written so far in hexadecimal. A byte is written as soon as eight
 ///    bits are ready, and the step marks the bytes it wrote.
-/// 6. The flush, which pads the last byte with zero bits. It shows the result in hexadecimal and its size against the
-///    input's, with the compression ratio.
+/// 6. The flush, which pads the last byte with zero bits. It shows the result's size against the input's, with the
+///    compression ratio.
 ///
 /// Crossing from one pass to the other fits the window to the scene again, since the two are different sizes.
 ///

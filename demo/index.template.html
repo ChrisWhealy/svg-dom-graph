@@ -55,6 +55,10 @@
                 item.classList.toggle('active', isActive)
                 if (isActive) {
                     item.setAttribute('aria-current', 'page')
+                    // A deep link, or the back button, can name a panel inside a collapsed group.
+                    // Expanding that group makes the current panel's menu item visible.
+                    const group = item.closest('details.menu-group')
+                    if (group) group.open = true
                 } else {
                     item.removeAttribute('aria-current')
                 }

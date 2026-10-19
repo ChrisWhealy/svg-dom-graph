@@ -1,0 +1,17 @@
+<section class="section" id="panel-selection-1d">
+    <h2>Cell selection: one-dimensional array</h2>
+    <p>A data node can highlight one of its own cells, or — for a two-dimensional grid — a whole row or column plus
+        a further cell within it, via <code>Scene::set_selection</code>. This is how a caller marks "where we
+        currently are" while stepping through an array's values, e.g. one element at a time.
+    </p>
+    <p>For a one-dimensional array, that is simply the currently selected element, in a single highlight colour. The
+        example is stepped by its own in-canvas selection toolbar (<code>Scene::show_selection_toolbar</code>) rather
+        than an external button. The walk starts "not started", before element <code>0</code>. Next and Previous stop at
+        either end instead of wrapping round, and Restart returns to "not started".</p>
+    <p class="controls">
+        <span>Selected index: <output id="selection-1d-index">not started</output></span>
+    </p>
+    <!-- The canvas below is an empty host: Rust creates its own <svg>, at its own size, when the panel builds. -->
+    <div class="canvas" id="selection-1d-diagram-stage">
+    </div>
+</section>

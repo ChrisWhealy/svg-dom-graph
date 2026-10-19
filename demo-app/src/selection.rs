@@ -1,8 +1,11 @@
-//! `panel-selection` / `#selection-1d-diagram`, `#selection-2d-diagram`, `#selection-2d-labelled-diagram`,
-//! `#selection-hexdump-diagram` and `#selection-thetac-diagram`: five examples, each stepping through an array's values via its own in-canvas
-//! [`Scene::show_selection_toolbar`] bar — no external HTML buttons. See [`build_selection_demo`]'s own doc comment for
-//! what each demonstrates. The second and third are two-dimensional arrays, side by side. The third has three values,
-//! each in a row labelled alphabetically.
+//! The four cell-selection panels, each stepping through an array's values via its own in-canvas
+//! [`Scene::show_selection_toolbar`] bar — no external HTML buttons:
+//!
+//! - `panel-selection-1d` / `#selection-1d-diagram` — [`build_selection_1d_demo`].
+//! - `panel-selection-2d` / `#selection-2d-diagram` and `#selection-2d-labelled-diagram` — [`build_selection_2d_demo`].
+//!   Two two-dimensional arrays, side by side. The second has three values, each in a row labelled alphabetically.
+//! - `panel-selection-hexdump` / `#selection-hexdump-diagram` — [`build_selection_hexdump_demo`].
+//! - `panel-selection-thetac` / `#selection-thetac-diagram` — [`build_selection_thetac_demo`].
 
 use crate::util::{ensure_svg_in, required_element, resize_svg, stringify};
 use std::{cell::RefCell, rc::Rc};
@@ -22,16 +25,19 @@ mod unit_tests;
 pub(crate) const SOURCE: &str = include_str!("selection.rs");
 
 thread_local! {
-    // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own two, separate `Scene`s — one per array
-    // dimension. Kept alive for the page's own lifetime: `show_selection_toolbar`'s own button listeners hold only a
-    // `Weak` reference back to the `Scene` they step — see its own doc comment ("Ownership").
-    static SCENE: RefCell<Option<(Scene, Scene, Scene)>> = const { RefCell::new(None) };
+    // Same reasoning as `tree::SCENE`'s own doc comment, for the one-dimensional demo's own `Scene`. Kept alive for the
+    // page's own lifetime: `show_selection_toolbar`'s own button listeners hold only a `Weak` reference back to the
+    // `Scene` they step — see its own doc comment ("Ownership").
+    static ONE_D_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
+
+    // The two-dimensional demo's own two `Scene`s, kept alive for the same reason.
+    static TWO_D_SCENES: RefCell<Option<(Scene, Scene)>> = const { RefCell::new(None) };
 
     // The third example's own canvas has a `Scene` too, replaced by each step's own rebuild — see
     // [`rebuild_theta_c_diagram`]'s own doc comment for why it must be kept.
     static THETA_C_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 
-    // The hex dump example's own `Scene`, kept alive for the same reason as `SCENE`'s.
+    // The hex dump example's own `Scene`, kept alive for the same reason as `ONE_D_SCENE`'s.
     static HEX_DUMP_SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
@@ -39,7 +45,7 @@ thread_local! {
 /// character column shows both what a byte is and what a dump shows in its place.
 const HEX_DUMP_BYTES: &[u8] = b"Selecting a byte marks it twice.\x00\x01\x02\x7f\xfe\xff Hex digits and characters.";
 
-/// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_demo`])
+/// How many columns the two-dimensional demo array uses. Its own value count (see [`build_selection_thetac_demo`])
 /// deliberately does not divide evenly by this, so the grid's own last row renders short.
 const SELECTION_TWO_D_COLS: usize = 4;
 
@@ -55,7 +61,7 @@ pub(crate) const INITIAL_5X5_BUFFER: [[u64; 5]; 5] = [
 ];
 
 /// The third example's own fixed input, `A(row, col)` — made-up values, not a real Keccak state, chosen only to give
-/// each row's own `ThetaC` chain a visibly distinct result. See [`build_selection_demo`]'s own doc comment (point 4).
+/// each row's own `ThetaC` chain a visibly distinct result. See [`build_selection_thetac_demo`]'s own doc comment.
 pub(crate) const THETA_C_INPUT: [[u64; 5]; 5] = [
     [
         0x1C80_317F_A3B1_799D,
@@ -109,63 +115,20 @@ struct ThetaCDemo {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the cell-selection demo: five examples stepping through an array's values, each via its own in-canvas
-/// [`Scene::show_selection_toolbar`] bar — Prev, Next, Restart — rather than any external HTML button. The first two
-/// bind the toolbar directly to their own already-drawn array. On a step they update nothing else but the selection and
-/// a status line. The third needs a fresh toolbar on every step instead, since its own diagram is redrawn from scratch
-/// each time. See [`rebuild_theta_c_diagram`]'s own doc comment for why.
+/// Builds the one-dimensional array demo: six `u8` values in one row, stepped by the node's own selection toolbar.
 ///
-/// Demonstrates [`Selection`]:
-///
-/// 1. The one-dimensional array (`GridLayout::Rows(1)`) only ever needs [`Selection::Cell`] — there is no separate row
-///    to highlight distinctly from the one element within it.
-/// 2. The two-dimensional array (`GridLayout::Columns`([`SELECTION_TWO_D_COLS`])) steps through its values in row-major
-///    order. Each step highlights the whole row currently being processed, in [`Selection::Row`]'s own band colour. It
-///    also highlights the specific cell currently being processed within that row, in the stronger focus colour — the
-///    two-tier highlight a data-flow walk over a matrix needs.
-/// 3. Its own value count leaves the last row short by two cells, a deliberately ragged grid. Stepping into that row
-///    bands only its own real cells, demonstrating live what `resolve_selection`'s own incomplete-grid tests already
-///    cover: a nominal row/column position is not always a real one.
-/// 4. The third example steps an operator chain across an array, rather than just highlighting one. For each row `n` of
-///    [`THETA_C_INPUT`], SHA-3's own `ThetaC` step computes `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR A(n,3) XOR
-///    A(n,4)`. It writes the result to output array `O(n)`. That is five `u64` values folded through four
-///    [`BinaryOperator::Xor`](svg_dom_graph::scene::BinaryOperator::Xor) nodes, one operator chain per row. The
-///    selection toolbar is bound to `O` itself: `O` holds exactly five values, one per row, so its own flat position
-///    *is* `n` — no separate cursor is needed. `A` sits at the top of the canvas, above the chain it feeds. `O` sits
-///    directly below the chain's own final `XOR` node. So a plain edge from there reaches `O` with nothing else in the
-///    way. See [`rebuild_theta_c_diagram`]'s own doc comment.
-/// 5. All three walks start unstarted — before element `0` is ever processed, nothing is highlighted and (for the
-///    third) `O` is entirely blank. The third example's chain is still drawn over five zero operands, rather than left
-///    out entirely. See [`theta::theta_c::build_scene`](crate::sha3_sponge::theta::theta_c::build_scene) for what is
-///    drawn and why a fresh `Scene` is unavoidable here. This is the standalone Cell Selection demo's own wrapper
-///    around it. It is the counterpart to [`show_one_d_toolbar`]/[`show_two_d_toolbar`] for the third example. An
-///    absent chain would read as "this does not exist yet," when the truth is "this has not run yet." `O` shows exactly
-///    rows `0..=n` of `outputs` for the walk's current position `Some(n)`, and nothing for `None` — see
-///    [`display_outputs`]'s own doc comment. Since that is recomputed fresh from the walk's own current position on
-///    every step, "Previous" un-reveals a row exactly as readily as "Next" reveals one.
-///
-/// 6. The hex dump example steps through the bytes of a [`HexDumpFormat`] node, a byte at a time. See
-///    [`build_hex_dump_demo`]. Its toolbar is drawn inside the node's own box, under its name, and not at the edge of the
-///    canvas.
-///
-/// None of the three wrap. [`Scene::show_selection_toolbar`]'s own Next/Prev clamp at both ends instead. Stepping
-/// "Next" past the last value, or "Previous" before the first, simply disables that button rather than cycling around.
+/// A one-dimensional array (`GridLayout::Rows(1)`) only ever needs [`Selection::Cell`], since there is no separate row to
+/// highlight distinctly from the one element within it. The walk starts unstarted, before element `0`, with nothing
+/// highlighted. [`Scene::show_selection_toolbar`]'s Next and Previous clamp at both ends rather than wrapping.
 ///
 /// # Errors
 ///
-/// Returns `Err` if any library call fails, or if `index.html` is missing any of the three canvases this function and
-/// [`rebuild_theta_c_diagram`] need (see its own `# Errors` section).
-pub(crate) fn build_selection_demo() -> Result<(), String> {
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#selection-1d-diagram-stage` or
+/// `#selection-1d-index`.
+pub(crate) fn build_selection_1d_demo() -> Result<(), String> {
     let document = crate::util::document()?;
-    ensure_svg_in(
-        &document,
-        "selection-thetac-diagram-stage",
-        "selection-thetac-diagram",
-        Size::new(1180.0, 1010.0),
-    )?;
-
     let one_d_values: Vec<u8> = vec![10, 20, 30, 40, 50, 60];
-    crate::util::ensure_svg_in(
+    ensure_svg_in(
         &document,
         "selection-1d-diagram-stage",
         "selection-1d-diagram",
@@ -183,8 +146,30 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let one_d_rect = one_d_scene.node_rect(one_d_node).map_err(stringify)?;
     fit_canvas_to_toolbar(&document, "selection-1d-diagram", one_d_rect)?;
 
-    // Ten values over four columns: a 3×4 shape with the last row short by two cells. See this function's own doc
-    // comment (point 3) — a deliberately ragged grid, not the coincidentally-exact fit twelve values would be.
+    // Keeps this Scene's only strong handle alive for the page's lifetime — see ONE_D_SCENE's own doc comment.
+    ONE_D_SCENE.with_borrow_mut(|slot| *slot = Some(one_d_scene.clone()));
+    show_one_d_toolbar(&document, &one_d_scene, one_d_node)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the two-dimensional array demo: two arrays side by side, each stepped by its own selection toolbar.
+///
+/// 1. The first (`GridLayout::Columns`([`SELECTION_TWO_D_COLS`])) steps through its values in row-major order. Each step
+///    highlights the whole row currently being processed, in [`Selection::Row`]'s own band colour. It also highlights the
+///    specific cell currently being processed within that row, in the stronger focus colour — the two-tier highlight a
+///    data-flow walk over a matrix needs.
+/// 2. Its own value count leaves the last row short by two cells, a deliberately ragged grid. Stepping into that row
+///    bands only its own real cells, demonstrating live what `resolve_selection`'s own incomplete-grid tests already
+///    cover: a nominal row/column position is not always a real one.
+/// 3. The second has three `u32` values in hexadecimal, one to a row, each row labelled alphabetically.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing either canvas or either status line.
+pub(crate) fn build_selection_2d_demo() -> Result<(), String> {
+    let document = crate::util::document()?;
+
+    // Ten values over four columns: a 3×4 shape with the last row short by two cells.
     let two_d_content = DataNodeContent::new(NodeValues::U8((1..=10).collect()), DataFormat::Decimal)
         .with_layout(GridLayout::Columns(SELECTION_TWO_D_COLS));
     let (two_d_scene, two_d_node) =
@@ -200,12 +185,9 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
     let (labelled_scene, labelled_node) =
         build_two_d_scene(&document, "selection-2d-labelled-diagram", "Labelled array", labelled_content)?;
 
-    // Keeps every Scene's only strong handle alive for the page's lifetime — see SCENE's own doc comment.
-    SCENE.with_borrow_mut(|slot| {
-        *slot = Some((one_d_scene.clone(), two_d_scene.clone(), labelled_scene.clone()));
-    });
+    // Keeps both Scenes' only strong handles alive for the page's lifetime — see TWO_D_SCENES's own doc comment.
+    TWO_D_SCENES.with_borrow_mut(|slot| *slot = Some((two_d_scene.clone(), labelled_scene.clone())));
 
-    show_one_d_toolbar(&document, &one_d_scene, one_d_node)?;
     show_two_d_toolbar(&document, &two_d_scene, two_d_node, "selection-2d-index", SELECTION_TWO_D_COLS)?;
     show_two_d_toolbar(
         &document,
@@ -213,15 +195,42 @@ pub(crate) fn build_selection_demo() -> Result<(), String> {
         labelled_node,
         "selection-2d-labelled-index",
         LABELLED_COLS,
-    )?;
+    )
+}
 
-    // Unstarted: no row has been processed yet — see this function's own doc comment (point 5).
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the row-wise selection demo: an operator chain stepped across an array, rather than just highlighting one.
+///
+/// For each row `n` of [`THETA_C_INPUT`], SHA-3's own `ThetaC` step computes `C(n) = A(n,0) XOR A(n,1) XOR A(n,2) XOR
+/// A(n,3) XOR A(n,4)` and writes the result to output array `O(n)`. That is five `u64` values folded through four
+/// [`BinaryOperator::Xor`](svg_dom_graph::scene::BinaryOperator::Xor) nodes, one operator chain per row. The selection
+/// toolbar is bound to `O` itself: `O` holds exactly five values, one per row, so its own flat position *is* `n` — no
+/// separate cursor is needed. `A` sits at the top of the canvas, above the chain it feeds. `O` sits directly below the
+/// chain's own final `XOR` node. So a plain edge from there reaches `O` with nothing else in the way. See
+/// [`rebuild_theta_c_diagram`]'s own doc comment.
+///
+/// The walk starts unstarted — before row `0` is ever processed, nothing is highlighted and `O` is entirely blank. The
+/// chain is still drawn over five zero operands, rather than left out entirely. An absent chain would read as "this does
+/// not exist yet," when the truth is "this has not run yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's
+/// current position `Some(n)`, and nothing for `None` — see [`display_outputs`]'s own doc comment. Since that is
+/// recomputed fresh from the walk's own current position on every step, "Previous" un-reveals a row exactly as readily
+/// as "Next" reveals one.
+///
+/// # Errors
+///
+/// Returns `Err` if any library call fails, or if `index.html` is missing `#selection-thetac-diagram-stage`.
+pub(crate) fn build_selection_thetac_demo() -> Result<(), String> {
+    let document = crate::util::document()?;
+    ensure_svg_in(
+        &document,
+        "selection-thetac-diagram-stage",
+        "selection-thetac-diagram",
+        Size::new(1180.0, 1010.0),
+    )?;
     let input = THETA_C_INPUT;
     let outputs = theta_c_outputs(input);
     let theta_c_demo = Rc::new(RefCell::new(ThetaCDemo { outputs, input }));
-    rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)?;
-
-    build_hex_dump_demo(&document)
+    rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -236,7 +245,7 @@ fn hex_dump_status(to: Option<usize>) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the hex dump example: [`HEX_DUMP_BYTES`] as `hexdump -C` shows them, with the offset of every line, in a node
+/// Builds the hex dump demo: [`HEX_DUMP_BYTES`] as `hexdump -C` shows them, with the offset of every line, in a node
 /// that has a name and a row for its own selection toolbar. The toolbar is drawn inside the node's box, under the name,
 /// and not at the edge of the canvas.
 ///
@@ -248,7 +257,8 @@ fn hex_dump_status(to: Option<usize>) -> String {
 ///
 /// Returns `Err` if `index.html` is missing `#selection-hexdump-index` or `#selection-hexdump-diagram-stage`, or if any
 /// library call fails.
-fn build_hex_dump_demo(document: &web_sys::Document) -> Result<(), String> {
+pub(crate) fn build_selection_hexdump_demo() -> Result<(), String> {
+    let document = &crate::util::document()?;
     ensure_svg_in(
         document,
         "selection-hexdump-diagram-stage",
@@ -408,7 +418,7 @@ fn show_two_d_toolbar(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Row `i`'s own `ThetaC` result — a pure function of `a`. Shared by every caller that needs it:
-/// [`build_selection_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both standalone
+/// [`build_selection_thetac_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both standalone
 /// and nested starting from row `0` already stepped.
 pub(crate) fn theta_c_outputs(a: [[u64; 5]; 5]) -> [u64; 5] {
     a.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
