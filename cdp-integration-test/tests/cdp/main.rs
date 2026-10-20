@@ -32,6 +32,11 @@
 //!   demo gallery.
 //! - [`text_nodes`] — the Markdown node and the text input node in the built demo gallery: lines inside the box, runs
 //!   drawn as bold, italic and code, real typing reaching the callback without panning or zooming, and a drag.
+//! - [`bit_values`] — bit arrays in the fixture: every width from 1 to 7 draws exactly that many digits inside its cell,
+//!   a node says its width, and a replacement of another width, or too wide a value, is refused.
+//! - [`base64`] — the Base64 panel in the built demo gallery: typing, both alphabets, final groups of one and two bytes,
+//!   an empty text, the cut at 256 bytes, and the focus and caret across the redraw. Also runs against the built demo
+//!   gallery.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
 //!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -51,6 +56,8 @@
 //! See [`cdp_integration_test::launch_browser`]'s own doc comment.
 
 mod accessibility_tree;
+mod base64;
+mod bit_values;
 mod bounds;
 mod chacha20_walk;
 mod common;

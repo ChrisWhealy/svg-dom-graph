@@ -62,7 +62,7 @@ use svg_dom::{
 use svg_dom_graph::{
     Error, NodeId,
     scene::{
-        ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout,
+        BitValues, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, EdgeAnchors, GridLayout,
         HexDumpFormat, InputMode, LabellingStyle, NodeOptions, NodeValues, Scene, Selection, SelectionToolbarOptions,
     },
 };
@@ -73,6 +73,8 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
     // The hex dumps the tests drive from the page, by name. See `select_dump_byte` and `unreach_all_but_the_first`.
     static DUMPS: RefCell<HashMap<&'static str, NodeId>> = RefCell::new(HashMap::new());
+    // The bit arrays the tests drive from the page, by name. See `replace_bits`.
+    static BITS: RefCell<HashMap<String, NodeId>> = RefCell::new(HashMap::new());
 }
 
 /// Selects byte `byte` of the hex dump called `name`, which is `dump_off` or `dump_on`: the same 65 bytes without and
@@ -108,6 +110,27 @@ pub fn reach_the_first_byte_of_the_big_dump() -> Result<(), JsValue> {
 
 /// How many bytes `dump_big` has.
 const BIG_DUMP_LEN: usize = 256;
+
+/// Replaces the values of the bit array called `bits_1` to `bits_7` with `values`, each `width` bits wide, and says
+/// `"ok"`, or why not. `bit_values.rs` uses it to prove that a replacement of the same width rewrites the cells, and that
+/// one of another width, or one that does not fit its width, is refused and leaves them as they were.
+#[wasm_bindgen]
+pub fn replace_bits(name: &str, width: u8, values: Vec<u8>) -> String {
+    let Some(id) = BITS.with_borrow(|bits| bits.get(name).copied()) else {
+        return "no such node".to_owned();
+    };
+    let values = match BitValues::new(width, values) {
+        Ok(values) => values,
+        Err(e) => return e.to_string(),
+    };
+    SCENE.with_borrow(|scene| match scene {
+        Some(scene) => match scene.set_data_values(id, NodeValues::Bits(values)) {
+            Ok(()) => "ok".to_owned(),
+            Err(e) => e.to_string(),
+        },
+        None => "no scene".to_owned(),
+    })
+}
 
 #[wasm_bindgen(start)]
 pub fn run() -> Result<(), JsValue> {
@@ -223,6 +246,18 @@ fn build() -> Result<(), Error> {
         DataNodeContent::new(NodeValues::U8((0..=255).collect()), DataFormat::HexDump(HexDumpFormat::new())),
     )?;
     scene.set_unreached_cells(dump_big, &(0..BIG_DUMP_LEN).collect::<Vec<_>>())?;
+    // One bit array of every width from 1 to 7, each holding zero and the largest value that fits, for `bit_values.rs`.
+    // Off-canvas.
+    for width in 1..=7_u8 {
+        let largest = (1_u8 << width) - 1;
+        let name = format!("bits_{width}");
+        let id = scene.add_named_data_node(
+            Point::new(2000.0, 4800.0 + f64::from(width) * 200.0),
+            &name,
+            DataNodeContent::new(NodeValues::Bits(BitValues::new(width, vec![0, largest])?), DataFormat::Binary),
+        )?;
+        BITS.with_borrow_mut(|bits| bits.insert(name, id));
+    }
     DUMPS.with_borrow_mut(|dumps| {
         dumps.insert("dump_off", dump_off);
         dumps.insert("dump_on", dump_on);

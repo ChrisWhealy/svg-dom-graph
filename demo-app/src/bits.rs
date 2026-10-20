@@ -35,7 +35,7 @@ fn in_every_format(what: &str, values: &NodeValues) -> Vec<Item> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the bit array demo: for each width in `1, 3, 4, 5, 6, 7`, a single value and several values, each written in
+/// Builds the bit array demo: for each width from 1 to 7, a single value and several values, each written in
 /// decimal, hexadecimal and binary. Every box is draggable.
 ///
 /// A [`BitValues`] holds values that are all exactly `width` bits wide, and refuses one that does not fit. The binary
@@ -52,6 +52,7 @@ pub(crate) fn build_bits_demo() -> Result<(), String> {
     let mut lines = Vec::new();
     for (width, single, several) in [
         (1, &[1][..], &[1, 0, 1, 1, 0, 0, 1, 0][..]),
+        (2, &[2], &[0, 1, 2, 3]),
         (3, &[5], &[0, 1, 2, 3, 4, 5, 6, 7]),
         (4, &[0xA], &[0x0, 0x3, 0x7, 0xA, 0xF]),
         (5, &[22], &[0, 7, 13, 22, 31, 17, 5, 29, 11]),
