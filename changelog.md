@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Retain keyboard focus after CRC-32 screen redraw (`632a020`)
-- Validate error bit and byte input fields in CRC-32 demo (``)
+- Validate error bit and byte input fields in CRC-32 demo (`be90206`)
+- Write screen redraw errors to the browser not console (``)
 
 # [Released]
 

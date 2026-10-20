@@ -444,3 +444,22 @@ fn set_field(tab: &Tab, label: &str, value: &str) -> Result<(), String> {
     std::thread::sleep(Duration::from_millis(200));
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A redraw that works leaves the window's error banner hidden and empty. A redraw that fails shows its reason there, but
+/// nothing in the page can make one fail, so this only checks the banner is where the demo expects it, and clears.
+#[test]
+fn the_error_banner_stays_hidden_while_redraws_work() -> Result<(), String> {
+    let tab = open()?;
+    let banner = |tab: &Tab| {
+        text(
+            tab,
+            "(() => { const b = document.getElementById('crc32-window-error'); \
+             return b.hidden + '|' + b.textContent; })()",
+        )
+    };
+    check_eq(banner(&tab)?.as_str(), "true|")?;
+    set_text(&tab, "abc")?;
+    introduce(&tab, 1, 1)?;
+    check_eq(banner(&tab)?.as_str(), "true|")
+}

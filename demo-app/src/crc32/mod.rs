@@ -10,7 +10,8 @@ use crate::{
     base64::encode::{length_note, utf8_prefix},
     source_file,
     util::{
-        MARGIN, document, ensure_svg_in, fit_window_to_stage, required_element, resize_svg, stringify, wire_open_window,
+        MARGIN, clear_error, document, ensure_svg_in, fit_window_to_stage, report_error, required_element, resize_svg,
+        stringify, wire_open_window,
     },
 };
 use algorithm::{Computation, FINAL_MASK, Finding, INITIAL, POLYNOMIAL, compute, locate};
@@ -65,6 +66,9 @@ thread_local! {
 }
 
 const STAGE_ID: &str = "crc32-diagram-stage";
+
+/// The id of the banner in the window page that a failure is shown in.
+const ERROR_ID: &str = "crc32-window-error";
 const DIAGRAM_ID: &str = "crc32-diagram";
 
 /// The text the demo opens on.
@@ -1008,8 +1012,8 @@ fn typed(id: NodeId, text: &str) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the scene again for `text`, then gives the new text box the keyboard focus, with the caret where it was, so
-/// that typing carries on in it. A failure is logged to the console, since the text box's own callback has nowhere to
-/// return it to.
+/// that typing carries on in it. A failure is shown in the window's own error banner, since the text box's own callback
+/// has nowhere to return it to, and the banner clears again at the next change that works.
 fn redraw(id: NodeId, text: &str) {
     let caret = DEMO.with_borrow(|slot| slot.as_ref().and_then(|d| d.scene.text_input_caret(id).ok()));
     let result = build(text).and_then(|input| {
@@ -1018,8 +1022,18 @@ fn redraw(id: NodeId, text: &str) {
             None => Ok(()),
         })
     });
-    if let Err(e) = result {
-        web_sys::console::error_1(&format!("Could not draw the text: {e}").into());
+    report(result, "Could not draw the text");
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows a failure in the window's own error banner, or clears the banner after a success.
+///
+/// A scene that fails part way has already had its old one cleared. Without this the diagram would be left incomplete
+/// with no sign of why.
+fn report(result: Result<(), String>, what: &str) {
+    match result {
+        Ok(()) => clear_error(ERROR_ID),
+        Err(e) => report_error(ERROR_ID, &format!("{what}: {e}")),
     }
 }
 
@@ -1074,8 +1088,10 @@ fn watch_composition(document: &web_sys::Document) -> Result<(), String> {
 /// focus had gone back to the start of the page.
 fn redraw_current(action: &str) -> bool {
     let text = DEMO.with_borrow(|slot| slot.as_ref().map_or_else(|| INITIAL_TEXT.to_owned(), |d| d.text.clone()));
-    if let Err(e) = build(&text) {
-        web_sys::console::error_1(&format!("Could not draw the error: {e}").into());
+    let built = build(&text).map(|_| ());
+    let worked = built.is_ok();
+    report(built, "Could not draw the error");
+    if !worked {
         return false;
     }
     let button = web_sys::window()
