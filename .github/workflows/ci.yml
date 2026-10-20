@@ -154,9 +154,43 @@ jobs:
       - name: Run the browser integration tests
         run: wasm-pack test --headless --${{ matrix.browser }}
 
-  cdp-integration-test:
-    name: CDP browser integration tests (Chrome)
+  # The lints are their own job so that they run once, not once for every shard of the tests below.
+  cdp-lint:
+    name: CDP clippy (fixture · tests)
     runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+
+      # cdp-test-fixture is a `cdylib` (wasm-bindgen crate) with no test targets of its own, so a plain `-p`
+      # invocation under the wasm32 target already covers all its compiled code.
+      - name: Clippy (cdp-test-fixture)
+        run: cargo clippy -p cdp-test-fixture --target wasm32-unknown-unknown -- -D warnings
+
+      # Native, not `--target wasm32-unknown-unknown`: cdp-integration-test itself runs on the host (it drives a
+      # real local Chrome via headless_chrome), so its own compiled code — including the `cdp` test binary under
+      # `tests/cdp/` — only exists under the native target. --all-targets, not a plain `-p cdp-integration-test`:
+      # #[cfg(test)] code (the `cdp` test binary) is only compiled in test mode, so a plain clippy invocation here
+      # would silently never lint it at all.
+      - name: Clippy (cdp-integration-test)
+        run: cargo clippy -p cdp-integration-test --all-targets -- -D warnings
+
+  # The CDP tests run in as many Chrome processes as there are shards, one on each runner, instead of one after the
+  # other in a single Chrome. Run in one, they took over 25 minutes. See .github/scripts/cdp-shard.sh for how the tests
+  # are dealt out. A test added to any module lands in some shard on its own, so adding a shard here is the only change
+  # that making the run faster or slower ever needs.
+  cdp-integration-test:
+    name: CDP browser integration tests (Chrome, shard ${{ matrix.shard }} of 8)
+    runs-on: ubuntu-latest
+    strategy:
+      # One shard failing should not hide what the others found.
+      fail-fast: false
+      matrix:
+        shard: [0, 1, 2, 3, 4, 5, 6, 7]
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
@@ -178,26 +212,10 @@ jobs:
       - name: Chrome version (diagnostic — the runner image ships one, nothing to install)
         run: google-chrome --version || google-chrome-stable --version || chromium-browser --version
 
-      # cdp-test-fixture is a `cdylib` (wasm-bindgen crate) with no test targets of its own, so a plain `-p`
-      # invocation under the wasm32 target already covers all its compiled code.
-      - name: Clippy (cdp-test-fixture)
-        run: cargo clippy -p cdp-test-fixture --target wasm32-unknown-unknown -- -D warnings
-
-      # Native, not `--target wasm32-unknown-unknown`: cdp-integration-test itself runs on the host (it drives a
-      # real local Chrome via headless_chrome), so its own compiled code — including the `cdp` test binary under
-      # `tests/cdp/` — only exists under the native target. --all-targets, not a plain `-p cdp-integration-test`:
-      # #[cfg(test)] code (the `cdp` test binary) is only compiled in test mode, so a plain clippy invocation here
-      # would silently never lint it at all.
-      - name: Clippy (cdp-integration-test)
-        run: cargo clippy -p cdp-integration-test --all-targets -- -D warnings
-
-      # Builds the cdp-test-fixture wasm package, serves it locally, and drives the runner's own Chrome over the
-      # DevTools Protocol — see the module doc comment in cdp-integration-test/tests/cdp/main.rs for what this
-      # verifies and why it's a separate job rather than folded into `browser-tests`: it needs headless_chrome and
-      # a real local Chrome binary, neither of which the wasm-bindgen-test-based browser tests require, and
-      # keeping it isolated means a failure here doesn't obscure results from the other jobs. This single command
-      # runs the crate's one `cdp` test binary, covering every scenario module — see
-      # cdp-integration-test/tests/cdp/main.rs's own module doc comment for the current list, rather than
-      # duplicating (and re-drifting) it here.
-      - name: Run the CDP integration tests (real pointer drag, driven through the actual browser)
-        run: cargo test -p cdp-integration-test
+      # Builds the cdp-test-fixture wasm package and the demo gallery as the tests of this shard need them, serves
+      # them locally, and drives the runner's own Chrome over the DevTools Protocol — see the module doc comment in
+      # cdp-integration-test/tests/cdp/main.rs for what this verifies and why it's a separate job rather than folded
+      # into `browser-tests`: it needs headless_chrome and a real local Chrome binary, neither of which the
+      # wasm-bindgen-test-based browser tests require. The tests inside a shard still take turns, as they do locally.
+      - name: Run this shard of the CDP integration tests (real pointer drag, driven through the actual browser)
+        run: .github/scripts/cdp-shard.sh ${{ matrix.shard }} 8

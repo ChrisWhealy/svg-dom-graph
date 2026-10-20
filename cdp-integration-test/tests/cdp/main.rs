@@ -51,6 +51,13 @@
 //!
 //! Run explicitly with `cargo test -p cdp-integration-test`.
 //!
+//! # Running in several Chrome processes
+//!
+//! Within one run the tests take turns in one Chrome (see [`common`]), which keeps a Mac from the kernel panic that
+//! several active tabs have caused. CI instead deals the tests out among eight shards, each on its own runner with its
+//! own Chrome, with `.github/scripts/cdp-shard.sh SHARD 8`. The script lists the tests from this binary, so a new test
+//! is in some shard without being named anywhere. Do not run several shards at once on one Mac.
+//!
 //! # Why the browser is launched with `sandbox(false)`
 //!
 //! See [`cdp_integration_test::launch_browser`]'s own doc comment.

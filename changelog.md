@@ -15,6 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
+- CI runs the CDP integration tests in eight shards to reduce runtime (``)
 - Rearranged panels in demo server (`1a2bad3`)
 - Change Huffman tree connector style to straight (`927e517`)
 - Limit Base64 demo input field to 256 characters (`aae478f`)
