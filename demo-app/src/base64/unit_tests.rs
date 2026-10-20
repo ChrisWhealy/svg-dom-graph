@@ -1,4 +1,4 @@
-use super::encode::{Alphabet, encode, encoded_len, sextets, utf8_prefix};
+use super::encode::{Alphabet, encode, encoded_len, length_note, sextets, utf8_prefix};
 
 fn text(input: &[u8]) -> String {
     String::from_utf8(encode(input, Alphabet::Standard).text).unwrap_or_default()
@@ -76,4 +76,13 @@ fn text_is_cut_between_characters_never_inside_one() {
     assert_eq!(utf8_prefix("abcd", 4), b"abcd");
     // A limit inside the first character leaves nothing.
     assert!(utf8_prefix("\u{20AC}", 2).is_empty());
+}
+
+#[test]
+fn the_page_says_when_text_was_left_out() {
+    assert_eq!(length_note(5, 5, 256), "5 of 256 bytes");
+    assert_eq!(length_note(256, 256, 256), "256 of 256 bytes");
+    let note = length_note(258, 255, 256);
+    assert!(note.starts_with("258 bytes typed. Only the first 255 are encoded"), "{note}");
+    assert!(note.ends_with("The last 3 are left out."), "{note}");
 }

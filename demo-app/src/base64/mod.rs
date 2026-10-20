@@ -9,7 +9,7 @@ use crate::{
     source_file,
     util::{MARGIN, document, ensure_svg_in, mark_unreached, required_element, required_input, resize_svg, stringify},
 };
-use encode::{Alphabet, PADDING, encode, utf8_prefix};
+use encode::{Alphabet, PADDING, encode, length_note, utf8_prefix};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -62,6 +62,10 @@ const ROW_LEN: usize = 16;
 const GAP: f64 = 100.0;
 const TOOLBAR_ROOM: f64 = 80.0;
 
+/// How wide the text box is, at most, and how wide the note beside it is.
+const INPUT_WIDTH: f64 = 580.0;
+const NOTE_WIDTH: f64 = 360.0;
+
 /// The space between one row of nodes and the next, wide enough for a connector.
 const ROW_GAP: f64 = 60.0;
 
@@ -96,22 +100,39 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
     let bytes = utf8_prefix(text, INPUT_LEN);
     let encoded = encode(bytes, alphabet);
 
+    let hexdump_content = DataNodeContent::new(
+        NodeValues::U8(padded(bytes, INPUT_LEN, 0)),
+        DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+    );
+    // The text box is centred over the hex dump, and is no wider than the dump.
+    let hexdump_size = scene
+        .measure_named_data_node("Input bytes", &hexdump_content)
+        .map_err(stringify)?;
+    let input_width = hexdump_size.width.min(INPUT_WIDTH);
     let input = scene
-        .add_text_input_node(Point::new(MARGIN, MARGIN), 580.0, "Text to encode", text, |_, id, text| {
-            typed(id, text);
-        })
+        .add_text_input_node(
+            Point::new(MARGIN + (hexdump_size.width - input_width) / 2.0, MARGIN),
+            input_width,
+            "Text to encode",
+            text,
+            |_, id, text| typed(id, text),
+        )
         .map_err(stringify)?;
     let input_rect = scene.node_rect(input).map_err(stringify)?;
 
-    let hexdump = scene
-        .add_named_data_node(
-            Point::new(MARGIN, input_rect.origin.y + input_rect.size.height + ROW_GAP),
-            "Input bytes",
-            DataNodeContent::new(
-                NodeValues::U8(padded(bytes, INPUT_LEN, 0)),
-                DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
-            ),
+    // What the text box holds that the encoding leaves out, beside it.
+    let note = scene
+        .add_markdown_node(
+            Point::new(input_rect.origin.x + input_rect.size.width + GAP / 2.0, MARGIN),
+            NOTE_WIDTH,
+            &length_note(text.len(), bytes.len(), INPUT_LEN),
         )
+        .map_err(stringify)?;
+    let note_rect = scene.node_rect(note).map_err(stringify)?;
+
+    let top = (input_rect.origin.y + input_rect.size.height).max(note_rect.origin.y + note_rect.size.height) + ROW_GAP;
+    let hexdump = scene
+        .add_named_data_node(Point::new(MARGIN, top), "Input bytes", hexdump_content)
         .map_err(stringify)?;
     let unreached: Vec<usize> = (bytes.len()..INPUT_LEN).collect();
     mark_unreached(&scene, hexdump, &unreached)?;
@@ -129,13 +150,28 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
         .with_to_side(Some(Side::South));
     scene.add_edge_with(input, hexdump, downward).map_err(stringify)?;
 
-    let mut nodes = vec![input, hexdump];
+    let mut nodes = vec![input, note, hexdump];
     if !encoded.sextets.is_empty() {
         // The data flows down from the input bytes to the six-bit values, then back up to the Base64 text, which is a
-        // hex dump beside the input bytes.
+        // hex dump beside the input bytes. The Base64 text is a third longer than the input, so the six-bit values go
+        // under whichever of the two is lower.
+        let characters = scene
+            .add_named_data_node(
+                Point::new(hexdump_rect.origin.x + hexdump_rect.size.width + GAP, hexdump_rect.origin.y),
+                "Base64 text",
+                DataNodeContent::new(
+                    NodeValues::U8(encoded.text.clone()),
+                    DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+                ),
+            )
+            .map_err(stringify)?;
+        let characters_rect = scene.node_rect(characters).map_err(stringify)?;
+        let sextets_top = (hexdump_rect.origin.y + hexdump_rect.size.height)
+            .max(characters_rect.origin.y + characters_rect.size.height)
+            + ROW_GAP;
         let sextets = scene
             .add_named_data_node(
-                Point::new(MARGIN, hexdump_rect.origin.y + hexdump_rect.size.height + ROW_GAP),
+                Point::new(MARGIN, sextets_top),
                 "Six-bit values",
                 DataNodeContent::new(
                     NodeValues::Bits(BitValues::new(6, encoded.sextets.clone()).map_err(stringify)?),
@@ -147,16 +183,6 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
         // The six bits behind a padding character are zeros that the padding made up, so the encoding does not use them.
         let padding: Vec<usize> = (0..encoded.text.len()).filter(|&i| encoded.text[i] == PADDING).collect();
         mark_unreached(&scene, sextets, &padding)?;
-        let characters = scene
-            .add_named_data_node(
-                Point::new(hexdump_rect.origin.x + hexdump_rect.size.width + GAP, hexdump_rect.origin.y),
-                "Base64 text",
-                DataNodeContent::new(
-                    NodeValues::U8(encoded.text.clone()),
-                    DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
-                ),
-            )
-            .map_err(stringify)?;
         scene.add_edge_with(hexdump, sextets, into_sextets).map_err(stringify)?;
         scene.add_edge_with(sextets, characters, back_up).map_err(stringify)?;
         nodes.extend([sextets, characters]);

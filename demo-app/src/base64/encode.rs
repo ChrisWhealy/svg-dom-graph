@@ -52,6 +52,21 @@ pub(super) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What the page says about the length of the text: how many bytes it has out of `max`, and when it has more than are
+/// encoded, how many were left out. `typed` is the length of the whole text in bytes and `encoded` the length of
+/// [`utf8_prefix`] of it.
+pub(super) fn length_note(typed: usize, encoded: usize, max: usize) -> String {
+    if typed <= max {
+        return format!("{typed} of {max} bytes");
+    }
+    format!(
+        "{typed} bytes typed. Only the first {encoded} are encoded, since the limit is {max} and the cut falls between \
+         characters. The last {} are left out.",
+        typed - encoded
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many characters `len` input bytes encode to, counting the padding: four for each group of three bytes, or part
 /// of one.
 pub(super) fn encoded_len(len: usize) -> usize {
