@@ -83,11 +83,14 @@ fn nodes_named(tab: &Tab, name: &str) -> Result<usize, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The panel opens on "Hello", which is five bytes: a group of three and a group of two, so one padding character.
+/// The panel opens on a sentence of 62 bytes: 20 whole groups and a last group of two, so one padding character.
 #[test]
-fn the_panel_opens_on_hello_with_one_padding_character() -> Result<(), String> {
+fn the_panel_opens_on_its_sentence_with_one_padding_character() -> Result<(), String> {
     let tab = open()?;
-    check_eq(result(&tab)?.as_str(), "SGVsbG8=")?;
+    check_eq(
+        result(&tab)?.as_str(),
+        "VGhpcyBpcyB3aGF0IHNvbWUgdGV4dCBsb29rcyBsaWtlIHdoZW4gZW5jb2RlZCB1c2luZyBCYXNlNjQuLi4=",
+    )?;
     check_eq(nodes_named(&tab, "Six-bit values")?, 1)?;
     check_eq(nodes_named(&tab, "Base64 text")?, 1)
 }

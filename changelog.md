@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct CDP tests (`f5d3488`)
 - Ensure encoded sequences can always recover valid UTF-8 characters (`b0f8f05`)
 - Doc only: Correct description of why `Base64URL` alphabet is needed (`fa05b86`)
+- Correct `Base64` test to work on the correct test string (``) 
 
 # [Released]
 

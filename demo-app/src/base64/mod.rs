@@ -47,7 +47,7 @@ thread_local! {
 const STAGE_ID: &str = "base64-diagram-stage";
 const DIAGRAM_ID: &str = "base64-diagram";
 
-/// The text the demo opens on. Five bytes do not divide into groups of three, so the last group needs padding.
+/// The text the demo opens on. It is 62 bytes, which do not divide into groups of three, so the last group needs padding.
 const INITIAL_TEXT: &str = "This is what some text looks like when encoded using Base64...";
 
 /// How many bytes of the typed text are encoded: 256, which is not a whole number of groups, so the last group of a
