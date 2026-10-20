@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.37] - 2026-10-20
 
 ## Added
@@ -28,9 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure encoded sequences can always recover valid UTF-8 characters (`b0f8f05`)
 - Doc only: Correct description of why `Base64URL` alphabet is needed (`fa05b86`)
 - Correct `Base64` test to work on the correct test string (`66ba7e9`)
-- Correct stale test (``)
-
-# [Released]
+- Correct stale test (`c16ec3a`)
 
 ## [0.2.36] - 2026-10-16
 
