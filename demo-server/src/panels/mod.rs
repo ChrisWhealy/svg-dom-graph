@@ -91,14 +91,17 @@ const GROUPS: &[Group] = &[
         panels: &[("panel-theta", "Nested Scenes (SHA3 Theta)")],
     },
     Group {
-        label: "Algorithms",
+        label: "Cryptographic Algorithms",
         panels: &[
             ("panel-sha1", "SHA1"),
             ("panel-sha2-256", "SHA2-256"),
             ("panel-sha3-sponge", "SHA3 Sponge"),
             ("panel-chacha20", "ChaCha20"),
-            ("panel-huffman", "Huffman encoding"),
         ],
+    },
+    Group {
+        label: "Encoding & Compression",
+        panels: &[("panel-huffman", "Huffman encoding")],
     },
 ];
 

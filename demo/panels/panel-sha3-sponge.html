@@ -14,22 +14,23 @@
             <p>Each time an input block is acquired, that data is <code>XOR</code>ed with the data currently in the
                 Rate, then the <code>Keccak-f[1600]</code> function is applied to the entire internal state. </p>
             <p>The remaining part of the internal state is known as the "Capacity" and this is always kept private.</p>
-            <p>This is where the input data is mixed in such a way to make the resulting output cryptographically
+            <p>The input data is mixed into the internal state in such a way that it is spread evenely between the
+                public "Rate" and the private "Capacity". This is what makes the resulting output cryptographically
                 strong.</p>
         </dd>
         <dt>Squeezing</dt>
         <dd>
             <p>Once the input data has been fully absorbed into the internal state, the output or "Squeeze" phase can
                 begin.</p>
-            <p>In the simplest case (demonstrated here), whatever data is found in the first 256 bits of the Rate
-                immediately equates to the SHA3-256 hash of the input data. When used in this manner, the SHA3 function
-                can be described as a "drop-in" replacement for the SHA2-256 algorithm.</p>
-            <p>However, even though all the input data has been consumed, the <code>Keccak-f[1600]</code> function can
-                be repeatedly applied to the internal state to create an entirely deterministic stream of psuedo-random
-                content.</p>
-            <p>For the same input, running multiple "squeeze" rounds (I.E. repeatedly running the
-                <code>Keccak-f[1600]</code> function on the internal state) will always produce exactly the same output.
-            </p>
+            <p>In the simplest case (demonstrated here), after the <code>Keccak-f[1600]</code> function has been run
+                once, whatever data is found in the first 256 bits of the Rate immediately equates to the SHA3-256 hash
+                of the input data. When used in this manner, the SHA3 function can be described as a "drop-in"
+                replacement for the SHA2-256 algorithm.</p>
+            <p>However, even though all the input data has now been consumed, you can continue to "squeeze" the internal
+                state (I.E. you continue to apply the <code>Keccak-f[1600]</code> function) to create an entirely
+                deterministic stream of psuedo-random content. </p>
+            <p>For the same input, repeatedly applying the <code>Keccak-f[1600]</code> function on the internal state is
+                guaranteed to produce exactly the same output.</p>
         </dd>
     </dl>
 

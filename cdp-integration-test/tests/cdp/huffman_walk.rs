@@ -682,13 +682,13 @@ fn a_marked_route_has_a_box_for_every_level_and_a_label_for_every_link() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every link has room for an elbow and an arrowhead on each side of its `0` or `1` label.
+/// Every link has room for an arrowhead on each side of its `0` or `1` label.
 ///
-/// An elbow bends midway, and the second half of it holds the arrowhead, which is 10 pixels long, and 6 more of
-/// clearance. So the gap above a label, and the gap below it, must each be at least twice that: 32 pixels. The
+/// The arrowhead is 10 pixels long and needs 6 more of clearance, and the link has to be long enough to show a slant
+/// clearly. So the gap above a label, and the gap below it, must each be at least twice that: 32 pixels. The
 /// rectangles are read from the rendered boxes, so this checks what is drawn, not the constants that drew it.
 #[test]
-fn every_link_has_room_for_an_elbow_and_an_arrowhead() -> Result<(), String> {
+fn every_link_has_room_for_an_arrowhead() -> Result<(), String> {
     const MINIMUM_GAP: f64 = 32.0;
     let tab = open_default()?;
     goto(&tab, 25)?;

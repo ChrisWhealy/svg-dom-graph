@@ -39,8 +39,8 @@ use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{
-        BoolFormat, ConnectorOptions, DataFormat, DataNodeContent, GridLayout, HexDumpFormat, NodeOptions, NodeValues,
-        Scene, SceneTitleOptions, Selection, SelectionStride, Side, ToolbarOptions,
+        BoolFormat, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, GridLayout, HexDumpFormat,
+        NodeOptions, NodeValues, Scene, SceneTitleOptions, Selection, SelectionStride, Side, ToolbarOptions,
     },
 };
 use walk::{Packing, Row, Shown, Spacing, leaf_label, pack_steps, packing, steps, symbol_label};
@@ -194,11 +194,12 @@ impl Model {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A forced south-to-north connector, for a link that runs down from a parent to its child.
+/// A straight, forced south-to-north connector, for a link that runs down from a parent to its child.
 fn downward() -> ConnectorOptions {
     ConnectorOptions::default()
         .with_from_side(Some(Side::South))
         .with_to_side(Some(Side::North))
+        .with_connector_type(ConnectorType::Straight)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
