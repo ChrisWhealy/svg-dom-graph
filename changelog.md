@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add a demo implementation of the CRC-32 algorithm (``)
+- Add a demo implementation of the CRC-32 algorithm (`4be261b`)
+
+## Fixed
+
+- Retain keyboard focus after CRC-32 screen redraw (``)
 
 # [Released]
 

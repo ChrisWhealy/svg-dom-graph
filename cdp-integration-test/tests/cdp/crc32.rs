@@ -321,3 +321,33 @@ fn an_error_in_a_byte_that_goes_away_is_dropped() -> Result<(), String> {
         "the error should have been dropped with its byte",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The buttons are drawn again with the rest of the scene, and the new button of the same kind has the keyboard focus, so
+/// a keyboard user can press it again. The change is announced in a live region that is not part of the scene.
+#[test]
+fn a_button_keeps_the_keyboard_focus_across_the_redraw_and_the_change_is_announced() -> Result<(), String> {
+    let tab = open()?;
+    let focused = |tab: &Tab| text(tab, "(document.activeElement?.getAttribute('data-action') ?? 'none')");
+    let announced = |tab: &Tab| text(tab, "document.getElementById('crc32-announcement').textContent");
+
+    introduce(&tab, 3, 1)?;
+    check_eq(focused(&tab)?.as_str(), "introduce")?;
+    check_eq(announced(&tab)?.as_str(), "Bit 1 of byte 3 is flipped in transmission.")?;
+
+    tab.evaluate(
+        &format!(
+            "document.querySelector('{DIAGRAM} g[data-action=\"remove\"]') \
+             .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}))"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not remove the error: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    check_eq(focused(&tab)?.as_str(), "remove")?;
+    check_eq(announced(&tab)?.as_str(), "No error has been introduced.")?;
+    check_eq(
+        text(&tab, "document.getElementById('crc32-announcement').getAttribute('aria-live')")?.as_str(),
+        "polite",
+    )
+}

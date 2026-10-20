@@ -94,6 +94,9 @@ const BUTTON_HEIGHT: f64 = 36.0;
 const STATUS_WIDTH: f64 = 300.0;
 const CONTROL_GAP: f64 = 20.0;
 
+/// The id of the live region in the window page that announces a change of the error.
+const ANNOUNCEMENT_ID: &str = "crc32-announcement";
+
 /// Finds the text box that holds the text to checksum, and not the fields for choosing a bit.
 const TEXT_BOX: &str = "#crc32-diagram g[aria-label^=\"Text to checksum\"] input";
 
@@ -536,10 +539,7 @@ fn build(text: &str) -> Result<NodeId, String> {
     ERROR.set(error);
     let transmission = Transmission::new(bytes, computed.crc, error);
     let words = words(bytes, &computed, &transmission);
-    let status = match error {
-        Some((byte, bit)) => format!("Bit {bit} of byte {byte} is flipped in transmission."),
-        None => "No error has been introduced.".to_owned(),
-    };
+    let status = error_status(error);
 
     // Both columns are as wide as their widest box. The axis of each is half of that from its left edge.
     let mut middle_width = INPUT_WIDTH;
@@ -1044,12 +1044,49 @@ fn watch_composition(document: &web_sys::Document) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the scene again for the text it was drawn for, with the error as it is now. The text box is replaced, so it
-/// does not keep the focus, which the button that was pressed has.
-fn redraw_current() {
+/// Draws the scene again for the text it was drawn for, with the error as it is now, and says whether that worked. The
+/// text box is replaced, and so is the button that was pressed. So the new button of the same `action` is given the
+/// keyboard focus, as the text box is given it after a change of text. Without that, a keyboard user would find that
+/// focus had gone back to the start of the page.
+fn redraw_current(action: &str) -> bool {
     let text = DEMO.with_borrow(|slot| slot.as_ref().map_or_else(|| INITIAL_TEXT.to_owned(), |d| d.text.clone()));
     if let Err(e) = build(&text) {
         web_sys::console::error_1(&format!("Could not draw the error: {e}").into());
+        return false;
+    }
+    let button = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| {
+            d.query_selector(&format!("#{DIAGRAM_ID} g[data-action=\"{action}\"]"))
+                .ok()
+                .flatten()
+        })
+        .and_then(|button| button.dyn_into::<web_sys::SvgElement>().ok());
+    if let Some(button) = button {
+        let _ = button.focus();
+    }
+    true
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Says `message` to assistive technology, in a live region that stays on the page. The scene is drawn again for each
+/// change, and a live region that is drawn along with it is new each time, which a screen reader may not announce. So
+/// this one is in the window page, outside the scene.
+fn announce(message: &str) {
+    if let Some(region) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id(ANNOUNCEMENT_ID))
+    {
+        region.set_text_content(Some(message));
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What the status line says about `error`.
+fn error_status(error: Option<(usize, u8)>) -> String {
+    match error {
+        Some((byte, bit)) => format!("Bit {bit} of byte {byte} is flipped in transmission."),
+        None => "No error has been introduced.".to_owned(),
     }
 }
 
@@ -1058,20 +1095,26 @@ fn redraw_current() {
 /// as 7. Nothing is flipped in an empty text, which has no bytes.
 fn introduce_error() {
     let length = DEMO.with_borrow(|slot| slot.as_ref().map_or(0, |d| utf8_prefix(&d.text, INPUT_LEN).len()));
-    if length > 0 {
-        let byte = FLIP_BYTE
-            .with_borrow(|v| v.trim().parse::<usize>().unwrap_or(0))
-            .min(length - 1);
-        let bit = FLIP_BIT.with_borrow(|v| v.trim().parse::<u8>().unwrap_or(0)).min(7);
-        ERROR.set(Some((byte, bit)));
-        redraw_current();
+    if length == 0 {
+        announce("There is no text to flip a bit in.");
+        return;
+    }
+    let byte = FLIP_BYTE
+        .with_borrow(|v| v.trim().parse::<usize>().unwrap_or(0))
+        .min(length - 1);
+    let bit = FLIP_BIT.with_borrow(|v| v.trim().parse::<u8>().unwrap_or(0)).min(7);
+    ERROR.set(Some((byte, bit)));
+    if redraw_current("introduce") {
+        announce(&error_status(Some((byte, bit))));
     }
 }
 
 /// Puts the flipped bit back.
 fn remove_error() {
     ERROR.set(None);
-    redraw_current();
+    if redraw_current("remove") {
+        announce(&error_status(None));
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

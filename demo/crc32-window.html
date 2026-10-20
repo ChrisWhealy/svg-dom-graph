@@ -16,6 +16,11 @@
         <div class="canvas" id="crc32-diagram-stage">
         </div>
         <p id="crc32-window-error" class="demo-error" hidden></p>
+        <!-- Said by a screen reader when an error is introduced or removed. It is here, not in the scene, because the
+             scene is drawn again for each change, and a live region that is new each time may not be announced. -->
+        <p id="crc32-announcement" role="status" aria-live="polite"
+            style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">
+        </p>
     </section>
 
     <script type="module">
