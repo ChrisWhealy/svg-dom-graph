@@ -37,6 +37,8 @@
 //! - [`base64`] — the Base64 panel in the built demo gallery: typing, both alphabets, final groups of one and two bytes,
 //!   an empty text, the cut at 256 bytes, and the focus and caret across the redraw. Also runs against the built demo
 //!   gallery.
+//! - [`crc32`] — the CRC-32 demo in the window the gallery's panel opens: the checksum on opening, typing, an empty text, the cut
+//!   at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a flipped bit. Also runs against the built demo gallery.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
 //!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -69,6 +71,7 @@ mod bounds;
 mod chacha20_walk;
 mod common;
 mod connectors;
+mod crc32;
 mod edge_anchors;
 mod hex_dump_geometry;
 mod hex_dump_paint_order;

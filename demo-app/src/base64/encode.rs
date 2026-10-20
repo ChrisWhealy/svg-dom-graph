@@ -43,7 +43,7 @@ pub(super) fn sextets(group: [u8; 3]) -> [u8; 4] {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The UTF-8 bytes of `text`, cut off at the last whole character that fits in `max` bytes. Cutting at exactly `max`
 /// could leave the first byte or two of a multi-byte character, which no one could decode back into text.
-pub(super) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
+pub(crate) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
     let mut end = text.len().min(max);
     while !text.is_char_boundary(end) {
         end -= 1;
@@ -55,7 +55,7 @@ pub(super) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
 /// What the page says about the length of the text: how many bytes it has out of `max`, and when it has more than are
 /// encoded, how many were left out. `typed` is the length of the whole text in bytes and `encoded` the length of
 /// [`utf8_prefix`] of it.
-pub(super) fn length_note(typed: usize, encoded: usize, max: usize) -> String {
+pub(crate) fn length_note(typed: usize, encoded: usize, max: usize) -> String {
     if typed <= max {
         return format!("{typed} of {max} bytes");
     }

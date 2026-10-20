@@ -28,6 +28,7 @@ features = [
     "Event",
     "EventTarget",
     "HtmlInputElement",
+    "KeyboardEvent",
     "Window",
 ]
 

@@ -104,6 +104,10 @@ const GROUPS: &[Group] = &[
         label: "Encoding & Compression",
         panels: &[("panel-huffman", "Huffman encoding"), ("panel-base64", "Base64 encoding")],
     },
+    Group {
+        label: "Error Detection & Correction",
+        panels: &[("panel-crc32", "CRC-32")],
+    },
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

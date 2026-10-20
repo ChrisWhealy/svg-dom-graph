@@ -68,6 +68,9 @@
 //! - `panel-base64` / `#base64-diagram` — [`base64::build_base64_demo`]: Base64 encoding of typed text, three bytes at a
 //!   time. The bytes in binary, the same bits cut into six-bit values, and the character for each value, with the padding
 //!   a short last group needs. Every value is worked out in plain Rust.
+//! - `panel-crc32` / `#crc32-diagram` — [`crc32::build_crc32_demo`]: the CRC-32 of typed text, a byte at a time. Each byte
+//!   picks an entry of the table of 256 with the register, and the entry is XORed with the register shifted a byte. The
+//!   register starts as all ones and is flipped at the end. Every value is worked out in plain Rust.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -87,6 +90,7 @@ mod base64;
 mod bits;
 mod bools_and_sizes;
 mod chacha20;
+mod crc32;
 mod data;
 mod edge_anchors;
 mod elbow;
@@ -200,6 +204,7 @@ demo_gallery! {
     "panel-chacha20" => chacha20::build_chacha20_demo + chacha20::FILES,
     "panel-base64" => base64::build_base64_demo + base64::FILES,
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
+    "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -232,6 +237,14 @@ pub fn init_chacha20_window() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn init_huffman_window() -> Result<(), JsValue> {
     huffman::build_huffman_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the CRC-32 scene in `crc32-window.html`, the window the gallery's own CRC-32 panel opens. Call it once, from that
+/// page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_crc32_window() -> Result<(), JsValue> {
+    crc32::build_crc32_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

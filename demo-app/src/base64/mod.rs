@@ -3,7 +3,7 @@
 //! - `panel-base64` / `#base64-diagram` — [`build_base64_demo`]: Base64 encoding of typed text, a group of three bytes
 //!   at a time.
 
-mod encode;
+pub(crate) mod encode;
 
 use crate::{
     source_file,

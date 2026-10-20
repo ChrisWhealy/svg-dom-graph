@@ -1,0 +1,52 @@
+<section class="section" id="panel-crc32">
+    <h2>CRC-32</h2>
+    <p>A <em>cyclic redundancy check</em> detects accidental changes to data. The sender calculates a short number from
+        the data it is sending, then sends this number along with the data.</p>
+    <p>The receiver calculates the same number from the data it received. If the two check numbers differ, then it is
+        known that the data changed during transmission.</p>
+    <p> CRC-32 is used by Ethernet, <code>zip</code>, <code>zip</code> and <code>PNG</code> to protect against data
+        corruption during transmission. It finds every change of a burst of up to 32 bits, and all but one in four
+        billion of the others. It does not defend against a person changing the data on purpose, since anyone can
+        calculate a new check number after they have tampered with the data.</p>
+    <p>CRC-32 treats the data as one very long binary number and takes the remainder when it is divided by a fixed
+        polynomial. It uses calculations that do not result in arithmetic carries, so that adding becomes the same as
+        XOR.</p>
+    <p>The version demonstrated here is the one every common tool uses. The polynomial is <code>0xEDB88320</code>, which
+        is the usual <code>0x04C11DB7</code> with its bits in reverse order, since the register is shifted to the right.
+    </p>
+    <ol>
+        <li>The 32-bit <em>register</em> starts as all ones: <code>0xFFFFFFFF</code>.</li>
+        <li>For each input byte, XOR the byte with the lowest byte of the register. The result is an index from 0 to 255
+            into a table.</li>
+        <li>The table's entry for that index is what shifting a byte through the register one bit at a time would have
+            done: shift right by one, and if the bit that fell out was a one, XOR in the polynomial. Doing that eight
+            times for every possible byte makes the 256 entries, so the demo takes each byte in one step.</li>
+        <li>The new register is the old register shifted right by a byte, XORed with the table's entry.</li>
+        <li>After the last byte, XOR the register with all ones. That flips every bit, and is the CRC-32.</li>
+    </ol>
+    <p>The standard way to check an implementation of CRC-32 is that the text <code>123456789</code> has the checksum
+        <code>CBF43926</code>. Type that text to try it. The diagram opens on a longer sentence, so that there is enough
+        to corrupt.</p>
+    <h3>Correcting an error</h3>
+    <p>CRC-32 is nearly always used only to <em>detect</em> an error, and the data is then sent again. But the check
+        number holds enough to do more when exactly one bit has changed. The difference between the check number that was
+        sent and the one the receiver works out is called the <em>syndrome</em>. It is zero if nothing changed. For a
+        single flipped bit, it depends only on <em>where</em> the bit is, and not on what the data holds. This
+        polynomial gives every bit position of data this short a different syndrome, so the receiver can work out the
+        syndrome of each position, find the one that matches, and flip that bit back. If two bits change, no single
+        position matches. That is detected, but it cannot be corrected.</p>
+    <p>Use the fields and buttons at the top of the diagram to flip one bit of the data on its way from the sender to the
+        receiver, and watch the receiver's column. The data flows down the sender's column, across, and then up the
+        receiver's column.</p>
+    <p>Type in the text input node. Each box of the diagram has a note beside it that says what it holds and how its
+        values are worked out. The numbers in the sender's notes are the real ones for the first byte of the text, so you
+        can follow that byte all the way through by hand. The diagram is drawn again for each change. Zoom and pan are
+        kept. The boxes line up on one axis and cannot be dragged. Bits are counted from 0 at the least significant bit of
+        a byte.</p>
+    <p>The checksum covers 64 bytes, so each byte can be a step in the diagram. Any text past that is not covered, the
+        cut falls between characters, and a note to the right of the text input node says how much was left out. Every
+        value is worked out in plain Rust. The library draws the nodes and does no checksumming.</p>
+    <p>This is the largest of the demos, so it opens in a window of its own, sized to fit it. Its text is scaled down to
+        85% so that more of it fits on the screen.</p>
+    <button id="crc32-open" class="open-window" type="button">Open the demo in its own window</button>
+</section>
