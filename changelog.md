@@ -20,13 +20,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Change Huffman tree connector style to straight (`927e517`)
 - Limit Base64 demo input field to 256 characters (`aae478f`)
 - Doc only: Bit sequences of differing lengths all share the same colour (`a92ecd9`)
+- Defer rebuilding the scene while IME composition is active (``)
 
 ## Fixed
 
 - Correct CDP tests (`f5d3488`)
 - Ensure encoded sequences can always recover valid UTF-8 characters (`b0f8f05`)
 - Doc only: Correct description of why `Base64URL` alphabet is needed (`fa05b86`)
-- Correct `Base64` test to work on the correct test string (``) 
+- Correct `Base64` test to work on the correct test string (`66ba7e9`) 
 
 # [Released]
 

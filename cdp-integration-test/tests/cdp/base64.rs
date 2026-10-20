@@ -6,8 +6,9 @@
 //! browser: that a real change redraws the scene with the right nodes, that the radio buttons draw it again, and what
 //! the redraw keeps.
 //!
-//! These do not cover typing through an input method editor. A change redraws the scene, which replaces the text box,
-//! and a composition in progress would not survive that. See the report that goes with these tests.
+//! A change redraws the scene, which replaces the text box, and a composition with an input method editor does not
+//! survive that. So the demo waits until the composition ends. The last test drives a composition through CDP's own
+//! `Input.imeSetComposition`.
 
 use crate::common::{DemoTab, new_demo_tab};
 use headless_chrome::Tab;
@@ -213,4 +214,63 @@ fn typing_keeps_the_focus_and_the_caret_across_the_redraw() -> Result<(), String
         "abXcd",
     )?;
     check_eq(result(&tab)?.as_str(), "YWJYY2Q=")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// While text is being composed, the scene is not drawn again, so the text box is the same element and the composition
+/// goes on. When the composition is committed, the scene is drawn for the composed text and the text box has the focus.
+#[test]
+fn a_composition_in_progress_is_not_interrupted_by_a_redraw() -> Result<(), String> {
+    use headless_chrome::protocol::cdp::Input::{ImeSetComposition, InsertText};
+
+    let tab = open()?;
+    let before = result(&tab)?;
+    // Put the caret at the end of the text and remember which element is the text box.
+    tab.evaluate(
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); i.focus(); \
+             i.setSelectionRange(i.value.length, i.value.length); window.composingBox = i; }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not focus the text box: {e}"))?;
+
+    tab.call_method(ImeSetComposition {
+        text: "\u{306B}\u{307B}".to_owned(),
+        selection_start: 2,
+        selection_end: 2,
+        replacement_start: None,
+        replacement_end: None,
+    })
+    .map_err(|e| format!("could not start the composition: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    let still_there = text(
+        &tab,
+        &format!(
+            "String(window.composingBox.isConnected && \
+             document.querySelector('{DIAGRAM} input') === window.composingBox)"
+        ),
+    )?;
+    check_eq(still_there.as_str(), "true")?;
+    check_eq(result(&tab)?, before.clone())?;
+
+    tab.call_method(InsertText {
+        text: "\u{65E5}\u{672C}".to_owned(),
+    })
+    .map_err(|e| format!("could not commit the composition: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    let value = text(&tab, &format!("document.querySelector('{DIAGRAM} input').value"))?;
+    check(
+        value.ends_with("\u{65E5}\u{672C}"),
+        &format!("the composed text is not in the box: {value:?}"),
+    )?;
+    check(result(&tab)? != before, "the scene was not drawn for the composed text")?;
+    check_eq(
+        text(
+            &tab,
+            &format!("String(document.activeElement === document.querySelector('{DIAGRAM} input'))"),
+        )?
+        .as_str(),
+        "true",
+    )
 }

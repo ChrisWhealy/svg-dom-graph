@@ -10,7 +10,7 @@ use crate::{
     util::{MARGIN, document, ensure_svg_in, mark_unreached, required_element, required_input, resize_svg, stringify},
 };
 use encode::{Alphabet, PADDING, encode, length_note, utf8_prefix};
-use std::cell::RefCell;
+use std::cell::{Cell, RefCell};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
@@ -37,11 +37,17 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
 struct Demo {
     scene: Scene,
     alphabet: Alphabet,
+    /// The text the scene was drawn for.
+    text: String,
+    /// The scene's text input node.
+    input: NodeId,
 }
 
 thread_local! {
     // Keeps the demo's `Scene` alive for the page's lifetime, as `tree::SCENE` does. Every change draws a new one.
     static DEMO: RefCell<Option<Demo>> = const { RefCell::new(None) };
+    // Whether the user is part way through composing text with an input method editor.
+    static COMPOSING: Cell<bool> = const { Cell::new(false) };
 }
 
 const STAGE_ID: &str = "base64-diagram-stage";
@@ -216,15 +222,32 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
     required_element(&document, "base64-alphabet")?
         .set_text_content(Some(std::str::from_utf8(alphabet.characters()).map_err(stringify)?));
 
-    DEMO.with_borrow_mut(|slot| *slot = Some(Demo { scene, alphabet }));
+    DEMO.with_borrow_mut(|slot| {
+        *slot = Some(Demo {
+            scene,
+            alphabet,
+            text: text.to_owned(),
+            input,
+        });
+    });
     Ok(input)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The text box now holds `text`. Draws the scene again for it, then gives the new text box the keyboard focus, with the
-/// caret where it was, so that typing carries on in it. A failure is logged to the console, since the text box's own
-/// callback has nowhere to return it to.
+/// The text box now holds `text`. Draws the scene again for it, unless the user is composing text with an input method
+/// editor. The scene is replaced along with its text box, and a composition does not survive that. So the scene waits
+/// until the composition ends: see [`composition_ended`].
 fn typed(id: NodeId, text: &str) {
+    if !COMPOSING.get() {
+        redraw(id, text);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the scene again for `text`, then gives the new text box the keyboard focus, with the caret where it was, so
+/// that typing carries on in it. A failure is logged to the console, since the text box's own callback has nowhere to
+/// return it to.
+fn redraw(id: NodeId, text: &str) {
     let state = DEMO.with_borrow(|slot| slot.as_ref().map(|d| (d.alphabet, d.scene.text_input_caret(id).ok())));
     let result = state
         .ok_or_else(|| "the diagram is not built".to_owned())
@@ -238,6 +261,51 @@ fn typed(id: NodeId, text: &str) {
     if let Err(e) = result {
         web_sys::console::error_1(&format!("Could not draw the text: {e}").into());
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The user has finished composing. Draws the scene for the text the text box holds now, if it is not the text the scene
+/// was drawn for. The browser can send the last `input` event either before or after `compositionend`, and the text may
+/// not be in the box until the event that follows it. So this looks once the event has been handled, and draws nothing
+/// if the `input` event has already done so.
+fn composition_ended() {
+    let value = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.query_selector(&format!("#{DIAGRAM_ID} input")).ok().flatten())
+        .and_then(|input| input.dyn_into::<web_sys::HtmlInputElement>().ok())
+        .map(|input| input.value());
+    let input = DEMO.with_borrow(|slot| slot.as_ref().filter(|d| Some(&d.text) != value.as_ref()).map(|d| d.input));
+    if let (Some(input), Some(value)) = (input, value) {
+        redraw(input, &value);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Watches the stage for the start and end of a composition. Composition events bubble, and the stage outlives every
+/// scene that is drawn in it, so these two listeners are attached once.
+///
+/// # Errors
+///
+/// Returns `Err` if the stage is missing, or a listener could not be attached.
+fn watch_composition(document: &web_sys::Document) -> Result<(), String> {
+    let stage = required_element(document, STAGE_ID)?;
+    let started = Closure::<dyn FnMut()>::new(|| COMPOSING.set(true));
+    let ended = Closure::<dyn FnMut()>::new(|| {
+        COMPOSING.set(false);
+        // Not at once: the text box may not hold the composed text until the events that follow have been handled.
+        if let Some(window) = web_sys::window() {
+            let later = Closure::once_into_js(composition_ended);
+            let _ = window.set_timeout_with_callback_and_timeout_and_arguments_0(later.unchecked_ref(), 0);
+        }
+    });
+    for (name, listener) in [("compositionstart", &started), ("compositionend", &ended)] {
+        stage
+            .add_event_listener_with_callback(name, listener.as_ref().unchecked_ref())
+            .map_err(|e| format!("could not attach the {name} listener: {e:?}"))?;
+    }
+    started.forget();
+    ended.forget();
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -271,6 +339,9 @@ fn choose(alphabet: Alphabet) {
 /// values for as long as it lives, so each change draws the scene again, as the Huffman demo does. Text past
 /// [`INPUT_LEN`] bytes is not encoded.
 ///
+/// A scene is not drawn while the user is composing text with an input method editor, since drawing it replaces the
+/// text box and ends the composition. It is drawn when the composition ends.
+///
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing a part of the panel, or if any library call fails.
@@ -288,6 +359,7 @@ pub(crate) fn build_base64_demo() -> Result<(), String> {
             .map_err(|e| format!("could not attach the listener for {id}: {e:?}"))?;
         on_change.forget();
     }
+    watch_composition(&document)?;
     build(INITIAL_TEXT, Alphabet::Standard).map(|_| ())
 }
 
