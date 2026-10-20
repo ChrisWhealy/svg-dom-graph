@@ -16,7 +16,7 @@ const DIAGRAM: &str = "#text-input-diagram";
 fn open_markdown() -> Result<DemoTab, String> {
     new_demo_tab(
         "index.html#panel-markdown",
-        &format!("{MARKDOWN_DIAGRAM} g[aria-label^=\"Text. \"]"),
+        &format!("{MARKDOWN_DIAGRAM} g[aria-label^=\"Text\"]"),
         (1400, 1400),
     )
 }
@@ -55,7 +55,7 @@ fn echo(tab: &Tab) -> Result<String, String> {
 }
 
 /// The Markdown node's `<g>`: the first node group, which is the one holding the headings.
-const MARKDOWN_GROUP: &str = "g[aria-label^=\"Text. \"]";
+const MARKDOWN_GROUP: &str = "g[aria-label^=\"Text\"]";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every line is drawn inside the box, whatever its length, and the box is as tall as its text.
@@ -100,7 +100,7 @@ fn a_label_wider_than_its_text_input_node_shrinks_to_fit() -> Result<(), String>
     let json = text(
         &tab,
         &format!(
-            "(() => {{ const g = document.querySelector('{DIAGRAM} g[aria-label=\"Text to be compressed\"]'); \
+            "(() => {{ const g = document.querySelector('{DIAGRAM} g[aria-label^=\"Long labels shrink!\"]'); \
                 const box = g.querySelector('rect').getBBox(); const b = g.querySelector('text').getBBox(); \
                 return JSON.stringify([b.x, b.x + b.width, box.width]); }})()"
         ),

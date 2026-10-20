@@ -11,7 +11,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Rearranged panels in demo server (`1a2bad3`)
-- Change Huffman tree connector style to straight (``)
+- Change Huffman tree connector style to straight (`927e517`)
+
+## Fixed
+
+- Correct CDP tests (``)
 
 # [Released]
 

@@ -898,7 +898,7 @@ fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
     check_eq(output(&tab)?, Vec::<String>::new())?;
     goto(&tab, PASS_TWO + 3)?;
     check_eq(output(&tab)?, vec!["4e".to_owned()])?;
-    check_eq(highlight(&tab, "Output bytes")?, Some("byte 0".to_owned()))?;
+    check_eq(highlight(&tab, "Output bytes")?, Some("cell 0".to_owned()))?;
     // The next step writes nothing, so the byte is no longer marked.
     goto(&tab, PASS_TWO + 4)?;
     check_eq(output(&tab)?, vec!["4e".to_owned()])?;
@@ -1026,23 +1026,22 @@ fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A dump without offsets marks each byte a step writes over the glyphs it names, in every place of a line and on more
-/// than one line. Identical lines are never collapsed, so a line is always where the output's byte count says it is.
+/// A dump without offsets marks the input byte a step packs over the glyphs it names, in every place of a line and on
+/// more than one line. Identical lines are never collapsed, so a line is always where the byte's index says it is.
 #[test]
-fn the_output_dump_marks_the_bytes_a_step_wrote_over_their_own_glyphs() -> Result<(), String> {
+fn the_input_dump_marks_the_byte_a_step_packs_over_its_own_glyphs() -> Result<(), String> {
     use crate::common::{ascii_column, dump_marks, hex_column};
-    // Eight bytes that are equally common get 3-bit codes, so 48 of them make 18 output bytes: a whole second line, and
-    // every place in a line, from a walk short enough to be quick.
+    // 48 input bytes make three lines of the dump, and pack one at a time, so every place in a line is marked.
     let tab = open_default()?;
     set_text(&tab, &"abcdefgh".repeat(6))?;
-    let scope = format!("{DIAGRAM} g[aria-label^=\"Output bytes\"]");
+    let scope = format!("{DIAGRAM} g[aria-label^=\"Input bytes\"]");
     let (mut hex_places, mut ascii_places, mut lines) = (
         std::collections::BTreeSet::new(),
         std::collections::BTreeSet::new(),
         std::collections::BTreeSet::new(),
     );
     // Walk to the end, looking at the marks after every step of pass two.
-    for _ in 0..100 {
+    for _ in 0..200 {
         click(&tab, "Next selection")?;
         if !in_pass_two(&tab)? {
             continue;
