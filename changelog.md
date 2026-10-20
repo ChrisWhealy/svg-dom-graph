@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - `NodeValues::Bits(BitValues)` to create bit value arrays 1-7 bits wide (`30734d1`)
-- Extend CDP test coverage to include rendered `BitValues` behaviour (``)
+- Extend CDP test coverage to include rendered `BitValues` behaviour (`9b1e8f8`)
 
 ## Changed
 
@@ -24,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct CDP tests (`f5d3488`)
 - Ensure encoded sequences can always recover valid UTF-8 characters (`b0f8f05`)
+- Doc only: Correct description of why `Base64URL` alphabet is needed (``)
 
 # [Released]
 

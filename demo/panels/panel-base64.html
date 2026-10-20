@@ -18,8 +18,8 @@
             href="https://datatracker.ietf.org/doc/html/rfc4648#section-4">Base64 alphabet</a> <code
             id="base64-alphabet"></code>. When used in a URL, the <a
             href="https://datatracker.ietf.org/doc/html/rfc4648#section-5">Base64URL alphabet</a> is used in which a
-        <code>-</code> is used for 62, and <code>_</code> is used for 63. This is to make the <code>+</code> and
-        <code>/</code> characters HTTP-safe.
+        <code>-</code> is used for 62, and <code>_</code> is used for 63. In this way, the sender of such an encoded
+        string does not first need to perform URL encoding before the string can be considered HTTP-safe.
     </p>
     <p>If the input does not divide into whole groups of three bytes, the last group is padded with zero bits. One
         byte leaves two characters to fill and two bytes leave one. These are written as <code>=</code>, so the output
