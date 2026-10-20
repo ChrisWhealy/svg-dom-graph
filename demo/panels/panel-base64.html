@@ -1,0 +1,40 @@
+<section class="section" id="panel-base64">
+    <h2>Base64 Encoding</h2>
+    <p>Base64 encodes a a sequence of bytes using only of printable characters, so they can transmitted as "plain text"
+        as opposed to raw binary. This means that BAse64 data can be included in the body of an email or sent as a query
+        string value in a URL.</p>
+    <p>It operates by taking three byte of the input (which equalts 24 bits), then dividing those 24 into four, 6-bit
+        slices. A six bit number is than some value in the range 0 to 63.</p>
+    <p>We now need to map that 6-bit number to a printable character. There are:</p>
+    <ul>
+        <li>26 uppercase letters (values <code>0..25</code>)</li>
+        <li>26 lowercase letters (values <code>26..51</code>)</li>
+        <li>Ten digits (values <code>52..61</code>)</li>
+        <li><code>62</code> is encoded as a <code>+</code></li>
+        <li><code>63</code> is encoded as a <code>/</code></li>
+    </ul>
+    <p>These characters make up what is known as the <a
+            href="https://datatracker.ietf.org/doc/html/rfc4648#section-4">Base64 alphabet</a> <code
+            id="base64-alphabet"></code>. When used in a URL, the <a
+            href="https://datatracker.ietf.org/doc/html/rfc4648#section-5">Base64URL alphabet</a> is used in which a
+        <code>-</code> is used for 62, and <code>_</code> is used for 63. This is to prevent the <code>+</code> and
+        <code>/</code> characters from being misinterpreted by the HTTP protocol.
+    </p>
+    <p>If the input does not divide into whole groups of three bytes, the last group is padded with zero bits. One
+        byte leaves two characters to fill and two bytes leave one. These are written as <code>=</code>, so the output
+        is always a multiple of four characters long.</p>
+    <p>Type in the text input node. Its bytes appear in the hex dump, then below it as six-bit values, then back up the
+        page as a second hex dump of the characters they stand for. The six-bit values are laid out four groups to a
+        row, and the node has a row only when the text needs one. The first hex dump has room for 256 bytes, so any text
+        past that is not encoded, and it dims the bytes that the text does not reach. The six-bit values behind a
+        padding character are dimmed too. Each change draws the diagram again, so a node that has been dragged returns
+        to its place. Zoom and pan are kept.</p>
+    <p class="controls">Alphabet:
+        <label><input type="radio" name="base64-alphabet" id="base64-alphabet-standard" checked> Standard
+            (RFC 4648 §4)</label>
+        <label><input type="radio" name="base64-alphabet" id="base64-alphabet-url"> URL-safe (RFC 4648 §5)</label>
+    </p>
+    <p class="controls">Base64: <code><output id="base64-result"></output></code></p>
+    <div class="canvas" id="base64-diagram-stage">
+    </div>
+</section>

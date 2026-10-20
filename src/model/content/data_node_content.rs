@@ -174,7 +174,7 @@ impl DataNodeContent {
     /// returned and this content still holds its old values. A caller that retries with the same `values` therefore sees
     /// every cell that was not yet confirmed as changed again, including those it had already written.
     ///
-    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned integer or float, and holds the
+    /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned integer or float, of the same bit width if they are bit values, and holds the
     /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
     /// content also needs printable ASCII, and counts as one cell, whole.
     pub(crate) fn try_replace_values<E>(
@@ -183,8 +183,7 @@ impl DataNodeContent {
         scratch: &mut String,
         mut update: impl FnMut(usize, &str) -> Result<(), E>,
     ) -> Result<bool, E> {
-        if std::mem::discriminant(&self.values) != std::mem::discriminant(&values) || self.values.len() != values.len()
-        {
+        if !self.values.same_kind(&values) || self.values.len() != values.len() {
             return Ok(false);
         }
         if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {

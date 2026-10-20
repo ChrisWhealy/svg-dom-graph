@@ -8,6 +8,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.2.37] - 2026-10-20
 
+## Added
+
+- Demo implementation of Base64 encoding (``)
+- `NodeValues::Bits(BitValues)` to create bit value arrays 1-7 bits wide (``)
+
 ## Changed
 
 - Rearranged panels in demo server (`1a2bad3`)
@@ -15,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct CDP tests (``)
+- Correct CDP tests (`f5d3488`)
 
 # [Released]
 

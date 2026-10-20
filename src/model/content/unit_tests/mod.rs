@@ -8,6 +8,7 @@
 //!   `widest_cell_string`.
 //! - [`floats`] — `F32`/`F64`: every `FloatFormat`, special values, IEEE-754 bits, and the width of a cell.
 //! - [`wide`] — `U128`, `I128` and `Uuid`: the whole range, every `UuidFormat`, and the width of a cell.
+//! - [`bit_values`] — `NodeValues::Bits`: validation, the digits of each format, and the width of a cell.
 //! - [`bools_and_sizes`] — `Bool`, `Usize` and `Isize`: every `BoolFormat`, a Boolean's fixed width, and a pointer-
 //!   sized integer's width.
 //! - [`content`] — the default and overridden layout, the value count, a single value, and the type colour and name.
@@ -18,6 +19,7 @@
 //! - [`hex_dump`] — `DataFormat::HexDump`: the lines of `hexdump -C`, the optional offset, and the cells.
 //! - [`labelling`] — `LabellingStyle` and `with_labels`/`with_labelling_style`.
 
+mod bit_values;
 mod bools_and_sizes;
 mod content;
 mod floats;

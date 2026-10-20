@@ -21,9 +21,9 @@ mod view_input;
 
 pub use crate::geometry::{side::Side, view::ViewTransform};
 pub use crate::model::content::{
-    ArithmeticOperator, BinaryOperator, BoolFormat, ByteOrder, DataFormat, DataNodeContent, FloatFormat, FloatNotation,
-    FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle, MAX_FLOAT_DIGITS, NodeValues, Selection, UnaryOperator,
-    Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle,
+    ArithmeticOperator, BinaryOperator, BitValues, BoolFormat, ByteOrder, DataFormat, DataNodeContent, FloatFormat,
+    FloatNotation, FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle, MAX_BIT_WIDTH, MAX_FLOAT_DIGITS,
+    NodeValues, Selection, UnaryOperator, Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle,
 };
 pub(crate) use box_handles::{BoxHandles, CellGrid, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};

@@ -67,6 +67,8 @@
 //! - [`DataFormat::Bool`]: a Boolean as [`BoolFormat`] says: the words `true` and `false`, the bits `1` and `0`, or a
 //!   green check mark and a red cross. On `Bool` values only. Every other format reads a Boolean as the one byte it is
 //!   held in.
+//! - [`NodeValues::Bits`]: values fewer than eight bits wide. [`DataFormat::Binary`] writes exactly as many digits as the
+//!   width, with no nybble gap, and [`DataFormat::Hexadecimal`] writes `width.div_ceil(4)` digits. See [`BitValues`].
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal
 //!   has no natural byte boundary to split on, unlike hexadecimal and binary. So [`ByteOrder`] has no visible effect
 //!   under `Decimal`: the same number reads the same regardless of which byte order produced it.
@@ -100,6 +102,7 @@
 //! `<title>` on a value's own rect would not produce a tooltip over that same value's own text — a sibling element, not
 //! a descendant. And a `<title>` as a child of the `<text>` element itself would leak its own text into
 //! `text.textContent`, corrupting the rendered digits read back from the DOM.
+mod bit_values;
 mod bool_format;
 mod byte_order;
 mod data_format;
@@ -113,6 +116,7 @@ mod operators;
 mod selection;
 mod uuid_format;
 
+pub use bit_values::{BitValues, MAX_BIT_WIDTH};
 pub use bool_format::BoolFormat;
 pub use byte_order::ByteOrder;
 pub use data_format::DataFormat;

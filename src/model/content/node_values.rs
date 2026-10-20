@@ -1,14 +1,15 @@
 use super::{
     ByteOrder, DataFormat, FloatFormat,
+    bit_values::{BitValues, format_bits_binary_into, format_bits_hex_into},
     bool_format::format_bool_into,
     float_format::{FloatLike, format_float_into, widest_float},
     format_ascii_into, format_binary_into, format_decimal_into, format_hex_into,
     uuid_format::{Uuid, format_uuid_into},
 };
 use crate::colours::{
-    TYPE_COLOUR_BOOL, TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32,
-    TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE, TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32,
-    TYPE_COLOUR_U64, TYPE_COLOUR_U128, TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
+    TYPE_COLOUR_BITS, TYPE_COLOUR_BOOL, TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16,
+    TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE, TYPE_COLOUR_U8, TYPE_COLOUR_U16,
+    TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128, TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -256,6 +257,36 @@ macro_rules! impl_float_cell {
 impl_float_cell!(f32, f64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats one value of `width` bits into `out` per `format`. A float, UUID or Boolean format means nothing for these
+/// values, and is rejected before one is ever drawn. It reads as the plain decimal number if it does get here.
+fn format_bits_into(value: u8, width: u8, format: DataFormat, out: &mut String) {
+    match format {
+        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+            format_decimal_into(u128::from(value), false, out);
+        },
+        DataFormat::Hexadecimal => format_bits_hex_into(value, width, out),
+        DataFormat::Binary => format_bits_binary_into(value, width, out),
+        DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => format_ascii_into([value], out),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats into `out` the value of `bits` that renders widest under `format`. Every format but decimal gives every
+/// value the same number of characters, so the first is as wide as any, and decimal's widest is the largest.
+fn format_widest_bits(bits: &BitValues, format: DataFormat, out: &mut String) {
+    let values = bits.values();
+    let widest = match format {
+        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+            values.iter().copied().max()
+        },
+        _ => values.first().copied(),
+    };
+    if let Some(value) = widest {
+        format_bits_into(value, bits.width(), format, out);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Calls `f(index, formatted)` for every value of `values`, reusing `scratch` for the text. See
 /// [`NodeValues::for_each_cell_string`].
 fn for_each_formatted<T: Cell>(
@@ -404,6 +435,12 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// every other format a Boolean is read as the single byte it is held in. The logical operators `NOT`, `AND`, `OR`,
 /// `XOR`, `NAND`, `NOR` and `XNOR` accept Booleans, and no other operator does.
 ///
+/// # Bit values
+///
+/// `Bits` holds [`BitValues`]: values that are each from 1 to 7 bits wide, all of one width, such as the six-bit values
+/// of Base64. [`DataFormat::Binary`] writes exactly that many digits, with no grouping into nybbles. See [`BitValues`]
+/// for each format.
+///
 /// # Equality
 ///
 /// Two `NodeValues` are equal when they are the same type and hold identical stored values, and for a float that means
@@ -450,6 +487,8 @@ pub enum NodeValues {
     Uuid(Vec<Uuid>),
     /// Boolean values. See [`BoolFormat`](super::BoolFormat).
     Bool(Vec<bool>),
+    /// Values fewer than eight bits wide, all of one width. See [`BitValues`].
+    Bits(BitValues),
 }
 
 impl PartialEq for NodeValues {
@@ -481,6 +520,17 @@ impl NodeValues {
             Self::F64(v) => v.len(),
             Self::Uuid(v) => v.len(),
             Self::Bool(v) => v.len(),
+            Self::Bits(b) => b.values().len(),
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if `other` is the same type: the same variant, and for bit values the same width. Values of the same kind
+    /// can replace one another in a drawn node, since every cell is then written the same way.
+    pub(super) fn same_kind(&self, other: &Self) -> bool {
+        match (self, other) {
+            (Self::Bits(a), Self::Bits(b)) => a.width() == b.width(),
+            _ => std::mem::discriminant(self) == std::mem::discriminant(other),
         }
     }
 
@@ -527,6 +577,7 @@ impl NodeValues {
             (Self::F64(a), Self::F64(b)) => same(a, b),
             (Self::Uuid(a), Self::Uuid(b)) => same(a, b),
             (Self::Bool(a), Self::Bool(b)) => same(a, b),
+            (Self::Bits(a), Self::Bits(b)) => a == b,
             _ => false,
         }
     }
@@ -566,6 +617,13 @@ impl NodeValues {
             Self::F64(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::Uuid(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::Bool(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::Bits(b) => {
+                let mut f = f;
+                for (i, &value) in b.values().iter().enumerate() {
+                    format_bits_into(value, b.width(), format, scratch);
+                    f(i, scratch);
+                }
+            },
         }
     }
 
@@ -600,6 +658,16 @@ impl NodeValues {
             (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::Uuid(v), Self::Uuid(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::Bool(v), Self::Bool(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::Bits(v), Self::Bits(o)) if v.width() == o.width() => {
+                let mut f = f;
+                for (i, (&value, &was)) in v.values().iter().zip(o.values()).enumerate() {
+                    if value != was {
+                        format_bits_into(value, v.width(), format, scratch);
+                        f(i, scratch)?;
+                    }
+                }
+                Ok(())
+            },
             _ => Ok(()),
         }
     }
@@ -631,6 +699,7 @@ impl NodeValues {
             Self::F64(v) => widest_float_cell(v, format, byte_order, out),
             Self::Uuid(v) => format_widest(v, format, byte_order, out),
             Self::Bool(v) => widest_bool_cell(v, format, byte_order, out),
+            Self::Bits(b) => format_widest_bits(b, format, out),
         }
     }
 
@@ -661,6 +730,10 @@ impl NodeValues {
             Self::F64(v) => format_first(v, format, byte_order, out),
             Self::Uuid(v) => format_first(v, format, byte_order, out),
             Self::Bool(v) => format_first(v, format, byte_order, out),
+            Self::Bits(b) => b.values().first().is_some_and(|&value| {
+                format_bits_into(value, b.width(), format, out);
+                true
+            }),
         }
     }
 
@@ -690,6 +763,7 @@ impl NodeValues {
             Self::F64(_) => TYPE_COLOUR_F64,
             Self::Uuid(_) => TYPE_COLOUR_UUID,
             Self::Bool(_) => TYPE_COLOUR_BOOL,
+            Self::Bits(_) => TYPE_COLOUR_BITS,
         }
     }
 
@@ -719,6 +793,15 @@ impl NodeValues {
             Self::F64(_) => "f64",
             Self::Uuid(_) => "uuid",
             Self::Bool(_) => "bool",
+            Self::Bits(b) => match b.width() {
+                1 => "1-bit",
+                2 => "2-bit",
+                3 => "3-bit",
+                4 => "4-bit",
+                5 => "5-bit",
+                6 => "6-bit",
+                _ => "7-bit",
+            },
         }
     }
 }

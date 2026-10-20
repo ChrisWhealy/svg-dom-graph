@@ -58,6 +58,7 @@ const GROUPS: &[Group] = &[
             ("panel-signed", "Signed integers"),
             ("panel-hexdump", "Hexdump"),
             ("panel-ascii", "ASCII"),
+            ("panel-bits", "Bit arrays"),
             ("panel-float", "Floating point"),
             ("panel-128-bit", "128-bit values and UUIDs"),
             ("panel-size", "Size types"),
@@ -101,7 +102,7 @@ const GROUPS: &[Group] = &[
     },
     Group {
         label: "Encoding & Compression",
-        panels: &[("panel-huffman", "Huffman encoding")],
+        panels: &[("panel-huffman", "Huffman encoding"), ("panel-base64", "Base64 encoding")],
     },
 ];
 

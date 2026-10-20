@@ -23,6 +23,8 @@
 //! - `panel-hexdump` / `#hexdump-diagram` — [`data::build_hexdump_demo`]: bytes as `hexdump -C` shows them, with and
 //!   without each line's offset and the total length.
 //! - `panel-ascii` / `#ascii-diagram` — [`data::build_ascii_demo`]: bytes as characters, a cell each or as a run of text.
+//! - `panel-bits` / `#bits-diagram` — [`bits::build_bits_demo`]: values from one to seven bits wide, singly and in
+//!   arrays, in decimal, hexadecimal and binary. Binary writes exactly as many digits as the width, with no nybble gap.
 //! - `panel-128-bit` / `#wide-diagram` — [`wide_values::build_wide_demo`]: a `u128` and an `i128` across their whole
 //!   range, and a `Uuid` of every version written in every way a `UuidFormat` can write it, including the two byte
 //!   layouts a UUID can be stored in.
@@ -63,6 +65,9 @@
 //!   round at a time, drawn as the four columns `a`, `b`, `c` and `d`. Each of the 12 steps of a quarter round is an
 //!   operator node in the column of the word it updates, and every value is a real result, worked out in plain Rust.
 //!   The scene is large, so it opens in a window of its own, as the hash demos' do.
+//! - `panel-base64` / `#base64-diagram` — [`base64::build_base64_demo`]: Base64 encoding of typed text, three bytes at a
+//!   time. The bytes in binary, the same bits cut into six-bit values, and the character for each value, with the padding
+//!   a short last group needs. Every value is worked out in plain Rust.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -78,6 +83,8 @@
 //! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
 //! [`report_panel_error`]) instead of trapping.
 
+mod base64;
+mod bits;
 mod bools_and_sizes;
 mod chacha20;
 mod data;
@@ -171,6 +178,7 @@ demo_gallery! {
     "panel-signed" => data::build_signed_demo,
     "panel-hexdump" => data::build_hexdump_demo,
     "panel-ascii" => data::build_ascii_demo,
+    "panel-bits" => bits::build_bits_demo,
     "panel-float" => floats::build_float_demo,
     "panel-128-bit" => wide_values::build_wide_demo,
     "panel-size" => bools_and_sizes::build_sizes_demo,
@@ -190,6 +198,7 @@ demo_gallery! {
     "panel-sha2-256" => sha2_256::build_sha2_256_demo + sha2_256::FILES,
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
     "panel-chacha20" => chacha20::build_chacha20_demo + chacha20::FILES,
+    "panel-base64" => base64::build_base64_demo + base64::FILES,
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
 }
 

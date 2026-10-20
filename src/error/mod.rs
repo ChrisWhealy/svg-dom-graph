@@ -95,6 +95,10 @@ pub enum Error {
     /// `DataFormat::HexDump` content that is not `u8`. Rejected before drawing anything or touching the graph's model,
     /// so a rejected call leaves the scene unchanged.
     InvalidHexDumpFormat,
+    /// [`BitValues::new`](crate::scene::BitValues::new) was given a `width` that is `0` or more than
+    /// [`MAX_BIT_WIDTH`](crate::scene::MAX_BIT_WIDTH), with `index` `None`, or a value that does not fit in `width`
+    /// bits, with `index` that of the first one.
+    InvalidBitValues { width: u8, index: Option<usize> },
     /// `DataFormat::Float` content that is not `f32` or `f64`, or whose [`crate::scene::FloatFormat`] asks for more than
     /// [`crate::scene::MAX_FLOAT_DIGITS`] digits, or for no significant digits at all. Rejected before drawing anything
     /// or touching the graph's model, so a rejected call leaves the scene unchanged.
@@ -285,6 +289,16 @@ impl fmt::Display for Error {
                 )
             },
             Error::InvalidHexDumpFormat => write!(f, "a hex dump format needs u8 values"),
+            Error::InvalidBitValues { width, index: None } => {
+                write!(
+                    f,
+                    "bit values must be from 1 to {max} bits wide, not {width}",
+                    max = crate::scene::MAX_BIT_WIDTH
+                )
+            },
+            Error::InvalidBitValues { width, index: Some(index) } => {
+                write!(f, "the value at index {index} does not fit into {width} bits")
+            },
             Error::InvalidFloatFormat => {
                 write!(
                     f,

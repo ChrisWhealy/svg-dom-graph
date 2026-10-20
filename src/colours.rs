@@ -114,6 +114,9 @@ pub(crate) const TYPE_COLOUR_ISIZE: &str = "#a6dcd2";
 /// The `bool` shade — pastel sand, a hue that no number or UUID has, and that is far from the yellow of a selection.
 pub(crate) const TYPE_COLOUR_BOOL: &str = "#f1e6c9";
 
+/// The shade for values fewer than eight bits wide — pastel rose-gold, a hue no whole-byte type has.
+pub(crate) const TYPE_COLOUR_BITS: &str = "#f2d4c4";
+
 /// A `true` mark's colour in [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) — a green that reads on every pastel.
 pub(crate) const BOOL_TRUE_INK: &str = "#1a7f37";
 
