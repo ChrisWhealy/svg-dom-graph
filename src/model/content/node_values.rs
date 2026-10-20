@@ -745,6 +745,9 @@ impl NodeValues {
     /// [`PLAIN_BOX_FILL`](crate::colours::PLAIN_BOX_FILL). That is the pale blue every ordinary node, and a multi-value
     /// data node's own outer box, already uses. See [`crate::colours`] for every shade this crate draws with, including
     /// these four.
+    ///
+    /// The one exception is [`Bits`](Self::Bits), where every width shares the same colour. The width of the values is
+    /// in the node's [`type_name`](Self::type_name), such as `6-bit`, and not in its colour.
     pub(crate) fn type_colour(&self) -> &'static str {
         match self {
             Self::U8(_) => TYPE_COLOUR_U8,

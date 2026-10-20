@@ -6,12 +6,12 @@
         are formatted in decimal, hexadecimal and binary.</p>
     <p>A bit array is made with <code>BitValues::new(width, values)</code>, which refuses a width of 0 or more than 7,
         and a value that does not fit in its width. So a six-bit array can never hold 64.</p>
-    <p>Binary writes exactly as many digits as the width, with no gap. The gap in the binary form of a whole byte
-        splits it into two nybbles of four bits, which means nothing for a width that is not a multiple of four.
-        Hexadecimal writes one digit for each four bits, or part of four, so a six-bit value is two digits.</p>
+    <p>Binary writes exactly as many digits as the width, with no gap. The gap in the binary form of a whole byte splits
+        it into two nybbles of four bits, which means nothing for a width that is not a multiple of four. Hexadecimal
+        writes one digit for each four bits, or part of four, so a six-bit value is two digits.</p>
     <p>The last line shows the difference. The number 19 as a <code>u8</code> is <code>0001 0011</code>, with two
-        leading zero bits. As a six-bit value it is <code>010011</code>. Each width has its own colour, and its width
-        is the node's accessible type name, such as <code>6-bit</code>.</p>
+        leading zero bits. As a six-bit value it is <code>010011</code>. The width is used to construct both the node's
+        tooltip and its accessible type name, such as <code>6-bit</code>.</p>
     <div class="canvas" id="bits-diagram-stage" style="margin-top: 1.5rem;">
     </div>
 </section>

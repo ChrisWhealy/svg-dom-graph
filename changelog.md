@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Rearranged panels in demo server (`1a2bad3`)
 - Change Huffman tree connector style to straight (`927e517`)
-- Limit Base64 demo input field to 256 characters (``)
+- Limit Base64 demo input field to 256 characters (`aae478f`)
+- Doc only: Bit sequences of differing lengths all share the same colour (``)
 
 ## Fixed
 
