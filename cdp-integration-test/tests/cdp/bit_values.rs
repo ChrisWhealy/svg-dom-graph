@@ -129,7 +129,8 @@ fn a_replacement_of_another_width_or_too_wide_a_value_is_refused_and_changes_not
 
     let too_wide = text(&tab, "window.fixture.replace_bits('bits_6', 6, new Uint8Array([64, 1]))")?;
     check(
-        too_wide.contains("does not fit in 6 bits"),
+        // The wording of the message is not the point, so this looks for what it must name: the value and the width.
+        too_wide.contains("index 0") && too_wide.contains("6 bits"),
         &format!("64 was not refused: {too_wide:?}"),
     )?;
 
