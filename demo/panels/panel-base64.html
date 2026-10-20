@@ -26,7 +26,7 @@
     <p>Type in the text input node. Its bytes appear in the hex dump, then below it as six-bit values, then back up the
         page as a second hex dump of the characters they stand for. The six-bit values are laid out four groups to a
         row, and the node has a row only when the text needs one. The first hex dump has room for 256 bytes, so any text
-        past that is not encoded, and it dims the bytes that the text does not reach. The six-bit values behind a
+        past that is not encoded (the cut falls between characters, never inside one), and it dims the bytes that the text does not reach. The six-bit values behind a
         padding character are dimmed too. Each change draws the diagram again, so a node that has been dragged returns
         to its place. Zoom and pan are kept.</p>
     <p class="controls">Alphabet:

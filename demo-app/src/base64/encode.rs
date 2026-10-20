@@ -41,6 +41,17 @@ pub(super) fn sextets(group: [u8; 3]) -> [u8; 4] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The UTF-8 bytes of `text`, cut off at the last whole character that fits in `max` bytes. Cutting at exactly `max`
+/// could leave the first byte or two of a multi-byte character, which no one could decode back into text.
+pub(super) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
+    let mut end = text.len().min(max);
+    while !text.is_char_boundary(end) {
+        end -= 1;
+    }
+    &text.as_bytes()[..end]
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many characters `len` input bytes encode to, counting the padding: four for each group of three bytes, or part
 /// of one.
 pub(super) fn encoded_len(len: usize) -> usize {

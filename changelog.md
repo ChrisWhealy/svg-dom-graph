@@ -10,8 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Demo implementation of Base64 encoding (``)
-- `NodeValues::Bits(BitValues)` to create bit value arrays 1-7 bits wide (``)
+- `NodeValues::Bits(BitValues)` to create bit value arrays 1-7 bits wide (`30734d1`)
 
 ## Changed
 
@@ -21,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct CDP tests (`f5d3488`)
+- Ensure encoded sequences can always recover valid UTF-8 characters (``)
 
 # [Released]
 

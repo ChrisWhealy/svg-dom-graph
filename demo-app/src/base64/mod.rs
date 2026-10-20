@@ -9,7 +9,7 @@ use crate::{
     source_file,
     util::{MARGIN, document, ensure_svg_in, mark_unreached, required_element, required_input, resize_svg, stringify},
 };
-use encode::{Alphabet, PADDING, encode};
+use encode::{Alphabet, PADDING, encode, utf8_prefix};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -51,7 +51,7 @@ const DIAGRAM_ID: &str = "base64-diagram";
 const INITIAL_TEXT: &str = "This is what some text looks like when encoded using Base64...";
 
 /// How many bytes of the typed text are encoded: 256, which is not a whole number of groups, so the last group of a
-/// full node needs padding. Text past it is not encoded. The hex dump always has room for this many.
+/// full node needs padding. Text past it is not encoded, and the cut falls between characters, never inside one. The hex dump always has room for this many.
 const INPUT_LEN: usize = 256;
 
 /// How many values the six-bit node lays out on a row, which is four whole groups.
@@ -93,7 +93,7 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
     let svg = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
-    let bytes = &text.as_bytes()[..text.len().min(INPUT_LEN)];
+    let bytes = utf8_prefix(text, INPUT_LEN);
     let encoded = encode(bytes, alphabet);
 
     let input = scene
