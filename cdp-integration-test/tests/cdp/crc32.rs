@@ -89,11 +89,12 @@ fn says(tab: &Tab, phrase: &str) -> Result<bool, String> {
     Ok(texts(tab)?.join(" ").contains(phrase))
 }
 
-/// Chooses bit `bit` of byte `byte` in the two fields in the scene, then presses the button that introduces the error.
-fn introduce(tab: &Tab, byte: usize, bit: u8) -> Result<(), String> {
+/// Types `byte` and `bit` into the two fields in the scene, exactly as given, then presses the button that introduces the
+/// error.
+fn introduce_text(tab: &Tab, byte: &str, bit: &str) -> Result<(), String> {
     tab.evaluate(
         &format!(
-            "(() => {{ for (const [label, value] of [['Byte', '{byte}'], ['Bit (0 to 7)', '{bit}']]) {{ \
+            "(() => {{ for (const [label, value] of [['Byte', {byte:?}], ['Bit (0 to 7)', {bit:?}]]) {{ \
                  const i = document.querySelector('{DIAGRAM} g[aria-label^=\"' + label + '\"] input'); \
                  i.value = value; i.dispatchEvent(new Event('input', {{ bubbles: true }})); }} \
              document.querySelector('{DIAGRAM} g[data-action=\"introduce\"]') \
@@ -104,6 +105,25 @@ fn introduce(tab: &Tab, byte: usize, bit: u8) -> Result<(), String> {
     .map_err(|e| format!("could not introduce the error: {e}"))?;
     std::thread::sleep(Duration::from_millis(400));
     Ok(())
+}
+
+/// Chooses bit `bit` of byte `byte` in the two fields in the scene, then presses the button that introduces the error.
+fn introduce(tab: &Tab, byte: usize, bit: u8) -> Result<(), String> {
+    introduce_text(tab, &byte.to_string(), &bit.to_string())
+}
+
+/// The fill of the box of the field called `label`, and whether its text box is marked invalid.
+fn field_marks(tab: &Tab, label: &str) -> Result<(String, String), String> {
+    let marks = text(
+        tab,
+        &format!(
+            "(() => {{ const g = document.querySelector('{DIAGRAM} g[aria-label^=\"{label}\"]'); \
+             return (g.querySelector('rect').getAttribute('fill') ?? '') + '|' + \
+                    (g.querySelector('input').getAttribute('aria-invalid') ?? ''); }})()"
+        ),
+    )?;
+    let (fill, invalid) = marks.split_once('|').ok_or("no marks returned")?;
+    Ok((fill.to_owned(), invalid.to_owned()))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -350,4 +370,77 @@ fn a_button_keeps_the_keyboard_focus_across_the_redraw_and_the_change_is_announc
         text(&tab, "document.getElementById('crc32-announcement').getAttribute('aria-live')")?.as_str(),
         "polite",
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A field that is not a whole number, or is out of range, is checked when the button is pressed. It is marked in the
+/// colour for what is wrong with it, and no other field is. The status line and the live region say which field and what
+/// is wrong, and no bit is flipped.
+#[test]
+fn a_field_that_is_wrong_is_marked_in_the_colour_for_what_is_wrong_and_nothing_is_flipped() -> Result<(), String> {
+    const NOT_A_NUMBER: &str = "#f5b7b1";
+    const OUT_OF_RANGE: &str = "#fad7a0";
+    let tab = open()?;
+    let (before, _) = field_marks(&tab, "Bit (0 to 7)")?;
+
+    // Letters in the bit field, and a byte past the end of the 49 bytes.
+    introduce_text(&tab, "70", "abc")?;
+    let (bit_fill, bit_invalid) = field_marks(&tab, "Bit (0 to 7)")?;
+    let (byte_fill, byte_invalid) = field_marks(&tab, "Byte")?;
+    check_eq(bit_fill, NOT_A_NUMBER.to_owned())?;
+    check_eq(bit_invalid, "true".to_owned())?;
+    check_eq(byte_fill, OUT_OF_RANGE.to_owned())?;
+    check_eq(byte_invalid, "true".to_owned())?;
+    check(
+        says(&tab, "Bit: \"abc\" is not a whole number")?,
+        "the status line does not say what is wrong with the bit",
+    )?;
+    check(
+        says(&tab, "Byte: 70 is more than 48")?,
+        "the status line does not say what is wrong with the byte",
+    )?;
+    check(texts(&tab)?.iter().any(|t| t == "none"), "no bit should have been flipped")?;
+    check(
+        text(&tab, "document.getElementById('crc32-announcement').textContent")?.contains("not a whole number"),
+        "the live region does not say what is wrong",
+    )?;
+
+    // A number that is too big is marked in the other colour, and a field that is right is not marked.
+    introduce_text(&tab, "3", "9")?;
+    check_eq(field_marks(&tab, "Bit (0 to 7)")?.0, OUT_OF_RANGE.to_owned())?;
+    let (byte_fill, byte_invalid) = field_marks(&tab, "Byte")?;
+    check_eq(byte_invalid, String::new())?;
+    check(
+        byte_fill != NOT_A_NUMBER && byte_fill != OUT_OF_RANGE,
+        "the byte is right, so it must not be marked",
+    )?;
+
+    // Editing a marked field takes its mark off at once, and the other mark stays.
+    set_field(&tab, "Bit (0 to 7)", "5")?;
+    let (fill, invalid) = field_marks(&tab, "Bit (0 to 7)")?;
+    check_eq(fill, before)?;
+    check_eq(invalid, String::new())?;
+
+    // Right values flip the bit and leave no marks.
+    introduce_text(&tab, "3", "5")?;
+    check(
+        says(&tab, "Bit 5 of byte 3 is flipped in transmission.")?,
+        "the bit was not flipped",
+    )?;
+    check_eq(field_marks(&tab, "Bit (0 to 7)")?.1, String::new())?;
+    check_eq(field_marks(&tab, "Byte")?.1, String::new())
+}
+
+/// Types `value` into the field called `label` in the scene.
+fn set_field(tab: &Tab, label: &str, value: &str) -> Result<(), String> {
+    tab.evaluate(
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} g[aria-label^=\"{label}\"] input'); \
+             i.value = {value:?}; i.dispatchEvent(new Event('input', {{ bubbles: true }})); }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not edit the {label} field: {e}"))?;
+    std::thread::sleep(Duration::from_millis(200));
+    Ok(())
 }

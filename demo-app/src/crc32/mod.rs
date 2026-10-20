@@ -4,6 +4,7 @@
 //!   that opens the scene in a window of its own: [`build_crc32_window`].
 
 mod algorithm;
+mod fields;
 
 use crate::{
     base64::encode::{length_note, utf8_prefix},
@@ -13,6 +14,7 @@ use crate::{
     },
 };
 use algorithm::{Computation, FINAL_MASK, Finding, INITIAL, POLYNOMIAL, compute, locate};
+use fields::{Complaint, Problem, bit_and_byte};
 use std::cell::{Cell, RefCell};
 use svg_dom::{
     SvgRoot,
@@ -33,6 +35,7 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 /// The files behind this demo's one function: the calculation, then the scene that draws it.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     source_file!("crc32/algorithm.rs", "algorithm.rs"),
+    source_file!("crc32/fields.rs", "fields.rs"),
     source_file!("crc32/mod.rs", "mod.rs"),
 ];
 
@@ -56,6 +59,9 @@ thread_local! {
     // What the two fields for choosing the bit to flip hold, so that they keep it across redraws.
     static FLIP_BYTE: RefCell<String> = RefCell::new("0".to_owned());
     static FLIP_BIT: RefCell<String> = RefCell::new("0".to_owned());
+    // What is wrong with each of those two fields, from the last time a button was pressed, or `None` if nothing is. It
+    // stays until the field is edited or a button is pressed again.
+    static COMPLAINTS: RefCell<[Option<Complaint>; 2]> = const { RefCell::new([None, None]) };
 }
 
 const STAGE_ID: &str = "crc32-diagram-stage";
@@ -86,6 +92,14 @@ const TOOLBAR_ROOM: f64 = 80.0;
 
 /// How much the diagram is scaled down, text and all. It is the largest of the demos, and it has a window to itself.
 const SCALE: f64 = 0.85;
+
+/// The names of the two fields that choose the bit to flip, in the order of [`COMPLAINTS`].
+const FIELD_LABELS: [&str; 2] = ["Bit (0 to 7)", "Byte"];
+
+/// The fill that marks a field that is not a number at all, and one that is a number but out of range. Neither is the
+/// only sign: the status line says which field and what is wrong with it.
+const NOT_A_NUMBER_FILL: &str = "#f5b7b1";
+const OUT_OF_RANGE_FILL: &str = "#fad7a0";
 
 /// The size of the fields and buttons for introducing an error, and the gap between one and the next.
 const FIELD_WIDTH: f64 = 120.0;
@@ -539,7 +553,8 @@ fn build(text: &str) -> Result<NodeId, String> {
     ERROR.set(error);
     let transmission = Transmission::new(bytes, computed.crc, error);
     let words = words(bytes, &computed, &transmission);
-    let status = error_status(error);
+    let complaints = COMPLAINTS.with_borrow(Clone::clone);
+    let status = status_text(error, &complaints);
 
     // Both columns are as wide as their widest box. The axis of each is half of that from its left edge.
     let mut middle_width = INPUT_WIDTH;
@@ -630,7 +645,7 @@ fn build(text: &str) -> Result<NodeId, String> {
     // drawn as SVG in the scene's own layer, so they zoom and pan with it.
     let note_rect = scene.node_rect(note).map_err(stringify)?;
     let mut control_left = note_rect.origin.x + note_rect.size.width + CONTROL_GAP;
-    for (label, store) in [("Bit (0 to 7)", &FLIP_BIT), ("Byte", &FLIP_BYTE)] {
+    for (index, (label, store)) in FIELD_LABELS.into_iter().zip([&FLIP_BIT, &FLIP_BYTE]).enumerate() {
         let value = store.with_borrow(Clone::clone);
         let field = scene
             .add_text_input_node(
@@ -638,7 +653,11 @@ fn build(text: &str) -> Result<NodeId, String> {
                 FIELD_WIDTH,
                 label,
                 &value,
-                move |_, _, text| store.with_borrow_mut(|stored| *stored = text.to_owned()),
+                move |_, _, text| {
+                    store.with_borrow_mut(|stored| *stored = text.to_owned());
+                    // Editing a field that was marked wrong takes the mark off it, until the next button press.
+                    clear_complaint(index);
+                },
             )
             .map_err(stringify)?;
         sender.nodes.push(field);
@@ -956,6 +975,11 @@ fn build(text: &str) -> Result<NodeId, String> {
     }
     scene.refresh_layout().map_err(stringify)?;
 
+    // A field that was wrong when a button was pressed is marked, in the colour for what is wrong with it.
+    for (label, complaint) in FIELD_LABELS.into_iter().zip(&complaints) {
+        mark_field(&document, label, complaint.as_ref().map(|c| c.problem));
+    }
+
     // Nothing is made draggable: the boxes are placed to line up, and the explanations sit beside them.
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     if let Some(view) = view {
@@ -1082,6 +1106,14 @@ fn announce(message: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What the status line says: what is wrong with the fields if anything is, which is what the user needs to know first,
+/// and otherwise what has been done to the data.
+fn status_text(error: Option<(usize, u8)>, complaints: &[Option<Complaint>; 2]) -> String {
+    let problems: Vec<&str> = complaints.iter().flatten().map(|c| c.message.as_str()).collect();
+    if problems.is_empty() { error_status(error) } else { problems.join(" ") }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the status line says about `error`.
 fn error_status(error: Option<(usize, u8)>) -> String {
     match error {
@@ -1091,26 +1123,80 @@ fn error_status(error: Option<(usize, u8)>) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Flips the bit that the two fields choose. A byte past the end of the text is taken as the last byte, and a bit past 7
-/// as 7. Nothing is flipped in an empty text, which has no bytes.
+/// Marks the field called `label` as wrong in the way `problem` says, or takes the mark off if there is none. The mark
+/// is a fill on the node's box, and `aria-invalid` on its text box, so that it does not depend on colour. The fill the
+/// box had is kept in `data-original-fill`, to put back.
+fn mark_field(document: &web_sys::Document, label: &str, problem: Option<Problem>) {
+    let Ok(Some(group)) = document.query_selector(&format!("#{DIAGRAM_ID} g[aria-label^=\"{label}\"]")) else {
+        return;
+    };
+    if let Ok(Some(input)) = group.query_selector("input") {
+        let _ = match problem {
+            Some(_) => input.set_attribute("aria-invalid", "true"),
+            None => input.remove_attribute("aria-invalid"),
+        };
+    }
+    let Ok(Some(rect)) = group.query_selector("rect") else { return };
+    match problem {
+        Some(problem) => {
+            if !rect.has_attribute("data-original-fill") {
+                let _ = rect.set_attribute("data-original-fill", &rect.get_attribute("fill").unwrap_or_default());
+            }
+            let fill = match problem {
+                Problem::NotANumber => NOT_A_NUMBER_FILL,
+                Problem::OutOfRange => OUT_OF_RANGE_FILL,
+            };
+            let _ = rect.set_attribute("fill", fill);
+        },
+        None => {
+            if let Some(original) = rect.get_attribute("data-original-fill") {
+                let _ = rect.set_attribute("fill", &original);
+                let _ = rect.remove_attribute("data-original-fill");
+            }
+        },
+    }
+}
+
+/// The field `index` of [`FIELD_LABELS`] has been edited, so what was wrong with it no longer is known to be.
+fn clear_complaint(index: usize) {
+    let had = COMPLAINTS.with_borrow_mut(|complaints| complaints[index].take().is_some());
+    if had && let Some(document) = web_sys::window().and_then(|w| w.document()) {
+        mark_field(&document, FIELD_LABELS[index], None);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Flips the bit that the two fields choose. Both are checked first. A field that is wrong is marked, the status line and
+/// the live region say what is wrong with it, and no bit is flipped. Nothing is flipped in an empty text, which has no
+/// bytes.
 fn introduce_error() {
     let length = DEMO.with_borrow(|slot| slot.as_ref().map_or(0, |d| utf8_prefix(&d.text, INPUT_LEN).len()));
     if length == 0 {
         announce("There is no text to flip a bit in.");
         return;
     }
-    let byte = FLIP_BYTE
-        .with_borrow(|v| v.trim().parse::<usize>().unwrap_or(0))
-        .min(length - 1);
-    let bit = FLIP_BIT.with_borrow(|v| v.trim().parse::<u8>().unwrap_or(0)).min(7);
-    ERROR.set(Some((byte, bit)));
-    if redraw_current("introduce") {
-        announce(&error_status(Some((byte, bit))));
+    let chosen = FLIP_BIT.with_borrow(|bit| FLIP_BYTE.with_borrow(|byte| bit_and_byte(bit, byte, length)));
+    match chosen {
+        Ok((byte, bit)) => {
+            COMPLAINTS.with_borrow_mut(|complaints| *complaints = [None, None]);
+            ERROR.set(Some((byte, bit)));
+            if redraw_current("introduce") {
+                announce(&error_status(Some((byte, bit))));
+            }
+        },
+        Err(wrong) => {
+            let message = status_text(None, &wrong);
+            COMPLAINTS.with_borrow_mut(|complaints| *complaints = wrong);
+            if redraw_current("introduce") {
+                announce(&message);
+            }
+        },
     }
 }
 
 /// Puts the flipped bit back.
 fn remove_error() {
+    COMPLAINTS.with_borrow_mut(|complaints| *complaints = [None, None]);
     ERROR.set(None);
     if redraw_current("remove") {
         announce(&error_status(None));
