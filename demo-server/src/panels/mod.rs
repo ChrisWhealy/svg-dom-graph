@@ -112,6 +112,10 @@ const GROUPS: &[Group] = &[
         label: "Error Detection & Correction",
         panels: &[("panel-crc32", "CRC-32"), ("panel-hamming", "Hamming(7,4)")],
     },
+    Group {
+        label: "Sorting",
+        panels: &[("panel-quicksort", "Quicksort")],
+    },
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

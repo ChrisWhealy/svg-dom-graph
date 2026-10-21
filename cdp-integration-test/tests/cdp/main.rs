@@ -44,6 +44,9 @@
 //!   at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a flipped bit. Also runs against the built demo gallery.
 //! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block,
 //!   the buttons that choose the data and flip a bit, and the stepping toolbar. Also runs against the built demo gallery.
+//! - [`quicksort`] — the Quicksort panel in the built demo gallery: the array and the rows under it, the buttons that choose
+//!   another array, the stepping toolbar, what each step announces, and the zoom across redraws. Also runs against the
+//!   built demo gallery.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
 //!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -85,6 +88,7 @@ mod hex_dump_selection;
 mod huffman_walk;
 mod overlap_resolution;
 mod pan;
+mod quicksort;
 mod row_labels;
 mod small_drag;
 mod step_driver_accessibility;

@@ -31,6 +31,7 @@ features = [
     "HtmlInputElement",
     "KeyboardEvent",
     "Location",
+    "NodeList",
     "Window",
 ]
 

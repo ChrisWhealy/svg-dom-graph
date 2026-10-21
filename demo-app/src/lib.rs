@@ -77,6 +77,11 @@
 //! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three parity
 //!   bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The boxes are one
 //!   path through the calculation, laid out as a block that runs along one row and back along the next.
+//! - `panel-quicksort` / `#quicksort-diagram` — [`quicksort::build_quicksort_demo`]: Quicksort of ten values with the Lomuto
+//!   partition, drawn as thin bars on a common baseline that are as tall as their values, so that sorting shows as bars
+//!   changing places. A red bar is the pivot and a green bar is the element being examined. The drawing, the buttons and
+//!   the stepping are shared by every sorting demo, in `sorting`; Quicksort supplies only its steps. Every value is worked
+//!   out in plain Rust.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -108,10 +113,12 @@ mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
 mod operators_unary;
+mod quicksort;
 mod selection;
 mod sha1;
 mod sha2_256;
 mod sha3_sponge;
+mod sorting;
 mod source_frame;
 mod svg_buttons;
 mod text_nodes;
@@ -216,6 +223,7 @@ demo_gallery! {
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
     "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
     "panel-hamming" => hamming::build_hamming_demo + hamming::FILES,
+    "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
