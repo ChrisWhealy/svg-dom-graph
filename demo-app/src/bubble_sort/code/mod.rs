@@ -42,7 +42,7 @@ pub(crate) fn frames(input: &[u8]) -> Vec<Frame> {
         frame(
             &array,
             0,
-            "The array is not sorted. Each pass compares neighbours from the left and swaps any that are the wrong way round."
+            "Bubble sort examines the array by comparing neighbouring elements from the left, and swapping any that are out of order."
                 .to_owned(),
         )
     }];

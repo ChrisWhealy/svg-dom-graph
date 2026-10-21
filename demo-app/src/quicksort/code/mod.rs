@@ -81,7 +81,7 @@ pub(super) fn steps(input: &[u8]) -> Vec<Step> {
     out.push(step(
         &array,
         &fixed,
-        format!("The array is not sorted. Quicksort starts with the whole of it, positions 0 to {last}."),
+        format!("Quicksort starts with the whole array, positions 0 to {last}, and splits it around a pivot."),
     ));
     let mut stack = vec![(0, last)];
     while let Some((lo, hi)) = stack.pop() {

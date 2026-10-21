@@ -59,7 +59,7 @@ pub(crate) fn frames(input: &[u8]) -> Vec<Frame> {
             &array,
             0,
             0,
-            "The array is not sorted. Shell sort puts the elements a gap apart in order, for a smaller gap each time, ending with a gap of 1."
+            "Shell sort puts the elements a gap apart in order with each other, for a smaller gap each time, ending with a gap of 1."
                 .to_owned(),
         )
     }];
