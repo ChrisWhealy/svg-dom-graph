@@ -1,6 +1,6 @@
 use super::encode::{
     SAMPLES, button_label, byte_template_bits, encode, explain, glyph, hex_of, length_of, payload_groups, payload_len,
-    template, template_bits,
+    range_exception, template, template_bits,
 };
 use super::layout::{centred_lefts, centred_over};
 
@@ -197,4 +197,17 @@ fn each_group_is_centred_over_its_byte() {
     // The two middle groups are as wide as each other, so the gap between them is on the axis, as the gap between the two
     // middle bytes is.
     assert!(((groups[1] + 140.0 + groups[2]) / 2.0 - 500.0).abs() < 1e-9);
+}
+
+#[test]
+fn only_the_range_of_three_bytes_has_an_exception_and_it_is_the_surrogates() {
+    assert_eq!(range_exception(1), None);
+    assert_eq!(range_exception(2), None);
+    assert!(range_exception(3).is_some_and(|what| what.starts_with("U+D800 to U+DFFF")));
+    assert_eq!(range_exception(4), None);
+    // The surrogates are not characters, so nothing the demo encodes is in them.
+    assert!((0xD800..=0xDFFF).all(|n| char::from_u32(n).is_none()));
+    // The note for a three-byte character says so, and no other note does.
+    assert!(explain('€', &encode('€')).contains("not counting U+D800 to U+DFFF"));
+    assert!(!explain('£', &encode('£')).contains("not counting"));
 }

@@ -41,6 +41,9 @@
             </tr>
         </tbody>
     </table>
+    <p>The range of three bytes leaves out values in the <code>U+D800</code> to <code>U+DFFF</code>. Those are the
+        surrogates, which UTF-16 uses in pairs to write the characters above <code>U+FFFF</code>. They are not
+        characters in their own right, and UTF-8 forbids encoding them.</p>
     <p>The bits of the code point fill the <code>x</code>s from the left. The bits that are not <code>x</code> are the
         template, and they make the encoding self-describing. The first byte starts with as many <code>1</code>s as
         there are bytes in the sequence, followed by a <code>0</code>. Every byte after the first starts with
