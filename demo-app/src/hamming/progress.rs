@@ -40,11 +40,12 @@ pub(super) fn show(scene: &Scene, nodes: &[NodeId], t: &Transmission, position: 
         };
         scene.set_selection(node, selection).map_err(stringify)?;
     }
-    // The bit that was flipped on the way, and the bit that the receiver flipped back.
-    if let Some(error) = t.error {
+    // The bit that was flipped on the way, and the bit that the receiver flipped back. A highlighted cell is drawn at
+    // full strength even in a box that is faint, so each is marked only once its box has been reached.
+    if let Some(error) = t.error.filter(|_| reached(3, position)) {
         scene.set_secondary_selection(nodes[3], &[error - 1]).map_err(stringify)?;
     }
-    if t.syndrome != 0 {
+    if t.syndrome != 0 && reached(7, position) {
         scene
             .set_secondary_selection(nodes[7], &[usize::from(t.syndrome) - 1])
             .map_err(stringify)?;

@@ -1,4 +1,3 @@
-
 use super::{CODEWORD_LEN, Transmission, covered};
 
 /// Every value the four data bits can have.

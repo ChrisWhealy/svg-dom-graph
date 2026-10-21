@@ -14,6 +14,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Step through the CRC-32 calculation with a selection toolbar (`00e44d1`)
 - Add a demo implementation of the Hamming(7,4) algorithm (`1541eb9`)
 
+## Changed
+
+- Update highlight only after walk reaches the relevant box (``)
+
 ## Fixed
 
 - Retain keyboard focus after CRC-32 screen redraw (`632a020`)
@@ -21,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Write screen redraw errors to the browser not console (`9857976`)
 - Correct failing Hammimng tests (`d6fb520`)
 - Correct restart logic in Hamming demo (`bf7cc40`)
-- Correct Hamming error position test (``)
+- Correct Hamming error position test (`64830a8`)
 
 # [Released]
 
