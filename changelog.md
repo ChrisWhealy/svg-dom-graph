@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add a demo implementation of UTF-8 encoding (`4d0952b`)
+- Extend UTF-8 CDP tests to test repeated screen redraws (``)
 
 ## Changed
 
@@ -18,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Exclude reserved surrogate code points from 3-byte UTF example (``)
+- Exclude reserved surrogate code points from 3-byte UTF example (`51c4240`)
 
 # [Released]
 

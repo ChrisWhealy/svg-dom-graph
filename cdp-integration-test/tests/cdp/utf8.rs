@@ -333,6 +333,83 @@ fn a_four_byte_character_has_one_margin_at_the_left() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
+fn view(tab: &Tab) -> Result<String, String> {
+    text(
+        tab,
+        &format!("(document.querySelector('{DIAGRAM} > g.svg-dom-graph-content')?.getAttribute('transform') ?? '')"),
+    )
+}
+
+/// The digits in the cells of every node whose accessible name starts with `prefix`, in the order the nodes were drawn,
+/// one after the other. The first `<text>` of a node is its name, so it is left out.
+fn digits_of(tab: &Tab, prefix: &str) -> Result<String, String> {
+    text(
+        tab,
+        &format!(
+            "[...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"{prefix}\"]')] \
+             .map(g => [...g.querySelectorAll('text')].slice(1).map(t => t.textContent).join('')).join('')"
+        ),
+    )
+}
+
+/// How many buttons say that they are pressed, and the action of the first that does.
+fn pressed(tab: &Tab) -> Result<String, String> {
+    text(
+        tab,
+        &format!(
+            "(() => {{ const on = [...document.querySelectorAll('{DIAGRAM} g[data-action][aria-pressed=\"true\"]')]; \
+             return on.length + ':' + (on[0]?.getAttribute('data-action') ?? 'none'); }})()"
+        ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Choosing characters again and again, in an order that goes up and down in length, draws the right scene each time,
+/// and the zoom is kept. The scene is drawn from scratch for every choice, so a node, a button or a listener left behind
+/// by one would show in the next. After each choice there is exactly one button pressed, the one chosen, the nodes are
+/// those of the character, and their cells hold its bits: the bits of the code point in the groups, and every bit of the
+/// bytes in the byte nodes. The expected bits are worked out here from the character, not read from the page.
+#[test]
+fn choosing_characters_again_and_again_draws_each_one_and_keeps_the_zoom() -> Result<(), String> {
+    const CHARACTERS: [char; 4] = ['A', '£', '€', '😀'];
+    let tab = open()?;
+    tab.find_element(&format!("{DIAGRAM} g[aria-label=\"Zoom in\"]"))
+        .map_err(|e| format!("could not find Zoom in: {e}"))?
+        .click()
+        .map_err(|e| format!("could not zoom in: {e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    let zoomed = view(&tab)?;
+    check(!zoomed.is_empty(), "zooming in should change the view")?;
+
+    // From one byte to four, down to two, to one, and on, twice round.
+    for index in [0, 3, 1, 0, 2, 3, 1, 2, 0, 3] {
+        press(&tab, &format!("choose-{index}"))?;
+        let c = CHARACTERS[index];
+        let mut encoded = [0_u8; 4];
+        let bytes = c.encode_utf8(&mut encoded).as_bytes();
+        let len = bytes.len();
+        let hex = bytes.iter().map(|b| format!("{b:02X}")).collect::<Vec<_>>().join(" ");
+
+        check_eq(pressed(&tab)?, format!("1:choose-{index}"))?;
+        check(result(&tab)?.ends_with(&hex), &format!("{c}: the result is not {hex}"))?;
+        check_eq(nodes_named(&tab, "UTF-8 bits")?, len)?;
+        check_eq(nodes_named(&tab, if len == 1 { "Code point bits" } else { "Bits " })?, len)?;
+        check_eq(nodes_named(&tab, "UTF-8 bytes")?, 1)?;
+        check_eq(nodes_named(&tab, "Code point:")?, 1)?;
+        check_eq(view(&tab)?, zoomed.clone())?;
+
+        // Every bit of the bytes, and the bits of the code point that go into them: 7, 11, 16 or 21.
+        let bits: String = bytes.iter().map(|b| format!("{b:08b}")).collect();
+        check_eq(digits_of(&tab, "UTF-8 bits")?, bits)?;
+        let payload_len = [7, 11, 16, 21][len - 1];
+        let payload = format!("{:0payload_len$b}", u32::from(c));
+        check_eq(digits_of(&tab, if len == 1 { "Code point bits" } else { "Bits " })?, payload)?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A button keeps the keyboard focus across the redraw that choosing it makes, and shows as the pressed one.
 #[test]
 fn a_button_keeps_the_keyboard_focus_across_the_redraw() -> Result<(), String> {
