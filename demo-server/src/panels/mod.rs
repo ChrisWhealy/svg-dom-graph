@@ -102,7 +102,11 @@ const GROUPS: &[Group] = &[
     },
     Group {
         label: "Encoding & Compression",
-        panels: &[("panel-huffman", "Huffman encoding"), ("panel-base64", "Base64 encoding")],
+        panels: &[
+            ("panel-huffman", "Huffman encoding"),
+            ("panel-base64", "Base64 encoding"),
+            ("panel-utf8", "UTF-8 encoding"),
+        ],
     },
     Group {
         label: "Error Detection & Correction",

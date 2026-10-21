@@ -37,6 +37,9 @@
 //! - [`base64`] — the Base64 panel in the built demo gallery: typing, both alphabets, final groups of one and two bytes,
 //!   an empty text, the cut at 256 bytes, and the focus and caret across the redraw. Also runs against the built demo
 //!   gallery.
+//! - [`utf8`] — the UTF-8 panel in the built demo gallery: the four buttons that choose a character, the column of nodes
+//!   that grows and shrinks with it, the template bits highlighted, and the focus across the redraw. Also runs against the
+//!   built demo gallery.
 //! - [`crc32`] — the CRC-32 demo in the window the gallery's panel opens: the checksum on opening, typing, an empty text, the cut
 //!   at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a flipped bit. Also runs against the built demo gallery.
 //! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block,
@@ -87,3 +90,4 @@ mod small_drag;
 mod step_driver_accessibility;
 mod text_nodes;
 mod text_selection;
+mod utf8;

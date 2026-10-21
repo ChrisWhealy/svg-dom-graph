@@ -1,0 +1,57 @@
+<section class="section" id="panel-utf8">
+    <h2>UTF-8 Encoding</h2>
+    <p>Unicode gives every character a number, called its code point and written <code>U+0041</code> for <code>A</code>.
+        UTF-8 is the way those numbers are turned into bytes. It uses one byte for the 128 ASCII characters, so ASCII
+        text is already valid UTF-8, and two, three or four bytes for everything else. Most text on the web is UTF-8.
+    </p>
+    <p>The number of bytes depends on the size of the code point:</p>
+    <table class="utf8-table">
+        <thead>
+            <tr>
+                <th>Code points</th>
+                <th>Bytes</th>
+                <th>Template</th>
+                <th>Bits of the code point</th>
+            </tr>
+        </thead>
+        <tbody>
+            <tr>
+                <td><code>U+0000</code> to <code>U+007F</code></td>
+                <td>1</td>
+                <td><code>0xxxxxxx</code></td>
+                <td>7</td>
+            </tr>
+            <tr>
+                <td><code>U+0080</code> to <code>U+07FF</code></td>
+                <td>2</td>
+                <td><code>110xxxxx 10xxxxxx</code></td>
+                <td>11</td>
+            </tr>
+            <tr>
+                <td><code>U+0800</code> to <code>U+FFFF</code></td>
+                <td>3</td>
+                <td><code>1110xxxx 10xxxxxx 10xxxxxx</code></td>
+                <td>16</td>
+            </tr>
+            <tr>
+                <td><code>U+10000</code> to <code>U+10FFFF</code></td>
+                <td>4</td>
+                <td><code>11110xxx 10xxxxxx 10xxxxxx 10xxxxxx</code></td>
+                <td>21</td>
+            </tr>
+        </tbody>
+    </table>
+    <p>The bits of the code point fill the <code>x</code>s from the left. The bits that are not <code>x</code> are the
+        template, and they make the encoding self-describing. The first byte starts with as many <code>1</code>s as
+        there are bytes in the sequence, followed by a <code>0</code>. Every byte after the first starts with
+        <code>10</code>, so a reader that starts in the middle of a text can always find where the next character
+        begins.
+    </p>
+    <p>Choose one of the four characters along the top, one for each length of sequence: <code>A</code> takes one byte,
+        <code>£</code> two, <code>€</code> three, and an emoji four. Under them is the code point, then the bits of the
+        code point, then the bits of the encoded bytes with the template highlighted, and last the bytes in hexadecimal.
+    </p>
+    <p class="controls">UTF-8: <code><output id="utf8-result"></output></code></p>
+    <div class="canvas" id="utf8-diagram-stage">
+    </div>
+</section>

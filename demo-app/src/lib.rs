@@ -68,6 +68,9 @@
 //! - `panel-base64` / `#base64-diagram` — [`base64::build_base64_demo`]: Base64 encoding of typed text, three bytes at a
 //!   time. The bytes in binary, the same bits cut into six-bit values, and the character for each value, with the padding
 //!   a short last group needs. Every value is worked out in plain Rust.
+//! - `panel-utf8` / `#utf8-diagram` — [`utf8::build_utf8_demo`]: UTF-8 encoding of one of four characters, one for each
+//!   length of sequence. A column of nodes shows the code point, its bits, the bits of the bytes with the template
+//!   highlighted, and the bytes, and it grows and shrinks with the character. Every value is worked out in plain Rust.
 //! - `panel-crc32` / `#crc32-diagram` — [`crc32::build_crc32_demo`]: the CRC-32 of typed text, a byte at a time. Each byte
 //!   picks an entry of the table of 256 with the register, and the entry is XORed with the register shifted a byte. The
 //!   register starts as all ones and is flipped at the end. Every value is worked out in plain Rust.
@@ -113,6 +116,7 @@ mod source_frame;
 mod svg_buttons;
 mod text_nodes;
 mod tree;
+mod utf8;
 mod util;
 mod wide_values;
 
@@ -208,6 +212,7 @@ demo_gallery! {
     "panel-sha3-sponge" => sha3_sponge::build_sha3_sponge_demo + sha3_sponge::FILES,
     "panel-chacha20" => chacha20::build_chacha20_demo + chacha20::FILES,
     "panel-base64" => base64::build_base64_demo + base64::FILES,
+    "panel-utf8" => utf8::build_utf8_demo + utf8::FILES,
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
     "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
     "panel-hamming" => hamming::build_hamming_demo + hamming::FILES,

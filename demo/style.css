@@ -860,3 +860,23 @@ label.demo-slider-container {
     max-width: 100%;
     height: auto;
 }
+
+/* The table of UTF-8 templates in the UTF-8 panel: a light grey border of one pixel, room above and below, and a header row
+   in dark grey on light grey. The border is collapsed so that the lines between cells are one pixel too. */
+.utf8-table {
+    margin: 1.25rem 0;
+    border-collapse: collapse;
+    border: 1px solid #d0d4d9;
+}
+
+.utf8-table th,
+.utf8-table td {
+    padding: 0.4rem 0.75rem;
+    border: 1px solid #d0d4d9;
+    text-align: left;
+}
+
+.utf8-table th {
+    background: #d9dde1;
+    color: #3a3f45;
+}
