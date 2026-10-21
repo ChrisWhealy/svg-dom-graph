@@ -141,7 +141,11 @@ fn a_swap_is_a_step_of_its_own_and_the_two_bars_slide() -> Result<(), String> {
         pairs[0].0 != pairs[0].1 && pairs[1].0 != pairs[1].1,
         "a bar should slide from one place to another",
     )?;
-    check(pairs[0].0 != pairs[1].0, "the two bars start in different places")
+    check(pairs[0].0 != pairs[1].0, "the two bars start in different places")?;
+    // The two bars change places, so each ends where the other began.
+    let x = |place: &str| place.split(' ').next().unwrap_or_default().to_owned();
+    check_eq(x(&pairs[0].0), x(&pairs[1].1))?;
+    check_eq(x(&pairs[1].0), x(&pairs[0].1))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

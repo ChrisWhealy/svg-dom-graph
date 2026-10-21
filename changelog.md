@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Exclude reserved surrogate code points from 3-byte UTF example (`51c4240`)
-- Correct sorting CDP tests (``)
+- Correct sorting CDP tests (`32ea23d`)
+- Separate sort DOM testing from animation testing (``)
 
 # [Released]
 

@@ -55,6 +55,10 @@ macro_rules! sort_demo_helpers {
 
         /// The bars of the diagram from left to right. A bar is a node whose box is a rectangle 44 wide with its value
         /// in the text beside it, which tells it from the buttons and the note.
+        ///
+        /// They are in the order the scene drew them, which is the order of the array, and not sorted by where they are
+        /// on the screen. A swap slides two bars for half a second, and where a bar is on the screen while it slides
+        /// says nothing about the step. `left` is where it is now, so it is only meaningful when nothing is sliding.
         #[allow(dead_code)]
         fn bars(tab: &Tab) -> Result<Vec<Bar>, String> {
             let json = text(
@@ -64,8 +68,7 @@ macro_rules! sort_demo_helpers {
                      .filter(g => g.children.length >= 2 && g.children[0].tagName === 'rect' && g.children[0].getAttribute('width') === '44' && g.children[1].tagName === 'text') \
                      .map(g => {{ const r = g.children[0].getBoundingClientRect(); \
                      return {{ value: Number(g.children[1].textContent), fill: g.children[0].getAttribute('fill'), \
-                     height: r.height, left: r.left, bottom: r.bottom }}; }}) \
-                     .sort((a, b) => a.left - b.left))"
+                     height: r.height, left: r.left, bottom: r.bottom }}; }}))"
                 ),
             )?;
             serde_json::from_str(&json).map_err(|e| format!("could not read the bars: {e}"))
