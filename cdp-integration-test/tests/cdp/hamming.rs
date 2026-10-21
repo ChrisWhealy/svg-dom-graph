@@ -357,7 +357,7 @@ fn restart_goes_back_to_the_start_and_removes_the_error_but_keeps_the_data() -> 
     press(&tab, "introduce")?;
     goto(&tab, 5)?;
     click(&tab, "Restart selection")?;
-    check_eq(step_position(&tab)?, None)?;
+    check_eq(step_position(&tab)?, Some(0))?;
     check(
         says(&tab, "No error has been introduced.")?,
         "restarting should remove the flipped bit",
