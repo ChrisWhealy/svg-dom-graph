@@ -47,6 +47,12 @@ jobs:
       - name: Unit tests (demo-app)
         run: cargo test -p svg-dom-graph-demo
 
+      # The CDP tests' own static file server is plain native code too, and the shards below run only the browser tests
+      # (`--test cdp`), so its unit tests, such as the one that a query string is not part of a file's name, run here.
+      # `--lib` selects them without starting a browser.
+      - name: Unit tests (cdp-integration-test server)
+        run: cargo test -p cdp-integration-test --lib
+
       # demo-server's own unit tests (build::unit_tests) already cover prepare_stage in isolation against the real
       # project, but this exercises the actual `cargo demo`-facing entry point — the same `--prepare-only` path CI
       # or a developer would use to check staging without paying for a full `wasm-pack build` (the `wasm` job below

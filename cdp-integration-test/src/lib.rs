@@ -84,6 +84,15 @@ pub fn build_demo() -> PathBuf {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The file under the served directory that a request for `url` asks for. The query string and the fragment are not
+/// part of a file's name, so `hamming-window.html?error=5` is the file `hamming-window.html`, and the page keeps the
+/// query in its own address to read. An empty path is `index.html`.
+fn file_requested(url: &str) -> &str {
+    let path = url.split(['?', '#']).next().unwrap_or_default().trim_start_matches('/');
+    if path.is_empty() { "index.html" } else { path }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Serves `dir` on an OS-assigned local port and returns that port. The server runs for the lifetime of the test
 /// process on a background thread; there is no shutdown hook, but the process exits when the test does.
 pub fn serve(dir: PathBuf) -> u16 {
@@ -93,11 +102,8 @@ pub fn serve(dir: PathBuf) -> u16 {
 
     thread::spawn(move || {
         for request in server.incoming_requests() {
-            let mut path = request.url().trim_start_matches('/').to_owned();
-            if path.is_empty() {
-                path = "index.html".to_owned();
-            }
-            let file_path = dir.join(&path);
+            let path = file_requested(request.url());
+            let file_path = dir.join(path);
             let response_result = match std::fs::read(&file_path) {
                 Ok(bytes) => {
                     let content_type = if path.ends_with(".wasm") {
@@ -126,9 +132,10 @@ pub fn serve(dir: PathBuf) -> u16 {
 /// How long the browser may go without opening, closing or changing a tab before `headless_chrome` drops its connection.
 ///
 /// The library's own default is 30 seconds, and it counts only browser-level events, not the calls a test makes inside
-/// a tab. A test that opens one tab and then works in it for longer, as a walk through all 961 positions of the ChaCha20
-/// demo does, would leave the browser idle by that count. Every test sharing the browser after it would then fail to
-/// open its own tab, with "underlying connection is closed". An hour is far longer than the whole run, which takes the demo tests in turn and so can leave the fixture's browser unused for many minutes.
+/// a tab. A test that opens one tab and then works in it for longer, as a walk through all 961 positions of the
+/// ChaCha20 demo does, would leave the browser idle by that count. Every test sharing the browser after it would then
+/// fail to open its own tab, with "underlying connection is closed". An hour is far longer than the whole run, which
+/// takes the demo tests in turn and so can leave the fixture's browser unused for many minutes.
 const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3600);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -153,3 +160,7 @@ pub fn launch_browser() -> Result<Browser, Box<dyn std::error::Error>> {
         .build()?;
     Ok(Browser::new(launch_options)?)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;
