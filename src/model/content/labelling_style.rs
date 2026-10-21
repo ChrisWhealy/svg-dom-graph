@@ -66,7 +66,7 @@ impl LabellingStyle {
         self.label_into(rows.saturating_sub(1) * cols, cols, out);
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The labels a grid of `rows` rows draws, if they are a caller's own text: one for each row, in order. Empty for a
     /// style that generates its labels. Text may use any characters, and the character count says nothing reliable about
     /// the rendered width: a CJK glyph is about twice as wide as a Latin one, even in a monospace font. So a caller sizing

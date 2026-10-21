@@ -177,7 +177,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `<g>` of node `id`, if it exists and is not yet draggable. Returns [`Error::UnknownNode`] for an unknown id and
     /// [`Error::AlreadyDraggable`] for one that is already draggable.
     fn undragged_group(&self, id: NodeId) -> Result<svg_dom::SvgNode, Error> {

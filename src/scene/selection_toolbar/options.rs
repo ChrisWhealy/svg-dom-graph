@@ -52,7 +52,7 @@ impl SelectionToolbarOptions {
         Self { edge, ..Self::default() }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// These options with `stride` set to `stride` — see [`SelectionToolbarOptions::stride`].
     ///
     /// Provided because the struct is `#[non_exhaustive]`, so a caller outside this crate cannot build one with struct
@@ -63,7 +63,7 @@ impl SelectionToolbarOptions {
         self
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether every length is one [`Scene::show_selection_toolbar`](crate::scene::Scene::show_selection_toolbar)
     /// accepts: `button_height` a finite value `> 0.0`, `gap` and `margin` finite values `>= 0.0`, and any `stride`'s
     /// `step` at least `1`.

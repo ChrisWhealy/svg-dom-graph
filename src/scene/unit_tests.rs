@@ -64,7 +64,7 @@ fn move_node_to_the_same_origin_skips_the_edge_redraw_loop_entirely() -> Result<
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Lifetime. A `Scene` is a cheap handle to `Rc`-shared state. Every listener it installs holds only a `Weak`
 //   reference back to that state. That covers node dragging, toolbar buttons, the pan surface, wheel zoom, and keyboard
 //   control. If any of them held a strong one, the state would sit in a cycle (`SceneInner` -> DOM node -> listener ->
@@ -112,7 +112,7 @@ fn ctrl_wheel_at_surface(id: &str) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn dropping_every_handle_of_a_busy_scene_frees_its_shared_state() -> Result<(), String> {
     let scene = busy_scene("lifetime-busy")?;
@@ -129,7 +129,7 @@ fn dropping_every_handle_of_a_busy_scene_frees_its_shared_state() -> Result<(), 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A clone is a real handle: the state lives while any one of them does, and is freed when the last goes.
 #[wasm_bindgen_test]
 fn the_shared_state_lives_until_the_last_clone_is_dropped() -> Result<(), String> {
@@ -143,7 +143,7 @@ fn the_shared_state_lives_until_the_last_clone_is_dropped() -> Result<(), String
     check(state.upgrade().is_none(), "the state outlived the last handle")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The reviewer's sequence, and then some: repeated showing and hiding, and every mode switched back and forth. Each
 /// show builds listeners afresh, and each hide takes them away again, so none may be left holding the state.
 #[wasm_bindgen_test]
@@ -177,7 +177,7 @@ fn repeated_show_hide_and_mode_changes_leave_nothing_holding_the_state() -> Resu
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A frame can be pending when the last handle goes: a wheel event schedules one, and it has not run yet. The scheduled
 /// frame holds the state weakly too, so it neither keeps it alive nor breaks when it finds it gone.
 #[wasm_bindgen_test]
@@ -193,7 +193,7 @@ fn a_scheduled_frame_does_not_keep_the_state_alive() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A toolbar that was never shown, and one shown and then hidden, are freed just the same.
 #[wasm_bindgen_test]
 fn a_scene_that_hid_its_toolbar_is_freed_too() -> Result<(), String> {

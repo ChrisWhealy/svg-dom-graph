@@ -239,7 +239,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current rendered rectangle of node `id` — its own top-left origin and size, in the `<svg>`'s own user space,
     /// as this crate itself last drew it.
     ///
@@ -261,7 +261,7 @@ impl Scene {
         self.inner.borrow().node_rect(id)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves node `id` to `top_left`, keeping its own current size, and redraws every incident connector to match. The
     /// same functionality is used here as [`Scene::make_draggable`](crate::scene::Scene::make_draggable) already
     /// performs for every dragged frame. The differences however are these:
@@ -318,7 +318,7 @@ impl Scene {
         result
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Rings or un-rings node `id`'s own outer box as a whole, with the same focus-ring stroke this crate's own toolbar
     /// buttons already use. Unlike [`Scene::set_selection`](crate::scene::Scene::set_selection), this works on any node
     /// kind: a plain node, a container node, or a data node. It never looks at a node's own cells, only the one outer

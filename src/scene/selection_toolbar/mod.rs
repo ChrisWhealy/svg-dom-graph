@@ -335,7 +335,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Positions the bar and its buttons for the current visible area.
     pub(super) fn layout_selection_toolbar(&mut self) -> Result<(), Error> {
         let area = self.visible_area();
@@ -530,7 +530,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes the selection toolbar from the DOM entirely, and with it every button and its listeners. Does nothing if
     /// none is shown.
     ///
@@ -547,7 +547,7 @@ impl Scene {
         toolbar.remove();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether a selection toolbar is currently shown.
     pub fn has_selection_toolbar(&self) -> bool {
         self.inner.borrow().selection_toolbar.is_some()

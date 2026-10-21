@@ -18,7 +18,7 @@ use std::{
     rc::{Rc, Weak},
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the current view to the DOM, if it has changed since it was last written.
 fn flush(inner: &Weak<RefCell<SceneInner>>) {
     if let Some(inner) = inner.upgrade() {
@@ -27,7 +27,7 @@ fn flush(inner: &Weak<RefCell<SceneInner>>) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Schedules at most one pending [`SceneInner::flush_view`] per animation frame. Cheap to clone.
 #[derive(Clone)]
 pub(super) struct ViewFlusher {
@@ -46,14 +46,14 @@ impl ViewFlusher {
         Ok(Self { inner, frame })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Asks for the current view to be written on the next animation frame. Does nothing if a frame is already asked
     /// for, since that frame will write the latest view whenever it runs.
     pub(super) fn schedule(&self) {
         self.frame.request();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the current view now and cancels any frame still pending. So a gesture that has just ended leaves the DOM
     /// exactly at its final position rather than one frame behind.
     pub(super) fn flush_now(&self) {

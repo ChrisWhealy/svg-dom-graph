@@ -37,7 +37,7 @@ pub(crate) struct HexMarks {
     pub(crate) unreached: Pool<(SvgNode, SvgNode)>,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Elements that are drawn when first needed and then reused, and which byte each one is over. A byte keeps the same
 /// element for as long as it stays in its set, so a change to the set touches only the bytes that entered or left it.
 pub(crate) struct Pool<T> {

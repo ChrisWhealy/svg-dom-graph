@@ -130,7 +130,7 @@ pub(crate) fn full_width(format: HexDumpFormat) -> usize {
     10 * usize::from(format.show_offset) + 4 * BYTES_PER_LINE + 4
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many characters of a line come before the hex digits of its first byte: the offset and its two spaces, or none.
 fn lead(format: HexDumpFormat) -> usize {
     10 * usize::from(format.show_offset)

@@ -92,7 +92,7 @@ impl PointerCoalescer {
         Ok(Self { state, frame })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Records `origin` as the position to apply next and, unless a frame is already scheduled, schedules one.
     ///
     /// A `pointermove` that arrives while a frame is still pending only overwrites the pending position — it neither
@@ -105,7 +105,7 @@ impl PointerCoalescer {
         self.frame.request();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Applies `origin` immediately, synchronously, using this coalescer's own reused scratch buffer.
     ///
     /// For a caller that already has an authoritative position of its own to apply right now. `pointerup`'s own
@@ -118,7 +118,7 @@ impl PointerCoalescer {
         self.state.apply_now(origin);
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Applies a pending position immediately, synchronously, cancelling any still-scheduled frame. It is for
     /// `pointerup`, so neither the node's own final rendered position nor a collision-resolution rect read straight
     /// afterward is ever one frame stale.
@@ -131,7 +131,7 @@ impl PointerCoalescer {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Discards a pending position and cancels any still-scheduled frame, without applying it — for `pointercancel`,
     /// where the drag itself is being abandoned, not completed.
     ///

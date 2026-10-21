@@ -31,7 +31,7 @@ use std::fmt::{Display, LowerExp, Write};
 /// readable cell.
 pub const MAX_FLOAT_DIGITS: u8 = 40;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether a float is written in plain or scientific notation.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
@@ -46,7 +46,7 @@ pub enum FloatNotation {
     Scientific,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many digits a float shows.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Default)]
 #[non_exhaustive]
@@ -66,7 +66,7 @@ pub enum FloatPrecision {
     SignificantDigits(u8),
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How a floating point value is written: a [`FloatNotation`] and a [`FloatPrecision`]. Use it as
 /// [`DataFormat::Float`](super::DataFormat::Float).
 ///
@@ -147,7 +147,7 @@ impl FloatFormat {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What formatting needs of `f32` and `f64`, so one implementation serves both. The two cannot share one, because
 /// the shortest digits that read back as the same value depend on the width: `0.1_f32` is `0.1`, and the same
 /// number as an `f64` is `0.10000000149011612`.
@@ -182,7 +182,7 @@ macro_rules! impl_float_like {
 
 impl_float_like!(f32, f64);
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes `value` into `out` per `format`, replacing what it held.
 pub(super) fn format_float_into<T: FloatLike>(value: T, format: FloatFormat, out: &mut String) {
     out.clear();
@@ -211,7 +211,7 @@ pub(super) fn format_float_into<T: FloatLike>(value: T, format: FloatFormat, out
     };
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the finite `value` into `out` in plain notation with exactly `digits` significant digits. Rust has no
 /// such format of its own. So this asks it for the digits in scientific notation, which it rounds correctly, and
 /// moves the decimal point by the exponent. The digits are held on the stack, so nothing is allocated.
@@ -254,7 +254,7 @@ fn plain_significant<T: FloatLike>(value: T, digits: u8, out: &mut String) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes into `out` the text of whichever of `values` takes the most characters under `format`, and the empty string if
 /// there are none. A cell sized for that text holds all of them, in a monospace font.
 ///
@@ -298,7 +298,7 @@ pub(super) fn widest_float<T: FloatLike>(values: &[T], format: FloatFormat, out:
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The values of one node that can be the widest, whatever the format: the largest and smallest magnitude of each sign,
 /// the zeros, and any special value. Anything else is no wider than one of these.
 struct Extremes<T> {

@@ -40,9 +40,9 @@ fn wrapped(text: &str, cols: usize) -> Vec<String> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Inline
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn plain_text_is_one_plain_run() -> Result<(), String> {
     check_eq(runs("just some words"), vec![run("just some words", PLAIN)])?;
@@ -165,9 +165,9 @@ fn a_closer_after_whitespace_does_not_close() -> Result<(), String> {
     check_eq(runs("*a *b"), vec![run("*a *b", PLAIN)])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Blocks
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_blank_line_ends_a_paragraph_and_its_lines_join_with_a_space() -> Result<(), String> {
     let blocks = parse("one\ntwo\n\nthree");
@@ -393,9 +393,9 @@ fn plain_text_has_no_markers_and_one_line_per_heading_line_or_item() -> Result<(
     check_eq(plain_text(&blocks), "Title\nSome bold text.\n• one\n• two".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Wrapping
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn text_wraps_between_words_and_no_line_is_longer_than_the_columns() -> Result<(), String> {
     let lines = wrapped("the quick brown fox jumps over the lazy dog", 16);
@@ -484,9 +484,9 @@ fn zero_columns_and_empty_text_do_not_loop_or_panic() -> Result<(), String> {
     check_eq(wrapped("   ", 10), vec![String::new()])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Layout
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const METRICS: Metrics = Metrics {
     char_width: 8.0,
     font_size: 14.0,

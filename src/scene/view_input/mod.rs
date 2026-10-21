@@ -22,7 +22,7 @@ use std::{
 };
 use svg_dom::{SvgNode, SvgRoot, root::utils::Rect};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// When a mouse or trackpad gesture is active. See [`Scene::set_pan_mode`] and [`Scene::set_wheel_zoom_mode`].
 ///
 /// Deriving `Copy` is a deliberate compatibility commitment, the same as [`DragOptions`](crate::scene::DragOptions).
@@ -47,7 +47,7 @@ impl InputMode {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The surface behind the content layer, and which gestures are currently wired onto it.
 ///
 /// Exists only while at least one gesture is active. Lives in [`SceneInner::view_input`].
@@ -92,7 +92,7 @@ impl ViewInput {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Creates the surface for `area`, places it directly beneath `content`, and wires the requested gestures onto it. A
 /// keyboard focus target of its own, another `<rect>`, is added beside it, so the same gestures can be reached without
 /// a pointer. The application's `<svg>` is never touched.
@@ -171,7 +171,7 @@ fn build(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl SceneInner {
     /// Brings the focus target's accessible name in line with the current zoom, so it reads "Graph view, zoom 125%".
     ///
@@ -224,7 +224,7 @@ impl SceneInner {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Sets when dragging empty background pans the content. The default is [`InputMode::WithToolbar`].
     ///
@@ -293,7 +293,7 @@ impl Scene {
         self.inner.borrow().wheel_zoom_active()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Brings the wired gestures in line with what is now wanted: adds or removes the surface, and the listeners on it,
     /// as the two modes and the toolbar's visibility require.
     ///
@@ -325,7 +325,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the toolbar and resizes the pan and wheel-zoom surface for the `<svg>`'s visible area as it is now.
     ///
     /// **The scene cannot observe its `<svg>` being resized, so call this whenever the size or `viewBox` changes,** for

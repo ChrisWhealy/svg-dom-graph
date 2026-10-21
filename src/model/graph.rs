@@ -42,7 +42,7 @@ impl Graph {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a node and returns its id.
     pub(crate) fn add_node(&mut self, rect: Rect, content: impl Into<NodeContent>) -> NodeId {
         let id = NodeId {
@@ -57,7 +57,7 @@ impl Graph {
         id
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a directed edge from `from` to `to` and returns its id.
     ///
     /// Registers the edge as incident to both endpoints. So [`incident_edges`](Self::incident_edges) finds it from
@@ -77,7 +77,7 @@ impl Graph {
         id
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `id`'s node data.
     ///
     /// Returns `None` if `id` does not name a node in this graph.
@@ -98,7 +98,7 @@ impl Graph {
         self.nodes.get_mut(id.index)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Overwrites `id`'s stored rectangle.
     ///
     /// Does nothing if `id` does not name a node in this graph.
@@ -108,7 +108,7 @@ impl Graph {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `id`'s edge data.
     ///
     /// Returns `None` if `id` does not name an edge in this graph.
@@ -119,7 +119,7 @@ impl Graph {
         self.edges.get(id.index)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns every edge id incident to `id` — edges where `id` is either endpoint.
     ///
     /// Returns an empty slice for a node with no edges, or for an unknown `id`.
@@ -127,7 +127,7 @@ impl Graph {
         self.node(id).map(|node| node.incident.as_slice()).unwrap_or(&[])
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes edge `id`, and drops it from both of its own endpoints' incident lists.
     ///
     /// Does nothing if `id` does not name an edge in this graph, or if `edges` is empty.
@@ -172,7 +172,7 @@ impl Graph {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes node `id` and its own incident-edge bookkeeping.
     ///
     /// Does nothing if `id` does not name a node in this graph, or if `nodes` is empty.

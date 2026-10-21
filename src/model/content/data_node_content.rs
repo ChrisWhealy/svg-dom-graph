@@ -257,7 +257,7 @@ impl DataNodeContent {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `false` for [`DataFormat::HexDump`] content that is not `u8`. Every other content is valid here.
     pub(crate) fn hex_dump_is_valid(&self) -> bool {
         self.hex_dump().is_none() || matches!(self.values, NodeValues::U8(_))

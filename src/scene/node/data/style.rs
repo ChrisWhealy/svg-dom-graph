@@ -62,7 +62,7 @@ impl CellStyle {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves `cell`, and its `text`, from the `old` style to this one, writing only the attributes the two styles
     /// disagree on. A cell going from default to focused changes its fill and stroke width and nothing else, so two
     /// writes are made, not six.

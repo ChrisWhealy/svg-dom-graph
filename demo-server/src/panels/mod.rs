@@ -1,12 +1,12 @@
 //! Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and the panel fragments in
 //! `demo/panels/`.
 //!
-//! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`. Its menu groups panels under headings like "Basic Nodes" and
-//! "Operators", each of which expands to show its panels.
+//! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`. Its menu groups panels under headings like "Basic Nodes"
+//! and "Operators", each of which expands to show its panels.
 //!
-//! [`GROUPS`] is this gallery's single source of truth for both panel order and menu labelling. It drives the
-//! generated `<nav>` menu and the generated panel body. So the two can never disagree about which panels exist or what
-//! order they come in.
+//! [`GROUPS`] is this gallery's single source of truth for both panel order and menu labelling. It drives the generated
+//! `<nav>` menu and the generated panel body. So the two can never disagree about which panels exist or what order they
+//! come in.
 //!
 //! It does not know anything about the Rust demo functions that build each panel's content. That mapping lives in
 //! `demo-app/src/lib.rs`'s `demo_gallery!` invocation instead. That invocation holds a separate list for a separate
@@ -14,9 +14,9 @@
 //!
 //! # Adding a new demo
 //!
-//! Add its id and menu label to the right group of [`GROUPS`]. Create the matching `demo/panels/{id}.html` fragment, containing an
-//! element with `id="{id}"`, since [`assemble`] checks the two match. Then add the matching `demo_gallery!` entry in
-//! `demo-app/src/lib.rs`.
+//! Add its id and menu label to the right group of [`GROUPS`]. Create the matching `demo/panels/{id}.html` fragment,
+//! containing an element with `id="{id}"`, since [`assemble`] checks the two match. Then add the matching
+//! `demo_gallery!` entry in `demo-app/src/lib.rs`.
 
 use std::{
     collections::HashSet,
@@ -114,7 +114,11 @@ const GROUPS: &[Group] = &[
     },
     Group {
         label: "Sorting",
-        panels: &[("panel-quicksort", "Quicksort")],
+        panels: &[
+            ("panel-bubble-sort", "Bubble sort"),
+            ("panel-shell-sort", "Shell sort"),
+            ("panel-quicksort", "Quicksort"),
+        ],
     },
 ];
 
@@ -125,8 +129,8 @@ fn manifest() -> Vec<(&'static str, &'static str)> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`GROUPS`]' own panel ids — used by [`super::validate`] to cross-check against `demo-app`'s `demo_gallery!` list,
-/// so the two cannot silently drift apart.
+/// [`GROUPS`]' own panel ids — used by [`super::validate`] to cross-check against `demo-app`'s `demo_gallery!` list, so
+/// the two cannot silently drift apart.
 pub fn panel_ids() -> Vec<&'static str> {
     manifest().into_iter().map(|(id, _)| id).collect()
 }
@@ -395,7 +399,7 @@ fn render_panels(panels_dir: &Path, manifest: &[(&'static str, &'static str)]) -
     Ok(body)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the left-hand `<nav>` this gallery's `demo/index.template.html` script uses to switch between panels (see
 /// that file's own `selectDemo`) from [`GROUPS`].
 ///

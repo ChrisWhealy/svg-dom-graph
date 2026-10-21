@@ -33,7 +33,7 @@ impl Scene {
         self.add_container_node_with(top_left, size, label, child, NodeOptions::default())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a container node at `top_left`, owning `child` as its nested `Scene`, and returns its id. `options`
     /// controls how many connector fixing points this node's sides offer, exactly as for
     /// [`add_node_with`](Self::add_node_with). A container node is drawn exactly like a plain node's box. So it needs
@@ -152,7 +152,7 @@ impl Scene {
         Ok(id)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces container node `node`'s own nested child `Scene` with `new_child`, and returns the one it replaced.
     ///
     /// The returned `Scene` is detached, and comes back **visible and focused** — the same state any freshly

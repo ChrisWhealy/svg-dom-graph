@@ -39,7 +39,7 @@ const MIN_TEXT_WIDTH: f64 = 40.0;
 /// What a node's accessible name reads, since its descendants are the text itself and are exposed as they are.
 const ARIA_LABEL: &str = "Text";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The width of one character of body text, measured from a real element, and removed again.
 ///
 /// A browser that cannot measure, because the `<svg>` is not displayed, reports no width. Then the width of a character
@@ -59,7 +59,7 @@ fn measure_char_width(svg: &SvgRoot) -> Result<f64, Error> {
     Ok(if each.is_finite() && each > 0.0 { each } else { BODY_FONT_SIZE * 0.6 })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A document, parsed and laid out for a particular width, and the size of the box that holds it.
 struct Plan {
     layout: Layout,
@@ -100,7 +100,7 @@ fn plan(svg: &SvgRoot, width: f64, source: &str) -> Result<Plan, Error> {
     Ok(Plan { layout, size })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws one line of text: a `<text>` whose runs are `<tspan>`s, each in its own weight, slant and colour.
 fn draw_line(svg: &SvgRoot, guard: &mut RenderGuard, group: &SvgNode, line: &markdown::Line) -> Result<(), Error> {
     let y = OUTER_PADDING + line.top + line.height / 2.0;
@@ -146,7 +146,7 @@ fn style_text(el: &SvgNode, size: f64) -> Result<(), Error> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a Markdown node's box and every line of its text, grouped under one `<g>`. Like every other node, everything
 /// is drawn in local coordinates, and the group carries `top_left` as its `transform`, so moving the node rewrites that
 /// one attribute and nothing else.
@@ -226,7 +226,7 @@ fn short_name(source: &str) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Adds a node of Markdown text, `width` wide, and returns its id. The box grows downward to hold the text, so its
     /// height is whatever the text needs. [`node_rect`](Self::node_rect) reports it.

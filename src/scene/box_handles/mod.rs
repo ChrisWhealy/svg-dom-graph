@@ -165,7 +165,7 @@ pub(crate) struct BoxHandles {
 }
 
 impl BoxHandles {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Rebuilds this node's own `aria-label` and tooltip from its base description plus whatever `selection` and
     /// `secondary` currently say — `Scene::set_selection` and `Scene::set_secondary_selection` both end here.
     ///
@@ -203,14 +203,14 @@ impl BoxHandles {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the label again if an earlier write of it failed, and does nothing otherwise. A selection call that finds
     /// nothing to change calls this, so the one thing it can still owe, a label that never got written, is paid.
     pub(crate) fn resync_label(&mut self) -> Result<(), svg_dom::Error> {
         if self.label_stale { self.refresh_label() } else { Ok(()) }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces a single-value node's own value text, `old`, with `new` in its `aria-label` and tooltip, then rebuilds
     /// them. The value follows `"{type_name} = "` in the base description, for example `"u32 = 0A 0B 0C 0D"`. Any
     /// relationship clauses after it, and the selection description, are kept.
@@ -233,7 +233,7 @@ impl BoxHandles {
         self.refresh_label()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This node's own name right now, layering whatever `selection` currently highlights onto `ref_name`.
     ///
     /// `ref_name` alone names a node's whole self — "A" for an array `Scene::set_selection` re-bands each step, never

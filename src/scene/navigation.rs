@@ -200,7 +200,7 @@ impl Scene {
         Ok(Scene { inner: child_rc })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Exits to the parent `Scene`, if any: hides `self`'s whole `<svg>` root and shows the parent's.
     ///
     /// Does nothing — returns `Ok(None)` — if `self` is the root of its own tree, or has become detached from one (its
@@ -237,7 +237,7 @@ impl Scene {
         Ok(Some(Scene { inner: parent_rc }))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `(Scene, NodeId)` that owns this `Scene` as a container node's child, if any.
     ///
     /// `None` for a true root, and also for a `Scene` that has become detached from its own tree — its former parent's
@@ -265,7 +265,7 @@ impl Scene {
             .is_some_and(|focused| Rc::ptr_eq(&focused, &self.inner))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes container node `id` itself clickable: a pointer click, or Enter/Space while it has keyboard focus, calls
     /// [`enter(id)`](Self::enter) — the caller never has to wire that up by hand.
     ///
@@ -351,7 +351,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Undoes [`make_enterable`](Self::make_enterable): `id` stops responding to a click or to Enter/Space, loses its
     /// pointer cursor, `role="button"` and tab stop, and can be made enterable again later.
     ///

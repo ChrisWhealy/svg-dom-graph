@@ -247,7 +247,7 @@ pub(crate) fn wrap(spans: &[Span], cols: usize) -> Vec<Vec<Span>> {
     lines
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The marker of item `index` of a list that starts at `start`, or a bullet if it is not numbered.
 fn list_marker(start: Option<u32>, index: usize) -> String {
     start.map_or_else(|| "•".to_owned(), |n| format!("{}.", u64::from(n) + index as u64))
@@ -258,7 +258,7 @@ fn hanging_indent(marker: &str, metrics: Metrics) -> f64 {
     (marker.chars().count() + 1) as f64 * metrics.char_width
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The narrowest column `blocks` fit in without a list marker running into its own text: the widest hanging indent of
 /// any list item, plus room for one character of text. It is 0 if there is no list.
 pub(crate) fn minimum_width(blocks: &[Block], metrics: Metrics) -> f64 {
@@ -273,7 +273,7 @@ pub(crate) fn minimum_width(blocks: &[Block], metrics: Metrics) -> f64 {
         .fold(0.0, f64::max)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Places `blocks` in a column `width` wide. `width` is the width of the text itself, with no padding.
 pub(crate) fn layout(blocks: &[Block], width: f64, metrics: Metrics) -> Layout {
     let mut lines: Vec<Line> = Vec::new();

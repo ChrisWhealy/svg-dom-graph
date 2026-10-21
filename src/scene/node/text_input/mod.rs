@@ -50,7 +50,7 @@ const INPUT_STYLE: &str = "box-sizing: border-box; width: 100%; height: 100%; ma
                            font: 13px ui-monospace, SFMono-Regular, Menlo, Consolas, monospace; \
                            user-select: text; -webkit-user-select: text;";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text box inside the node `group`, if it has one.
 fn find_input(group: &svg_dom::SvgNode) -> Option<HtmlInputElement> {
     group
@@ -349,7 +349,7 @@ impl Scene {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Node `id`'s text box.
 fn text_input_of(inner: &crate::scene::scene_inner::SceneInner, id: NodeId) -> Result<HtmlInputElement, Error> {
     match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {

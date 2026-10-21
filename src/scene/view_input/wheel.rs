@@ -17,7 +17,7 @@ use std::{cell::RefCell, rc::Weak};
 use svg_dom::{SvgNode, WeakSvgNode, root::utils::Point};
 use web_sys::WheelEvent;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Listens for modifier-plus-wheel over both the `surface` behind the content and the `content` layer, zooming about
 /// the pointer.
 ///
@@ -44,7 +44,7 @@ pub(super) fn install(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn zoom_on_wheel(surface: &WeakSvgNode, inner: &Weak<RefCell<SceneInner>>, flusher: &ViewFlusher, event: &WheelEvent) {
     if !(event.ctrl_key() || event.meta_key()) {
         return;

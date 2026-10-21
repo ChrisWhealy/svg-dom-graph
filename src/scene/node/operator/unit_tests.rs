@@ -55,9 +55,9 @@ fn the_texts_are_centred_on_the_box() -> Result<(), String> {
     check_eq(layout.centre_x(), layout.size.width / 2.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   check_operand_types: every operand and the result must share one integer width.
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 fn content(values: NodeValues) -> DataNodeContent {
     DataNodeContent::new(values, DataFormat::Hexadecimal)
@@ -128,9 +128,9 @@ fn an_unknown_operand_is_reported_as_such() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   check_integer_operands: a unary or binary operator needs integer operands.
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn integer_operands_are_accepted_by_a_bitwise_operator() -> Result<(), String> {

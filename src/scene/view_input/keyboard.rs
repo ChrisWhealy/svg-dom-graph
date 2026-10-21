@@ -37,7 +37,7 @@ const SHIFT_FACTOR: f64 = 5.0;
 /// of it falls outside the visible area and is clipped, so this is twice the width that shows.
 const FOCUS_OUTLINE_WIDTH: f64 = 6.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the scene while it is a keyboard target: what it is, and how far it is zoomed.
 ///
 /// The zoom is part of the *name*, not a live region, so changing it never interrupts a screen reader that is reading
@@ -78,7 +78,7 @@ fn description(pan: bool, zoom: bool) -> String {
     parts.join(" ")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes `target`, a `<rect>` the scene has created for the purpose, a keyboard target and wires its keys.
 ///
 /// `pan` enables the arrow keys and `zoom` enables plus, minus and zero. `scale` is the current zoom, for the name.
@@ -122,7 +122,7 @@ pub(super) fn install(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn on_key(inner: &Weak<RefCell<SceneInner>>, pan: bool, zoom: bool, event: &KeyboardEvent) {
     // Only this element receives the event, since it has no children and nothing else in the `<svg>` is its ancestor. A
     // key pressed on a toolbar button, for one, never reaches it. Leave browser and assistive-technology shortcuts

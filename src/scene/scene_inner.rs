@@ -108,7 +108,7 @@ impl Drop for SceneInner {
 }
 
 impl SceneInner {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves `element` — freshly created by one of `svg`'s own factory methods, which always append to the `<svg>` root
     /// — into the [`content`](Self::content) layer.
     ///
@@ -123,7 +123,7 @@ impl SceneInner {
         Ok(self.content.append(element).inspect_err(|_| element.remove())?)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current rectangle of node `id`.
     ///
     /// # Errors
@@ -134,7 +134,7 @@ impl SceneInner {
         self.graph.node(id).map(|node| node.rect).ok_or(Error::UnknownNode(id))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Node `id`'s own rendered box handles, or `None` if `id` does not name a node in this scene.
     pub(super) fn node_handle(&self, id: NodeId) -> Option<&BoxHandles> {
         if id.graph != self.graph.id {
@@ -151,7 +151,7 @@ impl SceneInner {
         self.node_handles.get_mut(id.index)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Appends `clause` to node `id`'s own `aria-label`/`<title>`, as a new sentence.
     ///
     /// `Scene::add_edge_with` calls this once per endpoint of every edge it adds. So a connector's own `<path>` is
@@ -225,7 +225,7 @@ impl SceneInner {
         self.node_handles.pop()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Edge `id`'s own rendered connector handle, or `None` if `id` does not name an edge in this scene.
     pub(super) fn edge_handle(&self, id: EdgeId) -> Option<&ConnectorHandle> {
         if id.graph != self.graph.id {
@@ -276,7 +276,7 @@ impl SceneInner {
         self.edge_handles.pop()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current [`EdgeAnchors`] configuration of node `id`.
     ///
     /// # Errors
@@ -288,7 +288,7 @@ impl SceneInner {
             .ok_or(Error::UnknownNode(id))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The `to`-side routing override for the edge from `from` to `to`, if `to` is a binary operator node and `from` is
     /// one of its own two known inputs. See [`connector::route`]'s own `to_override` parameter.
     ///
@@ -336,7 +336,7 @@ impl SceneInner {
         })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// If `edge_id` runs from `mover` into a two-input operator node with `mover` registered as one of its own two
     /// inputs, that operator's own id. `None` otherwise: an ordinary edge, or one a caller wired by hand, bypassing
     /// both [`Scene::add_binary_operator_node_with`] and [`Scene::add_arithmetic_operator_node_with`].
@@ -355,7 +355,7 @@ impl SceneInner {
         (mover == input_a || mover == input_b).then_some(edge.to)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves node `id` to `new_origin`: updates the graph, the rendered box, and every incident connector.
     ///
     /// Every child of the node's own `<g>` — its outer rect, and its label or grid cells — was drawn once, at creation,
@@ -421,7 +421,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes `vertices` as edge `id`'s own rendered path data, rounded by `radius` — the shared tail of
     /// [`redraw_edge`](Self::redraw_edge) and [`redraw_binary_operator_inputs`](Self::redraw_binary_operator_inputs),
     /// once each has its own route ready.
@@ -445,7 +445,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves edge `id`'s own "L"/"R" port marker — if it has one — to [`port_marker_position`]'s own point for
     /// `anchor`/`side`. Does nothing for an edge with no marker: an ordinary edge, or a commutative operator's own
     /// input edge — see `node::operator::draw_port_marker`'s own doc comment for which edges get one.
@@ -477,7 +477,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Recomputes edge `id`'s route from its current node positions, and rewrites its path data.
     ///
     /// The ordinary-edge fallback. It is correct for a binary operator input edge too, because
@@ -510,7 +510,7 @@ impl SceneInner {
         self.write_edge_path(id, &vertices, radius, scratch)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Redraws both of binary operator node `operator`'s own two input edges together. It computes the shared pair
     /// geometry exactly once: [`binary_operator_anchors`], and which side each input lands on. It then derives and
     /// writes each edge's own route from it.
@@ -590,7 +590,7 @@ impl SceneInner {
         self.reposition_port_marker(edge_b, anchor_b, side_b, scratch)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Redraws edge `id` with `connector_type`, and only then records it as the edge's new type.
     ///
     /// Writing the path before committing the type keeps `Scene::set_connector_type` transactional. If the DOM write
@@ -630,7 +630,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// If node `id`'s current rect overlaps another node's, returns a corrected origin that resolves the overlap.
     ///
     /// Pushes `id`'s rect back along the straight line from `pre_drag_origin` through the overlapped node's centre.

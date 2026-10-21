@@ -45,7 +45,7 @@ impl SelectionToolbarAction {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The flat position this action moves to from `current`, for a data node holding `len` values. It is `None` if
     /// activating it right now would change nothing. That is also this button's own disabled/enabled test (see
     /// [`is_enabled`](Self::is_enabled)).

@@ -135,14 +135,14 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes the title from the DOM entirely. Does nothing if none is shown.
     pub fn hide_scene_title(&self) {
         let Some(title) = self.inner.borrow_mut().scene_title.take() else { return };
         title.remove();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether a title is currently shown.
     pub fn has_scene_title(&self) -> bool {
         self.inner.borrow().scene_title.is_some()

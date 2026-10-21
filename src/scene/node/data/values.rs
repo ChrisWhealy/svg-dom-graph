@@ -9,7 +9,7 @@ use crate::{
 use svg_dom::root::utils::{Point, Rect};
 
 impl Scene {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The rectangle of cell `index` of data node `id`, in this scene's own coordinates, where `index` is the cell's
     /// flat row-major position. A single-value node's one cell is its whole content box.
     ///
@@ -35,7 +35,7 @@ impl Scene {
         })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces the values shown by data node `id` with `values`, rewriting each cell's own text in place.
     ///
     /// For a node whose content depends on a step the host walks through, such as a function's own output array. It is

@@ -149,7 +149,7 @@ fn heading(line: &str) -> Option<(u8, &str)> {
     (!text.is_empty()).then_some((hashes.min(3) as u8, text))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the parser has gathered since the last block ended.
 #[derive(Default)]
 struct Pending {
@@ -254,7 +254,7 @@ pub(crate) fn parse(source: &str) -> Vec<Block> {
     blocks
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text of `spans`, without any styling.
 fn spans_text(spans: &[Span]) -> String {
     spans.iter().map(|s| s.text.as_str()).collect()

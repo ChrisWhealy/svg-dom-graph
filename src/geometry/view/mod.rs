@@ -58,7 +58,7 @@ impl ViewTransform {
     /// The transform that leaves content exactly where it is drawn.
     pub(crate) const IDENTITY: Self = Self { scale: 1.0, tx: 0.0, ty: 0.0 };
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This transform after multiplying its scale by `factor`, keeping viewport point `pivot` fixed on screen.
     ///
     /// The resulting scale is clamped to [`MIN_SCALE`]..=[`MAX_SCALE`]. The translation is adjusted using the factor
@@ -80,7 +80,7 @@ impl ViewTransform {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Where content point `p` is drawn under this transform, in the `<svg>`'s own user space.
     pub(crate) fn apply(self, p: Point) -> Point {
         Point::new(p.x * self.scale + self.tx, p.y * self.scale + self.ty)
@@ -102,7 +102,7 @@ impl ViewTransform {
         now.unapply(self.apply(p))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// This transform moved by `(dx, dy)` in viewport space, leaving the scale alone.
     ///
     /// Viewport space, not content space: a pan of 10 moves the content 10 on screen, whatever the current zoom.
@@ -114,7 +114,7 @@ impl ViewTransform {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether another zoom-in step would change anything.
     pub(crate) fn can_zoom_in(self) -> bool {
         self.scale < MAX_SCALE
@@ -125,7 +125,7 @@ impl ViewTransform {
         self.scale > MIN_SCALE
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes this transform as an SVG `transform` attribute value into `out`, replacing its previous content.
     ///
     /// Writes into a caller-owned buffer, like the other `_into` helpers in this crate, so repeated zoom steps reuse

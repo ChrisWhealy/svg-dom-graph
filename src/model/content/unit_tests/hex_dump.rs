@@ -17,7 +17,7 @@ fn visible(line: &str) -> &str {
     line.trim_end()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_offset_is_hidden_unless_asked_for() -> Result<(), String> {
     check(!HexDumpFormat::default().shows_offset(), "hidden by default")?;
@@ -164,9 +164,9 @@ fn replacing_the_bytes_writes_only_the_lines_that_changed() -> Result<(), String
     check(written[0].1.contains("ff"), &written[0].1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Selecting a byte
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// Where byte `index` of the first line sits in `line`: the two characters its hex digits take, and the one its
 /// character takes, as found by looking in the text itself.

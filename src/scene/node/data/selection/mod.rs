@@ -131,7 +131,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Marks the cells at flat indices `cells` of node `id` as *secondary*. They are derived from the current
     /// selection, and part of the same step, without being the one cell (or row/column)
     /// [`set_selection`](Self::set_selection) names.

@@ -82,7 +82,7 @@ fn write_attr_replaces_previous_buffer_content() -> Result<(), String> {
     check(out == "translate(5, -3.5) scale(2)", &format!("unexpected attribute: {out}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn translating_moves_content_by_the_same_amount_on_screen_at_any_scale() -> Result<(), String> {
     let view = ViewTransform { scale: 2.0, tx: 10.0, ty: 20.0 };
@@ -137,7 +137,7 @@ fn a_non_finite_wheel_delta_changes_nothing() -> Result<(), String> {
     check(wheel_zoom_factor(f64::INFINITY, 0) == 1.0, "infinity changed the zoom")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Zoom-anchoring tests. A view maps a graph point `p` to `s * p + t`. Zooming about an anchor `a` must give `t' = a -
 //   (s' / s) * (a - t)`, where `s'` is the scale actually applied *after* clamping — not the scale requested.
 
@@ -425,7 +425,7 @@ fn repeated_zoom_cycles_do_not_accumulate_error() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pan or zoom writes this attribute for every animation frame. Once its buffer is large enough it must be reused,
 /// not reallocated, however the transform changes.
 #[test]
@@ -445,7 +445,7 @@ fn writing_the_transform_attribute_reuses_its_buffer() -> Result<(), String> {
     check(buffer.capacity() == capacity, "the buffer's capacity changed")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Re-reading a pointer position under a changed view. A pointer gesture that measured something when it began must go on
 // tracking the pointer if the view changes underneath it.
 

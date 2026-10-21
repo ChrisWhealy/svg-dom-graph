@@ -96,7 +96,7 @@ impl ResolvedBand {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Calls `f(i)` once for every flat index `i < len` this band contains, in ascending order — this band's own
     /// members, not a `0..len` scan tested one at a time via [`contains`](Self::contains).
     ///

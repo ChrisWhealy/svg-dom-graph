@@ -8,7 +8,7 @@ use crate::error::Error;
 /// [`NodeValues::U8`]: super::NodeValues::U8
 pub const MAX_BIT_WIDTH: u8 = 7;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A list of values that are each exactly `width` bits wide, from 1 to [`MAX_BIT_WIDTH`], for
 /// [`NodeValues::Bits`](super::NodeValues::Bits).
 ///
@@ -55,14 +55,14 @@ impl BitValues {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many bits wide each value is.
     #[must_use]
     pub fn width(&self) -> u8 {
         self.width
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The values, each in `0..(1 << width)`.
     #[must_use]
     pub fn values(&self) -> &[u8] {
@@ -70,7 +70,7 @@ impl BitValues {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes `value` as exactly `width` binary digits into `out`, most significant first, with no grouping.
 pub(super) fn format_bits_binary_into(value: u8, width: u8, out: &mut String) {
     out.clear();
@@ -79,7 +79,7 @@ pub(super) fn format_bits_binary_into(value: u8, width: u8, out: &mut String) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes `value` as `width.div_ceil(4)` uppercase hexadecimal digits into `out`.
 pub(super) fn format_bits_hex_into(value: u8, width: u8, out: &mut String) {
     use std::fmt::Write as _;

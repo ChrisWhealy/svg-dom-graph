@@ -101,7 +101,7 @@ fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeCont
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What distinguishes one two-input operator from another, once its operator enum has been resolved: how it is labelled,
 /// whether swapping its operands changes nothing, and whether it acts on the bits of an integer, as a binary operator
 /// does, or on numbers, as an arithmetic one does.
@@ -112,7 +112,7 @@ struct TwoInputKind {
     bitwise: bool,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::OperatorNeedsIntegers`] if any of `operands` holds floating point values. A unary or binary operator
 /// acts on the bits of an integer: there is no `NOT`, `AND`, `XOR` or rotation of a float in ordinary arithmetic, and a
 /// result drawn for one would claim a meaning it does not have. An arithmetic operator has no such restriction. Also
@@ -771,7 +771,7 @@ impl Scene {
         Ok(id)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Wires an incoming edge from each of `inputs` into operator node `id`, tracked on `guard` as each is added so a
     /// failure partway rolls them all back. Both edges exist afterwards, so the operator's own input-edge pair —
     /// otherwise unknowable until this point — is cached on its handles once here.
@@ -796,7 +796,7 @@ impl Scene {
         Ok((edge_a, edge_b))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws an "L" marker at the first operand's anchor on `rect` and an "R" marker at the second's, and stores each on
     /// its own edge so a later redraw repositions it. `rect` is the operator node's own rectangle, and `edges` its two
     /// input edges in `inputs` order.

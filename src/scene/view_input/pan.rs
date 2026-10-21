@@ -26,7 +26,7 @@ const IDLE_STYLE: &str = "cursor: grab; touch-action: none; user-select: none; -
 /// The surface's own style while a pan is in progress.
 const PANNING_STYLE: &str = "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where a pan has got to. Kept for as long as the pan lasts.
 ///
 /// It holds the pointer's last position and nothing about the view. Each move pans the view *as it is now* by how far
@@ -41,7 +41,7 @@ struct PanStart {
     inverse_ctm: Matrix2D,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wires panning onto `surface`: the pointer listeners, and the grab cursor that shows the surface can be dragged.
 ///
 /// The listeners hold only a `Weak` reference to the scene's shared state, for the same reason
@@ -124,7 +124,7 @@ pub(super) fn install(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Ends the pan `start` holds, writing its final position to the DOM first, if `pointer_id` is the pointer that began
 /// it.
 ///

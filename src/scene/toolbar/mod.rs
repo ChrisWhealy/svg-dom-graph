@@ -219,7 +219,7 @@ impl SceneInner {
         self.rendered_user_area().unwrap_or_else(|| visible_area(&self.svg))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The part of the `<svg>`'s user space its rendered box shows, or `None` if it cannot be measured.
     fn rendered_user_area(&self) -> Option<Rect> {
         // The `<svg>` root as a node, so its own screen matrix can be read. It is the content layer's parent.
@@ -235,7 +235,7 @@ impl SceneInner {
         )
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes `view` the current view and writes it to the content layer's `transform` at once.
     ///
     /// Also brings the accessible name and every toolbar button's enabled state in line with it, and settles any
@@ -267,7 +267,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes `view` the current view without touching the DOM. Returns whether there is now a write to flush.
     ///
     /// For a gesture that can fire many times per frame. The next [`flush_view`](Self::flush_view) writes only the
@@ -281,7 +281,7 @@ impl SceneInner {
         self.view_dirty
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the current view to the content layer, if it has changed since it was last written.
     ///
     /// # Errors
@@ -311,7 +311,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Marks each toolbar button enabled or disabled, to match what its action could currently do.
     ///
     /// A disabled button is dimmed and carries `aria-disabled`. It stays focusable, so keyboard focus is never lost
@@ -336,7 +336,7 @@ impl SceneInner {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Positions the bar and its buttons for the current visible area.
     pub(super) fn layout_toolbar(&mut self) -> Result<(), Error> {
         let area = self.visible_area();
@@ -455,7 +455,7 @@ impl Scene {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Removes the toolbar from the DOM entirely. Does nothing if none is shown.
     ///
     /// The scene's current zoom is kept. Use [`reset_view`](Self::reset_view) to undo it.
@@ -472,13 +472,13 @@ impl Scene {
         let _ = self.sync_view_input();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether a toolbar is currently shown.
     pub fn has_toolbar(&self) -> bool {
         self.inner.borrow().toolbar.is_some()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves the shown toolbar to `edge`. Does nothing if none is shown.
     ///
     /// The bar is placed against the `<svg>`'s visible area as it is at this call, so this also picks up a change the
@@ -499,7 +499,7 @@ impl Scene {
         inner.layout_toolbar()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Repositions the shown toolbar against the `<svg>`'s visible area as it is now. Does nothing if none is shown.
     ///
     /// **The scene cannot observe its `<svg>` being resized. Call this, or better [`refresh_layout`](
@@ -518,7 +518,7 @@ impl Scene {
         self.refresh_layout()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Zooms the content in by one step, about the centre of the `<svg>`'s visible area.
     ///
     /// Stops at a maximum scale of `4.0`. Calling it there changes nothing.

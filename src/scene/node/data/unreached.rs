@@ -17,7 +17,7 @@ const UNREACHED_MARKDOWN_OPACITY: &str = "0.5";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Marks the cells at flat indices `cells` of node `id` as *not yet computed*, and draws them faint.
     ///
     /// A walk through an algorithm fills its arrays in step by step. Until a cell's step is reached it holds a
