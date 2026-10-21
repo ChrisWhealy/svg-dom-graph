@@ -192,7 +192,8 @@ impl BoxHandles {
             append_cell_list(&self.secondary, &mut self.aria_label);
         }
         // A dump is never "a single cell", whatever its number of lines, since it is described by its bytes.
-        let total = if dump { usize::MAX } else { self.cell_rects.len() };
+        // A Markdown node has no cells, and is one value.
+        let total = if dump { usize::MAX } else { self.cell_rects.len().max(1) };
         unreached_clause_with(&self.unreached, total, unit, &mut self.aria_label);
         self.group.set_attr("aria-label", &self.aria_label)?;
         // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see

@@ -30,13 +30,32 @@ pub(super) struct Nodes {
     pub(super) last_register: NodeId,
     pub(super) sent_crc: NodeId,
     pub(super) receiver: Option<ReceiverNodes>,
+    /// Each box that has an explanation, paired with the node of that explanation.
+    pub(super) notes: Vec<(NodeId, NodeId)>,
+}
+
+impl Nodes {
+    /// The explanation of `id`, if it has one.
+    fn note_of(&self, id: NodeId) -> Option<NodeId> {
+        self.notes.iter().find(|(node, _)| *node == id).map(|&(_, note)| note)
+    }
+
+    /// Draws the explanation of `id` faint if `unreached`, so that it can be read ahead of the walk, and at full strength
+    /// once the walk arrives at the box it explains. A box with no explanation is left alone.
+    fn dim_note(&self, scene: &Scene, id: NodeId, unreached: bool) -> Result<(), String> {
+        match self.note_of(id) {
+            Some(note) => mark_unreached(scene, note, &all_if(unreached, 1)),
+            None => Ok(()),
+        }
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws what `progress` has not reached faint, and marks what it has just reached.
 ///
 /// A box keeps its text while it is faint, so a reader can see what is coming. The library marks the box as "not yet
-/// computed" for assistive technology too.
+/// computed" for assistive technology too. So is the explanation beside a box, which is faint until the walk arrives at
+/// the box it explains. A box with values for each byte is reached by the first byte.
 ///
 /// # Errors
 ///
@@ -53,7 +72,9 @@ pub(super) fn show(scene: &Scene, nodes: &Nodes, progress: &Progress) -> Result<
     }
     for &id in &nodes.per_byte {
         mark_unreached(scene, id, &pending)?;
+        nodes.dim_note(scene, id, progress.bytes_done == 0)?;
     }
+    nodes.dim_note(scene, nodes.last_register, !progress.last_register)?;
     single(scene, nodes.last_register, progress.last_register, false)?;
     single(scene, nodes.sent_crc, progress.crc, progress.newest == Newest::Crc)?;
 
@@ -61,12 +82,18 @@ pub(super) fn show(scene: &Scene, nodes: &Nodes, progress: &Progress) -> Result<
         let all: Vec<usize> = (0..nodes.bytes).collect();
         let arrived = if progress.arrived { Vec::new() } else { all.clone() };
         mark_unreached(scene, receiver.bytes, &arrived)?;
+        nodes.dim_note(scene, receiver.bytes, !progress.arrived)?;
         mark_unreached(scene, receiver.arrived_crc, &all_if(!progress.arrived, 1))?;
         mark_unreached(
             scene,
             receiver.registers,
             &if progress.receiver_registers { Vec::new() } else { all.clone() },
         )?;
+        nodes.dim_note(scene, receiver.registers, !progress.receiver_registers)?;
+        nodes.dim_note(scene, receiver.crc, !progress.received_crc)?;
+        nodes.dim_note(scene, receiver.syndrome, !progress.syndrome)?;
+        nodes.dim_note(scene, receiver.position, !progress.position)?;
+        nodes.dim_note(scene, receiver.corrected, !progress.corrected)?;
         single(
             scene,
             receiver.crc,

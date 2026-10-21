@@ -301,6 +301,38 @@ fn each_step_reaches_the_next_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The accessible names of the notes, which are the nodes of Markdown text, in the order they were drawn. The first node
+/// of Markdown text is the status line beside the buttons, and it is not a note.
+fn note_names(tab: &Tab) -> Result<Vec<String>, String> {
+    let json = text(
+        tab,
+        &format!(
+            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"Text\"]')].map(g => g.getAttribute('aria-label')))"
+        ),
+    )?;
+    let mut names: Vec<String> = serde_json::from_str(&json).map_err(|e| format!("could not read the notes: {e}"))?;
+    names.remove(0);
+    Ok(names)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The note under a box is faint until the walk reaches the box, and says so to a screen reader, so that it can be read
+/// ahead of the walk but not mistaken for a step that has been done.
+#[test]
+fn a_note_is_faint_until_the_walk_reaches_its_box() -> Result<(), String> {
+    let tab = open()?;
+    for position in 0..=LAST {
+        goto(&tab, position)?;
+        let names = note_names(&tab)?;
+        check_eq(names.len(), BOXES.len())?;
+        for (index, name) in names.iter().enumerate() {
+            check_eq(name.contains("not yet computed"), index > position)?;
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each step is announced in the live region, which is outside the scene, so a screen reader is told where the walk is.
 #[test]
 fn each_step_is_announced_to_a_screen_reader() -> Result<(), String> {

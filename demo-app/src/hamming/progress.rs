@@ -24,13 +24,21 @@ fn cells(index: usize) -> usize {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the boxes of the path `nodes` that `position` has not reached faint, and marks the one it has just reached. A
-/// box keeps its bits while it is faint, so a reader can see what is coming.
+/// box keeps its bits while it is faint, so a reader can see what is coming. The note under each box in `notes` is faint
+/// along with its box, and is read the same way.
 ///
 /// # Errors
 ///
 /// Returns `Err` if a library call fails.
-pub(super) fn show(scene: &Scene, nodes: &[NodeId], t: &Transmission, position: usize) -> Result<(), String> {
-    for (index, &node) in nodes.iter().enumerate() {
+pub(super) fn show(
+    scene: &Scene,
+    nodes: &[NodeId],
+    notes: &[NodeId],
+    t: &Transmission,
+    position: usize,
+) -> Result<(), String> {
+    for (index, (&node, &note)) in nodes.iter().zip(notes).enumerate() {
+        mark_unreached(scene, note, &all_if(!reached(index, position), 1))?;
         mark_unreached(scene, node, &all_if(!reached(index, position), cells(index)))?;
         // The whole of the newest box is marked, whether it holds one bit or several.
         let selection = match (newest(position) == Some(index), cells(index)) {

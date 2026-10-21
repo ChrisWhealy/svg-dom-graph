@@ -128,6 +128,7 @@ pub(super) fn draw(text: &str, position: usize, flips: &Flips) -> Result<Drawn, 
         explanation_width: SENDER_EXPLANATION_WIDTH,
         side: MARGIN + SENDER_EXPLANATION_WIDTH + GAP + measures.aside_width / 2.0,
         nodes: Vec::new(),
+        notes: Vec::new(),
     };
     let receiver = Column {
         scene: &scene,
@@ -136,6 +137,7 @@ pub(super) fn draw(text: &str, position: usize, flips: &Flips) -> Result<Drawn, 
         explanation_width: RECEIVER_EXPLANATION_WIDTH,
         side: receiver_axis,
         nodes: Vec::new(),
+        notes: Vec::new(),
     };
     let xor_left = sender_axis + measures.middle_width / 2.0 + GAP;
     let mut drawing = Drawing {
@@ -172,6 +174,7 @@ pub(super) fn draw(text: &str, position: usize, flips: &Flips) -> Result<Drawn, 
         bytes: bytes.len(),
         dump: rows.dump,
         per_byte: rows.per_byte,
+        notes: drawing.sender.notes.iter().chain(&drawing.receiver.notes).copied().collect(),
         last_register: last_row.last,
         sent_crc: last_row.sent,
         receiver: receiver_nodes,

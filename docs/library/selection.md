@@ -12,7 +12,7 @@ A selection toolbar steps one data node through its cells.
    These cells are independent of `Selection`, so the selection toolbar is unaffected.
    This also updates the node's own accessible name; it does not create a live-region announcement.
 
-- `set_unreached_cells` marks the cells of a data node that have not been computed yet, and draws them faint.
+- `set_unreached_cells` marks the cells of a data node that have not been computed yet, and draws them faint. A Markdown node is one value, so `[0]` dims all of its text, and its accessible name gains ", not yet computed".
   A walk through an algorithm fills its arrays step by step, and a placeholder zero looks exactly like a computed zero.
   The mark is independent of `Selection` and of the secondary cells, and also adds ", not yet computed: cells 16 to 63" to the node's accessible name.
 

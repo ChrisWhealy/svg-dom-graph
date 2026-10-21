@@ -108,16 +108,18 @@ pub(super) fn draw(t: &Transmission, position: usize, status: &str) -> Result<Dr
     let plan = snake::plan(&items, columns, width, left, controls.bottom + snake::GAP_Y);
 
     let mut nodes = Vec::with_capacity(BOXES);
+    let mut note_nodes = Vec::with_capacity(BOXES);
     let mut shown = Vec::with_capacity(2 * BOXES);
     for (((name, content), note), placement) in contents.into_iter().zip(&notes).zip(&plan.placements) {
         let node = scene.add_named_data_node(placement.node, name, content).map_err(stringify)?;
         let words = scene.add_markdown_node(placement.note, width, note).map_err(stringify)?;
         nodes.push(node);
+        note_nodes.push(words);
         shown.extend([node, words]);
     }
     shown.push(controls.status);
     connect(&scene, &nodes, &plan)?;
-    progress::show(&scene, &nodes, t, position)?;
+    progress::show(&scene, &nodes, &note_nodes, t, position)?;
 
     fit_canvas(&document, &scene, &plan, controls.right - left, &shown)?;
     let step = add_step_driver(&scene)?;

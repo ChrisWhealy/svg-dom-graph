@@ -527,6 +527,33 @@ fn each_step_reaches_one_more_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How many explanations say that they are not yet computed, to a screen reader as well as by being faint.
+fn faint_notes(tab: &Tab) -> Result<usize, String> {
+    text(
+        tab,
+        &format!("String(document.querySelectorAll('{DIAGRAM} g[aria-label=\"Text, not yet computed\"]').length)"),
+    )?
+    .parse()
+    .map_err(|e| format!("could not count the notes: {e}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An explanation is faint until the walk arrives at the box it explains. "abc" has three explanations for the boxes of
+/// each byte (index, entry, register), one for the last register, and six for the receiver.
+#[test]
+fn an_explanation_is_faint_until_the_walk_reaches_its_box() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    check_eq(faint_notes(&tab)?, 10)?;
+    goto(&tab, 1)?;
+    check_eq(faint_notes(&tab)?, 7)?;
+    goto(&tab, 3)?;
+    check_eq(faint_notes(&tab)?, 6)?;
+    goto(&tab, 10)?;
+    check_eq(faint_notes(&tab)?, 0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping back draws the scene as it was, and editing the text starts the walk again.
 #[test]
 fn stepping_back_restores_the_boxes_and_editing_the_text_starts_again() -> Result<(), String> {

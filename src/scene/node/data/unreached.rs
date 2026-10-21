@@ -1,12 +1,21 @@
 //! Marking a data node's cells that have no value yet: `Scene::set_unreached_cells`.
 
-use super::selection::{Highlight, try_for_each_difference};
+use super::{
+    selection::{Highlight, try_for_each_difference},
+    style::FULL_OPACITY,
+};
 use crate::{
     error::Error,
     model::node::{NodeContent, NodeId},
-    scene::{Scene, Selection},
+    scene::{Scene, Selection, scene_inner::SceneInner},
 };
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The opacity of a Markdown node that has not been reached: faint, but less so than a cell, since its text is meant to
+/// be read ahead of the walk.
+const UNREACHED_MARKDOWN_OPACITY: &str = "0.5";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Marks the cells at flat indices `cells` of node `id` as *not yet computed*, and draws them faint.
@@ -35,6 +44,12 @@ impl Scene {
     /// A [`DataFormat::HexDump`](crate::scene::DataFormat::HexDump) has a cell for each line, but `cells` names its
     /// *bytes*, as [`Selection::Cell`] does. An unreached byte is dimmed over its two hex digits and over its character.
     ///
+    /// # Markdown nodes
+    ///
+    /// A Markdown node holds one value: all of its text. So `cells` is either empty or `[0]`, and `[0]` draws the whole
+    /// node, its box and its text, faint. Its `aria-label` and tooltip gain `", not yet computed"`. This lets the note
+    /// under a step of a walk be dimmed with the step, and still be read.
+    ///
     /// # Replacement
     ///
     /// `cells` replaces whatever was marked before. An empty slice clears it. Order and duplicates do not matter. An
@@ -46,13 +61,21 @@ impl Scene {
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
     /// Returns [`Error::InvalidSelection`], carrying the offending index as a [`Selection::Cell`], if `id` names a plain
-    /// label or container node. It also returns it if any index in `cells` is out of range for `id`'s own value count.
+    /// label, container or text input node. It also returns it if any index in `cells` is out of range for `id`'s own value count.
     /// Checked before redrawing any cell, so a rejected call leaves every cell exactly as it was.
     ///
     /// Also returns a wrapped [`Error::Svg`] if redrawing a cell fails partway through, with the same "can leave some
     /// cells already redrawn" property [`set_selection`](Self::set_selection) documents.
     pub fn set_unreached_cells(&self, id: NodeId, cells: &[usize]) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
+
+        // A Markdown node is one value, dimmed as a whole.
+        if matches!(
+            inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content,
+            NodeContent::Markdown(_)
+        ) {
+            return set_markdown_unreached(&mut inner, id, cells);
+        }
 
         let content = match &inner.graph.node(id).ok_or(Error::UnknownNode(id))?.content {
             NodeContent::Data(content) => content,
@@ -132,4 +155,22 @@ impl Scene {
         handles.refresh_label()?;
         Ok(())
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`Scene::set_unreached_cells`] for a Markdown node, which has the one cell `0`.
+fn set_markdown_unreached(inner: &mut SceneInner, id: NodeId, cells: &[usize]) -> Result<(), Error> {
+    if let Some(&bad) = cells.iter().find(|&&i| i != 0) {
+        return Err(Error::InvalidSelection(id, Selection::Cell(bad)));
+    }
+    let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+    let new_unreached: Vec<usize> = if cells.is_empty() { Vec::new() } else { vec![0] };
+    if handles.unreached == new_unreached {
+        return Ok(handles.resync_label()?);
+    }
+    let opacity = if new_unreached.is_empty() { FULL_OPACITY } else { UNREACHED_MARKDOWN_OPACITY };
+    handles.group.set_attr("opacity", opacity)?;
+    handles.unreached = new_unreached;
+    handles.refresh_label()?;
+    Ok(())
 }

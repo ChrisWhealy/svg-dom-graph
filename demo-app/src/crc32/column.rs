@@ -31,6 +31,8 @@ pub(super) struct Column<'a> {
     /// The x of the middle of the boxes that only help.
     pub(super) side: f64,
     pub(super) nodes: Vec<NodeId>,
+    /// Each box that has an explanation, paired with the node of that explanation.
+    pub(super) notes: Vec<(NodeId, NodeId)>,
 }
 
 impl Column<'_> {
@@ -68,7 +70,8 @@ impl Column<'_> {
                 spec.content,
             )
             .map_err(stringify)?;
-        self.explain(middle, &spec.explanation)?;
+        let note = self.explain(middle, &spec.explanation)?;
+        self.notes.push((node, note));
         self.nodes.push(node);
         let aside = match spec.aside {
             Some((name, content)) => {
@@ -90,8 +93,8 @@ impl Column<'_> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Adds `explanation` in the column of explanations, centred on `middle`.
-    pub(super) fn explain(&mut self, middle: f64, explanation: &str) -> Result<(), String> {
+    /// Adds `explanation` in the column of explanations, centred on `middle`, and returns its node.
+    pub(super) fn explain(&mut self, middle: f64, explanation: &str) -> Result<NodeId, String> {
         let size = self
             .scene
             .measure_markdown_node(self.explanation_width, explanation)
@@ -105,7 +108,7 @@ impl Column<'_> {
             )
             .map_err(stringify)?;
         self.nodes.push(id);
-        Ok(())
+        Ok(id)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -140,7 +143,8 @@ impl Column<'_> {
                 result,
             )
             .map_err(stringify)?;
-        self.explain(middle, explanation)?;
+        let note = self.explain(middle, explanation)?;
+        self.notes.push((node, note));
         self.nodes.push(node);
         Ok(node)
     }
