@@ -1,10 +1,11 @@
-//! Where the nodes of a row go, so that the row is centred the way a person sees it. Pure, so none of it needs a browser.
+//! Where the nodes of a row go, so that the row is centred the way a person sees it. Pure, so none of it needs a
+//! browser.
 
 /// The left edges of the nodes of one row, whose boxes are `widths` wide, with `gap` between one box and the next, so
 /// that the row is centred on `axis`.
 ///
-/// With an odd number of nodes the one in the middle is centred on the axis. With an even number the gap between the two
-/// in the middle is. The others follow outward from there at the same gap. So the middle of the row is on the axis
+/// With an odd number of nodes the one in the middle is centred on the axis. With an even number the gap between the
+/// two in the middle is. The others follow outward from there at the same gap. So the middle of the row is on the axis
 /// whatever the widths are, which centring the whole extent of the row would not do if the widths on one side were more
 /// than those on the other.
 pub(super) fn centred_lefts(widths: &[f64], gap: f64, axis: f64) -> Vec<f64> {

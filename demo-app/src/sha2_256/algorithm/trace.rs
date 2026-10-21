@@ -1,6 +1,6 @@
 use super::*;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything one block's hash goes through, from the padded block to the digest.
 pub(in crate::sha2_256) struct Trace {
     /// The padded message block.

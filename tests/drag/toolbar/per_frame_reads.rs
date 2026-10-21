@@ -45,7 +45,7 @@ impl Drop for AttributeReads {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The counter itself is trustworthy: an attribute read made on purpose is seen.
 #[wasm_bindgen_test]
 fn the_attribute_read_counter_sees_a_read() -> Result<(), String> {
@@ -56,7 +56,7 @@ fn the_attribute_read_counter_sees_a_read() -> Result<(), String> {
     check(reads.count() == 2, &format!("expected 2 reads, counted {}", reads.count()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pan frame reads nothing from the DOM. Pointer moves, keyboard arrows, a burst of wheel events, and the frame that
 /// writes the result are all measured. The view changes, so the frame writes; nothing has to be read to know that.
 #[wasm_bindgen_test]

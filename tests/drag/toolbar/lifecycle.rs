@@ -48,7 +48,7 @@ async fn every_input_does_exactly_one_thing(scene: &Scene, id: &str) -> Result<(
     scene.reset_view().map_err(|e| e.to_string())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The sequence itself: show, hide, show, hide, show. After it, the toolbar and its gestures behave exactly as they
 /// would have after a single show.
 #[wasm_bindgen_test]
@@ -68,7 +68,7 @@ async fn show_hide_show_hide_show_then_every_input_does_exactly_one_thing() -> R
     every_input_does_exactly_one_thing(&scene, "lifecycle-sequence").await
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Many more cycles, mixing in a toolbar moved to every edge, replaced while shown, and re-shown with new options. One
 /// stale listener from any of them would double an input.
 #[wasm_bindgen_test]
@@ -87,7 +87,7 @@ async fn many_lifecycle_changes_still_leave_every_input_doing_exactly_one_thing(
     every_input_does_exactly_one_thing(&scene, "lifecycle-many").await
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same for the input modes: one gesture switched on, off, and on again, over and over, with the toolbar showing
 /// throughout.
 #[wasm_bindgen_test]
@@ -109,7 +109,7 @@ async fn many_mode_changes_still_leave_every_input_doing_exactly_one_thing() -> 
     every_input_does_exactly_one_thing(&scene, "lifecycle-modes").await
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Once every `Scene` handle is dropped, no input route does anything at all: not a button, not the wheel, not a key,
 /// not a drag. If a listener were kept alive by a reference cycle, the scene it points at would still be alive and
 /// would still answer, moving the view. Nothing here has a handle left to read the zoom from, so the rendered DOM is

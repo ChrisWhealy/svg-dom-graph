@@ -45,9 +45,9 @@ fn shared() -> Result<&'static Shared, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Opens a fresh tab on the shared fixture page and waits for the last node (`labelled`, the ninth and final one
-/// added by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence
-/// proves the whole scene finished building.
+/// Opens a fresh tab on the shared fixture page and waits for the last node (`labelled`, the ninth and final one added
+/// by the fixture) before returning it. Since the fixture builds every node synchronously, that node's presence proves
+/// the whole scene finished building.
 pub(crate) fn new_tab() -> Result<DemoTab, String> {
     // A test that failed while holding the lock poisons it, which says nothing about the next test's tab.
     let turn = TURN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -65,7 +65,7 @@ pub(crate) fn new_tab() -> Result<DemoTab, String> {
     Ok(DemoTab { tab, _turn: turn })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The demo gallery, built and served once per test run, and the browser that opens its pages.
 ///
 /// Kept apart from [`SHARED`], so a run that selects only fixture tests never pays for building the demo.
@@ -90,14 +90,14 @@ fn demo() -> Result<&'static DemoShared, String> {
     .map_err(String::clone)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A tab that holds the lock every test shares, until it is dropped.
 ///
-/// A click through the toolbar needs its tab in front, and Chrome has one foreground tab at a time. Tests that ran
-/// side by side would each take the front from the others and see their clicks fail. The lock makes them take turns.
+/// A click through the toolbar needs its tab in front, and Chrome has one foreground tab at a time. Tests that ran side
+/// by side would each take the front from the others and see their clicks fail. The lock makes them take turns.
 ///
-/// It also keeps the run to one active tab. Running tabs in parallel has twice been followed by a macOS kernel panic
-/// (a kernel spinlock timeout between two Chrome threads), which taking turns avoids.
+/// It also keeps the run to one active tab. Running tabs in parallel has twice been followed by a macOS kernel panic (a
+/// kernel spinlock timeout between two Chrome threads), which taking turns avoids.
 pub(crate) struct DemoTab {
     tab: Arc<Tab>,
     _turn: MutexGuard<'static, ()>,
@@ -113,9 +113,9 @@ impl Deref for DemoTab {
 
 static TURN: Mutex<()> = Mutex::new(());
 
-/// Waits for its turn, then opens a fresh tab on the demo's window page `page` (for example `chacha20-window.html`) and waits until `ready`
-/// matches an element. The viewport is made `size` large, so a diagram taller than Chrome's headless window is wholly
-/// on screen and every part of it can be hit by a real mouse.
+/// Waits for its turn, then opens a fresh tab on the demo's window page `page` (for example `chacha20-window.html`) and
+/// waits until `ready` matches an element. The viewport is made `size` large, so a diagram taller than Chrome's
+/// headless window is wholly on screen and every part of it can be hit by a real mouse.
 pub(crate) fn new_demo_tab(page: &str, ready: &str, size: (u32, u32)) -> Result<DemoTab, String> {
     // A test that failed while holding the lock poisons it, which says nothing about the next test's tab.
     let turn = TURN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
@@ -245,7 +245,7 @@ pub(crate) fn ctrl_wheel(tab: &Tab, (x, y): (f64, f64), delta_y: f64) -> Result<
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn mouse_event(
     tab: &Tab,
     kind: Input::DispatchMouseEventTypeOption,
@@ -277,7 +277,7 @@ pub(crate) fn mouse_event(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One mark a hex dump draws over a selected byte, as found in the browser.
 #[derive(Debug, PartialEq, Eq)]
 pub(crate) struct DumpMark {

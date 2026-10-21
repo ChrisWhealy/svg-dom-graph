@@ -540,9 +540,9 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
     };
     apply_stage(&scene, stage_nodes, stage)?;
 
-    // Fit this diagram's own `<svg>` to its content. The stepping toolbar is at the top, inside `TOP_Y`. The 17-lane "Rate", "XOR",
-    // "Input block" and the rest are taller than a fixed size can anticipate. Nested scenes then size themselves
-    // against the stage this makes.
+    // Fit this diagram's own `<svg>` to its content. The stepping toolbar is at the top, inside `TOP_Y`. The 17-lane
+    // "Rate", "XOR", "Input block" and the rest are taller than a fixed size can anticipate. Nested scenes then size
+    // themselves against the stage this makes.
     let mut right = 0.0_f64;
     let mut bottom = 0.0_f64;
     for node in [message, input_block, output_hash, rate_out, capacity_out] {
@@ -611,7 +611,7 @@ fn rebuild(stage: usize) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The SHA3 Sponge scene is far larger than any other demo. So the gallery panel keeps only the description, plus a
 /// button that opens the scene in a window of its own: `sha3-sponge-window.html`, which runs
 /// [`build_sha3_sponge_window`] there.
@@ -630,7 +630,7 @@ const WINDOW_PAGE: &str = "sha3-sponge-window.html";
 /// The window's own name, so a second click reuses it.
 const WINDOW_NAME: &str = "svg-dom-graph-sha3-sponge";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA3 Sponge scene at its first stage, with "Message" in focus — see [`build_scene`]'s own doc comment for
 /// what it draws. It wires the scene's own close button, and resizes the window it runs in to fit the scene. Runs in
 /// `sha3-sponge-window.html`, not in the gallery.
@@ -646,11 +646,11 @@ pub(crate) fn build_sha3_sponge_window() -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wires `#sha3-sponge-close` — the nested view's own &times; close button — to whichever of "Keccak f(1600)"'s own
-/// descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside
-/// [`rebuild`]: unlike the `<svg>` content `rebuild` redraws from scratch on every step, `#sha3-sponge-close` is
-/// a plain, static `index.html` element that would otherwise pick up one more duplicate listener per step.
-/// [`keccak::exit_if_focused`] always reads `keccak`'s own latest thread-local state at click time, regardless of how
-/// many rebuilds happened since this listener was attached.
+/// descendants is currently entered, via [`keccak::exit_if_focused`]. Wired once, here, not from inside [`rebuild`]:
+/// unlike the `<svg>` content `rebuild` redraws from scratch on every step, `#sha3-sponge-close` is a plain, static
+/// `index.html` element that would otherwise pick up one more duplicate listener per step. [`keccak::exit_if_focused`]
+/// always reads `keccak`'s own latest thread-local state at click time, regardless of how many rebuilds happened since
+/// this listener was attached.
 ///
 /// # Errors
 ///
@@ -674,10 +674,11 @@ fn wire_sha3_sponge_controls(document: web_sys::Document) -> Result<(), String> 
 const ERROR_ID: &str = "sha3-sponge-window-error";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Shows a step's own failure, or hides the last one once a step works again. Every selection toolbar in this demo calls
-/// it with the result of its own step. The step runs in the toolbar's own callback, which has nowhere to return an
-/// error to. Dropping it would leave the diagram half updated with no sign of why. The window's own error banner shows
-/// it. A theta scene run on the gallery's own page shows it in that panel instead. See [`crate::util::report_error`].
+/// Shows a step's own failure, or hides the last one once a step works again. Every selection toolbar in this demo
+/// calls it with the result of its own step. The step runs in the toolbar's own callback, which has nowhere to return
+/// an error to. Dropping it would leave the diagram half updated with no sign of why. The window's own error banner
+/// shows it. A theta scene run on the gallery's own page shows it in that panel instead. See
+/// [`crate::util::report_error`].
 pub(crate) fn report_step(result: Result<(), String>) {
     match result {
         Ok(()) => crate::util::clear_error(ERROR_ID),

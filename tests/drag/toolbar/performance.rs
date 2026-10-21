@@ -70,7 +70,7 @@ impl Recorder {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A graph of nodes and connectors, then every way of zooming and panning it: buttons, wheel, drag, and keyboard. The
 /// only thing that may change anywhere at or below the content layer is that layer's own `transform`. No node moves, no
 /// connector is rerouted, and no label or marker is rewritten — which is what makes the cost independent of graph size.
@@ -128,7 +128,7 @@ async fn zooming_and_panning_change_only_the_content_layers_own_transform() -> R
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cost of a burst is one write, not one per event. Twenty wheel events and a run of pan moves, all inside one
 /// frame, are a single mutation of the content layer's `transform`.
 #[wasm_bindgen_test]
@@ -160,7 +160,7 @@ async fn a_burst_of_wheel_and_pan_events_is_one_transform_write() -> Result<(), 
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zoom and pan do not invalidate routing: every node's own position and every connector's own path are byte-for-byte
 /// what they were, however far the view has been zoomed and panned.
 #[wasm_bindgen_test]

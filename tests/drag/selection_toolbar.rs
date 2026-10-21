@@ -457,7 +457,7 @@ fn hiding_the_toolbar_drops_the_callback() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With a stride, the bar holds five buttons in order: `Prev Round`, `Prev`, `Next`, `Next Round`, `Restart`. Each has
 /// its own accessible name. Without a stride it still holds the original three.
 #[wasm_bindgen_test]
@@ -496,7 +496,7 @@ fn a_stride_adds_two_buttons_in_the_expected_order_with_their_own_names() -> Res
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Next Round` and `Prev Round` move five cells at a time, report a transition for each, clamp at the ends, and are
 /// disabled when they could not move.
 #[wasm_bindgen_test]
@@ -552,7 +552,7 @@ fn the_stride_buttons_move_a_whole_group_and_are_disabled_at_the_ends() -> Resul
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A stride of `0` is rejected like any other invalid option.
 #[wasm_bindgen_test]
 fn a_zero_stride_is_rejected() -> Result<(), String> {
@@ -568,7 +568,7 @@ fn a_zero_stride_is_rejected() -> Result<(), String> {
     check(!scene.has_selection_toolbar(), "nothing was installed")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A stride button is as wide as its label's own rendered text needs, whatever script the label is in. A label of wide
 /// glyphs needs more room than a fixed width gives it, however few characters it has.
 #[wasm_bindgen_test]

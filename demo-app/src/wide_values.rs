@@ -39,8 +39,8 @@ const SIGNED_LABELS: &[&str] = &["min", "-2^64", "-1", "zero", "max"];
 const SIGNED: [i128; 5] = [i128::MIN, -(1 << 64), -1, 0, i128::MAX];
 
 /// A UUID of each version that RFC 9562 defines, and the nil and max UUIDs, which have no version. Version 2 is not
-/// among them, since RFC 9562 reserves it for DCE Security and does not define it. Each is a published
-/// example, so each is a real UUID of its version and a reader can look it up.
+/// among them, since RFC 9562 reserves it for DCE Security and does not define it. Each is a published example, so each
+/// is a real UUID of its version and a reader can look it up.
 const VERSION_LABELS: &[&str] = &[
     "nil", "v1 time", "v3 MD5", "v4 random", "v5 SHA-1", "v6 time", "v7 Unix time", "v8 custom", "max",
 ];
@@ -101,8 +101,8 @@ fn example_as_guid_bytes() -> Uuid {
 ///   it is two's complement, so `-1` is sixteen bytes of `FF`. The most negative value is the widest, since its sign
 ///   makes it one character longer than the largest.
 /// - **Line 3: a UUID of every version.** The same kind of value as a `u128`, but written as a UUID, with the digit
-///   that gives its version in the third group. The second node is the same UUIDs under `Decimal`, as the numbers
-///   that they are.
+///   that gives its version in the third group. The second node is the same UUIDs under `Decimal`, as the numbers that
+///   they are.
 /// - **Lines 4 and 5: every way to write one UUID.** The same UUID is hyphenated, simple, braced, a URN and uppercase.
 ///   Every format writes a fixed number of characters, so a node is as wide for one UUID as for any other.
 /// - **Lines 6 and 7: byte layouts.** A UUID that is an RFC 9562 one is stored most significant byte first. A Microsoft

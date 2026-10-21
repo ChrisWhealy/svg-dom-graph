@@ -108,8 +108,8 @@ pub(crate) fn build_scene(
 
     // The input array: `A`'s own 25 values, its own `[5; [5; u64]]` node, at the top of the canvas. `TOP_Y` (50, not
     // `0`) leaves the scene title's own band clear above it, rather than overlapping it. That band is `margin` 12 plus
-    // its own ≈28-unit-tall text, an estimate as usual with no browser here to measure it.
-    // Below the scene's own title and its stepping toolbar, which is at the top.
+    // its own ≈28-unit-tall text, an estimate as usual with no browser here to measure it. Below the scene's own title
+    // and its stepping toolbar, which is at the top.
     const TOP_Y: f64 = crate::util::CONTENT_TOP;
     let array = scene
         .add_named_data_node(

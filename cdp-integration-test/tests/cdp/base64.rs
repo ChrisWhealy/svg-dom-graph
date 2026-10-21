@@ -83,7 +83,7 @@ fn nodes_named(tab: &Tab, name: &str) -> Result<usize, String> {
     .map_err(|e| format!("could not count {name}: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The panel opens on a sentence of 62 bytes: 20 whole groups and a last group of two, so one padding character.
 #[test]
 fn the_panel_opens_on_its_sentence_with_one_padding_character() -> Result<(), String> {
@@ -96,7 +96,7 @@ fn the_panel_opens_on_its_sentence_with_one_padding_character() -> Result<(), St
     check_eq(nodes_named(&tab, "Base64 text")?, 1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Typing encodes the new text, with the padding that a last group of one byte, of two, and of three needs.
 #[test]
 fn typing_encodes_the_new_text_with_the_padding_each_final_group_needs() -> Result<(), String> {
@@ -114,9 +114,9 @@ fn typing_encodes_the_new_text_with_the_padding_each_final_group_needs() -> Resu
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An empty text has nothing to encode, so the six-bit values and the Base64 text are not drawn, and typing again brings
-/// them back.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An empty text has nothing to encode, so the six-bit values and the Base64 text are not drawn, and typing again
+/// brings them back.
 #[test]
 fn an_empty_text_draws_neither_the_six_bit_values_nor_the_base64_text() -> Result<(), String> {
     let tab = open()?;
@@ -130,7 +130,7 @@ fn an_empty_text_draws_neither_the_six_bit_values_nor_the_base64_text() -> Resul
     check_eq(result(&tab)?.as_str(), "Zg==")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The URL-safe alphabet writes `-` and `_` where the standard one writes `+` and `/`, for the same text, and choosing
 /// either draws the same text again.
 #[test]
@@ -154,7 +154,7 @@ fn the_url_safe_alphabet_changes_only_the_characters_for_62_and_63() -> Result<(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Text that is one byte too long for the limit because its last character takes three bytes is cut before that
 /// character, not inside it, and the note beside the text box says so.
 #[test]
@@ -184,7 +184,7 @@ fn a_character_that_straddles_the_256_byte_limit_is_left_out_whole() -> Result<(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A change redraws the whole scene, and the text box that replaces the old one has the keyboard focus, with the caret
 /// where it was, so typing carries on.
 #[test]
@@ -216,7 +216,7 @@ fn typing_keeps_the_focus_and_the_caret_across_the_redraw() -> Result<(), String
     check_eq(result(&tab)?.as_str(), "YWJYY2Q=")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// While text is being composed, the scene is not drawn again, so the text box is the same element and the composition
 /// goes on. When the composition is committed, the scene is drawn for the composed text and the text box has the focus.
 #[test]

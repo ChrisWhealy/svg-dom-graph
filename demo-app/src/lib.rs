@@ -22,7 +22,8 @@
 //!   counts are chosen to cover every combination the grid layout rule can produce.
 //! - `panel-hexdump` / `#hexdump-diagram` — [`data::build_hexdump_demo`]: bytes as `hexdump -C` shows them, with and
 //!   without each line's offset and the total length.
-//! - `panel-ascii` / `#ascii-diagram` — [`data::build_ascii_demo`]: bytes as characters, a cell each or as a run of text.
+//! - `panel-ascii` / `#ascii-diagram` — [`data::build_ascii_demo`]: bytes as characters, a cell each or as a run of
+//!   text.
 //! - `panel-bits` / `#bits-diagram` — [`bits::build_bits_demo`]: values from one to seven bits wide, singly and in
 //!   arrays, in decimal, hexadecimal and binary. Binary writes exactly as many digits as the width, with no nybble gap.
 //! - `panel-128-bit` / `#wide-diagram` — [`wide_values::build_wide_demo`]: a `u128` and an `i128` across their whole
@@ -37,20 +38,19 @@
 //! - `panel-operators-binary` / `#operators-binary-diagram` — [`operators_binary::build_binary_operator_demo`]: two
 //!   operand nodes feeding an operator node, for every binary operator this crate names.
 //! - `panel-operators-arithmetic` / `#operators-arithmetic-diagram` —
-//!   [`operators_arithmetic::build_arithmetic_operator_demo`]: two operand nodes feeding an operator node, for
-//!   every arithmetic operator this crate names.
-//! - `panel-operators-chained` / `#operators-chained-diagram` —
-//!   [`operators_chained::build_chained_operator_demo`]: operator nodes feeding further operator nodes, including
-//!   the operator-chaining example that motivated this whole family of panels. Every result any of the four operator
-//!   panels shows is computed here with plain Rust integer ops, never by the library itself — see each function's own
-//!   doc comment.
+//!   [`operators_arithmetic::build_arithmetic_operator_demo`]: two operand nodes feeding an operator node, for every
+//!   arithmetic operator this crate names.
+//! - `panel-operators-chained` / `#operators-chained-diagram` — [`operators_chained::build_chained_operator_demo`]:
+//!   operator nodes feeding further operator nodes, including the operator-chaining example that motivated this whole
+//!   family of panels. Every result any of the four operator panels shows is computed here with plain Rust integer ops,
+//!   never by the library itself — see each function's own doc comment.
 //! - `panel-selection-1d`, `panel-selection-2d`, `panel-selection-hexdump` and `panel-selection-thetac` —
 //!   [`selection::build_selection_1d_demo`], [`selection::build_selection_2d_demo`],
 //!   [`selection::build_selection_hexdump_demo`] and [`selection::build_selection_thetac_demo`]: an array stepped
-//!   through by its own in-canvas selection toolbar, in one dimension, in two, as the bytes of a hex dump, and row by row
-//!   through an operator chain.
-//! - `panel-markdown` / `#markdown-diagram` — [`text_nodes::build_markdown_demo`]: a Markdown node using every construct
-//!   it supports.
+//!   through by its own in-canvas selection toolbar, in one dimension, in two, as the bytes of a hex dump, and row by
+//!   row through an operator chain.
+//! - `panel-markdown` / `#markdown-diagram` — [`text_nodes::build_markdown_demo`]: a Markdown node using every
+//!   construct it supports.
 //! - `panel-text-input` / `#text-input-diagram` — [`text_nodes::build_text_input_demo`]: a text input node, whose text
 //!   appears in an ASCII node and a hexdump node as it is typed.
 //! - `panel-theta` / `#theta-diagram` — [`theta::build_theta_demo`]. It shows SHA3's `Theta` function as a parent
@@ -65,23 +65,29 @@
 //!   round at a time, drawn as the four columns `a`, `b`, `c` and `d`. Each of the 12 steps of a quarter round is an
 //!   operator node in the column of the word it updates, and every value is a real result, worked out in plain Rust.
 //!   The scene is large, so it opens in a window of its own, as the hash demos' do.
-//! - `panel-base64` / `#base64-diagram` — [`base64::build_base64_demo`]: Base64 encoding of typed text, three bytes at a
-//!   time. The bytes in binary, the same bits cut into six-bit values, and the character for each value, with the padding
-//!   a short last group needs. Every value is worked out in plain Rust.
+//! - `panel-base64` / `#base64-diagram` — [`base64::build_base64_demo`]: Base64 encoding of typed text, three bytes at
+//!   a time. The bytes in binary, the same bits cut into six-bit values, and the character for each value, with the
+//!   padding a short last group needs. Every value is worked out in plain Rust.
 //! - `panel-utf8` / `#utf8-diagram` — [`utf8::build_utf8_demo`]: UTF-8 encoding of one of four characters, one for each
 //!   length of sequence. A column of nodes shows the code point, its bits, the bits of the bytes with the template
 //!   highlighted, and the bytes, and it grows and shrinks with the character. Every value is worked out in plain Rust.
-//! - `panel-crc32` / `#crc32-diagram` — [`crc32::build_crc32_demo`]: the CRC-32 of typed text, a byte at a time. Each byte
-//!   picks an entry of the table of 256 with the register, and the entry is XORed with the register shifted a byte. The
-//!   register starts as all ones and is flipped at the end. Every value is worked out in plain Rust.
-//! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three parity
-//!   bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The boxes are one
-//!   path through the calculation, laid out as a block that runs along one row and back along the next.
-//! - `panel-quicksort` / `#quicksort-diagram` — [`quicksort::build_quicksort_demo`]: Quicksort of ten values with the Lomuto
-//!   partition, drawn as thin bars on a common baseline that are as tall as their values, so that sorting shows as bars
-//!   changing places. A red bar is the pivot and a green bar is the element being examined. The drawing, the buttons and
-//!   the stepping are shared by every sorting demo, in `sorting`; Quicksort supplies only its steps. Every value is worked
-//!   out in plain Rust.
+//! - `panel-crc32` / `#crc32-diagram` — [`crc32::build_crc32_demo`]: the CRC-32 of typed text, a byte at a time. Each
+//!   byte picks an entry of the table of 256 with the register, and the entry is XORed with the register shifted a
+//!   byte. The register starts as all ones and is flipped at the end. Every value is worked out in plain Rust.
+//! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three
+//!   parity bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The
+//!   boxes are one path through the calculation, laid out as a block that runs along one row and back along the next.
+//! - `panel-bubble-sort` / `#bubble-sort-diagram` — [`bubble_sort::build_bubble_sort_demo`]: Bubble sort of ten values,
+//!   drawn as bars in the same way as Quicksort. A pass compares neighbours, green and blue, and the swap slides the
+//!   two bars past each other. After each pass the largest element left is in place at the end.
+//! - `panel-shell-sort` / `#shell-sort-diagram` — [`shell_sort::build_shell_sort_demo`]: Shell sort of ten values,
+//!   drawn as bars in the same way. Elements a gap apart are put in order with each other, for the gaps 5, 2 and 1, so
+//!   a swap can carry a bar several places at once.
+//! - `panel-quicksort` / `#quicksort-diagram` — [`quicksort::build_quicksort_demo`]: Quicksort of ten values with the
+//!   Lomuto partition, drawn as thin bars on a common baseline that are as tall as their values, so that sorting shows
+//!   as bars changing places. A red bar is the pivot and a green bar is the element being examined. The drawing, the
+//!   buttons and the stepping are shared by every sorting demo, in `sorting`; Quicksort supplies only its steps. Every
+//!   value is worked out in plain Rust.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -100,6 +106,7 @@
 mod base64;
 mod bits;
 mod bools_and_sizes;
+mod bubble_sort;
 mod chacha20;
 mod crc32;
 mod data;
@@ -118,6 +125,7 @@ mod selection;
 mod sha1;
 mod sha2_256;
 mod sha3_sponge;
+mod shell_sort;
 mod sorting;
 mod source_frame;
 mod svg_buttons;
@@ -223,18 +231,20 @@ demo_gallery! {
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
     "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
     "panel-hamming" => hamming::build_hamming_demo + hamming::FILES,
+    "panel-bubble-sort" => bubble_sort::build_bubble_sort_demo + bubble_sort::FILES,
+    "panel-shell-sort" => shell_sort::build_shell_sort_demo + shell_sort::FILES,
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the SHA3 Sponge scene in `sha3-sponge-window.html`, the window the gallery's own SHA3 Sponge panel opens. Call
-/// it once, from that page's own script, after the wasm module has loaded.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the SHA3 Sponge scene in `sha3-sponge-window.html`, the window the gallery's own SHA3 Sponge panel opens.
+/// Call it once, from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
 pub fn init_sha3_sponge_window() -> Result<(), JsValue> {
     sha3_sponge::build_sha3_sponge_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA-256 scene in `sha2-256-window.html`, the window the gallery's own SHA2-256 panel opens. Call it once,
 /// from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
@@ -242,7 +252,7 @@ pub fn init_sha2_256_window() -> Result<(), JsValue> {
     sha2_256::build_sha2_256_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the ChaCha20 scene in `chacha20-window.html`, the window the gallery's own ChaCha20 panel opens. Call it
 /// once, from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
@@ -250,7 +260,7 @@ pub fn init_chacha20_window() -> Result<(), JsValue> {
     chacha20::build_chacha20_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Huffman scene in `huffman-window.html`, the window the gallery's own Huffman panel opens. Call it once,
 /// from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
@@ -258,15 +268,15 @@ pub fn init_huffman_window() -> Result<(), JsValue> {
     huffman::build_huffman_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the CRC-32 scene in `crc32-window.html`, the window the gallery's own CRC-32 panel opens. Call it once, from that
-/// page's own script, after the wasm module has loaded.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the CRC-32 scene in `crc32-window.html`, the window the gallery's own CRC-32 panel opens. Call it once, from
+/// that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
 pub fn init_crc32_window() -> Result<(), JsValue> {
     crc32::build_crc32_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Hamming(7,4) scene in `hamming-window.html`, the window the gallery's own Hamming(7,4) panel opens. Call
 /// it once, from that page's own script, after the wasm module has loaded.
 #[wasm_bindgen]
@@ -274,7 +284,7 @@ pub fn init_hamming_window() -> Result<(), JsValue> {
     hamming::build_hamming_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA-1 scene in `sha1-window.html`, the window the gallery's own SHA1 panel opens. Call it once, from that
 /// page's own script, after the wasm module has loaded.
 #[wasm_bindgen]

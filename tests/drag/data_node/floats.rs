@@ -34,7 +34,7 @@ fn f64_grid(values: Vec<f64>, format: FloatFormat) -> DataNodeContent {
     DataNodeContent::new(NodeValues::F64(values), DataFormat::Float(format)).with_layout(GridLayout::Columns(1))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Decimal places and significant digits are different things, and each reads as it should.
 #[wasm_bindgen_test]
 fn decimal_places_and_significant_digits_are_written_as_asked() -> Result<(), String> {
@@ -46,7 +46,7 @@ fn decimal_places_and_significant_digits_are_written_as_asked() -> Result<(), St
     check(digits == ["1230", "1.23", "0.00123"], &format!("digits {digits:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Scientific notation, the shortest form, and the special values.
 #[wasm_bindgen_test]
 fn scientific_notation_and_special_values_are_written_as_asked() -> Result<(), String> {
@@ -66,7 +66,7 @@ fn scientific_notation_and_special_values_are_written_as_asked() -> Result<(), S
     check(special == ["NaN", "inf", "-inf", "-0.0"], &format!("special {special:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Hexadecimal` and `Binary` show a float's IEEE-754 bits.
 #[wasm_bindgen_test]
 fn hexadecimal_and_binary_show_the_ieee_754_bits() -> Result<(), String> {
@@ -78,7 +78,7 @@ fn hexadecimal_and_binary_show_the_ieee_754_bits() -> Result<(), String> {
     check(hex == ["3F 80 00 00", "C0 00 00 00"], &format!("hex {hex:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The point of the width calculation: whatever the format, no value overflows its cell. Each case has a different
 /// widest value: a tiny one under plain significant digits, a negative one with many integer digits under decimal places,
 /// a long exponent under scientific notation, `-inf` among short numbers, and an awkward sum under the shortest form.
@@ -121,7 +121,7 @@ fn every_cell_is_wide_enough_for_its_widest_value_in_every_format() -> Result<()
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A float format that cannot be honoured is rejected before anything is drawn.
 #[wasm_bindgen_test]
 fn an_invalid_float_format_is_rejected_before_anything_is_drawn() -> Result<(), String> {
@@ -143,7 +143,7 @@ fn an_invalid_float_format_is_rejected_before_anything_is_drawn() -> Result<(), 
     check(nth_group("float-invalid", 0).is_err(), "a rejected call should draw nothing")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A float names its own type, and has a colour of its own.
 #[wasm_bindgen_test]
 fn a_float_node_names_its_type_and_the_value_it_shows() -> Result<(), String> {
@@ -159,7 +159,7 @@ fn a_float_node_names_its_type_and_the_value_it_shows() -> Result<(), String> {
     check(title_of(&group)?.as_deref() == Some("f32 = -2.50"), "the tooltip should match")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single float is replaced across the sign of zero, which `==` cannot see, and its text, tooltip and name follow.
 #[wasm_bindgen_test]
 fn a_single_float_replaced_by_a_negative_zero_follows_in_text_title_and_name() -> Result<(), String> {
@@ -192,7 +192,7 @@ fn a_single_float_replaced_by_a_negative_zero_follows_in_text_title_and_name() -
     expect("NaN")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An `f32` and an `f64` are different types, as far as replacing values and operators are concerned.
 #[wasm_bindgen_test]
 fn an_f32_is_not_an_f64_for_replacement_or_for_an_operator() -> Result<(), String> {
@@ -217,7 +217,7 @@ fn an_f32_is_not_an_f64_for_replacement_or_for_an_operator() -> Result<(), Strin
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Unary and binary operators act on the bits of an integer, and are refused floating point operands, even when the
 /// operands and result are all of one float type. Nothing is drawn for a rejected call.
 #[wasm_bindgen_test]
@@ -255,7 +255,7 @@ fn a_bitwise_operator_is_refused_floating_point_operands() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An arithmetic operator means something for a float, and accepts it. The accessible name of its result names the
 /// float type.
 #[wasm_bindgen_test]

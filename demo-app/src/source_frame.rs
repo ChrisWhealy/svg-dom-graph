@@ -1,5 +1,5 @@
-//! Each demo panel gets a collapsible frame below it showing the formatted Rust source of the function that built it.
-//! A panel whose function only calls into other files gets one more, closed, frame for each of them, whole. See
+//! Each demo panel gets a collapsible frame below it showing the formatted Rust source of the function that built it. A
+//! panel whose function only calls into other files gets one more, closed, frame for each of them, whole. See
 //! [`crate::DemoPanel::files`].
 //!
 //! [`crate::init_panel`] appends this itself, deliberately even when that function reported failure — the source is

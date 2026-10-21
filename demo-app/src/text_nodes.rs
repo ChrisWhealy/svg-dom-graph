@@ -1,8 +1,8 @@
 //! The two text-node panels:
 //!
 //! - `panel-markdown` / `#markdown-diagram` — [`build_markdown_demo`]: a Markdown node.
-//! - `panel-text-input` / `#text-input-diagram` — [`build_text_input_demo`]: a text input node, whose text appears in an
-//!   ASCII node and a hexdump node as it is typed.
+//! - `panel-text-input` / `#text-input-diagram` — [`build_text_input_demo`]: a text input node, whose text appears in
+//!   an ASCII node and a hexdump node as it is typed.
 
 use crate::util::{document, ensure_svg_in, required_element, stringify, view_box_rect};
 use std::cell::RefCell;
@@ -60,7 +60,7 @@ A backslash makes punctuation literal: \\*not italic\\* and \\`not code\\`."
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Markdown demo: one Markdown node.
 ///
 /// The node is [`markdown`]'s text, which uses every supported construct: three heading levels, bold, italic, code,
@@ -97,18 +97,18 @@ pub(crate) fn build_markdown_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The text as the [`BUFFER_LEN`] bytes the ASCII node and the hexdump node hold: its UTF-8 bytes, cut off at the end of
-/// the buffer, and padded with zero bytes if shorter.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text as the [`BUFFER_LEN`] bytes the ASCII node and the hexdump node hold: its UTF-8 bytes, cut off at the end
+/// of the buffer, and padded with zero bytes if shorter.
 fn buffer_of(text: &str) -> Vec<u8> {
     let mut bytes = text.as_bytes().to_vec();
     bytes.resize(BUFFER_LEN, 0);
     bytes
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the text input demo: a text input node, an ASCII node and a hexdump node, with a connector from the text input
-/// node to each of the others.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the text input demo: a text input node, an ASCII node and a hexdump node, with a connector from the text
+/// input node to each of the others.
 ///
 /// 1. The text input node holds one line of text the browser edits. The text box keeps the keyboard focus while the
 ///    diagram is panned, zoomed, or the nodes are dragged, and typing in it never pans or zooms the diagram.

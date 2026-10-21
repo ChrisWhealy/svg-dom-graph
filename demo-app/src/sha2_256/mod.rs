@@ -117,7 +117,7 @@ fn rightward() -> ConnectorOptions {
         .with_to_side(Some(Side::West))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A connector from the east side of `from` to the west side of `to`, which meets `to` at the height of `from`'s own
 /// middle. So it runs straight across when `from` sits beside `to`, and not down to `to`'s own middle, which would be
 /// far below when `to` is a tall column. `from` must lie within `to`'s own height.
@@ -493,8 +493,8 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
             // The initial hash starts the working variables, which lead into the five terms that sum to `temp1`. The
             // two terms of `temp2` follow. `temp1` and `temp2` both feed the next working variables, and those the
             // digest. The working variables also feed the terms of `temp2`, and `temp1` feeds the next working
-            // variables, but a connector over the nodes between would cross them. Those relationships are named in
-            // the nodes instead.
+            // variables, but a connector over the nodes between would cross them. Those relationships are named in the
+            // nodes instead.
             for (from, to) in [
                 (0, 1),
                 (1, 2),
@@ -647,8 +647,8 @@ fn step_to(position: usize) -> Result<(), String> {
         let previous = demo.shown_at.take().map(|at| shown(&demo.trace, at));
         apply(&demo.scene, &demo.nodes, &shown(&demo.trace, position), previous.as_ref())?;
         demo.shown_at = Some(position);
-        // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on the
-        // first position, so its next click advances from there and not from nowhere.
+        // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on the first
+        // position, so its next click advances from there and not from nowhere.
         if position == 0 {
             demo.scene.set_selection(demo.step, Selection::Cell(0)).map_err(stringify)?;
         }

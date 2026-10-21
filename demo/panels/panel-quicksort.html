@@ -1,0 +1,19 @@
+<section class="section" id="panel-quicksort">
+    <h2>Quicksort</h2>
+    <p><em>Quicksort</em> sorts by splitting. It picks one element, the <em>pivot</em>, and moves every element smaller
+        than the pivot in front of it and every other element behind it. The pivot is then exactly where it belongs in the
+        sorted array. What is left is two smaller arrays, one on each side of the pivot, and each is sorted the same way.
+        An array of one element is already sorted.</p>
+    <p>This demo uses the <em>Lomuto</em> partition, in which the pivot is the last element of the range being sorted. One
+        pass looks at each of the other elements in turn. An element smaller than the pivot is swapped with the first
+        element that is not, which grows the group of smaller elements at the front of the range by one. At the end of the
+        pass the pivot is swapped in behind that group.</p>
+    <p class="demo-error" id="quicksort-error" hidden></p>
+    <!-- Said by a screen reader at each step. It is here, not in the scene, because the scene is drawn again for each step,
+         and a live region that is new each time may not be announced. -->
+    <p id="quicksort-announcement" role="status" aria-live="polite"
+        style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">
+    </p>
+    <div class="canvas" id="quicksort-diagram-stage">
+    </div>
+</section>

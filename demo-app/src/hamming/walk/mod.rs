@@ -25,7 +25,7 @@ pub(super) fn newest(position: usize) -> Option<usize> {
     (position > 0).then(|| position.min(BOXES - 1))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What each position is, in a few words: the name of its box and what is done to arrive there.
 const STAGES: [&str; BOXES] = [
     "Data bits. The four bits to protect.",

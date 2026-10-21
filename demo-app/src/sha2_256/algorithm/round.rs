@@ -1,6 +1,6 @@
 use super::*;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One round of compression, with every intermediate value kept so the demo can show it.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::sha2_256) struct Round {

@@ -26,7 +26,7 @@ pub(super) const ROUNDS: usize = 64;
 /// The longest message that fits one block: 64 bytes, less the terminator byte and the 8-byte length.
 pub(super) const MAX_MESSAGE_LEN: usize = 55;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The initial hash value `H`: the first 32 bits of the fractional parts of the square roots of the first 8 primes.
 /// `H[0]` is working variable `a`, and `H[7]` is `h`.
 ///
@@ -62,7 +62,7 @@ pub(super) const ROUND_CONSTANTS: [u32; ROUNDS] = [
     0x90be_fffa, 0xa450_6ceb, 0xbef9_a3f7, 0xc671_78f2,
 ];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The message schedule's general purpose small sigma
 fn sigma_using(w: u32, r1: u32, r2: u32, sh: u32) -> u32 {
     w.rotate_right(r1) ^ w.rotate_right(r2) ^ w >> sh
@@ -78,7 +78,7 @@ pub(super) fn sigma1(w: u32) -> u32 {
     sigma_using(w, 17, 19, 10)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Compression's general purpose big
 fn big_sigma_using(w: u32, r1: u32, r2: u32, r3: u32) -> u32 {
     w.rotate_right(r1) ^ w.rotate_right(r2) ^ w.rotate_right(r3)
@@ -94,19 +94,19 @@ pub(super) fn big_sigma1(w: u32) -> u32 {
     big_sigma_using(w, 6, 11, 25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Choose: each bit of `e` picks the matching bit of `f` where it is set, and of `g` where it is clear.
 pub(super) fn choice(e: u32, f: u32, g: u32) -> u32 {
     (e & f) ^ (!e & g)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Majority: each result bit is the value held by at least two of the matching bits of `a`, `b` and `c`.
 pub(super) fn majority(a: u32, b: u32, c: u32) -> u32 {
     (a & b) ^ (a & c) ^ (b & c)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The padded message block: `message`'s bytes, then the `0x80` terminator, then zeros, with the message's length in
 /// bits as the last word. Words are big-endian, so the first byte of the message is the top byte of word 0.
 ///
@@ -126,7 +126,7 @@ pub(super) fn message_block(message: &[u8]) -> Option<[u32; BLOCK_WORDS]> {
     Some(block)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Schedule word `n`, for `n >= 16`, from the earlier words of `schedule`: `ms[n-16] + sigma0(ms[n-15]) + ms[n-7] +
 /// sigma1(ms[n-2])`, with overflow ignored.
 pub(super) fn expanded_word(schedule: &[u32; SCHEDULE_WORDS], n: usize) -> u32 {

@@ -6,7 +6,7 @@ use crate::common::{attr_f64, check, check_close, dispatch_pointer_event};
 use svg_dom_graph::scene::{InputMode, ToolbarOptions};
 use wasm_bindgen_test::*;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every button exposes the button role, a name that does not depend on its visible text, and a place in the Tab order.
 #[wasm_bindgen_test]
 fn every_toolbar_button_has_the_button_role_an_explicit_name_and_a_tab_stop() -> Result<(), String> {
@@ -26,7 +26,7 @@ fn every_toolbar_button_has_the_button_role_an_explicit_name_and_a_tab_stop() ->
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Keyboard focus is drawn explicitly, as a thicker, differently coloured border. It is not left to whatever outline a
 /// browser draws for a focused SVG element. It goes away again on blur.
 #[wasm_bindgen_test]
@@ -48,7 +48,7 @@ fn a_focused_toolbar_button_shows_an_obvious_focus_ring_that_blur_removes() -> R
     check_close(attr_f64(&rect, "stroke-width")?, resting.1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Activating a control marked `aria-disabled` does nothing at all — by click or by keyboard. In particular it writes
 /// nothing to the DOM, so the content layer still has no `transform`.
 #[wasm_bindgen_test]
@@ -86,7 +86,7 @@ fn activating_an_aria_disabled_button_does_nothing() -> Result<(), String> {
     check_close(scene.zoom_scale(), 4.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With panning on, the scene adds a keyboard focus target of its own: a role, a name that says how far it is zoomed,
 /// and a description of its keys. All of that is on that element, and none of it on the application's `<svg>`.
 #[wasm_bindgen_test]
@@ -128,7 +128,7 @@ async fn the_scene_adds_a_named_keyboard_target_that_reports_its_zoom() -> Resul
         "the name did not follow a wheel zoom",
     )
 }
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Arrow keys move the view like scrolling: pressing right moves the view right, so the content moves left. One press
 /// is 40 units, and Shift makes it five times further. This is the keyboard way back to content that zooming pushed out
 /// of view.
@@ -175,7 +175,7 @@ fn arrow_keys_pan_the_view_and_shift_pans_further() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pan step is in the `<svg>`'s own units, so it looks the same on screen however far the content is zoomed.
 #[wasm_bindgen_test]
 fn a_keyboard_pan_step_is_the_same_distance_at_any_zoom() -> Result<(), String> {
@@ -190,7 +190,7 @@ fn a_keyboard_pan_step_is_the_same_distance_at_any_zoom() -> Result<(), String> 
     check_close(after - before, -40.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Plus, minus, and zero zoom from the keyboard, about the centre of the visible area.
 #[wasm_bindgen_test]
 fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
@@ -212,7 +212,7 @@ fn plus_minus_and_zero_zoom_from_the_keyboard() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Keys the scene does not use, and keys held with Ctrl, Cmd, or Alt, are neither acted on nor cancelled. So the
 /// browser's own page zoom (Ctrl or Cmd with plus or minus) and other shortcuts keep working.
 #[wasm_bindgen_test]
@@ -241,7 +241,7 @@ fn unrelated_keys_and_browser_shortcuts_are_left_alone() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A key pressed on a toolbar button bubbles up through the `<svg>`, but is the button's, not the scene's. An arrow key
 /// on a focused button must not pan the view.
 #[wasm_bindgen_test]
@@ -260,7 +260,7 @@ fn a_key_pressed_on_a_toolbar_button_does_not_pan_the_view() -> Result<(), Strin
     check_close(scene.zoom_scale(), 1.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each key group follows its own mode: the arrows are the keyboard side of panning, and plus, minus, and zero the
 /// keyboard side of wheel zoom.
 #[wasm_bindgen_test]
@@ -300,7 +300,7 @@ fn the_arrow_keys_follow_the_pan_mode_and_the_zoom_keys_follow_the_wheel_zoom_mo
     check_close(scene.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The keyboard target is the scene's own, so once no gesture needs it the whole element goes, along with its role,
 /// name, description, tab stop, and key listener. Nothing of the application's `<svg>` was involved, so nothing on it
 /// changes.
@@ -331,7 +331,7 @@ fn hiding_the_toolbar_removes_the_keyboard_target_and_leaves_the_svg_alone() -> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A key sent to the application's `<svg>` itself is not the scene's. Only the focus target takes keys. So an
 /// application that handles keys on its own `<svg>` is not competing with anything.
 #[wasm_bindgen_test]
@@ -351,7 +351,7 @@ fn a_key_sent_to_the_svg_itself_does_nothing() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The target draws nothing until it has keyboard focus. Then it outlines the visible area, so it is obvious where
 /// focus is, and blur takes the outline away again.
 #[wasm_bindgen_test]
@@ -375,7 +375,7 @@ fn the_keyboard_target_outlines_the_scene_only_while_it_has_focus() -> Result<()
     check(attr(&target, "stroke")? == "none", "blur did not remove the outline")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The target lies above the pan surface but takes no pointer events. It covers the same area. So it neither blocks
 /// panning nor is left behind when the layout is refreshed.
 #[wasm_bindgen_test]
@@ -411,7 +411,7 @@ fn the_keyboard_target_never_gets_in_the_way_of_the_pan_surface() -> Result<(), 
     )?;
     check_close(scene.zoom_scale(), 1.0)
 }
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zoom changes must not cause disruptive announcements. Nothing here is a live region. The state attributes are only
 /// rewritten when they actually change. So a run of zoom steps that changes no button's state touches none of them.
 #[wasm_bindgen_test]

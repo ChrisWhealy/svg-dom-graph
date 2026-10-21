@@ -34,7 +34,7 @@ fn theta_agrees_with_the_theta_scenes_own_calculation() {
     assert_eq!(theta(state), from_scene);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Acceptance tests, at four levels. Each higher level is checked against something the lower ones are not made from,
 //   so the diagram's own data flow and the real SHA3 calculation cannot drift apart unnoticed:
 //
@@ -125,7 +125,7 @@ fn states() -> Vec<[u64; 25]> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_round_constant_table_matches_the_specs_own_lfsr() {
     assert_eq!(ROUND_CONSTANTS.len(), ROUND_COUNT);
@@ -134,7 +134,7 @@ fn the_round_constant_table_matches_the_specs_own_lfsr() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Level 1: each step function.
 #[test]
 fn each_step_function_matches_the_reference_written_from_the_spec() {
@@ -150,7 +150,7 @@ fn each_step_function_matches_the_reference_written_from_the_spec() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Level 2: one complete round, and every intermediate state the nested scenes show.
 #[test]
 fn one_complete_round_and_each_of_its_intermediate_states_match_the_reference() {
@@ -176,7 +176,7 @@ fn one_complete_round_and_each_of_its_intermediate_states_match_the_reference() 
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Level 3: all 24 rounds, and every one of the 24 states a nested scene can be entered on.
 #[test]
 fn all_twenty_four_rounds_match_the_reference_and_every_traced_round_agrees() {
@@ -192,7 +192,7 @@ fn all_twenty_four_rounds_match_the_reference_and_every_traced_round_agrees() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Level 4: complete `SHA3-256` digests against published known answers. These are NIST's own example for the empty
 /// message and for `"abc"`, and the widely quoted digest of a longer sentence. They run through the same `sha3_256_run`
 /// the diagram draws from.
@@ -211,7 +211,7 @@ fn sha3_256_digests_match_the_published_known_answers() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The diagram's own data flow. The state the Keccak scene starts from is the sponge's own absorbed state. The state
 /// its last round leaves is the sponge's own row 3. So a reader following the diagram down through the nested scenes is
 /// following the calculation that produced the digest.
@@ -235,7 +235,7 @@ fn the_keccak_scenes_rounds_start_at_the_sponges_absorbed_state_and_end_at_its_o
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The padded block as bytes, the way the sponge absorbs it: each lane little-endian.
 fn block_bytes(message: &[u8]) -> Vec<u8> {
     sha3_256_block(message).iter().flat_map(|lane| lane.to_le_bytes()).collect()

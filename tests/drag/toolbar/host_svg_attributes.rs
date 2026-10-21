@@ -6,7 +6,7 @@ use crate::common::{check, dispatch_pointer_event};
 use svg_dom_graph::scene::{InputMode, Side, ToolbarOptions};
 use wasm_bindgen_test::*;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The application's `<svg>` supplies its own role, name, description, and `tabindex`. Showing the toolbar, zooming,
 /// panning, changing every input mode, and hiding the toolbar must leave every one of them exactly as it was. That
 /// holds not just at the end, but throughout. So no moment exists when the application's own name has been replaced.

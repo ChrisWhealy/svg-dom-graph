@@ -50,16 +50,17 @@ pub(super) fn range(len: usize) -> &'static str {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What the range of `len` bytes leaves out, if it leaves anything out. The range of three bytes holds U+D800 to U+DFFF,
-/// the surrogates, which UTF-16 uses in pairs to write the characters above U+FFFF. They are not characters, and RFC 3629
-/// forbids encoding them. A Rust `char` cannot hold one, so [`encode`] never meets one.
+/// What the range of `len` bytes leaves out, if it leaves anything out. The range of three bytes holds U+D800 to
+/// U+DFFF, the surrogates, which UTF-16 uses in pairs to write the characters above U+FFFF. They are not characters,
+/// and RFC 3629 forbids encoding them. A Rust `char` cannot hold one, so [`encode`] never meets one.
 pub(super) fn range_exception(len: usize) -> Option<&'static str> {
     (len == 3).then_some("U+D800 to U+DFFF, which are reserved for UTF-16 surrogates and cannot be encoded in UTF-8")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Which bits of byte `byte` of a sequence of `len` bytes are the template, as indices into that byte's eight bits from
-/// the left: in the first byte the leading `1`s and the `0` after them, and in every other byte the `10` that starts it.
+/// the left: in the first byte the leading `1`s and the `0` after them, and in every other byte the `10` that starts
+/// it.
 pub(super) fn byte_template_bits(len: usize, byte: usize) -> Vec<usize> {
     match (len, byte) {
         (1, _) => vec![0],

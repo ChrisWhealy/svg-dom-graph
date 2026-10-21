@@ -32,7 +32,7 @@ fn background_drag_pans(id: &str) -> Result<bool, String> {
     Ok(content.get_attribute("transform") != before)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The default follows the toolbar exactly as before: off with no toolbar, on while one is shown, off again once
 /// hidden.
 #[wasm_bindgen_test]
@@ -68,7 +68,7 @@ fn by_default_both_gestures_follow_the_toolbar() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The motivating case: an application supplies its own controls, hides the stock toolbar, and still wants both
 /// gestures.
 #[wasm_bindgen_test]
@@ -86,7 +86,7 @@ fn both_gestures_can_be_forced_on_with_no_toolbar_at_all() -> Result<(), String>
     check(ctrl_wheel_zooms(&scene, "im-own-controls")?, "ctrl+wheel did not zoom")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A forced-on gesture survives the toolbar being shown and hidden, while one following the toolbar does not.
 #[wasm_bindgen_test]
 fn a_forced_gesture_survives_hiding_the_toolbar_and_a_following_one_does_not() -> Result<(), String> {
@@ -114,7 +114,7 @@ fn a_forced_gesture_survives_hiding_the_toolbar_and_a_following_one_does_not() -
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Off` beats a shown toolbar, and the two gestures are independent of each other.
 #[wasm_bindgen_test]
 fn a_gesture_can_be_forced_off_even_while_the_toolbar_is_shown() -> Result<(), String> {
@@ -137,7 +137,7 @@ fn a_gesture_can_be_forced_off_even_while_the_toolbar_is_shown() -> Result<(), S
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Both `Off` with a toolbar shown leaves no surface at all, so nothing sits behind the content.
 #[wasm_bindgen_test]
 fn with_both_gestures_off_there_is_no_surface_even_with_a_toolbar() -> Result<(), String> {
@@ -154,7 +154,7 @@ fn with_both_gestures_off_there_is_no_surface_even_with_a_toolbar() -> Result<()
     check(!ctrl_wheel_zooms(&scene, "im-both-off")?, "wheel zoom worked with the mode off")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Pan on, wheel zoom untouched: only the requested gesture is wired.
 #[wasm_bindgen_test]
 fn forcing_only_pan_on_leaves_wheel_zoom_off() -> Result<(), String> {
@@ -169,7 +169,7 @@ fn forcing_only_pan_on_leaves_wheel_zoom_off() -> Result<(), String> {
     check(scene.zoom_scale() == 1.0, "the scale changed")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Going back to `WithToolbar`, or to `Off`, tears the gesture down completely. There is no surface and no leftover
 /// wheel listener on the content layer. So a wheel over a node is no longer cancelled.
 #[wasm_bindgen_test]
@@ -199,7 +199,7 @@ fn switching_a_gesture_back_off_removes_its_surface_and_listener() -> Result<(),
     check_close(scene.zoom_scale(), before)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Setting the same mode again changes nothing — in particular it does not rebuild the surface.
 #[wasm_bindgen_test]
 fn setting_the_same_mode_again_keeps_the_same_surface() -> Result<(), String> {
@@ -211,7 +211,7 @@ fn setting_the_same_mode_again_keeps_the_same_surface() -> Result<(), String> {
     check(first.is_same_node(Some(&second)), "an unchanged mode rebuilt the surface")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `refresh_layout` resizes the surface with no toolbar shown, and `refresh_toolbar_layout` still works as before.
 #[wasm_bindgen_test]
 fn refresh_layout_resizes_the_surface_with_no_toolbar() -> Result<(), String> {
@@ -236,7 +236,7 @@ fn refresh_layout_resizes_the_surface_with_no_toolbar() -> Result<(), String> {
     check_close(attr_f64(&surface, "width")?, 500.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dragging a node that is currently selected drags only that node. Its selection — the text it exposes to assistive
 /// technology, and every cell's colour — is untouched by the drag, and the scene does not pan.
 #[wasm_bindgen_test]
@@ -294,7 +294,7 @@ fn dragging_a_selected_node_moves_it_keeps_its_selection_and_does_not_pan() -> R
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The surface's cursor tracks the pan: grabbing while the button is down, back to grab after a release or a cancel.
 /// Real pointer capture is checked separately, against real input, in the CDP suite — a synthetic pointer id is not one
 /// the browser will let a test capture.
@@ -325,7 +325,7 @@ fn the_pan_cursor_returns_to_idle_after_release_and_after_cancel() -> Result<(),
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// However a pan ends — released, or cancelled — the next one starts cleanly and adds to the last, so no stale gesture
 /// state is left behind.
 #[wasm_bindgen_test]
@@ -347,7 +347,7 @@ fn a_pan_can_be_started_again_after_any_way_of_ending_one() -> Result<(), String
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar's own buttons sit above the pan surface, so pressing one never starts a pan — but does still click.
 #[wasm_bindgen_test]
 fn pressing_a_toolbar_button_does_not_start_a_pan() -> Result<(), String> {
@@ -367,7 +367,7 @@ fn pressing_a_toolbar_button_does_not_start_a_pan() -> Result<(), String> {
     check_close(scene.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Showing and hiding the toolbar repeatedly must never leave a handler behind. Every listener lives on the surface,
 /// which is removed with the gestures, except the wheel listener on the content layer.
 ///
@@ -428,7 +428,7 @@ fn showing_and_hiding_the_toolbar_repeatedly_installs_no_duplicate_handlers() ->
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same, for a mode toggled back and forth: no accumulated surfaces or listeners.
 #[wasm_bindgen_test]
 fn toggling_input_modes_repeatedly_installs_no_duplicate_handlers() -> Result<(), String> {

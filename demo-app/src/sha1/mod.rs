@@ -1,13 +1,14 @@
-//! `panel-sha1` / `#sha1-diagram`: SHA-1 of one short message, drawn as the standard describes it. See [`build_scene`]'s
-//! own doc comment for what the diagram shows. The scene is large, so it runs in a window of its own. The gallery's
-//! panel keeps the description and opens that window: see [`build_sha1_demo`].
+//! `panel-sha1` / `#sha1-diagram`: SHA-1 of one short message, drawn as the standard describes it. See
+//! [`build_scene`]'s own doc comment for what the diagram shows. The scene is large, so it runs in a window of its own.
+//! The gallery's panel keeps the description and opens that window: see [`build_sha1_demo`].
 //!
 //! # Layout
 //!
-//! Data flows along one axis where it can. The compression phase runs left to right across the top row. A row that would
-//! make the diagram too wide turns back on itself, so the flow snakes: the next row runs right to left, directly beneath
-//! the end of the last. The schedule phase is a single column of nodes beside the schedule, itself a single column. Every
-//! connector is a straight line between neighbouring nodes, and none crosses another or passes over a node.
+//! Data flows along one axis where it can. The compression phase runs left to right across the top row. A row that
+//! would make the diagram too wide turns back on itself, so the flow snakes: the next row runs right to left, directly
+//! beneath the end of the last. The schedule phase is a single column of nodes beside the schedule, itself a single
+//! column. Every connector is a straight line between neighbouring nodes, and none crosses another or passes over a
+//! node.
 //!
 //! # Phases
 //!
@@ -299,8 +300,8 @@ struct Nodes {
 ///
 /// `previous` is what the nodes show now, if that is known. The message block and the message schedule are the two
 /// biggest nodes, and they are final for most of the walk. They are only written when `previous` shows something
-/// different, so a step during compression leaves their cells alone. Without a `previous`, as after drawing the
-/// diagram afresh, everything is written.
+/// different, so a step during compression leaves their cells alone. Without a `previous`, as after drawing the diagram
+/// afresh, everything is written.
 ///
 /// # Errors
 ///
@@ -394,17 +395,17 @@ fn apply_unreached(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<
 ///
 /// # What this draws
 ///
-/// **The column on the left** runs from top to bottom. "Plain Text Message" is the text being hashed. "Message Block" is
-/// that text as 16 big-endian words, followed by the `0x80` terminator byte, with the message's length in bits in the
-/// last word. Below it is one new schedule word being built. The "XOR" node holds the four words it reads, labelled
-/// `ms[n-3]`, `ms[n-8]`, `ms[n-14]` and `ms[n-16]`, which are also marked in the schedule as secondary, then their XOR in a
-/// fifth row. The node below it is that XOR rotated left by one bit, which is the new word.
+/// **The column on the left** runs from top to bottom. "Plain Text Message" is the text being hashed. "Message Block"
+/// is that text as 16 big-endian words, followed by the `0x80` terminator byte, with the message's length in bits in
+/// the last word. Below it is one new schedule word being built. The "XOR" node holds the four words it reads, labelled
+/// `ms[n-3]`, `ms[n-8]`, `ms[n-14]` and `ms[n-16]`, which are also marked in the schedule as secondary, then their XOR
+/// in a fifth row. The node below it is that XOR rotated left by one bit, which is the new word.
 ///
-/// **"Message Schedule"** is on the right: 80 words, [`EXPANSION_COLUMNS`] to a row. The first 16 are the block, and each
-/// of the other 64 is `ROTL(ms[n-3] XOR ms[n-8] XOR ms[n-14] XOR ms[n-16], 1)`. The new word is marked in it as the word
-/// in focus. The three connectors that reach the schedule each run straight across. The schedule is placed beside the
-/// column so that the block is level with its top, and the new word is level with its bottom. So the gap between the
-/// nodes of the column is set by the schedule's own height, unless that would be less than [`V_GAP`].
+/// **"Message Schedule"** is on the right: 80 words, [`EXPANSION_COLUMNS`] to a row. The first 16 are the block, and
+/// each of the other 64 is `ROTL(ms[n-3] XOR ms[n-8] XOR ms[n-14] XOR ms[n-16], 1)`. The new word is marked in it as
+/// the word in focus. The three connectors that reach the schedule each run straight across. The schedule is placed
+/// beside the column so that the block is level with its top, and the new word is level with its bottom. So the gap
+/// between the nodes of the column is set by the schedule's own height, unless that would be less than [`V_GAP`].
 fn build_expansion(scene: &Scene) -> Result<(Common, Half, Vec<Placed>), String> {
     let message_name = "Plain Text Message";
     let block_name = "Message Block";
@@ -430,8 +431,8 @@ fn build_expansion(scene: &Scene) -> Result<(Common, Half, Vec<Placed>), String>
     let column_x = LEFT + column_width / 2.0;
 
     // The block is level with the top of the schedule, and the new word with its bottom, each a little way in. If the
-    // schedule is too short for that to leave a gap of `V_GAP` between the nodes, the gap is `V_GAP`, and the connectors
-    // meet the schedule's edge instead.
+    // schedule is too short for that to leave a gap of `V_GAP` between the nodes, the gap is `V_GAP`, and the
+    // connectors meet the schedule's edge instead.
     let block_top = TOP + message_size.height + V_GAP;
     let reach = schedule_size.height
         - 2.0 * SCHEDULE_INSET
@@ -491,11 +492,11 @@ fn build_expansion(scene: &Scene) -> Result<(Common, Half, Vec<Placed>), String>
 /// # What this draws
 ///
 /// **Row 1**, left to right, is one round. "Initial hash H" starts "Working variables a..e", which lead into the five
-/// terms of `temp = ROTL(a, 5) + f(b, c, d) + e + K + W`, each in a row labelled with its name. `f` and `K` are the same
-/// for every round of a section, so the name of `f` changes from one section to the next. `W` is `ms[i]`, the schedule
-/// word for round `i`, which sits above the row. It is the word marked in the schedule, and a connector runs down from
-/// the schedule to the terms. "Initial hash H" is named as fixed by the standard, since it is not worked out from the
-/// message.
+/// terms of `temp = ROTL(a, 5) + f(b, c, d) + e + K + W`, each in a row labelled with its name. `f` and `K` are the
+/// same for every round of a section, so the name of `f` changes from one section to the next. `W` is `ms[i]`, the
+/// schedule word for round `i`, which sits above the row. It is the word marked in the schedule, and a connector runs
+/// down from the schedule to the terms. "Initial hash H" is named as fixed by the standard, since it is not worked out
+/// from the message.
 ///
 /// **Row 2** turns back on itself, directly below, and runs right to left. "temp" is the sum of the terms, and sits
 /// straight below them, centred on them. It is `a` of the next round, so it leads into "Next working variables", which
@@ -711,8 +712,8 @@ fn step_to(position: usize) -> Result<(), String> {
         let previous = demo.shown_at.take().map(|at| shown(&demo.trace, at));
         apply(&demo.scene, &demo.nodes, &shown(&demo.trace, position), previous.as_ref())?;
         demo.shown_at = Some(position);
-        // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on the
-        // first position, so its next click advances from there and not from nowhere.
+        // A step back from the first position, or a restart, comes back as unstarted. Put the toolbar back on the first
+        // position, so its next click advances from there and not from nowhere.
         if position == 0 {
             demo.scene.set_selection(demo.step, Selection::Cell(0)).map_err(stringify)?;
         }

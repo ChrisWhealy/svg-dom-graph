@@ -149,9 +149,9 @@ fn no_word_is_being_built_outside_the_expansion() -> Result<(), String> {
     check(shown(&trace, 51).expansion.is_none(), "a round builds no word")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   What has not been reached yet
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn at_the_start_nothing_but_the_message_has_been_reached() -> Result<(), String> {

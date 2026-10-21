@@ -54,7 +54,7 @@ pub(super) fn theta(state: [u64; 25]) -> [u64; 25] {
     std::array::from_fn(|lane| state[lane] ^ d[lane % 5])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The state at the start of one round and after each of its five functions.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(super) struct RoundTrace {
@@ -72,7 +72,7 @@ pub(super) struct RoundTrace {
     pub(super) output: [u64; 25],
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs round `round` over `input`, keeping every intermediate state.
 pub(super) fn round_trace(input: [u64; 25], round: usize) -> RoundTrace {
     let after_theta = theta(input);
@@ -89,14 +89,14 @@ pub(super) fn round_trace(input: [u64; 25], round: usize) -> RoundTrace {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One round of `Keccak-f\[1600\]`.
 #[cfg_attr(not(test), allow(dead_code))] // The demo walks rounds through `round_traces`; tests check the whole.
 pub(super) fn keccak_round(state: [u64; 25], round: usize) -> [u64; 25] {
     round_trace(state, round).output
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every round's own [`RoundTrace`], chained from `seed`: round `0` starts from `seed`, and every later round starts
 /// from the previous round's own output.
 pub(super) fn round_traces(seed: [u64; 25]) -> [RoundTrace; ROUND_COUNT] {
@@ -108,27 +108,27 @@ pub(super) fn round_traces(seed: [u64; 25]) -> [RoundTrace; ROUND_COUNT] {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The whole `Keccak-f\[1600\]` permutation: all 24 rounds.
 pub(super) fn keccak_f(state: [u64; 25]) -> [u64; 25] {
     (0..ROUND_COUNT).fold(state, keccak_round)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `A[x][y]`, as `Theta`'s own nested scenes index their input: the state's lane `x + 5y` is `grid[x][y]`. Those scenes
 /// work along `x` — "row `n`" there is column `n` of the state — so a state is handed to them transposed.
 pub(super) fn to_theta_grid(state: [u64; 25]) -> [[u64; 5]; 5] {
     std::array::from_fn(|x| std::array::from_fn(|y| state[x + 5 * y]))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The inverse of [`to_theta_grid`].
 #[cfg_attr(not(test), allow(dead_code))] // The demo walks rounds through `round_traces`; tests check the whole.
 pub(super) fn from_theta_grid(grid: [[u64; 5]; 5]) -> [u64; 25] {
     std::array::from_fn(|lane| grid[lane % 5][lane / 5])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `SHA3-256`'s own rate, in lanes: 1088 bits.
 pub(super) const SHA3_256_RATE_LANES: usize = 17;
 
@@ -147,7 +147,7 @@ pub(super) fn sha3_256_block(message: &[u8]) -> [u64; SHA3_256_RATE_LANES] {
     std::array::from_fn(|lane| u64::from_le_bytes(block[8 * lane..8 * lane + 8].try_into().expect("8 bytes")))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One complete `SHA3-256` of a short message, as the sponge diagram shows it: the padded block, the state after it is
 /// absorbed, and the state after `Keccak-f\[1600\]`.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -185,6 +185,6 @@ pub(super) fn sha3_256_run(message: &[u8]) -> Sha3_256Run {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

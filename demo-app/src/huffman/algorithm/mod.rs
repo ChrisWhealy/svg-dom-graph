@@ -2,8 +2,8 @@
 //!
 //! Pass one counts byte frequencies, builds the tree by repeatedly merging the two lightest nodes, and reads a code
 //! length for each byte from its depth. Canonical assignment then replaces the tree's own bit patterns, because a
-//! decoder can rebuild canonical codes from the lengths alone. Pass two looks up each byte's code and packs it into
-//! the output.
+//! decoder can rebuild canonical codes from the lengths alone. Pass two looks up each byte's code and packs it into the
+//! output.
 //!
 //! # Scope
 //!
@@ -25,7 +25,7 @@ pub(super) const MAX_INPUT_LEN: usize = 128;
 /// The longest code the packer can hold, in bits.
 pub(super) const MAX_CODE_LEN: u8 = 32;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything one encoding goes through, from the input text to the output bytes.
 pub(super) struct Trace {
     /// How often each distinct byte occurs, in byte order.
@@ -57,6 +57,6 @@ pub(super) fn trace(input: &[u8]) -> Option<Trace> {
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

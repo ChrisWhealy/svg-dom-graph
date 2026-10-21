@@ -1,15 +1,15 @@
 //! The ChaCha20 demo's own stepping toolbar, driven by real clicks and key presses in Chrome.
 //!
 //! The demo's arithmetic is covered by native unit tests. What they cannot reach is the browser-facing behaviour of the
-//! walk: which diagram and which values the page shows at each position, what a redraw keeps (zoom, pan, keyboard focus)
-//! and whether nodes stay draggable inside the diagram after it has been redrawn at a new size.
+//! walk: which diagram and which values the page shows at each position, what a redraw keeps (zoom, pan, keyboard
+//! focus) and whether nodes stay draggable inside the diagram after it has been redrawn at a new size.
 //!
 //! The walk has 961 positions: `None` (unstarted), then `0..=959` for the 80 quarter rounds of 12 steps each, then 960
 //! for the keystream block. Moving between 959 and 960 is the one transition that redraws the whole scene, so those two
 //! are where a redraw could drop the view, the focus or the drag limits.
 //!
-//! Unlike the other scenarios in this binary, these run against the built demo gallery's `chacha20-window.html`, not the
-//! fixture. See [`crate::common::new_demo_tab`].
+//! Unlike the other scenarios in this binary, these run against the built demo gallery's `chacha20-window.html`, not
+//! the fixture. See [`crate::common::new_demo_tab`].
 
 use crate::common::{DemoTab, drag, mouse_event, new_demo_tab};
 use headless_chrome::{Tab, protocol::cdp::Input};
@@ -22,7 +22,7 @@ const VIEWPORT: (u32, u32) = (1800, 1800);
 const LAST_STEP: usize = 959;
 const KEYSTREAM: usize = 960;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn open() -> Result<DemoTab, String> {
     new_demo_tab("chacha20-window.html", &format!("{DIAGRAM} g[aria-label^=\"Step:\"]"), VIEWPORT)
 }
@@ -128,7 +128,7 @@ fn goto(tab: &Tab, target: usize) -> Result<(), String> {
     Err(format!("could not reach position {target}, stopped at {:?}", position(tab)?))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The first step is the first quarter round's first `ADD`: before it, every operator is unreached.
 #[test]
 fn the_unstarted_walk_moves_to_the_first_step_of_the_first_quarter_round() -> Result<(), String> {
@@ -158,7 +158,7 @@ fn the_unstarted_walk_moves_to_the_first_step_of_the_first_quarter_round() -> Re
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Position 11 is the first quarter round's last step, and 12 begins the second one, on the second column.
 #[test]
 fn position_12_begins_the_next_quarter_round() -> Result<(), String> {
@@ -195,7 +195,7 @@ fn position_12_begins_the_next_quarter_round() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Position 47 ends the first round, which mixes columns, and 48 begins the second, which mixes diagonals.
 #[test]
 fn position_48_changes_from_a_column_round_to_a_diagonal_round() -> Result<(), String> {
@@ -219,7 +219,7 @@ fn position_48_changes_from_a_column_round_to_a_diagonal_round() -> Result<(), S
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
 fn view(tab: &Tab) -> Result<String, String> {
     text(
@@ -330,7 +330,7 @@ fn the_keystream_block_redraw_keeps_the_view_the_toolbar_and_the_focus() -> Resu
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Restart goes back to the unstarted walk from anywhere: a quarter round, a later round, or the keystream block.
 #[test]
 fn restart_returns_to_the_unstarted_diagram_from_any_position() -> Result<(), String> {
@@ -361,7 +361,7 @@ fn restart_returns_to_the_unstarted_diagram_from_any_position() -> Result<(), St
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A node's box and the view box, as `(x, y, width, height, view_width, view_height)`.
 fn geometry(tab: &Tab, prefix: &str) -> Result<[f64; 6], String> {
     let reading = text(

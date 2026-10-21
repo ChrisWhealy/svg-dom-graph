@@ -30,7 +30,7 @@ fn sum(word: &[u8; CODEWORD_LEN], positions: &[usize], names: &[&str; CODEWORD_L
 /// The name of each position of a received codeword.
 const RECEIVED_NAMES: [&str; CODEWORD_LEN] = ["b1", "b2", "b3", "b4", "b5", "b6", "b7"];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The note under each box of the path, in the order of the path.
 pub(super) fn notes(t: &Transmission) -> [String; 9] {
     let parity_lines: Vec<String> = (0..3)

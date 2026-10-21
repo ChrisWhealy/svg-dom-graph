@@ -50,7 +50,7 @@ async fn settle() -> Result<(), String> {
     next_frame().await
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel zoom, then the toolbar hidden before its frame. Nothing may throw, and the view the wheel made must reach
 /// the DOM: the scene and what is drawn agree.
 #[wasm_bindgen_test]
@@ -71,7 +71,7 @@ async fn hiding_the_toolbar_between_a_wheel_and_its_frame_throws_nothing_and_kee
     check_close(drawn_scale("td-wheel-hide")?, 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pan move, then panning switched off before its frame. That rebuilds the gestures, so the old ones are torn down
 /// while a frame is pending. The pan so far must reach the DOM.
 #[wasm_bindgen_test]
@@ -97,7 +97,7 @@ async fn switching_panning_off_between_a_pan_move_and_its_frame_throws_nothing_a
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel zoom, then the wheel mode switched off before its frame. Tears the wheel handling down and builds the rest
 /// again.
 #[wasm_bindgen_test]
@@ -119,7 +119,7 @@ async fn switching_wheel_zoom_off_between_a_wheel_and_its_frame_throws_nothing_a
     check_close(drawn_scale("td-wheel-off")?, 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel zoom, then every `Scene` handle dropped before its frame. The scene's own state goes, and with it the
 /// handling that scheduled the frame. The last view must still be drawn.
 #[wasm_bindgen_test]
@@ -141,7 +141,7 @@ async fn dropping_the_scene_between_a_wheel_and_its_frame_throws_nothing_and_dra
     check_close(drawn_scale("td-wheel-drop")?, 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The older node-drag coalescer has the same shape: a drag move, then the scene dropped before the frame that would
 /// apply it.
 #[wasm_bindgen_test]

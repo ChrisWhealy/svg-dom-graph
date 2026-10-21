@@ -62,7 +62,7 @@ fn zoom_works_without_a_toolbar_and_new_nodes_join_the_zoomed_layer() -> Result<
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pan surface exists only while a toolbar is shown, sits directly beneath the content layer, and covers the whole
 /// visible area.
 #[wasm_bindgen_test]
@@ -96,7 +96,7 @@ fn a_pan_surface_exists_only_while_the_toolbar_is_shown() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dragging the background moves the content by the pointer's own movement on screen, and leaves the scale alone. At
 /// scale 1.25 the zoom translation is (-50, -37.5), so a (30, -20) drag gives (-20, -57.5).
 #[wasm_bindgen_test]
@@ -126,7 +126,7 @@ fn dragging_the_background_pans_the_content_at_any_zoom() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every move applies to where the pan started, so the content follows the pointer, and finishing a pan changes nothing
 /// further.
 #[wasm_bindgen_test]
@@ -154,7 +154,7 @@ async fn a_pan_follows_the_pointer_and_stops_when_it_is_released() -> Result<(),
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A second pointer cannot steal or end the pan, a cancel ends it, and only the primary button starts one.
 #[wasm_bindgen_test]
 async fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_cancel() -> Result<(), String> {
@@ -192,7 +192,7 @@ async fn a_pan_ignores_a_second_pointer_and_a_non_primary_button_and_ends_on_can
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dragging a node drags only that node: the node's own pointer events never reach the surface behind it.
 #[wasm_bindgen_test]
 fn dragging_a_node_does_not_pan_the_content() -> Result<(), String> {
@@ -217,7 +217,7 @@ fn dragging_a_node_does_not_pan_the_content() -> Result<(), String> {
     check_close(y, 120.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Panning makes Reset useful again, and Reset restores both the pan and the zoom.
 #[wasm_bindgen_test]
 fn reset_undoes_a_pan_and_is_enabled_by_one() -> Result<(), String> {
@@ -244,7 +244,7 @@ fn reset_undoes_a_pan_and_is_enabled_by_one() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Ctrl+wheel and Cmd+wheel both zoom, about the pointer. One notch up at (100, 100) is one 1.25 step, and the content
 /// point under the pointer stays put: (100 - 100 * 1.25) = -25 on each axis.
 #[wasm_bindgen_test]
@@ -273,7 +273,7 @@ async fn ctrl_or_cmd_plus_wheel_zooms_about_the_pointer() -> Result<(), String> 
     check_close(scene.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Scrolling down zooms out, and a smaller delta zooms proportionally less.
 #[wasm_bindgen_test]
 fn the_wheel_direction_and_size_set_the_zoom_direction_and_amount() -> Result<(), String> {
@@ -289,7 +289,7 @@ fn the_wheel_direction_and_size_set_the_zoom_direction_and_amount() -> Result<()
     check_close(scene.zoom_scale(), 1.25_f64.powf(0.1))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Without a modifier the wheel is neither handled nor cancelled, so the page still scrolls.
 #[wasm_bindgen_test]
 fn the_wheel_alone_does_not_zoom_and_is_not_cancelled() -> Result<(), String> {
@@ -301,7 +301,7 @@ fn the_wheel_alone_does_not_zoom_and_is_not_cancelled() -> Result<(), String> {
     check_close(scene.zoom_scale(), 1.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel over a node bubbles to the content layer, so zooming works over nodes as well as over empty background.
 #[wasm_bindgen_test]
 fn wheel_zoom_works_over_a_node() -> Result<(), String> {
@@ -319,7 +319,7 @@ fn wheel_zoom_works_over_a_node() -> Result<(), String> {
     check_close(scene.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wheel zoom belongs to the toolbar, like panning. Without one, a scene leaves the wheel alone entirely, and hiding
 /// the toolbar takes the wheel handling away with it.
 #[wasm_bindgen_test]
@@ -351,7 +351,7 @@ fn wheel_zoom_needs_a_shown_toolbar() -> Result<(), String> {
     check_close(scene.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Wheel zoom stops at the same limits as the buttons, and enables Reset.
 #[wasm_bindgen_test]
 async fn wheel_zoom_is_limited_and_enables_reset() -> Result<(), String> {
@@ -376,7 +376,7 @@ async fn wheel_zoom_is_limited_and_enables_reset() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A trackpad pinch is many small ctrl+wheel events, not one notch. Twenty events of -10 pixels each must compose to
 /// exactly two notches (1.25 squared), not twenty full steps that slam into the maximum. The DOM is not written for
 /// each one: nothing is rendered until the frame, and then the final view is written once.
@@ -404,7 +404,7 @@ async fn a_burst_of_small_wheel_events_composes_proportionally_and_writes_the_do
     check_close(scale, 1.5625)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Small events and one big event zoom identically: the factors multiply.
 #[wasm_bindgen_test]
 fn ten_wheel_events_of_ten_pixels_zoom_exactly_as_one_of_a_hundred() -> Result<(), String> {
@@ -423,7 +423,7 @@ fn ten_wheel_events_of_ten_pixels_zoom_exactly_as_one_of_a_hundred() -> Result<(
     check_close(split.zoom_scale(), 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A button pressed while a wheel burst is still waiting for its frame acts on the latest view. The frame that follows
 /// cannot resurrect the stale wheel view over it.
 #[wasm_bindgen_test]
@@ -444,7 +444,7 @@ async fn a_button_pressed_mid_burst_wins_over_the_pending_frame() -> Result<(), 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pan is written to the DOM one frame late while it runs. The moment the pointer is released, the DOM is exact.
 /// Nothing is left for a later frame to catch up on.
 #[wasm_bindgen_test]

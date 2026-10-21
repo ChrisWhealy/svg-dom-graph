@@ -194,8 +194,8 @@ fn each_group_is_centred_over_its_byte() {
         let widths = [100.0, 140.0, 140.0, 140.0];
         assert!((group + widths[n] / 2.0 - (byte + 90.0)).abs() < 1e-9, "group {n}");
     }
-    // The two middle groups are as wide as each other, so the gap between them is on the axis, as the gap between the two
-    // middle bytes is.
+    // The two middle groups are as wide as each other, so the gap between them is on the axis, as the gap between the
+    // two middle bytes is.
     assert!(((groups[1] + 140.0 + groups[2]) / 2.0 - 500.0).abs() < 1e-9);
 }
 

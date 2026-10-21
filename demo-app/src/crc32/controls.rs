@@ -118,7 +118,7 @@ pub(super) fn announce(message: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The walk position the scene is at.
 fn current_position() -> usize {
     DEMO.with_borrow(|slot| slot.as_ref().map_or(0, |d| d.position))
@@ -160,7 +160,7 @@ fn text_length() -> Option<usize> {
     Some(length)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the buttons work: see [`svg_buttons::watch`].
 ///
 /// # Errors

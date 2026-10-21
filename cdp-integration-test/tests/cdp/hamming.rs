@@ -1,9 +1,9 @@
-//! The Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block, the buttons that
-//! choose the data and flip a bit, and the stepping toolbar that walks along the path.
+//! The Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block, the buttons
+//! that choose the data and flip a bit, and the stepping toolbar that walks along the path.
 //!
 //! The code itself and the layout arithmetic are covered by native unit tests. What they cannot reach is the browser:
-//! that the scene is drawn with the nine boxes where the layout says, that the buttons drawn in the scene work, and that
-//! each step makes the right boxes faint.
+//! that the scene is drawn with the nine boxes where the layout says, that the buttons drawn in the scene work, and
+//! that each step makes the right boxes faint.
 //!
 //! Like [`crate::crc32`], these run against the built demo gallery's window page, not the fixture.
 
@@ -105,7 +105,7 @@ fn faint(tab: &Tab, name: &str) -> Result<bool, String> {
     .contains("not yet computed"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The walk's position, read from the hidden "Step" driver's own selection. `None` before the walk has started.
 fn step_position(tab: &Tab) -> Result<Option<usize>, String> {
     let name = text(
@@ -175,7 +175,7 @@ fn rects(tab: &Tab) -> Result<Vec<[f64; 4]>, String> {
     serde_json::from_str(&json).map_err(|e| format!("could not read the boxes: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The window opens with the nine boxes of the path and the controls, and the walk at its start.
 #[test]
 fn the_window_opens_with_the_path_the_controls_and_the_walk_at_the_start() -> Result<(), String> {
@@ -210,7 +210,7 @@ fn the_window_opens_with_the_path_the_controls_and_the_walk_at_the_start() -> Re
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The path runs along a row, and back along the next: a block, not a line. The boxes of a row are level, the first row
 /// runs left to right and the second right to left, and no two boxes overlap.
 #[test]
@@ -249,8 +249,9 @@ fn the_path_snakes_into_a_block() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A data bit's button flips it, says so in its name and its pressed state, and keeps the keyboard focus across the redraw.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A data bit's button flips it, says so in its name and its pressed state, and keeps the keyboard focus across the
+/// redraw.
 #[test]
 fn a_data_bit_button_toggles_its_bit_and_keeps_the_focus() -> Result<(), String> {
     let tab = open()?;
@@ -286,7 +287,7 @@ fn a_data_bit_button_toggles_its_bit_and_keeps_the_focus() -> Result<(), String>
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each step reaches one more box of the path.
 #[test]
 fn each_step_reaches_the_next_box() -> Result<(), String> {
@@ -305,7 +306,7 @@ fn each_step_reaches_the_next_box() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flipping a bit moves the walk to the received codeword, and the receiver finds exactly that bit: the error position
 /// at the end of the path is the position the status line says was flipped. The data is recovered whichever bit it was.
 #[test]
@@ -336,7 +337,7 @@ fn the_receiver_finds_whichever_bit_was_flipped() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flipping a bit moves a walk that is before the received codeword on to it, and never moves one that is past it.
 /// Removing the error leaves the walk where it is.
 #[test]
@@ -353,7 +354,7 @@ fn flipping_a_bit_moves_the_walk_to_the_received_codeword_but_never_back() -> Re
     check(says(&tab, "No error has been introduced.")?, "the error should be gone")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar's "Restart" starts the walk again and removes the flipped bit, but keeps the data bits as they were set.
 #[test]
 fn restart_goes_back_to_the_start_and_removes_the_error_but_keeps_the_data() -> Result<(), String> {
@@ -371,7 +372,7 @@ fn restart_goes_back_to_the_start_and_removes_the_error_but_keeps_the_data() -> 
     check_eq(label_of(&tab, "toggle-1")?.as_str(), "d2 = 1")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The status line is white, and the buttons have colours of their own that are not the light blue of the notes.
 #[test]
 fn the_status_line_is_white_and_the_buttons_are_coloured() -> Result<(), String> {
@@ -398,9 +399,9 @@ fn the_status_line_is_white_and_the_buttons_are_coloured() -> Result<(), String>
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Defines one test for each position listed, calling `$run` with it. Each is a test of its own, with its own tab, so the
-/// CI deals them out to different shards, instead of one long test that walks every position in a single shard.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Defines one test for each position listed, calling `$run` with it. Each is a test of its own, with its own tab, so
+/// the CI deals them out to different shards, instead of one long test that walks every position in a single shard.
 macro_rules! at_each_position {
     ($run:ident: $($name:ident => $position:expr),+ $(,)?) => {
         $(
@@ -412,9 +413,9 @@ macro_rules! at_each_position {
     };
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible names of the notes, which are the nodes of Markdown text, in the order they were drawn. The first node
-/// of Markdown text is the status line beside the buttons, and it is not a note.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The accessible names of the notes, which are the nodes of Markdown text, in the order they were drawn. The first
+/// node of Markdown text is the status line beside the buttons, and it is not a note.
 fn note_names(tab: &Tab) -> Result<Vec<String>, String> {
     let json = text(
         tab,
@@ -454,7 +455,7 @@ fn click_and_settle(tab: &Tab, name: &str) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// At `position`, the live region outside the scene says which step the walk is at and what it has reached, so that a
 /// screen reader can follow every stage.
 fn announces(position: usize) -> Result<(), String> {
@@ -478,7 +479,7 @@ at_each_position! { announces:
     the_walk_announces_step_9 => 8,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// At `position`, the note under a box is faint until the walk reaches the box, and says so to a screen reader, so that
 /// it can be read ahead of the walk but not mistaken for a step that has been done.
 fn notes_follow_the_walk(position: usize) -> Result<(), String> {
@@ -503,10 +504,10 @@ at_each_position! { notes_follow_the_walk:
     the_notes_at_position_7_follow_the_walk => 7,
     the_notes_at_position_8_follow_the_walk => 8,
 }
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Restarting from `position`, after changing the data and introducing an error, returns to the start: the error is gone,
-/// the later boxes are faint again, and the data bit that was changed stays changed. At position 0 the walk is already
-/// at the start, and Restart leaves it there.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Restarting from `position`, after changing the data and introducing an error, returns to the start: the error is
+/// gone, the later boxes are faint again, and the data bit that was changed stays changed. At position 0 the walk is
+/// already at the start, and Restart leaves it there.
 fn restart_from(position: usize) -> Result<(), String> {
     let tab = open()?;
     press(&tab, "toggle-1")?;
@@ -540,9 +541,9 @@ at_each_position! { restart_from:
     restart_from_position_8_returns_to_the_start => 8,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Restart makes one announcement that says both that the error is gone and that the walk is back at the first step. Two
-/// announcements made together would leave a screen reader saying only the second.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Restart makes one announcement that says both that the error is gone and that the walk is back at the first step.
+/// Two announcements made together would leave a screen reader saying only the second.
 #[test]
 fn restart_announces_the_removed_error_and_the_first_step_together() -> Result<(), String> {
     let tab = open_with("?error=3")?;
@@ -555,9 +556,10 @@ fn restart_announces_the_removed_error_and_the_first_step_together() -> Result<(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// "Previous selection" at position 0 has nowhere earlier to go, and the toolbar reports it exactly as it reports "Restart".
-/// So the walk stays at the start, a flipped bit is removed as a restart removes it, the data stays, and nothing fails.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// "Previous selection" at position 0 has nowhere earlier to go, and the toolbar reports it exactly as it reports
+/// "Restart". So the walk stays at the start, a flipped bit is removed as a restart removes it, the data stays, and
+/// nothing fails.
 #[test]
 fn previous_at_position_zero_is_a_restart() -> Result<(), String> {
     let tab = open_with("?error=5")?;
@@ -579,7 +581,7 @@ fn previous_at_position_zero_is_a_restart() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With the bit at `error` flipped, which the page's address chooses, the status line names it, and the receiver finds
 /// that same position at the end of the path and recovers the data. It is deterministic, unlike the button.
 fn finds_error_at(error: usize) -> Result<(), String> {
@@ -619,7 +621,7 @@ at_each_position! { finds_error_at:
     the_receiver_finds_an_error_at_position_7 => 7,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping back from a box that shows the error to one before it takes the mark away, since a mark is drawn at full
 /// strength even in a faint box, and would give away what the walk has not reached.
 #[test]
@@ -650,9 +652,9 @@ fn stepping_back_takes_the_error_marks_away_from_boxes_not_reached() -> Result<(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The zoom stays through redraws of every kind: a data bit changed, an error introduced and removed, a step forward and
-/// back, and a restart.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The zoom stays through redraws of every kind: a data bit changed, an error introduced and removed, a step forward
+/// and back, and a restart.
 #[test]
 fn the_zoom_survives_every_kind_of_redraw() -> Result<(), String> {
     let tab = open()?;
@@ -668,7 +670,7 @@ fn the_zoom_survives_every_kind_of_redraw() -> Result<(), String> {
     check_eq(view(&tab)?, zoomed)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The error banner stays hidden while redraws work.
 #[test]
 fn the_error_banner_stays_hidden_while_redraws_work() -> Result<(), String> {

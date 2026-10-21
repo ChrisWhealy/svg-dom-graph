@@ -1,10 +1,10 @@
 //! The Hamming(7,4) code in plain Rust: four data bits and three parity bits make a seven-bit codeword, from which one
 //! flipped bit can be found and put right. Nothing here touches the DOM or the library.
 //!
-//! The bits of a codeword are numbered 1 to 7 from the left. The parity bits are at the positions that are powers of two:
-//! 1, 2 and 4. The data bits fill the others: 3, 5, 6 and 7. A parity bit covers every position whose number has the same
-//! bit set: position 1 (binary 001) covers 1, 3, 5, 7. Position 2 (010) covers 2, 3, 6, 7. Position 4 (100) covers 4, 5,
-//! 6, 7. Each makes the number of 1s among the positions it covers even.
+//! The bits of a codeword are numbered 1 to 7 from the left. The parity bits are at the positions that are powers of
+//! two: 1, 2 and 4. The data bits fill the others: 3, 5, 6 and 7. A parity bit covers every position whose number has
+//! the same bit set: position 1 (binary 001) covers 1, 3, 5, 7. Position 2 (010) covers 2, 3, 6, 7. Position 4 (100)
+//! covers 4, 5, 6, 7. Each makes the number of 1s among the positions it covers even.
 
 /// The positions, counting from 1, of the three parity bits.
 pub(super) const PARITY_POSITIONS: [usize; 3] = [1, 2, 4];

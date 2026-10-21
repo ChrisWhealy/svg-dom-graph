@@ -26,7 +26,7 @@ fn css_sized_svg(id: &str, width: u32, height: u32) -> Result<svg_dom::SvgRoot, 
     svg_dom::SvgRoot::attach(id).map_err(|e| e.to_string())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With no `viewBox` and no size attributes, the layout uses the rendered size rather than the cached `0 x 0`. A 300 x
 /// 200 north bar of default width 134 sits at x = (300 - 134) / 2 = 83, and the pan surface covers the whole box.
 #[wasm_bindgen_test]
@@ -45,7 +45,7 @@ fn a_css_sized_svg_with_no_view_box_is_laid_out_against_its_rendered_size() -> R
     check_close(attr_f64(&surface, "height")?, 200.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The layout does not follow a resize by itself: it stays where it was until `refresh_layout` is called. That is the
 /// documented requirement, and this test pins it down so it is not mistaken for a bug.
 #[wasm_bindgen_test]
@@ -66,7 +66,7 @@ fn a_resize_is_only_picked_up_by_refresh_layout() -> Result<(), String> {
     check_close(attr_f64(&pan_surface("rl-resize")?, "width")?, 500.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With a `viewBox`, the layout is in the `viewBox`'s own units, and the browser scales the whole `<svg>` — toolbar
 /// included — when only its CSS size changes. So a responsive page needs no refresh at all. Nothing about the toolbar's
 /// own position changes, and it is still where it should be relative to the content.

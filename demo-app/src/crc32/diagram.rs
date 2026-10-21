@@ -508,8 +508,8 @@ impl Drawing<'_> {
         let (register_id, _) = self.receiver.place(tops[4], heights[4], register_row)?;
         let (crc_id, _) = self.receiver.place(tops[3], heights[3], crc_row)?;
         // The CRC travels with the data, so the receiver has its own copy of it. It is level with the syndrome, on its
-        // left, so that it enters the syndrome at its west edge, and the receiver's own CRC enters at its south edge. The
-        // CRC reaches the copy from the sender's XOR, straight up the gap between the columns.
+        // left, so that it enters the syndrome at its west edge, and the receiver's own CRC enters at its south edge.
+        // The CRC reaches the copy from the sender's XOR, straight up the gap between the columns.
         let xor_size = self.measures.xor;
         let copy_content = word(t.arrived_crc);
         let copy_size = scene
@@ -534,8 +534,8 @@ impl Drawing<'_> {
         let (position_id, _) = self.receiver.place(tops[1], heights[1], position_row)?;
         let (corrected_id, _) = self.receiver.place(tops[0], heights[0], corrected_row)?;
 
-        // The bytes cross from the sender to the receiver, and the error is introduced on the way across. The edge is an
-        // elbow, and its upright part is in the middle of the gap, clear of the XOR.
+        // The bytes cross from the sender to the receiver, and the error is introduced on the way across. The edge is
+        // an elbow, and its upright part is in the middle of the gap, clear of the XOR.
         scene
             .add_edge_with(
                 dump,

@@ -80,8 +80,8 @@ pub(super) enum Operation {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The 12 steps of a quarter round, in order: the word each updates, and how.
 ///
-/// The RFC writes them as `a += b; d ^= a; d <<<= 16; c += d; b ^= c; b <<<= 12; a += b; d ^= a; d <<<= 8; c += d;
-/// b ^= c; b <<<= 7`.
+/// The RFC writes them as `a += b; d ^= a; d <<<= 16; c += d; b ^= c; b <<<= 12; a += b; d ^= a; d <<<= 8; c += d; b ^=
+/// c; b <<<= 7`.
 pub(super) const STEPS: [(Word, Operation); 12] = [
     (Word::A, Operation::Add(Word::B)),
     (Word::D, Operation::Xor(Word::A)),

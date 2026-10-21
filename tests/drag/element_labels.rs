@@ -222,9 +222,9 @@ fn replacing_the_values_of_an_unlabelled_grid_adds_no_element_names() -> Result<
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Text labels are sized by what they render as, not by their length
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// A two-row grid of one column, labelled with `labels`, and the width of the node it makes.
 fn width_with_text_labels(id: &str, labels: &'static [&'static str]) -> Result<f64, String> {
@@ -346,9 +346,9 @@ fn replacing_the_values_of_a_text_labelled_grid_keeps_its_row_labels() -> Result
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   A layout's own row count is kept, whether or not every row has a value
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// The height of a node of `values` laid out in exactly three rows, labelled in `labelling` if there is one.
 fn height_in_three_rows(id: &str, values: Vec<u8>, labelling: Option<LabellingStyle>) -> Result<f64, String> {

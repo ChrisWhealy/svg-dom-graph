@@ -27,7 +27,7 @@ fn texts_of(id: &str) -> Result<Vec<String>, String> {
         .collect())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A negative value shows a minus sign, and a positive value or zero shows no sign at all, not even `+`.
 #[wasm_bindgen_test]
 fn a_sign_is_shown_only_for_a_negative_value() -> Result<(), String> {
@@ -39,7 +39,7 @@ fn a_sign_is_shown_only_for_a_negative_value() -> Result<(), String> {
     check(texts == ["-12", "0", "345"], &format!("got {texts:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Hexadecimal and binary show the value's two's-complement representation, in the selected byte order.
 #[wasm_bindgen_test]
 fn hexadecimal_and_binary_show_the_twos_complement_of_a_negative_value() -> Result<(), String> {
@@ -56,7 +56,7 @@ fn hexadecimal_and_binary_show_the_twos_complement_of_a_negative_value() -> Resu
     check(bin == ["1000 0000"], &format!("bin {bin:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A signed width names its own type as text, and has a colour of its own that differs from its unsigned equivalent's.
 #[wasm_bindgen_test]
 fn a_signed_node_names_its_type_and_has_a_colour_of_its_own() -> Result<(), String> {
@@ -84,7 +84,7 @@ fn a_signed_node_names_its_type_and_has_a_colour_of_its_own() -> Result<(), Stri
     check(fill(&signed)? != fill(&unsigned)?, "i64 and u64 should not share a colour")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cells of a signed node are all as wide as the widest value needs, and a negative value is one character wider
 /// than its magnitude.
 #[wasm_bindgen_test]
@@ -109,7 +109,7 @@ fn every_cell_is_wide_enough_for_the_minus_sign() -> Result<(), String> {
     check(neg > pos, &format!("-100 needs more room than 100: {neg} against {pos}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A signed node's values can be replaced by values of the same signed width, but not by the unsigned equivalent.
 #[wasm_bindgen_test]
 fn replacing_values_needs_the_same_signed_width() -> Result<(), String> {
@@ -129,7 +129,7 @@ fn replacing_values_needs_the_same_signed_width() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operator's operand and result must share one type, and a signed type and its unsigned equivalent are two types.
 #[wasm_bindgen_test]
 fn an_operator_rejects_an_operand_and_result_of_signed_and_unsigned_widths() -> Result<(), String> {
@@ -159,7 +159,7 @@ fn an_operator_rejects_an_operand_and_result_of_signed_and_unsigned_widths() -> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single signed value is replaced across zero, from positive to negative and back, with a new value that formats to
 /// the same number of characters. The rendered text, the tooltip and the accessible name must each follow every
 /// replacement, so the sign is written and then removed again.
@@ -200,7 +200,7 @@ fn a_single_value_replaced_across_zero_follows_its_sign_in_text_title_and_name()
     expect("0")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `PlainText` is for `u8` bytes only. Signed bytes are rejected even when every value is positive and happens to be a
 /// printable ASCII code, so this restriction is deliberate and not an accident of the values chosen.
 #[wasm_bindgen_test]

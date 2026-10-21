@@ -178,8 +178,8 @@ fn summary(trace: &Trace) -> String {
     let original = packed.steps.len().max(1);
     let encoded = packed.bytes.len();
     let ratio = original as f64 / encoded.max(1) as f64;
-    // Tenths of a percent, rounded to the nearest, so that the text has no floating point noise. The saving is taken from
-    // this figure, so the two always add up to 100%.
+    // Tenths of a percent, rounded to the nearest, so that the text has no floating point noise. The saving is taken
+    // from this figure, so the two always add up to 100%.
     let permille = (encoded * 1000 + original / 2) / original;
     let change = if encoded <= original {
         format!("a saving of {}.{}%", (1000 - permille) / 10, (1000 - permille) % 10)

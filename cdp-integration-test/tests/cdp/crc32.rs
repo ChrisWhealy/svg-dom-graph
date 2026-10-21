@@ -1,11 +1,11 @@
-//! The CRC-32 demo, in the window of its own that the gallery's panel opens: the checksum on opening, the check value on
-//! typing, an empty text, the cut at 64 bytes, the focus and caret across the redraw, the buttons in the scene
-//! that introduce an error, the receiver finding and correcting a flipped bit, and the stepping toolbar that walks
-//! through the calculation.
+//! The CRC-32 demo, in the window of its own that the gallery's panel opens: the checksum on opening, the check value
+//! on typing, an empty text, the cut at 64 bytes, the focus and caret across the redraw, the buttons in the scene that
+//! introduce an error, the receiver finding and correcting a flipped bit, and the stepping toolbar that walks through
+//! the calculation.
 //!
 //! The calculation is covered by native unit tests against published checksums. What they cannot reach is the browser:
-//! that a real change draws the scene again with the right nodes, that the buttons drawn in the scene work, and that the
-//! text box keeps focus across the redraw.
+//! that a real change draws the scene again with the right nodes, that the buttons drawn in the scene work, and that
+//! the text box keeps focus across the redraw.
 //!
 //! Like [`crate::huffman_walk`], these run against the built demo gallery's window page, not the fixture.
 
@@ -137,7 +137,7 @@ fn position(tab: &Tab) -> Result<String, String> {
         .ok_or_else(|| "no error position in the diagram".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The gallery's own panel is only a description and a button that opens the window.
 #[test]
 fn the_gallery_panel_has_a_button_that_opens_the_window() -> Result<(), String> {
@@ -152,7 +152,7 @@ fn the_gallery_panel_has_a_button_that_opens_the_window() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The diagram is drawn at 85% of the size of its own view box, so its text is 15% smaller than it would be.
 #[test]
 fn the_diagram_is_scaled_down_to_85_percent() -> Result<(), String> {
@@ -171,7 +171,7 @@ fn the_diagram_is_scaled_down_to_85_percent() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The window opens on a sentence of 49 bytes, whose CRC-32 is `AC52F740`.
 #[test]
 fn the_window_opens_on_its_sentence() -> Result<(), String> {
@@ -189,7 +189,7 @@ fn the_window_opens_on_its_sentence() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Typing works the checksum out again for the new text.
 #[test]
 fn typing_works_the_checksum_out_again() -> Result<(), String> {
@@ -207,7 +207,7 @@ fn typing_works_the_checksum_out_again() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An empty text has no bytes to shift through the register, so the CRC-32 is zero and the nodes for the bytes are not
 /// drawn. Typing again brings them back.
 #[test]
@@ -223,7 +223,7 @@ fn an_empty_text_has_a_checksum_of_zero_and_no_byte_nodes() -> Result<(), String
     check_eq(result(&tab)?.as_str(), "E8B7BE43")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A character that straddles the 64 byte limit is left out whole, so the checksum is that of the 63 bytes before it.
 #[test]
 fn a_character_that_straddles_the_limit_is_left_out_whole() -> Result<(), String> {
@@ -235,7 +235,7 @@ fn a_character_that_straddles_the_limit_is_left_out_whole() -> Result<(), String
     check_eq(straddling, result(&tab)?)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A change draws the scene again, and the text box that replaces the old one has the keyboard focus, with the caret
 /// where it was, so typing carries on.
 #[test]
@@ -258,7 +258,7 @@ fn typing_keeps_the_focus_and_the_caret_across_the_redraw() -> Result<(), String
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The two buttons for introducing an error are in the scene, and there are no fields for choosing a bit.
 #[test]
 fn the_buttons_for_introducing_an_error_are_in_the_scene() -> Result<(), String> {
@@ -289,9 +289,9 @@ fn the_buttons_for_introducing_an_error_are_in_the_scene() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With no error, the receiver finds none. With a bit flipped, wherever the random choice puts it, the receiver finds one
-/// bit, in the data or in the CRC. Removing the error puts the receiver back as it was.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// With no error, the receiver finds none. With a bit flipped, wherever the random choice puts it, the receiver finds
+/// one bit, in the data or in the CRC. Removing the error puts the receiver back as it was.
 #[test]
 fn the_receiver_finds_a_flipped_bit_and_puts_it_right() -> Result<(), String> {
     let tab = open()?;
@@ -322,7 +322,7 @@ fn the_receiver_finds_a_flipped_bit_and_puts_it_right() -> Result<(), String> {
     check_eq(position(&tab)?.as_str(), "none")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A flip in a byte that is no longer there is dropped when the text gets shorter, and the flip stays if it was in the
 /// CRC. Either way the status line says what is flipped now.
 #[test]
@@ -337,7 +337,7 @@ fn a_shorter_text_keeps_only_a_flip_that_still_exists() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The button is drawn again with the rest of the scene, and the new button of the same kind has the keyboard focus, so
 /// a keyboard user can press it again. The change is announced in a live region that is not part of the scene.
 #[test]
@@ -362,9 +362,9 @@ fn a_button_keeps_the_keyboard_focus_across_the_redraw_and_the_change_is_announc
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A redraw that works leaves the window's error banner hidden and empty. A redraw that fails shows its reason there, but
-/// nothing in the page can make one fail, so this only checks the banner is where the demo expects it, and clears.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A redraw that works leaves the window's error banner hidden and empty. A redraw that fails shows its reason there,
+/// but nothing in the page can make one fail, so this only checks the banner is where the demo expects it, and clears.
 #[test]
 fn the_error_banner_stays_hidden_while_redraws_work() -> Result<(), String> {
     let tab = open()?;
@@ -381,7 +381,7 @@ fn the_error_banner_stays_hidden_while_redraws_work() -> Result<(), String> {
     check_eq(banner(&tab)?.as_str(), "true|")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The walk's position, read from the hidden "Step" driver's own selection. `None` before the walk has started.
 fn step_position(tab: &Tab) -> Result<Option<usize>, String> {
     let name = text(
@@ -449,7 +449,7 @@ fn faint(tab: &Tab, name: &str) -> Result<bool, String> {
     .contains("not yet computed"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The walk starts with nothing worked out: the bytes are there to read, and everything worked out from them is faint.
 #[test]
 fn the_walk_starts_with_nothing_worked_out() -> Result<(), String> {
@@ -474,7 +474,7 @@ fn the_walk_starts_with_nothing_worked_out() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each step reaches the next byte in the table index, the table entry and the register, then the sender is done, then
 /// the receiver is reached one box at a time. "abc" has 3 bytes, so the walk has 11 positions.
 #[test]
@@ -526,7 +526,7 @@ fn each_step_reaches_one_more_box() -> Result<(), String> {
     check(!faint(&tab, "Error position")?, "and the error position")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many explanations say that they are not yet computed, to a screen reader as well as by being faint.
 fn faint_notes(tab: &Tab) -> Result<usize, String> {
     text(
@@ -537,7 +537,7 @@ fn faint_notes(tab: &Tab) -> Result<usize, String> {
     .map_err(|e| format!("could not count the notes: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An explanation is faint until the walk arrives at the box it explains. "abc" has three explanations for the boxes of
 /// each byte (index, entry, register), one for the last register, and six for the receiver.
 #[test]
@@ -553,7 +553,7 @@ fn an_explanation_is_faint_until_the_walk_reaches_its_box() -> Result<(), String
     check_eq(faint_notes(&tab)?, 0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping back draws the scene as it was, and editing the text starts the walk again.
 #[test]
 fn stepping_back_restores_the_boxes_and_editing_the_text_starts_again() -> Result<(), String> {
@@ -569,7 +569,7 @@ fn stepping_back_restores_the_boxes_and_editing_the_text_starts_again() -> Resul
     check(faint(&tab, "Table index")?, "a new text has not been worked out")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flipping a bit moves the walk on to the bytes arriving if it was before that, since the error cannot be seen sooner.
 /// It does not move a walk that is already past that, and removing the error leaves the walk where it is.
 #[test]
@@ -586,7 +586,7 @@ fn flipping_a_bit_moves_the_walk_to_the_arrival_but_never_back() -> Result<(), S
     check_eq(step_position(&tab)?, Some(8))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar button that has the keyboard focus still has it after the scene is drawn again for the step.
 #[test]
 fn a_toolbar_button_keeps_the_keyboard_focus_across_a_step() -> Result<(), String> {
@@ -599,9 +599,9 @@ fn a_toolbar_button_keeps_the_keyboard_focus_across_a_step() -> Result<(), Strin
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The notes that say something about the text and the error are white, and the buttons have colours of their own, so the
-/// three kinds of box are told apart from each other and from the light blue explanations.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The notes that say something about the text and the error are white, and the buttons have colours of their own, so
+/// the three kinds of box are told apart from each other and from the light blue explanations.
 #[test]
 fn the_notes_are_white_and_the_buttons_are_coloured() -> Result<(), String> {
     const EXPLANATION: &str = "#eef4ff";
@@ -634,7 +634,7 @@ fn the_notes_are_white_and_the_buttons_are_coloured() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar's "Restart" button starts the walk again and removes every flipped bit.
 #[test]
 fn restart_goes_back_to_the_start_and_removes_the_errors() -> Result<(), String> {

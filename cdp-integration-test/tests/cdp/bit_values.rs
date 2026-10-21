@@ -37,7 +37,7 @@ fn cells(tab: &Tab, name: &str) -> Result<Vec<String>, String> {
     serde_json::from_str(&json).map_err(|e| format!("could not read the cells of {name}: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zero is as many zeros as the width, and the largest value is as many ones. There is no gap, whatever the width.
 #[test]
 fn binary_writes_exactly_the_width_in_digits_for_every_width() -> Result<(), String> {
@@ -51,7 +51,7 @@ fn binary_writes_exactly_the_width_in_digits_for_every_width() -> Result<(), Str
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The digits of every cell are drawn inside the cell's own box, so the node was measured wide enough for its widest
 /// value at every width.
 #[test]
@@ -80,7 +80,7 @@ fn the_digits_of_every_width_fit_inside_their_cells() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A node says its width in its tooltip or its accessible name, since its colour is the same for every width.
 #[test]
 fn a_node_says_its_width() -> Result<(), String> {
@@ -101,7 +101,7 @@ fn a_node_says_its_width() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Replacing the values of a rendered array with others of the same width rewrites its cells.
 #[test]
 fn a_replacement_of_the_same_width_rewrites_the_cells() -> Result<(), String> {
@@ -114,7 +114,7 @@ fn a_replacement_of_the_same_width_rewrites_the_cells() -> Result<(), String> {
     check_eq(&all[all.len() - 2..], &["010011".to_owned(), "111111".to_owned()][..])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A replacement of another width is refused, and so is a value that does not fit. Neither changes a cell.
 #[test]
 fn a_replacement_of_another_width_or_too_wide_a_value_is_refused_and_changes_nothing() -> Result<(), String> {

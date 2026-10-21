@@ -1,11 +1,11 @@
 //! The UTF-8 panel in the built demo gallery: the four buttons that choose a character, the rows of bits that grow and
 //! shrink with the character, the groups of code point bits lined up over the bytes they fill, the template bits
-//! highlighted in the bits of the bytes, and the keyboard focus staying on
-//! a button across the redraw that every choice makes.
+//! highlighted in the bits of the bytes, and the keyboard focus staying on a button across the redraw that every choice
+//! makes.
 //!
 //! The encoding itself is covered by native unit tests against the standard library's own encoder for every character.
-//! What they cannot reach is the browser: that a real choice redraws the scene with the right nodes, and what the redraw
-//! keeps.
+//! What they cannot reach is the browser: that a real choice redraws the scene with the right nodes, and what the
+//! redraw keeps.
 //!
 //! Each length of character is a test of its own, so the CI deals them out to different shards.
 
@@ -77,7 +77,7 @@ fn label(tab: &Tab, name: &str) -> Result<String, String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The panel opens on the one-byte character, with a button for each of the four, the first pressed, and one column of
 /// four nodes.
 #[test]
@@ -101,16 +101,16 @@ fn the_panel_opens_on_the_one_byte_character_with_four_buttons() -> Result<(), S
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The name of the node holding the bits of byte `byte` of a sequence of `len`, whose name starts with `base`.
 fn byte_node(base: &str, len: usize, byte: usize) -> String {
     if len == 1 { base.to_owned() } else { format!("{base} (byte {})", byte + 1) }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Choosing the character at `index` encodes it as `expected`, with a node of bits for each byte, and the bits of the
-/// template are highlighted in each: in the first byte the leading ones and the zero after them, and in every other byte
-/// the `10` that starts it. `highlighted` is what each byte's node says.
+/// template are highlighted in each: in the first byte the leading ones and the zero after them, and in every other
+/// byte the `10` that starts it. `highlighted` is what each byte's node says.
 fn encodes_to(index: usize, expected: &str, highlighted: &[&str]) -> Result<(), String> {
     let tab = open()?;
     press(&tab, &format!("choose-{index}"))?;
@@ -151,9 +151,9 @@ fn a_four_byte_character_has_the_template_of_four_bytes() -> Result<(), String> 
     encodes_to(3, "F0 9F 98 80", &["cells 0 to 4", "cells 0, 1", "cells 0, 1", "cells 0, 1"])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The left and right edges of the nodes of one row, boxes included, as the page draws them, from left to right. A row is
-/// every node whose accessible name starts with `prefix`.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The left and right edges of the nodes of one row, boxes included, as the page draws them, from left to right. A row
+/// is every node whose accessible name starts with `prefix`.
 fn row_edges(tab: &Tab, prefix: &str) -> Result<Vec<(f64, f64)>, String> {
     let json = text(
         tab,
@@ -166,8 +166,8 @@ fn row_edges(tab: &Tab, prefix: &str) -> Result<Vec<(f64, f64)>, String> {
     serde_json::from_str(&json).map_err(|e| format!("could not read the row {prefix}: {e}"))
 }
 
-/// Where a person sees the middle of a row: the middle of the node in the middle if there is an odd number of nodes, and
-/// the middle of the gap between the two in the middle if there is an even number.
+/// Where a person sees the middle of a row: the middle of the node in the middle if there is an odd number of nodes,
+/// and the middle of the gap between the two in the middle if there is an even number.
 fn middle_of(edges: &[(f64, f64)]) -> f64 {
     let half = edges.len() / 2;
     if edges.len() % 2 == 1 {
@@ -177,11 +177,11 @@ fn middle_of(edges: &[(f64, f64)]) -> f64 {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The four rows of nodes share a midline. With an odd number of nodes in a row, the one in the middle is on it, and with
-/// an even number the gap between the two in the middle is. The code point and the bytes in hexadecimal are on it too, so
-/// they are centred above and below the rows of bits. No two nodes of a row overlap, and `len` nodes are in each row of
-/// bits.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The four rows of nodes share a midline. With an odd number of nodes in a row, the one in the middle is on it, and
+/// with an even number the gap between the two in the middle is. The code point and the bytes in hexadecimal are on it
+/// too, so they are centred above and below the rows of bits. No two nodes of a row overlap, and `len` nodes are in
+/// each row of bits.
 fn rows_are_centred(index: usize, len: usize) -> Result<(), String> {
     let tab = open()?;
     press(&tab, &format!("choose-{index}"))?;
@@ -203,8 +203,8 @@ fn rows_are_centred(index: usize, len: usize) -> Result<(), String> {
         for pair in row.windows(2) {
             check(pair[0].1 <= pair[1].0, &format!("two nodes of the {name} overlap: {pair:?}"))?;
         }
-        // Each group is centred over its byte, so the groups of two bytes, 5 and 6 bits wide, have the gap between them a
-        // few pixels off the midline. Every other row has its middle exactly on it.
+        // Each group is centred over its byte, so the groups of two bytes, 5 and 6 bits wide, have the gap between them
+        // a few pixels off the midline. Every other row has its middle exactly on it.
         let allowed = if name == "groups" && len == 2 { 8.0 } else { 1.0 };
         let offset = middle_of(row) - axis;
         check(
@@ -243,9 +243,9 @@ fn the_gaps_of_a_four_byte_character_are_on_the_midline() -> Result<(), String> 
     rows_are_centred(3, 4)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The buttons, the note under them and the code point share a midline, whichever character is chosen. The note is as wide
-/// as the buttons together.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The buttons, the note under them and the code point share a midline, whichever character is chosen. The note is as
+/// wide as the buttons together.
 fn shares_a_midline(index: usize) -> Result<(), String> {
     let tab = open()?;
     press(&tab, &format!("choose-{index}"))?;
@@ -295,10 +295,10 @@ fn the_buttons_the_note_and_a_four_byte_graph_share_a_midline() -> Result<(), St
     shares_a_midline(3)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The leftmost node of the diagram is a margin from its left edge, for a character of any length, and not further in
-/// because the axis was placed with a margin counted twice. The widest block is the row of four buttons, or the row of four
-/// bytes, so for a short character the buttons and the note set the left edge.
+/// because the axis was placed with a margin counted twice. The widest block is the row of four buttons, or the row of
+/// four bytes, so for a short character the buttons and the note set the left edge.
 fn left_margin(index: usize) -> Result<f64, String> {
     let tab = open()?;
     press(&tab, &format!("choose-{index}"))?;
@@ -332,7 +332,7 @@ fn a_four_byte_character_has_one_margin_at_the_left() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
 fn view(tab: &Tab) -> Result<String, String> {
     text(
@@ -364,12 +364,13 @@ fn pressed(tab: &Tab) -> Result<String, String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Choosing characters again and again, in an order that goes up and down in length, draws the right scene each time,
-/// and the zoom is kept. The scene is drawn from scratch for every choice, so a node, a button or a listener left behind
-/// by one would show in the next. After each choice there is exactly one button pressed, the one chosen, the nodes are
-/// those of the character, and their cells hold its bits: the bits of the code point in the groups, and every bit of the
-/// bytes in the byte nodes. The expected bits are worked out here from the character, not read from the page.
+/// and the zoom is kept. The scene is drawn from scratch for every choice, so a node, a button or a listener left
+/// behind by one would show in the next. After each choice there is exactly one button pressed, the one chosen, the
+/// nodes are those of the character, and their cells hold its bits: the bits of the code point in the groups, and every
+/// bit of the bytes in the byte nodes. The expected bits are worked out here from the character, not read from the
+/// page.
 #[test]
 fn choosing_characters_again_and_again_draws_each_one_and_keeps_the_zoom() -> Result<(), String> {
     const CHARACTERS: [char; 4] = ['A', '£', '€', '😀'];
@@ -409,7 +410,7 @@ fn choosing_characters_again_and_again_draws_each_one_and_keeps_the_zoom() -> Re
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A button keeps the keyboard focus across the redraw that choosing it makes, and shows as the pressed one.
 #[test]
 fn a_button_keeps_the_keyboard_focus_across_the_redraw() -> Result<(), String> {

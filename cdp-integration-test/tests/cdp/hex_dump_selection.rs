@@ -67,7 +67,7 @@ fn marks(tab: &Tab) -> Result<Vec<String>, String> {
     serde_json::from_str(&json).map_err(|e| format!("could not read the marks: {e}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar is drawn inside the node, under its name and above its black text area, and not at the scene's edge.
 #[test]
 fn the_toolbar_is_docked_inside_the_nodes_own_box_between_its_name_and_its_text() -> Result<(), String> {
@@ -94,7 +94,7 @@ fn the_toolbar_is_docked_inside_the_nodes_own_box_between_its_name_and_its_text(
     check_eq(geometry.as_str(), "true,true,true")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping selects a byte at a time, and marks its hex digits and its character with the primary and secondary colours.
 #[test]
 fn a_selected_byte_is_marked_by_its_hex_digits_and_by_its_character() -> Result<(), String> {
@@ -113,7 +113,7 @@ fn a_selected_byte_is_marked_by_its_hex_digits_and_by_its_character() -> Result<
     check_eq(marks(&tab)?, vec![format!("{PRIMARY}=00"), format!("{SECONDARY}=.")])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping back moves the marks to the earlier byte, and Restart clears them.
 #[test]
 fn stepping_back_and_restarting_move_and_clear_the_marks() -> Result<(), String> {
@@ -128,7 +128,7 @@ fn stepping_back_and_restarting_move_and_clear_the_marks() -> Result<(), String>
     check_eq(marks(&tab)?, Vec::<String>::new())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The marks sit over the glyphs they name, wherever the byte is in its line: at the ends of a line, on either side of the
 /// extra gap after the eighth byte, and across the change of line. This is measured against where the browser draws each
 /// character, and not against the library's own idea of the columns.

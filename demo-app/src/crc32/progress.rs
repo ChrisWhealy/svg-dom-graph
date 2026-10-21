@@ -23,8 +23,8 @@ pub(super) struct ReceiverNodes {
 pub(super) struct Nodes {
     /// How many bytes the text has.
     pub(super) bytes: usize,
-    /// The sender's boxes that have a value for each byte: the bytes themselves, the table index, the table entry and the
-    /// register. There are none without text.
+    /// The sender's boxes that have a value for each byte: the bytes themselves, the table index, the table entry and
+    /// the register. There are none without text.
     pub(super) dump: Option<NodeId>,
     pub(super) per_byte: Vec<NodeId>,
     pub(super) last_register: NodeId,
@@ -40,8 +40,8 @@ impl Nodes {
         self.notes.iter().find(|(node, _)| *node == id).map(|&(_, note)| note)
     }
 
-    /// Draws the explanation of `id` faint if `unreached`, so that it can be read ahead of the walk, and at full strength
-    /// once the walk arrives at the box it explains. A box with no explanation is left alone.
+    /// Draws the explanation of `id` faint if `unreached`, so that it can be read ahead of the walk, and at full
+    /// strength once the walk arrives at the box it explains. A box with no explanation is left alone.
     fn dim_note(&self, scene: &Scene, id: NodeId, unreached: bool) -> Result<(), String> {
         match self.note_of(id) {
             Some(note) => mark_unreached(scene, note, &all_if(unreached, 1)),

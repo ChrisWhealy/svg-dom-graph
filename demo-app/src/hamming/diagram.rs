@@ -84,8 +84,8 @@ pub(super) fn draw(t: &Transmission, position: usize, status: &str) -> Result<Dr
     let svg = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
-    // Measure the path: every box, then every note at the width of a cell, which is the widest box or the usual width of
-    // a note.
+    // Measure the path: every box, then every note at the width of a cell, which is the widest box or the usual width
+    // of a note.
     let contents = boxes(t)?;
     let notes = words::notes(t);
     let mut sizes = Vec::with_capacity(BOXES);

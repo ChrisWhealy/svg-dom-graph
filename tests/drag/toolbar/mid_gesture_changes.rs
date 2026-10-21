@@ -7,7 +7,7 @@ use crate::common::{check_close, dispatch_pointer_event, group_translate, nth_gr
 use svg_dom_graph::scene::ToolbarOptions;
 use wasm_bindgen_test::*;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Drag a node, zoom with the wheel at the pointer, then keep dragging. A wheel at the pointer holds the grabbed point
 /// still. So the second move of 25 pixels at 1.25x is 20 units of content, not 25. The node ends at 100 + 25 + 20 =
 /// 145.
@@ -29,7 +29,7 @@ async fn a_node_drag_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> 
     check_close(y, 108.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same holds for a zoom that comes from the application rather than from an input. `zoom_in` is public, so a drag
 /// cannot assume only the wheel or keyboard will change the view. That zoom is about the centre of the view, not the
 /// pointer, so the grabbed point moves on screen. The node must follow the pointer to wherever it now is: the point of
@@ -63,7 +63,7 @@ async fn a_node_drag_carries_on_correctly_after_the_application_zooms_in_the_mid
     check_close(y, expected.1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel zoom is written to the DOM one frame late. If a drag begins inside that frame, the node's screen matrix,
 /// read from the DOM, still shows the old zoom while the view already has the new one. The drag must not be built on
 /// that stale matrix: at 1.25x, 25 pixels is 20 units.
@@ -90,7 +90,7 @@ async fn a_drag_that_starts_before_a_pending_zoom_has_been_drawn_uses_the_new_zo
     check_close(x, 120.0) // 100 + 25 / 1.25
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Pan, zoom with the wheel at the pointer, then keep panning. The zoom must not be thrown away by the next move. The
 /// pan is 30 pixels, then a zoom of 1.25 about the pointer, then 30 more pixels across and 10 down.
 #[wasm_bindgen_test]
@@ -120,7 +120,7 @@ async fn a_pan_carries_on_correctly_after_a_wheel_zoom_in_the_middle() -> Result
     check_close(ty, expected.1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same for a zoom the application makes: pan, `zoom_in`, pan. It zooms about the centre of the view, (200, 150).
 #[wasm_bindgen_test]
 async fn a_pan_carries_on_correctly_after_the_application_zooms_in_the_middle() -> Result<(), String> {
@@ -145,7 +145,7 @@ async fn a_pan_carries_on_correctly_after_the_application_zooms_in_the_middle() 
     check_close(ty, expected.1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zoom in the middle of a pan, from the keyboard, and reset in the middle of a node drag. Whatever changes the view,
 /// the gesture composes with it.
 #[wasm_bindgen_test]

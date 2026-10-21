@@ -7,9 +7,9 @@
 //!
 //! The state before the quarter round is at the top. Its four words feed the four columns, and the four words that come
 //! out feed the state below. Each of the four words runs down a column of its own. A step that updates a word puts its
-//! operator node in that word's column. The word's previous value is one operand. A step that adds or XORs another
-//! word draws that word's latest value as its second operand, so the connector crosses to the other column. A
-//! rotation has only the one operand.
+//! operator node in that word's column. The word's previous value is one operand. A step that adds or XORs another word
+//! draws that word's latest value as its second operand, so the connector crosses to the other column. A rotation has
+//! only the one operand.
 //!
 //! # The walk
 //!
@@ -17,8 +17,8 @@
 //! marks into the nodes already drawn, via [`apply`]. What a step shows comes from [`walk::shown`], a pure function of
 //! the position alone. Stepping backwards is therefore the same write as stepping forwards, and so is a restart.
 //!
-//! The keystream block, which the 20 rounds lead to, has a layout of its own. Crossing to or from it draws the
-//! diagram again, and keeps the zoom and pan and the keyboard focus the old one had.
+//! The keystream block, which the 20 rounds lead to, has a layout of its own. Crossing to or from it draws the diagram
+//! again, and keeps the zoom and pan and the keyboard focus the old one had.
 //!
 //! # What is real
 //!
@@ -87,7 +87,8 @@ const INPUT_GAP: f64 = 40.0;
 const FIRST_SIZE: (f64, f64) = (1900.0, 1400.0);
 
 /// The row each of the 12 steps sits on. Steps that hand a value straight on share a row. The `XOR` after the first
-/// `ADD` shares its row, and so do the `ADD` and `XOR` after each rotation of `d`. Every other step has a row of its own.
+/// `ADD` shares its row, and so do the `ADD` and `XOR` after each rotation of `d`. Every other step has a row of its
+/// own.
 const STEP_ROWS: [usize; 12] = [0, 0, 1, 1, 1, 2, 3, 3, 4, 4, 4, 5];
 /// How many rows the steps take.
 const ROWS: usize = 6;
@@ -190,8 +191,8 @@ thread_local! {
 /// Draws the quarter round diagram, with nothing reached yet, and returns its nodes and the node that drives its
 /// toolbar. See [`build_chacha20_window`] for what it shows.
 ///
-/// Every operator node is drawn with a zero result, which [`apply`] replaces as the walk reaches it. The layout does not
-/// depend on the values, since a hexadecimal word is always as wide as any other.
+/// Every operator node is drawn with a zero result, which [`apply`] replaces as the walk reaches it. The layout does
+/// not depend on the values, since a hexadecimal word is always as wide as any other.
 fn draw_quarter_round(scene: &Scene, rounds: &Rounds) -> Result<(Nodes, NodeId), String> {
     let column_x = |word: Word| X_MARGIN + COLUMN_PITCH * word.index() as f64;
     let first = &rounds.stages[0];
@@ -234,8 +235,8 @@ fn draw_quarter_round(scene: &Scene, rounds: &Rounds) -> Result<(Nodes, NodeId),
     }
     let inputs = latest.clone();
 
-    // For each step, the nodes the walk shows as in use while it stands there: the step's own node and its operands. The
-    // four input nodes are listed too, since a step can read one of them.
+    // For each step, the nodes the walk shows as in use while it stands there: the step's own node and its operands.
+    // The four input nodes are listed too, since a step can read one of them.
     let mut in_use: Vec<Vec<NodeId>> = Vec::with_capacity(STEPS.len());
     let mut every_node: Vec<NodeId> = latest.clone();
     let mut steps = Vec::with_capacity(STEPS.len());
@@ -391,8 +392,8 @@ fn driver(scene: &Scene) -> Result<NodeId, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Writes `shown` into the quarter round diagram: every value, each mark for a value not yet reached, and the
-/// highlight on the step in use and the words it reads.
+/// Writes `shown` into the quarter round diagram: every value, each mark for a value not yet reached, and the highlight
+/// on the step in use and the words it reads.
 ///
 /// It writes everything each time and leaves the library to skip what has not changed, so it needs no record of what
 /// was written before.
@@ -596,8 +597,8 @@ fn focus_button(label: &str) {
 /// resizes the window it runs in to fit the scene. Runs in `chacha20-window.html`, not in the gallery.
 ///
 /// The initial state of RFC 8439, section 2.3.2, is at the top. Below it are the four columns of the first quarter
-/// round: `a`, `b`, `c` and `d` going in, the 12 steps that mix them, and `a`, `b`, `c` and `d` coming out. Below those is
-/// the state after the quarter round, which is the initial state with those four words replaced. The four words
+/// round: `a`, `b`, `c` and `d` going in, the 12 steps that mix them, and `a`, `b`, `c` and `d` coming out. Below those
+/// is the state after the quarter round, which is the initial state with those four words replaced. The four words
 /// involved are marked in both states.
 ///
 /// Each of the 12 steps is an operator node, `ADD`, `XOR` or `ROTL`, in the column of the word it updates. An `ADD` or
@@ -606,15 +607,15 @@ fn focus_button(label: &str) {
 ///
 /// The selection toolbar steps through the walk. "Next" and "Prev" move one step, and when a quarter round ends they
 /// move on to the next, which is drawn in the same diagram with its own state. A quarter round mixes a column of the
-/// state in an odd round and a diagonal in an even round, and the title says which. The "Round" buttons move on a
-/// whole round. Once the last step of round 20 is done, one more step shows the keystream block that the rounds lead to.
+/// state in an odd round and a diagonal in an even round, and the title says which. The "Round" buttons move on a whole
+/// round. Once the last step of round 20 is done, one more step shows the keystream block that the rounds lead to.
 /// "Restart" returns the walk to the beginning. Every node the walk has not reached then shows zero, and is drawn
 /// faint.
 ///
 /// Every value shown is worked out by [`algorithm::rounds`]. `svg_dom_graph` itself never evaluates an operator. See
 /// [`Scene::add_arithmetic_operator_node`]'s own doc comment for why. So this function does what a real caller would:
-/// it takes each real value and hands it to the library alongside the operator that produced it, and later replaces
-/// it with [`Scene::set_data_values`].
+/// it takes each real value and hands it to the library alongside the operator that produced it, and later replaces it
+/// with [`Scene::set_data_values`].
 ///
 /// # Errors
 ///

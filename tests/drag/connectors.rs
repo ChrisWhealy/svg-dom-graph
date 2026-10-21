@@ -343,7 +343,7 @@ fn add_edge_with_a_forced_from_side_overrides_the_side_that_would_otherwise_be_c
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `with_from_position` pins the endpoint a fraction of the way along the forced side, whatever the other node's
 /// position is. A quarter of the way along a 100-wide south side is `x = 25`.
 #[wasm_bindgen_test]
@@ -369,7 +369,7 @@ fn add_edge_with_a_from_position_pins_the_endpoint_along_the_forced_side() -> Re
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A position that is not a finite value in `0.0..=1.0` is rejected before anything is drawn.
 #[wasm_bindgen_test]
 fn add_edge_with_rejects_an_invalid_position_before_drawing_anything() -> Result<(), String> {
@@ -397,7 +397,7 @@ fn add_edge_with_rejects_an_invalid_position_before_drawing_anything() -> Result
     check(connector_count("connector-bad-position")? == 0, "nothing was drawn")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two nodes: `A` at `(0, 0)`, size `(100, 40)`, and `B` at `(300, 200)`, size `(40, 20)`. Returns the scene and both ids.
 fn pinned_pair(svg_id: &str) -> Result<(Scene, svg_dom_graph::NodeId, svg_dom_graph::NodeId), String> {
     let svg = make_svg(svg_id, Size::new(800.0, 400.0), Size::new(800.0, 400.0));
@@ -411,7 +411,7 @@ fn pinned_pair(svg_id: &str) -> Result<(Scene, svg_dom_graph::NodeId, svg_dom_gr
     Ok((scene, a, b))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `with_to_position` pins the `to` endpoint. Three quarters of the way along `B`'s 40-wide north side is `x = 330`.
 #[wasm_bindgen_test]
 fn add_edge_with_a_to_position_pins_the_to_endpoint_along_the_forced_side() -> Result<(), String> {
@@ -428,7 +428,7 @@ fn add_edge_with_a_to_position_pins_the_to_endpoint_along_the_forced_side() -> R
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `0.0` and `1.0` are both valid, and pin to the two ends of the side. `A`'s south side runs from `x = 0` to `x = 100`.
 #[wasm_bindgen_test]
 fn a_position_of_zero_or_one_pins_to_the_ends_of_the_side() -> Result<(), String> {
@@ -450,7 +450,7 @@ fn a_position_of_zero_or_one_pins_to_the_ends_of_the_side() -> Result<(), String
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pin also applies to a straight connector. It starts at `(25, 40)`, a quarter of the way along `A`'s south side, and
 /// ends at the middle of `B`'s forced north side, `(320, 200)`.
 #[wasm_bindgen_test]
@@ -467,7 +467,7 @@ fn a_position_pin_applies_to_a_straight_connector() -> Result<(), String> {
     check(d == "M 25 40 L 320 200", &format!("expected \"M 25 40 L 320 200\", got {d:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pinned connector stays at the same fraction of the same side after its node moves. `A` moves from `(0, 0)` to
 /// `(200, 50)`, so a quarter of the way along its south side becomes `(225, 90)`.
 #[wasm_bindgen_test]
@@ -490,7 +490,7 @@ fn a_pinned_connector_keeps_its_fraction_after_move_node() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A position pin overrides the node's own fixing points. `A` has three, at `x = 25`, `50` and `75` along its south
 /// side. Without a pin the connector snaps to one of those. A pin at `0.1` lands at `x = 10`, which is none of them.
 #[wasm_bindgen_test]
@@ -532,7 +532,7 @@ fn a_position_pin_overrides_the_nodes_edge_anchors() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A connector between two west sides turns beyond the further west of the two, and so enters its last node from
 /// outside it. `B`'s west edge is further west than `A`'s, so a bend at the midpoint between the two would still be east
 /// of `B` and double back through it.

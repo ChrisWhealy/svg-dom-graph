@@ -1,9 +1,9 @@
 //! CRC-32 as used by Ethernet, zip, gzip and PNG: the reflected polynomial `0xEDB88320`, a register that starts as all
-//! ones, and a result that is the register with all its bits flipped. Worked out one byte at a time with the table of 256
-//! entries, so that the demo can show each step. Nothing here touches the DOM or the library.
+//! ones, and a result that is the register with all its bits flipped. Worked out one byte at a time with the table of
+//! 256 entries, so that the demo can show each step. Nothing here touches the DOM or the library.
 
-/// The polynomial `x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1`, with its
-/// bits in reverse order, since the register is shifted right.
+/// The polynomial `x^32 + x^26 + x^23 + x^22 + x^16 + x^12 + x^11 + x^10 + x^8 + x^7 + x^5 + x^4 + x^2 + x + 1`, with
+/// its bits in reverse order, since the register is shifted right.
 pub(super) const POLYNOMIAL: u32 = 0xEDB8_8320;
 
 /// What the register holds before the first byte.
@@ -12,7 +12,7 @@ pub(super) const INITIAL: u32 = 0xFFFF_FFFF;
 /// What the last register is XORed with to make the result.
 pub(super) const FINAL_MASK: u32 = 0xFFFF_FFFF;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The register after a byte of value `byte` has been shifted through it, eight bits at a time: each time, shift right
 /// by one, and if the bit that fell out was a one, XOR in the polynomial. This is the table's entry for `byte`.
 const fn entry(byte: u8) -> u32 {
@@ -36,7 +36,7 @@ pub(super) const TABLE: [u32; 256] = {
     table
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What happened when one input byte was shifted into the register.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct Step {
@@ -77,7 +77,7 @@ pub(super) fn compute(bytes: &[u8]) -> Computation {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The CRC-32 of `bytes` worked out one bit at a time, with no table. The demo does not use it. The tests compare the
 /// table with it.
 #[cfg(test)]
@@ -92,7 +92,7 @@ pub(super) fn bitwise(bytes: &[u8]) -> u32 {
     register ^ FINAL_MASK
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the receiver concludes from the syndrome, which is the CRC that was sent XORed with the CRC of what arrived.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) enum Finding {

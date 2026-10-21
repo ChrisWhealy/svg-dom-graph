@@ -25,30 +25,35 @@
 //! - [`row_labels`] — every row label of a node labelled in scripts of unequal glyph width stays inside the node's box.
 //!
 //! - [`chacha20_walk`] — the ChaCha20 demo's own stepping toolbar, driven by real clicks: the walk's boundaries, what
-//!   survives a redraw, and that nodes stay draggable inside the redrawn diagram. Unlike the rest, this one runs against
-//!   the built demo gallery (`demo-server --build-only`), not the fixture.
+//!   survives a redraw, and that nodes stay draggable inside the redrawn diagram. Unlike the rest, this one runs
+//!   against the built demo gallery (`demo-server --build-only`), not the fixture.
 //! - [`huffman_walk`] — the Huffman demo's own stepping toolbar and text box: what each position shows, that stepping
-//!   back restores it, that editing the text starts the walk again, and what a redraw keeps. Also runs against the built
-//!   demo gallery.
+//!   back restores it, that editing the text starts the walk again, and what a redraw keeps. Also runs against the
+//!   built demo gallery.
 //! - [`text_nodes`] — the Markdown node and the text input node in the built demo gallery: lines inside the box, runs
 //!   drawn as bold, italic and code, real typing reaching the callback without panning or zooming, and a drag.
-//! - [`bit_values`] — bit arrays in the fixture: every width from 1 to 7 draws exactly that many digits inside its cell,
-//!   a node says its width, and a replacement of another width, or too wide a value, is refused.
-//! - [`base64`] — the Base64 panel in the built demo gallery: typing, both alphabets, final groups of one and two bytes,
-//!   an empty text, the cut at 256 bytes, and the focus and caret across the redraw. Also runs against the built demo
+//! - [`bit_values`] — bit arrays in the fixture: every width from 1 to 7 draws exactly that many digits inside its
+//!   cell, a node says its width, and a replacement of another width, or too wide a value, is refused.
+//! - [`base64`] — the Base64 panel in the built demo gallery: typing, both alphabets, final groups of one and two
+//!   bytes, an empty text, the cut at 256 bytes, and the focus and caret across the redraw. Also runs against the built
+//!   demo gallery.
+//! - [`utf8`] — the UTF-8 panel in the built demo gallery: the four buttons that choose a character, the column of
+//!   nodes that grows and shrinks with it, the template bits highlighted, and the focus across the redraw. Also runs
+//!   against the built demo gallery.
+//! - [`crc32`] — the CRC-32 demo in the window the gallery's panel opens: the checksum on opening, typing, an empty
+//!   text, the cut at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a
+//!   flipped bit. Also runs against the built demo gallery.
+//! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a
+//!   block, the buttons that choose the data and flip a bit, and the stepping toolbar. Also runs against the built demo
 //!   gallery.
-//! - [`utf8`] — the UTF-8 panel in the built demo gallery: the four buttons that choose a character, the column of nodes
-//!   that grows and shrinks with it, the template bits highlighted, and the focus across the redraw. Also runs against the
-//!   built demo gallery.
-//! - [`crc32`] — the CRC-32 demo in the window the gallery's panel opens: the checksum on opening, typing, an empty text, the cut
-//!   at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a flipped bit. Also runs against the built demo gallery.
-//! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block,
-//!   the buttons that choose the data and flip a bit, and the stepping toolbar. Also runs against the built demo gallery.
-//! - [`quicksort`] — the Quicksort panel in the built demo gallery: the array and the rows under it, the buttons that choose
-//!   another array, the stepping toolbar, what each step announces, and the zoom across redraws. Also runs against the
-//!   built demo gallery.
-//! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
-//!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
+//! - [`quicksort`] — the Quicksort panel in the built demo gallery: the array and the rows under it, the buttons that
+//!   choose another array, the stepping toolbar, what each step announces, and the zoom across redraws. Also runs
+//!   against the built demo gallery.
+//! - [`bubble_sort`] and [`shell_sort`] — the Bubble sort and Shell sort panels in the built demo gallery: which bars
+//!   are marked at each step, the swap that slides the two bars, how many steps a sorted array and one in reverse take,
+//!   and what a redraw keeps. The helpers that read the bars are shared with [`quicksort`], in [`sorting`].
+//! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's
+//!   accessibility tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
 //! The first nine drive the same shared Chrome instance against the sibling `cdp-test-fixture` wasm crate (built once,
 //! served locally) — see [`common`] for the shared setup, mirroring `svg-dom`'s own `cdp-integration-test` crate.
@@ -76,6 +81,7 @@ mod accessibility_tree;
 mod base64;
 mod bit_values;
 mod bounds;
+mod bubble_sort;
 mod chacha20_walk;
 mod common;
 mod connectors;
@@ -90,7 +96,9 @@ mod overlap_resolution;
 mod pan;
 mod quicksort;
 mod row_labels;
+mod shell_sort;
 mod small_drag;
+mod sorting;
 mod step_driver_accessibility;
 mod text_nodes;
 mod text_selection;

@@ -38,7 +38,7 @@ fn grid(id: &str) -> Result<(Scene, svg_dom_graph::NodeId, web_sys::Element), St
     Ok((scene, node, nth_group(id, 0)?))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each cell's own text and accessible name follow the new values, and the selection survives.
 #[wasm_bindgen_test]
 fn new_values_rewrite_each_cells_text_and_accessible_name_and_keep_the_selection() -> Result<(), String> {
@@ -77,7 +77,7 @@ fn new_values_rewrite_each_cells_text_and_accessible_name_and_keep_the_selection
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A different width or count is rejected, and a rejected call changes nothing.
 #[wasm_bindgen_test]
 fn incompatible_values_are_rejected_and_change_nothing() -> Result<(), String> {
@@ -98,7 +98,7 @@ fn incompatible_values_are_rejected_and_change_nothing() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A plain label node is rejected, and a rejected call changes nothing.
 #[wasm_bindgen_test]
 fn a_label_node_is_rejected() -> Result<(), String> {
@@ -122,7 +122,7 @@ fn a_label_node_is_rejected() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An operator node's own result is replaced in place, like a data node's. Its text and accessible name quote the new
 /// value, its operand and its selection are untouched, and a value of another type is rejected without a change.
 #[wasm_bindgen_test]
@@ -175,7 +175,7 @@ fn an_operator_result_is_replaced_in_place() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single-value node is replaced in place: its text, accessible name and tooltip all quote the new value, and its
 /// size, selection description and relationship clauses survive.
 #[wasm_bindgen_test]
@@ -228,7 +228,7 @@ fn a_single_value_node_is_replaced_in_place_with_its_name_tooltip_and_clauses_ke
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A named single-value node keeps its name in the accessible name, and a later value change replaces only the value. A
 /// second change after a relationship was added still finds it.
 #[wasm_bindgen_test]
@@ -258,7 +258,7 @@ fn a_named_single_value_node_keeps_its_name_across_repeated_replacements() -> Re
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single value of another width is rejected, and a rejected call leaves the text and label as they were.
 #[wasm_bindgen_test]
 fn a_single_value_of_another_width_is_rejected_and_changes_nothing() -> Result<(), String> {
@@ -283,7 +283,7 @@ fn a_single_value_of_another_width_is_rejected_and_changes_nothing() -> Result<(
     check(group.get_attribute("aria-label") == label, "a rejected call changed the label")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `PlainText` node is a single value too. Replacing it with another string of the same length rewrites its text and
 /// its accessible name.
 #[wasm_bindgen_test]
@@ -371,7 +371,7 @@ fn a_single_value_is_rewritten_only_when_it_changes() -> Result<(), String> {
     check(label.contains("u8 = 9"), &format!("got {label:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Only a Boolean icon ever changes colour. Replacing a number, a float or a UUID writes no `fill`, which matters since
 /// `set_data_values` is called for every step of an animation. A replaced icon does write one.
 #[wasm_bindgen_test]

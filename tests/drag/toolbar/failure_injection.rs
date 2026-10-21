@@ -38,7 +38,7 @@ impl Drop for FailingWrites {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The injector works: with it on, a write to the named attribute fails and one to any other does not.
 #[wasm_bindgen_test]
 fn the_write_failure_injector_fails_only_the_named_attribute() -> Result<(), String> {
@@ -57,7 +57,7 @@ fn the_write_failure_injector_fails_only_the_named_attribute() -> Result<(), Str
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A zoom whose `transform` cannot be written is not applied at all: it reports the error, `zoom_scale()` is what it
 /// was, and nothing is drawn. Once writes work again, the next zoom is one step from where the view really is — not
 /// two.
@@ -81,7 +81,7 @@ fn a_zoom_whose_write_fails_is_not_applied() -> Result<(), String> {
     check_close(drawn_scale("tx-zoom-fails")?, 1.25)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same from a view that is already zoomed: a failed reset keeps the zoom the graph is drawn at.
 #[wasm_bindgen_test]
 fn a_reset_whose_write_fails_keeps_the_zoom_that_is_drawn() -> Result<(), String> {
@@ -101,7 +101,7 @@ fn a_reset_whose_write_fails_keeps_the_zoom_that_is_drawn() -> Result<(), String
     check_close(drawn_scale("tx-reset-fails")?, 1.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A view already waiting for its frame is the view a failed change falls back to, still waiting. It is not lost, and
 /// not applied twice: once writes work again, the next zoom starts from it.
 #[wasm_bindgen_test]
@@ -127,7 +127,7 @@ async fn a_failed_zoom_falls_back_to_a_view_still_waiting_for_its_frame() -> Res
     check_close(drawn_scale("tx-pending-fails")?, 1.5625)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// If the graph has zoomed, the operation has succeeded, however the accessible name fares. The name is bookkeeping: it
 /// is put right by the next change, since a name that failed to be written is not treated as up to date.
 #[wasm_bindgen_test]
@@ -157,7 +157,7 @@ fn a_failure_writing_only_the_accessible_name_does_not_undo_or_fail_the_zoom() -
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same for the toolbar buttons' enabled state.
 #[wasm_bindgen_test]
 fn a_failure_writing_only_a_buttons_state_does_not_undo_or_fail_the_zoom() -> Result<(), String> {
@@ -185,7 +185,7 @@ fn a_failure_writing_only_a_buttons_state_does_not_undo_or_fail_the_zoom() -> Re
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A wheel or pan change is drawn by a frame, and a frame has nobody to report an error to. If its write fails, the
 /// view is not lost: it stays waiting, so the next thing that draws the view draws it, and the scene and the drawing
 /// agree again.

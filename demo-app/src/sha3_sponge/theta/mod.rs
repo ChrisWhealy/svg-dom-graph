@@ -363,7 +363,7 @@ pub(crate) fn output(a: [[u64; 5]; 5]) -> [[u64; 5]; 5] {
     xor_loop::outputs(a, theta_d::outputs(crate::selection::theta_c_outputs(a)))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows `result` in "Theta Output" once the walk is on the last function, `XOR loop` (position `2`), and zeros before
 /// then.
 ///
@@ -376,7 +376,7 @@ fn show_theta_output(scene: &Scene, output: NodeId, result: &[u64], position: us
     crate::util::mark_unreached(scene, output, &crate::util::all_if(position < 2, result.len()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Puts `functions[current]` in focus and makes it, alone, clickable: every other function loses both. Safe to call
 /// again for the same `current`, so the walk can step back and forth freely.
 ///

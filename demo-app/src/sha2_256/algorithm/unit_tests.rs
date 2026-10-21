@@ -16,9 +16,9 @@ fn digest_of(message: &[u8]) -> Result<String, String> {
     Ok(digest_hex(&trace.digest))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Constants
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_first_primes_end_where_the_standard_says() -> Result<(), String> {
     check_eq(first_primes(8), vec![2, 3, 5, 7, 11, 13, 17, 19])?;
@@ -40,12 +40,12 @@ fn the_round_constants_start_and_end_as_the_standard_says() -> Result<(), String
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Recomputing the constants
 //
 //   The tables are fixed by the standard and declared as constants. These recompute them from the primes, with exact
 //   integer arithmetic, so a mistyped digit cannot go unnoticed.
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// The first `n` prime numbers.
 fn first_primes(n: usize) -> Vec<u32> {
@@ -101,9 +101,9 @@ fn the_round_constant_table_is_the_cube_root_fractions_of_the_first_sixty_four_p
     check_eq(ROUND_CONSTANTS.to_vec(), recomputed)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   The functions
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn choice_takes_f_where_e_is_set_and_g_where_it_is_clear() -> Result<(), String> {
     check_eq(choice(0xFFFF_0000, 0x1234_5678, 0x9ABC_DEF0), 0x1234_DEF0)
@@ -125,9 +125,9 @@ fn the_sigmas_are_their_own_rotations_and_shifts() -> Result<(), String> {
     check_eq(big_sigma1(w), w.rotate_right(6) ^ w.rotate_right(11) ^ w.rotate_right(25))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   The block and the schedule
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_block_is_the_message_then_the_terminator_then_the_bit_length() -> Result<(), String> {
     let block = message_block(b"abc").ok_or("fits one block")?;
@@ -169,9 +169,9 @@ fn the_schedule_starts_with_the_block_and_expands_from_it() -> Result<(), String
     check_eq(schedule[19], 0x6000_03c6)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   The rounds and the digest
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_round_shifts_the_working_variables_down_and_computes_a_and_e() -> Result<(), String> {
     let state = [1, 2, 3, 4, 5, 6, 7, 8];

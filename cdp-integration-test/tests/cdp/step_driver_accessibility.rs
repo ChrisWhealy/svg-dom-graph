@@ -29,7 +29,7 @@ const PAGES: [&str; 5] = [
 const DRIVER: &str = "g[aria-label^=\"Step:\"]";
 const VIEWPORT: (u32, u32) = (1800, 1800);
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `Accessibility.getPartialAXTree` for one node, as a request and a reply this file defines itself.
 ///
 /// The `headless_chrome` bindings have a typed version, but it cannot read a node that Chrome ignores because of
@@ -76,7 +76,7 @@ fn is_hidden(tab: &Tab, element: &Element<'_>) -> Result<bool, String> {
     Ok(ax_node(tab, element)?.is_none_or(|node| node["ignored"].as_bool() == Some(true)))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn every_demos_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
     for page in PAGES {
@@ -84,8 +84,8 @@ fn every_demos_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar
         tab.call_method(Accessibility::Enable(None))
             .map_err(|e| format!("{page}: Accessibility.enable failed: {e}"))?;
 
-        // A nested scene has its own driver, so a page can have several. Each must be hidden, along with a number
-        // cell inside it: hiding only the group's own node would not stop a screen reader reaching the cells.
+        // A nested scene has its own driver, so a page can have several. Each must be hidden, along with a number cell
+        // inside it: hiding only the group's own node would not stop a screen reader reaching the cells.
         let drivers = tab
             .find_elements(DRIVER)
             .map_err(|e| format!("{page}: could not find the Step drivers: {e}"))?;

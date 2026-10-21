@@ -1,11 +1,11 @@
-//! Base64 encoding as RFC 4648 defines it, worked out one group of three bytes at a time so that the demo can show every
-//! step. Nothing here touches the DOM or the library.
+//! Base64 encoding as RFC 4648 defines it, worked out one group of three bytes at a time so that the demo can show
+//! every step. Nothing here touches the DOM or the library.
 
 /// The 64 characters a six-bit value stands for in standard Base64, in order (RFC 4648 §4).
 const STANDARD: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/";
 
-/// The alphabet of Base64URL (RFC 4648 §5): the same, but with `-` for `+` and `_` for `/`, so that the text can be used
-/// in a URL or a file name without escaping.
+/// The alphabet of Base64URL (RFC 4648 §5): the same, but with `-` for `+` and `_` for `/`, so that the text can be
+/// used in a URL or a file name without escaping.
 const URL_SAFE: &[u8; 64] = b"ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 
 /// Which 64 characters the six-bit values stand for.
@@ -28,7 +28,7 @@ impl Alphabet {
 /// The character that fills the last group when the input does not divide into whole groups of three bytes.
 pub(super) const PADDING: u8 = b'=';
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The four six-bit values that three bytes make when their 24 bits are cut into four pieces. A group that is short of
 /// bytes is padded with zero bits first.
 pub(super) fn sextets(group: [u8; 3]) -> [u8; 4] {
@@ -40,7 +40,7 @@ pub(super) fn sextets(group: [u8; 3]) -> [u8; 4] {
     ]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The UTF-8 bytes of `text`, cut off at the last whole character that fits in `max` bytes. Cutting at exactly `max`
 /// could leave the first byte or two of a multi-byte character, which no one could decode back into text.
 pub(crate) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
@@ -51,7 +51,7 @@ pub(crate) fn utf8_prefix(text: &str, max: usize) -> &[u8] {
     &text.as_bytes()[..end]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the page says about the length of the text: how many bytes it has out of `max`, and when it has more than are
 /// encoded, how many were left out. `typed` is the length of the whole text in bytes and `encoded` the length of
 /// [`utf8_prefix`] of it.
@@ -66,14 +66,14 @@ pub(crate) fn length_note(typed: usize, encoded: usize, max: usize) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many characters `len` input bytes encode to, counting the padding: four for each group of three bytes, or part
 /// of one.
 pub(super) fn encoded_len(len: usize) -> usize {
     len.div_ceil(3) * 4
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything the demo shows about encoding `input`: the six-bit values of every group, and the characters they stand
 /// for, with the padding.
 pub(super) struct Encoded {

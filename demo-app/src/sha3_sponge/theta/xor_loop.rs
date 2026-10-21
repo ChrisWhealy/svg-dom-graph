@@ -250,7 +250,8 @@ pub(super) fn build_scene(
         )
         .map_err(stringify)?;
     scene.add_edge(xor_node, output).map_err(stringify)?;
-    // Unstarted, the two working values are placeholders. Cells up to `n` are written to the output, in row-major order.
+    // Unstarted, the two working values are placeholders. Cells up to `n` are written to the output, in row-major
+    // order.
     for node in [d_cell, a_cell] {
         crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
     }

@@ -11,7 +11,7 @@ use std::time::Duration;
 const MARKDOWN_DIAGRAM: &str = "#markdown-diagram";
 const DIAGRAM: &str = "#text-input-diagram";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The Markdown panel, once its node is drawn.
 fn open_markdown() -> Result<DemoTab, String> {
     new_demo_tab(
@@ -57,7 +57,7 @@ fn echo(tab: &Tab) -> Result<String, String> {
 /// The Markdown node's `<g>`: the first node group, which is the one holding the headings.
 const MARKDOWN_GROUP: &str = "g[aria-label^=\"Text\"]";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every line is drawn inside the box, whatever its length, and the box is as tall as its text.
 #[test]
 fn every_line_of_the_markdown_is_drawn_inside_its_box() -> Result<(), String> {
@@ -92,7 +92,7 @@ fn every_line_of_the_markdown_is_drawn_inside_its_box() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A text input node narrower than its label shrinks the label, so it stays inside the node's box.
 #[test]
 fn a_label_wider_than_its_text_input_node_shrinks_to_fit() -> Result<(), String> {
@@ -112,7 +112,7 @@ fn a_label_wider_than_its_text_input_node_shrinks_to_fit() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Bold, italic and code runs are drawn as tspans with the matching weight, slant and colour, and headings are larger.
 #[test]
 fn bold_italic_and_code_are_drawn_as_such_and_headings_are_larger() -> Result<(), String> {
@@ -168,7 +168,7 @@ fn bold_italic_and_code_are_drawn_as_such_and_headings_are_larger() -> Result<()
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An escaped marker is literal, and a word with no spaces that is longer than a line is split across lines.
 #[test]
 fn escapes_are_literal_and_a_too_long_word_is_split() -> Result<(), String> {
@@ -199,7 +199,7 @@ fn escapes_are_literal_and_a_too_long_word_is_split() -> Result<(), String> {
     check_eq(pieces, word)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Typing in the text box, with a real keyboard, reaches the callback, and does not pan or zoom the diagram even for the
 /// keys that would, such as `+` and the arrow keys.
 #[test]
@@ -223,7 +223,7 @@ fn real_typing_reaches_the_callback_and_never_pans_or_zooms() -> Result<(), Stri
     check_eq(text(&tab, "document.activeElement.tagName.toLowerCase()")?, "input".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text box is named for assistive technology by the node's label, and its node is a labelled group.
 #[test]
 fn the_text_input_node_is_named_for_assistive_technology() -> Result<(), String> {
@@ -244,7 +244,7 @@ fn the_text_input_node_is_named_for_assistive_technology() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The Markdown node is a labelled group.
 #[test]
 fn the_markdown_node_is_a_labelled_group() -> Result<(), String> {
@@ -258,7 +258,7 @@ fn the_markdown_node_is_a_labelled_group() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A drag of the Markdown node moves it.
 #[test]
 fn the_markdown_node_drags() -> Result<(), String> {
@@ -284,7 +284,7 @@ fn the_markdown_node_drags() -> Result<(), String> {
     check(transform(&tab)? != before, "the node did not move")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text input node's `<g>`, found by its label.
 const INPUT_GROUP: &str = "g[aria-label^=\"Text to echo\"]";
 
@@ -322,7 +322,7 @@ fn calls(tab: &Tab) -> Result<String, String> {
     text(tab, "document.getElementById('text-input-calls').textContent")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Replacing the text from code puts it in the text box, text outside the Basic Multilingual Plane included, and does
 /// not call the callback, which then still hears of the next real keystroke.
 #[test]
@@ -352,7 +352,7 @@ fn replacing_the_text_from_code_does_not_call_the_callback() -> Result<(), Strin
     check_eq(echo(&tab)?, "Replaced \u{2603} \u{1F600}!?".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pointer drag that starts on the node's label row moves the node. One that starts inside the text box selects text
 /// and leaves the node where it is, and a click inside the text box places the caret there.
 #[test]
@@ -388,7 +388,7 @@ fn a_drag_outside_the_text_box_moves_the_node_and_inside_it_selects_text() -> Re
     check_eq(input_group_transform(&tab)?, moved)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size `measure_markdown_node` reports is the size the node is then drawn at, and is the size of its drawn box.
 #[test]
 fn the_measured_size_of_the_markdown_node_is_the_size_it_is_drawn_at() -> Result<(), String> {
@@ -416,7 +416,7 @@ fn the_measured_size_of_the_markdown_node_is_the_size_it_is_drawn_at() -> Result
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Assistive technology reads the Markdown node's text as it is, the markers of its lists included.
 #[test]
 fn the_markdown_nodes_text_is_there_for_assistive_technology_to_read() -> Result<(), String> {

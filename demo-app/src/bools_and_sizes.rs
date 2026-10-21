@@ -57,7 +57,7 @@ const TRUTH_TABLES: [(&str, BoolFormat); 3] = [
     ("bools-icon-diagram", BoolFormat::Icon),
 ];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A column of `values` in `format`, each labelled with the matching one of `labels`.
 fn column(values: NodeValues, format: DataFormat, labels: &'static [&'static str]) -> DataNodeContent {
     DataNodeContent::new(values, format)
@@ -70,23 +70,23 @@ fn flag(value: bool, format: DataFormat) -> DataNodeContent {
     DataNodeContent::new(NodeValues::Bool(vec![value]), format)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Boolean demo: a Boolean in every format, and then a truth table for each of the three `BoolFormat`s.
 ///
 /// - **Booleans in every format.**
 ///
-///   One line for each of the words, the bits, and an icon (a green check mark or a red cross).
-///   A line holds `true` and `false` on their own and then both in an array. A fourth line shows hexadecimal, which is
-///   the byte that a Boolean is held in. Every format gives `true` and `false` a cell of the same width, so a node that
-///   changes from one to the other does not outgrow its cells. A screen reader is told `true` or `false` for a mark, and
-///   not the name of its glyph.
+///   One line for each of the words, the bits, and an icon (a green check mark or a red cross). A line holds `true` and
+///   `false` on their own and then both in an array. A fourth line shows hexadecimal, which is the byte that a Boolean
+///   is held in. Every format gives `true` and `false` a cell of the same width, so a node that changes from one to the
+///   other does not outgrow its cells. A screen reader is told `true` or `false` for a mark, and not the name of its
+///   glyph.
 /// - **Three truth tables.**
 ///
-///   Each has a column for each of `AND`, `OR` and `XOR`, and a row for each pair of operands,
-///   and each writes its operands and its results in one `BoolFormat`: first the words, then the bits, then the marks.
-///   The logical operators accept Booleans in any format, and the result of each is worked out here in plain Rust, as
-///   it is for every operator node. The shifts, the rotations and the arithmetic operators do not accept a Boolean,
-///   since there is no sum of two of them and no `true` to rotate.
+///   Each has a column for each of `AND`, `OR` and `XOR`, and a row for each pair of operands, and each writes its
+///   operands and its results in one `BoolFormat`: first the words, then the bits, then the marks. The logical
+///   operators accept Booleans in any format, and the result of each is worked out here in plain Rust, as it is for
+///   every operator node. The shifts, the rotations and the arithmetic operators do not accept a Boolean, since there
+///   is no sum of two of them and no `true` to rotate.
 ///
 /// # Errors
 ///
@@ -123,7 +123,7 @@ pub(crate) fn build_bools_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a truth table into `#{svg_id}` inside `#{svg_id}-stage`: one column for each of `AND`, `OR` and `XOR`, and in
 /// each a row for every pair of operands. Both operands, and the result, are written in `format`. Returns the scene.
 ///
@@ -172,13 +172,13 @@ fn build_truth_table(svg_id: &str, format: DataFormat) -> Result<Scene, String> 
     Ok(scene)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the pointer-sized integer demo: `usize` and `isize`, each as a single value and as a column of several, in
 /// decimal, hexadecimal and binary.
 ///
 /// Their width is that of the target the demo runs on. That is 32 bits on `wasm32`, so the largest `usize` has ten
-/// digits and its hexadecimal is four bytes, where on a 64-bit host it would have twenty digits and eight bytes. The most
-/// negative `isize` is the widest in its node, since its sign makes it a character longer than the largest.
+/// digits and its hexadecimal is four bytes, where on a 64-bit host it would have twenty digits and eight bytes. The
+/// most negative `isize` is the widest in its node, since its sign makes it a character longer than the largest.
 ///
 /// # Errors
 ///

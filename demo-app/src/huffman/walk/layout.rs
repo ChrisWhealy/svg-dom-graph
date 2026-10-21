@@ -32,9 +32,9 @@ impl Spacing {
     }
 }
 
-/// The width of one character of a box's text, with some to spare, and the space left on either side of the text. A data
-/// node's box is its text plus 6 on each side. The scene centres each box on its measured width, so this only decides how
-/// far apart the boxes are laid out.
+/// The width of one character of a box's text, with some to spare, and the space left on either side of the text. A
+/// data node's box is its text plus 6 on each side. The scene centres each box on its measured width, so this only
+/// decides how far apart the boxes are laid out.
 const CHAR_WIDTH: f64 = 8.2;
 const TEXT_PADDING: f64 = 16.0;
 /// The narrowest a box can be.
@@ -64,7 +64,8 @@ impl Placed {
     }
 }
 
-/// The width of `node`'s box: as wide as its text needs. A leaf reads as [`leaf_label`] does, and a branch as its weight.
+/// The width of `node`'s box: as wide as its text needs. A leaf reads as [`leaf_label`] does, and a branch as its
+/// weight.
 fn width_of(node: &Node) -> f64 {
     let chars = match *node {
         Node::Leaf { symbol, weight } => leaf_label(symbol, weight).chars().count(),

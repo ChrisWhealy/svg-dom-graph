@@ -49,7 +49,8 @@ const HEX_DUMP_BYTES: &[u8] = b"Selecting a byte marks it twice.\x00\x01\x02\x7f
 /// deliberately does not divide evenly by this, so the grid's own last row renders short.
 const SELECTION_TWO_D_COLS: usize = 4;
 
-/// How many columns the labelled two-dimensional example uses: one, so every value has a row, and so a label, of its own.
+/// How many columns the labelled two-dimensional example uses: one, so every value has a row, and so a label, of its
+/// own.
 const LABELLED_COLS: usize = 1;
 
 pub(crate) const INITIAL_5X5_BUFFER: [[u64; 5]; 5] = [
@@ -117,8 +118,8 @@ struct ThetaCDemo {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the one-dimensional array demo: six `u8` values in one row, stepped by the node's own selection toolbar.
 ///
-/// A one-dimensional array (`GridLayout::Rows(1)`) only ever needs [`Selection::Cell`], since there is no separate row to
-/// highlight distinctly from the one element within it. The walk starts unstarted, before element `0`, with nothing
+/// A one-dimensional array (`GridLayout::Rows(1)`) only ever needs [`Selection::Cell`], since there is no separate row
+/// to highlight distinctly from the one element within it. The walk starts unstarted, before element `0`, with nothing
 /// highlighted. [`Scene::show_selection_toolbar`]'s Next and Previous clamp at both ends rather than wrapping.
 ///
 /// # Errors
@@ -154,10 +155,10 @@ pub(crate) fn build_selection_1d_demo() -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the two-dimensional array demo: two arrays side by side, each stepped by its own selection toolbar.
 ///
-/// 1. The first (`GridLayout::Columns`([`SELECTION_TWO_D_COLS`])) steps through its values in row-major order. Each step
-///    highlights the whole row currently being processed, in [`Selection::Row`]'s own band colour. It also highlights the
-///    specific cell currently being processed within that row, in the stronger focus colour — the two-tier highlight a
-///    data-flow walk over a matrix needs.
+/// 1. The first (`GridLayout::Columns`([`SELECTION_TWO_D_COLS`])) steps through its values in row-major order. Each
+///    step highlights the whole row currently being processed, in [`Selection::Row`]'s own band colour. It also
+///    highlights the specific cell currently being processed within that row, in the stronger focus colour — the
+///    two-tier highlight a data-flow walk over a matrix needs.
 /// 2. Its own value count leaves the last row short by two cells, a deliberately ragged grid. Stepping into that row
 ///    bands only its own real cells, demonstrating live what `resolve_selection`'s own incomplete-grid tests already
 ///    cover: a nominal row/column position is not always a real one.
@@ -210,9 +211,9 @@ pub(crate) fn build_selection_2d_demo() -> Result<(), String> {
 /// [`rebuild_theta_c_diagram`]'s own doc comment.
 ///
 /// The walk starts unstarted — before row `0` is ever processed, nothing is highlighted and `O` is entirely blank. The
-/// chain is still drawn over five zero operands, rather than left out entirely. An absent chain would read as "this does
-/// not exist yet," when the truth is "this has not run yet." `O` shows exactly rows `0..=n` of `outputs` for the walk's
-/// current position `Some(n)`, and nothing for `None` — see [`display_outputs`]'s own doc comment. Since that is
+/// chain is still drawn over five zero operands, rather than left out entirely. An absent chain would read as "this
+/// does not exist yet," when the truth is "this has not run yet." `O` shows exactly rows `0..=n` of `outputs` for the
+/// walk's current position `Some(n)`, and nothing for `None` — see [`display_outputs`]'s own doc comment. Since that is
 /// recomputed fresh from the walk's own current position on every step, "Previous" un-reveals a row exactly as readily
 /// as "Next" reveals one.
 ///
@@ -233,10 +234,10 @@ pub(crate) fn build_selection_thetac_demo() -> Result<(), String> {
     rebuild_theta_c_diagram(None, display_outputs(outputs, None), theta_c_demo)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The text `#selection-hexdump-index` shows for the selected byte `to` of [`HEX_DUMP_BYTES`]: its position, in decimal and
-/// in hexadecimal, as the offset column of a dump shows it, and the byte itself. "not started" is the state before byte
-/// `0`.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text `#selection-hexdump-index` shows for the selected byte `to` of [`HEX_DUMP_BYTES`]: its position, in decimal
+/// and in hexadecimal, as the offset column of a dump shows it, and the byte itself. "not started" is the state before
+/// byte `0`.
 fn hex_dump_status(to: Option<usize>) -> String {
     match to.and_then(|i| HEX_DUMP_BYTES.get(i).map(|&b| (i, b))) {
         Some((i, byte)) => format!("byte {i} (offset {i:08x}), value {byte:02x}"),
@@ -244,7 +245,7 @@ fn hex_dump_status(to: Option<usize>) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the hex dump demo: [`HEX_DUMP_BYTES`] as `hexdump -C` shows them, with the offset of every line, in a node
 /// that has a name and a row for its own selection toolbar. The toolbar is drawn inside the node's box, under the name,
 /// and not at the edge of the canvas.
@@ -297,7 +298,7 @@ pub(crate) fn build_selection_hexdump_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws one two-dimensional example's array, `content`, named `name`, into `#{svg_id}` inside `#{svg_id}-stage`. Sizes
 /// the canvas to fit it and the toolbar below it. Returns the scene and the array's node.
 ///
@@ -418,8 +419,8 @@ fn show_two_d_toolbar(
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Row `i`'s own `ThetaC` result — a pure function of `a`. Shared by every caller that needs it:
-/// [`build_selection_thetac_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both standalone
-/// and nested starting from row `0` already stepped.
+/// [`build_selection_thetac_demo`]'s own initial state, and [`crate::sha3_sponge::theta`]'s own nested walk, both
+/// standalone and nested starting from row `0` already stepped.
 pub(crate) fn theta_c_outputs(a: [[u64; 5]; 5]) -> [u64; 5] {
     a.map(|row| row[0] ^ row[1] ^ row[2] ^ row[3] ^ row[4])
 }

@@ -1,7 +1,7 @@
 //! The UTF-8 panel:
 //!
-//! - `panel-utf8` / `#utf8-diagram` — [`build_utf8_demo`]: UTF-8 encoding of one of four characters, one for each length
-//!   of sequence.
+//! - `panel-utf8` / `#utf8-diagram` — [`build_utf8_demo`]: UTF-8 encoding of one of four characters, one for each
+//!   length of sequence.
 
 pub(crate) mod encode;
 mod layout;
@@ -45,8 +45,8 @@ thread_local! {
 const STAGE_ID: &str = "utf8-diagram-stage";
 const DIAGRAM_ID: &str = "utf8-diagram";
 
-/// The room east of the nodes for the zoom toolbar, and the gap between one row of the column and the next, which is wide
-/// enough for a connector, and between the note and the row under it.
+/// The room east of the nodes for the zoom toolbar, and the gap between one row of the column and the next, which is
+/// wide enough for a connector, and between the note and the row under it.
 const TOOLBAR_ROOM: f64 = 80.0;
 const ROW_GAP: f64 = 50.0;
 
@@ -56,7 +56,8 @@ const NODE_GAP: f64 = 20.0;
 /// The gap between the buttons and the note under them.
 const NOTE_GAP: f64 = 20.0;
 
-/// The size of a button and the gap between one and the next. The buttons are as wide as they need to be for the four of them to be as wide as the widest row of bits, and the note under them is as wide as the four.
+/// The size of a button and the gap between one and the next. The buttons are as wide as they need to be for the four
+/// of them to be as wide as the widest row of bits, and the note under them is as wide as the four.
 const MIN_BUTTON_WIDTH: f64 = 180.0;
 const BUTTON_HEIGHT: f64 = 36.0;
 const BUTTON_GAP: f64 = 16.0;
@@ -142,15 +143,16 @@ fn build(selected: usize) -> Result<(), String> {
     let encoded = encode(c);
     let len = encoded.bytes.len();
 
-    // Everything is centred on one axis that stays put: the buttons, the note under them, and every row of the column. It is
-    // as wide as a row of four bytes.
+    // Everything is centred on one axis that stays put: the buttons, the note under them, and every row of the column.
+    // It is as wide as a row of four bytes.
     let byte_box = scene
         .measure_named_data_node(&byte_name("UTF-8 bits", SAMPLES.len(), 0), &bit_row(&[0; 8])?)
         .map_err(stringify)?
         .width;
     let widest_row = SAMPLES.len() as f64 * byte_box + (SAMPLES.len() - 1) as f64 * NODE_GAP;
-    // The four buttons, and the note under them, are as wide as the widest row of bits, so that the block has the same width
-    // for every character, and the margin at its left is one margin, not more because a row is wider than the buttons.
+    // The four buttons, and the note under them, are as wide as the widest row of bits, so that the block has the same
+    // width for every character, and the margin at its left is one margin, not more because a row is wider than the
+    // buttons.
     let count = SAMPLES.len() as f64;
     let button_width = ((widest_row - (count - 1.0) * BUTTON_GAP) / count).max(MIN_BUTTON_WIDTH);
     let buttons_width = count * button_width + (count - 1.0) * BUTTON_GAP;
@@ -158,8 +160,8 @@ fn build(selected: usize) -> Result<(), String> {
     let axis = MARGIN + span / 2.0;
     let left = axis - buttons_width / 2.0;
     let buttons_bottom = add_buttons(&document, selected, left, button_width)?;
-    // The contents of the two rows of bits. A group is as wide as the bits the template leaves in its byte, so the groups
-    // are uneven, and the bytes are eight wide.
+    // The contents of the two rows of bits. A group is as wide as the bits the template leaves in its byte, so the
+    // groups are uneven, and the bytes are eight wide.
     let mut from = 0;
     let mut groups = Vec::with_capacity(len);
     for (n, &width) in payload_groups(len).iter().enumerate() {
@@ -170,10 +172,10 @@ fn build(selected: usize) -> Result<(), String> {
     for n in 0..len {
         byte_rows.push((byte_name("UTF-8 bits", len, n), bit_row(&encoded.bits[8 * n..8 * n + 8])?));
     }
-    // The row of bytes is centred on the axis the way a person sees it: the node in the middle, or the gap between the two
-    // in the middle, is on the axis. Each group of code point bits is then centred over the byte it fills, so that the
-    // groups and the bytes are in the same columns however uneven the groups are. The bits of a group are not always
-    // directly over the bits of the byte that they fill, since the groups are narrower than the bytes.
+    // The row of bytes is centred on the axis the way a person sees it: the node in the middle, or the gap between the
+    // two in the middle, is on the axis. Each group of code point bits is then centred over the byte it fills, so that
+    // the groups and the bytes are in the same columns however uneven the groups are. The bits of a group are not
+    // always directly over the bits of the byte that they fill, since the groups are narrower than the bytes.
     let widths_of = |rows: &[(String, DataNodeContent)]| -> Result<Vec<f64>, String> {
         rows.iter()
             .map(|(name, content)| {
@@ -199,8 +201,8 @@ fn build(selected: usize) -> Result<(), String> {
         }
     };
     let mut nodes = Vec::new();
-    // The note is under the buttons, as wide as the row of them. Its height depends on the character, and the column is under
-    // it, so room is kept for the tallest, and the column stays where it is as the character changes.
+    // The note is under the buttons, as wide as the row of them. Its height depends on the character, and the column is
+    // under it, so room is kept for the tallest, and the column stays where it is as the character changes.
     let note_top = buttons_bottom + NOTE_GAP;
     let mut note_height = 0.0_f64;
     for sample in SAMPLES {
@@ -351,16 +353,16 @@ fn choose(action: &str) {
 ///
 /// 1. The code point, as the hexadecimal number Unicode gives the character.
 /// 2. The bits of the code point that go into the bytes, as many as the template has room for: 7, 11, 16 or 21.
-/// 3. The bits of the encoded bytes, a byte to a row. A character takes one byte up to U+007F, two up to U+07FF, three up
-///    to U+FFFF and four above that. The bits of the template, which say how long the sequence is and where each byte
-///    sits in it, are highlighted. The rest are the bits of step 2, in order.
+/// 3. The bits of the encoded bytes, a byte to a row. A character takes one byte up to U+007F, two up to U+07FF, three
+///    up to U+FFFF and four above that. The bits of the template, which say how long the sequence is and where each
+///    byte sits in it, are highlighted. The rest are the bits of step 2, in order.
 /// 4. The bytes in hexadecimal. These are what is stored or sent.
 ///
 /// A note under the buttons says why the character takes that many bytes. So the column grows and shrinks with the
 /// character: the bits of the bytes have one, two, three or four rows. Every value is worked out in plain Rust by
-/// [`encode`], which fills in the template and is tested against the standard library's own encoder for every character.
-/// The library does no encoding. A node holds the same number of values for as long as it lives, so choosing a character
-/// draws the scene again.
+/// [`encode`], which fills in the template and is tested against the standard library's own encoder for every
+/// character. The library does no encoding. A node holds the same number of values for as long as it lives, so choosing
+/// a character draws the scene again.
 ///
 /// # Errors
 ///

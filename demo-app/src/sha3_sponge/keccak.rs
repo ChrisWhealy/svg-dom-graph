@@ -309,8 +309,8 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     // smaller visual polish this feature does without.
 
     // Shrink this round's own `<svg>` to its content. The width is the rightmost of "Round Constants" and the function
-    // row, and the height is the bottom of "A Bytes Output". Each gets the left margin, and the width also gets room for
-    // the East toolbar. The stepping toolbar [`attach_toolbar`] adds is at the top, inside `TOP_Y`.
+    // row, and the height is the bottom of "A Bytes Output". Each gets the left margin, and the width also gets room
+    // for the East toolbar. The stepping toolbar [`attach_toolbar`] adds is at the top, inside `TOP_Y`.
     const TOOLBAR_ALLOWANCE: f64 = 60.0;
     let a_out_rect = scene.node_rect(a_out).map_err(stringify)?;
     let right = (rc_rect.origin.x + rc_rect.size.width).max(iota_rect.origin.x + iota_rect.size.width);

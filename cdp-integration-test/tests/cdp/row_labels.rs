@@ -12,7 +12,7 @@ use crate::common::new_tab;
 /// is rounded to the browser's own layout units, so an exact comparison would fail on rounding alone.
 const TOLERANCE: f64 = 0.5;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The fixture's `labelled` node (`#diagram > g.svg-dom-graph-content > g:nth-of-type(9)`) has four rows labelled in
 /// Latin, CJK, combining marks and Latin again. Every visible row label's own bounding box must lie within the node's
 /// outer box, which is the node's own first `<rect>`.

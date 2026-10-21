@@ -385,7 +385,7 @@ fn add_binary_operator_node_rejects_a_multi_value_result() -> Result<(), String>
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two operator nodes whose results differ only in being signed or unsigned have different accessible names and
 /// tooltips, because the colour that tells them apart is invisible to assistive technology.
 #[wasm_bindgen_test]

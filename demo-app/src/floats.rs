@@ -163,8 +163,8 @@ fn content_group(document: &web_sys::Document) -> Result<web_sys::Element, Strin
 /// Builds the floating point demo: nine values, and one node for each way of writing them. Each line of nodes is read
 /// across, and the rows line up, so a row is one value written every way.
 ///
-/// - **Line 1: significant digits and decimal places.** The first node is the shortest digits that read back as the same
-///   value. Then come decimal places, which count the digits after the point whatever the size of the value, and
+/// - **Line 1: significant digits and decimal places.** The first node is the shortest digits that read back as the
+///   same value. Then come decimal places, which count the digits after the point whatever the size of the value, and
 ///   significant digits, which count from the first nonzero digit. So two decimal places keep `0.000123456` as `-0.00`,
 ///   and three significant digits keep it as `-0.000123`. The digits of a large value that are not significant are
 ///   written as zeros.
@@ -238,8 +238,8 @@ pub(crate) fn build_float_demo() -> Result<(), String> {
             tallest = tallest.max(rect.size.height);
         }
 
-        // A picture is as wide as its node, so its height is known only now that the node's width is. The nodes of
-        // this line are then moved down to make room for the tallest picture above them.
+        // A picture is as wide as its node, so its height is known only now that the node's width is. The nodes of this
+        // line are then moved down to make room for the tallest picture above them.
         let picture_room = placed
             .iter()
             .filter_map(|&(_, image, _, width)| image.map(|i| width * i.height / i.width))

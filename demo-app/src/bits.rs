@@ -34,9 +34,9 @@ fn in_every_format(what: &str, values: &NodeValues) -> Vec<Item> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the bit array demo: for each width from 1 to 7, a single value and several values, each written in
-/// decimal, hexadecimal and binary. Every box is draggable.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the bit array demo: for each width from 1 to 7, a single value and several values, each written in decimal,
+/// hexadecimal and binary. Every box is draggable.
 ///
 /// A [`BitValues`] holds values that are all exactly `width` bits wide, and refuses one that does not fit. The binary
 /// format writes exactly `width` digits with no gap, since the grouping of a byte into two nybbles means nothing for a

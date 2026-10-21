@@ -305,7 +305,7 @@ pub fn check_close(got: f64, expected: f64) -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many DOM mutations (text, attribute or child changes) `group` sees while `act` runs.
 pub fn mutations_during(group: &web_sys::Element, act: impl FnOnce() -> Result<(), String>) -> Result<u32, String> {
     let ignore = wasm_bindgen::closure::Closure::wrap(Box::new(|_: js_sys::Array, _: web_sys::MutationObserver| {})

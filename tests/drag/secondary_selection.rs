@@ -16,7 +16,7 @@ const FOCUS_FILL: &str = "#ff6b4a";
 const BAND_FILL: &str = "#ffe066";
 const DEFAULT_FILL: &str = "#fdebd3";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A 5-column, 2-row `u8` grid in a fresh scene, plus the inner cell `<rect>`s of its own one `<g>`.
 fn grid(id: &str) -> Result<(Scene, svg_dom_graph::NodeId, Vec<web_sys::Element>, web_sys::Element), String> {
     let svg = make_svg(id, Size::new(400.0, 260.0), Size::new(400.0, 260.0));
@@ -48,7 +48,7 @@ fn attr(cell: &web_sys::Element, name: &str) -> String {
     cell.get_attribute(name).unwrap_or_default()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A secondary cell gets its own fill, a dashed outline, and a thicker stroke than the default; clearing restores every
 /// one of them.
 #[wasm_bindgen_test]
@@ -87,7 +87,7 @@ fn secondary_cells_get_their_own_fill_and_a_dashed_outline_and_clearing_restores
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `set_selection` neither clears nor is cleared by the secondary cells, and the toolbar-visible primary `Selection` is
 /// untouched by secondary updates. Precedence: focus, then secondary, then band.
 #[wasm_bindgen_test]
@@ -126,7 +126,7 @@ fn secondary_selection_is_independent_of_the_primary_one_and_ranks_between_focus
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Replacement, duplicates, ordering and an identical set are all handled.
 #[wasm_bindgen_test]
 fn secondary_selection_replaces_dedups_and_ignores_order() -> Result<(), String> {
@@ -160,7 +160,7 @@ fn secondary_selection_replaces_dedups_and_ignores_order() -> Result<(), String>
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A secondary cell is also described after a primary selection, and survives an unrelated primary change.
 #[wasm_bindgen_test]
 fn secondary_label_follows_the_primary_selection_description() -> Result<(), String> {
@@ -179,7 +179,7 @@ fn secondary_label_follows_the_primary_selection_description() -> Result<(), Str
     check(label.ends_with(", also highlighted: cell 6"), &label)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Out-of-range indices and a plain label node are rejected, and a rejected call changes nothing.
 #[wasm_bindgen_test]
 fn secondary_selection_rejects_out_of_range_indices_and_label_nodes() -> Result<(), String> {
@@ -207,7 +207,7 @@ fn secondary_selection_rejects_out_of_range_indices_and_label_nodes() -> Result<
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single-value node's lone cell is its own outer box; it can be marked secondary too.
 #[wasm_bindgen_test]
 fn secondary_selection_works_on_a_single_value_node() -> Result<(), String> {
@@ -229,7 +229,7 @@ fn secondary_selection_works_on_a_single_value_node() -> Result<(), String> {
     check(attr(&rect, "fill") == DEFAULT_FILL, &attr(&rect, "fill"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Giving the same derived cells again, in the order they were already given, touches nothing in the document. Unsorted
 /// input with duplicates is still accepted, and still ends in the same state.
 #[wasm_bindgen_test]
@@ -249,7 +249,7 @@ fn repeating_the_same_secondary_cells_changes_nothing_and_unsorted_input_still_w
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A run of three or more secondary cells reads as a range in the accessible name, as the unreached cells do, and a
 /// shorter run is still listed.
 #[wasm_bindgen_test]

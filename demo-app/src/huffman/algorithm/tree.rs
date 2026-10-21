@@ -67,8 +67,8 @@ impl Tree {
         self.nodes.len() - 1
     }
 
-    /// The route from the root to each leaf, as `(symbol, path)` in byte order. A left branch is `0` and a right one
-    /// is `1`.
+    /// The route from the root to each leaf, as `(symbol, path)` in byte order. A left branch is `0` and a right one is
+    /// `1`.
     ///
     /// These are the bit patterns the tree itself gives, which are not the canonical codes. A tree with a single leaf
     /// has an empty path.
@@ -119,8 +119,8 @@ impl Tree {
 
     /// The depth of each leaf, as `(symbol, depth)` in byte order.
     ///
-    /// A tree with a single leaf has depth 0, which would give that byte an empty code. It is given length 1 instead.
-    /// A depth never exceeds 255, because a tree has at most 256 leaves.
+    /// A tree with a single leaf has depth 0, which would give that byte an empty code. It is given length 1 instead. A
+    /// depth never exceeds 255, because a tree has at most 256 leaves.
     pub(in crate::huffman) fn leaf_depths(&self) -> Vec<(u8, u8)> {
         self.leaf_paths()
             .into_iter()

@@ -1,17 +1,16 @@
-//! The Huffman demo's own window: its stepping toolbar and its text input node, driven by real clicks and key presses in
-//! Chrome.
+//! The Huffman demo's own window: its stepping toolbar and its text input node, driven by real clicks and key presses
+//! in Chrome.
 //!
 //! The algorithm and the walk are covered by native unit tests. What they cannot reach is the browser-facing behaviour:
 //! what the window shows at each position, that a step backwards restores what a step forwards drew, that editing the
-//! text starts the walk again, which nodes the route through the tree marks, and what a redraw keeps (zoom, and keyboard
-//! focus on a button or in the text box). Every step draws the whole scene again, so every step is a place where a
-//! redraw could drop one of those.
+//! text starts the walk again, which nodes the route through the tree marks, and what a redraw keeps (zoom, and
+//! keyboard focus on a button or in the text box). Every step draws the whole scene again, so every step is a place
+//! where a redraw could drop one of those.
 //!
 //! Most scenarios set the text to "abracadabra", which is small enough to work by hand. It has 4 merges and 5 distinct
 //! bytes, so its walk has 11 positions: `0` counts, `1..=4` merge, `5` reads the lengths and `6..=10` assign the
-//! canonical codes. Pass two continues from there, with one position for each input byte and a last one for the
-//! flush. The demo's own default text is the first sentence of *Pride and Prejudice*, which has its own
-//! scenarios below.
+//! canonical codes. Pass two continues from there, with one position for each input byte and a last one for the flush.
+//! The demo's own default text is the first sentence of *Pride and Prejudice*, which has its own scenarios below.
 //!
 //! Like [`crate::chacha20_walk`], these run against the built demo gallery's window page, not the fixture.
 
@@ -27,7 +26,7 @@ const FLUSH: usize = LAST + 12;
 /// The fill the library gives a cell marked by a secondary selection.
 const SECONDARY_FILL: &str = "#7fd8be";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The demo as it opens, with its own default text.
 fn open_default() -> Result<DemoTab, String> {
     new_demo_tab("huffman-window.html", &format!("{DIAGRAM} g[aria-label^=\"Step:\"]"), VIEWPORT)
@@ -204,7 +203,7 @@ fn row(symbol: &str, count: &str, path: &str, length: &str, code: &str) -> Vec<S
     [symbol, count, path, length, code].map(str::to_owned).to_vec()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The walk starts by counting: five trees of one node, the counts in the table, and nothing else filled in.
 #[test]
 fn the_walk_starts_by_counting_with_five_single_node_trees() -> Result<(), String> {
@@ -229,7 +228,7 @@ fn the_walk_starts_by_counting_with_five_single_node_trees() -> Result<(), Strin
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The first merge joins `c` and `d`, the two lightest, and draws the new branch with its two labelled links.
 #[test]
 fn the_first_merge_joins_the_two_lightest_trees() -> Result<(), String> {
@@ -249,7 +248,7 @@ fn the_first_merge_joins_the_two_lightest_trees() -> Result<(), String> {
     check_eq(forest_boxes.iter().filter(|t| *t == "1").count(), 1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// After the last merge there is one tree of nine boxes, and the table still has no lengths.
 #[test]
 fn the_last_merge_leaves_one_tree() -> Result<(), String> {
@@ -269,7 +268,7 @@ fn the_last_merge_leaves_one_tree() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reading the lengths fills in the tree paths and lengths, and no canonical code yet. Then each step adds one code.
 #[test]
 fn the_lengths_come_before_the_canonical_codes_which_come_one_at_a_time() -> Result<(), String> {
@@ -299,7 +298,7 @@ fn the_lengths_come_before_the_canonical_codes_which_come_one_at_a_time() -> Res
     check_eq(table(&tab)?[1][4].as_str(), "–")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The last position has every canonical code. Where the tree's path and the canonical code differ, both are shown.
 #[test]
 fn the_last_step_has_every_canonical_code_and_shows_where_they_differ_from_the_tree() -> Result<(), String> {
@@ -320,7 +319,7 @@ fn the_last_step_has_every_canonical_code_and_shows_where_they_differ_from_the_t
     check_eq(position(&tab)?, Some(LAST + 1))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A step back from the end draws exactly what a step forward to the same position did.
 #[test]
 fn stepping_back_restores_what_stepping_forward_drew() -> Result<(), String> {
@@ -337,7 +336,7 @@ fn stepping_back_restores_what_stepping_forward_drew() -> Result<(), String> {
     check_eq(forest(&tab)?, (5, 0))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Editing the text starts the walk again, from the new text.
 #[test]
 fn editing_the_text_starts_the_walk_again_from_the_new_text() -> Result<(), String> {
@@ -356,7 +355,7 @@ fn editing_the_text_starts_the_walk_again_from_the_new_text() -> Result<(), Stri
     check_eq(position(&tab)?, Some(4))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A text that cannot be encoded says why, and leaves the diagram as it was.
 #[test]
 fn text_that_cannot_be_encoded_leaves_the_diagram_alone() -> Result<(), String> {
@@ -392,7 +391,7 @@ fn text_that_cannot_be_encoded_leaves_the_diagram_alone() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A character of several bytes is counted as its separate bytes, each shown in hexadecimal.
 #[test]
 fn a_multi_byte_character_is_counted_as_its_separate_bytes() -> Result<(), String> {
@@ -405,7 +404,7 @@ fn a_multi_byte_character_is_counted_as_its_separate_bytes() -> Result<(), Strin
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One distinct byte has nothing to merge, and is given a 1-bit code.
 #[test]
 fn one_distinct_byte_is_given_a_one_bit_code() -> Result<(), String> {
@@ -418,7 +417,7 @@ fn one_distinct_byte_is_given_a_one_bit_code() -> Result<(), String> {
     check_eq(marked(&tab)?, vec!["a x4".to_owned()])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The zoom survives a step, which draws the scene again.
 #[test]
 fn the_zoom_survives_a_redraw() -> Result<(), String> {
@@ -440,7 +439,7 @@ fn the_zoom_survives_a_redraw() -> Result<(), String> {
     check_eq(view(&tab)?, zoomed)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The keyboard focus stays on the toolbar button that was pressed, so a keyboard user can press it again.
 #[test]
 fn keyboard_focus_stays_on_the_pressed_button() -> Result<(), String> {
@@ -462,9 +461,9 @@ fn keyboard_focus_stays_on_the_pressed_button() -> Result<(), String> {
     check_eq(position(&tab)?, Some(2))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Typing in the text box, with a real keyboard, draws the scene again and leaves the keyboard focus and the caret in the
-/// new text box, so that the next key goes where the last did.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Typing in the text box, with a real keyboard, draws the scene again and leaves the keyboard focus and the caret in
+/// the new text box, so that the next key goes where the last did.
 #[test]
 fn typing_keeps_the_focus_and_the_caret_through_each_redraw() -> Result<(), String> {
     let tab = open()?;
@@ -492,7 +491,7 @@ fn typing_keeps_the_focus_and_the_caret_through_each_redraw() -> Result<(), Stri
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The demo opens on the first sentence of *Pride and Prejudice*, with its punctuation: 26 distinct bytes in 116.
 #[test]
 fn the_demo_opens_on_the_first_sentence_of_pride_and_prejudice() -> Result<(), String> {
@@ -502,8 +501,8 @@ fn the_demo_opens_on_the_first_sentence_of_pride_and_prejudice() -> Result<(), S
     check_eq(forest(&tab)?, (26, 0))?;
     let rows = table(&tab)?;
     check_eq(rows.len(), 26)?;
-    // The space is 22 of the 116 bytes, so it is first. The comma, the full stop and the capital letter are bytes like any
-    // other, and occur once each.
+    // The space is 22 of the 116 bytes, so it is first. The comma, the full stop and the capital letter are bytes like
+    // any other, and occur once each.
     check_eq(rows[0].clone(), row("space", "22", "–", "–", "–"))?;
     let counts: Vec<(&str, &str)> = rows.iter().map(|r| (r[0].as_str(), r[1].as_str())).collect();
     for expected in [(",", "1"), (".", "1"), ("I", "1"), ("a", "9"), ("n", "9")] {
@@ -521,8 +520,9 @@ fn the_demo_opens_on_the_first_sentence_of_pride_and_prejudice() -> Result<(), S
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every merge of the long sentence works, ends in one tree of 26 leaves and 25 branches, and then every byte has a code.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every merge of the long sentence works, ends in one tree of 26 leaves and 25 branches, and then every byte has a
+/// code.
 #[test]
 fn the_long_sentence_walks_from_26_trees_to_one_and_then_to_26_codes() -> Result<(), String> {
     let tab = open_default()?;
@@ -547,7 +547,7 @@ fn the_long_sentence_walks_from_26_trees_to_one_and_then_to_26_codes() -> Result
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each step explains itself in up to three paragraphs, and a merge says which side is which.
 #[test]
 fn each_step_explains_what_it_did_and_why() -> Result<(), String> {
@@ -567,7 +567,7 @@ fn each_step_explains_what_it_did_and_why() -> Result<(), String> {
     check(tie.contains("Another tree also weighs 2. Ties go to the tree made first"), &tie)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The explanation of a step is bold where it names the merge, and is not drawn with its Markdown markers showing.
 #[test]
 fn the_explanation_is_formatted_and_shows_no_markers() -> Result<(), String> {
@@ -585,7 +585,7 @@ fn the_explanation_is_formatted_and_shows_no_markers() -> Result<(), String> {
     check(!explanation(&tab)?.contains("**"), "the markers of bold text are showing")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A byte that Markdown reads as formatting is drawn as itself in the explanation, never as emphasis.
 #[test]
 fn a_byte_that_markdown_would_read_as_formatting_is_drawn_as_itself() -> Result<(), String> {
@@ -605,7 +605,7 @@ fn a_byte_that_markdown_would_read_as_formatting_is_drawn_as_itself() -> Result<
     check(!seen.contains('\\'), &format!("a backslash of an escape is showing: {seen}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The heading row of the table has a fill of its own, and the rows below it share the usual one.
 #[test]
 fn the_heading_row_has_a_fill_of_its_own() -> Result<(), String> {
@@ -629,9 +629,9 @@ fn the_heading_row_has_a_fill_of_its_own() -> Result<(), String> {
     check(body != heading, &format!("the heading and the body share the fill {heading}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// As each canonical code is assigned, the route from the root to that byte's leaf is marked with the library's secondary
-/// selection: the boxes on it, and the label of each of its links. Nothing is marked at any other step.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// As each canonical code is assigned, the route from the root to that byte's leaf is marked with the library's
+/// secondary selection: the boxes on it, and the label of each of its links. Nothing is marked at any other step.
 #[test]
 fn the_route_to_each_byte_is_marked_as_its_canonical_code_is_assigned() -> Result<(), String> {
     let tab = open()?;
@@ -663,7 +663,7 @@ fn the_route_to_each_byte_is_marked_as_its_canonical_code_is_assigned() -> Resul
     check_eq(marked(&tab)?, ["0", "11", "a x5"].map(str::to_owned).to_vec())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The route's boxes are the right number deep for the byte's code length, in the long sentence too: each step marks a
 /// box for every level down to the leaf, and a label for every link.
 #[test]
@@ -681,12 +681,12 @@ fn a_marked_route_has_a_box_for_every_level_and_a_label_for_every_link() -> Resu
     check_eq(marked.len(), 2 * length + 1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every link has room for an arrowhead on each side of its `0` or `1` label.
 ///
 /// The arrowhead is 10 pixels long and needs 6 more of clearance, and the link has to be long enough to show a slant
-/// clearly. So the gap above a label, and the gap below it, must each be at least twice that: 32 pixels. The
-/// rectangles are read from the rendered boxes, so this checks what is drawn, not the constants that drew it.
+/// clearly. So the gap above a label, and the gap below it, must each be at least twice that: 32 pixels. The rectangles
+/// are read from the rendered boxes, so this checks what is drawn, not the constants that drew it.
 #[test]
 fn every_link_has_room_for_an_arrowhead() -> Result<(), String> {
     const MINIMUM_GAP: f64 = 32.0;
@@ -739,7 +739,7 @@ fn every_link_has_room_for_an_arrowhead() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The gallery's own panel is only a description and a button that opens the window.
 #[test]
 fn the_gallery_panel_has_a_button_that_opens_the_window() -> Result<(), String> {
@@ -754,7 +754,7 @@ fn the_gallery_panel_has_a_button_that_opens_the_window() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The caret is kept in UTF-16 code units, as the browser counts them. After a character that is two units, such as an
 /// emoji, the redrawn text box has the caret just after it, not in the middle of it.
 #[test]
@@ -786,11 +786,11 @@ fn the_caret_survives_a_redraw_after_a_character_of_two_utf16_units() -> Result<
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Pass two
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to the bytes 0x4E, 0xAC and 0x9C with a
-// bit of padding. The 'a' that is the fourth input byte completes the first byte.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to the bytes 0x4E, 0xAC and 0x9C with
+// a bit of padding. The 'a' that is the fourth input byte completes the first byte.
 
 /// The texts that follow the box titled `heading`, for as long as `keep` accepts them.
 fn after(tab: &Tab, heading: &str, keep: impl Fn(&str) -> bool) -> Result<Vec<String>, String> {
@@ -806,8 +806,8 @@ fn is_hex_byte(t: &str) -> bool {
     t.len() == 2 && t.bytes().all(|b| b.is_ascii_digit() || (b'A'..=b'F').contains(&b))
 }
 
-/// The bytes written so far, as the two hex digits the hexadecimal node shows for each, in lower case. Before the first,
-/// the scene says so in a plain box instead.
+/// The bytes written so far, as the two hex digits the hexadecimal node shows for each, in lower case. Before the
+/// first, the scene says so in a plain box instead.
 fn output(tab: &Tab) -> Result<Vec<String>, String> {
     if texts(tab)?.iter().any(|t| t == "Output bytes: none") {
         return Ok(Vec::new());
@@ -846,7 +846,7 @@ fn text_inputs(tab: &Tab) -> Result<usize, String> {
 /// The first position of pass two.
 const PASS_TWO: usize = LAST + 1;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Pass two opens with its own title, and the text box becomes an array of the input's bytes with the first marked.
 #[test]
 fn pass_two_replaces_the_text_box_with_the_input_bytes_and_marks_the_first() -> Result<(), String> {
@@ -868,7 +868,7 @@ fn pass_two_replaces_the_text_box_with_the_input_bytes_and_marks_the_first() -> 
     check_eq(table(&tab)?.remove(0), row("a", "5", "0", "1", "0"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stepping across the boundary, in both directions, visits every position once, and the scene follows.
 #[test]
 fn stepping_across_the_boundary_skips_and_repeats_no_position() -> Result<(), String> {
@@ -888,7 +888,7 @@ fn stepping_across_the_boundary_skips_and_repeats_no_position() -> Result<(), St
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A step writes a byte only when eight bits are ready, and marks exactly the bytes it wrote.
 #[test]
 fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
@@ -905,7 +905,7 @@ fn a_step_marks_exactly_the_bytes_it_wrote() -> Result<(), String> {
     check_eq(highlight(&tab, "Output bytes")?, None)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The flush pads the last byte with zeros, compares its size with the input's.
 #[test]
 fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<(), String> {
@@ -932,7 +932,7 @@ fn the_flush_pads_the_last_byte_and_shows_the_result_and_its_size() -> Result<()
     check_eq(position(&tab)?, Some(FLUSH))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A text whose codes fill whole bytes needs no padding, and the flush writes no byte of its own.
 #[test]
 fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
@@ -951,7 +951,7 @@ fn a_byte_aligned_output_needs_no_padding() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every byte of a multi-byte character is its own cell of the input dump.
 #[test]
 fn the_input_dump_has_a_cell_for_each_byte_not_each_character() -> Result<(), String> {
@@ -971,7 +971,7 @@ fn the_input_dump_has_a_cell_for_each_byte_not_each_character() -> Result<(), St
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A one-byte text still shows its whole summary, inside the diagram.
 #[test]
 fn a_short_text_still_shows_its_summary_inside_the_diagram() -> Result<(), String> {
@@ -993,7 +993,7 @@ fn a_short_text_still_shows_its_summary_inside_the_diagram() -> Result<(), Strin
     check_eq(inside.as_str(), "inside")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The keyboard focus stays on the "Next selection" button as the walk crosses from pass one into pass two.
 #[test]
 fn keyboard_focus_survives_the_change_of_pass() -> Result<(), String> {
@@ -1010,7 +1010,7 @@ fn keyboard_focus_survives_the_change_of_pass() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// "Next 8" and "Previous 8" move eight positions, across the change of pass, and stop at the ends.
 #[test]
 fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<(), String> {
@@ -1025,7 +1025,7 @@ fn the_eight_step_buttons_move_eight_positions_across_both_passes() -> Result<()
     check(!in_pass_two(&tab)?, "position 8 is in pass one")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A dump without offsets marks the input byte a step packs over the glyphs it names, in every place of a line and on
 /// more than one line. Identical lines are never collapsed, so a line is always where the byte's index says it is.
 #[test]

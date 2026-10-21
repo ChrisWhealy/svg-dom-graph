@@ -1,6 +1,6 @@
 use super::{MAX_CODE_LEN, Tree};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A bit sequence of 1 to [`MAX_CODE_LEN`] bits, held in the low `len` bits of `bits`.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(in crate::huffman) struct Code {

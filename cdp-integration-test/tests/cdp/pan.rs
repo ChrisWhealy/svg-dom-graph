@@ -18,7 +18,7 @@ const RELEASE: Input::DispatchMouseEventTypeOption = Input::DispatchMouseEventTy
 const SURFACE: &str = "#diagram > rect";
 const SOLO: &str = "#diagram > g.svg-dom-graph-content > g:nth-of-type(1)";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The content layer's `transform`, as `(tx, ty)`, or `None` if it has never been panned or zoomed.
 fn content_translate(tab: &Tab) -> Result<Option<(f64, f64)>, String> {
     let content = tab
@@ -68,7 +68,7 @@ fn close(got: f64, expected: f64) -> bool {
     (got - expected).abs() <= 1.0
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dragging empty background pans the whole scene by the pointer's own movement. The surface holds pointer capture for
 /// as long as the button is down, and lets go the moment it comes up.
 #[test]
@@ -99,7 +99,7 @@ fn dragging_empty_background_pans_the_scene_and_holds_then_releases_pointer_capt
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A pan that starts on background and then sweeps across a node is still a pan. The node neither moves nor gets the
 /// events, because the surface has captured the pointer.
 #[test]
@@ -135,7 +135,7 @@ fn a_pan_that_crosses_over_a_node_stays_a_pan() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A node drag that starts on a node and then travels across empty background is still a node drag: the scene never
 /// pans. The node holds pointer capture during the drag, and the surface never does.
 #[test]
@@ -174,7 +174,7 @@ fn a_node_drag_that_crosses_over_background_stays_a_node_drag() -> Result<(), St
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Pressing on a node never starts a pan, even though the pan surface lies behind it.
 #[test]
 fn pressing_on_a_node_never_starts_a_pan() -> Result<(), String> {
@@ -190,12 +190,12 @@ fn pressing_on_a_node_never_starts_a_pan() -> Result<(), String> {
     check(content_translate(&tab)?.is_none(), "a press on a node panned the scene")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn check(condition: bool, msg: &str) -> Result<(), String> {
     if condition { Ok(()) } else { Err(msg.into()) }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `role` of the element that currently has keyboard focus, or an empty string if nothing does.
 ///
 /// The scene's focus target is an element of its own with no id, so it is recognised by its role. The application's own
@@ -210,7 +210,7 @@ fn focused_role(tab: &Tab) -> Result<String, String> {
     Ok(result.value.and_then(|v| v.as_str().map(str::to_owned)).unwrap_or_default())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A keyboard-only user can reach the scene with the Tab key, and the arrow keys then pan it. This goes through the
 /// browser's own focus order and key handling, which a synthetic `keydown` dispatched at the element does not.
 #[test]
@@ -243,7 +243,7 @@ fn tab_reaches_the_scene_and_the_arrow_keys_then_pan_it() -> Result<(), String> 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zooming with the real wheel in the middle of a real node drag. The pointer holds `solo` at (60, 40), 40 in from its
 /// corner. A wheel at the pointer holds that point still, so the second move of 25 pixels at 1.25x is 20 units of
 /// content. Using the matrix from the start of the drag would move it 25.
@@ -272,7 +272,7 @@ fn a_node_drag_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), Stri
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The same for a pan: pan 30 pixels, zoom with the real wheel at the pointer, pan 30 more. The zoom is kept.
 fn a_pan_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), String> {
     let tab = new_tab()?;
@@ -296,7 +296,7 @@ fn a_pan_carries_on_correctly_after_a_real_wheel_zoom() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Both real-wheel scenarios, one after the other.
 ///
 /// **Ignored by default**, and run on its own with `cargo test -p cdp-integration-test -- --ignored`. Passing alone, it

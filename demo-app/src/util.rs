@@ -306,16 +306,17 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
         .map_err(|e| format!("could not insert the fresh nested child <svg>: {e:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Puts the nested child `<svg>` with the fixed id `slot_id` back as the one element for that slot.
 ///
-/// Stepping a nested child clones its `<svg>` under a fresh id (see [`create_child_svg`]) and removes the one it started
-/// from. After a step the fixed id is therefore gone. A host that is rebuilt later, and looks for that fixed id again,
-/// would not find it. That left the rebuilt scene half drawn.
+/// Stepping a nested child clones its `<svg>` under a fresh id (see [`create_child_svg`]) and removes the one it
+/// started from. After a step the fixed id is therefore gone. A host that is rebuilt later, and looks for that fixed id
+/// again, would not find it. That left the rebuilt scene half drawn.
 ///
 /// Every element in the slot carries `data-slot="{slot_id}"`, which a clone inherits. This finds them. If none holds
-/// the fixed id, the first takes it back. Any further ones are stale, left by earlier steps, and are removed. The slot's
-/// element then carries the attribute, so later clones are found in turn. Does nothing if the slot has no element at all.
+/// the fixed id, the first takes it back. Any further ones are stale, left by earlier steps, and are removed. The
+/// slot's element then carries the attribute, so later clones are found in turn. Does nothing if the slot has no
+/// element at all.
 ///
 /// # Errors
 ///
@@ -652,16 +653,16 @@ pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows `message` in the element `#banner_id`, and logs it to the console too.
 ///
-/// `#banner_id` is a `.demo-error` paragraph a window page keeps `hidden` until something fails. It is for a failure with
-/// nowhere to be returned to, such as one inside a toolbar's own callback. A gallery panel that fails to build gets the
-/// same red banner from `report_panel_error`. A failure here must not be swallowed. If it were, the diagram would sit
-/// half updated with no sign of why.
+/// `#banner_id` is a `.demo-error` paragraph a window page keeps `hidden` until something fails. It is for a failure
+/// with nowhere to be returned to, such as one inside a toolbar's own callback. A gallery panel that fails to build
+/// gets the same red banner from `report_panel_error`. A failure here must not be swallowed. If it were, the diagram
+/// would sit half updated with no sign of why.
 ///
-/// A page with no such element is the gallery itself, which a shared demo can also run in. There the message goes into a
-/// `.demo-error` paragraph at the end of the section on show instead, which [`clear_error`] removes again.
+/// A page with no such element is the gallery itself, which a shared demo can also run in. There the message goes into
+/// a `.demo-error` paragraph at the end of the section on show instead, which [`clear_error`] removes again.
 pub(crate) fn report_error(banner_id: &str, message: &str) {
     web_sys::console::error_1(&message.into());
     let Ok(document) = document() else { return };
@@ -685,7 +686,7 @@ pub(crate) fn report_error(banner_id: &str, message: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Hides the banner [`report_error`] showed, or removes the paragraph it added to the gallery's section, once whatever
 /// failed has worked again. Does nothing if there is none.
 pub(crate) fn clear_error(banner_id: &str) {
@@ -699,8 +700,8 @@ pub(crate) fn clear_error(banner_id: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `y` of a scene's first row when its stepping toolbar is at the top: below the scene's own title and the toolbar. See
-/// [`step_toolbar_options`].
+/// The `y` of a scene's first row when its stepping toolbar is at the top: below the scene's own title and the toolbar.
+/// See [`step_toolbar_options`].
 pub(crate) const CONTENT_TOP: f64 = 100.0;
 
 /// How far a scene's stepping toolbar sits from its top edge: below the scene's own title.
@@ -717,8 +718,7 @@ pub(crate) fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOp
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Marks `cells` of `node` as not yet computed, or clears the mark if there are none. See
-/// `Scene::set_unreached_cells`.
+/// Marks `cells` of `node` as not yet computed, or clears the mark if there are none. See `Scene::set_unreached_cells`.
 ///
 /// # Errors
 ///
@@ -743,7 +743,7 @@ pub(crate) fn after(at: Option<usize>, count: usize) -> Vec<usize> {
     (first..count).collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One data node of a line in [`lay_out_lines`]: a `name` shown over its box, and its `content`.
 pub(crate) struct Item {
     pub(crate) name: String,
@@ -761,14 +761,14 @@ pub(crate) const MARGIN: f64 = 20.0;
 const H_GAP: f64 = 30.0;
 const V_GAP: f64 = 36.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds each item of each of `lines` to `scene` as a named data node, left to right along a line and top to bottom down
 /// the lines, starting `top` below the top of the canvas. Every box is as wide and as tall as its own content needs, so
 /// the layout is measured as it is built: a node starts where the one before it ended, and a line starts below the
 /// tallest node of the line above.
 ///
-/// Returns the right-hand and bottom edges of everything placed, so the caller can size the canvas to fit, and the id of
-/// every node, in the order placed.
+/// Returns the right-hand and bottom edges of everything placed, so the caller can size the canvas to fit, and the id
+/// of every node, in the order placed.
 ///
 /// # Errors
 ///
@@ -793,7 +793,7 @@ pub(crate) fn lay_out_lines(scene: &Scene, lines: Vec<Vec<Item>>, top: f64) -> R
     Ok((right, y - V_GAP, ids))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the usual shape of a data-types panel: an empty `<svg id="{svg_id}">` in `{svg_id}-stage`, `lines` laid out
 /// in it by [`lay_out_lines`], and the canvas then resized to fit what was laid out, with room for the zoom toolbar on
 /// the east side. Returns the scene, for the caller to keep alive.

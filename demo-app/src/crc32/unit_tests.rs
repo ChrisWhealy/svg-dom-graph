@@ -50,9 +50,9 @@ fn no_bytes_leave_the_register_as_it_started() {
     assert_eq!(computed.register, INITIAL);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Correcting a single flipped bit
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 use super::algorithm::{Finding, locate, syndrome_of_bit};
 
@@ -64,7 +64,8 @@ fn every_single_bit_of_data_up_to_the_limit_has_a_syndrome_of_its_own() {
             for bit in 0..8 {
                 let syndrome = syndrome_of_bit(len, byte, bit);
                 assert_ne!(syndrome, 0, "{len} bytes, byte {byte}, bit {bit}");
-                // A flipped bit of the CRC has a syndrome of a single one, which a flipped bit of the data must not have.
+                // A flipped bit of the CRC has a syndrome of a single one, which a flipped bit of the data must not
+                // have.
                 assert!(syndrome.count_ones() > 1, "{len} bytes, byte {byte}, bit {bit}");
                 assert!(seen.insert(syndrome), "{len} bytes, byte {byte}, bit {bit} repeats a syndrome");
             }

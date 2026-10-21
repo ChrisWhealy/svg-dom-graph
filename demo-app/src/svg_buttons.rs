@@ -18,11 +18,12 @@ pub(crate) struct Button<'a> {
     pub(crate) action: &'a str,
     /// Its fill and its outline.
     pub(crate) colours: (&'a str, &'a str),
-    /// `Some(on)` makes it a toggle button, and sets `aria-pressed` to say which state it is in. `None` is a plain button.
+    /// `Some(on)` makes it a toggle button, and sets `aria-pressed` to say which state it is in. `None` is a plain
+    /// button.
     pub(crate) pressed: Option<bool>,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The layer of the scene drawn in `#diagram_id`, which a button is added to.
 ///
 /// # Errors
@@ -35,9 +36,9 @@ pub(crate) fn layer(document: &web_sys::Document, diagram_id: &str) -> Result<we
         .ok_or_else(|| "the scene has no content layer".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws `button` in the scene's own layer `layer`, in `area`, that [`watch`] will find by its action. It is a rectangle
-/// with a label, in a group that has the role of a button and can take the keyboard focus.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws `button` in the scene's own layer `layer`, in `area`, that [`watch`] will find by its action. It is a
+/// rectangle with a label, in a group that has the role of a button and can take the keyboard focus.
 ///
 /// # Errors
 ///
@@ -111,7 +112,7 @@ pub(crate) fn add_button(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the buttons drawn by [`add_button`] work. One listener for clicks and one for the Enter and Space keys are on
 /// the stage `stage_id`, which outlives every scene that is drawn in it, and find the button by its `data-action`. So a
 /// scene drawn again needs no listeners of its own. `on_press` is called with the action of the button.

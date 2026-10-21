@@ -5,8 +5,8 @@
 /// Which bits are flipped. Flipping a bit that is already flipped puts it back, so each bit is flipped or not.
 #[derive(Clone, Debug, Default, PartialEq, Eq)]
 pub(super) struct Flips {
-    /// Bits of the data: the byte, and the bit in it, counting from 0 at the least significant.
-    /// In order, with no repeats.
+    /// Bits of the data: the byte, and the bit in it, counting from 0 at the least significant. In order, with no
+    /// repeats.
     pub(super) data: Vec<(usize, u8)>,
     /// Bits of the CRC, counting from 0 at the least significant. In order, with no repeats.
     pub(super) crc: Vec<u8>,

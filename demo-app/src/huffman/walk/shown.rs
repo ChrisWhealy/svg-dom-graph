@@ -29,8 +29,8 @@ pub(in crate::huffman) struct Shown {
     pub(in crate::huffman) rows: Vec<Row>,
     /// The row the last step wrote to, if it wrote to exactly one.
     pub(in crate::huffman) focus_row: Option<usize>,
-    /// The nodes on the route from the root down to the leaf of the byte the last step gave a canonical code, root first.
-    /// Empty at every other step.
+    /// The nodes on the route from the root down to the leaf of the byte the last step gave a canonical code, root
+    /// first. Empty at every other step.
     pub(in crate::huffman) route: Vec<usize>,
 }
 

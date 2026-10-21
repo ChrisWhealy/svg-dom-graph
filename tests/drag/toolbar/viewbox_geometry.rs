@@ -24,7 +24,7 @@ fn check_rect(got: (f64, f64, f64, f64), expected: (f64, f64, f64, f64)) -> Resu
     check_close(got.3, expected.3)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `viewBox` centred on the origin: `-500 -300 1000 600`. The visible area's centre is (0, 0), not (500, 300), so a
 /// zoom about the centre leaves the translation at zero. An implementation that assumed a `(0, 0)` origin would zoom
 /// about (500, 300) instead, and translate by (-125, -75).
@@ -53,7 +53,7 @@ fn a_view_box_centred_on_the_origin_zooms_about_its_own_centre() -> Result<(), S
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A `viewBox` whose origin is positive on both axes: `100 50 400 300`, centre (300, 200). Zooming in by 1.25 about it
 /// gives a translation of (300 - 1.25 * 300, 200 - 1.25 * 200) = (-75, -50).
 #[wasm_bindgen_test]
@@ -75,7 +75,7 @@ fn a_view_box_with_a_positive_origin_zooms_about_its_own_centre() -> Result<(), 
     check_close(ty, -50.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Pointer-centred wheel zoom under a non-zero origin *and* a CSS scale (here 0.4 pixels per user unit): the content
 /// point under the pointer must not move.
 #[wasm_bindgen_test]
@@ -102,7 +102,7 @@ async fn pointer_centred_zoom_holds_its_point_under_a_non_zero_origin_and_a_css_
     check_close(ty, pivot_y - 1.25 * pivot_y)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With the default `preserveAspectRatio` (`xMidYMid meet`), an `<svg>` wider than its `viewBox` shows *more* than the
 /// `viewBox`. Here `0 0 400 400` in a 400 x 200 box scales by 0.5 and is centred. So the visible user-space area is x
 /// from -200 to 600, and y from 0 to 400. The bar belongs on the real top edge of that, not the `viewBox`'s.
@@ -124,7 +124,7 @@ fn with_meet_the_visible_area_is_wider_than_the_view_box() -> Result<(), String>
     check_close(ty, -50.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// With `slice`, the same box *crops* the `viewBox`: it scales by 1 and shows y from 100 to 300 only. A bar placed at
 /// the `viewBox`'s own top edge (y = 8) would be cropped out of view entirely. It must sit on the visible top edge.
 #[wasm_bindgen_test]
@@ -138,7 +138,7 @@ fn with_slice_the_toolbar_stays_inside_the_cropped_visible_area() -> Result<(), 
     check_close(y, 108.0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A CSS scale other than 1 changes how many pixels a pointer moves per user unit. Panning by 40 pixels at 2 pixels per
 /// user unit moves the content by 20.
 #[wasm_bindgen_test]

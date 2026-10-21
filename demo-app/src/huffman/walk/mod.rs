@@ -1,5 +1,5 @@
-//! The walk through both passes: which step the demo is on, and what the scene shows at it. Pure, so none of it needs
-//! a browser.
+//! The walk through both passes: which step the demo is on, and what the scene shows at it. Pure, so none of it needs a
+//! browser.
 //!
 //! One flat position counts every step, so a selection toolbar can step through all of them. With `M` merges and `N`
 //! distinct bytes, the steps of pass one are:
@@ -59,6 +59,6 @@ pub(super) fn symbol_label(symbol: u8) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

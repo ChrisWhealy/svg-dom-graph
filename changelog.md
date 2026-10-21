@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add a demo implementation of UTF-8 encoding (`4d0952b`)
 - Extend UTF-8 CDP tests to test repeated screen redraws (`0e381af`)
-- Add a demo implementation of Quicksort (``)
+- Add a demo implementation of Quicksort (`b2b31a6`)
+- Add a demo implementation of Shellsort (``)
 
 ## Changed
 

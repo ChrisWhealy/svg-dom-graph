@@ -24,8 +24,8 @@ fn cells(index: usize) -> usize {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the boxes of the path `nodes` that `position` has not reached faint, and marks the one it has just reached. A
-/// box keeps its bits while it is faint, so a reader can see what is coming. The note under each box in `notes` is faint
-/// along with its box, and is read the same way.
+/// box keeps its bits while it is faint, so a reader can see what is coming. The note under each box in `notes` is
+/// faint along with its box, and is read the same way.
 ///
 /// # Errors
 ///

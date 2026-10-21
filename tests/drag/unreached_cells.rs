@@ -14,7 +14,7 @@ use wasm_bindgen_test::wasm_bindgen_test;
 const FAINT: &str = "0.35";
 const FOCUS_FILL: &str = "#ff6b4a";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A 5-column, 2-row `u8` grid in a fresh scene, with its inner cell `<rect>`s and `<text>`s, and its own `<g>`.
 struct Grid {
     scene: Scene,
@@ -77,7 +77,7 @@ fn is_full(grid: &Grid, i: usize) -> bool {
     full(&grid.rects[i]) && full(&grid.texts[i])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A marked cell's box and digits both go faint, an unmarked cell is untouched, and clearing restores the cell.
 #[wasm_bindgen_test]
 fn marked_cells_go_faint_box_and_digits_and_clearing_restores_them() -> Result<(), String> {
@@ -99,7 +99,7 @@ fn marked_cells_go_faint_box_and_digits_and_clearing_restores_them() -> Result<(
     check(!label(&g.group).contains("not yet computed"), &label(&g.group))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The node's own accessible name says which cells are not yet computed, as a range when there are three or more in a
 /// row, and the tooltip says the same.
 #[wasm_bindgen_test]
@@ -123,7 +123,7 @@ fn the_accessible_name_and_tooltip_name_the_cells() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A selected cell shows at full strength even while it is marked, and goes faint again when the selection moves on.
 #[wasm_bindgen_test]
 fn a_selection_wins_over_unreached_and_gives_the_cell_back_when_it_moves() -> Result<(), String> {
@@ -145,7 +145,7 @@ fn a_selection_wins_over_unreached_and_gives_the_cell_back_when_it_moves() -> Re
     check(is_full(&g, 0), "the newly selected cell is not at full strength")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A secondary cell also wins over unreached, and the two sets stay independent of each other.
 #[wasm_bindgen_test]
 fn a_secondary_cell_wins_over_unreached_and_the_two_sets_are_independent() -> Result<(), String> {
@@ -163,7 +163,7 @@ fn a_secondary_cell_wins_over_unreached_and_the_two_sets_are_independent() -> Re
     check(label(&g.group).contains("not yet computed: cells 1 to 3"), &label(&g.group))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// New values written into a marked cell leave it faint until it is taken out of the set.
 #[wasm_bindgen_test]
 fn writing_a_value_does_not_clear_the_mark() -> Result<(), String> {
@@ -178,7 +178,7 @@ fn writing_a_value_does_not_clear_the_mark() -> Result<(), String> {
     check(is_full(&g, 9), "taking the cell out of the set did not restore it")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A single-value node is one cell: the whole box goes faint, and its name just says it is not yet computed.
 #[wasm_bindgen_test]
 fn a_single_value_node_goes_faint_as_a_whole() -> Result<(), String> {
@@ -208,7 +208,7 @@ fn a_single_value_node_goes_faint_as_a_whole() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An index out of range, or a plain label node, is rejected, and a rejected call changes nothing.
 #[wasm_bindgen_test]
 fn out_of_range_and_label_nodes_are_rejected_and_change_nothing() -> Result<(), String> {
@@ -235,7 +235,7 @@ fn out_of_range_and_label_nodes_are_rejected_and_change_nothing() -> Result<(), 
     check(label(&g.group) == before, "a rejected call changed the label")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Order and duplicates do not matter, and an identical set is accepted again without changing anything.
 #[wasm_bindgen_test]
 fn order_and_duplicates_do_not_matter_and_a_repeat_is_harmless() -> Result<(), String> {
@@ -247,7 +247,7 @@ fn order_and_duplicates_do_not_matter_and_a_repeat_is_harmless() -> Result<(), S
     check(first.ends_with(", not yet computed: cells 7 to 9"), &first)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Marking the same cells again, in the order they were already given, touches nothing in the document. Unsorted input
 /// with duplicates is still accepted, and still ends in the same state.
 #[wasm_bindgen_test]

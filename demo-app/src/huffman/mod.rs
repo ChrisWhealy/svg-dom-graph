@@ -1,7 +1,7 @@
-//! `panel-huffman` / `#huffman-diagram`: Huffman encoding, which counts the bytes of a text, builds the code tree, gives
-//! every byte its canonical code and then packs the codes into bytes. See [`build_scene`]'s own doc comment for what
-//! the diagram shows. The scene is large, so it runs in a window of its own. The gallery's panel keeps the description
-//! and opens that window: see [`build_huffman_demo`].
+//! `panel-huffman` / `#huffman-diagram`: Huffman encoding, which counts the bytes of a text, builds the code tree,
+//! gives every byte its canonical code and then packs the codes into bytes. See [`build_scene`]'s own doc comment for
+//! what the diagram shows. The scene is large, so it runs in a window of its own. The gallery's panel keeps the
+//! description and opens that window: see [`build_huffman_demo`].
 //!
 //! Huffman encoding takes two passes over the text. The first counts how often each byte occurs and builds the tree.
 //! The second replaces each byte with its code and packs the odd-length bit sequences into whole bytes. This file draws
@@ -9,9 +9,9 @@
 //!
 //! # One scene per step
 //!
-//! A node or edge cannot be removed once drawn, and every step changes which nodes exist. So each step
-//! draws the whole scene again, from [`walk::shown`] alone, and keeps the zoom and pan and the keyboard focus the old
-//! one had. Stepping backwards is the same work as stepping forwards.
+//! A node or edge cannot be removed once drawn, and every step changes which nodes exist. So each step draws the whole
+//! scene again, from [`walk::shown`] alone, and keeps the zoom and pan and the keyboard focus the old one had. Stepping
+//! backwards is the same work as stepping forwards.
 //!
 //! # The text to encode
 //!
@@ -22,8 +22,8 @@
 //! # What is real
 //!
 //! All of it. [`algorithm::trace`] encodes the text in plain Rust, and every value on screen is a piece of that one
-//! calculation: the counts, the merges, the tree's paths, the canonical codes, the pending bits and the output. Symbols are bytes, so a multi-byte
-//! character is counted as its separate bytes, as real Huffman encoders do.
+//! calculation: the counts, the merges, the tree's paths, the canonical codes, the pending bits and the output. Symbols
+//! are bytes, so a multi-byte character is counted as its separate bytes, as real Huffman encoders do.
 
 mod algorithm;
 mod walk;
@@ -159,8 +159,8 @@ impl Model {
         }
     }
 
-    /// The model after the text box changes to `text`. A text that can be encoded starts the walk again. One that cannot
-    /// leaves the diagram as it was and only changes what the status line says.
+    /// The model after the text box changes to `text`. A text that can be encoded starts the walk again. One that
+    /// cannot leaves the diagram as it was and only changes what the status line says.
     fn with_text(&self, text: &str) -> Self {
         match algorithm::trace(text.as_bytes()) {
             Some(trace) => Self::new(text, trace),
@@ -193,7 +193,7 @@ impl Model {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A straight, forced south-to-north connector, for a link that runs down from a parent to its child.
 fn downward() -> ConnectorOptions {
     ConnectorOptions::default()
@@ -243,7 +243,7 @@ fn row_cells(row: &Row) -> [String; 5] {
     ]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The nodes of the forest, so that what the step highlights can be found again.
 struct Forest {
     /// Each tree node's own box, by its index in the tree's arena. `None` for a node that is not in the forest yet.
@@ -353,10 +353,9 @@ fn highlight_route(scene: &Scene, forest: &Forest, route: &[usize]) -> Result<()
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the code table with its top left at `(left, top)`, one row for each distinct byte, the commonest first, and
-/// returns the lowest edge. The first row holds the headings, and has a fill of its own. The row `focus_row` is
-/// ringed.
+/// returns the lowest edge. The first row holds the headings, and has a fill of its own. The row `focus_row` is ringed.
 ///
 /// # Errors
 ///
@@ -388,7 +387,7 @@ fn draw_table(scene: &Scene, shown: &Shown, focus_row: Option<usize>, left: f64,
     Ok(y)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws one named row of data at `(left, top)` and returns its lowest edge. `marked` cells get the secondary
 /// selection. `content` is `None` for a row with nothing in it, which is drawn as a plain box saying so.
 ///
@@ -484,8 +483,8 @@ fn bits_to_pack_width(scene: &Scene, trace: &Trace) -> Result<f64, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How wide pass two's stack of rows can get, so that what stands beside it does not move as the walk steps. It is the
-/// widest of a full row of the output in hexadecimal and of the bits to pack beside the
-/// pending bits, which are at most seven.
+/// widest of a full row of the output in hexadecimal and of the bits to pack beside the pending bits, which are at most
+/// seven.
 ///
 /// # Errors
 ///
@@ -500,8 +499,8 @@ fn packing_width(scene: &Scene, bits_width: f64) -> Result<f64, String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws what pass two shows at one step, with its top left at `(left, top)` and `width` wide, and returns the lowest
-/// edge: the bits being appended with the bits left pending beside them, and under those the bytes written so far
-/// in hexadecimal. What the step added to the bits being appended is marked. At the flush it adds its size against the
+/// edge: the bits being appended with the bits left pending beside them, and under those the bytes written so far in
+/// hexadecimal. What the step added to the bits being appended is marked. At the flush it adds its size against the
 /// input's.
 ///
 /// # Errors
@@ -591,9 +590,9 @@ fn status_height(scene: &Scene, model: &Model) -> Result<f64, String> {
 /// left to right and the scene is wide rather than tall.
 ///
 /// **The forest** starts as one tree of one node for each distinct byte, lightest first. Each step merges the two
-/// lightest into a new tree whose weight is their sum, and the merge is ringed. The smaller of the two goes on the left.
-/// Every link is labelled `0` for left or `1` for right. Ties go to the tree made first, so the same text always gives
-/// the same tree. A leaf is coloured differently from a branch, and both from a link's label, since each holds a
+/// lightest into a new tree whose weight is their sum, and the merge is ringed. The smaller of the two goes on the
+/// left. Every link is labelled `0` for left or `1` for right. Ties go to the tree made first, so the same text always
+/// gives the same tree. A leaf is coloured differently from a branch, and both from a link's label, since each holds a
 /// different kind of value.
 ///
 /// **The code table** has a row for each distinct byte, the commonest first, under a heading row of its own colour. Its
@@ -723,8 +722,8 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
         .map_err(stringify)?;
     crate::util::hide_step_driver(DIAGRAM_ID)?;
 
-    // The widest the forest ever is is every byte in a row of its own, before any merge.
-    // Pass two reads from left to right: the text, then the table, then the packing.
+    // The widest the forest ever is is every byte in a row of its own, before any merge. Pass two reads from left to
+    // right: the text, then the table, then the packing.
     let right = if pass_two.is_some() {
         packing_left + packing_width + NAMED_FRAME
     } else {
@@ -735,10 +734,10 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
     Ok((scene, input, step))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the scene for `model`, wires its stepping toolbar, and replaces whatever scene was there. It keeps the zoom
-/// and pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node, which
-/// pass two does not have.
+/// and pan and the keyboard focus on a toolbar button that the old one had. Returns the new text input node, which pass
+/// two does not have.
 ///
 /// # Errors
 ///
@@ -771,15 +770,15 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     if let Some(label) = focused {
         focus_button(&label);
     }
-    // The two passes are different sizes, so the window is fitted again when the walk crosses from one to the other. Not
-    // at every step, since a window that kept changing size would be hard to use.
+    // The two passes are different sizes, so the window is fitted again when the walk crosses from one to the other.
+    // Not at every step, since a window that kept changing size would be hard to use.
     if was_pass_two.is_some_and(|was| was != (model_position >= pass_one_steps)) {
         crate::util::fit_window_to_stage(DIAGRAM_ID)?;
     }
     Ok(input)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moves the diagram to walk position `position`. A failure is shown in the window's own error banner, and logged,
 /// since the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
@@ -817,7 +816,7 @@ fn report(result: Result<(), String>, what: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
 fn focused_button() -> Option<String> {
     let document = crate::util::document().ok()?;
@@ -843,7 +842,7 @@ fn focus_button(label: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Huffman scene at its first step, wires its stepping toolbar, and resizes the window it runs in to fit the
 /// scene. Runs in `huffman-window.html`, not in the gallery.
 ///
@@ -853,15 +852,16 @@ fn focus_button(label: &str) {
 ///    every link is labelled `0` or `1`.
 /// 2. Reading each byte's code length from the depth of its leaf. This is the last thing the tree is used for.
 /// 3. Assigning canonical codes from those lengths, one byte at a time, with the route to the byte marked in the tree.
-///    The table keeps the tree's own paths beside the codes, so it shows that the two differ, with the lengths unchanged.
+///    The table keeps the tree's own paths beside the codes, so it shows that the two differ, with the lengths
+///    unchanged.
 /// 4. Editing the text in the scene's own text input node, which draws everything again from the first step.
 ///
 /// Pass two follows the last canonical code, and demonstrates:
 ///
 /// 5. Packing the codes into bytes, one input byte at a time. The text box is replaced by a hex dump of the input's
 ///    bytes, with the byte being packed marked. Beside it are the pending bits with the new code appended, the bits
-///    left pending, and the bytes written so far in hexadecimal. A byte is written as soon as eight
-///    bits are ready, and the step marks the bytes it wrote.
+///    left pending, and the bytes written so far in hexadecimal. A byte is written as soon as eight bits are ready, and
+///    the step marks the bytes it wrote.
 /// 6. The flush, which pads the last byte with zero bits. It shows the result's size against the input's, with the
 ///    compression ratio.
 ///
@@ -876,7 +876,7 @@ pub(crate) fn build_huffman_window() -> Result<(), String> {
     crate::util::fit_window_to_stage(DIAGRAM_ID)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The Huffman scene is larger than most demos. So the gallery panel keeps only the description, plus a button that
 /// opens the scene in a window of its own: `huffman-window.html`, which runs [`build_huffman_window`] there. A named
 /// window is reused. Pressing the button again focuses the one already open.

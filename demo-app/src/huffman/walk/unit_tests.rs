@@ -1,5 +1,5 @@
-//! The walk against "abracadabra", worked by hand: the merges leave leaves `a`=0 `b`=1 `c`=2 `d`=3 `r`=4, then `c`+`d` =
-//! node 5, `b`+`r` = node 6, node 5 + node 6 = node 7, and `a` + node 7 = the root, node 8.
+//! The walk against "abracadabra", worked by hand: the merges leave leaves `a`=0 `b`=1 `c`=2 `d`=3 `r`=4, then `c`+`d`
+//! = node 5, `b`+`r` = node 6, node 5 + node 6 = node 7, and `a` + node 7 = the root, node 8.
 
 use super::{
     super::algorithm::{Node, trace},
@@ -18,9 +18,9 @@ fn abracadabra() -> Result<Trace, String> {
     trace(b"abracadabra").ok_or_else(|| "the input is encodable".to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Positions
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_walk_has_one_step_for_counting_each_merge_the_lengths_and_each_code() -> Result<(), String> {
     // 1 counting step, 4 merges, 1 lengths step, 5 codes.
@@ -33,9 +33,9 @@ fn a_position_past_the_end_is_the_last() -> Result<(), String> {
     check_eq(shown(&t, 500).caption, shown(&t, 10).caption)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   The forest
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn counting_starts_with_every_byte_as_its_own_tree_lightest_first() -> Result<(), String> {
     // Weights: a=5 b=2 c=1 d=1 r=2. Lightest first, ties to the lower index: c, d, b, r, a.
@@ -80,9 +80,9 @@ fn the_forest_stays_one_tree_after_the_last_merge() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   The table
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_table_holds_counts_only_until_the_lengths_are_read_and_the_commonest_byte_comes_first() -> Result<(), String> {
     let t = abracadabra()?;
@@ -91,7 +91,8 @@ fn the_table_holds_counts_only_until_the_lengths_are_read_and_the_commonest_byte
             check_eq((row.path, row.length, row.canonical), (None, None, None))?;
         }
     }
-    // Most often first, and bytes that occur as often as each other in byte order: a=5, then b=2 and r=2, then c=1 and d=1.
+    // Most often first, and bytes that occur as often as each other in byte order: a=5, then b=2 and r=2, then c=1 and
+    // d=1.
     let counts: Vec<(u8, u32)> = shown(&t, 0).rows.iter().map(|r| (r.symbol, r.count)).collect();
     check_eq(counts, vec![(b'a', 5), (b'b', 2), (b'r', 2), (b'c', 1), (b'd', 1)])
 }
@@ -175,9 +176,9 @@ fn the_canonical_codes_differ_from_the_tree_paths_where_the_tree_put_b_before_c(
     check_eq(differing, vec![b'b', b'c', b'd'])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Captions
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_counting_caption_says_what_was_counted_and_what_comes_next() -> Result<(), String> {
     let caption = shown(&abracadabra()?, 0).caption;
@@ -259,7 +260,8 @@ fn a_canonical_caption_works_the_code_out_and_compares_it_with_the_tree() -> Res
     )?;
     check_eq(first[1].as_str(), "The tree's own path for 'a' happens to be the same.")?;
     check(first[2].starts_with("Codes are handed out shortest first"), "the ordering rule")?;
-    // 'b' follows 'a': the previous code 0, plus 1, shifted left by the 2 bits it is longer by, is 100. The tree said 110.
+    // 'b' follows 'a': the previous code 0, plus 1, shifted left by the 2 bits it is longer by, is 100. The tree said
+    // 110.
     let second = shown(&t, 7).caption;
     check_eq(
         second[0].as_str(),
@@ -309,9 +311,9 @@ fn one_distinct_byte_has_nothing_to_merge_and_a_length_of_one() -> Result<(), St
     check_eq(shown(&t, 2).rows[0].canonical.clone(), Some("0".to_owned()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Layout
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_branch_is_centred_over_its_children_and_sits_one_level_higher() -> Result<(), String> {
     let t = abracadabra()?;
@@ -360,9 +362,9 @@ fn a_leaf_is_as_wide_as_its_label_needs() -> Result<(), String> {
     check(placed.iter().all(|p| p.width >= 48.0), "no box is narrower than the minimum")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Spacing between levels
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn each_connector_between_a_parent_and_its_child_has_room_for_an_elbow_and_an_arrowhead() -> Result<(), String> {
     // Whatever the measured heights are, the gap each side of the bit label is twice the arrowhead and its clearance.
@@ -402,9 +404,9 @@ fn a_child_sits_a_whole_level_below_its_parent() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Markdown
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_byte_that_markdown_reads_as_formatting_is_escaped() -> Result<(), String> {
     for (byte, escaped) in [
@@ -433,9 +435,9 @@ fn a_caption_names_a_formatting_byte_escaped_and_never_bare() -> Result<(), Stri
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   A real sentence
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const AUSTEN: &[u8] =
     b"It is a truth universally acknowledged, that a single man in possession of a good fortune must be in want of a wife.";
 
@@ -477,9 +479,9 @@ fn every_step_explains_itself_in_one_to_three_paragraphs_none_of_them_empty() ->
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Pass two
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // "abracadabra" has the canonical codes a=0 b=100 c=101 d=110 r=111, so it packs to 0100 1110 1010 1100 1001 110 and a
 // single bit of padding: the bytes 0x4E, 0xAC and 0x9C.
 

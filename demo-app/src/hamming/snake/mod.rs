@@ -1,11 +1,11 @@
-//! Laying a path of boxes out as compactly as it can be: along a row, then back along the next, and so on, so that a long
-//! path makes a block and not a line. Pure, so none of it needs a browser.
+//! Laying a path of boxes out as compactly as it can be: along a row, then back along the next, and so on, so that a
+//! long path makes a block and not a line. Pure, so none of it needs a browser.
 //!
 //! Each step of the path is a cell holding the box and, under it, a note about it. The cells are in rows of equal
 //! width. The first row goes left to right, the second right to left, and so on. The box of the cell at the end of a
 //! row has the next box straight below it, and the connector between them loops round the outside. That is why the
-//! boxes at the ends of a row are pushed to the outside of their cell. The note under a box then never lies between
-//! the box and the loop.
+//! boxes at the ends of a row are pushed to the outside of their cell. The note under a box then never lies between the
+//! box and the loop.
 
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::scene::Side;
@@ -114,8 +114,8 @@ pub(super) fn plan(items: &[Item], columns: usize, width: f64, left: f64, top: f
             // The row runs right to left in the odd rows, so the first member is in the last column.
             let col = if forward { n } else { columns - 1 - n };
             let cell_left = left + col as f64 * (width + GAP_X);
-            // The boxes at the ends are pushed to the outside of the cell, so the note is between them and not in the way
-            // of the connector round the end. Those in the middle are centred.
+            // The boxes at the ends are pushed to the outside of the cell, so the note is between them and not in the
+            // way of the connector round the end. Those in the middle are centred.
             let node_x = if columns == 1 || (col != 0 && col != columns - 1) {
                 cell_left + (width - item.node.width) / 2.0
             } else if col == 0 {
@@ -143,8 +143,8 @@ pub(super) fn plan(items: &[Item], columns: usize, width: f64, left: f64, top: f
 /// layout that takes the least room, counting a layout further from [`TARGET_ASPECT`] as taking more. Equal layouts
 /// keep the fewer columns.
 ///
-/// With two or more steps the path needs at least two columns, since a path of one column has its boxes one above
-/// the next with their notes between.
+/// With two or more steps the path needs at least two columns, since a path of one column has its boxes one above the
+/// next with their notes between.
 pub(super) fn best_columns(items: &[Item], width: f64) -> usize {
     let most = items.len().max(1);
     let fewest = if most > 1 { 2 } else { 1 };

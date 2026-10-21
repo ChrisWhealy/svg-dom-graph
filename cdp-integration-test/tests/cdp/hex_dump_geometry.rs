@@ -13,7 +13,7 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The marks sit over the glyphs they name at the edges of a group of eight, at the edges of a line, across the change
 /// of line, and at the last byte, whether or not the dump shows offsets. Measured against where the browser draws each
 /// character, and not against the library's own idea of the columns.
@@ -49,7 +49,7 @@ fn the_marks_sit_over_the_right_glyphs_with_and_without_offsets() -> Result<(), 
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reaching one byte of 256 unreached ones changes only that byte's two blocks in the document. The other 255 are neither
 /// moved nor shown again. The page records every change to the node while it happens.
 #[test]

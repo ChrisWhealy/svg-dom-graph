@@ -39,8 +39,8 @@ fn in_every_format(what: &str, values: &NodeValues) -> Vec<Item> {
 }
 
 /// A line for each of a single value and several, with each line's nodes one beside the next, or if `wide`, the binary
-/// one apart on a line of its own. A binary node has eight digits for every byte, so one of a 32-bit or 64-bit value
-/// is wider than a decimal or hexadecimal one beside it by a margin that would push the line off the canvas.
+/// one apart on a line of its own. A binary node has eight digits for every byte, so one of a 32-bit or 64-bit value is
+/// wider than a decimal or hexadecimal one beside it by a margin that would push the line off the canvas.
 fn lines_for(type_name: &str, single: NodeValues, several: NodeValues, wide: bool) -> Vec<Vec<Item>> {
     let mut lines = Vec::new();
     for (what, values) in [
@@ -59,7 +59,7 @@ fn lines_for(type_name: &str, single: NodeValues, several: NodeValues, wide: boo
     lines
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the unsigned integer demo: for each of `u8`, `u16`, `u32` and `u64`, a single value and several values, each
 /// written in decimal, hexadecimal and binary. Every box is draggable, and every box is sized to fit its own content
 /// automatically, unlike [`crate::tree::build_demo_tree`]'s caller-sized boxes.
@@ -78,7 +78,8 @@ fn lines_for(type_name: &str, single: NodeValues, several: NodeValues, wide: boo
 /// A single `u64` under [`DataFormat::Binary`] is 64 digits, nybble-grouped and byte-separated.
 /// [`GridLayout::Automatic`](svg_dom_graph::scene::GridLayout::Automatic) sizes a grid by cell *count*, not physical
 /// width. So that node is also this demo's own worked example of the extreme cell-aspect-ratio case. That case
-/// motivates [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns) — see that type's own doc comment.
+/// motivates [`GridLayout::MaxColumns`](svg_dom_graph::scene::GridLayout::MaxColumns) — see that type's own doc
+/// comment.
 ///
 /// # Errors
 ///
@@ -124,14 +125,14 @@ pub(crate) fn build_unsigned_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the signed integer demo: for each of `i8`, `i16`, `i32` and `i64`, a single value and several values, each
 /// written in decimal, hexadecimal and binary.
 ///
-/// A sign is shown only for a value that is negative. A positive value, and zero, show none. Hexadecimal and binary show
-/// the value's two's-complement bytes, so an `i8` of `-2` reads `FE` in hexadecimal, and the most negative value of each
-/// width reads as a one followed by zeros. Every group of several values holds a negative, a zero and a positive value,
-/// and the extremes of its width.
+/// A sign is shown only for a value that is negative. A positive value, and zero, show none. Hexadecimal and binary
+/// show the value's two's-complement bytes, so an `i8` of `-2` reads `FE` in hexadecimal, and the most negative value
+/// of each width reads as a one followed by zeros. Every group of several values holds a negative, a zero and a
+/// positive value, and the extremes of its width.
 ///
 /// # Errors
 ///
@@ -169,15 +170,16 @@ pub(crate) fn build_signed_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the hexdump demo: the same bytes as a hex dump in the format of `hexdump -C`, written the four ways that
-/// [`HexDumpFormat`] allows, and then a single byte and a short run of bytes. Each line of sixteen bytes is a cell of its
-/// own, and each node is a line of its own, since a dump line is wider than half the canvas.
+/// [`HexDumpFormat`] allows, and then a single byte and a short run of bytes. Each line of sixteen bytes is a cell of
+/// its own, and each node is a line of its own, since a dump line is wider than half the canvas.
 ///
 /// - **Neither:** each line's offset is hidden, as it is by default, and the line that ends `hexdump -C` with the total
 ///   length is not shown.
 /// - **With offsets:** [`HexDumpFormat::with_offset`] shows each line's offset.
-/// - **With the total length:** [`HexDumpFormat::with_total_length`] adds the final line, which holds the number of bytes.
+/// - **With the total length:** [`HexDumpFormat::with_total_length`] adds the final line, which holds the number of
+///   bytes.
 /// - **With both.**
 ///
 /// # Errors
@@ -223,7 +225,7 @@ pub(crate) fn build_hexdump_demo() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the ASCII demo, which shows bytes as characters in the two ways [`DataFormat`] offers.
 ///
 /// - **[`DataFormat::Ascii`]** writes every byte as one character in a cell of its own: a printable byte as itself, a

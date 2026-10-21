@@ -87,8 +87,8 @@ const INPUT_LEN: usize = 64;
 const INPUT_WIDTH: f64 = 580.0;
 const NOTE_WIDTH: f64 = 260.0;
 
-/// How wide the explanation beside each box is: on the left of the sender's column, which has the most to say, and on the
-/// right of the receiver's.
+/// How wide the explanation beside each box is: on the left of the sender's column, which has the most to say, and on
+/// the right of the receiver's.
 const SENDER_EXPLANATION_WIDTH: f64 = 570.0;
 const RECEIVER_EXPLANATION_WIDTH: f64 = 380.0;
 
@@ -198,8 +198,8 @@ fn go(position: usize) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The toolbar's "Restart" button was pressed. Puts the diagram back to the start of the walk, and removes every flipped
-/// bit, so that the walk starts again from nothing.
+/// The toolbar's "Restart" button was pressed. Puts the diagram back to the start of the walk, and removes every
+/// flipped bit, so that the walk starts again from nothing.
 fn restart() {
     FLIPS.with_borrow_mut(|flips| *flips = Flips::default());
     go(0);
@@ -314,9 +314,8 @@ fn watch_composition(document: &web_sys::Document) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the CRC-32 scene in `crc32-window.html`, and fits the window to it.
-/// The sender's calculation goes down the page, and the receiver's goes back up.`
-/// The diagram is scaled down to 85%, text and all, since it is a large demo.
+/// Builds the CRC-32 scene in `crc32-window.html`, and fits the window to it. The sender's calculation goes down the
+/// page, and the receiver's goes back up.` The diagram is scaled down to 85%, text and all, since it is a large demo.
 ///
 /// The sender's column, from the top:
 ///

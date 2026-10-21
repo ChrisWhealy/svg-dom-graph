@@ -53,11 +53,13 @@ thread_local! {
 const STAGE_ID: &str = "base64-diagram-stage";
 const DIAGRAM_ID: &str = "base64-diagram";
 
-/// The text the demo opens on. It is 62 bytes, which do not divide into groups of three, so the last group needs padding.
+/// The text the demo opens on. It is 62 bytes, which do not divide into groups of three, so the last group needs
+/// padding.
 const INITIAL_TEXT: &str = "This is what some text looks like when encoded using Base64...";
 
 /// How many bytes of the typed text are encoded: 256, which is not a whole number of groups, so the last group of a
-/// full node needs padding. Text past it is not encoded, and the cut falls between characters, never inside one. The hex dump always has room for this many.
+/// full node needs padding. Text past it is not encoded, and the cut falls between characters, never inside one. The
+/// hex dump always has room for this many.
 const INPUT_LEN: usize = 256;
 
 /// How many values the six-bit node lays out on a row, which is four whole groups.
@@ -75,7 +77,7 @@ const NOTE_WIDTH: f64 = 360.0;
 /// The space between one row of nodes and the next, wide enough for a connector.
 const ROW_GAP: f64 = 60.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `values` followed by enough `fill` to make `len` values.
 fn padded(values: &[u8], len: usize, fill: u8) -> Vec<u8> {
     let mut out = values.to_vec();
@@ -83,7 +85,7 @@ fn padded(values: &[u8], len: usize, fill: u8) -> Vec<u8> {
     out
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the scene for `text` with the characters of `alphabet`, replacing whatever scene was there, and returns the
 /// new text input node. It keeps the zoom and pan the old scene had.
 ///
@@ -186,7 +188,8 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
                 .with_layout(GridLayout::Columns(ROW_LEN)),
             )
             .map_err(stringify)?;
-        // The six bits behind a padding character are zeros that the padding made up, so the encoding does not use them.
+        // The six bits behind a padding character are zeros that the padding made up, so the encoding does not use
+        // them.
         let padding: Vec<usize> = (0..encoded.text.len()).filter(|&i| encoded.text[i] == PADDING).collect();
         mark_unreached(&scene, sextets, &padding)?;
         scene.add_edge_with(hexdump, sextets, into_sextets).map_err(stringify)?;
@@ -233,7 +236,7 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
     Ok(input)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text box now holds `text`. Draws the scene again for it, unless the user is composing text with an input method
 /// editor. The scene is replaced along with its text box, and a composition does not survive that. So the scene waits
 /// until the composition ends: see [`composition_ended`].
@@ -243,7 +246,7 @@ fn typed(id: NodeId, text: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the scene again for `text`, then gives the new text box the keyboard focus, with the caret where it was, so
 /// that typing carries on in it. A failure is logged to the console, since the text box's own callback has nowhere to
 /// return it to.
@@ -263,11 +266,11 @@ fn redraw(id: NodeId, text: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The user has finished composing. Draws the scene for the text the text box holds now, if it is not the text the scene
-/// was drawn for. The browser can send the last `input` event either before or after `compositionend`, and the text may
-/// not be in the box until the event that follows it. So this looks once the event has been handled, and draws nothing
-/// if the `input` event has already done so.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The user has finished composing. Draws the scene for the text the text box holds now, if it is not the text the
+/// scene was drawn for. The browser can send the last `input` event either before or after `compositionend`, and the
+/// text may not be in the box until the event that follows it. So this looks once the event has been handled, and draws
+/// nothing if the `input` event has already done so.
 fn composition_ended() {
     let value = web_sys::window()
         .and_then(|w| w.document())
@@ -280,7 +283,7 @@ fn composition_ended() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Watches the stage for the start and end of a composition. Composition events bubble, and the stage outlives every
 /// scene that is drawn in it, so these two listeners are attached once.
 ///
@@ -308,7 +311,7 @@ fn watch_composition(document: &web_sys::Document) -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the same text again with `alphabet`. The text is that of the text box in the scene on the page.
 fn choose(alphabet: Alphabet) {
     let text = web_sys::window()
@@ -322,7 +325,7 @@ fn choose(alphabet: Alphabet) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the Base64 demo: a text input node and the nodes that follow it down the page.
 ///
 /// 1. The text input node holds the text to encode. Each change encodes it again.
@@ -332,8 +335,8 @@ fn choose(alphabet: Alphabet) {
 ///    `a-z`, `0-9`, then `+` and `/`, or `-` and `_` in the URL-safe alphabet. There are exactly as many as the text
 ///    needs, so the node has a row only when there are values for it.
 /// 4. The character for each value, as a second hex dump beside the first, so that the data flows down the page and
-///    then back up. A group of one or two bytes is short, so its last two or one characters are the padding `=`, and the
-///    six-bit values behind them are dimmed.
+///    then back up. A group of one or two bytes is short, so its last two or one characters are the padding `=`, and
+///    the six-bit values behind them are dimmed.
 ///
 /// Every value is worked out in plain Rust by [`encode`]. The library does no encoding. A node holds the same number of
 /// values for as long as it lives, so each change draws the scene again, as the Huffman demo does. Text past

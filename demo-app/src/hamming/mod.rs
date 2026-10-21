@@ -192,9 +192,9 @@ fn restart() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The position of the flipped bit that the page's address asks for, as in `hamming-window.html?error=5`, if it asks for
-/// one that exists. The page opens with that bit already flipped. It gives a browser test the one position it wants,
-/// where the button picks at random. There is no control for it on the page.
+/// The position of the flipped bit that the page's address asks for, as in `hamming-window.html?error=5`, if it asks
+/// for one that exists. The page opens with that bit already flipped. It gives a browser test the one position it
+/// wants, where the button picks at random. There is no control for it on the page.
 fn error_in_address() -> Option<usize> {
     let search = web_sys::window()?.location().search().ok()?;
     search
@@ -241,9 +241,9 @@ fn focus(selector: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the Hamming(7,4) scene in `hamming-window.html`, at the start of the walk, wires its stepping toolbar and
-/// its buttons, and resizes the window to fit the scene.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the Hamming(7,4) scene in `hamming-window.html`, at the start of the walk, wires its stepping toolbar and its
+/// buttons, and resizes the window to fit the scene.
 ///
 /// The path of boxes is the calculation:
 ///

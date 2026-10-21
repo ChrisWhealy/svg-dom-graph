@@ -47,9 +47,9 @@ fn decode(lengths: &[(u8, u8)], bytes: &[u8], bit_len: usize) -> Result<Vec<u8>,
     Ok(out)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Pass one
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn frequencies_are_counted_in_byte_order() -> Result<(), String> {
     let got: Vec<(u8, u32)> = frequencies(b"abracadabra").iter().map(|f| (f.symbol, f.count)).collect();
@@ -181,9 +181,9 @@ fn the_codes_are_prefix_free_and_fill_the_code_space() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Pass two
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn abracadabra_packs_to_the_hand_worked_bytes() -> Result<(), String> {
     // a=0 b=100 r=111 c=101 d=110, so a b r a c a d a b r a is
@@ -290,9 +290,9 @@ fn the_final_flush_can_be_derived_from_the_last_step() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Edge cases
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn one_distinct_byte_gets_a_one_bit_code() -> Result<(), String> {
     let t = trace_of(b"aaaaaaaaa")?;
@@ -399,9 +399,9 @@ fn non_ascii_text_is_encoded_as_its_utf8_bytes() -> Result<(), String> {
     check_eq(String::from_utf8(back).map_err(|e| e.to_string())?, text.to_owned())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 //   Round trip
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn decoding_from_the_lengths_alone_recovers_the_input() -> Result<(), String> {
     // A small deterministic generator, so that the test needs no random number crate.
