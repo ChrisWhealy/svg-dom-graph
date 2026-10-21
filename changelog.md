@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.39] - 2026-10-21
 
 ## Added
@@ -25,9 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Exclude reserved surrogate code points from 3-byte UTF example (`51c4240`)
 - Correct sorting CDP tests (`32ea23d`)
 - Separate sort DOM testing from animation testing (`29784cf`)
-- Correct sort array description when already sorted (``)
-
-# [Released]
+- Correct sort array description when already sorted (`875ab38`)
 
 ## [0.2.38] - 2026-10-21
 
