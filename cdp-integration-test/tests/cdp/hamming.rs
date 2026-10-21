@@ -301,6 +301,22 @@ fn each_step_reaches_the_next_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Each step is announced in the live region, which is outside the scene, so a screen reader is told where the walk is.
+#[test]
+fn each_step_is_announced_to_a_screen_reader() -> Result<(), String> {
+    let tab = open()?;
+    for (position, name) in BOXES.iter().enumerate().skip(1) {
+        goto(&tab, position)?;
+        let said = text(&tab, "document.getElementById('hamming-announcement').textContent")?;
+        check(
+            said.starts_with(&format!("Step {} of 9: {name}", position + 1)),
+            &format!("position {position} announced {said:?}"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flipping a bit moves the walk to the received codeword, and the receiver finds exactly that bit: the error position
 /// at the end of the path is the position the status line says was flipped. The data is recovered whichever bit it was.
 #[test]

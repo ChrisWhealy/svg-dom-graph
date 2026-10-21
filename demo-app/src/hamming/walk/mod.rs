@@ -25,6 +25,27 @@ pub(super) fn newest(position: usize) -> Option<usize> {
     (position > 0).then(|| position.min(BOXES - 1))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What each position is, in a few words: the name of its box and what is done to arrive there.
+const STAGES: [&str; BOXES] = [
+    "Data bits. The four bits to protect.",
+    "Parity bits. Each makes its group of bits hold an even number of 1s.",
+    "Codeword. The data and parity bits in positions 1 to 7.",
+    "Received codeword. The channel may have flipped one bit.",
+    "Check bits. The three groups worked out again over the bits that arrived.",
+    "Syndrome. The three checks read as a binary number.",
+    "Error position. The syndrome, which is the position of the flipped bit, or 0 if none.",
+    "Corrected codeword. The bit at the error position is flipped back.",
+    "Recovered data. Read from positions 3, 5, 6 and 7.",
+];
+
+/// What a screen reader is told when the walk arrives at `position`, which it cannot see: how far along it is, and what
+/// the box it has reached is.
+pub(super) fn announcement(position: usize) -> String {
+    let index = position.min(BOXES - 1);
+    format!("Step {} of {BOXES}: {}", index + 1, STAGES[index])
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

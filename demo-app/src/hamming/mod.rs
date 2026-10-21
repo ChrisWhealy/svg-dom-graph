@@ -156,10 +156,16 @@ fn redraw(action: &str, position: usize) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves the diagram to walk position `position`. A failure is shown in the window's own error banner, since the
+/// Moves the diagram to walk position `position`, and announces it. A failure is shown in the window's own error banner, since the
 /// toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
-    report(build(position), &format!("This step failed (position {position})"));
+    let result = build(position);
+    let worked = result.is_ok();
+    report(result, &format!("This step failed (position {position})"));
+    // The toolbar's own buttons have fixed names, so nothing else tells a screen reader where the walk has got to.
+    if worked {
+        controls::announce(&walk::announcement(position));
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
