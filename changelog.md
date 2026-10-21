@@ -10,7 +10,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Add a demo implementation of UTF-8 encoding (``)
+- Add a demo implementation of UTF-8 encoding (`4d0952b`)
 
 # [Released]
 
