@@ -71,6 +71,9 @@
 //! - `panel-crc32` / `#crc32-diagram` — [`crc32::build_crc32_demo`]: the CRC-32 of typed text, a byte at a time. Each byte
 //!   picks an entry of the table of 256 with the register, and the entry is XORed with the register shifted a byte. The
 //!   register starts as all ones and is flipped at the end. Every value is worked out in plain Rust.
+//! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three parity
+//!   bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The boxes are one
+//!   path through the calculation, laid out as a block that runs along one row and back along the next.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -95,6 +98,7 @@ mod data;
 mod edge_anchors;
 mod elbow;
 mod floats;
+mod hamming;
 mod highlight;
 mod huffman;
 mod operators_arithmetic;
@@ -106,6 +110,7 @@ mod sha1;
 mod sha2_256;
 mod sha3_sponge;
 mod source_frame;
+mod svg_buttons;
 mod text_nodes;
 mod tree;
 mod util;
@@ -205,6 +210,7 @@ demo_gallery! {
     "panel-base64" => base64::build_base64_demo + base64::FILES,
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
     "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
+    "panel-hamming" => hamming::build_hamming_demo + hamming::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -245,6 +251,14 @@ pub fn init_huffman_window() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn init_crc32_window() -> Result<(), JsValue> {
     crc32::build_crc32_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the Hamming(7,4) scene in `hamming-window.html`, the window the gallery's own Hamming(7,4) panel opens. Call
+/// it once, from that page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_hamming_window() -> Result<(), JsValue> {
+    hamming::build_hamming_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

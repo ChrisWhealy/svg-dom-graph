@@ -111,9 +111,6 @@ const ANNOUNCEMENT_ID: &str = "crc32-announcement";
 /// Finds the text box that holds the text to checksum.
 const TEXT_BOX: &str = "#crc32-diagram g[aria-label^=\"Text to checksum\"] input";
 
-/// The XML namespace SVG elements are created in.
-const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
-
 /// The space between one row of boxes and the next, wide enough for a connector.
 const ROW_GAP: f64 = 50.0;
 

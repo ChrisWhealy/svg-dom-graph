@@ -39,6 +39,8 @@
 //!   gallery.
 //! - [`crc32`] — the CRC-32 demo in the window the gallery's panel opens: the checksum on opening, typing, an empty text, the cut
 //!   at 64 bytes, the focus and caret across the redraw, and the receiver finding and correcting a flipped bit. Also runs against the built demo gallery.
+//! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a block,
+//!   the buttons that choose the data and flip a bit, and the stepping toolbar. Also runs against the built demo gallery.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's accessibility
 //!   tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -73,6 +75,7 @@ mod common;
 mod connectors;
 mod crc32;
 mod edge_anchors;
+mod hamming;
 mod hex_dump_geometry;
 mod hex_dump_paint_order;
 mod hex_dump_selection;

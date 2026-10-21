@@ -1,19 +1,20 @@
 //! The buttons in the scene that introduce an error, and what they do.
 
 use super::{
-    ANNOUNCEMENT_ID, DEMO, DIAGRAM_ID, FLIPS, INITIAL_TEXT, INPUT_LEN, STAGE_ID, SVG_NAMESPACE, build, flips::Flips,
-    report, walk::Walk,
+    ANNOUNCEMENT_ID, DEMO, DIAGRAM_ID, FLIPS, INITIAL_TEXT, INPUT_LEN, STAGE_ID, build, flips::Flips, report,
+    walk::Walk,
 };
 use crate::{
     base64::encode::utf8_prefix,
-    util::{document, required_element, stringify},
+    svg_buttons::{self, Button},
+    util::{document, stringify},
 };
-use svg_dom::root::utils::Point;
+use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     NodeId,
     scene::{NodeOptions, Scene},
 };
-use wasm_bindgen::{JsCast, closure::Closure};
+use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the buttons for introducing an error, and the gap between one and the next.
@@ -43,23 +44,26 @@ pub(super) fn add_controls(
     status_options: NodeOptions,
 ) -> Result<NodeId, String> {
     let document = document()?;
-    let layer = document
-        .query_selector(&format!("#{DIAGRAM_ID} > g.svg-dom-graph-content"))
-        .map_err(|e| format!("could not look for the scene's layer: {e:?}"))?
-        .ok_or("the scene has no content layer")?;
+    let layer = svg_buttons::layer(&document, DIAGRAM_ID)?;
     let mut left = left;
     // The button that flips one bit at random, then the button that puts it back.
     for (label, action, colours) in [
         ("Flip a random bit", "introduce", FLIP_COLOURS),
         ("Remove all errors", "remove", REMOVE_COLOURS),
     ] {
-        add_button(
+        svg_buttons::add_button(
             &document,
             &layer,
-            Point::new(left, middle - BUTTON_HEIGHT / 2.0),
-            label,
-            action,
-            colours,
+            Rect {
+                origin: Point::new(left, middle - BUTTON_HEIGHT / 2.0),
+                size: Size::new(BUTTON_WIDTH, BUTTON_HEIGHT),
+            },
+            &Button {
+                label,
+                action,
+                colours,
+                pressed: None,
+            },
         )?;
         left += BUTTON_WIDTH + CONTROL_GAP;
     }
@@ -156,117 +160,16 @@ fn text_length() -> Option<usize> {
     Some(length)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws a button in the scene's own layer `layer`, at `top_left`, that `watch_buttons` will find by its `action`. It is
-/// a rectangle with a label, in a group that has the role of a button and can take the keyboard focus.
-///
-/// # Errors
-///
-/// Returns `Err` if an element could not be made or added.
-fn add_button(
-    document: &web_sys::Document,
-    layer: &web_sys::Element,
-    top_left: Point,
-    label: &str,
-    action: &str,
-    (fill, stroke): (&str, &str),
-) -> Result<(), String> {
-    let make = |tag: &str, attributes: &[(&str, String)]| -> Result<web_sys::Element, String> {
-        let element = document
-            .create_element_ns(Some(SVG_NAMESPACE), tag)
-            .map_err(|e| format!("could not make a <{tag}>: {e:?}"))?;
-        for (name, value) in attributes {
-            element
-                .set_attribute(name, value)
-                .map_err(|e| format!("could not set {name} on a <{tag}>: {e:?}"))?;
-        }
-        Ok(element)
-    };
-    let group = make(
-        "g",
-        &[
-            ("role", "button".to_owned()),
-            ("tabindex", "0".to_owned()),
-            ("aria-label", label.to_owned()),
-            ("data-action", action.to_owned()),
-            ("style", "cursor: pointer;".to_owned()),
-        ],
-    )?;
-    let rect = make(
-        "rect",
-        &[
-            ("x", top_left.x.to_string()),
-            ("y", top_left.y.to_string()),
-            ("width", BUTTON_WIDTH.to_string()),
-            ("height", BUTTON_HEIGHT.to_string()),
-            ("rx", "6".to_owned()),
-            ("fill", fill.to_owned()),
-            ("stroke", stroke.to_owned()),
-            ("stroke-width", "1.5".to_owned()),
-        ],
-    )?;
-    let text = make(
-        "text",
-        &[
-            ("x", (top_left.x + BUTTON_WIDTH / 2.0).to_string()),
-            ("y", (top_left.y + BUTTON_HEIGHT / 2.0).to_string()),
-            ("text-anchor", "middle".to_owned()),
-            ("dominant-baseline", "central".to_owned()),
-            ("font-size", "14".to_owned()),
-            ("fill", "#1a1a1a".to_owned()),
-            ("style", "pointer-events: none; user-select: none;".to_owned()),
-        ],
-    )?;
-    text.set_text_content(Some(label));
-    for (parent, child) in [(&group, &rect), (&group, &text), (layer, &group)] {
-        parent
-            .append_child(child)
-            .map_err(|e| format!("could not add the button: {e:?}"))?;
-    }
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Makes the buttons drawn by [`add_button`] work. One listener for clicks and one for the Enter and Space keys are on
-/// the stage, which outlives every scene that is drawn in it, and find the button by its `data-action`. So a scene
-/// drawn again needs no listeners of its own.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes the buttons work: see [`svg_buttons::watch`].
 ///
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing, or a listener could not be attached.
 pub(super) fn watch_buttons(document: &web_sys::Document) -> Result<(), String> {
-    let stage = required_element(document, STAGE_ID)?;
-    let press = |target: Option<web_sys::EventTarget>| {
-        let action = target
-            .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
-            .and_then(|e| e.closest("[data-action]").ok().flatten())
-            .and_then(|button| button.get_attribute("data-action"));
-        match action.as_deref() {
-            Some("introduce") => introduce_error(),
-            Some("remove") => remove_error(),
-            _ => {},
-        }
-    };
-    let clicked = Closure::<dyn FnMut(web_sys::Event)>::new(move |event: web_sys::Event| press(event.target()));
-    let key = Closure::<dyn FnMut(web_sys::KeyboardEvent)>::new(move |event: web_sys::KeyboardEvent| {
-        if event.key() == "Enter" || event.key() == " " {
-            let on_button = event
-                .target()
-                .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
-                .is_some_and(|e| e.closest("[data-action]").ok().flatten().is_some());
-            if on_button {
-                event.prevent_default();
-                press(event.target());
-            }
-        }
-    });
-    stage
-        .add_event_listener_with_callback("click", clicked.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the click listener: {e:?}"))?;
-    stage
-        .add_event_listener_with_callback("keydown", key.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the keydown listener: {e:?}"))?;
-    clicked.forget();
-    key.forget();
-    Ok(())
+    svg_buttons::watch(document, STAGE_ID, |action| match action {
+        "introduce" => introduce_error(),
+        "remove" => remove_error(),
+        _ => {},
+    })
 }

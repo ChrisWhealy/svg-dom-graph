@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Add a demo implementation of the CRC-32 algorithm (`4be261b`)
-- Step through the CRC-32 calculation with a selection toolbar (``)
+- Step through the CRC-32 calculation with a selection toolbar (`00e44d1`)
+- Add a demo implementation of the Hamming(7,4) algorithm (``)
 
 ## Fixed
 

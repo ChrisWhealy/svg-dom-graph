@@ -31,6 +31,7 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo/chacha20-window.html")?;
     copy("demo/huffman-window.html")?;
     copy("demo/crc32-window.html")?;
+    copy("demo/hamming-window.html")?;
     for id in panels::panel_ids() {
         copy(&format!("demo/panels/{id}.html"))?;
     }
@@ -75,6 +76,7 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
         "chacha20-window.html",
         "huffman-window.html",
         "crc32-window.html",
+        "hamming-window.html",
     ] {
         if !stage.stage_dir.join(page).is_file() {
             return Err(format!("expected {page} to be staged alongside index.html"));

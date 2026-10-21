@@ -106,7 +106,7 @@ const GROUPS: &[Group] = &[
     },
     Group {
         label: "Error Detection & Correction",
-        panels: &[("panel-crc32", "CRC-32")],
+        panels: &[("panel-crc32", "CRC-32"), ("panel-hamming", "Hamming(7,4)")],
     },
 ];
 
