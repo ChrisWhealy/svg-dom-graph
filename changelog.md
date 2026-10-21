@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Validate error bit and byte input fields in CRC-32 demo (`be90206`)
 - Write screen redraw errors to the browser not console (`9857976`)
 - Correct failing Hammimng tests (`d6fb520`)
-- Correct restart logic in Hamming demo (``)
+- Correct restart logic in Hamming demo (`bf7cc40`)
+- Correct Hamming error position test (``)
 
 # [Released]
 

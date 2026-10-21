@@ -317,14 +317,14 @@ fn the_receiver_finds_whichever_bit_was_flipped() -> Result<(), String> {
             .and_then(|rest| rest.split(' ').next().map(str::to_owned))
             .ok_or("the status line does not say which bit")?;
         goto(&tab, LAST)?;
-        // The box's own texts are its title, then its value.
+        // The box draws its title first and its one value last.
         let found = text(
             &tab,
             &format!(
-                "[...document.querySelector('{DIAGRAM} g[aria-label^=\"Error position\"]').querySelectorAll('text')].map(t => t.textContent).join('')"
+                "[...document.querySelector('{DIAGRAM} g[aria-label^=\"Error position\"]').querySelectorAll('text')].at(-1).textContent"
             ),
         )?;
-        check_eq(found.strip_prefix("Error position").unwrap_or(&found), status.as_str())?;
+        check_eq(found.as_str(), status.as_str())?;
         check(says(&tab, "They are the data that was sent.")?, "the data should be recovered")?;
         goto(&tab, 0)?;
     }
