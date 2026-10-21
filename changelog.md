@@ -6,7 +6,9 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.38] - 2026-10-20
+# [Released]
+
+## [0.2.38] - 2026-10-21
 
 ## Added
 
@@ -20,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Update highlight only after walk reaches the relevant box (`fa6f3ea`)
 - Dim Markdown node content for unreached steps (`cdb3657`)
-- Clarify behaviour when "Prev" is pressed at start of CRC32 and Hamming demos (``)
+- Clarify behaviour when "Prev" is pressed at start of CRC32 and Hamming demos (`9cacff4`)
 
 ## Fixed
 
@@ -31,9 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct restart logic in Hamming demo (`bf7cc40`)
 - Correct Hamming error position test (`64830a8`)
 - Server test handles query strings (`23e97d4`)
-- Prevent "Restart" from overwriting its own accessibility announcement (``)
-
-# [Released]
+- Prevent "Restart" from overwriting its own accessibility announcement (`d62c791`)
 
 ## [0.2.37] - 2026-10-20
 
