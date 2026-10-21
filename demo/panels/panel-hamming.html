@@ -1,30 +1,37 @@
 <section class="section" id="panel-hamming">
     <h2>Hamming(7,4)</h2>
-    <p>A <em>Hamming code</em> adds a few extra bits to some data so that a receiver can not only tell that a bit changed on
-        the way, but find <em>which</em> bit it was, and flip it back. No other bit needs to be sent again.</p>
+    <p>A <em>Hamming code</em> adds a few extra bits to some data so that a receiver can not only tell that a bit
+        changed on the way, but find <em>which</em> bit it was, and flip it back. No other bit needs to be sent again.
+    </p>
     <p>Hamming(7,4) protects four data bits with three <em>parity</em> bits, making a codeword of seven. The bits are
-        numbered 1 to 7 from the left. The parity bits are at the positions that are powers of two, 1, 2 and 4, and the data
-        bits are at 3, 5, 6 and 7. Each parity bit makes a group of bits hold an even number of 1s. The group is every
-        position whose number has the parity bit's own number among its binary 1s:</p>
+        numbered 1 to 7 from the left. The parity bits are at the positions that are powers of two, 1, 2 and 4, and the
+        data bits are at 3, 5, 6 and 7. Each parity bit makes a group of bits hold an even number of 1s. The group is
+        every position whose number has the parity bit's own number among its binary 1s:</p>
     <ul>
         <li><code>p1</code> at position 1 (binary 001) covers positions 1, 3, 5 and 7.</li>
         <li><code>p2</code> at position 2 (binary 010) covers positions 2, 3, 6 and 7.</li>
         <li><code>p4</code> at position 4 (binary 100) covers positions 4, 5, 6 and 7.</li>
     </ul>
-    <p>The receiver works out the same three groups over the bits that arrived. If a bit flipped, the groups that contain it
-        no longer hold an even number of 1s. Written as a binary number, the three checks are the <em>syndrome</em>, and it
-        is exactly the position of the flipped bit, because each position is covered by the groups that are the 1s in its
-        number. A syndrome of zero means that every group is still even.</p>
-    <p>The diagram is the path of that calculation, one box for each step. A path of nine boxes in a line would be long and
-        thin, so the boxes run along one row and back along the next, and the number of boxes in a row is chosen to make the
-        block as compact as it can be.</p>
-    <p>The toolbar at the top steps along the path. At the start only the data is shown, and the boxes still to come are drawn
-        faint. The buttons along the top set each data bit, flip one bit of the codeword at random on the way to the receiver,
-        and put it back. Flipping a bit moves the walk on to the received codeword, if it is not there yet, so that the error
-        can be seen. "Restart" starts the walk again and removes the flipped bit.</p>
-    <p>Hamming(7,4) corrects only <em>one</em> flipped bit. If two bits flipped, the syndrome would point at a third position,
-        and the receiver would put the wrong bit right without knowing. That is why this demo flips only one.</p>
-    <p>The diagram opens in a window of its own. Every bit is worked out in plain Rust. The library draws the nodes and does
-        no coding.</p>
+    <p>The receiver works out the same three groups over the bits that arrived. If a bit flipped, the groups that
+        contain it no longer hold an even number of 1s. Written as a binary number, the three checks are the
+        <em>syndrome</em>, and it is exactly the position of the flipped bit, because each position is covered by the
+        groups that are the 1s in its number. A syndrome of zero means that every group is still even.
+    </p>
+    <p>The toolbar at the top steps along the path. At the start only the data is shown and the unreached boxes are
+        drawn faint. The buttons along the top are used to:</p>
+    <ol>
+        <li>Set each data bit</li>
+        <li>Flip a random bit to simulate transmission corruption</li>
+    </ol>
+    <p>The walk will start again when you:</p>
+    <ol>
+        <li>Press "Restart" (which also removes any flipped bit)</li>
+        <li>Press "Previous" when the walk is already at the start</li>
+    </ol>
+    <p>Hamming(7,4) corrects only <em>one</em> flipped bit. If two bits flipped, the syndrome would point at a third
+        position, and the receiver would put the wrong bit right without knowing. That is why this demo flips only one.
+    </p>
+    <p>The diagram opens in a window of its own. Every bit is worked out in plain Rust. The library draws the nodes and
+        does no coding.</p>
     <button id="hamming-open" class="open-window" type="button">Open the demo in its own window</button>
 </section>

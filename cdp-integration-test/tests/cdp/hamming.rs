@@ -541,12 +541,21 @@ at_each_position! { restart_from:
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// "Previous selection" at position 0 has nowhere earlier to go. The walk stays at the start, and nothing fails.
+/// "Previous selection" at position 0 has nowhere earlier to go, and the toolbar reports it exactly as it reports "Restart".
+/// So the walk stays at the start, a flipped bit is removed as a restart removes it, the data stays, and nothing fails.
 #[test]
-fn previous_at_position_zero_stays_at_the_start() -> Result<(), String> {
-    let tab = open()?;
+fn previous_at_position_zero_is_a_restart() -> Result<(), String> {
+    let tab = open_with("?error=5")?;
+    check(
+        says(&tab, "The bit at position 5 is flipped in transmission.")?,
+        "the page should open with a flipped bit",
+    )?;
     click_and_settle(&tab, "Previous selection")?;
     check_eq(step_position(&tab)?, Some(0))?;
+    check(
+        says(&tab, "No error has been introduced.")?,
+        "stepping back from the start restarts, which removes the flipped bit",
+    )?;
     check(!faint(&tab, "Data bits")?, "the data should still be there")?;
     check(faint(&tab, "Parity bits")?, "nothing else should be reached")?;
     check_eq(

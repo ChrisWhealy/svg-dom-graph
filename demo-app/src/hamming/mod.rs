@@ -120,6 +120,8 @@ fn build(position: usize) -> Result<(), String> {
             SelectionToolbarOptions::new(Side::North),
             |_scene, _node, transition| match transition.to {
                 Some(position) => go(position),
+                // "Restart" and "Previous" from the first position are the same transition, so both land here, and the
+                // demo cannot tell them apart. Stepping back from the start is therefore a restart.
                 None => restart(),
             },
         )
@@ -169,7 +171,8 @@ fn go(position: usize) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The toolbar's "Restart" button was pressed. Puts the diagram back to the start of the walk, and removes the flipped
+/// The toolbar's "Restart" button was pressed, or "Previous" from the first position, which the toolbar reports in the
+/// same way. Puts the diagram back to the start of the walk, and removes the flipped
 /// bit, so that the walk starts again from nothing. The data bits stay as they are.
 fn restart() {
     STATE.with_borrow_mut(|state| state.error = None);

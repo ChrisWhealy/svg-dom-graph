@@ -158,6 +158,8 @@ fn build(text: &str, position: usize) -> Result<NodeId, String> {
             SelectionToolbarOptions::new(Side::North).with_stride(SelectionStride::new(walk::STRIDE, "8")),
             |_scene, _node, transition| match transition.to {
                 Some(position) => go(position),
+                // "Restart" and "Previous" from the first position are the same transition, so both land here, and the
+                // demo cannot tell them apart. Stepping back from the start is therefore a restart.
                 None => restart(),
             },
         )

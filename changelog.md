@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Update highlight only after walk reaches the relevant box (`fa6f3ea`)
 - Dim Markdown node content for unreached steps (`cdb3657`)
+- Clarify behaviour when "Prev" is pressed at start of CRC32 and Hamming demos (``)
 
 ## Fixed
 
@@ -29,7 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct failing Hammimng tests (`d6fb520`)
 - Correct restart logic in Hamming demo (`bf7cc40`)
 - Correct Hamming error position test (`64830a8`)
-- Server test handles query strings (``)
+- Server test handles query strings (`23e97d4`)
 
 # [Released]
 

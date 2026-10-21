@@ -26,39 +26,46 @@
     </ol>
     <p>The standard way to check an implementation of CRC-32 is that the text <code>123456789</code> has the checksum
         <code>CBF43926</code>. Type that text to try it. The diagram opens on a longer sentence, so that there is enough
-        to corrupt.</p>
+        to corrupt.
+    </p>
     <h3>Correcting an error</h3>
     <p>CRC-32 is nearly always used only to <em>detect</em> an error, and the data is then sent again. But the check
-        number holds enough to do more when exactly one bit has changed. The difference between the check number that was
-        sent and the one the receiver works out is called the <em>syndrome</em>. It is zero if nothing changed. For a
-        single flipped bit, it depends only on <em>where</em> the bit is, and not on what the data holds. This
-        polynomial gives every bit position of data this short a different syndrome, so the receiver can work out the
+        number holds enough to do more when exactly one bit has changed. The difference between the check number that
+        was sent and the one the receiver works out is called the <em>syndrome</em>. It is zero if nothing changed. For
+        a single flipped bit, it depends only on <em>where</em> the bit is, and not on what the data holds. This
+        polynomial gives every bitposition of data this short a different syndrome, so the receiver can work out the
         syndrome of each position, find the one that matches, and flip that bit back. If two bits change, no single
         position matches. That is detected, but it cannot be corrected.</p>
-    <p>The toolbar at the top of the diagram steps through the calculation. At the start nothing has been worked out, and
-        every box that is still to come is drawn faint. Each step takes one more byte of the text through the register and
-        marks it in the bytes, the table index, the table entry and the register. After the last byte come the final XOR,
-        the arrival of the bytes at the receiver, and then each of the receiver's boxes in turn. "Next 8" moves eight
-        steps at a time. Editing the text starts the walk again, and so does "Restart", which also removes any flipped bit.</p>
+    <p>The toolbar at the top of the diagram steps through the calculation. At the start nothing has been worked out,
+        and every box that is still to come is drawn faint. Each step takes one more byte of the text through the
+        register and marks it in the bytes, the table index, the table entry and the register. After the last byte come
+        the final XOR, the arrival of the bytes at the receiver, and then each of the receiver's boxes in turn. "Next 8"
+        moves eight steps at a time.</p>
+    <p>The walk will start again when you:</p>
+    <ol>
+        <li>Edit the text</li>
+        <li>Press "Restart" (which also removes any flipped bit)</li>
+        <li>Press "Previous" when the walk is already at the start</li>
+    </ol>
     <p>Press "Flip a random bit" at the top of the diagram. The demo picks one bit at random, from the data or from the
-        CRC, and flips it on the way from the sender to the receiver. If the walk has not reached the arrival of the bytes,
-        it moves there, so that the error can be seen. Watch the receiver's column. The data flows down the sender's
-        column, across, and then up the receiver's column. Each press picks again, and "Remove all errors" puts the bit
-        back.</p>
+        CRC, and flips it on the way from the sender to the receiver. If the walk has not reached the arrival of the
+        bytes, it moves there, so that the error can be seen. Watch the receiver's column. The data flows down the
+        sender's column, across, and then up the receiver's column. Each press picks again, and "Remove all errors" puts
+        the bit back.</p>
     <ul>
         <li><strong>One bit of the data:</strong> the receiver finds which bit it is and flips it back.</li>
-        <li><strong>One bit of the CRC:</strong> the data is right and the CRC is wrong. The syndrome has a single 1, which
-            no bit of the data gives, so the receiver leaves the data alone.</li>
+        <li><strong>One bit of the CRC:</strong> the data is right and the CRC is wrong. The syndrome has a single 1,
+            which no bit of the data gives, so the receiver leaves the data alone.</li>
     </ul>
     <p>Only one bit is flipped because one is all that CRC-32 can correct. When two or more bits change, the check
         number still shows that something is wrong, but no single position matches the syndrome, so the receiver can
         only ask for the data again. With several bits flipped, the syndrome can even match a single position by chance,
         and then the receiver would correct the wrong bit.</p>
     <p>Type in the text input node. Each box of the diagram has a note beside it that says what it holds and how its
-        values are worked out. The numbers in the sender's notes are the real ones for the first byte of the text, so you
-        can follow that byte all the way through by hand. The diagram is drawn again for each change. Zoom and pan are
-        kept. The boxes line up on one axis and cannot be dragged. Bits are counted from 0 at the least significant bit of
-        a byte.</p>
+        values are worked out. The numbers in the sender's notes are the real ones for the first byte of the text, so
+        you can follow that byte all the way through by hand. The diagram is drawn again for each change. Zoom and pan
+        are kept. The boxes line up on one axis and cannot be dragged. Bits are counted from 0 at the least significant
+        bit of a byte.</p>
     <p>The checksum covers 64 bytes, so each byte can be a step in the diagram. Any text past that is not covered, the
         cut falls between characters, and a note to the right of the text input node says how much was left out. Every
         value is worked out in plain Rust. The library draws the nodes and does no checksumming.</p>
