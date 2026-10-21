@@ -1,4 +1,3 @@
-
 //! The Hamming(7,4) code in plain Rust: four data bits and three parity bits make a seven-bit codeword, from which one
 //! flipped bit can be found and put right. Nothing here touches the DOM or the library.
 //!

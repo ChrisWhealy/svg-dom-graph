@@ -317,13 +317,14 @@ fn the_receiver_finds_whichever_bit_was_flipped() -> Result<(), String> {
             .and_then(|rest| rest.split(' ').next().map(str::to_owned))
             .ok_or("the status line does not say which bit")?;
         goto(&tab, LAST)?;
+        // The box's own texts are its title, then its value.
         let found = text(
             &tab,
             &format!(
                 "[...document.querySelector('{DIAGRAM} g[aria-label^=\"Error position\"]').querySelectorAll('text')].map(t => t.textContent).join('')"
             ),
         )?;
-        check_eq(found, status)?;
+        check_eq(found.strip_prefix("Error position").unwrap_or(&found), status.as_str())?;
         check(says(&tab, "They are the data that was sent.")?, "the data should be recovered")?;
         goto(&tab, 0)?;
     }
@@ -355,7 +356,7 @@ fn restart_goes_back_to_the_start_and_removes_the_error_but_keeps_the_data() -> 
     press(&tab, "toggle-1")?;
     press(&tab, "introduce")?;
     goto(&tab, 5)?;
-    click(&tab, "Restart")?;
+    click(&tab, "Restart selection")?;
     check_eq(step_position(&tab)?, None)?;
     check(
         says(&tab, "No error has been introduced.")?,

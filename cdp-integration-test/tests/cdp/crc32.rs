@@ -616,7 +616,7 @@ fn restart_goes_back_to_the_start_and_removes_the_errors() -> Result<(), String>
     flip(&tab)?;
     goto(&tab, 8)?;
     check(!says(&tab, "No error has been introduced.")?, "a bit should be flipped")?;
-    click(&tab, "Restart")?;
+    click(&tab, "Restart selection")?;
     check_eq(step_position(&tab)?, None)?;
     check(
         says(&tab, "No error has been introduced.")?,

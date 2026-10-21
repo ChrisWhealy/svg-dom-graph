@@ -5,3 +5,6 @@
 # build` remains a release build regardless (that is wasm-pack's own default, independent of this alias), so
 # demo-server's own profile has no effect on what actually needs to be fast.
 demo = "run -p demo-server"
+
+# Run Chrome DevTools Protocol based browser test crate
+cdp-test = "test -p cdp-integration-test"
