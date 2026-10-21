@@ -12,6 +12,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add a demo implementation of UTF-8 encoding (`4d0952b`)
 
+## Changed
+
+- Recalculate UTF-8 node centre lines (``)
+
 # [Released]
 
 ## [0.2.38] - 2026-10-21

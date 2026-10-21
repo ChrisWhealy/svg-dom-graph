@@ -12,7 +12,7 @@ use crate::{
     util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify},
 };
 use encode::{SAMPLES, button_label, byte_template_bits, encode, explain, hex_of, payload_groups};
-use layout::centred_lefts;
+use layout::{centred_lefts, centred_over};
 use std::cell::{Cell, RefCell};
 use svg_dom::{
     SvgRoot,
@@ -170,18 +170,23 @@ fn build(selected: usize) -> Result<(), String> {
     for n in 0..len {
         byte_rows.push((byte_name("UTF-8 bits", len, n), bit_row(&encoded.bits[8 * n..8 * n + 8])?));
     }
-    // Each row is centred on the axis the way a person sees it: the node in the middle, or the gap between the two in the
-    // middle, is on the axis, in the rows of groups and of bytes alike. The groups are not all as wide as the bytes, so a
-    // group is not always directly over the bits of its byte that it fills, but it is over its byte.
-    let lefts = |rows: &[(String, DataNodeContent)]| -> Result<Vec<f64>, String> {
-        let mut widths = Vec::with_capacity(rows.len());
-        for (name, content) in rows {
-            widths.push(scene.measure_named_data_node(name, content).map_err(stringify)?.width);
-        }
-        Ok(centred_lefts(&widths, NODE_GAP, axis))
+    // The row of bytes is centred on the axis the way a person sees it: the node in the middle, or the gap between the two
+    // in the middle, is on the axis. Each group of code point bits is then centred over the byte it fills, so that the
+    // groups and the bytes are in the same columns however uneven the groups are. The bits of a group are not always
+    // directly over the bits of the byte that they fill, since the groups are narrower than the bytes.
+    let widths_of = |rows: &[(String, DataNodeContent)]| -> Result<Vec<f64>, String> {
+        rows.iter()
+            .map(|(name, content)| {
+                scene
+                    .measure_named_data_node(name, content)
+                    .map(|size| size.width)
+                    .map_err(stringify)
+            })
+            .collect()
     };
-    let group_lefts = lefts(&groups)?;
-    let byte_lefts = lefts(&byte_rows)?;
+    let byte_widths = widths_of(&byte_rows)?;
+    let byte_lefts = centred_lefts(&byte_widths, NODE_GAP, axis);
+    let group_lefts = centred_over(&byte_lefts, &byte_widths, &widths_of(&groups)?);
 
     let down = |elbow: bool| {
         let options = ConnectorOptions::default()

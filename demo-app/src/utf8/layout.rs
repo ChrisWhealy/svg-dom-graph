@@ -31,3 +31,14 @@ pub(super) fn centred_lefts(widths: &[f64], gap: f64, axis: f64) -> Vec<f64> {
     }
     lefts
 }
+
+/// The left edges of boxes `widths` wide that are each centred over the box `base_widths` wide at the same place in
+/// `base_lefts`. So a box lines up with the one under it by its centre, whatever the two widths are.
+pub(super) fn centred_over(base_lefts: &[f64], base_widths: &[f64], widths: &[f64]) -> Vec<f64> {
+    base_lefts
+        .iter()
+        .zip(base_widths)
+        .zip(widths)
+        .map(|((left, base), width)| left + (base - width) / 2.0)
+        .collect()
+}

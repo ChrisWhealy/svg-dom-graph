@@ -2,7 +2,7 @@ use super::encode::{
     SAMPLES, button_label, byte_template_bits, encode, explain, glyph, hex_of, length_of, payload_groups, payload_len,
     template, template_bits,
 };
-use super::layout::centred_lefts;
+use super::layout::{centred_lefts, centred_over};
 
 /// One character from every length, and from either side of each boundary between lengths.
 const EDGES: [char; 11] = [
@@ -184,4 +184,17 @@ fn rows_of_equal_nodes_have_the_same_centres() {
     let groups = centred_lefts(&[90.0, 130.0, 130.0], 20.0, 500.0);
     let bytes = centred_lefts(&[180.0, 180.0, 180.0], 20.0, 500.0);
     assert!((groups[1] + 65.0 - 500.0).abs() < 1e-9 && (bytes[1] + 90.0 - 500.0).abs() < 1e-9);
+}
+
+#[test]
+fn each_group_is_centred_over_its_byte() {
+    let bytes = centred_lefts(&[180.0; 4], 20.0, 500.0);
+    let groups = centred_over(&bytes, &[180.0; 4], &[100.0, 140.0, 140.0, 140.0]);
+    for (n, (&byte, &group)) in bytes.iter().zip(&groups).enumerate() {
+        let widths = [100.0, 140.0, 140.0, 140.0];
+        assert!((group + widths[n] / 2.0 - (byte + 90.0)).abs() < 1e-9, "group {n}");
+    }
+    // The two middle groups are as wide as each other, so the gap between them is on the axis, as the gap between the two
+    // middle bytes is.
+    assert!(((groups[1] + 140.0 + groups[2]) / 2.0 - 500.0).abs() < 1e-9);
 }

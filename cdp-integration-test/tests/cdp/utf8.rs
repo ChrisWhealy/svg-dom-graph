@@ -203,10 +203,21 @@ fn rows_are_centred(index: usize, len: usize) -> Result<(), String> {
         for pair in row.windows(2) {
             check(pair[0].1 <= pair[1].0, &format!("two nodes of the {name} overlap: {pair:?}"))?;
         }
+        // Each group is centred over its byte, so the groups of two bytes, 5 and 6 bits wide, have the gap between them a
+        // few pixels off the midline. Every other row has its middle exactly on it.
+        let allowed = if name == "groups" && len == 2 { 8.0 } else { 1.0 };
         let offset = middle_of(row) - axis;
         check(
-            offset.abs() < 1.0,
+            offset.abs() < allowed,
             &format!("the middle of the {name} is {offset}px from the midline"),
+        )?;
+    }
+    // Each group is over the byte it fills, in the same column, however uneven the groups are.
+    for (n, (group, byte)) in groups.iter().zip(&bytes).enumerate() {
+        let (above, below) = ((group.0 + group.1) / 2.0, (byte.0 + byte.1) / 2.0);
+        check(
+            (above - below).abs() < 1.0,
+            &format!("group {n} is centred on {above}, over a byte centred on {below}"),
         )?;
     }
     Ok(())
