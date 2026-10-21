@@ -18,11 +18,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Recalculate UTF-8 node centre lines (`2547848`)
-- Doc only: Reflow doc comments and dividers to column 120 (``)
+- Doc only: Reflow doc comments and dividers to column 120 (`83159d3`)
 
 ## Fixed
 
 - Exclude reserved surrogate code points from 3-byte UTF example (`51c4240`)
+- Correct sorting CDP tests (``)
 
 # [Released]
 

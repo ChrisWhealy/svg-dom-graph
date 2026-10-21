@@ -88,10 +88,15 @@ macro_rules! sort_demo_helpers {
                 .collect())
         }
 
-        /// What the live region outside the scene says.
+        /// What the live region outside the scene says, which is the one that goes with this diagram.
         #[allow(dead_code)]
         fn said(tab: &Tab) -> Result<String, String> {
-            text(tab, "document.getElementById('quicksort-announcement').textContent")
+            // The live region has the same prefix as the diagram: `quicksort-announcement` for `#quicksort-diagram`.
+            let prefix = DIAGRAM.trim_start_matches('#').trim_end_matches("-diagram");
+            text(
+                tab,
+                &format!("document.getElementById('{prefix}-announcement').textContent"),
+            )
         }
 
         /// How many steps the walk has, read from the announcement of the step it is on: "Step 3 of 40. ..."
