@@ -25,7 +25,7 @@ use crate::{
     source_file,
     util::{clear_error, document, fit_window_to_stage, report_error, stringify, wire_open_window},
 };
-use code::Transmission;
+use code::{CODEWORD_LEN, Transmission};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{Scene, Selection, SelectionToolbarOptions, Side};
 use wasm_bindgen::JsCast;
@@ -178,6 +178,20 @@ fn restart() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The position of the flipped bit that the page's address asks for, as in `hamming-window.html?error=5`, if it asks for
+/// one that exists. The page opens with that bit already flipped. It gives a browser test the one position it wants,
+/// where the button picks at random. There is no control for it on the page.
+fn error_in_address() -> Option<usize> {
+    let search = web_sys::window()?.location().search().ok()?;
+    search
+        .trim_start_matches('?')
+        .split('&')
+        .find_map(|pair| pair.strip_prefix("error="))
+        .and_then(|n| n.parse().ok())
+        .filter(|position| (1..=CODEWORD_LEN).contains(position))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows a failure in the window's own error banner, or clears the banner after a success.
 fn report(result: Result<(), String>, what: &str) {
     match result {
@@ -248,6 +262,9 @@ fn focus(selector: &str) {
 pub(crate) fn build_hamming_window() -> Result<(), String> {
     let document = document()?;
     controls::watch_buttons(&document)?;
+    if let Some(position) = error_in_address() {
+        STATE.with_borrow_mut(|state| state.error = Some(position));
+    }
     build(0)?;
     fit_window_to_stage(DIAGRAM_ID)
 }

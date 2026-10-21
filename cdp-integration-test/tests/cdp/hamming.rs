@@ -29,8 +29,13 @@ const BOXES: [&str; 9] = [
 ];
 
 fn open() -> Result<DemoTab, String> {
+    open_with("")
+}
+
+/// Opens the window with `query` on its address, such as `?error=5`, which opens it with that bit already flipped.
+fn open_with(query: &str) -> Result<DemoTab, String> {
     new_demo_tab(
-        "hamming-window.html",
+        &format!("hamming-window.html{query}"),
         &format!("{DIAGRAM} g[aria-label^=\"Data bits\"]"),
         VIEWPORT,
     )
@@ -301,54 +306,6 @@ fn each_step_reaches_the_next_box() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible names of the notes, which are the nodes of Markdown text, in the order they were drawn. The first node
-/// of Markdown text is the status line beside the buttons, and it is not a note.
-fn note_names(tab: &Tab) -> Result<Vec<String>, String> {
-    let json = text(
-        tab,
-        &format!(
-            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"Text\"]')].map(g => g.getAttribute('aria-label')))"
-        ),
-    )?;
-    let mut names: Vec<String> = serde_json::from_str(&json).map_err(|e| format!("could not read the notes: {e}"))?;
-    names.remove(0);
-    Ok(names)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The note under a box is faint until the walk reaches the box, and says so to a screen reader, so that it can be read
-/// ahead of the walk but not mistaken for a step that has been done.
-#[test]
-fn a_note_is_faint_until_the_walk_reaches_its_box() -> Result<(), String> {
-    let tab = open()?;
-    for position in 0..=LAST {
-        goto(&tab, position)?;
-        let names = note_names(&tab)?;
-        check_eq(names.len(), BOXES.len())?;
-        for (index, name) in names.iter().enumerate() {
-            check_eq(name.contains("not yet computed"), index > position)?;
-        }
-    }
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Each step is announced in the live region, which is outside the scene, so a screen reader is told where the walk is.
-#[test]
-fn each_step_is_announced_to_a_screen_reader() -> Result<(), String> {
-    let tab = open()?;
-    for (position, name) in BOXES.iter().enumerate().skip(1) {
-        goto(&tab, position)?;
-        let said = text(&tab, "document.getElementById('hamming-announcement').textContent")?;
-        check(
-            said.starts_with(&format!("Step {} of 9: {name}", position + 1)),
-            &format!("position {position} announced {said:?}"),
-        )?;
-    }
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Flipping a bit moves the walk to the received codeword, and the receiver finds exactly that bit: the error position
 /// at the end of the path is the position the status line says was flipped. The data is recovered whichever bit it was.
 #[test]
@@ -439,6 +396,252 @@ fn the_status_line_is_white_and_the_buttons_are_coloured() -> Result<(), String>
         )?;
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Defines one test for each position listed, calling `$run` with it. Each is a test of its own, with its own tab, so the
+/// CI deals them out to different shards, instead of one long test that walks every position in a single shard.
+macro_rules! at_each_position {
+    ($run:ident: $($name:ident => $position:expr),+ $(,)?) => {
+        $(
+            #[test]
+            fn $name() -> Result<(), String> {
+                $run($position)
+            }
+        )+
+    };
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The accessible names of the notes, which are the nodes of Markdown text, in the order they were drawn. The first node
+/// of Markdown text is the status line beside the buttons, and it is not a note.
+fn note_names(tab: &Tab) -> Result<Vec<String>, String> {
+    let json = text(
+        tab,
+        &format!(
+            "JSON.stringify([...document.querySelectorAll('{DIAGRAM} g[aria-label^=\"Text\"]')].map(g => g.getAttribute('aria-label')))"
+        ),
+    )?;
+    let mut names: Vec<String> = serde_json::from_str(&json).map_err(|e| format!("could not read the notes: {e}"))?;
+    names.remove(0);
+    Ok(names)
+}
+
+/// The accessible name of the box that starts with `name`.
+fn box_label(tab: &Tab, name: &str) -> Result<String, String> {
+    text(
+        tab,
+        &format!("document.querySelector('{DIAGRAM} g[aria-label^=\"{name}\"]').getAttribute('aria-label')"),
+    )
+}
+
+/// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
+fn view(tab: &Tab) -> Result<String, String> {
+    text(
+        tab,
+        &format!("(document.querySelector('{DIAGRAM} > g.svg-dom-graph-content')?.getAttribute('transform') ?? '')"),
+    )
+}
+
+/// Clicks the button `name` with a real mouse click, and waits a moment, without waiting for the walk to move. For a
+/// button that leaves the walk where it is.
+fn click_and_settle(tab: &Tab, name: &str) -> Result<(), String> {
+    tab.find_element(&format!("{DIAGRAM} g[aria-label=\"{name}\"]"))
+        .map_err(|e| format!("could not find the {name:?} button: {e}"))?
+        .click()
+        .map_err(|e| format!("could not click {name:?}: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// At `position`, the live region outside the scene says which step the walk is at and what it has reached, so that a
+/// screen reader can follow every stage.
+fn announces(position: usize) -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, position)?;
+    let said = text(&tab, "document.getElementById('hamming-announcement').textContent")?;
+    check(
+        said.starts_with(&format!("Step {} of 9: {}", position + 1, BOXES[position])),
+        &format!("position {position} announced {said:?}"),
+    )
+}
+
+at_each_position! { announces:
+    the_walk_announces_step_2 => 1,
+    the_walk_announces_step_3 => 2,
+    the_walk_announces_step_4 => 3,
+    the_walk_announces_step_5 => 4,
+    the_walk_announces_step_6 => 5,
+    the_walk_announces_step_7 => 6,
+    the_walk_announces_step_8 => 7,
+    the_walk_announces_step_9 => 8,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// At `position`, the note under a box is faint until the walk reaches the box, and says so to a screen reader, so that
+/// it can be read ahead of the walk but not mistaken for a step that has been done.
+fn notes_follow_the_walk(position: usize) -> Result<(), String> {
+    let tab = open()?;
+    goto(&tab, position)?;
+    let names = note_names(&tab)?;
+    check_eq(names.len(), BOXES.len())?;
+    for (index, name) in names.iter().enumerate() {
+        check_eq(name.contains("not yet computed"), index > position)?;
+    }
+    Ok(())
+}
+
+at_each_position! { notes_follow_the_walk:
+    the_notes_at_position_0_follow_the_walk => 0,
+    the_notes_at_position_1_follow_the_walk => 1,
+    the_notes_at_position_2_follow_the_walk => 2,
+    the_notes_at_position_3_follow_the_walk => 3,
+    the_notes_at_position_4_follow_the_walk => 4,
+    the_notes_at_position_5_follow_the_walk => 5,
+    the_notes_at_position_6_follow_the_walk => 6,
+    the_notes_at_position_7_follow_the_walk => 7,
+    the_notes_at_position_8_follow_the_walk => 8,
+}
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Restarting from `position`, after changing the data and introducing an error, returns to the start: the error is gone,
+/// the later boxes are faint again, and the data bit that was changed stays changed. At position 0 the walk is already
+/// at the start, and Restart leaves it there.
+fn restart_from(position: usize) -> Result<(), String> {
+    let tab = open()?;
+    press(&tab, "toggle-1")?;
+    press(&tab, "introduce")?;
+    goto(&tab, position)?;
+    if position == 0 {
+        click_and_settle(&tab, "Restart selection")?;
+    } else {
+        click(&tab, "Restart selection")?;
+    }
+    check_eq(step_position(&tab)?, Some(0))?;
+    check(
+        says(&tab, "No error has been introduced.")?,
+        "restarting should remove the flipped bit",
+    )?;
+    for name in &BOXES[1..] {
+        check(faint(&tab, name)?, &format!("{name} should be faint again"))?;
+    }
+    check_eq(label_of(&tab, "toggle-1")?.as_str(), "d2 = 1")
+}
+
+at_each_position! { restart_from:
+    restart_from_position_0_returns_to_the_start => 0,
+    restart_from_position_1_returns_to_the_start => 1,
+    restart_from_position_2_returns_to_the_start => 2,
+    restart_from_position_3_returns_to_the_start => 3,
+    restart_from_position_4_returns_to_the_start => 4,
+    restart_from_position_5_returns_to_the_start => 5,
+    restart_from_position_6_returns_to_the_start => 6,
+    restart_from_position_7_returns_to_the_start => 7,
+    restart_from_position_8_returns_to_the_start => 8,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// "Previous selection" at position 0 has nowhere earlier to go. The walk stays at the start, and nothing fails.
+#[test]
+fn previous_at_position_zero_stays_at_the_start() -> Result<(), String> {
+    let tab = open()?;
+    click_and_settle(&tab, "Previous selection")?;
+    check_eq(step_position(&tab)?, Some(0))?;
+    check(!faint(&tab, "Data bits")?, "the data should still be there")?;
+    check(faint(&tab, "Parity bits")?, "nothing else should be reached")?;
+    check_eq(
+        text(&tab, "String(document.getElementById('hamming-window-error').hidden)")?.as_str(),
+        "true",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// With the bit at `error` flipped, which the page's address chooses, the status line names it, and the receiver finds
+/// that same position at the end of the path and recovers the data. It is deterministic, unlike the button.
+fn finds_error_at(error: usize) -> Result<(), String> {
+    let tab = open_with(&format!("?error={error}"))?;
+    check(
+        says(&tab, &format!("The bit at position {error} is flipped in transmission."))?,
+        "the status line should name the flipped bit",
+    )?;
+    goto(&tab, LAST)?;
+    let found = text(
+        &tab,
+        &format!(
+            "[...document.querySelector('{DIAGRAM} g[aria-label^=\"Error position\"]').querySelectorAll('text')].at(-1).textContent"
+        ),
+    )?;
+    check_eq(found, error.to_string())?;
+    check(says(&tab, "They are the data that was sent.")?, "the data should be recovered")?;
+    // The flipped bit is marked where it arrived, and where it was put right.
+    let cell = error - 1;
+    check(
+        box_label(&tab, "Received codeword")?.contains(&format!("also highlighted: cell {cell}")),
+        "the received codeword should mark the flipped bit",
+    )?;
+    check(
+        box_label(&tab, "Corrected codeword")?.contains(&format!("also highlighted: cell {cell}")),
+        "the corrected codeword should mark the bit put right",
+    )
+}
+
+at_each_position! { finds_error_at:
+    the_receiver_finds_an_error_at_position_1 => 1,
+    the_receiver_finds_an_error_at_position_2 => 2,
+    the_receiver_finds_an_error_at_position_3 => 3,
+    the_receiver_finds_an_error_at_position_4 => 4,
+    the_receiver_finds_an_error_at_position_5 => 5,
+    the_receiver_finds_an_error_at_position_6 => 6,
+    the_receiver_finds_an_error_at_position_7 => 7,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Stepping back from a box that shows the error to one before it takes the mark away, since a mark is drawn at full
+/// strength even in a faint box, and would give away what the walk has not reached.
+#[test]
+fn stepping_back_takes_the_error_marks_away_from_boxes_not_reached() -> Result<(), String> {
+    let tab = open_with("?error=5")?;
+    goto(&tab, LAST)?;
+    check(
+        box_label(&tab, "Received codeword")?.contains("also highlighted"),
+        "marked once reached",
+    )?;
+    check(
+        box_label(&tab, "Corrected codeword")?.contains("also highlighted"),
+        "marked once reached",
+    )?;
+    goto(&tab, 6)?;
+    check(
+        !box_label(&tab, "Corrected codeword")?.contains("also highlighted"),
+        "the corrected codeword is not reached, so shows no mark",
+    )?;
+    check(
+        box_label(&tab, "Received codeword")?.contains("also highlighted"),
+        "the received codeword is reached, so keeps its mark",
+    )?;
+    goto(&tab, 2)?;
+    check(
+        !box_label(&tab, "Received codeword")?.contains("also highlighted"),
+        "the received codeword is not reached, so shows no mark",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The zoom stays through redraws of every kind: a data bit changed, an error introduced and removed, a step forward and
+/// back, and a restart.
+#[test]
+fn the_zoom_survives_every_kind_of_redraw() -> Result<(), String> {
+    let tab = open()?;
+    click_and_settle(&tab, "Zoom in")?;
+    let zoomed = view(&tab)?;
+    check(!zoomed.is_empty(), "zooming in should change the view")?;
+    press(&tab, "toggle-0")?;
+    press(&tab, "introduce")?;
+    press(&tab, "remove")?;
+    goto(&tab, 5)?;
+    goto(&tab, 1)?;
+    click(&tab, "Restart selection")?;
+    check_eq(view(&tab)?, zoomed)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

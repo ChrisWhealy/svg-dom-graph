@@ -14,11 +14,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Step through the CRC-32 calculation with a selection toolbar (`00e44d1`)
 - Add a demo implementation of the Hamming(7,4) algorithm (`1541eb9`)
 - Add screen-reader announcement per walk step (`1b30c20`)
+- Extend Hamming demo regression tests (``)
 
 ## Changed
 
 - Update highlight only after walk reaches the relevant box (`fa6f3ea`)
-- Dim Markdown node content for unreached steps (``)
+- Dim Markdown node content for unreached steps (`cdb3657`)
 
 ## Fixed
 
