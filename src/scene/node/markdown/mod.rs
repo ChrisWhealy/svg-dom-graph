@@ -159,13 +159,14 @@ fn draw_markdown_box(
     plan: &Plan,
     name: &str,
     edge_anchors: Option<EdgeAnchors>,
+    fill: Option<&str>,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
     let mut guard = RenderGuard::new(group.clone());
 
     let rect_el = svg.rect(Point::origin(), plan.size)?;
     guard.track(rect_el.clone());
-    rect_el.set_fill(PLAIN_BOX_FILL)?;
+    rect_el.set_fill(fill.unwrap_or(PLAIN_BOX_FILL))?;
     rect_el.set_stroke(BOX_STROKE)?;
     rect_el.set_stroke_width(1.5)?;
     group.append(&rect_el)?;
@@ -258,7 +259,7 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds a Markdown node, as [`add_markdown_node`](Self::add_markdown_node), but with `options` controlling how many
-    /// connector fixing points its sides offer — see [`EdgeAnchors`].
+    /// connector fixing points its sides offer — see [`EdgeAnchors`] — and the fill of its box, if `options.fill` is set.
     ///
     /// # Errors
     ///
@@ -290,6 +291,7 @@ impl Scene {
             &plan,
             &short_name(markdown),
             options.edge_anchors,
+            options.fill,
         );
         inner.scratch = scratch;
         let (handles, rect) = result?;

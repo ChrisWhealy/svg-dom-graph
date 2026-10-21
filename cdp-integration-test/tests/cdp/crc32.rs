@@ -1,6 +1,7 @@
 //! The CRC-32 demo, in the window of its own that the gallery's panel opens: the checksum on opening, the check value on
-//! typing, an empty text, the cut at 64 bytes, the focus and caret across the redraw, the fields and buttons in the scene
-//! that introduce an error, and the receiver finding and correcting a flipped bit.
+//! typing, an empty text, the cut at 64 bytes, the focus and caret across the redraw, the buttons in the scene
+//! that introduce an error, the receiver finding and correcting a flipped bit, and the stepping toolbar that walks
+//! through the calculation.
 //!
 //! The calculation is covered by native unit tests against published checksums. What they cannot reach is the browser:
 //! that a real change draws the scene again with the right nodes, that the buttons drawn in the scene work, and that the
@@ -13,7 +14,7 @@ use headless_chrome::Tab;
 use std::time::Duration;
 
 const DIAGRAM: &str = "#crc32-diagram";
-/// The text box that holds the text to checksum. The two fields for choosing a bit are text boxes too.
+/// The text box that holds the text to checksum.
 const TEXT_BOX: &str = "#crc32-diagram g[aria-label^=\"Text to checksum\"] input";
 const VIEWPORT: (u32, u32) = (2600, 2400);
 
@@ -89,41 +90,51 @@ fn says(tab: &Tab, phrase: &str) -> Result<bool, String> {
     Ok(texts(tab)?.join(" ").contains(phrase))
 }
 
-/// Types `byte` and `bit` into the two fields in the scene, exactly as given, then presses the button that introduces the
-/// error.
-fn introduce_text(tab: &Tab, byte: &str, bit: &str) -> Result<(), String> {
+/// Presses the button that flips one bit at random.
+fn flip(tab: &Tab) -> Result<(), String> {
     tab.evaluate(
         &format!(
-            "(() => {{ for (const [label, value] of [['Byte', {byte:?}], ['Bit (0 to 7)', {bit:?}]]) {{ \
-                 const i = document.querySelector('{DIAGRAM} g[aria-label^=\"' + label + '\"] input'); \
-                 i.value = value; i.dispatchEvent(new Event('input', {{ bubbles: true }})); }} \
-             document.querySelector('{DIAGRAM} g[data-action=\"introduce\"]') \
-                 .dispatchEvent(new MouseEvent('click', {{ bubbles: true }})); }})()"
+            "document.querySelector('{DIAGRAM} g[data-action=\"introduce\"]') \
+             .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}))"
         ),
         false,
     )
-    .map_err(|e| format!("could not introduce the error: {e}"))?;
+    .map_err(|e| format!("could not flip a bit: {e}"))?;
     std::thread::sleep(Duration::from_millis(400));
     Ok(())
 }
 
-/// Chooses bit `bit` of byte `byte` in the two fields in the scene, then presses the button that introduces the error.
-fn introduce(tab: &Tab, byte: usize, bit: u8) -> Result<(), String> {
-    introduce_text(tab, &byte.to_string(), &bit.to_string())
+/// Presses the button that puts every flipped bit back.
+fn remove_errors(tab: &Tab) -> Result<(), String> {
+    tab.evaluate(
+        &format!(
+            "document.querySelector('{DIAGRAM} g[data-action=\"remove\"]') \
+             .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}))"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not remove the errors: {e}"))?;
+    std::thread::sleep(Duration::from_millis(400));
+    Ok(())
 }
 
-/// The fill of the box of the field called `label`, and whether its text box is marked invalid.
-fn field_marks(tab: &Tab, label: &str) -> Result<(String, String), String> {
-    let marks = text(
-        tab,
-        &format!(
-            "(() => {{ const g = document.querySelector('{DIAGRAM} g[aria-label^=\"{label}\"]'); \
-             return (g.querySelector('rect').getAttribute('fill') ?? '') + '|' + \
-                    (g.querySelector('input').getAttribute('aria-invalid') ?? ''); }})()"
-        ),
-    )?;
-    let (fill, invalid) = marks.split_once('|').ok_or("no marks returned")?;
-    Ok((fill.to_owned(), invalid.to_owned()))
+/// What the error-position box says: the one text in the diagram that is in the form of a position.
+fn position(tab: &Tab) -> Result<String, String> {
+    let is_digits = |t: &str| !t.is_empty() && t.bytes().all(|b| b.is_ascii_digit());
+    let is_position = |t: &str| {
+        t == "none"
+            || t == "more than one bit"
+            || t.strip_prefix("byte ")
+                .and_then(|rest| rest.split_once(", bit "))
+                .is_some_and(|(byte, bit)| is_digits(byte) && is_digits(bit))
+            || t.strip_prefix("bit ")
+                .and_then(|rest| rest.strip_suffix(" of the CRC"))
+                .is_some_and(is_digits)
+    };
+    texts(tab)?
+        .into_iter()
+        .find(|t| is_position(t))
+        .ok_or_else(|| "no error position in the diagram".to_owned())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -248,10 +259,9 @@ fn typing_keeps_the_focus_and_the_caret_across_the_redraw() -> Result<(), String
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The fields and buttons for introducing an error are in the scene, and the fields keep what was typed in them when the
-/// scene is drawn again.
+/// The two buttons for introducing an error are in the scene, and there are no fields for choosing a bit.
 #[test]
-fn the_controls_for_introducing_an_error_are_in_the_scene() -> Result<(), String> {
+fn the_buttons_for_introducing_an_error_are_in_the_scene() -> Result<(), String> {
     let tab = open()?;
     for action in ["introduce", "remove"] {
         check_eq(
@@ -263,8 +273,6 @@ fn the_controls_for_introducing_an_error_are_in_the_scene() -> Result<(), String
             "1",
         )?;
     }
-    check_eq(nodes_named(&tab, "Byte")?, 1)?;
-    check_eq(nodes_named(&tab, "Bit (0 to 7)")?, 1)?;
     // They are inside the scene's own layer, so they zoom and pan with it.
     check_eq(
         text(
@@ -274,76 +282,63 @@ fn the_controls_for_introducing_an_error_are_in_the_scene() -> Result<(), String
         .as_str(),
         "2",
     )?;
-    introduce(&tab, 2, 5)?;
+    // The only text box is the one for the text to checksum.
     check_eq(
-        text(
-            &tab,
-            &format!("document.querySelector('{DIAGRAM} g[aria-label^=\"Byte\"] input').value"),
-        )?
-        .as_str(),
-        "2",
+        text(&tab, &format!("String(document.querySelectorAll('{DIAGRAM} input').length)"))?.as_str(),
+        "1",
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// With no error, the receiver finds none. With one bit flipped, it finds that bit, and flipping it back gives the bytes
-/// that were sent. Removing the error puts the receiver back as it was.
+/// With no error, the receiver finds none. With a bit flipped, wherever the random choice puts it, the receiver finds one
+/// bit, in the data or in the CRC. Removing the error puts the receiver back as it was.
 #[test]
 fn the_receiver_finds_a_flipped_bit_and_puts_it_right() -> Result<(), String> {
     let tab = open()?;
     check_eq(nodes_named(&tab, "Error position")?, 1)?;
-    check(
-        texts(&tab)?.iter().any(|t| t == "none"),
-        "no error should be found when none was introduced",
-    )?;
+    check_eq(position(&tab)?.as_str(), "none")?;
     check(
         says(&tab, "No error has been introduced.")?,
         "the status line should say that no error was introduced",
     )?;
 
-    introduce(&tab, 2, 5)?;
-    check(
-        says(&tab, "Bit 5 of byte 2 is flipped in transmission.")?,
-        "the status line does not say which bit",
-    )?;
-    let all = texts(&tab)?;
-    check(
-        all.iter().any(|t| t == "byte 2, bit 5"),
-        &format!("the flipped bit was not found: {all:?}"),
-    )?;
-    // The CRC that was sent is still the one on show.
-    check_eq(result(&tab)?.as_str(), "AC52F740")?;
+    // The choice is random, so try several times: each press picks again, and each must be found.
+    for _ in 0..3 {
+        flip(&tab)?;
+        check(
+            says(&tab, "is flipped in transmission.")?,
+            "the status line does not say a bit was flipped",
+        )?;
+        let found = position(&tab)?;
+        check(
+            (found.starts_with("byte ") && found.contains(", bit ")) || found.ends_with(" of the CRC"),
+            &format!("the flipped bit was not found: {found}"),
+        )?;
+        // The CRC that was sent is still the one on show.
+        check_eq(result(&tab)?.as_str(), "AC52F740")?;
+    }
 
-    tab.evaluate(
-        &format!(
-            "document.querySelector('{DIAGRAM} g[data-action=\"remove\"]') \
-             .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}))"
-        ),
-        false,
-    )
-    .map_err(|e| format!("could not remove the error: {e}"))?;
-    std::thread::sleep(Duration::from_millis(400));
-    check(
-        texts(&tab)?.iter().any(|t| t == "none"),
-        "removing the error should leave none to find",
-    )
+    remove_errors(&tab)?;
+    check_eq(position(&tab)?.as_str(), "none")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An error in a byte that is no longer there is dropped when the text gets shorter.
+/// A flip in a byte that is no longer there is dropped when the text gets shorter, and the flip stays if it was in the
+/// CRC. Either way the status line says what is flipped now.
 #[test]
-fn an_error_in_a_byte_that_goes_away_is_dropped() -> Result<(), String> {
+fn a_shorter_text_keeps_only_a_flip_that_still_exists() -> Result<(), String> {
     let tab = open()?;
-    introduce(&tab, 8, 0)?;
+    flip(&tab)?;
     set_text(&tab, "abc")?;
+    let all = texts(&tab)?.join(" ");
     check(
-        says(&tab, "No error has been introduced.")?,
-        "the error should have been dropped with its byte",
+        all.contains("is flipped in transmission.") || all.contains("No error has been introduced."),
+        &format!("the status line should describe the flip or say there is none: {all}"),
     )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The buttons are drawn again with the rest of the scene, and the new button of the same kind has the keyboard focus, so
+/// The button is drawn again with the rest of the scene, and the new button of the same kind has the keyboard focus, so
 /// a keyboard user can press it again. The change is announced in a live region that is not part of the scene.
 #[test]
 fn a_button_keeps_the_keyboard_focus_across_the_redraw_and_the_change_is_announced() -> Result<(), String> {
@@ -351,98 +346,20 @@ fn a_button_keeps_the_keyboard_focus_across_the_redraw_and_the_change_is_announc
     let focused = |tab: &Tab| text(tab, "(document.activeElement?.getAttribute('data-action') ?? 'none')");
     let announced = |tab: &Tab| text(tab, "document.getElementById('crc32-announcement').textContent");
 
-    introduce(&tab, 3, 1)?;
+    flip(&tab)?;
     check_eq(focused(&tab)?.as_str(), "introduce")?;
-    check_eq(announced(&tab)?.as_str(), "Bit 1 of byte 3 is flipped in transmission.")?;
+    check(
+        announced(&tab)?.ends_with("is flipped in transmission."),
+        "the live region should say which bit was flipped",
+    )?;
 
-    tab.evaluate(
-        &format!(
-            "document.querySelector('{DIAGRAM} g[data-action=\"remove\"]') \
-             .dispatchEvent(new MouseEvent('click', {{ bubbles: true }}))"
-        ),
-        false,
-    )
-    .map_err(|e| format!("could not remove the error: {e}"))?;
-    std::thread::sleep(Duration::from_millis(400));
+    remove_errors(&tab)?;
     check_eq(focused(&tab)?.as_str(), "remove")?;
     check_eq(announced(&tab)?.as_str(), "No error has been introduced.")?;
     check_eq(
         text(&tab, "document.getElementById('crc32-announcement').getAttribute('aria-live')")?.as_str(),
         "polite",
     )
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A field that is not a whole number, or is out of range, is checked when the button is pressed. It is marked in the
-/// colour for what is wrong with it, and no other field is. The status line and the live region say which field and what
-/// is wrong, and no bit is flipped.
-#[test]
-fn a_field_that_is_wrong_is_marked_in_the_colour_for_what_is_wrong_and_nothing_is_flipped() -> Result<(), String> {
-    const NOT_A_NUMBER: &str = "#f5b7b1";
-    const OUT_OF_RANGE: &str = "#fad7a0";
-    let tab = open()?;
-    let (before, _) = field_marks(&tab, "Bit (0 to 7)")?;
-
-    // Letters in the bit field, and a byte past the end of the 49 bytes.
-    introduce_text(&tab, "70", "abc")?;
-    let (bit_fill, bit_invalid) = field_marks(&tab, "Bit (0 to 7)")?;
-    let (byte_fill, byte_invalid) = field_marks(&tab, "Byte")?;
-    check_eq(bit_fill, NOT_A_NUMBER.to_owned())?;
-    check_eq(bit_invalid, "true".to_owned())?;
-    check_eq(byte_fill, OUT_OF_RANGE.to_owned())?;
-    check_eq(byte_invalid, "true".to_owned())?;
-    check(
-        says(&tab, "Bit: \"abc\" is not a whole number")?,
-        "the status line does not say what is wrong with the bit",
-    )?;
-    check(
-        says(&tab, "Byte: 70 is more than 48")?,
-        "the status line does not say what is wrong with the byte",
-    )?;
-    check(texts(&tab)?.iter().any(|t| t == "none"), "no bit should have been flipped")?;
-    check(
-        text(&tab, "document.getElementById('crc32-announcement').textContent")?.contains("not a whole number"),
-        "the live region does not say what is wrong",
-    )?;
-
-    // A number that is too big is marked in the other colour, and a field that is right is not marked.
-    introduce_text(&tab, "3", "9")?;
-    check_eq(field_marks(&tab, "Bit (0 to 7)")?.0, OUT_OF_RANGE.to_owned())?;
-    let (byte_fill, byte_invalid) = field_marks(&tab, "Byte")?;
-    check_eq(byte_invalid, String::new())?;
-    check(
-        byte_fill != NOT_A_NUMBER && byte_fill != OUT_OF_RANGE,
-        "the byte is right, so it must not be marked",
-    )?;
-
-    // Editing a marked field takes its mark off at once, and the other mark stays.
-    set_field(&tab, "Bit (0 to 7)", "5")?;
-    let (fill, invalid) = field_marks(&tab, "Bit (0 to 7)")?;
-    check_eq(fill, before)?;
-    check_eq(invalid, String::new())?;
-
-    // Right values flip the bit and leave no marks.
-    introduce_text(&tab, "3", "5")?;
-    check(
-        says(&tab, "Bit 5 of byte 3 is flipped in transmission.")?,
-        "the bit was not flipped",
-    )?;
-    check_eq(field_marks(&tab, "Bit (0 to 7)")?.1, String::new())?;
-    check_eq(field_marks(&tab, "Byte")?.1, String::new())
-}
-
-/// Types `value` into the field called `label` in the scene.
-fn set_field(tab: &Tab, label: &str, value: &str) -> Result<(), String> {
-    tab.evaluate(
-        &format!(
-            "(() => {{ const i = document.querySelector('{DIAGRAM} g[aria-label^=\"{label}\"] input'); \
-             i.value = {value:?}; i.dispatchEvent(new Event('input', {{ bubbles: true }})); }})()"
-        ),
-        false,
-    )
-    .map_err(|e| format!("could not edit the {label} field: {e}"))?;
-    std::thread::sleep(Duration::from_millis(200));
-    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -460,6 +377,250 @@ fn the_error_banner_stays_hidden_while_redraws_work() -> Result<(), String> {
     };
     check_eq(banner(&tab)?.as_str(), "true|")?;
     set_text(&tab, "abc")?;
-    introduce(&tab, 1, 1)?;
+    flip(&tab)?;
     check_eq(banner(&tab)?.as_str(), "true|")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The walk's position, read from the hidden "Step" driver's own selection. `None` before the walk has started.
+fn step_position(tab: &Tab) -> Result<Option<usize>, String> {
+    let name = text(
+        tab,
+        &format!("(document.querySelector('{DIAGRAM} g[aria-label^=\"Step:\"]')?.getAttribute('aria-label') ?? '')"),
+    )?;
+    let Some((before, _)) = name.split_once(" selected") else {
+        return Ok(None);
+    };
+    before
+        .rsplit("cell ")
+        .next()
+        .and_then(|n| n.parse().ok())
+        .map(Some)
+        .ok_or_else(|| format!("could not read a cell from {name:?}"))
+}
+
+/// Waits until `step_position` returns something other than `from`, or fails after five seconds.
+fn wait_for_move(tab: &Tab, from: Option<usize>) -> Result<(), String> {
+    let deadline = std::time::Instant::now() + Duration::from_secs(5);
+    while std::time::Instant::now() < deadline {
+        if step_position(tab)? != from {
+            // Every move draws the scene again. Give the redraw its own moment to finish attaching.
+            std::thread::sleep(Duration::from_millis(100));
+            return Ok(());
+        }
+        std::thread::sleep(Duration::from_millis(20));
+    }
+    Err(format!("the walk never left {from:?}"))
+}
+
+/// Presses a toolbar button with a real mouse click and waits for the walk to move.
+fn click(tab: &Tab, name: &str) -> Result<(), String> {
+    let from = step_position(tab)?;
+    tab.find_element(&format!("{DIAGRAM} g[aria-label=\"{name}\"]"))
+        .map_err(|e| format!("could not find the {name:?} button: {e}"))?
+        .click()
+        .map_err(|e| format!("could not click {name:?}: {e}"))?;
+    wait_for_move(tab, from)
+}
+
+/// Walks to `target` one step at a time.
+fn goto(tab: &Tab, target: usize) -> Result<(), String> {
+    for _ in 0..80 {
+        let now = step_position(tab)?.unwrap_or(0);
+        if now == target {
+            return Ok(());
+        }
+        click(tab, if now < target { "Next selection" } else { "Previous selection" })?;
+    }
+    Err(format!(
+        "could not reach position {target}, stopped at {:?}",
+        step_position(tab)?
+    ))
+}
+
+/// Whether the node whose accessible name starts with `name` says that it is not yet computed.
+fn faint(tab: &Tab, name: &str) -> Result<bool, String> {
+    Ok(text(
+        tab,
+        &format!(
+            "(document.querySelector('{DIAGRAM} g[aria-label^=\"{name}\"]')?.getAttribute('aria-label') ?? 'missing')"
+        ),
+    )?
+    .contains("not yet computed"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The walk starts with nothing worked out: the bytes are there to read, and everything worked out from them is faint.
+#[test]
+fn the_walk_starts_with_nothing_worked_out() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    check_eq(step_position(&tab)?, Some(0))?;
+    check(!faint(&tab, "Input bytes")?, "the bytes are the input, so they are not faint")?;
+    for name in [
+        "Table index",
+        "Table entry",
+        "Register after each byte",
+        "Register after the last byte",
+        "Received bytes",
+        "CRC that arrived",
+        "Received register after each byte",
+        "CRC of the received bytes",
+        "Error position",
+        "Corrected bytes",
+    ] {
+        check(faint(&tab, name)?, &format!("{name} should not be reached yet"))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Each step reaches the next byte in the table index, the table entry and the register, then the sender is done, then
+/// the receiver is reached one box at a time. "abc" has 3 bytes, so the walk has 11 positions.
+#[test]
+fn each_step_reaches_one_more_box() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    goto(&tab, 1)?;
+    check(
+        text(
+            &tab,
+            &format!("document.querySelector('{DIAGRAM} g[aria-label^=\"Table index\"]').getAttribute('aria-label')"),
+        )?
+        .contains("not yet computed: cells 1"),
+        "after one byte the index is reached for byte 0 only",
+    )?;
+    check(
+        faint(&tab, "Register after the last byte")?,
+        "the last register comes after the last byte",
+    )?;
+
+    goto(&tab, 3)?;
+    check(!faint(&tab, "Table index")?, "all three bytes have been through")?;
+    check(!faint(&tab, "Register after each byte")?, "all three registers are worked out")?;
+    check(
+        !faint(&tab, "Register after the last byte")?,
+        "the last register is reached with the last byte",
+    )?;
+    check(faint(&tab, "Received bytes")?, "nothing has been received yet")?;
+
+    // Position 4 makes the CRC, 5 receives the bytes, and so on, one box each.
+    goto(&tab, 5)?;
+    check(!faint(&tab, "Received bytes")?, "the bytes arrive at position 5")?;
+    check(!faint(&tab, "CRC that arrived")?, "so does the CRC")?;
+    check(
+        faint(&tab, "Received register after each byte")?,
+        "the registers are worked out next",
+    )?;
+    goto(&tab, 6)?;
+    check(
+        !faint(&tab, "Received register after each byte")?,
+        "position 6 works the registers out",
+    )?;
+    check(faint(&tab, "CRC of the received bytes")?, "the CRC is not worked out yet")?;
+    goto(&tab, 10)?;
+    check(
+        !faint(&tab, "Corrected bytes")?,
+        "the last position reaches the corrected bytes",
+    )?;
+    check(!faint(&tab, "Error position")?, "and the error position")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Stepping back draws the scene as it was, and editing the text starts the walk again.
+#[test]
+fn stepping_back_restores_the_boxes_and_editing_the_text_starts_again() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    goto(&tab, 10)?;
+    goto(&tab, 2)?;
+    check(faint(&tab, "Received bytes")?, "stepping back makes the receiver faint again")?;
+    check(faint(&tab, "Register after the last byte")?, "and the last register")?;
+    goto(&tab, 4)?;
+    set_text(&tab, "abcd")?;
+    check_eq(step_position(&tab)?, Some(0))?;
+    check(faint(&tab, "Table index")?, "a new text has not been worked out")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Flipping a bit moves the walk on to the bytes arriving if it was before that, since the error cannot be seen sooner.
+/// It does not move a walk that is already past that, and removing the error leaves the walk where it is.
+#[test]
+fn flipping_a_bit_moves_the_walk_to_the_arrival_but_never_back() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    flip(&tab)?;
+    check_eq(step_position(&tab)?, Some(5))?;
+    check(!faint(&tab, "Received bytes")?, "the bytes have arrived")?;
+    goto(&tab, 8)?;
+    flip(&tab)?;
+    check_eq(step_position(&tab)?, Some(8))?;
+    remove_errors(&tab)?;
+    check_eq(step_position(&tab)?, Some(8))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The toolbar button that has the keyboard focus still has it after the scene is drawn again for the step.
+#[test]
+fn a_toolbar_button_keeps_the_keyboard_focus_across_a_step() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    click(&tab, "Next selection")?;
+    check_eq(
+        text(&tab, "document.activeElement?.getAttribute('aria-label') ?? 'none'")?.as_str(),
+        "Next selection",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The notes that say something about the text and the error are white, and the buttons have colours of their own, so the
+/// three kinds of box are told apart from each other and from the light blue explanations.
+#[test]
+fn the_notes_are_white_and_the_buttons_are_coloured() -> Result<(), String> {
+    const EXPLANATION: &str = "#eef4ff";
+    let tab = open()?;
+    let fill_of_note = |phrase: &str| {
+        text(
+            &tab,
+            &format!(
+                "(() => {{ const t = [...document.querySelectorAll('{DIAGRAM} text')].find(t => t.textContent.includes({phrase:?})); \
+                 return t ? t.closest('g').querySelector('rect').getAttribute('fill') : 'missing'; }})()"
+            ),
+        )
+    };
+    check_eq(fill_of_note("49 of 64 bytes")?.as_str(), "#ffffff")?;
+    check_eq(fill_of_note("No error has been introduced.")?.as_str(), "#ffffff")?;
+    let button_fill = |action: &str| {
+        text(
+            &tab,
+            &format!("document.querySelector('{DIAGRAM} g[data-action=\"{action}\"] rect').getAttribute('fill')"),
+        )
+    };
+    let (flip, remove) = (button_fill("introduce")?, button_fill("remove")?);
+    check(
+        flip != EXPLANATION && remove != EXPLANATION,
+        "the buttons are not the colour of the notes",
+    )?;
+    check(
+        flip != remove && flip != "#ffffff" && remove != "#ffffff",
+        "each button has its own colour",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The toolbar's "Restart" button starts the walk again and removes every flipped bit.
+#[test]
+fn restart_goes_back_to_the_start_and_removes_the_errors() -> Result<(), String> {
+    let tab = open()?;
+    set_text(&tab, "abc")?;
+    flip(&tab)?;
+    goto(&tab, 8)?;
+    check(!says(&tab, "No error has been introduced.")?, "a bit should be flipped")?;
+    click(&tab, "Restart")?;
+    check_eq(step_position(&tab)?, None)?;
+    check(
+        says(&tab, "No error has been introduced.")?,
+        "restarting should remove the flipped bit",
+    )?;
+    check(faint(&tab, "Received bytes")?, "the walk should be back at the start")
 }

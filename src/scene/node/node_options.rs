@@ -18,11 +18,12 @@ pub struct NodeOptions {
     ///
     /// `None` (the default) keeps each connector's own default anchor rule.
     pub edge_anchors: Option<EdgeAnchors>,
-    /// The fill of a plain node's box, as any SVG paint, such as `"#d6f2ee"` or `"lightsteelblue"`.
+    /// The fill of a plain node's or a Markdown node's box, as any SVG paint, such as `"#d6f2ee"` or `"lightsteelblue"`.
     ///
     /// `None` (the default) keeps the usual light blue. Only
-    /// [`Scene::add_node_with`](crate::scene::Scene::add_node_with) reads it. A data node's own fill says what type it
-    /// holds, so it is not changed by this.
+    /// [`Scene::add_node_with`](crate::scene::Scene::add_node_with) and
+    /// [`Scene::add_markdown_node_with`](crate::scene::Scene::add_markdown_node_with) read it. A data node's own fill
+    /// says what type it holds, so it is not changed by this.
     pub fill: Option<&'static str>,
 }
 

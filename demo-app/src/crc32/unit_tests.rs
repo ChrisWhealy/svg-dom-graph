@@ -136,3 +136,33 @@ fn two_flipped_bits_are_never_mistaken_for_one_in_data_up_to_the_limit() {
         }
     }
 }
+
+#[test]
+fn up_to_three_flipped_bits_of_the_data_and_the_crc_are_never_mistaken_for_one_or_for_none() {
+    use std::collections::HashMap;
+    // The longest text the demo takes, with its CRC: 512 bits of data and 32 of CRC. The syndrome of each bit is the
+    // syndrome of flipping it alone. The syndrome of several is the XOR of their syndromes.
+    let len = 64;
+    let mut singles: Vec<u32> = (0..len)
+        .flat_map(|byte| (0..8).map(move |bit| syndrome_of_bit(len, byte, bit)))
+        .collect();
+    singles.extend((0..32).map(|bit| 1_u32 << bit));
+    let single_set: std::collections::HashSet<u32> = singles.iter().copied().collect();
+    assert_eq!(single_set.len(), singles.len(), "two single bits share a syndrome");
+    assert!(!single_set.contains(&0));
+
+    // No two bits give the syndrome of one bit (so no three bits are a codeword), and no two pairs give the same
+    // syndrome (so no four bits are). Together with the above, flipping 1, 2 or 3 bits can never give a syndrome of
+    // zero, and 2 or 3 can never give the syndrome of a single bit.
+    let mut pairs = HashMap::new();
+    for (i, a) in singles.iter().enumerate() {
+        for (j, b) in singles.iter().enumerate().skip(i + 1) {
+            let both = a ^ b;
+            assert_ne!(both, 0);
+            assert!(!single_set.contains(&both), "bits {i} and {j} look like one bit");
+            if let Some(other) = pairs.insert(both, (i, j)) {
+                panic!("pairs {other:?} and {:?} give the same syndrome", (i, j));
+            }
+        }
+    }
+}
