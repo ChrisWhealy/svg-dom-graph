@@ -541,6 +541,21 @@ at_each_position! { restart_from:
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Restart makes one announcement that says both that the error is gone and that the walk is back at the first step. Two
+/// announcements made together would leave a screen reader saying only the second.
+#[test]
+fn restart_announces_the_removed_error_and_the_first_step_together() -> Result<(), String> {
+    let tab = open_with("?error=3")?;
+    goto(&tab, 5)?;
+    click(&tab, "Restart selection")?;
+    let said = text(&tab, "document.getElementById('hamming-announcement').textContent")?;
+    check(
+        said.contains("No error has been introduced.") && said.contains("Step 1 of 9: Data bits"),
+        &format!("restart announced {said:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// "Previous selection" at position 0 has nowhere earlier to go, and the toolbar reports it exactly as it reports "Restart".
 /// So the walk stays at the start, a flipped bit is removed as a restart removes it, the data stays, and nothing fails.
 #[test]

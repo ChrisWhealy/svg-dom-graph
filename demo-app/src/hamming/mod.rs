@@ -158,26 +158,37 @@ fn redraw(action: &str, position: usize) -> bool {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves the diagram to walk position `position`, and announces it. A failure is shown in the window's own error banner, since the
-/// toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
-fn go(position: usize) {
+/// Draws the diagram at walk position `position`, and says whether that worked. A failure is shown in the window's own
+/// error banner, since the toolbar's own callback has nowhere to return it to. The banner clears again at the next step
+/// that works.
+fn show_position(position: usize) -> bool {
     let result = build(position);
     let worked = result.is_ok();
     report(result, &format!("This step failed (position {position})"));
-    // The toolbar's own buttons have fixed names, so nothing else tells a screen reader where the walk has got to.
-    if worked {
+    worked
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Moves the diagram to walk position `position`, and announces it. The toolbar's own buttons have fixed names, so
+/// nothing else tells a screen reader where the walk has got to.
+fn go(position: usize) {
+    if show_position(position) {
         controls::announce(&walk::announcement(position));
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar's "Restart" button was pressed, or "Previous" from the first position, which the toolbar reports in the
-/// same way. Puts the diagram back to the start of the walk, and removes the flipped
-/// bit, so that the walk starts again from nothing. The data bits stay as they are.
+/// same way. Puts the diagram back to the start of the walk, and removes the flipped bit, so that the walk starts again
+/// from nothing. The data bits stay as they are.
+///
+/// There is one announcement, saying both that the error is gone and where the walk is. Two in a row would leave a
+/// screen reader saying only the second.
 fn restart() {
     STATE.with_borrow_mut(|state| state.error = None);
-    go(0);
-    controls::announce(&controls::describe(None));
+    if show_position(0) {
+        controls::announce(&format!("{} {}", controls::describe(None), walk::announcement(0)));
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

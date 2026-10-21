@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct restart logic in Hamming demo (`bf7cc40`)
 - Correct Hamming error position test (`64830a8`)
 - Server test handles query strings (`23e97d4`)
+- Prevent "Restart" from overwriting its own accessibility announcement (``)
 
 # [Released]
 
