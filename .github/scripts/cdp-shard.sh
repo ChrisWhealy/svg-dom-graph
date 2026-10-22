@@ -6,6 +6,9 @@
 # having to say so. Sorting puts the tests of one module next to each other, so dealing them out in turn spreads the
 # 30-odd tests of the largest module over every shard, instead of leaving one shard with all of them.
 #
+# In CI, CDP_PREBUILT=1 tells the tests to serve the demo and fixture packages the `cdp-build` job made, instead of
+# building them again in every shard. Without it, the tests build what they need, as they do locally.
+#
 # Each shard is a separate runner with its own Chrome. The tests inside a shard still take turns, as they do locally:
 # running several tabs of one Chrome at once has been followed by a macOS kernel panic. Do not run several shards at
 # the same time on one Mac.

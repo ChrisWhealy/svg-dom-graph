@@ -96,27 +96,9 @@ jobs:
       - name: Clippy (demo-app, wasm32 target)
         run: cargo clippy -p svg-dom-graph-demo -p demo-common --target wasm32-unknown-unknown -- -D warnings
 
-      # jetli/wasm-pack-action was previously used here, but its last release (v0.4.0, 2022) declares a `node16`
-      # runtime, which GitHub has deprecated — every job using it now emits a dependency-maintenance warning even
-      # though CI itself stays green, and there is no newer release to bump to. taiki-e/install-action is actively
-      # maintained, already used elsewhere for other Rust tools, and installs wasm-pack straight from its own
-      # GitHub Releases — pinning the tool version here (rather than the action's own "latest") keeps the same
-      # reproducibility the previous pin gave. Bump deliberately when needed.
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack@0.15.0
-
-      # `cargo run -p demo-server -- --build-only`, not a hand-written `wasm-pack build demo-app ...` invocation
-      # directly: demo-server's own build::build_wasm constructs that command programmatically (working directory,
-      # argument order, an absolute --out-dir derived from StagePaths), and a hand-written approximation here could
-      # drift out of step with it — a regression in build_wasm (wrong argument, wrong directory, wrong pkg_dir)
-      # could then leave this job green while `cargo demo` was actually broken. --build-only runs demo-server's
-      # real build_demo pipeline (stage index.html, then that exact wasm-pack invocation) without starting Actix,
-      # so this exercises the precise path `cargo demo` uses. Runs natively — demo-server is a host binary, not
-      # something built for wasm32 — despite this job's toolchain also carrying the wasm32 target above.
-      - name: Build the demo (cargo demo's own pipeline, without starting the server)
-        run: cargo run -p demo-server -- --build-only
+      # The demo itself is built by the `cdp-build` job below, which runs the same `cargo run -p demo-server --
+      # --build-only` pipeline as `cargo demo` and then hands the result to the CDP shards. Building it here as well
+      # would only do the same work twice.
 
   msrv:
     name: MSRV (1.85)
@@ -151,7 +133,7 @@ jobs:
       # without this. Tracked upstream at https://github.com/actions/runner-images/issues/10015.
       - name: Allow unprivileged user namespaces (Firefox/Chromium sandbox needs this on Ubuntu 24.04 runners)
         run: sudo sysctl -w kernel.apparmor_restrict_unprivileged_userns=0
-      # See the `wasm` job's own `Install wasm-pack` step for why this uses taiki-e/install-action rather than
+      # See the `cdp-build` job's own `Install wasm-pack` step for why this uses taiki-e/install-action rather than
       # jetli/wasm-pack-action.
       - name: Install wasm-pack
         uses: taiki-e/install-action@v2
@@ -193,13 +175,65 @@ jobs:
       - name: Clippy (cdp-integration-test)
         run: cargo clippy -p cdp-integration-test --all-targets -- -D warnings
 
+  # Builds, once, the two wasm packages that every CDP shard serves: the demo gallery and the cdp-test-fixture. The
+  # shards download the result instead of each compiling the 25,000 lines of the demo for wasm again. See
+  # `PREBUILT_VAR` in cdp-integration-test/src/lib.rs for how the tests are told to use it.
+  #
+  # `cargo run -p demo-server -- --build-only`, not a hand-written `wasm-pack build demo-app ...` invocation:
+  # demo-server's own build::build_wasm constructs that command programmatically (working directory, argument order,
+  # an absolute --out-dir derived from StagePaths), and a hand-written approximation here could drift out of step with
+  # it. --build-only runs demo-server's real build_demo pipeline (stage index.html, then that exact wasm-pack
+  # invocation) without starting Actix, so this exercises the precise path `cargo demo` uses.
+  cdp-build:
+    name: Build the demo and the CDP fixture for the shards
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      # jetli/wasm-pack-action was previously used in CI, but its last release (v0.4.0, 2022) declares a `node16`
+      # runtime, which GitHub has deprecated — every job using it now emits a dependency-maintenance warning even
+      # though CI itself stays green, and there is no newer release to bump to. taiki-e/install-action is actively
+      # maintained, already used elsewhere for other Rust tools, and installs wasm-pack straight from its own
+      # GitHub Releases — pinning the tool version here (rather than the action's own "latest") keeps the same
+      # reproducibility the previous pin gave. Bump deliberately when needed.
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+
+      - name: Build the demo (cargo demo's own pipeline, without starting the server)
+        run: cargo run -p demo-server -- --build-only
+
+      - name: Build the CDP test fixture
+        run: wasm-pack build --target web
+        working-directory: cdp-test-fixture
+
+      # Both paths are uploaded in one artifact, which keeps their paths relative to the repository root, so that
+      # downloading it into the checkout puts each exactly where the tests look for it.
+      - name: Share the builds with the shards
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdp-builds
+          path: |
+            target/demo-stage
+            cdp-test-fixture/pkg
+          if-no-files-found: error
+          retention-days: 1
+
   # The CDP tests run in as many Chrome processes as there are shards, one on each runner, instead of one after the
   # other in a single Chrome. Run in one, they took over 25 minutes. See .github/scripts/cdp-shard.sh for how the tests
   # are dealt out. A test added to any module lands in some shard on its own, so adding a shard here is the only change
   # that making the run faster or slower ever needs.
   cdp-integration-test:
     name: CDP browser integration tests (Chrome, shard ${{ matrix.shard }} of 8)
+    needs: cdp-build
     runs-on: ubuntu-latest
+    env:
+      # The packages come from the `cdp-build` job, not from a build in this shard.
+      CDP_PREBUILT: "1"
     strategy:
       # One shard failing should not hide what the others found.
       fail-fast: false
@@ -208,28 +242,24 @@ jobs:
     steps:
       - uses: actions/checkout@v7
       - uses: dtolnay/rust-toolchain@stable
-        with:
-          targets: wasm32-unknown-unknown
       - uses: Swatinem/rust-cache@v2
+      - name: Download the demo and fixture builds
+        uses: actions/download-artifact@v4
+        with:
+          name: cdp-builds
+          path: .
       # Unlike `browser-tests`, this job does not need the AppArmor/unprivileged-userns workaround: the shared
       # `launch_browser` helper (cdp-integration-test/src/lib.rs) launches Chrome with `.sandbox(false)`, precisely
       # so it never attempts the AppArmor-dependent sandbox initialisation that workaround exists for — see
       # `tests/cdp/main.rs`'s own `# Why the browser is launched with sandbox(false)` doc section. The
       # `sudo sysctl` step `browser-tests` needs has no effect here and is deliberately omitted.
-      # See the `wasm` job's own `Install wasm-pack` step for why this uses taiki-e/install-action rather than
-      # jetli/wasm-pack-action.
-      - name: Install wasm-pack
-        uses: taiki-e/install-action@v2
-        with:
-          tool: wasm-pack@0.15.0
-
       - name: Chrome version (diagnostic — the runner image ships one, nothing to install)
         run: google-chrome --version || google-chrome-stable --version || chromium-browser --version
 
-      # Builds the cdp-test-fixture wasm package and the demo gallery as the tests of this shard need them, serves
-      # them locally, and drives the runner's own Chrome over the DevTools Protocol — see the module doc comment in
-      # cdp-integration-test/tests/cdp/main.rs for what this verifies and why it's a separate job rather than folded
-      # into `browser-tests`: it needs headless_chrome and a real local Chrome binary, neither of which the
-      # wasm-bindgen-test-based browser tests require. The tests inside a shard still take turns, as they do locally.
+      # Serves the prebuilt cdp-test-fixture and demo gallery locally, and drives the runner's own Chrome over the
+      # DevTools Protocol — see the module doc comment in cdp-integration-test/tests/cdp/main.rs for what this verifies
+      # and why it's a separate job rather than folded into `browser-tests`: it needs headless_chrome and a real local
+      # Chrome binary, neither of which the wasm-bindgen-test-based browser tests require. The tests inside a shard
+      # still take turns, as they do locally.
       - name: Run this shard of the CDP integration tests (real pointer drag, driven through the actual browser)
         run: .github/scripts/cdp-shard.sh ${{ matrix.shard }} 8

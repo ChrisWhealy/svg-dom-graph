@@ -12,7 +12,12 @@
 
 use fd_lock::RwLock;
 use headless_chrome::{Browser, LaunchOptions, browser::default_executable};
-use std::{fs::OpenOptions, path::PathBuf, process::Command, thread};
+use std::{
+    fs::OpenOptions,
+    path::{Path, PathBuf},
+    process::Command,
+    thread,
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The path to the sibling `cdp-test-fixture` wasm crate, relative to this crate's own manifest directory.
@@ -24,6 +29,33 @@ pub fn fixture_dir() -> PathBuf {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The environment variable that says the wasm packages were built before the tests started, and are to be used as
+/// they are. CI sets it in each shard after downloading what its `build` job made, so that eight shards do not each
+/// build the same packages. Without it, the tests build what they need, as they always have.
+const PREBUILT_VAR: &str = "CDP_PREBUILT";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Whether [`PREBUILT_VAR`] is set to anything other than an empty string or `0`.
+fn prebuilt() -> bool {
+    std::env::var(PREBUILT_VAR).is_ok_and(|value| !value.is_empty() && value != "0")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks that `marker`, a file a finished build always leaves in `dir`, is there, and says what is missing if it is
+/// not. A shard told to use a prebuilt package that is not there should stop with that message, not with a browser
+/// that shows a 404.
+fn require_prebuilt(dir: &Path, marker: &str) -> Result<(), String> {
+    if dir.join(marker).is_file() {
+        Ok(())
+    } else {
+        Err(format!(
+            "{PREBUILT_VAR} is set, but {} does not exist. Download the build artifact before running the tests.",
+            dir.join(marker).display()
+        ))
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Rebuilds the `cdp-test-fixture` wasm package so `serve`'s output is current.
 ///
 /// `tests/cdp/common.rs` calls this once per test run, from behind its own `OnceLock`, so within this crate's own `cdp`
@@ -31,6 +63,10 @@ pub fn fixture_dir() -> PathBuf {
 /// second, independent `cargo test`/`cargo nextest run` invocation racing this one. Two `wasm-pack build` invocations
 /// running in the same `dir` at once would corrupt each other's intermediate states.
 pub fn build_fixture(dir: &PathBuf) {
+    if prebuilt() {
+        require_prebuilt(dir, "pkg/cdp_test_fixture.js").expect("the prebuilt fixture is missing");
+        return;
+    }
     let lock_path = dir.join(".build_fixture.lock");
     let lock_file = OpenOptions::new()
         .create(true)
@@ -62,6 +98,11 @@ pub fn build_demo() -> PathBuf {
     // The same directory `demo-server` stages into, which `CARGO_TARGET_DIR` can move. It may not exist yet, and the
     // lock has to be taken before the build that would create it. A relative path is relative to where cargo runs.
     let target = std::env::var_os("CARGO_TARGET_DIR").map_or_else(|| root.join("target"), |dir| root.join(dir));
+    if prebuilt() {
+        let stage = target.join("demo-stage");
+        require_prebuilt(&stage, "index.html").expect("the prebuilt demo is missing");
+        return stage;
+    }
     std::fs::create_dir_all(&target).expect("could not create the target directory");
     let lock_file = OpenOptions::new()
         .create(true)
