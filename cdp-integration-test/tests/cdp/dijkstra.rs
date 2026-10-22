@@ -176,10 +176,18 @@ fn cell_names(tab: &Tab, name: &str) -> Result<Vec<String>, String> {
     )
 }
 
-/// Where the three arrays, the queue and the vertices are, and how big, as the scene itself has them: each node's own
-/// `transform` and the size of its first rectangle. Unlike a bounding box on the page, this does not change when a
-/// selection or a focus ring thickens a stroke.
-fn placed(tab: &Tab) -> Result<Vec<String>, String> {
+/// Where one node is, and how big, as the scene itself has them.
+#[derive(Deserialize, Debug, PartialEq)]
+struct Placed {
+    at: String,
+    width: f64,
+    height: f64,
+}
+
+/// Where the three arrays, the queue and the vertices are, and how big: each node's own `transform` and the size of its
+/// first rectangle. Unlike a bounding box on the page, this does not change when a selection or a focus ring thickens a
+/// stroke.
+fn placed(tab: &Tab) -> Result<Vec<Placed>, String> {
     json(
         tab,
         &format!(
@@ -188,10 +196,23 @@ fn placed(tab: &Tab) -> Result<Vec<String>, String> {
              ...{VERTEX_GROUPS}.sort((a, b) => \
                a.querySelector(':scope > text').textContent.localeCompare(b.querySelector(':scope > text').textContent))] \
              .map(g => {{ const r = g.querySelector('rect'); \
-             return g.getAttribute('transform') + ' ' + r.getAttribute('width') + 'x' + r.getAttribute('height'); }})"
+             return {{ at: g.getAttribute('transform'), width: Number(r.getAttribute('width')), \
+             height: Number(r.getAttribute('height')) }}; }})"
         ),
     )
 }
+
+/// Whether every node is where it was, exactly, and as big as it was to within `SIZE_TOLERANCE`.
+fn same_places(before: &[Placed], after: &[Placed]) -> bool {
+    before.len() == after.len()
+        && before.iter().zip(after).all(|(x, y)| {
+            x.at == y.at && (x.width - y.width).abs() < SIZE_TOLERANCE && (x.height - y.height).abs() < SIZE_TOLERANCE
+        })
+}
+
+/// How much the size of a node may differ between two steps. The browser measures the same text a little differently
+/// from one layout to the next, by a few hundredths of a unit, and that is not a node changing size.
+const SIZE_TOLERANCE: f64 = 0.25;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The panel opens on the reference graph with the walk at its start. Every edge has a label with its weight, in the
@@ -417,7 +438,7 @@ fn the_arrays_the_queue_and_the_vertices_never_move_or_change_size() -> Result<(
     for position in 1..count {
         click(&tab, "Next selection")?;
         check(
-            placed(&tab)? == before,
+            same_places(&before, &placed(&tab)?),
             &format!("an array, the queue or a vertex moved or resized at step {position}"),
         )?;
     }

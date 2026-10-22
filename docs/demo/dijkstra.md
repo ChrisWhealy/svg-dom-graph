@@ -92,6 +92,8 @@ A note under the graph says the same.
 The scene is drawn again for each step, and the vertices, the three arrays and the queue are exactly where they were.
 The arrays do not outgrow their cells when `∞` becomes `1250`, because each column is given a width hint: the widest string it ever shows, measured in the browser.
 Only the note changes size, and it is below everything, so it moves nothing.
+The browser measures the same text a little differently from one layout to the next, so an array's width can differ by a few hundredths of a unit between steps.
+The test allows for that: positions must be identical, and sizes equal to within a quarter of a unit.
 
 A redraw keeps what the person has done:
 

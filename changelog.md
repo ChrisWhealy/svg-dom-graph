@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct failing CI tests (`7b7d732`)
 - Prevent overflow being reported for a settled edge that should instead be skipped (`c3fd429`)
-- Avoid vertex and edge label overlap after move (``)
+- Avoid vertex and edge label overlap after move (`ac6cff8`)
+- Correct another failing CI test (``)
 
 # [Released]
 
