@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct failing CI tests (``)
+- Correct failing CI tests (`7b7d732`)
+- Prevent overflow being reported for a settled edge that should instead be skipped (``)
 
 # [Released]
 

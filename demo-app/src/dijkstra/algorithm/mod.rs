@@ -270,9 +270,6 @@ pub(super) fn steps(graph: &Graph, source: usize, destination: Option<usize>) ->
             break;
         }
         for (index, edge) in graph.edges.iter().enumerate().filter(|(_, edge)| edge.from == vertex) {
-            let candidate = distance
-                .checked_add(edge.weight)
-                .ok_or(Error::DistanceOverflow { edge: index })?;
             let (from, to) = (run.name(edge.from).to_owned(), run.name(edge.to).to_owned());
             let current = run.distance[edge.to];
             let (relaxation, note) = if run.settled[edge.to] {
@@ -283,31 +280,38 @@ pub(super) fn steps(graph: &Graph, source: usize, destination: Option<usize>) ->
                         edge.weight
                     ),
                 )
-            } else if current.is_none_or(|current| candidate < current) {
-                run.distance[edge.to] = Some(candidate);
-                run.predecessor[edge.to] = Some(edge.from);
-                run.via[edge.to] = Some(index);
-                run.heap.push(Reverse((candidate, edge.to)));
-                let was = current.map_or("∞".to_owned(), |current| current.to_string());
-                (
-                    Relaxation::Improved,
-                    format!(
-                        "Edge {from} to {to}, weight {}: {distance} + {} = {candidate}, which is less than {was}. \
-                         {to} is now reached from {from}.",
-                        edge.weight, edge.weight
-                    ),
-                )
             } else {
-                (
-                    Relaxation::Kept,
-                    format!(
-                        "Edge {from} to {to}, weight {}: {distance} + {} = {candidate}, which is not less than {}. \
+                // The sum is only taken for a vertex that can still be improved. An edge back to a settled vertex is
+                // skipped above, so a sum that would overflow there is no error.
+                let candidate = distance
+                    .checked_add(edge.weight)
+                    .ok_or(Error::DistanceOverflow { edge: index })?;
+                if current.is_none_or(|current| candidate < current) {
+                    run.distance[edge.to] = Some(candidate);
+                    run.predecessor[edge.to] = Some(edge.from);
+                    run.via[edge.to] = Some(index);
+                    run.heap.push(Reverse((candidate, edge.to)));
+                    let was = current.map_or("∞".to_owned(), |current| current.to_string());
+                    (
+                        Relaxation::Improved,
+                        format!(
+                            "Edge {from} to {to}, weight {}: {distance} + {} = {candidate}, which is less than {was}. \
+                         {to} is now reached from {from}.",
+                            edge.weight, edge.weight
+                        ),
+                    )
+                } else {
+                    (
+                        Relaxation::Kept,
+                        format!(
+                            "Edge {from} to {to}, weight {}: {distance} + {} = {candidate}, which is not less than {}. \
                          {to} keeps its route.",
-                        edge.weight,
-                        edge.weight,
-                        current.map_or("∞".to_owned(), |current| current.to_string())
-                    ),
-                )
+                            edge.weight,
+                            edge.weight,
+                            current.map_or("∞".to_owned(), |current| current.to_string())
+                        ),
+                    )
+                }
             };
             let step = run.record(note);
             step.active = Some(vertex);

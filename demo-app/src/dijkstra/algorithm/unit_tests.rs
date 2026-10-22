@@ -275,6 +275,16 @@ fn a_distance_that_overflows_is_an_error_not_a_wrap() {
 }
 
 #[test]
+fn an_edge_back_to_a_settled_vertex_is_skipped_before_its_sum_can_overflow() {
+    // C is settled at u64::MAX - 1, and C to A would add 2 to that. A is settled already, so the sum is never taken.
+    let graph = graph(3, &[(A, B, i64::MAX), (B, C, i64::MAX), (C, A, 2)]);
+    let steps = steps(&graph, A, None).expect("a run, not an overflow");
+    let last = last(&steps);
+    assert_eq!(last.distance, vec![Some(0), Some(i64::MAX as u64), Some(u64::MAX - 1)]);
+    assert!(last.settled.iter().all(|&settled| settled));
+}
+
+#[test]
 fn the_largest_distance_that_fits_is_not_mistaken_for_unreachable() {
     let graph = graph(3, &[(A, B, i64::MAX), (B, C, i64::MAX)]);
     let steps = steps(&graph, A, None).expect("a run");
