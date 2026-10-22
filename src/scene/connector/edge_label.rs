@@ -18,8 +18,10 @@
 //!
 //! A label's box is moved by writing the `transform` of its group. What the label's handle says about where it is only
 //! changes after that write has succeeded. So if a write fails, the handle still says where the label really is. The
-//! error is returned to the caller, and the next time the connector is routed the label is placed again and moved if
-//! it needs to be. Nothing marks the label as stale, because nothing needs to.
+//! error is returned to the caller. The edge is also noted in a short list of labels to try again. They are placed again
+//! by the next call that places any label, by the end of a drag, and by a move that does not change a node's position,
+//! so a label that missed its move is not left where it was until its connector happens to be routed. The handle itself
+//! needs no flag, because it only ever says where the label really is.
 //!
 //! # Ordering
 //!
@@ -257,6 +259,7 @@ impl SceneInner {
             .iter()
             .filter(|id| id.graph == self.graph.id)
             .map(|id| id.index)
+            .chain(std::mem::take(&mut self.dirty_labels))
             .filter(|&index| self.edge_handles.get(index).is_some_and(|handle| handle.label.is_some()))
             .collect();
         first_pass.sort_unstable();
@@ -266,8 +269,17 @@ impl SceneInner {
         }
         let vertices: Vec<Rect> = self.graph.nodes.iter().map(|node| node.rect).collect();
 
+        // A label whose write fails is noted to be tried again, and the others are still placed. The first error is
+        // the one returned.
+        let mut failure: Option<Error> = None;
+        let mut place = |scene: &mut Self, index: usize| {
+            if let Err(error) = scene.place_one(index, &vertices, scratch) {
+                scene.dirty_labels.push(index);
+                failure.get_or_insert(error);
+            }
+        };
         for &index in &first_pass {
-            self.place_one(index, &vertices, scratch)?;
+            place(self, index);
         }
 
         // Every label that is now where it was not, and could be overlapped by one of lower priority.
@@ -288,9 +300,25 @@ impl SceneInner {
             .collect();
         lower.sort_unstable();
         for index in lower {
-            self.place_one(index, &vertices, scratch)?;
+            place(self, index);
         }
-        Ok(())
+        failure.map_or(Ok(()), Err)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Places again every label whose write failed the last time it was placed. It does nothing if there are none, which
+    /// is nearly always.
+    ///
+    /// Called when a drag ends, and when a node is moved to the position it already has.
+    ///
+    /// # Errors
+    ///
+    /// Returns the first error of a write that fails again. That label stays on the list.
+    pub(crate) fn retry_dirty_labels(&mut self, scratch: &mut String) -> Result<(), Error> {
+        if self.dirty_labels.is_empty() {
+            return Ok(());
+        }
+        self.place_labels(&[], scratch)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -67,6 +67,10 @@ pub(super) struct SceneInner {
     pub edge_handles: Vec<ConnectorHandle>,
     /// How many edges have a label. A scene with none never looks at its labels when a connector is routed again.
     pub label_count: usize,
+    /// The indices of the edges whose label could not be written the last time it was placed. They are placed again by
+    /// the next call to [`place_labels`](Self::place_labels), and by [`retry_dirty_labels`](Self::retry_dirty_labels),
+    /// so a label that missed its move is not left where it was until its connector happens to be routed again.
+    pub dirty_labels: Vec<usize>,
     pub arrow: SvgMarker,
     /// The (parent `Scene`, container `NodeId`) pair that owns this `Scene` as its nested child, if any. It is `None`
     /// for a `Scene` that has never been grafted into another one via `Scene::add_container_node`/
@@ -391,7 +395,8 @@ impl SceneInner {
 
         // Can we bail-out early?
         if rect.origin == new_origin {
-            return Ok(());
+            // Nothing moves, but a label that missed an earlier move is given another try.
+            return self.retry_dirty_labels(scratch);
         }
 
         self.graph.set_node_rect(
@@ -636,6 +641,10 @@ impl SceneInner {
     /// Writing the path before committing the type keeps `Scene::set_connector_type` transactional. If the DOM write
     /// fails partway through — [`SvgNode::set_attr`] can itself fail — the stored `connector_type` is left exactly as
     /// it was. It never claims a route the rendered path does not actually show.
+    ///
+    /// The edge's label is placed once the path and type are committed. If that fails, the error is returned although
+    /// the new type is already drawn and recorded: the label is where it was, and is placed again later. See
+    /// [`place_labels`](Self::place_labels).
     ///
     /// `scratch` is a caller-owned buffer, reused across calls to avoid allocating a fresh `String` on every move
     /// event.

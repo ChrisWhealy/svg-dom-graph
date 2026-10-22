@@ -61,7 +61,8 @@ That is the whole of it: there are two passes and never more, so the work is bou
 A graph too crowded for every label to be clear is allowed to overlap, as documented above.
 
 A label that could not be moved because a write failed is where it was, and the error is returned.
-It is placed again the next time its connector is routed, or when `set_edge_label` is called again for the edge.
+Its edge is noted, and the label is placed again by the next call that places any label, when a drag ends, and by `move_node` to the position a node already has.
+A call that changes the connector type draws and records the new type before it places the label, so a label failure there leaves the new type in place and returns the error: the call has partly succeeded.
 
 ## Edge focus
 

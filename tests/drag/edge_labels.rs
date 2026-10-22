@@ -4,7 +4,7 @@
 //! The placement rules themselves are checked without a browser, in `src/geometry/label`. These tests are about what
 //! reaches the page: the drawn label, where it ends up, and that it follows its connector.
 
-use crate::common::{check, group_translate, make_svg, mutations_during};
+use crate::common::{FailingWrites, check, group_translate, make_svg, mutations_during};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     EdgeId, Error, NodeId,
@@ -452,6 +452,44 @@ fn a_node_moved_onto_an_unrelated_label_moves_the_label_clear_of_it() -> Result<
     check(
         !overlap(label, moved),
         &format!("the label {label:?} still overlaps the node {moved:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A label whose move failed is placed again by a later move that leaves a node where it is, and so needs no change of
+/// position to be retried.
+///
+/// Changing the connector type writes the path's `d` and then the label's `transform`. Only `transform` is made to fail,
+/// so the connector changes and the label does not, and the call reports the error.
+#[wasm_bindgen_test]
+fn a_label_that_failed_to_move_is_placed_again_by_a_move_that_changes_nothing() -> Result<(), String> {
+    let scene = new_scene("label-retry")?;
+    let (a, b) = (node(&scene, "A", 20.0, 40.0)?, node(&scene, "B", 400.0, 300.0)?);
+    let edge = scene
+        .add_edge_with(a, b, ConnectorOptions::default().with_connector_type(ConnectorType::Straight))
+        .map_err(e)?;
+    scene.set_edge_label(edge, Some("weight")).map_err(e)?;
+    let before = transform_of("label-retry", 0)?;
+
+    {
+        let _failing = FailingWrites::start(&["transform"])?;
+        check(
+            scene
+                .set_connector_type(edge, ConnectorType::Elbow { corner_radius: 0.0 })
+                .is_err(),
+            "the injected label write failure should be reported",
+        )?;
+    }
+    check(
+        transform_of("label-retry", 0)? == before,
+        "the label should be where it was while its write failed",
+    )?;
+
+    // The node is moved to where it already is. Nothing moves, but the label is tried again.
+    scene.move_node(a, Point::new(20.0, 40.0)).map_err(e)?;
+    check(
+        transform_of("label-retry", 0)? != before,
+        "the label was not placed again by a move that changed nothing",
     )
 }
 

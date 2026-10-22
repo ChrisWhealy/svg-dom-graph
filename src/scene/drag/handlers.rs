@@ -166,6 +166,12 @@ pub(super) fn pointerup(
         // final rendered position nor the collision-resolution rect read below is ever one frame stale.
         coalescer.flush();
 
+        // A label that missed one of the moves of this drag is tried again now, since the last frame may be the one that
+        // failed and nothing else would place it until its connector is next routed.
+        if let Some(inner) = inner_weak.upgrade() {
+            let _ = inner.borrow_mut().retry_dirty_labels(&mut String::new());
+        }
+
         // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to do.
         // `PushClear` pushes this node back to a clear position, along the line to where it started this drag,
         // if the drop overlaps another node.

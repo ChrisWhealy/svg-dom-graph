@@ -343,8 +343,13 @@ impl Scene {
     /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
     ///
     /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails once
-    /// underway. The stored connector type is only updated once the new path has actually been written. A failure here
-    /// leaves `id` rendered and recorded exactly as it was before the call.
+    /// underway. The stored connector type is only updated once the new path has actually been written. A failure of
+    /// the path leaves `id` rendered and recorded exactly as it was before the call.
+    ///
+    /// The edge's label is placed after that, and a failure there is also returned, but by then the new type is
+    /// already drawn and recorded: the call has partly succeeded. The label is where it was, and is placed again by the
+    /// next call that places any label, by the end of a drag, or by a move that leaves a node where it is, whichever
+    /// comes first.
     ///
     /// A `connector_type` is received that is identical to `id`'s own current one, then this is an immediate no-op and
     /// we bail out early. [`ConnectorType`] derives `PartialEq`, so this comparison is free next. This is the check
