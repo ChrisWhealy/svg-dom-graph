@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adjust layout of Base64 demo (`b975022`)
 - Extract common functionality into `demo-common` project crate (`67143bb`)
 - Adjust layout of Text Input demo (`7772016`)
-- Add CI `cdp-build` job to pre-build WASM module that is then downloaded by each CI test shard (``)
+- Add CI `cdp-build` job to pre-build WASM module that is then downloaded by each CI test shard (`60c6914`)
+- Collect CI test shard runtime data (``)
 
 # [Released]
 

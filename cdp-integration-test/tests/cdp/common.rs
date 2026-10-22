@@ -12,9 +12,10 @@
 use cdp_integration_test::{build_demo, build_fixture, fixture_dir, launch_browser, serve};
 use headless_chrome::{Browser, Element, Tab, protocol::cdp::Input};
 use std::{
+    io::Write,
     ops::Deref,
     sync::{Arc, Mutex, MutexGuard, OnceLock},
-    time::Duration,
+    time::{Duration, Instant},
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -52,6 +53,7 @@ pub(crate) fn new_tab() -> Result<DemoTab, String> {
     // A test that failed while holding the lock poisons it, which says nothing about the next test's tab.
     let turn = TURN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let shared = shared()?;
+    let timing = Timing::start();
     let tab = shared.browser.new_tab().map_err(|e| format!("failed to open a new tab: {e}"))?;
     tab.navigate_to(&shared.base_url)
         .map_err(|e| format!("failed to navigate to fixture page: {e}"))?;
@@ -62,7 +64,11 @@ pub(crate) fn new_tab() -> Result<DemoTab, String> {
         Duration::from_secs(10),
     )
     .map_err(|e| format!("fixture did not finish building in time: {e}"))?;
-    Ok(DemoTab { tab, _turn: turn })
+    Ok(DemoTab {
+        tab,
+        _timing: timing,
+        _turn: turn,
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -100,6 +106,8 @@ fn demo() -> Result<&'static DemoShared, String> {
 /// kernel spinlock timeout between two Chrome threads), which taking turns avoids.
 pub(crate) struct DemoTab {
     tab: Arc<Tab>,
+    // Declared before the turn, so the time is recorded while the test still has the browser to itself.
+    _timing: Timing,
     _turn: MutexGuard<'static, ()>,
 }
 
@@ -113,6 +121,41 @@ impl Deref for DemoTab {
 
 static TURN: Mutex<()> = Mutex::new(());
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The environment variable that names a file to which each test appends how long it held the browser, as a line of
+/// `test name`, a tab, and milliseconds. `.github/scripts/cdp-deal.sh` uses these times to deal the tests out to the CI
+/// shards so that each shard takes about as long as the others. Nothing is recorded if it is not set.
+const TIMING_FILE_VAR: &str = "CDP_TIMING_FILE";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How long one test held the browser. It starts when the test's turn has begun and the browser is up, so the time it
+/// spent waiting for other tests, and the one-off start of Chrome, are not counted. It ends when the test's [`DemoTab`]
+/// is dropped, which is when the test ends, whether it passed or failed.
+struct Timing {
+    started: Instant,
+}
+
+impl Timing {
+    fn start() -> Self {
+        Self { started: Instant::now() }
+    }
+}
+
+impl Drop for Timing {
+    fn drop(&mut self) {
+        let Some(path) = std::env::var_os(TIMING_FILE_VAR) else { return };
+        // libtest names each test's thread after the test, as `hamming::restart_from_position_0_returns_to_the_start`.
+        let thread = std::thread::current();
+        // With a single test thread, libtest runs the tests on the main thread, which does not say which test it is.
+        let Some(name) = thread.name().filter(|name| *name != "main") else { return };
+        let line = format!("{name}\t{}\n", self.started.elapsed().as_millis());
+        // One `write` of the whole line, so lines from separate runs appending to one file do not interleave.
+        if let Ok(mut file) = std::fs::OpenOptions::new().create(true).append(true).open(path) {
+            let _ = file.write_all(line.as_bytes());
+        }
+    }
+}
+
 /// Waits for its turn, then opens a fresh tab on the demo's window page `page` (for example `chacha20-window.html`) and
 /// waits until `ready` matches an element. The viewport is made `size` large, so a diagram taller than Chrome's
 /// headless window is wholly on screen and every part of it can be hit by a real mouse.
@@ -120,6 +163,7 @@ pub(crate) fn new_demo_tab(page: &str, ready: &str, size: (u32, u32)) -> Result<
     // A test that failed while holding the lock poisons it, which says nothing about the next test's tab.
     let turn = TURN.lock().unwrap_or_else(std::sync::PoisonError::into_inner);
     let demo = demo()?;
+    let timing = Timing::start();
     let tab = demo.browser.new_tab().map_err(|e| format!("failed to open a new tab: {e}"))?;
     tab.call_method(headless_chrome::protocol::cdp::Emulation::SetDeviceMetricsOverride {
         width: size.0,
@@ -144,7 +188,11 @@ pub(crate) fn new_demo_tab(page: &str, ready: &str, size: (u32, u32)) -> Result<
     tab.activate().map_err(|e| format!("failed to activate tab: {e}"))?;
     tab.wait_for_element_with_custom_timeout(ready, Duration::from_secs(30))
         .map_err(|e| format!("{page} did not finish building in time: {e}"))?;
-    Ok(DemoTab { tab, _turn: turn })
+    Ok(DemoTab {
+        tab,
+        _timing: timing,
+        _turn: turn,
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

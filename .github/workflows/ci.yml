@@ -55,6 +55,10 @@ jobs:
       - name: Unit tests (demo-common)
         run: cargo test -p demo-common
 
+      # cdp-deal.sh decides which CDP tests each shard runs. This checks it on a made-up list, with no browser.
+      - name: Test how the CDP tests are dealt out to the shards
+        run: .github/scripts/test-cdp-deal.sh
+
       # The CDP tests' own static file server is plain native code too, and the shards below run only the browser tests
       # (`--test cdp`), so its unit tests, such as the one that a query string is not part of a file's name, run here.
       # `--lib` selects them without starting a browser.
@@ -234,6 +238,10 @@ jobs:
     env:
       # The packages come from the `cdp-build` job, not from a build in this shard.
       CDP_PREBUILT: "1"
+      # Each test appends how long it held the browser to this file, which is uploaded below. Those times are what
+      # .github/cdp-timings.tsv is made from, and what the dealing of tests to shards goes by. See
+      # .github/scripts/cdp-merge-timings.sh.
+      CDP_TIMING_FILE: ${{ github.workspace }}/cdp-timings-${{ matrix.shard }}.tsv
     strategy:
       # One shard failing should not hide what the others found.
       fail-fast: false
@@ -263,3 +271,13 @@ jobs:
       # still take turns, as they do locally.
       - name: Run this shard of the CDP integration tests (real pointer drag, driven through the actual browser)
         run: .github/scripts/cdp-shard.sh ${{ matrix.shard }} 8
+
+      # Uploaded even when a test failed, so that a failing run still tells how long the others took.
+      - name: Keep the test timings
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: cdp-timings-${{ matrix.shard }}
+          path: cdp-timings-${{ matrix.shard }}.tsv
+          if-no-files-found: ignore
+          retention-days: 30
