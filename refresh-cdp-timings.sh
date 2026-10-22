@@ -19,6 +19,8 @@
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+# `gh` finds the repository from the current directory, so run from the repository wherever the script was started.
+cd "$root"
 workflow="ci.yml"
 branch="main"
 output="${CDP_TIMINGS_FILE:-$root/.github/cdp-timings.tsv}"
@@ -43,7 +45,12 @@ else
   runs="$(gh run list --workflow "$workflow" --branch "$branch" --status completed --limit 15 \
     --json databaseId,conclusion \
     --jq '.[] | select(.conclusion != "cancelled" and .conclusion != "skipped") | .databaseId')"
-  [ -n "$runs" ] || { echo "refresh-cdp-timings.sh: no completed $workflow runs found on $branch" >&2; exit 1; }
+  if [ -z "$runs" ]; then
+    echo "refresh-cdp-timings.sh: no completed $workflow runs found on $branch in $(gh repo view --json nameWithOwner --jq .nameWithOwner 2>&1)," >&2
+    echo "which has these runs of any status:" >&2
+    gh run list --workflow "$workflow" --limit 5 >&2 || true
+    exit 1
+  fi
   run=""
   for candidate in $runs; do
     if download "$candidate"; then
