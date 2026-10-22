@@ -590,7 +590,7 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
 /// Returns `Err` if the window's own stage is missing, or if any library call fails.
 fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.scene.view()));
-    let focused = focused_button();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
 
     let (scene, nodes, step) = build_scene(stage)?;
     if let Some(view) = view {
@@ -615,8 +615,8 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
             shown_at: Some(position),
         });
     });
-    if let Some(label) = focused {
-        focus_button(&label);
+    if let Some(selector) = focused {
+        demo_common::focus::focus(&selector);
     }
     demo_common::util::fit_window_to_stage(DIAGRAM_ID)
 }
@@ -654,32 +654,6 @@ fn step_to(position: usize) -> Result<(), String> {
         }
         Ok(())
     })
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
-fn focused_button() -> Option<String> {
-    let document = demo_common::util::document().ok()?;
-    let active = document.active_element()?;
-    let diagram = document.get_element_by_id(DIAGRAM_ID)?;
-    if diagram.contains(Some(&active)) {
-        active.get_attribute("aria-label")
-    } else {
-        None
-    }
-}
-
-/// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
-/// that is disabled now is left alone.
-fn focus_button(label: &str) {
-    use wasm_bindgen::JsCast;
-    let Ok(document) = demo_common::util::document() else { return };
-    let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
-    if let Ok(Some(button)) = document.query_selector(&selector) {
-        if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
-            let _ = button.focus();
-        }
-    }
 }
 
 /// Builds the SHA-256 scene at its first step, with the message in focus, wires its stepping toolbar, and resizes the

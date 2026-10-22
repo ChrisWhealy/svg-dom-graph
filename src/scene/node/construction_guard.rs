@@ -77,6 +77,9 @@ impl Drop for OperatorConstructionGuard {
                 if let Some(marker) = handle.port_marker {
                     marker.remove();
                 }
+                if let Some(label) = handle.label {
+                    label.remove();
+                }
             }
             inner.graph.remove_edge(edge_id);
         }

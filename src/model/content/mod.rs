@@ -67,6 +67,10 @@
 //! - [`DataFormat::Bool`]: a Boolean as [`BoolFormat`] says: the words `true` and `false`, the bits `1` and `0`, or a
 //!   green check mark and a red cross. On `Bool` values only. Every other format reads a Boolean as the one byte it is
 //!   held in.
+//! - [`DataFormat::Text`]: one string for each cell, drawn as it is, on `Text` values only. A string is one line with no
+//!   control character in it, and may be empty. Its cell is as wide as the widest string measures in the browser, or as
+//!   [`DataNodeContent::with_cell_width_hint`] says, whichever is more, so a character from a fallback font cannot spill
+//!   out of its cell.
 //! - [`NodeValues::Bits`]: values fewer than eight bits wide. [`DataFormat::Binary`] writes exactly as many digits as the
 //!   width, with no nybble gap, and [`DataFormat::Hexadecimal`] writes `width.div_ceil(4)` digits. See [`BitValues`].
 //! - [`DataFormat::Decimal`]: the whole value as one plain decimal number. For a float, its shortest digits. Decimal

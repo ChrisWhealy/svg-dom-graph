@@ -13,7 +13,7 @@ use crate::{
     error::Error,
     geometry::{
         binary_operator_anchors, elbow_path_into, nearest_clear_centre, port_marker_position, rects_overlap,
-        side::Side, view::ViewTransform,
+        route::Route, side::Side, view::ViewTransform,
     },
     model::{edge::EdgeId, graph::Graph, node::NodeId},
 };
@@ -65,6 +65,8 @@ pub(super) struct SceneInner {
     pub graph: Graph,
     pub node_handles: Vec<BoxHandles>,
     pub edge_handles: Vec<ConnectorHandle>,
+    /// How many edges have a label. A scene with none never looks at its labels when a connector is routed again.
+    pub label_count: usize,
     pub arrow: SvgMarker,
     /// The (parent `Scene`, container `NodeId`) pair that owns this `Scene` as its nested child, if any. It is `None`
     /// for a `Scene` that has never been grafted into another one via `Scene::add_container_node`/
@@ -273,7 +275,11 @@ impl SceneInner {
             );
             return None;
         }
-        self.edge_handles.pop()
+        let handle = self.edge_handles.pop()?;
+        if handle.label.is_some() {
+            self.label_count -= 1;
+        }
+        Some(handle)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -418,7 +424,31 @@ impl SceneInner {
             }
         }
 
+        if self.label_count > 0 {
+            let redrawn = self.edges_redrawn_with(id);
+            self.place_labels(&redrawn, scratch)?;
+        }
         Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Every edge whose route is written again when node `id` moves, or when its fixing points change: the edges
+    /// incident to it, and the other input of a binary operator that `id` is an input of, since the two inputs are routed
+    /// together. See [`move_node`](Self::move_node).
+    pub(super) fn edges_redrawn_with(&self, id: NodeId) -> Vec<EdgeId> {
+        let mut edges = self.graph.incident_edges(id).to_vec();
+        for &edge_id in self.graph.incident_edges(id) {
+            let Some(operator) = self.binary_operator_input_target(id, edge_id) else {
+                continue;
+            };
+            if let Some((a, b)) = self
+                .node_handle(operator)
+                .and_then(|handles| handles.binary_operator_input_edges)
+            {
+                edges.extend([a, b]);
+            }
+        }
+        edges
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -435,13 +465,16 @@ impl SceneInner {
     pub(super) fn write_edge_path(
         &self,
         id: EdgeId,
-        vertices: &[Point],
+        vertices: &Route,
         radius: f64,
         scratch: &mut String,
     ) -> Result<(), Error> {
         elbow_path_into(vertices, radius, scratch);
         let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
         handle.path.set_attr("d", scratch)?;
+        // Kept only once the path is written, so that it is the route the path shows. A label is placed from it.
+        handle.route.set(*vertices);
+        handle.radius.set(radius);
         Ok(())
     }
 
@@ -626,8 +659,10 @@ impl SceneInner {
         let handle = self.edge_handle_mut(id).ok_or(Error::UnknownEdge(id))?;
         handle.path.set_attr("d", scratch)?;
         handle.connector_type = connector_type;
+        handle.route.set(vertices);
+        handle.radius.set(radius);
 
-        Ok(())
+        self.place_labels(&[id], scratch)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

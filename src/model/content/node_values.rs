@@ -8,8 +8,8 @@ use super::{
 };
 use crate::colours::{
     TYPE_COLOUR_BITS, TYPE_COLOUR_BOOL, TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16,
-    TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE, TYPE_COLOUR_U8, TYPE_COLOUR_U16,
-    TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128, TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
+    TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE, TYPE_COLOUR_TEXT, TYPE_COLOUR_U8,
+    TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128, TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -59,7 +59,8 @@ fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
         | DataFormat::PlainText
         | DataFormat::HexDump(_)
         | DataFormat::Uuid(_)
-        | DataFormat::Bool(_) => values.first().copied(),
+        | DataFormat::Bool(_)
+        | DataFormat::Text => values.first().copied(),
     }
 }
 
@@ -163,7 +164,11 @@ macro_rules! impl_word {
                 match format {
                     // A float, UUID or Boolean format means nothing for an integer, and is rejected before one is ever
                     // drawn. It reads as the plain decimal number if it does get here.
-                    DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+                    DataFormat::Decimal
+                    | DataFormat::Float(_)
+                    | DataFormat::Uuid(_)
+                    | DataFormat::Bool(_)
+                    | DataFormat::Text => {
                         let (magnitude, negative) = self.split_sign();
                         format_decimal_into(magnitude, negative, out);
                     },
@@ -191,7 +196,7 @@ impl Cell for Uuid {
             // A UUID is written as its own text under `Uuid`. Every other format reads its 128 bits as a number or as
             // bytes, as a `u128` would, and the default text is what a node that is given no format says reads best.
             DataFormat::Uuid(uuid_format) => format_uuid_into(self, uuid_format, out),
-            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Bool(_) => {
+            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Bool(_) | DataFormat::Text => {
                 format_decimal_into(self.as_u128(), false, out);
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_bytes(), byte_order), out),
@@ -214,7 +219,7 @@ impl Cell for bool {
         match format {
             DataFormat::Bool(bool_format) => format_bool_into(self, bool_format, out),
             // Every other format reads a Boolean as the single byte it is held in: `1` or `0`.
-            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) => {
+            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Text => {
                 format_decimal_into(u128::from(byte), false, out);
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes([byte], byte_order), out),
@@ -235,7 +240,7 @@ macro_rules! impl_float_cell {
         impl Cell for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+                    DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
                         format_float_into(self, FloatFormat::shortest(), out);
                     },
                     DataFormat::Float(float_format) => format_float_into(self, float_format, out),
@@ -261,7 +266,7 @@ impl_float_cell!(f32, f64);
 /// values, and is rejected before one is ever drawn. It reads as the plain decimal number if it does get here.
 fn format_bits_into(value: u8, width: u8, format: DataFormat, out: &mut String) {
     match format {
-        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
             format_decimal_into(u128::from(value), false, out);
         },
         DataFormat::Hexadecimal => format_bits_hex_into(value, width, out),
@@ -276,7 +281,7 @@ fn format_bits_into(value: u8, width: u8, format: DataFormat, out: &mut String) 
 fn format_widest_bits(bits: &BitValues, format: DataFormat, out: &mut String) {
     let values = bits.values();
     let widest = match format {
-        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
             values.iter().copied().max()
         },
         _ => values.first().copied(),
@@ -342,7 +347,7 @@ fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrde
 /// binary and `Ascii` formats show a fixed number of bytes, so the first value is as wide as any.
 fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
     match format {
-        DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) => {
+        DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
             widest_float(values, FloatFormat::shortest(), out)
         },
         DataFormat::Float(float_format) => widest_float(values, float_format, out),
@@ -441,6 +446,17 @@ fn format_first<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder
 /// of Base64. [`DataFormat::Binary`] writes exactly that many digits, with no grouping into nybbles. See [`BitValues`]
 /// for each format.
 ///
+/// # Text
+///
+/// `Text` holds strings, one to a cell, and is written by [`DataFormat::Text`], which no other values accept. Each
+/// string is drawn as it is. It is set as the text of an SVG text element, and is never read as markup. A string must be
+/// one line, with no control character in it. It may be empty, which is drawn as an empty cell and is read out as
+/// "empty". Cell widths follow the strings' measured widths in the browser, not their character counts, since a
+/// character such as `∞` can come from a font whose advance differs from the monospace font's. A string has no fixed
+/// width, so a node whose strings are replaced by wider ones will outgrow its cells. See
+/// [`DataNodeContent::with_cell_width_hint`](super::DataNodeContent::with_cell_width_hint) for how a caller prevents
+/// that.
+///
 /// # Equality
 ///
 /// Two `NodeValues` are equal when they are the same type and hold identical stored values, and for a float that means
@@ -489,6 +505,8 @@ pub enum NodeValues {
     Bool(Vec<bool>),
     /// Values fewer than eight bits wide, all of one width. See [`BitValues`].
     Bits(BitValues),
+    /// Text: one string for each cell. See "Text" above, and [`DataFormat::Text`].
+    Text(Vec<String>),
 }
 
 impl PartialEq for NodeValues {
@@ -521,6 +539,7 @@ impl NodeValues {
             Self::Uuid(v) => v.len(),
             Self::Bool(v) => v.len(),
             Self::Bits(b) => b.values().len(),
+            Self::Text(v) => v.len(),
         }
     }
 
@@ -544,6 +563,21 @@ impl NodeValues {
     /// `true` for [`NodeValues::Bool`], the only values a [`DataFormat::Bool`] can format.
     pub(super) fn is_bool(&self) -> bool {
         matches!(self, Self::Bool(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`NodeValues::Text`], the only values a [`DataFormat::Text`] can format.
+    pub(super) fn is_text(&self) -> bool {
+        matches!(self, Self::Text(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The strings of [`NodeValues::Text`], and none for any other values.
+    pub(super) fn text(&self) -> Option<&[String]> {
+        match self {
+            Self::Text(v) => Some(v),
+            _ => None,
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -578,6 +612,7 @@ impl NodeValues {
             (Self::Uuid(a), Self::Uuid(b)) => same(a, b),
             (Self::Bool(a), Self::Bool(b)) => same(a, b),
             (Self::Bits(a), Self::Bits(b)) => a == b,
+            (Self::Text(a), Self::Text(b)) => a == b,
             _ => false,
         }
     }
@@ -621,6 +656,14 @@ impl NodeValues {
                 let mut f = f;
                 for (i, &value) in b.values().iter().enumerate() {
                     format_bits_into(value, b.width(), format, scratch);
+                    f(i, scratch);
+                }
+            },
+            Self::Text(v) => {
+                let mut f = f;
+                for (i, text) in v.iter().enumerate() {
+                    scratch.clear();
+                    scratch.push_str(text);
                     f(i, scratch);
                 }
             },
@@ -668,6 +711,17 @@ impl NodeValues {
                 }
                 Ok(())
             },
+            (Self::Text(v), Self::Text(o)) => {
+                let mut f = f;
+                for (i, (text, was)) in v.iter().zip(o).enumerate() {
+                    if text != was {
+                        scratch.clear();
+                        scratch.push_str(text);
+                        f(i, scratch)?;
+                    }
+                }
+                Ok(())
+            },
             _ => Ok(()),
         }
     }
@@ -700,6 +754,13 @@ impl NodeValues {
             Self::Uuid(v) => format_widest(v, format, byte_order, out),
             Self::Bool(v) => widest_bool_cell(v, format, byte_order, out),
             Self::Bits(b) => format_widest_bits(b, format, out),
+            // The most characters is only a start. The drawing code measures every string, since a character's width
+            // depends on the font it comes from.
+            Self::Text(v) => {
+                if let Some(longest) = v.iter().max_by_key(|text| text.chars().count()) {
+                    out.push_str(longest);
+                }
+            },
         }
     }
 
@@ -732,6 +793,11 @@ impl NodeValues {
             Self::Bool(v) => format_first(v, format, byte_order, out),
             Self::Bits(b) => b.values().first().is_some_and(|&value| {
                 format_bits_into(value, b.width(), format, out);
+                true
+            }),
+            Self::Text(v) => v.first().is_some_and(|text| {
+                out.clear();
+                out.push_str(text);
                 true
             }),
         }
@@ -767,6 +833,7 @@ impl NodeValues {
             Self::Uuid(_) => TYPE_COLOUR_UUID,
             Self::Bool(_) => TYPE_COLOUR_BOOL,
             Self::Bits(_) => TYPE_COLOUR_BITS,
+            Self::Text(_) => TYPE_COLOUR_TEXT,
         }
     }
 
@@ -796,6 +863,7 @@ impl NodeValues {
             Self::F64(_) => "f64",
             Self::Uuid(_) => "uuid",
             Self::Bool(_) => "bool",
+            Self::Text(_) => "text",
             Self::Bits(b) => match b.width() {
                 1 => "1-bit",
                 2 => "2-bit",

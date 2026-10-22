@@ -26,7 +26,6 @@ use code::{CODEWORD_LEN, Transmission};
 use demo_common::util::{clear_error, document, fit_window_to_stage, report_error, stringify, wire_open_window};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{Scene, Selection, SelectionToolbarOptions, Side};
-use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
@@ -103,7 +102,7 @@ thread_local! {
 /// Returns `Err` if the page is missing a part of the panel, or if any library call fails.
 fn build(position: usize) -> Result<(), String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.scene.view()));
-    let focused = focused_selector();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
     let (data, error) = STATE.with_borrow(|state| (state.data, state.error));
     let transmission = Transmission::new(data, error);
 
@@ -136,7 +135,7 @@ fn build(position: usize) -> Result<(), String> {
         });
     });
     if let Some(selector) = focused {
-        focus(&selector);
+        demo_common::focus::focus(&selector);
     }
     Ok(())
 }
@@ -150,7 +149,7 @@ fn redraw(action: &str, position: usize) -> bool {
     let worked = result.is_ok();
     report(result, "Could not draw the change");
     if worked {
-        focus(&format!("#{DIAGRAM_ID} g[data-action=\"{action}\"]"));
+        demo_common::focus::focus(&format!("#{DIAGRAM_ID} g[data-action=\"{action}\"]"));
     }
     worked
 }
@@ -209,33 +208,6 @@ fn report(result: Result<(), String>, what: &str) {
     match result {
         Ok(()) => clear_error(ERROR_ID),
         Err(e) => report_error(ERROR_ID, &format!("{what}: {e}")),
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A selector for the button in the diagram that has keyboard focus, if one does: by its action if it is one of this
-/// demo's own buttons, and otherwise by its accessible name, as a toolbar button is.
-fn focused_selector() -> Option<String> {
-    let document = document().ok()?;
-    let active = document.active_element()?;
-    document.get_element_by_id(DIAGRAM_ID)?.contains(Some(&active)).then_some(())?;
-    if let Some(action) = active.get_attribute("data-action") {
-        return Some(format!("#{DIAGRAM_ID} g[data-action=\"{action}\"]"));
-    }
-    active
-        .get_attribute("aria-label")
-        .map(|label| format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]"))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the element `selector` finds, if there is one and it can take focus. A toolbar button that
-/// is disabled now is left alone.
-fn focus(selector: &str) {
-    let Ok(document) = document() else { return };
-    if let Ok(Some(element)) = document.query_selector(selector) {
-        if let Ok(element) = element.dyn_into::<web_sys::SvgElement>() {
-            let _ = element.focus();
-        }
     }
 }
 

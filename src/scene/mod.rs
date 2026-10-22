@@ -176,6 +176,7 @@ impl Scene {
             graph: Graph::new(),
             node_handles: Vec::new(),
             edge_handles: Vec::new(),
+            label_count: 0,
             arrow,
             scratch: String::new(),
             parent: None,

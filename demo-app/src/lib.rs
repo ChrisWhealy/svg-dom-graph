@@ -95,6 +95,10 @@
 //!   at a time, then pads the last byte and shows the result in hexadecimal with its compression ratio. Each step is
 //!   explained in a Markdown node. Every step draws the scene again, and every value is a real result, worked out in
 //!   plain Rust. The scene is large, so it opens in a window of its own, as the hash demos' do.
+//! - `panel-dijkstra` / `#dijkstra-diagram` — [`dijkstra::build_dijkstra_demo`]: Dijkstra's shortest-path algorithm on a
+//!   weighted directed graph of six vertices, one step at a time. The edges carry their weights on labels, the distance,
+//!   the predecessor and whether each vertex is settled are three arrays of text and Boolean cells, and the queue has a
+//!   fixed size. The examined edge, and finally the whole route, is emphasised. Every value is worked out in plain Rust.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
@@ -110,6 +114,7 @@ mod bubble_sort;
 mod chacha20;
 mod crc32;
 mod data;
+mod dijkstra;
 mod edge_anchors;
 mod elbow;
 mod floats;
@@ -231,6 +236,7 @@ demo_gallery! {
     "panel-bubble-sort" => bubble_sort::build_bubble_sort_demo + bubble_sort::FILES,
     "panel-shell-sort" => shell_sort::build_shell_sort_demo + shell_sort::FILES,
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
+    "panel-dijkstra" => dijkstra::build_dijkstra_demo + dijkstra::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

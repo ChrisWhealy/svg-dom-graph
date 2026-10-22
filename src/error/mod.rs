@@ -109,6 +109,10 @@ pub enum Error {
     /// `DataFormat::Bool` content that is not `Bool` values. Rejected before drawing anything or touching the graph's
     /// model, so a rejected call leaves the scene unchanged.
     InvalidBoolFormat,
+    /// `DataFormat::Text` content that is not `Text` values, `Text` values under another format, or a string that holds a
+    /// line break or another control character. Rejected before drawing anything or touching the graph's model, so a
+    /// rejected call leaves the scene unchanged.
+    InvalidTextContent,
     /// `Scene::add_named_data_node`/`Scene::add_named_data_node_with` was given a `name` that is empty, or holds only
     /// whitespace.
     ///
@@ -158,6 +162,14 @@ pub enum Error {
     /// `I128`. Rejected before drawing anything or touching the graph's model, so a rejected call leaves the scene
     /// unchanged.
     OperatorOnUuid { operator: String },
+    /// `Scene::set_edge_label` was given a label that is empty, or has a line break or another control character in it.
+    /// Rejected before touching the scene, so a rejected call leaves the edge as it was.
+    InvalidEdgeLabel,
+    /// An operator node of any kind was given text as operands.
+    ///
+    /// A string is not a number, so no operator has a meaning for one. Rejected before drawing anything or touching the
+    /// graph's model, so a rejected call leaves the scene unchanged.
+    OperatorOnText { operator: String },
     /// An operator node was given Booleans as operands, and it is not one that a Boolean has a meaning under.
     ///
     /// `NOT`, `AND`, `OR`, `XOR`, `NAND`, `NOR` and `XNOR` are accepted. A shift, a rotation, a bit or byte reversal
@@ -308,6 +320,12 @@ impl fmt::Display for Error {
             },
             Error::InvalidUuidFormat => write!(f, "a UUID format needs Uuid values"),
             Error::InvalidBoolFormat => write!(f, "a Boolean format needs Bool values"),
+            Error::InvalidTextContent => {
+                write!(
+                    f,
+                    "text values and the text format go together, and a text cell must have control characters such as CR or LF"
+                )
+            },
             Error::EmptyNodeName => write!(f, "name must not be empty or hold only whitespace"),
             Error::InvalidGridLayout(layout) => {
                 write!(f, "grid layout {layout:?} must use a column/row count >= 1")
@@ -326,6 +344,15 @@ impl fmt::Display for Error {
             },
             Error::OperatorOnUuid { operator } => {
                 write!(f, "{operator} cannot act on UUIDs: a UUID is an identifier, not a number")
+            },
+            Error::InvalidEdgeLabel => {
+                write!(
+                    f,
+                    "an edge label must not be empty, and must be one line without control characters"
+                )
+            },
+            Error::OperatorOnText { operator } => {
+                write!(f, "{operator} cannot act on text: a string is not a number")
             },
             Error::OperatorOnBool { operator } => {
                 write!(

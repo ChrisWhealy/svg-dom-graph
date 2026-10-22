@@ -52,6 +52,10 @@
 //! - [`bubble_sort`] and [`shell_sort`] — the Bubble sort and Shell sort panels in the built demo gallery: which bars
 //!   are marked at each step, the swap that slides the two bars, how many steps a sorted array and one in reverse take,
 //!   and what a redraw keeps. The helpers that read the bars are shared with [`quicksort`], in [`sorting`].
+//! - [`dijkstra`] — the Dijkstra panel in the built demo gallery: the labelled edges and the arrays of text, labels
+//!   kept beside their connectors and apart while a vertex is dragged with a real mouse, the examined edge and then the
+//!   whole route emphasised, what a redraw keeps, and the arrays and queue never moving. Also runs against the built demo
+//!   gallery.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's
 //!   accessibility tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -86,6 +90,7 @@ mod chacha20_walk;
 mod common;
 mod connectors;
 mod crc32;
+mod dijkstra;
 mod edge_anchors;
 mod hamming;
 mod hex_dump_geometry;

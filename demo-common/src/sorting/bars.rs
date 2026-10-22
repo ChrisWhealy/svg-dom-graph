@@ -12,7 +12,7 @@ use super::{
 };
 use crate::{
     svg_buttons,
-    util::{MARGIN, document, ensure_svg_in, hide_step_driver, required_element, resize_svg, stringify},
+    util::{MARGIN, add_step_driver, document, ensure_svg_in, required_element, resize_svg, stringify},
 };
 use svg_dom::{
     SvgRoot,
@@ -20,7 +20,7 @@ use svg_dom::{
 };
 use svg_dom_graph::{
     NodeId,
-    scene::{DataFormat, DataNodeContent, GridLayout, NodeOptions, NodeValues, Scene, Side, ToolbarOptions},
+    scene::{NodeOptions, Scene, Side, ToolbarOptions},
 };
 use wasm_bindgen::JsCast;
 
@@ -177,22 +177,6 @@ fn add_baseline(document: &web_sys::Document, diagram_id: &str, from: f64, to: f
         .append_child(&line)
         .map(|_| ())
         .map_err(|e| format!("could not add the baseline: {e:?}"))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// "Step" is a small array of one cell for each step, placed far off-canvas, purely to drive the selection toolbar. It
-/// is hidden from assistive technology, since the toolbar's own buttons and the live region announce the position.
-fn add_step_driver(scene: &Scene, diagram_id: &str, count: usize) -> Result<NodeId, String> {
-    let values: Vec<u16> = (1..=count).map(|n| u16::try_from(n).unwrap_or(u16::MAX)).collect();
-    let step = scene
-        .add_named_data_node(
-            Point::new(-10_000.0, -10_000.0),
-            "Step",
-            DataNodeContent::new(NodeValues::U16(values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
-        )
-        .map_err(stringify)?;
-    hide_step_driver(diagram_id)?;
-    Ok(step)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

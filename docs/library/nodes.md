@@ -21,14 +21,14 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
    A value then reads as a variable, not just a bare type — `"B: u64 = ..."` rather than `"u64 = ..."`.
   `name` must not be empty or hold only whitespace.
 
-  A `DataNodeContent` holds the values, in one of sixteen types: six unsigned widths (`NodeValues::U8`, `U16`, `U32`, `U64`, `U128` or `Usize`), their signed equivalents (`I8`, `I16`, `I32`, `I64`, `I128` or `Isize`), floating point (`F32` or `F64`, described in [Floating Point Values](floating-point.md)), `Uuid`, described in [128-bit Values and UUIDs](uuids-and-128-bit-values.md), and `Bool`, described in [Booleans and Pointer-sized Integers](bools-and-sizes.md).
+  A `DataNodeContent` holds the values, in one of seventeen types: six unsigned widths (`NodeValues::U8`, `U16`, `U32`, `U64`, `U128` or `Usize`), their signed equivalents (`I8`, `I16`, `I32`, `I64`, `I128` or `Isize`), floating point (`F32` or `F64`, described in [Floating Point Values](floating-point.md)), `Uuid`, described in [128-bit Values and UUIDs](uuids-and-128-bit-values.md), `Bool`, described in [Booleans and Pointer-sized Integers](bools-and-sizes.md), and `Text`, described in [Text Cells](text-cells.md).
   Every value in a node shares one type, so an operator's operands and result must too, and a signed type is a different type from its unsigned equivalent.
   A unary or binary operator needs integer operands, and an arithmetic operator accepts floats too.
   A signed value shows a sign only when it is negative, and hexadecimal, binary and `Ascii` show its two's-complement representation in the selected byte order.
 
   How the values are drawn is set by:
 
-  - `DataFormat` is `Decimal`, `Hexadecimal`, `Binary`, `Ascii`, `PlainText` or, for floating point only, `Float`.
+  - `DataFormat` is `Decimal`, `Hexadecimal`, `Binary`, `Ascii`, `PlainText`, `Text` for text values only or, for floating point only, `Float`.
     `Ascii` draws each byte as one character, with a visible mark for a space or an unprintable byte.
     `PlainText` draws a whole run of printable ASCII in one box and counts as a single value.
   - `GridLayout` is `Automatic`, `Columns(n)`, `Rows(n)` or `MaxColumns(n)`.

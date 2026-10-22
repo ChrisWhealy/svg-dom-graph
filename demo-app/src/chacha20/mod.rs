@@ -465,7 +465,7 @@ fn apply(scene: &Scene, nodes: &Nodes, shown: &Shown) -> Result<(), String> {
 /// Returns `Err` if the window's own stage is missing, or if any library call fails.
 fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<(), String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|demo| demo.scene.view()));
-    let focused = focused_button();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
 
     let document = demo_common::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(FIRST_SIZE.0, FIRST_SIZE.1))?;
@@ -521,8 +521,8 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
             titled: Some(shown.quarter_round),
         });
     });
-    if let Some(label) = focused {
-        focus_button(&label);
+    if let Some(selector) = focused {
+        demo_common::focus::focus(&selector);
     }
     demo_common::util::fit_window_to_stage(DIAGRAM_ID)
 }
@@ -565,33 +565,6 @@ fn step_to(position: Option<usize>) -> Result<(), String> {
         }
         Ok(())
     })
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
-fn focused_button() -> Option<String> {
-    let document = demo_common::util::document().ok()?;
-    let active = document.active_element()?;
-    let diagram = document.get_element_by_id(DIAGRAM_ID)?;
-    if diagram.contains(Some(&active)) {
-        active.get_attribute("aria-label")
-    } else {
-        None
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
-/// that is disabled now is left alone.
-fn focus_button(label: &str) {
-    use wasm_bindgen::JsCast;
-    let Ok(document) = demo_common::util::document() else { return };
-    let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
-    if let Ok(Some(button)) = document.query_selector(&selector) {
-        if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
-            let _ = button.focus();
-        }
-    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

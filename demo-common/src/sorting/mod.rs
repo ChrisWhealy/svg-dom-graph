@@ -17,7 +17,6 @@ pub mod testing;
 use crate::util::{clear_error, document, report_error, stringify};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{Scene, Selection, SelectionToolbarOptions, Side};
-use wasm_bindgen::JsCast;
 
 /// The room east of the scene for the zoom toolbar, and where the buttons start: below the stepping toolbar, which is
 /// fixed to the top edge.
@@ -125,7 +124,7 @@ fn announcement(position: usize, count: usize, note: &str) -> String {
 fn build(algorithm: &'static Algorithm, position: usize) -> Result<String, String> {
     let diagram_id = format!("{}-diagram", algorithm.prefix);
     let view = with_runtime(algorithm, |runtime| runtime.scene.as_ref().map(Scene::view));
-    let focused = focused_selector(&diagram_id);
+    let focused = crate::focus::focused_selector(&diagram_id);
     let values = with_runtime(algorithm, |runtime| runtime.array.clone());
     let frames = (algorithm.frames)(&values);
     let position = position.min(frames.len().saturating_sub(1));
@@ -165,7 +164,7 @@ fn build(algorithm: &'static Algorithm, position: usize) -> Result<String, Strin
         runtime.position = Some(position);
     });
     if let Some(selector) = focused {
-        focus(&selector);
+        crate::focus::focus(&selector);
     }
     Ok(announcement(position, frames.len(), &frame.note))
 }
@@ -188,36 +187,9 @@ fn go(algorithm: &'static Algorithm, position: usize, new_array: bool) {
             } else {
                 said
             };
-            controls::announce(&announcement_id, &said);
+            crate::util::announce(&announcement_id, &said);
         },
         Err(e) => report_error(&error_id, &format!("This step failed (position {position}): {e}")),
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A selector for the button in the diagram `diagram_id` that has keyboard focus, if one does: by its action if it is
-/// one of the demo's own buttons, and otherwise by its accessible name, as a toolbar button is.
-fn focused_selector(diagram_id: &str) -> Option<String> {
-    let document = document().ok()?;
-    let active = document.active_element()?;
-    document.get_element_by_id(diagram_id)?.contains(Some(&active)).then_some(())?;
-    if let Some(action) = active.get_attribute("data-action") {
-        return Some(format!("#{diagram_id} g[data-action=\"{action}\"]"));
-    }
-    active
-        .get_attribute("aria-label")
-        .map(|label| format!("#{diagram_id} g[aria-label=\"{label}\"]"))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the element `selector` finds, if there is one and it can take focus. A toolbar button that
-/// is disabled now is left alone.
-fn focus(selector: &str) {
-    let Ok(document) = document() else { return };
-    if let Ok(Some(element)) = document.query_selector(selector) {
-        if let Ok(element) = element.dyn_into::<web_sys::SvgElement>() {
-            let _ = element.focus();
-        }
     }
 }
 
@@ -233,7 +205,7 @@ pub fn build_demo(algorithm: &'static Algorithm) -> Result<(), String> {
     controls::watch_buttons(&document, algorithm)?;
     with_runtime(algorithm, |runtime| runtime.array = array::INITIAL.to_vec());
     let said = build(algorithm, 0)?;
-    controls::announce(&format!("{}-announcement", algorithm.prefix), &said);
+    crate::util::announce(&format!("{}-announcement", algorithm.prefix), &said);
     Ok(())
 }
 

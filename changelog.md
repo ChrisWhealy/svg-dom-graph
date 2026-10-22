@@ -6,6 +6,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.41] - 2026-10-23
+
+- Implement Dijkstra's shortest path algorithm (``)
+
 # [Released]
 
 ## [0.2.40] - 2026-10-22

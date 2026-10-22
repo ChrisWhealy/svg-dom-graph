@@ -10,6 +10,10 @@
 //! - [`connectors`] — `ConnectorType`: corner-radius validation, live updates, clamping, `Straight`/`Elbow` toggling.
 //! - [`edge_anchors`] — `EdgeAnchors`/`NodeOptions`: validation, per-edge snapping, live redraws via
 //!   `set_edge_anchors`.
+//! - [`edge_focus`] — `Scene::set_edge_focus`: an edge emphasised on its own, any number at once, nothing else about the
+//!   edge changed, surviving a reroute, and independent of a node's focus ring.
+//! - [`edge_labels`] — `Scene::set_edge_label`: a label beside its connector and clear of the line, the arrowhead and
+//!   the nodes, placed again when the connector is, kept apart from the labels of other edges, and removed with `None`.
 //! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
 //!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
 //! - [`move_node`] covers `Scene::move_node`. It moves a node and reroutes its edges exactly as a drag does, and checks
@@ -65,6 +69,8 @@ mod connectors;
 mod data_node;
 mod drag_basics;
 mod edge_anchors;
+mod edge_focus;
+mod edge_labels;
 mod element_labels;
 mod focus;
 mod measure;

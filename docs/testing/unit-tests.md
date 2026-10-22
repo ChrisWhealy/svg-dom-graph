@@ -14,11 +14,13 @@ The node content tests in `src/model/content/unit_tests/` are split by topic:
 
 * formatting
 * text formats
+* text cells
 * grid shape
 * selection
 * operators, and
 * labelling
 
+The text cell tests cover `NodeValues::Text`: each string written as it is, including Unicode and empty ones, which content is valid (text values with the text format only, and no control character in a string or in the cell-width hint), `empty` being what is said for a blank cell, which cells a replacement rewrites, and the hint adding no value.
 The labelling tests cover each `LabellingStyle`, and `Text` in particular: a string belongs to a row and not an element, a row with no string has no label, and the candidates offered for measuring are only those rows that hold a cell.
 The float tests in `floats.rs` cover every `FloatFormat`: shortest digits, decimal places, significant digits (including rounding up to a new power of ten and padding a huge or tiny value with zeros), scientific notation, `NaN`, the infinities, negative zero, and the IEEE-754 bits in either byte order.
 They also check the width of a cell: the widest value of a node, found from a few extremes, is as wide as the widest value formatted by brute force, for every format over every triple of values from a set of every size, sign and kind.
@@ -41,6 +43,9 @@ Two `compile_fail` tests, each asserting a specific error code, confirm that the
 Asserting the code means they fail only for that reason and not because the crate stopped compiling, and they fail if either is widened again.
 
 The toolbar's own pure arithmetic is covered too.
+`src/geometry/label/unit_tests.rs` tests where an edge's label goes, without a browser: the candidates on a horizontal, vertical, sloping and elbowed route, their number, the trimmed corners and the bare arrowhead, a node or another label in the way, the least bad place when none is clear, and the rule for keeping a place.
+That rule is tested on its own with chosen scores, so eleven points of improvement is shown not to move a label and twelve is shown to.
+`src/colours/unit_tests.rs` checks the contrast, by the WCAG formula, of the colours a label and a focused edge are drawn in. It is a handful of claimed pairings, not a suite of every colour.
 `src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
 It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.

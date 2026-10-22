@@ -147,6 +147,18 @@ fn check_not_uuid_operands(graph: &Graph, operands: &[NodeId], operator: &str) -
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::OperatorOnText`] if any of `operands` holds text. A string is not a number, so no operator has a
+/// meaning for one.
+fn check_not_text_operands(graph: &Graph, operands: &[NodeId], operator: &str) -> Result<(), Error> {
+    for &operand in operands {
+        if operand_content(graph, operand)?.holds_text() {
+            return Err(Error::OperatorOnText { operator: operator.to_owned() });
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::OperatorOnBool`] if `logical` is `false` and any of `operands` holds Booleans. A Boolean has a
 /// meaning under `NOT`, `AND`, `OR`, `XOR`, `NAND`, `NOR` and `XNOR`, which are `logical`. It has none under a shift,
 /// a rotation, a bit or byte reversal, or an arithmetic operator: there is no sum of two Booleans, and no `true` to
@@ -538,8 +550,8 @@ impl Scene {
     /// match.
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if `input` holds floating point values. A unary operator acts on the
-    /// bits of an integer, and means nothing for a float. Returns [`Error::OperatorOnUuid`] if `input` holds UUIDs,
-    /// which no operator accepts. Returns [`Error::OperatorOnBool`] if `input` holds Booleans and `operator` is not
+    /// bits of an integer, and means nothing for a float. Returns [`Error::OperatorOnUuid`] if `input` holds UUIDs, and
+    /// [`Error::OperatorOnText`] if it holds text, neither of which any operator accepts. Returns [`Error::OperatorOnBool`] if `input` holds Booleans and `operator` is not
     /// [`UnaryOperator::Not`].
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
@@ -562,6 +574,7 @@ impl Scene {
             check_operand_types(&inner.graph, &[input], &result)?;
             let label = operator.label();
             check_not_uuid_operands(&inner.graph, &[input], &label)?;
+            check_not_text_operands(&inner.graph, &[input], &label)?;
             check_bool_operands(&inner.graph, &[input], &label, operator == UnaryOperator::Not)?;
             check_integer_operands(&inner.graph, &[input], &label)?;
             insert_operator_node(&mut inner, top_left, &label, result, options, None)?.0
@@ -623,7 +636,8 @@ impl Scene {
     ///
     /// Returns [`Error::OperatorNeedsIntegers`] if the operands hold floating point values. A binary operator acts on
     /// the bits of integers, and means nothing for floats. Use an arithmetic operator for those. Returns
-    /// [`Error::OperatorOnUuid`] if the operands hold UUIDs, which no operator accepts. Booleans are accepted: every
+    /// [`Error::OperatorOnUuid`] if the operands hold UUIDs, and [`Error::OperatorOnText`] if they hold text, which no
+    /// operator accepts. Booleans are accepted: every
     /// [`BinaryOperator`] is a Boolean function.
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
@@ -700,7 +714,8 @@ impl Scene {
     /// `result`'s own type does not match theirs. Both operands and the result must share one
     /// [`NodeValues`](crate::scene::NodeValues) type. Unlike the unary and binary operators, an arithmetic operator
     /// accepts floating point operands, since addition, division and the rest mean something for a float. It does not
-    /// accept UUIDs, which no operator does: that is [`Error::OperatorOnUuid`]. Nor does it accept Booleans, which have
+    /// accept UUIDs, which no operator does: that is [`Error::OperatorOnUuid`]. Nor does it accept text, which is
+    /// [`Error::OperatorOnText`]. Nor does it accept Booleans, which have
     /// no sum or remainder: that is [`Error::OperatorOnBool`].
     ///
     /// Every check above runs before drawing anything or touching the graph's model, so a rejected call leaves the
@@ -750,6 +765,7 @@ impl Scene {
             let mut inner = self.inner.borrow_mut();
             check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
             check_not_uuid_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+            check_not_text_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             check_bool_operands(&inner.graph, &[inputs.0, inputs.1], label, bitwise)?;
             if bitwise {
                 check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;

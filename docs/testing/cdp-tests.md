@@ -51,6 +51,15 @@ The fixture's ninth node has rows labelled in Latin, CJK, and a letter with comb
 The test asserts that the bounding box of every visible label lies inside the node's outer rectangle.
 It checks that observable contract, and does not repeat the width algorithm, and it assumes nothing about which label is widest, because that depends on the fonts the machine has.
 
+Its own `dijkstra.rs` scenario runs against the built demo gallery, and asks what the native tests of the algorithm and of the label placer cannot: what reaches the page.
+Every edge has a label with its weight, named for its edge, and the arrays hold text, with `∞` and `—` drawn, and empty queue rows read out as `empty`.
+Each label is checked against the boxes, the other labels and its own line, sampled along the real path.
+That is done at rest and after a real mouse drag of a vertex through several places, which is the case that matters: C to D and C to E leave one vertex together, and dragging it must not bring their labels together.
+The examined edge is emphasised alone, and its ends ringed, and at the last step the five edges of the route are emphasised at once.
+A redraw keeps the zoom, the place a vertex was dragged to and the keyboard focus on the toolbar button.
+Every step is walked, to check that the three arrays, the queue and the vertices never move or change size.
+The walk helpers are the ones the sorting scenarios use, and are shared: see `sorting.rs`.
+
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 
 Needs the latest version of the Chrome/Chromium binary to be locally installed.

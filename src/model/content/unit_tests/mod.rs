@@ -17,6 +17,8 @@
 //! - [`operators`] — operator labels and commutativity.
 //! - [`text_formats`] — `DataFormat::Ascii` and `DataFormat::PlainText`.
 //! - [`hex_dump`] — `DataFormat::HexDump`: the lines of `hexdump -C`, the optional offset, and the cells.
+//! - [`text_cells`] — `NodeValues::Text` and `DataFormat::Text`: the strings, what is valid, what is said for an empty cell,
+//!   replacements, and the cell-width hint.
 //! - [`labelling`] — `LabellingStyle` and `with_labels`/`with_labelling_style`.
 
 mod bit_values;
@@ -30,5 +32,6 @@ mod labelling;
 mod operators;
 mod selection;
 mod support;
+mod text_cells;
 mod text_formats;
 mod wide;

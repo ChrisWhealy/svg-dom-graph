@@ -1,4 +1,9 @@
-use crate::{geometry::side::Side, scene::connector::connector_type::ConnectorType};
+use super::edge_label::EdgeLabel;
+use crate::{
+    geometry::{route::Route, side::Side},
+    scene::connector::connector_type::ConnectorType,
+};
+use std::cell::Cell;
 use svg_dom::SvgNode;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -22,6 +27,20 @@ pub(crate) struct ConnectorHandle {
     /// The small "L"/"R" text label marking this edge's operand identity at a non-commutative two-input operator's own
     /// input anchor. `None` for every other edge — see `add_two_input_operator_node_with`'s own `commutes` parameter.
     pub(crate) port_marker: Option<SvgNode>,
+
+    /// The route this connector's path was last written from, and the radius its corners were rounded by. A label is
+    /// placed from these, so that the path and the label always come from one route, and a label's place can be worked
+    /// out again without computing the route a second time. Cells, so that a redraw that only has `&self` can store
+    /// them.
+    pub(crate) route: Cell<Route>,
+    pub(crate) radius: Cell<f64>,
+
+    /// Whether this edge is focused. See [`Scene::set_edge_focus`](crate::scene::Scene::set_edge_focus). It is only
+    /// changed once the path's own attributes have been written, so a call that failed part way is repeated in full.
+    pub(crate) focused: bool,
+
+    /// This edge's label, if it has one. See [`Scene::set_edge_label`](crate::scene::Scene::set_edge_label).
+    pub(crate) label: Option<EdgeLabel>,
 }
 
 impl ConnectorHandle {

@@ -1,14 +1,18 @@
-//! What every sorting demo's browser tests share: reading the bars, their colours, the live region and the stepping
-//! toolbar.
+//! What the browser tests of a demo that steps share: reading the live region and walking the stepping toolbar, and for a
+//! sorting demo, reading the bars and their colours.
 //!
-//! The bars, their colours and the buttons are drawn by the shared `sorting` module of the demo, the same for every
-//! algorithm, so what reads them back is the same too. A demo's tests call [`sort_demo_helpers!`] with the id of its
-//! diagram, and get the functions below for it, such as `bars`, `values`, `with_fill`, `goto` and `click`. The macro
-//! takes the `use` lines of the file that calls it, which needs `Tab`, `Duration` and `Instant`.
+//! The walk is the same for every demo that steps with the selection toolbar, whatever it draws, so a demo's tests call
+//! [`walk_helpers!`] with the id of its diagram, and get `text`, `said`, `step_count`, `step_position`, `goto` and
+//! `click` for it. The bars, their colours and the buttons are drawn by the shared `sorting` module of the demo, the same
+//! for every algorithm, so what reads them back is shared too. A sorting demo calls [`sort_demo_helpers!`] instead, which
+//! gives it the same functions and `bars`, `values` and `with_fill` besides. The macros take the `use` lines of the file
+//! that calls them, which needs `Tab`, `Duration` and `Instant`.
 
-/// Defines, in the file that calls it, the constant `DIAGRAM` for the diagram whose selector is `$diagram`, the colours
-/// the bars take, and the functions that read the bars and walk the toolbar.
-macro_rules! sort_demo_helpers {
+/// Defines, in the file that calls it, the constant `DIAGRAM` for the diagram whose selector is `$diagram`, and the
+/// functions that read the live region and walk the stepping toolbar of a demo that steps: `text`, `said`, `step_count`,
+/// `step_position`, `click`, `goto`, `goto_note` and `view`. Every demo that steps with the toolbar shares them, whatever
+/// it draws. The file that calls it needs `Tab`, `Duration` and `Instant` in scope.
+macro_rules! walk_helpers {
     ($diagram:literal) => {
         const DIAGRAM: &str = $diagram;
 
@@ -21,6 +25,120 @@ macro_rules! sort_demo_helpers {
                 .and_then(|v| v.as_str().map(str::to_owned))
                 .ok_or_else(|| format!("{expression} did not return a string"))
         }
+
+        /// What the live region outside the scene says, which is the one that goes with this diagram.
+        #[allow(dead_code)]
+        fn said(tab: &Tab) -> Result<String, String> {
+            // The live region has the same prefix as the diagram: `quicksort-announcement` for `#quicksort-diagram`.
+            let prefix = DIAGRAM.trim_start_matches('#').trim_end_matches("-diagram");
+            text(tab, &format!("document.getElementById('{prefix}-announcement').textContent"))
+        }
+
+        /// How many steps the walk has, read from the announcement of the step it is on: "Step 3 of 40. ..."
+        #[allow(dead_code)]
+        fn step_count(tab: &Tab) -> Result<usize, String> {
+            let said = said(tab)?;
+            said.split(" of ")
+                .nth(1)
+                .and_then(|rest| rest.split('.').next())
+                .and_then(|n| n.trim().parse().ok())
+                .ok_or_else(|| format!("could not read the number of steps from {said:?}"))
+        }
+
+        /// The walk's position, read from the hidden "Step" driver's own selection. `None` before the walk has started.
+        #[allow(dead_code)]
+        fn step_position(tab: &Tab) -> Result<Option<usize>, String> {
+            let name = text(
+                tab,
+                &format!(
+                    "(document.querySelector('{DIAGRAM} g[aria-label^=\"Step:\"]')?.getAttribute('aria-label') ?? '')"
+                ),
+            )?;
+            let Some((before, _)) = name.split_once(" selected") else {
+                return Ok(None);
+            };
+            before
+                .rsplit("cell ")
+                .next()
+                .and_then(|n| n.parse().ok())
+                .map(Some)
+                .ok_or_else(|| format!("could not read a cell from {name:?}"))
+        }
+
+        /// Waits until `step_position` returns something other than `from`, or fails after five seconds.
+        #[allow(dead_code)]
+        fn wait_for_move(tab: &Tab, from: Option<usize>) -> Result<(), String> {
+            let deadline = Instant::now() + Duration::from_secs(5);
+            while Instant::now() < deadline {
+                if step_position(tab)? != from {
+                    // Every move draws the scene again. Give the redraw its own moment to finish attaching.
+                    std::thread::sleep(Duration::from_millis(100));
+                    return Ok(());
+                }
+                std::thread::sleep(Duration::from_millis(20));
+            }
+            Err(format!("the walk never left {from:?}"))
+        }
+
+        /// Presses a toolbar button with a real mouse click and waits for the walk to move.
+        #[allow(dead_code)]
+        fn click(tab: &Tab, name: &str) -> Result<(), String> {
+            let from = step_position(tab)?;
+            tab.find_element(&format!("{DIAGRAM} g[aria-label=\"{name}\"]"))
+                .map_err(|e| format!("could not find the {name:?} button: {e}"))?
+                .click()
+                .map_err(|e| format!("could not click {name:?}: {e}"))?;
+            wait_for_move(tab, from)
+        }
+
+        /// Walks to `target` one step at a time.
+        #[allow(dead_code)]
+        fn goto(tab: &Tab, target: usize) -> Result<(), String> {
+            for _ in 0..400 {
+                let now = step_position(tab)?.unwrap_or(0);
+                if now == target {
+                    return Ok(());
+                }
+                click(tab, if now < target { "Next selection" } else { "Previous selection" })?;
+            }
+            Err(format!(
+                "could not reach position {target}, stopped at {:?}",
+                step_position(tab)?
+            ))
+        }
+
+        /// Walks forward until the live region says `phrase`, one step at a time, and fails if it never does.
+        #[allow(dead_code)]
+        fn goto_note(tab: &Tab, phrase: &str) -> Result<(), String> {
+            for _ in 0..200 {
+                if said(tab)?.contains(phrase) {
+                    return Ok(());
+                }
+                click(tab, "Next selection")?;
+            }
+            Err(format!("the walk never said {phrase:?}"))
+        }
+
+        /// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
+        #[allow(dead_code)]
+        fn view(tab: &Tab) -> Result<String, String> {
+            text(
+                tab,
+                &format!(
+                    "(document.querySelector('{DIAGRAM} > g.svg-dom-graph-content')?.getAttribute('transform') ?? '')"
+                ),
+            )
+        }
+    };
+}
+
+pub(crate) use walk_helpers;
+
+/// Defines everything [`walk_helpers!`] does, and the colours the bars take, the functions that read the bars and press
+/// the buttons drawn in the scene, and the checks every sorting demo is held to.
+macro_rules! sort_demo_helpers {
+    ($diagram:literal) => {
+        $crate::sorting::walk_helpers!($diagram);
 
         /// The colours the bars take, as the demo draws them. An ordinary bar has the library's usual light blue
         /// instead.
@@ -91,28 +209,6 @@ macro_rules! sort_demo_helpers {
                 .collect())
         }
 
-        /// What the live region outside the scene says, which is the one that goes with this diagram.
-        #[allow(dead_code)]
-        fn said(tab: &Tab) -> Result<String, String> {
-            // The live region has the same prefix as the diagram: `quicksort-announcement` for `#quicksort-diagram`.
-            let prefix = DIAGRAM.trim_start_matches('#').trim_end_matches("-diagram");
-            text(
-                tab,
-                &format!("document.getElementById('{prefix}-announcement').textContent"),
-            )
-        }
-
-        /// How many steps the walk has, read from the announcement of the step it is on: "Step 3 of 40. ..."
-        #[allow(dead_code)]
-        fn step_count(tab: &Tab) -> Result<usize, String> {
-            let said = said(tab)?;
-            said.split(" of ")
-                .nth(1)
-                .and_then(|rest| rest.split('.').next())
-                .and_then(|n| n.trim().parse().ok())
-                .ok_or_else(|| format!("could not read the number of steps from {said:?}"))
-        }
-
         /// Presses the button drawn in the scene with `action`.
         #[allow(dead_code)]
         fn press(tab: &Tab, action: &str) -> Result<(), String> {
@@ -128,78 +224,6 @@ macro_rules! sort_demo_helpers {
             Ok(())
         }
 
-        /// The walk's position, read from the hidden "Step" driver's own selection. `None` before the walk has started.
-        #[allow(dead_code)]
-        fn step_position(tab: &Tab) -> Result<Option<usize>, String> {
-            let name = text(
-                tab,
-                &format!("(document.querySelector('{DIAGRAM} g[aria-label^=\"Step:\"]')?.getAttribute('aria-label') ?? '')"),
-            )?;
-            let Some((before, _)) = name.split_once(" selected") else {
-                return Ok(None);
-            };
-            before
-                .rsplit("cell ")
-                .next()
-                .and_then(|n| n.parse().ok())
-                .map(Some)
-                .ok_or_else(|| format!("could not read a cell from {name:?}"))
-        }
-
-        /// Waits until `step_position` returns something other than `from`, or fails after five seconds.
-        #[allow(dead_code)]
-        fn wait_for_move(tab: &Tab, from: Option<usize>) -> Result<(), String> {
-            let deadline = Instant::now() + Duration::from_secs(5);
-            while Instant::now() < deadline {
-                if step_position(tab)? != from {
-                    // Every move draws the scene again. Give the redraw its own moment to finish attaching.
-                    std::thread::sleep(Duration::from_millis(100));
-                    return Ok(());
-                }
-                std::thread::sleep(Duration::from_millis(20));
-            }
-            Err(format!("the walk never left {from:?}"))
-        }
-
-        /// Presses a toolbar button with a real mouse click and waits for the walk to move.
-        #[allow(dead_code)]
-        fn click(tab: &Tab, name: &str) -> Result<(), String> {
-            let from = step_position(tab)?;
-            tab.find_element(&format!("{DIAGRAM} g[aria-label=\"{name}\"]"))
-                .map_err(|e| format!("could not find the {name:?} button: {e}"))?
-                .click()
-                .map_err(|e| format!("could not click {name:?}: {e}"))?;
-            wait_for_move(tab, from)
-        }
-
-        /// Walks to `target` one step at a time.
-        #[allow(dead_code)]
-        fn goto(tab: &Tab, target: usize) -> Result<(), String> {
-            for _ in 0..400 {
-                let now = step_position(tab)?.unwrap_or(0);
-                if now == target {
-                    return Ok(());
-                }
-                click(tab, if now < target { "Next selection" } else { "Previous selection" })?;
-            }
-            Err(format!(
-                "could not reach position {target}, stopped at {:?}",
-                step_position(tab)?
-            ))
-        }
-
-        /// Walks forward until the live region says `phrase`, one step at a time, and fails if it never does.
-        #[allow(dead_code)]
-        fn goto_note(tab: &Tab, phrase: &str) -> Result<(), String> {
-            for _ in 0..200 {
-                if said(tab)?.contains(phrase) {
-                    return Ok(());
-                }
-                click(tab, "Next selection")?;
-            }
-            Err(format!("the walk never said {phrase:?}"))
-        }
-
         /// How many bars have a slide on them.
         #[allow(dead_code)]
         fn slides(tab: &Tab) -> Result<usize, String> {
@@ -209,15 +233,6 @@ macro_rules! sort_demo_helpers {
             )?
             .parse()
             .map_err(|e| format!("could not count the slides: {e}"))
-        }
-
-        /// The scene's content layer `transform`, which is its zoom and pan, or an empty string if it has none.
-        #[allow(dead_code)]
-        fn view(tab: &Tab) -> Result<String, String> {
-            text(
-                tab,
-                &format!("(document.querySelector('{DIAGRAM} > g.svg-dom-graph-content')?.getAttribute('transform') ?? '')"),
-            )
         }
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

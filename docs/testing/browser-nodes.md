@@ -25,6 +25,15 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
   - an `f32` and an `f64` being different types for replacement and for an operator
   - a unary or binary operator refusing floating point operands, and drawing nothing, while an arithmetic operator accepts them
+- text values (`NodeValues::Text`, `DataFormat::Text`):
+  - each string drawn as it is, with Unicode and empty ones included, one cell each, every cell the same width and every string inside its cell
+  - a string that looks like markup drawn as those characters, and making no element
+  - runs of spaces kept
+  - the cell-width hint widening the cells without being drawn, counted or named, and a string wider than the hint still fitting
+  - with a hint as wide as every later value, a replacement changing no cell and no box
+  - an empty cell named `empty`, and a replacement keeping the names up to date
+  - text values with another format, another values type with the text format, and a control character in a string or the hint, all rejected before anything is drawn
+  - a bad replacement leaving the node as it was, and no operator accepting text
 - signed values (`NodeValues::I8`/`I16`/`I32`/`I64`):
   - a sign being shown only for a negative value, and never a `+`
   - hexadecimal and binary showing the two's-complement bytes of a negative value

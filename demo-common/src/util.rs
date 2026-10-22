@@ -727,6 +727,42 @@ pub fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOptions {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Adds the stepping driver of a walk of `count` positions to `scene`, whose `<svg>` is `#svg_id`: a named array of one
+/// numbered cell for each position, far off the canvas, that a selection toolbar steps along. It is hidden from
+/// assistive technology, since the toolbar's own buttons and the live region announce the position. See
+/// [`hide_step_driver`].
+///
+/// # Errors
+///
+/// Returns `Err` if the library call fails, or the node cannot be found to hide.
+pub fn add_step_driver(scene: &Scene, svg_id: &str, count: usize) -> Result<NodeId, String> {
+    use svg_dom_graph::scene::{DataFormat, GridLayout, NodeValues};
+    let values: Vec<u16> = (1..=count).map(|n| u16::try_from(n).unwrap_or(u16::MAX)).collect();
+    let step = scene
+        .add_named_data_node(
+            Point::new(-10_000.0, -10_000.0),
+            "Step",
+            DataNodeContent::new(NodeValues::U16(values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
+        )
+        .map_err(stringify)?;
+    hide_step_driver(svg_id)?;
+    Ok(step)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Announces `message` to assistive technology in the live region `#announcement_id`, which stays on the page. A scene
+/// that is drawn again for each step is a poor place for one, since a live region that is new each time may not be
+/// announced. So it is in the panel, outside the scene. Does nothing if the page has no such region.
+pub fn announce(announcement_id: &str, message: &str) {
+    if let Some(region) = web_sys::window()
+        .and_then(|w| w.document())
+        .and_then(|d| d.get_element_by_id(announcement_id))
+    {
+        region.set_text_content(Some(message));
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Marks `cells` of `node` as not yet computed, or clears the mark if there are none. See `Scene::set_unreached_cells`.
 ///
 /// # Errors

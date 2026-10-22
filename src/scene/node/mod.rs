@@ -45,7 +45,9 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 /// * [`Error::InvalidHexDumpFormat`] if `HexDump` content is not `u8` values,
 /// * [`Error::InvalidFloatFormat`] if `Float` content is not `f32` or `f64`, or asks for too many digits,
 /// * [`Error::InvalidUuidFormat`] if `Uuid` content is not `Uuid` values,
-/// * [`Error::InvalidBoolFormat`] if `Bool` content is not `Bool` values, or
+/// * [`Error::InvalidBoolFormat`] if `Bool` content is not `Bool` values,
+/// * [`Error::InvalidTextContent`] if `Text` values and the `Text` format do not go together, or a string, or the cell
+///   width hint, has a control character in it, or
 /// * [`Error::InvalidGridLayout`] if a non-`PlainText` grid layout wraps `0`.
 ///
 /// `PlainText` content has no grid, so specifying a layout has no effect and is never checked.
@@ -74,6 +76,9 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     }
     if !content.bool_format_is_valid() {
         return Err(Error::InvalidBoolFormat);
+    }
+    if !content.text_is_valid() {
+        return Err(Error::InvalidTextContent);
     }
     if !content.keeps_spaces() && !content.layout().is_valid() {
         return Err(Error::InvalidGridLayout(content.layout()));
@@ -232,7 +237,11 @@ impl Scene {
                 return Err(e);
             }
         }
+        // Every connector has a new route, so every label on one is placed again.
+        let redrawn = inner.edges_redrawn_with(id);
+        let placed = inner.place_labels(&redrawn, &mut scratch);
         inner.scratch = scratch;
+        placed?;
         if let Some(handles) = inner.node_handle_mut(id) {
             handles.edge_anchors_stale = false;
         }

@@ -20,6 +20,7 @@ pub struct DataNodeContent {
     column_group: usize,
     labelling: Option<LabellingStyle>,
     toolbar: bool,
+    cell_width_hint: Option<String>,
 }
 
 impl DataNodeContent {
@@ -43,6 +44,7 @@ impl DataNodeContent {
             column_group: 0,
             labelling: None,
             toolbar: false,
+            cell_width_hint: None,
         }
     }
 
@@ -58,6 +60,53 @@ impl DataNodeContent {
     pub fn with_toolbar(mut self) -> Self {
         self.toolbar = true;
         self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with every cell at least as wide as `sample` is when drawn, so that a node whose strings are
+    /// replaced later does not outgrow its cells. See [`NodeValues::Text`] for why a string's width is not fixed.
+    ///
+    /// The width of the cells is the widest of the measured widths of `sample` and of every string the node holds,
+    /// measured in the cell's own font. So `sample` sets a floor, and a longer string still gets the room it needs. A
+    /// caller who wants a width that never changes chooses `sample` as the widest string the node will ever show, and
+    /// measures nothing itself. `sample` is only measured. It is never drawn, never counted as a value, and never part of
+    /// the node's accessible name. It has an effect on [`DataFormat::Text`] content only, and is checked like a cell: a
+    /// line break or another control character in it is rejected with
+    /// [`Error::InvalidTextContent`](crate::error::Error::InvalidTextContent).
+    #[must_use]
+    pub fn with_cell_width_hint(mut self, sample: &str) -> Self {
+        self.cell_width_hint = Some(sample.to_owned());
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The sample string [`with_cell_width_hint`](Self::with_cell_width_hint) gave, if any.
+    pub(crate) fn cell_width_hint(&self) -> Option<&str> {
+        self.cell_width_hint.as_deref()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The strings of [`DataFormat::Text`] content, and none for any other.
+    pub(crate) fn text_cells(&self) -> Option<&[String]> {
+        self.values.text().filter(|_| self.is_text())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`DataFormat::Text`] content.
+    pub(crate) fn is_text(&self) -> bool {
+        self.format == DataFormat::Text
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` unless [`DataFormat::Text`] and [`NodeValues::Text`] go together, every string is one line with no control
+    /// character in it, and so is any cell-width hint. Every content that has no text is valid here.
+    pub(crate) fn text_is_valid(&self) -> bool {
+        if self.is_text() != self.values.is_text() {
+            return false;
+        }
+        let one_line = |text: &String| !text.chars().any(char::is_control);
+        self.values.text().is_none_or(|cells| cells.iter().all(one_line))
+            && self.cell_width_hint.as_ref().is_none_or(one_line)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -176,7 +225,9 @@ impl DataNodeContent {
     ///
     /// Returns `Ok(false)`, changing nothing and calling nothing, unless `values` is the same type, signed or unsigned integer or float, of the same bit width if they are bit values, and holds the
     /// same number of values. So the grid keeps exactly the same shape it was drawn with. [`DataFormat::PlainText`]
-    /// content also needs printable ASCII, and counts as one cell, whole.
+    /// content also needs printable ASCII, and counts as one cell, whole. [`DataFormat::Text`] content needs strings with
+    /// no control character in them. A cell's width is not changed to fit a longer string. See
+    /// [`with_cell_width_hint`](Self::with_cell_width_hint).
     pub(crate) fn try_replace_values<E>(
         &mut self,
         values: NodeValues,
@@ -187,6 +238,13 @@ impl DataNodeContent {
             return Ok(false);
         }
         if self.format == DataFormat::PlainText && !is_printable_ascii(&values) {
+            return Ok(false);
+        }
+        // A replacement string is held to the same rule as one the node was built with.
+        if values
+            .text()
+            .is_some_and(|cells| cells.iter().any(|text| text.chars().any(char::is_control)))
+        {
             return Ok(false);
         }
         if let (Some(format), NodeValues::U8(new)) = (self.hex_dump(), &values) {
@@ -271,6 +329,14 @@ impl DataNodeContent {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for content whose spaces must be drawn as they are: [`keeps_spaces`](Self::keeps_spaces), and
+    /// [`DataFormat::Text`], whose strings may have runs of spaces in them. Unlike a plain text or hex dump node, a text
+    /// node is still a grid, so it still has its layout checked.
+    pub(crate) fn preserves_spaces(&self) -> bool {
+        self.keeps_spaces() || self.is_text()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`DataFormat::PlainText`] content.
     pub(crate) fn is_plain_text(&self) -> bool {
         self.format == DataFormat::PlainText
@@ -297,6 +363,12 @@ impl DataNodeContent {
             DataFormat::Float(float_format) => self.values.is_float() && float_format.is_valid(),
             _ => true,
         }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if this content holds text.
+    pub(crate) fn holds_text(&self) -> bool {
+        self.values.is_text()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -351,7 +423,8 @@ impl DataNodeContent {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What a screen reader should be told for a cell that shows `text`: `true` or `false` for a mark, and `text`
-    /// itself for every other cell. A mark is a picture, and its glyph would be read out as its Unicode name.
+    /// itself for every other cell, or `empty` for a cell with no text. A mark is a picture, and its glyph would be read
+    /// out as its Unicode name.
     pub(crate) fn spoken<'a>(&self, text: &'a str) -> &'a str {
         Self::spoken_for(self.is_bool_icon(), text)
     }
@@ -361,6 +434,8 @@ impl DataNodeContent {
         match text {
             ICON_TRUE if icon => "true",
             ICON_FALSE if icon => "false",
+            // Only a text cell can be empty, and a blank cell would be read out as nothing at all.
+            "" => "empty",
             _ => text,
         }
     }

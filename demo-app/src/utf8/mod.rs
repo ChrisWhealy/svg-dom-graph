@@ -22,7 +22,6 @@ use svg_dom_graph::scene::{
     BitValues, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, GridLayout, NodeValues,
     Scene, Side, ToolbarOptions,
 };
-use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
@@ -132,7 +131,7 @@ fn add_buttons(document: &web_sys::Document, selected: usize, left: f64, width: 
 /// Returns `Err` if `index.html` is missing a part of the panel, or if any library call fails.
 fn build(selected: usize) -> Result<(), String> {
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
-    let focused = focused_selector();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
     let document = document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(1000.0, 1000.0))?;
     required_element(&document, DIAGRAM_ID)?.set_inner_html("");
@@ -301,31 +300,9 @@ fn build(selected: usize) -> Result<(), String> {
     )));
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
     if let Some(selector) = focused {
-        focus(&selector);
+        demo_common::focus::focus(&selector);
     }
     Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A selector for the button in the diagram that has keyboard focus, if one does, by its action.
-fn focused_selector() -> Option<String> {
-    let document = document().ok()?;
-    let active = document.active_element()?;
-    document.get_element_by_id(DIAGRAM_ID)?.contains(Some(&active)).then_some(())?;
-    let action = active.get_attribute("data-action")?;
-    Some(format!("#{DIAGRAM_ID} g[data-action=\"{action}\"]"))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the element `selector` finds, if there is one. Without it, a keyboard user would find that
-/// focus had gone back to the start of the page when the scene was drawn again.
-fn focus(selector: &str) {
-    let Ok(document) = document() else { return };
-    if let Ok(Some(element)) = document.query_selector(selector) {
-        if let Ok(element) = element.dyn_into::<web_sys::SvgElement>() {
-            let _ = element.focus();
-        }
-    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

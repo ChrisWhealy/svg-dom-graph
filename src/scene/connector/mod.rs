@@ -2,10 +2,11 @@
 mod connector_handle;
 mod connector_options;
 mod connector_type;
+mod edge_label;
 
 use super::{Scene, node::EdgeAnchors};
 use crate::{
-    colours::CONNECTOR_STROKE,
+    colours::{CONNECTOR_STROKE, EDGE_FOCUS_STROKE},
     error::Error,
     geometry::{
         binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, forced_anchor,
@@ -16,7 +17,18 @@ use crate::{
 pub(crate) use connector_handle::{ConnectorHandle, Pin};
 pub use connector_options::ConnectorOptions;
 pub use connector_type::ConnectorType;
+use std::cell::Cell;
 use svg_dom::root::utils::{Point, Rect};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How thick a connector's line is.
+const CONNECTOR_WIDTH: f64 = 1.5;
+
+/// How thick a focused connector's line is: more than twice as thick, so that it can be told apart without its colour.
+const FOCUSED_WIDTH: f64 = 3.5;
+
+/// The attribute a focused connector's path carries, for a test or a stylesheet to find it by.
+pub(crate) const FOCUS_ATTRIBUTE: &str = "data-svg-dom-graph-edge-focus";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::InvalidCornerRadius`] if `connector_type` is [`ConnectorType::Elbow`] with a corner radius that is
@@ -241,7 +253,7 @@ impl Scene {
         inner.attach(&path)?;
         path.set_fill("none")?;
         path.set_stroke(CONNECTOR_STROKE)?;
-        path.set_stroke_width(1.5)?;
+        path.set_stroke_width(CONNECTOR_WIDTH)?;
         path.set_marker_end_ref(&inner.arrow)?;
 
         let id = inner.graph.add_edge(from, to);
@@ -255,6 +267,10 @@ impl Scene {
                 from_position: options.from_position,
                 to_position: options.to_position,
                 port_marker: None,
+                route: Cell::new(vertices),
+                radius: Cell::new(radius),
+                focused: false,
+                label: None,
             },
         );
 
@@ -267,6 +283,47 @@ impl Scene {
         inner.append_relationship(to, &format!("Input from {from_name}"))?;
 
         Ok(id)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Emphasises the connector of edge `id` if `focused` is `true`, and returns it to the ordinary look if `false`. A
+    /// focused connector is drawn in a deep blue and more than twice as thick, and carries `aria-current="true"`.
+    ///
+    /// Focus is a state of each edge on its own. Any number of edges can be focused at once, which is how a whole path
+    /// is shown. It is not "the current edge", and focusing one never unfocuses another. It changes the look of the line
+    /// and nothing else: the route, the endpoints, the label, and every node, and what the caller knows, are as they were.
+    /// It is independent of [`set_focus`](Self::set_focus), which rings a node. The two draw on different elements and
+    /// neither overrides the other.
+    ///
+    /// Colour is not the only thing that sets a focused edge apart: the extra thickness does, and so does the
+    /// attribute. A caller who needs the state in words, such as a step explanation, writes it itself.
+    ///
+    /// Setting an edge to the state it is already in changes nothing and writes nothing. If a write fails part way,
+    /// the edge is still recorded in its old state, so repeating the call writes it all again.
+    ///
+    /// # Errors
+    ///
+    /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene, or a wrapped [`Error::Svg`] if a write
+    /// fails.
+    pub fn set_edge_focus(&self, id: EdgeId, focused: bool) -> Result<(), Error> {
+        let mut inner = self.inner.borrow_mut();
+        let handle = inner.edge_handle_mut(id).ok_or(Error::UnknownEdge(id))?;
+        if handle.focused == focused {
+            return Ok(());
+        }
+        if focused {
+            handle.path.set_stroke(EDGE_FOCUS_STROKE)?;
+            handle.path.set_stroke_width(FOCUSED_WIDTH)?;
+            handle.path.set_attr("aria-current", "true")?;
+            handle.path.set_attr(FOCUS_ATTRIBUTE, "true")?;
+        } else {
+            handle.path.set_stroke(CONNECTOR_STROKE)?;
+            handle.path.set_stroke_width(CONNECTOR_WIDTH)?;
+            handle.path.remove_attr("aria-current")?;
+            handle.path.remove_attr(FOCUS_ATTRIBUTE)?;
+        }
+        handle.focused = focused;
+        Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

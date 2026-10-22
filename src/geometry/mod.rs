@@ -3,6 +3,7 @@
 //! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`. This mirrors how `svg-dom`
 //! itself separates pure geometry math from its DOM-facing code.
 
+pub(crate) mod label;
 pub(crate) mod route;
 pub(crate) mod side;
 pub(crate) mod view;

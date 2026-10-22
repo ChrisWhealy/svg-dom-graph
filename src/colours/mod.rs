@@ -117,6 +117,10 @@ pub(crate) const TYPE_COLOUR_BOOL: &str = "#f1e6c9";
 /// The shade for values fewer than eight bits wide — pastel rose-gold, a hue no whole-byte type has.
 pub(crate) const TYPE_COLOUR_BITS: &str = "#f2d4c4";
 
+/// The shade for text values: a pale neutral grey. Text is not a number, so it takes no hue of a numeric type, and it
+/// stays well away from the blue of an ordinary node and from the yellow of a selection.
+pub(crate) const TYPE_COLOUR_TEXT: &str = "#e9ecef";
+
 /// A `true` mark's colour in [`BoolFormat::Icon`](crate::scene::BoolFormat::Icon) — a green that reads on every pastel.
 pub(crate) const BOOL_TRUE_INK: &str = "#1a7f37";
 
@@ -138,6 +142,23 @@ pub(crate) const TYPE_COLOUR_F32: &str = "#d0e3fb";
 /// The `f64` shade — a deeper sky blue than [`TYPE_COLOUR_F32`].
 pub(crate) const TYPE_COLOUR_F64: &str = "#a8c8f2";
 
+/// The background of an edge label: white, so that the label reads over a connector's line and a pastel box alike.
+/// Against [`TEXT_FILL`] it has a contrast ratio of over 15 to 1, far above the 4.5 to 1 that WCAG asks of text.
+pub(crate) const EDGE_LABEL_FILL: &str = "#ffffff";
+
+/// The outline of an edge label's background: a mid grey, which has a contrast ratio of over 3 to 1 against white, the
+/// least that WCAG asks of the edge of a control, so the label's box can be told from the page behind it.
+pub(crate) const EDGE_LABEL_STROKE: &str = "#6b7785";
+
+/// The stroke of a focused edge's connector: a deep blue. It has a contrast ratio of over 6 to 1 against white, above the
+/// 3 to 1 that WCAG asks of a graphical object. Colour is not all that tells a focused edge from another: it is also
+/// drawn more than twice as thick, and carries `aria-current`.
+pub(crate) const EDGE_FOCUS_STROKE: &str = "#0b57d0";
+
 /// The ink of inline code in a Markdown node, a dark orange that stays legible on [`PLAIN_BOX_FILL`] and sets code apart
 /// from prose without relying on the font alone.
 pub(crate) const MARKDOWN_CODE_INK: &str = "#a4380b";
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod unit_tests;

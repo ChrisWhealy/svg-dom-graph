@@ -1,0 +1,23 @@
+<section class="section" id="panel-dijkstra" data-group="Graph algorithms" data-label="Dijkstra's shortest paths" data-order="10">
+    <h2>Dijkstra's Shortest Paths</h2>
+    <p><em>Dijkstra's algorithm</em> finds the shortest route from one vertex of a weighted graph to the others. Each
+        vertex keeps a <em>distance</em>, the length of the shortest route found to it so far, which starts as
+        <code>&infin;</code> for every vertex except the source, where it is 0. A <em>queue</em> holds the vertices the
+        algorithm has reached.</p>
+    <p>The algorithm takes the nearest vertex from the queue and <em>settles</em> it: no route found later can be
+        shorter. Then it looks at every edge that leaves that vertex. If going along the edge gives its far end a
+        distance that is strictly shorter than the one it has, the distance is replaced and the vertex is remembered as
+        the <em>predecessor</em>, which is where the route came from. The old entry for that vertex stays in the queue,
+        out of date, and is ignored when it comes out. Weights must not be negative.</p>
+    <p>Here the run goes from A to F. Press Next to step along it, and drag a vertex to move it. The shortest route to F,
+        found by following the predecessors back from F, is A, C, B, D, E, F, with a length of 13. The first route found
+        to B is not the shortest one.</p>
+    <p class="demo-error" id="dijkstra-error" hidden></p>
+    <!-- Said by a screen reader at each step. It is here, not in the scene, because the scene is redrawn for each step,
+         and a screen reader may not announce the new live region after it a redraw. -->
+    <p id="dijkstra-announcement" role="status" aria-live="polite"
+        style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">
+    </p>
+    <div class="canvas" id="dijkstra-diagram-stage">
+    </div>
+</section>

@@ -237,7 +237,7 @@ impl GridLayoutMetrics {
         guard.track(measure_el.clone());
         measure_el.set_font_family(GRID_FONT_FAMILY)?;
         measure_el.set_font_size(GRID_FONT_SIZE)?;
-        if content.keeps_spaces() {
+        if content.preserves_spaces() {
             measure_el.set_attr("style", "white-space: pre")?;
         }
         let mut max_width = measure_el.bounding_box()?.size.width;
@@ -259,6 +259,15 @@ impl GridLayoutMetrics {
         if let Some(marks) = content.bool_icon_marks() {
             for mark in marks {
                 measure_el.set_text(mark);
+                max_width = max_width.max(measure_el.bounding_box()?.size.width);
+            }
+        }
+        // Edge case: the width of a character depends on the font it comes from, and a string may hold characters, such
+        // as `∞` and `—`, that the monospace font does not have. So every text cell is measured as it is, and so is the
+        // caller's width hint, and the widest wins. Character counts say nothing here.
+        if let Some(cells) = content.text_cells() {
+            for text in cells.iter().map(String::as_str).chain(content.cell_width_hint()) {
+                measure_el.set_text(text);
                 max_width = max_width.max(measure_el.bounding_box()?.size.width);
             }
         }
@@ -684,7 +693,7 @@ fn draw_cells(
             if content.is_bool_icon() {
                 halo_icon(&text)?;
             }
-            if content.keeps_spaces() {
+            if content.preserves_spaces() {
                 text.set_attr("style", "white-space: pre")?;
             }
             cells.texts.push(text.clone());

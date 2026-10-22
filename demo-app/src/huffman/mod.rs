@@ -44,7 +44,6 @@ use svg_dom_graph::{
     },
 };
 use walk::{Packing, Row, Shown, Spacing, leaf_label, pack_steps, packing, steps, symbol_label};
-use wasm_bindgen::JsCast;
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
@@ -746,7 +745,7 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.scene.view()));
     let was_pass_two =
         DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.model.position >= steps(&d.model.encoding.trace)));
-    let focused = focused_button();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
 
     let (model_position, pass_one_steps) = (model.position, steps(&model.encoding.trace));
     let (scene, input, step) = build_scene(&model)?;
@@ -767,8 +766,8 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     scene.set_selection(step, Selection::Cell(model.position)).map_err(stringify)?;
 
     DEMO.with_borrow_mut(|slot| *slot = Some(Demo { scene, model }));
-    if let Some(label) = focused {
-        focus_button(&label);
+    if let Some(selector) = focused {
+        demo_common::focus::focus(&selector);
     }
     // The two passes are different sizes, so the window is fitted again when the walk crosses from one to the other.
     // Not at every step, since a window that kept changing size would be hard to use.
@@ -813,32 +812,6 @@ fn report(result: Result<(), String>, what: &str) {
     match result {
         Ok(()) => demo_common::util::clear_error(ERROR_ID),
         Err(e) => demo_common::util::report_error(ERROR_ID, &format!("{what}: {e}")),
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
-fn focused_button() -> Option<String> {
-    let document = demo_common::util::document().ok()?;
-    let active = document.active_element()?;
-    let diagram = document.get_element_by_id(DIAGRAM_ID)?;
-    if diagram.contains(Some(&active)) {
-        active.get_attribute("aria-label")
-    } else {
-        None
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
-/// that is disabled now is left alone.
-fn focus_button(label: &str) {
-    let Ok(document) = demo_common::util::document() else { return };
-    let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
-    if let Ok(Some(button)) = document.query_selector(&selector) {
-        if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
-            let _ = button.focus();
-        }
     }
 }
 

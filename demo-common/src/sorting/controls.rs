@@ -49,19 +49,6 @@ pub(super) fn add_buttons(document: &web_sys::Document, diagram_id: &str, axis: 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Announces the contents of `message` to assistive technology in the live region identified by `announcement_id`,
-/// which stays on the page. The scene and the live region are redrawn for each step, which a screen reader may not
-/// announce. So this one is in the panel, outside the scene.
-pub(super) fn announce(announcement_id: &str, message: &str) {
-    if let Some(region) = web_sys::window()
-        .and_then(|w| w.document())
-        .and_then(|d| d.get_element_by_id(announcement_id))
-    {
-        region.set_text_content(Some(message));
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The array as the live region says it, for after a new one is chosen.
 pub(super) fn describe(values: &[u8]) -> String {
     format!(

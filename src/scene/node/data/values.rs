@@ -97,9 +97,9 @@ impl Scene {
         let mut old_text = String::new();
         if single_value && content.differs_from(&values) {
             content.single_cell_string_into(&mut old_text);
-            // The accessible name quotes what is said, and a mark is said as the word. Every other value is said as it
-            // is written, so its text is kept as it is and nothing is allocated.
-            if icon {
+            // The accessible name quotes what is said, and a mark is said as the word, and an empty text as "empty".
+            // Every other value is said as it is written, so its text is kept as it is and nothing is allocated.
+            if icon || old_text.is_empty() {
                 old_text = crate::scene::DataNodeContent::spoken_for(icon, &old_text).to_owned();
             }
         }

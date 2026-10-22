@@ -139,7 +139,7 @@ struct Demo {
 /// Returns `Err` if the page is missing a part of the panel, or if any library call fails.
 fn build(text: &str, position: usize) -> Result<NodeId, String> {
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|d| d.scene.view()));
-    let focused = focused_button();
+    let focused = demo_common::focus::focused_selector(DIAGRAM_ID);
 
     // A bit can only be flipped in a byte that exists. Those left over from longer text are dropped.
     let flips = FLIPS.with_borrow_mut(|flips| {
@@ -178,8 +178,8 @@ fn build(text: &str, position: usize) -> Result<NodeId, String> {
             position: drawn.position,
         });
     });
-    if let Some(label) = focused {
-        focus_button(&label);
+    if let Some(selector) = focused {
+        demo_common::focus::focus(&selector);
     }
     Ok(input)
 }
@@ -203,32 +203,6 @@ fn restart() {
     FLIPS.with_borrow_mut(|flips| *flips = Flips::default());
     go(0);
     controls::announce(&FLIPS.with_borrow(Flips::describe));
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
-fn focused_button() -> Option<String> {
-    let document = document().ok()?;
-    let active = document.active_element()?;
-    let diagram = document.get_element_by_id(DIAGRAM_ID)?;
-    if diagram.contains(Some(&active)) {
-        active.get_attribute("aria-label")
-    } else {
-        None
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
-/// that is disabled now is left alone.
-fn focus_button(label: &str) {
-    let Ok(document) = document() else { return };
-    let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
-    if let Ok(Some(button)) = document.query_selector(&selector) {
-        if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
-            let _ = button.focus();
-        }
-    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
