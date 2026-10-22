@@ -19,7 +19,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Add CI `cdp-build` job to pre-build WASM module that is then downloaded by each CI test shard (`60c6914`)
 - Collect CI test shard runtime data (`95bea7c`)
-- Upload CDP timing data (``)
+- Upload CDP timing data (`a8740d2`)
+- Create shell script to refresh CDP timing data (``)
 
 # [Released]
 

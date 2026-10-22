@@ -23,6 +23,7 @@ exclude = [
     ".github/",
     "rustfmt.toml",
     "webdriver.json",
+    "refresh-cdp-timings.sh",
 ]
 
 [dependencies]
