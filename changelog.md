@@ -6,13 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.41] - 2026-10-23
 
 ## Added
 
 - Implement Dijkstra's shortest path algorithm (`ecfa484`)
 - Fully implement DOM-write failure recovery (`3bad2e2`)
-- Restarting Dijkstra demo randomises weights (``)
+- Restarting Dijkstra demo randomises weights (`f2f5cb6`)
 
 ## Fixed
 
@@ -22,8 +24,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Correct another failing CI test (`78c6b1b`)
 - Avoid rebuilding label list during hot path execution (`82fc904`)
 - Avoid possible integer overflow in placement scoring (`2132e4e`)
-
-# [Released]
 
 ## [0.2.40] - 2026-10-22
 
