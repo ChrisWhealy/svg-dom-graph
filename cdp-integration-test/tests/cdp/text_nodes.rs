@@ -430,3 +430,18 @@ fn the_markdown_nodes_text_is_there_for_assistive_technology_to_read() -> Result
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The text input node, the ASCII node and the hexdump node are centred on one vertical midline.
+#[test]
+fn the_three_nodes_share_a_vertical_midline() -> Result<(), String> {
+    let tab = open()?;
+    let middle = |selector: &str| bounds(&tab, selector).map(|(left, _, right, _)| (left + right) / 2.0);
+    let input = middle(&format!("{DIAGRAM} {INPUT_GROUP} rect"))?;
+    let ascii = middle(&format!("{DIAGRAM} g[aria-label^=\"The text as ASCII\"] rect"))?;
+    let hexdump = middle(&format!("{DIAGRAM} g[aria-label^=\"The text as a hexdump\"] rect"))?;
+    check(
+        (input - ascii).abs() <= 1.5 && (input - hexdump).abs() <= 1.5,
+        &format!("the midlines are {input}, {ascii} and {hexdump}"),
+    )
+}

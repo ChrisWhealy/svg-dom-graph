@@ -4,7 +4,7 @@
 //! - `panel-text-input` / `#text-input-diagram` — [`build_text_input_demo`]: a text input node, whose text appears in
 //!   an ASCII node and a hexdump node as it is typed.
 
-use demo_common::util::{document, ensure_svg_in, required_element, stringify, view_box_rect};
+use demo_common::util::{MARGIN, document, ensure_svg_in, required_element, stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -28,6 +28,9 @@ thread_local! {
 /// node but not how many values it holds, so both are a buffer of this size. Text past it is not shown, and text
 /// shorter than it leaves the rest of the buffer as zero bytes.
 const BUFFER_LEN: usize = 32;
+
+/// How wide the text input node is.
+const INPUT_WIDTH: f64 = 580.0;
 
 /// How many columns the ASCII node lays its [`BUFFER_LEN`] bytes out in.
 const ASCII_COLUMNS: usize = 16;
@@ -136,23 +139,36 @@ pub(crate) fn build_text_input_demo() -> Result<(), String> {
     let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
     let initial = "Edit this text";
+    let ascii_content = DataNodeContent::new(NodeValues::U8(buffer_of(initial)), DataFormat::Ascii)
+        .with_layout(GridLayout::Columns(ASCII_COLUMNS));
+    let hexdump_content = DataNodeContent::new(
+        NodeValues::U8(buffer_of(initial)),
+        DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+    );
+    // The three nodes in the chain are centred on one vertical midline, which is the middle of the widest of them.
+    let ascii_size = scene
+        .measure_named_data_node("The text as ASCII", &ascii_content)
+        .map_err(stringify)?;
+    let hexdump_size = scene
+        .measure_named_data_node("The text as a hexdump", &hexdump_content)
+        .map_err(stringify)?;
+    let midline = MARGIN + INPUT_WIDTH.max(ascii_size.width).max(hexdump_size.width) / 2.0;
     let ascii = scene
         .add_named_data_node(
-            Point::new(20.0, 250.0),
+            Point::new(midline - ascii_size.width / 2.0, 250.0),
             "The text as ASCII",
-            DataNodeContent::new(NodeValues::U8(buffer_of(initial)), DataFormat::Ascii)
-                .with_layout(GridLayout::Columns(ASCII_COLUMNS)),
+            ascii_content,
         )
         .map_err(stringify)?;
     let ascii_rect = scene.node_rect(ascii).map_err(stringify)?;
     let hexdump = scene
         .add_named_data_node(
-            Point::new(20.0, ascii_rect.origin.y + ascii_rect.size.height + 60.0),
-            "The text as a hexdump",
-            DataNodeContent::new(
-                NodeValues::U8(buffer_of(initial)),
-                DataFormat::HexDump(HexDumpFormat::new().with_offset(true)),
+            Point::new(
+                midline - hexdump_size.width / 2.0,
+                ascii_rect.origin.y + ascii_rect.size.height + 60.0,
             ),
+            "The text as a hexdump",
+            hexdump_content,
         )
         .map_err(stringify)?;
 
@@ -163,14 +179,20 @@ pub(crate) fn build_text_input_demo() -> Result<(), String> {
     calls.set_text_content(Some("0"));
     let count = std::cell::Cell::new(0_u32);
     let input = scene
-        .add_text_input_node(Point::new(20.0, 20.0), 580.0, "Text to echo", initial, move |scene, _, text| {
-            count.set(count.get() + 1);
-            calls.set_text_content(Some(&count.get().to_string()));
-            echo.set_text_content(Some(text));
-            // Both nodes were built with BUFFER_LEN values, so neither call can be refused for their number.
-            let _ = scene.set_data_values(ascii, NodeValues::U8(buffer_of(text)));
-            let _ = scene.set_data_values(hexdump, NodeValues::U8(buffer_of(text)));
-        })
+        .add_text_input_node(
+            Point::new(midline - INPUT_WIDTH / 2.0, MARGIN),
+            INPUT_WIDTH,
+            "Text to echo",
+            initial,
+            move |scene, _, text| {
+                count.set(count.get() + 1);
+                calls.set_text_content(Some(&count.get().to_string()));
+                echo.set_text_content(Some(text));
+                // Both nodes were built with BUFFER_LEN values, so neither call can be refused for their number.
+                let _ = scene.set_data_values(ascii, NodeValues::U8(buffer_of(text)));
+                let _ = scene.set_data_values(hexdump, NodeValues::U8(buffer_of(text)));
+            },
+        )
         .map_err(stringify)?;
 
     // Replacing the text from code is a change the caller makes, so it does not call the callback, and the other two

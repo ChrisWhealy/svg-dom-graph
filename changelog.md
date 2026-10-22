@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Organize demo groups using per-panel metadata (`38d9b10`)
 - Adjust layout of Base64 demo (`b975022`)
-- Extract common functionality into `demo-common` project crate (``)
+- Extract common functionality into `demo-common` project crate (`67143bb`)
+- Adjust layout of Text Input demo (``)
 
 # [Released]
 
