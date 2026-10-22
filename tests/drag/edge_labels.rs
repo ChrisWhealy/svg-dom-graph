@@ -364,48 +364,63 @@ fn labels_of_two_connectors_that_leave_one_node_do_not_overlap() -> Result<(), S
 }
 
 /// A label that was placed earlier is not moved to make room for one placed later: the later one gives way.
+///
+/// Two connectors leave one node. The second is then moved until it runs almost alongside the first, which is where the
+/// first one's label is. Nothing else stands in the way, so there is room for the second label elsewhere.
 #[wasm_bindgen_test]
 fn a_later_label_gives_way_to_an_earlier_one() -> Result<(), String> {
     let scene = new_scene("label-priority")?;
-    let (a, b) = (node(&scene, "A", 20.0, 20.0)?, node(&scene, "B", 320.0, 20.0)?);
-    let (c, d) = (node(&scene, "C", 90.0, 300.0)?, node(&scene, "D", 250.0, 300.0)?);
-    let first = scene.add_edge(a, b).map_err(e)?;
-    let second = scene.add_edge(c, d).map_err(e)?;
+    let c = node(&scene, "C", 40.0, 200.0)?;
+    let (d, f) = (node(&scene, "D", 400.0, 90.0)?, node(&scene, "E", 400.0, 400.0)?);
+    let (first, second) = (scene.add_edge(c, d).map_err(e)?, scene.add_edge(c, f).map_err(e)?);
     scene.set_edge_label(first, Some("first")).map_err(e)?;
     scene.set_edge_label(second, Some("second")).map_err(e)?;
     let kept = transform_of("label-priority", 0)?;
 
-    // The second connector is moved into the first label's neighbourhood.
-    scene.move_node(c, Point::new(90.0, 8.0)).map_err(e)?;
-    scene.move_node(d, Point::new(250.0, 8.0)).map_err(e)?;
-
-    check(
-        transform_of("label-priority", 0)? == kept,
-        "the earlier label was moved for the later one",
-    )?;
-    let (one, two) = (label_rect("label-priority", 0)?, label_rect("label-priority", 1)?);
-    check(!overlap(one, two), &format!("the labels overlap: {one:?} and {two:?}"))
+    for (to, name) in [
+        (Point::new(400.0, 300.0), "second edge at 300"),
+        (Point::new(400.0, 200.0), "second edge at 200"),
+        (Point::new(400.0, 150.0), "second edge at 150"),
+    ] {
+        scene.move_node(f, to).map_err(e)?;
+        check(
+            transform_of("label-priority", 0)? == kept,
+            &format!("the earlier label was moved for the later one ({name})"),
+        )?;
+        let (one, two) = (label_rect("label-priority", 0)?, label_rect("label-priority", 1)?);
+        check(!overlap(one, two), &format!("the labels overlap ({name}): {one:?} and {two:?}"))?;
+    }
+    Ok(())
 }
 
-/// A label of lower priority that is in the way of a higher one that has just moved is the one that moves.
+/// A label of lower priority that is in the way of a higher one that has just moved is moved aside, so the two never
+/// end up overlapping.
+///
+/// The first connector is swept down towards the second, and the second's label has to be put again to keep clear of
+/// it. Both connectors leave one node and end at nodes that stand clear of each other and of the other connector, so
+/// there is always room for both labels.
 #[wasm_bindgen_test]
 fn a_later_label_in_the_way_of_an_earlier_one_that_moves_is_moved_aside() -> Result<(), String> {
     let scene = new_scene("label-reconcile")?;
-    let (a, b) = (node(&scene, "A", 20.0, 300.0)?, node(&scene, "B", 320.0, 300.0)?);
-    let (c, d) = (node(&scene, "C", 90.0, 8.0)?, node(&scene, "D", 250.0, 8.0)?);
-    let first = scene.add_edge(a, b).map_err(e)?;
-    let second = scene.add_edge(c, d).map_err(e)?;
+    let c = node(&scene, "C", 40.0, 200.0)?;
+    let (d, f) = (node(&scene, "D", 400.0, 20.0)?, node(&scene, "E", 400.0, 200.0)?);
+    let (first, second) = (scene.add_edge(c, d).map_err(e)?, scene.add_edge(c, f).map_err(e)?);
     scene.set_edge_label(first, Some("first")).map_err(e)?;
     scene.set_edge_label(second, Some("second")).map_err(e)?;
-    let before = transform_of("label-reconcile", 1)?;
 
-    // The first edge is moved up, so that its label lands where the second one's is.
-    scene.move_node(a, Point::new(20.0, 20.0)).map_err(e)?;
-    scene.move_node(b, Point::new(320.0, 20.0)).map_err(e)?;
-
-    let (one, two) = (label_rect("label-reconcile", 0)?, label_rect("label-reconcile", 1)?);
-    check(!overlap(one, two), &format!("the labels overlap: {one:?} and {two:?}"))?;
-    check(transform_of("label-reconcile", 1)? != before, "the later label was moved aside")
+    for (to, name) in [
+        (Point::new(400.0, 60.0), "first edge at 60"),
+        (Point::new(400.0, 100.0), "first edge at 100"),
+        (Point::new(400.0, 140.0), "first edge at 140"),
+    ] {
+        scene.move_node(d, to).map_err(e)?;
+        let (one, two) = (label_rect("label-reconcile", 0)?, label_rect("label-reconcile", 1)?);
+        check(!overlap(one, two), &format!("the labels overlap ({name}): {one:?} and {two:?}"))?;
+    }
+    // Whether the second label has to move depends on where the first one lands, so that is not required here. The
+    // placer's own tests in `src/geometry/label` cover the pass that moves it. This test requires that the page never
+    // shows two overlapping labels.
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -8,7 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.2.41] - 2026-10-23
 
-- Implement Dijkstra's shortest path algorithm (``)
+## Added
+
+- Implement Dijkstra's shortest path algorithm (`ecfa484`)
+
+## Fixed
+
+- Correct failing CI tests (``)
 
 # [Released]
 

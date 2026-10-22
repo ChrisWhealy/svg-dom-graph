@@ -132,8 +132,20 @@ fn zoom_in_keeps_the_centre_of_the_visible_area_fixed() -> Result<(), String> {
     let scene = new_scene("tb-pivot")?;
     scene.zoom_in().map_err(|e| e.to_string())?;
     let transform = attr(&content("tb-pivot")?, "transform")?;
+
+    // The centre is read from the size the browser lays the SVG out at, which is not always a whole number of pixels:
+    // 300.0039 is a size a browser may report for a height of 300. So the numbers are compared, not the text.
+    let numbers: Vec<f64> = transform
+        .split(|c: char| !(c.is_ascii_digit() || c == '.' || c == '-'))
+        .filter(|part| !part.is_empty())
+        .map(str::parse)
+        .collect::<Result<_, _>>()
+        .map_err(|e| format!("unreadable transform {transform}: {e}"))?;
+    let [tx, ty, scale] = numbers[..] else {
+        return Err(format!("unexpected transform: {transform}"));
+    };
     check(
-        transform == "translate(-50, -37.5) scale(1.25)",
+        (tx + 50.0).abs() < 0.1 && (ty + 37.5).abs() < 0.1 && (scale - 1.25).abs() < 1e-9,
         &format!("unexpected transform: {transform}"),
     )
 }

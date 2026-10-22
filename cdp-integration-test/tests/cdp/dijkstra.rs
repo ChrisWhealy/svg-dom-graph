@@ -70,17 +70,21 @@ fn json<T: for<'de> Deserialize<'de>>(tab: &Tab, expression: &str) -> Result<T, 
     serde_json::from_str(&raw).map_err(|e| format!("could not read {raw}: {e}"))
 }
 
-/// The vertex boxes, A to F: nodes of the content layer that have a rectangle and a text with a vertex's name.
+/// The vertex boxes, A to F: nodes of the content layer that have a rectangle and a text with a vertex's name. A node's
+/// group also holds a `title` for its accessible name, so the rectangle and the text are found by tag, not by position.
 const VERTEX_GROUPS: &str = "[...document.querySelectorAll('#dijkstra-diagram > g.svg-dom-graph-content > g')] \
-     .filter(g => g.children.length === 2 && g.children[0].tagName === 'rect' && g.children[1].tagName === 'text' \
-                  && /^[A-F]$/.test(g.children[1].textContent))";
+     .filter(g => g.querySelector(':scope > rect') && /^[A-F]$/.test(g.querySelector(':scope > text')?.textContent ?? ''))";
+/// The rectangle and the name of a vertex group `g`.
+const VERTEX_RECT: &str = "g.querySelector(':scope > rect')";
+const VERTEX_NAME: &str = "g.querySelector(':scope > text').textContent";
 
 fn vertex_boxes(tab: &Tab) -> Result<Vec<Box4>, String> {
     json(
         tab,
         &format!(
-            "{VERTEX_GROUPS}.sort((a, b) => a.children[1].textContent.localeCompare(b.children[1].textContent)) \
-             .map(g => {{ const r = g.children[0].getBoundingClientRect(); \
+            "{VERTEX_GROUPS}.sort((a, b) => \
+             a.querySelector(':scope > text').textContent.localeCompare(b.querySelector(':scope > text').textContent)) \
+             .map(g => {{ const r = {VERTEX_RECT}.getBoundingClientRect(); \
              return {{ left: r.left, top: r.top, width: r.width, height: r.height }}; }})"
         ),
     )
@@ -91,8 +95,8 @@ fn ringed(tab: &Tab) -> Result<Vec<String>, String> {
     json(
         tab,
         &format!(
-            "{VERTEX_GROUPS}.filter(g => g.children[0].getAttribute('stroke-width') === '3') \
-             .map(g => g.children[1].textContent).sort()"
+            "{VERTEX_GROUPS}.filter(g => {VERTEX_RECT}.getAttribute('stroke-width') === '3') \
+             .map(g => {VERTEX_NAME}).sort()"
         ),
     )
 }
@@ -102,8 +106,8 @@ fn filled_settled(tab: &Tab) -> Result<Vec<String>, String> {
     json(
         tab,
         &format!(
-            "{VERTEX_GROUPS}.filter(g => g.children[0].getAttribute('fill') === '#d9c9f3') \
-             .map(g => g.children[1].textContent).sort()"
+            "{VERTEX_GROUPS}.filter(g => {VERTEX_RECT}.getAttribute('fill') === '#d9c9f3') \
+             .map(g => {VERTEX_NAME}).sort()"
         ),
     )
 }
@@ -172,13 +176,20 @@ fn cell_names(tab: &Tab, name: &str) -> Result<Vec<String>, String> {
     )
 }
 
-/// The boxes of the three arrays and the queue, by the start of their names.
-fn array_boxes(tab: &Tab) -> Result<Vec<Box4>, String> {
+/// Where the three arrays, the queue and the vertices are, and how big, as the scene itself has them: each node's own
+/// `transform` and the size of its first rectangle. Unlike a bounding box on the page, this does not change when a
+/// selection or a focus ring thickens a stroke.
+fn placed(tab: &Tab) -> Result<Vec<String>, String> {
     json(
         tab,
-        "['Distance:', 'Previous:', 'Settled:', 'Queue'].map(name => { \
-         const r = document.querySelector(`#dijkstra-diagram g[aria-label^=\"${name}\"]`).getBoundingClientRect(); \
-         return { left: r.left, top: r.top, width: r.width, height: r.height }; })",
+        &format!(
+            "[...['Distance:', 'Previous:', 'Settled:', 'Queue'] \
+               .map(name => document.querySelector(`#dijkstra-diagram g[aria-label^=\"${{name}}\"]`)), \
+             ...{VERTEX_GROUPS}.sort((a, b) => \
+               a.querySelector(':scope > text').textContent.localeCompare(b.querySelector(':scope > text').textContent))] \
+             .map(g => {{ const r = g.querySelector('rect'); \
+             return g.getAttribute('transform') + ' ' + r.getAttribute('width') + 'x' + r.getAttribute('height'); }})"
+        ),
     )
 }
 
@@ -400,25 +411,14 @@ fn a_redraw_keeps_the_zoom_the_dragged_vertex_and_the_keyboard_focus() -> Result
 #[test]
 fn the_arrays_the_queue_and_the_vertices_never_move_or_change_size() -> Result<(), String> {
     let tab = open()?;
-    let (arrays, vertices) = (array_boxes(&tab)?, vertex_boxes(&tab)?);
+    let before = placed(&tab)?;
+    check_eq(before.len(), 4 + VERTICES.len())?;
     let count = step_count(&tab)?;
     for position in 1..count {
         click(&tab, "Next selection")?;
-        let same = |a: &[Box4], b: &[Box4]| {
-            a.iter().zip(b).all(|(x, y)| {
-                (x.left - y.left).abs() < 0.01
-                    && (x.top - y.top).abs() < 0.01
-                    && (x.width - y.width).abs() < 0.01
-                    && (x.height - y.height).abs() < 0.01
-            })
-        };
         check(
-            same(&arrays, &array_boxes(&tab)?),
-            &format!("an array or the queue moved or resized at step {position}"),
-        )?;
-        check(
-            same(&vertices, &vertex_boxes(&tab)?),
-            &format!("a vertex moved at step {position}"),
+            placed(&tab)? == before,
+            &format!("an array, the queue or a vertex moved or resized at step {position}"),
         )?;
     }
     check_eq(step_position(&tab)?, Some(count - 1))
