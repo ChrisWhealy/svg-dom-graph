@@ -32,7 +32,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct CI test duration calculation (`ad1205e`)
 - Avoid incomplete CI run from replacing entire timing history (`dd8a93f`)
-- `refresh-cdp-timings.sh` always queries the correct repo (``)
+- `refresh-cdp-timings.sh` always queries the correct repo (`ecbf234`)
+- `refresh-cdp-timings.sh` handles partial CI runs or `gh run list ...` returning an empty list (``)
 
 # [Released]
 

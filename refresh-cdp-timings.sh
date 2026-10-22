@@ -23,6 +23,8 @@ root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 cd "$root"
 workflow="ci.yml"
 branch="main"
+# The number of CDP shards in ci.yml, which the averages below are taken over.
+shards=8
 output="${CDP_TIMINGS_FILE:-$root/.github/cdp-timings.tsv}"
 
 command -v gh > /dev/null || { echo "refresh-cdp-timings.sh: the GitHub CLI (gh) is not installed" >&2; exit 1; }
@@ -42,9 +44,10 @@ if [ "$#" -ge 1 ]; then
   run="$1"
   download "$run" || { echo "refresh-cdp-timings.sh: run $run has no cdp-timings artifacts:" >&2; cat "$work/error" >&2; exit 1; }
 else
-  runs="$(gh run list --workflow "$workflow" --branch "$branch" --status completed --limit 15 \
-    --json databaseId,conclusion \
-    --jq '.[] | select(.conclusion != "cancelled" and .conclusion != "skipped") | .databaseId')"
+  # The branch and status are chosen here, not by `--branch` and `--status`: GitHub's API has answered those filters with
+  # an empty list while a run was in progress, although the runs were there.
+  runs="$(gh run list --workflow "$workflow" --limit 40 --json databaseId,conclusion,status,headBranch \
+    --jq ".[] | select(.headBranch == \"$branch\" and .status == \"completed\" and .conclusion != \"cancelled\" and .conclusion != \"skipped\") | .databaseId")"
   if [ -z "$runs" ]; then
     echo "refresh-cdp-timings.sh: no completed $workflow runs found on $branch in $(gh repo view --json nameWithOwner --jq .nameWithOwner 2>&1)," >&2
     echo "which has these runs of any status:" >&2
@@ -88,8 +91,11 @@ fi
 
 # How the file differs from what it was: tests with a different time, new tests and dropped tests. The tests run side by
 # side in the shards, so the totals are also shown as the average time of one shard, which is what a perfectly even
-# dealing would give. The number of shards is the number of timing files the run uploaded.
-shards="$(find "$work/download" -type f -name '*.tsv' | wc -l | tr -d ' ')"
+# dealing would give. The file holds the times of the whole suite, so the average is over all the shards, even if this run
+# uploaded the timings of fewer.
+uploaded="$(find "$work/download" -type f -name '*.tsv' | wc -l | tr -d ' ')"
+[ "$uploaded" -eq "$shards" ] \
+  || echo "warning: run $run uploaded timings from $uploaded of $shards shards; the other tests keep their old times" >&2
 awk -v shards="$shards" -F'\t' '
   NR == FNR { old[$1] = $2; next }
   { seen[$1] = 1; new_total += $2
