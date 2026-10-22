@@ -79,5 +79,21 @@ else
   cp "$work/merged.tsv" "$work/pruned.tsv"
 fi
 
+# How the file differs from what it was: tests with a different time, new tests and dropped tests. The tests run side by
+# side in the shards, so the totals are also shown as the average time of one shard, which is what a perfectly even
+# dealing would give. The number of shards is the number of timing files the run uploaded.
+shards="$(find "$work/download" -type f -name '*.tsv' | wc -l | tr -d ' ')"
+awk -v shards="$shards" -F'\t' '
+  NR == FNR { old[$1] = $2; next }
+  { seen[$1] = 1; new_total += $2
+    if (!($1 in old)) added++
+    else if (old[$1] != $2) changed++
+    else same++ }
+  END { for (t in old) { old_total += old[t]; if (!(t in seen)) dropped++ }
+        printf "unchanged %d, changed %d, added %d, dropped %d\n", same, changed, added, dropped
+        printf "Average execution time across %d shards is now %.0f seconds (was %.0f).\n", shards, new_total / shards / 1000, old_total / shards / 1000
+        printf "Total sequential test execution time is now %.0f seconds (was %.0f).\n", new_total / 1000, old_total / 1000 }
+' "$output" "$work/pruned.tsv"
+
 cp "$work/pruned.tsv" "$output"
 echo "kept $(wc -l < "$output" | tr -d ' ') timings, $(wc -l < "$work/new.tsv" | tr -d ' ') of them from run $run"
