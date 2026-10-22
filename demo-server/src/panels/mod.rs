@@ -4,9 +4,10 @@
 //! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`. Its menu groups panels under headings like "Basic Nodes"
 //! and "Operators", each of which expands to show its panels.
 //!
-//! [`GROUPS`] is this gallery's single source of truth for both panel order and menu labelling. It drives the generated
-//! `<nav>` menu and the generated panel body. So the two can never disagree about which panels exist or what order they
-//! come in.
+//! The panels describe themselves. Each fragment's opening `<section>` tag carries the group the panel is filed under,
+//! its menu label and its place within the group, as `data-group`, `data-label` and `data-order`. The fragments in
+//! `demo/panels/` are therefore the single source of truth for which panels exist, and nothing else lists them.
+//! [`GROUP_ORDER`] only decides the order of the headings.
 //!
 //! It does not know anything about the Rust demo functions that build each panel's content. That mapping lives in
 //! `demo-app/src/lib.rs`'s `demo_gallery!` invocation instead. That invocation holds a separate list for a separate
@@ -14,12 +15,12 @@
 //!
 //! # Adding a new demo
 //!
-//! Add its id and menu label to the right group of [`GROUPS`]. Create the matching `demo/panels/{id}.html` fragment,
-//! containing an element with `id="{id}"`, since [`assemble`] checks the two match. Then add the matching
-//! `demo_gallery!` entry in `demo-app/src/lib.rs`.
+//! Create `demo/panels/{id}.html`, whose root element is
+//! `<section class="section" id="{id}" data-group="..." data-label="..." data-order="...">`. Orders within a group are
+//! numbered in tens, so that a panel can be slotted between two others. Then add the matching `demo_gallery!` entry in
+//! `demo-app/src/lib.rs`. A panel in a group that is new needs the group adding to [`GROUP_ORDER`].
 
 use std::{
-    collections::HashSet,
     fmt, fs, io,
     path::{Path, PathBuf},
 };
@@ -28,118 +29,37 @@ const PANELS_PLACEHOLDER: &str = "{{PANELS}}";
 const MENU_PLACEHOLDER: &str = "{{MENU}}";
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One heading of the menu, and the panels it expands to show.
-///
-/// A group that holds exactly one panel has nothing to expand. It is drawn as a menu item that opens its one panel
-/// directly, labelled with the group's own `label`, and the panel's own label is not shown.
-struct Group {
-    label: &'static str,
-    /// `(panel id, menu label)`, in the order the group lists them.
-    panels: &'static [(&'static str, &'static str)],
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The menu, in the order its groups and their panels, and so the assembled page, present them. A panel's own body
-/// markup, including its `<h2>` heading, lives entirely in `demo/panels/{id}.html`. This list only decides which
-/// fragments exist, what order they appear in, which group they are filed under, and what their `<nav>` link reads.
-const GROUPS: &[Group] = &[
-    Group {
-        label: "Basic Nodes",
-        panels: &[
-            ("panel-tree", "Directed tree"),
-            ("panel-elbow", "Connector routing"),
-            ("panel-edge-anchors", "Fixing points"),
-        ],
-    },
-    Group {
-        label: "Data Nodes",
-        panels: &[
-            ("panel-unsigned", "Unsigned integers"),
-            ("panel-signed", "Signed integers"),
-            ("panel-hexdump", "Hexdump"),
-            ("panel-ascii", "ASCII"),
-            ("panel-bits", "Bit arrays"),
-            ("panel-float", "Floating point"),
-            ("panel-128-bit", "128-bit values and UUIDs"),
-            ("panel-size", "Size types"),
-            ("panel-bool", "Booleans"),
-        ],
-    },
-    Group {
-        label: "Operators",
-        panels: &[
-            ("panel-operators-unary", "Unary operators"),
-            ("panel-operators-binary", "Binary operators"),
-            ("panel-operators-arithmetic", "Arithmetic operators"),
-            ("panel-operators-chained", "Chained operators"),
-        ],
-    },
-    Group {
-        label: "Cell selection",
-        panels: &[
-            ("panel-selection-1d", "One-dimensional array"),
-            ("panel-selection-2d", "Two-dimensional array"),
-            ("panel-selection-hexdump", "Hexdump selection"),
-            ("panel-selection-thetac", "Row-wise selection (SHA3 ThetaC)"),
-        ],
-    },
-    Group {
-        label: "Text nodes",
-        panels: &[("panel-markdown", "Markdown node"), ("panel-text-input", "Text input node")],
-    },
-    Group {
-        label: "Nested scenes",
-        panels: &[("panel-theta", "Nested Scenes (SHA3 Theta)")],
-    },
-    Group {
-        label: "Cryptographic Algorithms",
-        panels: &[
-            ("panel-sha1", "SHA1"),
-            ("panel-sha2-256", "SHA2-256"),
-            ("panel-sha3-sponge", "SHA3 Sponge"),
-            ("panel-chacha20", "ChaCha20"),
-        ],
-    },
-    Group {
-        label: "Encoding & Compression",
-        panels: &[
-            ("panel-huffman", "Huffman encoding"),
-            ("panel-base64", "Base64 encoding"),
-            ("panel-utf8", "UTF-8 encoding"),
-        ],
-    },
-    Group {
-        label: "Error Detection & Correction",
-        panels: &[("panel-crc32", "CRC-32"), ("panel-hamming", "Hamming(7,4)")],
-    },
-    Group {
-        label: "Sorting",
-        panels: &[
-            ("panel-bubble-sort", "Bubble sort"),
-            ("panel-shell-sort", "Shell sort"),
-            ("panel-quicksort", "Quicksort"),
-        ],
-    },
+/// The headings of the menu, in the order they are drawn. A group with no panels is not drawn.
+const GROUP_ORDER: &[&str] = &[
+    "Basic Nodes",
+    "Data Nodes",
+    "Operators",
+    "Cell selection",
+    "Text nodes",
+    "Nested scenes",
+    "Cryptographic Algorithms",
+    "Encoding & Compression",
+    "Error Detection & Correction",
+    "Sorting",
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every panel of [`GROUPS`] as `(panel id, menu label)`, in menu order, ignoring which group each is filed under.
-fn manifest() -> Vec<(&'static str, &'static str)> {
-    GROUPS.iter().flat_map(|group| group.panels.iter().copied()).collect()
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`GROUPS`]' own panel ids — used by [`super::validate`] to cross-check against `demo-app`'s `demo_gallery!` list, so
-/// the two cannot silently drift apart.
-pub fn panel_ids() -> Vec<&'static str> {
-    manifest().into_iter().map(|(id, _)| id).collect()
+/// One panel, as its own fragment describes it.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub struct Panel {
+    pub id: String,
+    pub group: String,
+    /// The text of the panel's menu item. A group that holds only this panel shows the group's heading instead.
+    pub label: String,
+    /// Where the panel comes in its group: lower first, and a tie goes to the lower id.
+    pub order: u32,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything that can go wrong assembling `index.html`. None of these checks need an HTML parser. Every one is a
 /// targeted check against a specific convention this gallery already relies on. The conventions are one placeholder per
-/// token, one `id="..."` per fragment, and a fragments directory that matches [`manifest`] exactly. None is a general
-/// claim about well-formed HTML.
+/// token, one `id="..."` per fragment that matches its filename, and the three `data-` attributes on its opening tag.
+/// None is a general claim about well-formed HTML.
 #[derive(Debug)]
 pub enum AssembleError {
     /// A file could not be read, or the assembled result could not be written.
@@ -153,18 +73,18 @@ pub enum AssembleError {
         placeholder: &'static str,
         count: usize,
     },
-    /// The same panel id appears in [`manifest`] more than once.
-    DuplicateManifestId(&'static str),
-    /// A panel id does not match `panel-[a-z0-9-]+` — see [`check_panel_id_format`] for why that pattern is enforced up
-    /// front rather than escaped at each place an id is emitted.
-    InvalidPanelId(&'static str),
+    /// A fragment's filename does not match `panel-[a-z0-9-]+` — see [`is_valid_panel_id`] for why that pattern is
+    /// enforced up front rather than escaped at each place an id is emitted.
+    InvalidPanelId(String),
     /// A fragment's own content does not contain `id="{id}"` for the id it is filed under — it may have been
     /// copy-pasted from another panel's fragment and never updated.
-    FragmentIdMismatch { id: &'static str, fragment_path: PathBuf },
-    /// [`manifest`]'s panel ids and `demo/panels/*.html`'s own filenames are not the same set. That is exactly how an
-    /// orphaned fragment (removed from the manifest but left on disk) or a missing one (added to the manifest but never
-    /// created) gets caught.
-    CatalogueMismatch(String),
+    FragmentIdMismatch { id: String, fragment_path: PathBuf },
+    /// A fragment has no opening `<section>` tag, or the tag lacks the `data-` attribute `attribute`.
+    MissingAttribute { fragment_path: PathBuf, attribute: &'static str },
+    /// A fragment's `data-order` is not a whole number.
+    InvalidOrder { fragment_path: PathBuf, value: String },
+    /// A fragment's `data-group` is not in [`GROUP_ORDER`], which would leave the panel out of the menu.
+    UnknownGroup { fragment_path: PathBuf, group: String },
     /// The fully assembled output still contains a `{{...}}` token after both placeholders were substituted — evidence
     /// of a typo'd or unexpected placeholder that no check above already caught.
     LeftoverPlaceholder(String),
@@ -188,10 +108,9 @@ impl fmt::Display for AssembleError {
                     template_path.display()
                 )
             },
-            Self::DuplicateManifestId(id) => write!(f, "MANIFEST contains the panel id {id:?} more than once"),
             Self::InvalidPanelId(id) => write!(
                 f,
-                "MANIFEST contains the panel id {id:?}, which does not match panel-[a-z0-9-]+"
+                "demo/panels/ contains the fragment {id:?}, whose name does not match panel-[a-z0-9-]+"
             ),
             Self::FragmentIdMismatch { id, fragment_path } => {
                 write!(
@@ -200,9 +119,21 @@ impl fmt::Display for AssembleError {
                     fragment_path.display()
                 )
             },
-            Self::CatalogueMismatch(detail) => {
-                write!(f, "MANIFEST and demo/panels/ disagree about which panels exist:\n{detail}")
-            },
+            Self::MissingAttribute { fragment_path, attribute } => write!(
+                f,
+                "{} has no <section> tag with the attribute {attribute}",
+                fragment_path.display()
+            ),
+            Self::InvalidOrder { fragment_path, value } => write!(
+                f,
+                "{} has data-order={value:?}, which is not a whole number",
+                fragment_path.display()
+            ),
+            Self::UnknownGroup { fragment_path, group } => write!(
+                f,
+                "{} is filed under data-group={group:?}, which is not in GROUP_ORDER",
+                fragment_path.display()
+            ),
             Self::LeftoverPlaceholder(context) => {
                 write!(
                     f,
@@ -216,7 +147,85 @@ impl fmt::Display for AssembleError {
 impl std::error::Error for AssembleError {}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds `index.html` from `source_demo_dir`'s `index.template.html`, a `<nav>` menu generated from [`manifest`], and
+/// Every panel in `panels_dir`, in menu order: by the position of its group in [`GROUP_ORDER`], then by `data-order`,
+/// then by id.
+///
+/// Reads and checks every fragment, so a fragment that is wrongly named, whose id does not match its name, or that
+/// lacks its metadata is reported here, whichever caller asked.
+pub fn catalogue(panels_dir: &Path) -> Result<Vec<Panel>, AssembleError> {
+    let mut panels = Vec::new();
+    for id in list_fragment_ids(panels_dir)? {
+        if !is_valid_panel_id(&id) {
+            return Err(AssembleError::InvalidPanelId(id));
+        }
+        let fragment_path = panels_dir.join(format!("{id}.html"));
+        let fragment = read_to_string(&fragment_path)?;
+        if !fragment.contains(&format!("id=\"{id}\"")) {
+            return Err(AssembleError::FragmentIdMismatch { id, fragment_path });
+        }
+        let attribute = |name: &'static str| {
+            section_attribute(&fragment, name).ok_or_else(|| AssembleError::MissingAttribute {
+                fragment_path: fragment_path.clone(),
+                attribute: name,
+            })
+        };
+        let group = attribute("data-group")?;
+        let label = attribute("data-label")?;
+        let order_text = attribute("data-order")?;
+        let order = order_text.parse().map_err(|_| AssembleError::InvalidOrder {
+            fragment_path: fragment_path.clone(),
+            value: order_text.clone(),
+        })?;
+        if !GROUP_ORDER.contains(&group.as_str()) {
+            return Err(AssembleError::UnknownGroup { fragment_path, group });
+        }
+        panels.push(Panel { id, group, label, order });
+    }
+    sort_into_menu_order(&mut panels);
+    Ok(panels)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Puts `panels` in menu order. See [`catalogue`].
+fn sort_into_menu_order(panels: &mut [Panel]) {
+    let group_position = |panel: &Panel| GROUP_ORDER.iter().position(|g| *g == panel.group);
+    panels.sort_by(|a, b| {
+        group_position(a)
+            .cmp(&group_position(b))
+            .then(a.order.cmp(&b.order))
+            .then_with(|| a.id.cmp(&b.id))
+    });
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The value of the attribute `name` on the first `<section>` tag of `fragment`, with the five HTML escapes undone, or
+/// `None` if there is no such tag or attribute. The tag ends at its first `>`, so a value must not contain one. Write
+/// it as `&gt;`.
+fn section_attribute(fragment: &str, name: &str) -> Option<String> {
+    let start = fragment.find("<section")?;
+    let tag = &fragment[start..start + fragment[start..].find('>')?];
+    let needle = format!(" {name}=\"");
+    let value_start = tag.find(&needle)? + needle.len();
+    let value = &tag[value_start..value_start + tag[value_start..].find('"')?];
+    Some(
+        value
+            .replace("&lt;", "<")
+            .replace("&gt;", ">")
+            .replace("&quot;", "\"")
+            .replace("&#39;", "'")
+            .replace("&amp;", "&"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`catalogue`]'s panel ids, in menu order. [`super::validate`] cross-checks them against `demo-app`'s `demo_gallery!`
+/// list, so the two cannot silently drift apart.
+pub fn panel_ids(panels_dir: &Path) -> Result<Vec<String>, AssembleError> {
+    Ok(catalogue(panels_dir)?.into_iter().map(|panel| panel.id).collect())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds `index.html` from `source_demo_dir`'s `index.template.html`, a `<nav>` menu generated from [`catalogue`], and
 /// `panels/*.html` fragments, and writes the result to `out_path`.
 ///
 /// Every check runs, and the complete assembled output is built in memory, before anything is written — a call that
@@ -225,19 +234,13 @@ pub fn assemble(source_demo_dir: &Path, out_path: &Path) -> Result<(), AssembleE
     let panels_dir = source_demo_dir.join("panels");
     let template_path = source_demo_dir.join("index.template.html");
 
-    let manifest = manifest();
-    check_unique_manifest_ids(&manifest)?;
-    check_panel_id_format(&manifest)?;
-
     let template = read_to_string(&template_path)?;
     check_placeholder_count(&template, &template_path, PANELS_PLACEHOLDER)?;
     check_placeholder_count(&template, &template_path, MENU_PLACEHOLDER)?;
 
-    let fragment_ids = list_fragment_ids(&panels_dir)?;
-    check_catalogue_consistency(&manifest, &fragment_ids)?;
-
-    let panels_body = render_panels(&panels_dir, &manifest)?;
-    let menu_body = render_menu();
+    let panels = catalogue(&panels_dir)?;
+    let panels_body = render_panels(&panels_dir, &panels)?;
+    let menu_body = render_menu(&panels);
     let assembled = template.replacen(PANELS_PLACEHOLDER, &panels_body, 1);
     let assembled = assembled.replacen(MENU_PLACEHOLDER, &menu_body, 1);
     check_no_leftover_placeholders(&assembled)?;
@@ -251,39 +254,6 @@ pub fn assemble(source_demo_dir: &Path, out_path: &Path) -> Result<(), AssembleE
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Checks
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-/// Every panel id among `entries` must be unique. A duplicate would silently render the same fragment twice.
-///
-/// Takes the entry list as a parameter, rather than reading [`manifest`] directly, purely so the tests below can
-/// exercise the duplicate-detection logic against a small synthetic list.
-fn check_unique_manifest_ids(entries: &[(&'static str, &'static str)]) -> Result<(), AssembleError> {
-    let mut seen = HashSet::new();
-    for &(id, _) in entries {
-        if !seen.insert(id) {
-            return Err(AssembleError::DuplicateManifestId(id));
-        }
-    }
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every panel id among `entries` must match `panel-[a-z0-9-]+`.
-///
-/// Ids are emitted verbatim into both HTML attribute values and Rust match arms: `id="{id}"` in each fragment,
-/// `data-target="{id}"` in the generated menu, and `"panel-..." => name` in `demo-app/src/lib.rs`'s `demo_gallery!`.
-/// This restricts them to a known-safe ASCII pattern up front, meaning that downstream — [`render_menu`], a fragment
-/// file, `demo_gallery!` — never has to escape or re-validate an id itself.
-///
-/// Unlike labels (see [`escape_text`]), ids are not free text, so a fixed character set is the natural fit rather than
-/// an escaper. Mirrors `svg-dom`'s own `check_panel_id_format`.
-fn check_panel_id_format(entries: &[(&'static str, &'static str)]) -> Result<(), AssembleError> {
-    for &(id, _) in entries {
-        if !is_valid_panel_id(id) {
-            return Err(AssembleError::InvalidPanelId(id));
-        }
-    }
-    Ok(())
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn is_valid_panel_id(id: &str) -> bool {
@@ -315,8 +285,7 @@ fn check_placeholder_count(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The panel id each `demo/panels/*.html` fragment is filed under (its filename, minus `.html`), in whatever order
-/// `fs::read_dir` happens to return.
+/// The panel id each `demo/panels/*.html` fragment is filed under (its filename, minus `.html`), in alphabetical order.
 fn list_fragment_ids(panels_dir: &Path) -> Result<Vec<String>, AssembleError> {
     let entries = fs::read_dir(panels_dir).map_err(|source| AssembleError::Io {
         path: panels_dir.to_path_buf(),
@@ -336,38 +305,8 @@ fn list_fragment_ids(panels_dir: &Path) -> Result<Vec<String>, AssembleError> {
             ids.push(stem.to_owned());
         }
     }
+    ids.sort();
     Ok(ids)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// [`manifest`] and `fragment_ids` (the fragments directory's own filenames) must name exactly the same set of panels —
-/// see [`AssembleError::CatalogueMismatch`] for what drifting apart would mean.
-fn check_catalogue_consistency(
-    manifest: &[(&'static str, &'static str)],
-    fragment_ids: &[String],
-) -> Result<(), AssembleError> {
-    let missing_fragment: Vec<_> = manifest
-        .iter()
-        .map(|&(id, _)| id)
-        .filter(|id| !fragment_ids.iter().any(|f| f == id))
-        .collect();
-    let orphan_fragment: Vec<_> = fragment_ids
-        .iter()
-        .filter(|id| !manifest.iter().any(|&(m, _)| m == id.as_str()))
-        .collect();
-
-    if missing_fragment.is_empty() && orphan_fragment.is_empty() {
-        return Ok(());
-    }
-
-    let mut detail = Vec::new();
-    if !missing_fragment.is_empty() {
-        detail.push(format!("  in MANIFEST but missing from demo/panels/: {missing_fragment:?}"));
-    }
-    if !orphan_fragment.is_empty() {
-        detail.push(format!("  in demo/panels/ but missing from MANIFEST: {orphan_fragment:?}"));
-    }
-    Err(AssembleError::CatalogueMismatch(detail.join("\n")))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -383,17 +322,11 @@ fn check_no_leftover_placeholders(assembled: &str) -> Result<(), AssembleError> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Reads each of [`manifest`]'s fragments, in order, checking each one's own content contains `id="{id}"` for the id it
-/// is filed under, and concatenates them into the finished panels body.
-fn render_panels(panels_dir: &Path, manifest: &[(&'static str, &'static str)]) -> Result<String, AssembleError> {
+/// Reads each of `panels`' fragments, in order, and concatenates them into the finished panels body.
+fn render_panels(panels_dir: &Path, panels: &[Panel]) -> Result<String, AssembleError> {
     let mut body = String::new();
-    for &(id, _) in manifest {
-        let fragment_path = panels_dir.join(format!("{id}.html"));
-        let fragment = read_to_string(&fragment_path)?;
-        if !fragment.contains(&format!("id=\"{id}\"")) {
-            return Err(AssembleError::FragmentIdMismatch { id, fragment_path });
-        }
-        body.push_str(&fragment);
+    for panel in panels {
+        body.push_str(&read_to_string(&panels_dir.join(format!("{}.html", panel.id)))?);
         body.push('\n');
     }
     Ok(body)
@@ -401,13 +334,13 @@ fn render_panels(panels_dir: &Path, manifest: &[(&'static str, &'static str)]) -
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the left-hand `<nav>` this gallery's `demo/index.template.html` script uses to switch between panels (see
-/// that file's own `selectDemo`) from [`GROUPS`].
+/// that file's own `selectDemo`) from `panels`, which [`catalogue`] has already put in menu order.
 ///
 /// A group of several panels is a `<details class="menu-group">`, a native disclosure widget, with one
 /// `<button class="menu-item" data-target="...">` per panel. A group of one panel is that button alone, with the
 /// `menu-item-top` class and the group's own label. The script finds every panel by `.menu-item`, so it does not need
 /// to know the two shapes apart.
-fn render_menu() -> String {
+fn render_menu(panels: &[Panel]) -> String {
     let button = |class: &str, id: &str, label: &str| {
         format!(
             "<button type=\"button\" class=\"{class}\" data-target=\"{id}\">{}</button>\n",
@@ -415,18 +348,20 @@ fn render_menu() -> String {
         )
     };
     let mut menu = String::new();
-    for group in GROUPS {
-        match group.panels {
-            [(id, _)] => {
+    for heading in GROUP_ORDER {
+        let members: Vec<&Panel> = panels.iter().filter(|panel| panel.group == *heading).collect();
+        match members.as_slice() {
+            [] => {},
+            [only] => {
                 menu.push_str("            ");
-                menu.push_str(&button("menu-item menu-item-top", id, group.label));
+                menu.push_str(&button("menu-item menu-item-top", &only.id, heading));
             },
-            panels => {
+            members => {
                 menu.push_str("            <details class=\"menu-group\">\n");
-                menu.push_str(&format!("                <summary>{}</summary>\n", escape_text(group.label)));
-                for (id, label) in panels {
+                menu.push_str(&format!("                <summary>{}</summary>\n", escape_text(heading)));
+                for panel in members {
                     menu.push_str("                ");
-                    menu.push_str(&button("menu-item", id, label));
+                    menu.push_str(&button("menu-item", &panel.id, &panel.label));
                 }
                 menu.push_str("            </details>\n");
             },

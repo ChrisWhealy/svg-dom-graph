@@ -38,8 +38,9 @@
         let wasmReady = false
 
         // The full set of valid panel ids, taken directly from the rendered menu.
-        // The menu itself is generated server-side, from the same catalogue the panel fragments come from
-        // (`MANIFEST` in `demo-server/src/panels/mod.rs`), so this list cannot drift from the real panel set.
+        // The menu itself is generated server-side, from the panel fragments' own
+        // `data-group`, `data-label` and `data-order` attributes (see `demo-server/src/panels/mod.rs`), so this list cannot
+        // drift from the real panel set.
         const menuItems = [...document.querySelectorAll('#menu .menu-item')]
         const validPanelIds = new Set(menuItems.map(item => item.dataset.target))
 

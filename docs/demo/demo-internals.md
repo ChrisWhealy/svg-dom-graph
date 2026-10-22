@@ -54,6 +54,6 @@ It assembles `index.html` from `demo/index.template.html`, a `<nav>` menu genera
 It validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list, rebuilds the wasm package, and serves the result — with no dependency on external HTTP-server tooling.
 It also copies the window pages (`STATIC_ASSETS` in `demo-server/src/build/mod.rs`) beside the assembled `index.html`.
 
-A new demo needs four things: a panel fragment in `demo/panels/`, its id and menu label in `MANIFEST` (`demo-server/src/panels/mod.rs`), a `demo_gallery!` entry in `demo-app/src/lib.rs`, and, for one that opens in a window, a page in `demo/` that is added to `STATIC_ASSETS`.
+A new demo needs four things: a panel fragment in `demo/panels/` whose `<section>` tag carries its menu group, label and order as `data-group`, `data-label` and `data-order`, a `demo_gallery!` entry in `demo-app/src/lib.rs`, and, for one that opens in a window, a page in `demo/` that is added to `STATIC_ASSETS`.
 
 `wasm-pack` is required to build the demo.

@@ -1,7 +1,7 @@
-//! Cross-checks `demo-server`'s own panel manifest ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!` list.
-//! The two id lists are declared in separate crates, in different forms (HTML-oriented here, function-oriented there),
-//! for reasons explained in each one's own doc comment. This stops them silently drifting apart. Mirrors `svg-dom`'s
-//! own `demo-server/src/validate/mod.rs`.
+//! Cross-checks the panel fragments in `demo/panels/` ([`panels::panel_ids`]) against `demo-app`'s `demo_gallery!`
+//! list. The two id lists are declared in separate crates, in different forms (HTML-oriented here, function-oriented
+//! there), for reasons explained in each one's own doc comment. This stops them silently drifting apart. Mirrors
+//! `svg-dom`'s own `demo-server/src/validate/mod.rs`.
 //!
 //! This reads `demo-app/src/lib.rs` as plain text and extracts every panel id from the `demo_gallery!` invocation,
 //! rather than depending on `demo-app` as a library. That crate builds to a wasm `cdylib` for the browser. A native
@@ -22,9 +22,11 @@ use std::{
 pub enum ValidationError {
     /// `demo-app/src/lib.rs` could not be read.
     Io { path: PathBuf, source: io::Error },
+    /// The panel fragments could not be read or are not well formed — see [`panels::AssembleError`].
+    Panels(panels::AssembleError),
     /// The same panel id appears in `demo_gallery!` more than once.
     DuplicateGalleryId(String),
-    /// `demo-server`'s panel manifest and `demo-app`'s `demo_gallery!` are not the same set of ids.
+    /// The panel fragments in `demo/panels/` and `demo-app`'s `demo_gallery!` are not the same set of ids.
     CatalogueMismatch(String),
 }
 
@@ -32,13 +34,14 @@ impl fmt::Display for ValidationError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Io { path, source } => write!(f, "could not read {} ({source})", path.display()),
+            Self::Panels(err) => write!(f, "{err}"),
             Self::DuplicateGalleryId(id) => {
                 write!(f, "demo-app's demo_gallery! contains the panel id {id:?} more than once")
             },
             Self::CatalogueMismatch(detail) => {
                 write!(
                     f,
-                    "demo-server's panel manifest and demo-app's demo_gallery! have drifted apart\n{detail}"
+                    "the fragments in demo/panels/ and demo-app's demo_gallery! have drifted apart\n{detail}"
                 )
             },
         }
@@ -48,7 +51,7 @@ impl fmt::Display for ValidationError {
 impl std::error::Error for ValidationError {}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Checks that every panel id in `demo-server`'s [`panels::panel_ids`] has a matching `demo_gallery!` entry in
+/// Checks that every panel fragment in `demo/panels/` ([`panels::panel_ids`]) has a matching `demo_gallery!` entry in
 /// `demo-app/src/lib.rs`, and vice versa.
 ///
 /// A failure here is fatal, the same as a stale `index.html` or a failed wasm build. It is better to refuse to serve a
@@ -65,10 +68,10 @@ pub fn validate(root: &Path) -> Result<(), ValidationError> {
         return Err(ValidationError::DuplicateGalleryId(dup.to_owned()));
     }
 
-    let manifest_ids = panels::panel_ids();
+    let manifest_ids = panels::panel_ids(&root.join("demo").join("panels")).map_err(ValidationError::Panels)?;
 
     let missing_from_gallery: Vec<_> = manifest_ids.iter().filter(|id| !gallery_ids.iter().any(|g| g == *id)).collect();
-    let missing_from_manifest: Vec<_> = gallery_ids.iter().filter(|id| !manifest_ids.contains(&id.as_str())).collect();
+    let missing_from_manifest: Vec<_> = gallery_ids.iter().filter(|id| !manifest_ids.contains(id)).collect();
 
     if missing_from_gallery.is_empty() && missing_from_manifest.is_empty() {
         return Ok(());
@@ -77,12 +80,12 @@ pub fn validate(root: &Path) -> Result<(), ValidationError> {
     let mut detail = Vec::new();
     if !missing_from_gallery.is_empty() {
         detail.push(format!(
-            "  in demo-server/src/panels/mod.rs's MANIFEST but missing from demo-app's demo_gallery!: {missing_from_gallery:?}"
+            "  in demo/panels/ but missing from demo-app's demo_gallery!: {missing_from_gallery:?}"
         ));
     }
     if !missing_from_manifest.is_empty() {
         detail.push(format!(
-            "  in demo-app's demo_gallery! but missing from demo-server/src/panels/mod.rs's MANIFEST: {missing_from_manifest:?}"
+            "  in demo-app's demo_gallery! but missing from demo/panels/: {missing_from_manifest:?}"
         ));
     }
     Err(ValidationError::CatalogueMismatch(detail.join("\n")))

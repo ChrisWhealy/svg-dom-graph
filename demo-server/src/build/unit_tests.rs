@@ -32,7 +32,7 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo/huffman-window.html")?;
     copy("demo/crc32-window.html")?;
     copy("demo/hamming-window.html")?;
-    for id in panels::panel_ids() {
+    for id in panels::panel_ids(&src_root.join("demo").join("panels")).map_err(|e| e.to_string())? {
         copy(&format!("demo/panels/{id}.html"))?;
     }
     Ok(())
