@@ -1,5 +1,6 @@
 use super::{
-    ARROW_REACH, Conflicts, MAX_CANDIDATES, OPPOSITE_SIDE_PENALTY, PlacerInput, candidates, choose, place, reach,
+    ARROW_REACH, Conflicts, MAX_CANDIDATES, OPPOSITE_SIDE_PENALTY, PlacerInput, SWITCH_THRESHOLD, candidates, choose,
+    place, reach, soft_score,
 };
 use svg_dom::root::utils::{Point, Rect, Size};
 
@@ -462,4 +463,32 @@ fn label_placing_time() {
             time(true)
         );
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Coordinates far larger than any scene has still give a score, and no sum of scores wraps or panics.
+#[test]
+fn scores_of_enormous_coordinates_saturate_and_do_not_overflow() {
+    let route = [p(0.0, 0.0), p(1.0e12, 0.0)];
+    let all = candidates(&route, 0.0, LABEL);
+    let first = all[0];
+    let far_opposite = all
+        .iter()
+        .find(|candidate| !candidate.preferred && candidate.anchor != first.anchor)
+        .expect("an opposite-side candidate at another anchor");
+    // The offset is past u32::MAX, so the points saturate, and the penalty must not wrap them round to a small number.
+    assert_eq!(soft_score(far_opposite, &first), u32::MAX);
+    assert!(place(&input(&route, &[], &[], None)).is_some());
+}
+
+/// The comparison that decides whether to leave a place does not overflow when the scores are near the largest.
+#[test]
+fn keeping_a_place_does_not_overflow_when_the_scores_are_near_the_largest() {
+    let clear = Conflicts::CLEAR;
+    // A difference of one is less than the threshold, so the previous place is kept, and nothing may wrap or saturate
+    // into a switch. A difference of the threshold is enough to leave it.
+    let near = [(clear, u32::MAX), (clear, u32::MAX - 1)];
+    assert_eq!(choose(&near, Some(0)), Some(0));
+    let enough = [(clear, u32::MAX), (clear, u32::MAX - SWITCH_THRESHOLD)];
+    assert_eq!(choose(&enough, Some(0)), Some(1));
 }

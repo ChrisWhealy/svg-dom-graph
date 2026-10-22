@@ -387,7 +387,7 @@ fn soft_score(candidate: &Candidate, first: &Candidate) -> u32 {
     // Not negative, and not past what a label could ever be moved by on a screen, so the conversion cannot lose a sign.
     #[allow(clippy::cast_possible_truncation, clippy::cast_sign_loss)]
     let points = offset.round().min(f64::from(u32::MAX)) as u32;
-    points + if candidate.preferred { 0 } else { OPPOSITE_SIDE_PENALTY }
+    points.saturating_add(if candidate.preferred { 0 } else { OPPOSITE_SIDE_PENALTY })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -402,7 +402,9 @@ fn choose(scored: &[(Conflicts, u32)], previous: Option<usize>) -> Option<usize>
         .map(|(index, _)| index);
     let previous = previous.filter(|&p| p < scored.len() && scored[p].0.is_clear());
     match (previous, best_clear) {
-        (Some(previous), Some(best)) if scored[best].1 + SWITCH_THRESHOLD <= scored[previous].1 => Some(best),
+        (Some(previous), Some(best)) if scored[previous].1.saturating_sub(scored[best].1) >= SWITCH_THRESHOLD => {
+            Some(best)
+        },
         (Some(previous), _) => Some(previous),
         (None, Some(best)) => Some(best),
         (None, None) => scored
