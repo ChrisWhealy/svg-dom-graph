@@ -44,34 +44,7 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 #[test]
 fn the_panel_opens_on_ten_bars_as_tall_as_their_values() -> Result<(), String> {
     let tab = open()?;
-    let bars = bars(&tab)?;
-    check_eq(bars.iter().map(|b| b.value).collect::<Vec<_>>(), INITIAL.to_vec())?;
-    for action in ["random", "sorted", "reversed"] {
-        check_eq(
-            text(
-                &tab,
-                &format!("String(document.querySelectorAll('{DIAGRAM} g[data-action=\"{action}\"]').length)"),
-            )?
-            .as_str(),
-            "1",
-        )?;
-    }
-    let baseline = bars[0].bottom;
-    let per_unit = bars[0].height / f64::from(bars[0].value);
-    for bar in &bars {
-        check(
-            (bar.bottom - baseline).abs() < 0.5,
-            &format!("{bar:?} is not on the baseline {baseline}"),
-        )?;
-        check(
-            (bar.height / f64::from(bar.value) - per_unit).abs() < 0.05,
-            &format!("{bar:?} is not as tall as its value, in proportion"),
-        )?;
-        check(bar.fill == bars[0].fill, "no bar is marked at the start")?;
-    }
-    check(bars.windows(2).all(|w| w[0].left < w[1].left), "the bars should be in a row")?;
-    check_eq(step_position(&tab)?, Some(0))?;
-    check(said(&tab)?.starts_with("Step 1 of "), "the first step should be announced")
+    opens_on_ten_bars_as_tall_as_their_values(&tab)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -166,13 +139,7 @@ fn stepping_back_over_a_swap_does_not_slide() -> Result<(), String> {
 #[test]
 fn the_last_step_shows_the_bars_in_order_and_all_in_place() -> Result<(), String> {
     let tab = open()?;
-    let last = step_count(&tab)? - 1;
-    goto(&tab, last)?;
-    let mut expected = INITIAL;
-    expected.sort_unstable();
-    check_eq(values(&tab)?, expected.to_vec())?;
-    check_eq(with_fill(&tab, LILAC)?, (0..10).collect::<Vec<_>>())?;
-    check(said(&tab)?.contains("sorted"), "the last step should say that it is sorted")
+    ends_with_the_bars_in_order_and_all_in_place(&tab)
 }
 
 /// Once the first pivot is placed and the range before it is chosen, the bars outside that range are pale, and the
@@ -191,16 +158,7 @@ fn bars_outside_the_range_are_pale_and_a_placed_pivot_is_lilac() -> Result<(), S
 #[test]
 fn each_step_is_announced_with_how_far_along_it_is() -> Result<(), String> {
     let tab = open()?;
-    let count = step_count(&tab)?;
-    for position in 1..6 {
-        goto(&tab, position)?;
-        let said = said(&tab)?;
-        check(
-            said.starts_with(&format!("Step {} of {count}. ", position + 1)),
-            &format!("position {position} announced {said:?}"),
-        )?;
-    }
-    Ok(())
+    announces_each_step_with_how_far_along_it_is(&tab)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -227,13 +185,7 @@ fn the_sorted_button_gives_bars_in_order_with_the_longest_walk() -> Result<(), S
 #[test]
 fn the_reverse_button_gives_bars_from_tallest_to_shortest() -> Result<(), String> {
     let tab = open()?;
-    press(&tab, "reversed")?;
-    let values = values(&tab)?;
-    check_eq(values.len(), 10)?;
-    check(
-        values.windows(2).all(|w| w[0] > w[1]),
-        &format!("not in descending order: {values:?}"),
-    )
+    reversed_button_gives_bars_from_tallest_to_shortest(&tab)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -241,12 +193,7 @@ fn the_reverse_button_gives_bars_from_tallest_to_shortest() -> Result<(), String
 #[test]
 fn the_random_button_gives_ten_different_bars() -> Result<(), String> {
     let tab = open()?;
-    press(&tab, "random")?;
-    let mut values = values(&tab)?;
-    check_eq(values.len(), 10)?;
-    values.sort_unstable();
-    values.dedup();
-    check_eq(values.len(), 10)
+    random_button_gives_ten_different_bars(&tab)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -266,18 +213,5 @@ fn restart_goes_back_to_the_unsorted_bars() -> Result<(), String> {
 #[test]
 fn the_zoom_survives_every_kind_of_redraw() -> Result<(), String> {
     let tab = open()?;
-    tab.find_element(&format!("{DIAGRAM} g[aria-label=\"Zoom in\"]"))
-        .map_err(|e| format!("could not find Zoom in: {e}"))?
-        .click()
-        .map_err(|e| format!("could not zoom in: {e}"))?;
-    std::thread::sleep(Duration::from_millis(300));
-    let zoomed = view(&tab)?;
-    check(!zoomed.is_empty(), "zooming in should change the view")?;
-    goto(&tab, 5)?;
-    check_eq(view(&tab)?, zoomed.clone())?;
-    goto(&tab, 2)?;
-    click(&tab, "Restart selection")?;
-    check_eq(view(&tab)?, zoomed.clone())?;
-    press(&tab, "reversed")?;
-    check_eq(view(&tab)?, zoomed)
+    keeps_the_zoom_across_every_kind_of_redraw(&tab)
 }

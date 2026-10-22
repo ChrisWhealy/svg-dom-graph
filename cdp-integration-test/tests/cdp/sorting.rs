@@ -220,6 +220,114 @@ macro_rules! sort_demo_helpers {
             )
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // What every sorting demo is held to. Each demo's file has a test of its own that calls one of these, so that
+        // the CI deals the tests out to the shards one by one, and a failure names the demo.
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+        /// The panel opens on ten bars in the order of `INITIAL`, standing on one baseline, as tall as their values in
+        /// proportion, and in a row, with three buttons to choose another array and the walk at its start. None is
+        /// marked.
+        #[allow(dead_code)]
+        fn opens_on_ten_bars_as_tall_as_their_values(tab: &Tab) -> Result<(), String> {
+            let bars = bars(tab)?;
+            check_eq(bars.iter().map(|b| b.value).collect::<Vec<_>>(), INITIAL.to_vec())?;
+            for action in ["random", "sorted", "reversed"] {
+                check_eq(
+                    text(
+                        tab,
+                        &format!("String(document.querySelectorAll('{DIAGRAM} g[data-action=\"{action}\"]').length)"),
+                    )?
+                    .as_str(),
+                    "1",
+                )?;
+            }
+            let baseline = bars[0].bottom;
+            let per_unit = bars[0].height / f64::from(bars[0].value);
+            for bar in &bars {
+                check(
+                    (bar.bottom - baseline).abs() < 0.5,
+                    &format!("{bar:?} is not on the baseline {baseline}"),
+                )?;
+                check(
+                    (bar.height / f64::from(bar.value) - per_unit).abs() < 0.05,
+                    &format!("{bar:?} is not as tall as its value, in proportion"),
+                )?;
+                check(bar.fill == bars[0].fill, "no bar is marked at the start")?;
+            }
+            check(bars.windows(2).all(|w| w[0].left < w[1].left), "the bars should be in a row")?;
+            check_eq(step_position(tab)?, Some(0))?;
+            check(said(tab)?.starts_with("Step 1 of "), "the first step should be announced")
+        }
+
+        /// Each of the first steps is announced with its number and the number of steps there are.
+        #[allow(dead_code)]
+        fn announces_each_step_with_how_far_along_it_is(tab: &Tab) -> Result<(), String> {
+            let count = step_count(tab)?;
+            for position in 1..6 {
+                goto(tab, position)?;
+                let said = said(tab)?;
+                check(
+                    said.starts_with(&format!("Step {} of {count}. ", position + 1)),
+                    &format!("position {position} announced {said:?}"),
+                )?;
+            }
+            Ok(())
+        }
+
+        /// The last step has the bars in order, every one in its final place, and says that the array is sorted.
+        #[allow(dead_code)]
+        fn ends_with_the_bars_in_order_and_all_in_place(tab: &Tab) -> Result<(), String> {
+            let last = step_count(tab)? - 1;
+            goto(tab, last)?;
+            let mut expected = INITIAL;
+            expected.sort_unstable();
+            check_eq(values(tab)?, expected.to_vec())?;
+            check_eq(with_fill(tab, LILAC)?, (0..10).collect::<Vec<_>>())?;
+            check(said(tab)?.contains("sorted"), "the last step should say that it is sorted")
+        }
+
+        /// The zoom is kept when the scene is drawn again for a step, a restart, and another array.
+        #[allow(dead_code)]
+        fn keeps_the_zoom_across_every_kind_of_redraw(tab: &Tab) -> Result<(), String> {
+            tab.find_element(&format!("{DIAGRAM} g[aria-label=\"Zoom in\"]"))
+                .map_err(|e| format!("could not find Zoom in: {e}"))?
+                .click()
+                .map_err(|e| format!("could not zoom in: {e}"))?;
+            std::thread::sleep(Duration::from_millis(300));
+            let zoomed = view(tab)?;
+            check(!zoomed.is_empty(), "zooming in should change the view")?;
+            goto(tab, 5)?;
+            check_eq(view(tab)?, zoomed.clone())?;
+            goto(tab, 2)?;
+            click(tab, "Restart selection")?;
+            check_eq(view(tab)?, zoomed.clone())?;
+            press(tab, "reversed")?;
+            check_eq(view(tab)?, zoomed)
+        }
+
+        /// "Reverse sorted" gives ten bars from the tallest to the shortest.
+        #[allow(dead_code)]
+        fn reversed_button_gives_bars_from_tallest_to_shortest(tab: &Tab) -> Result<(), String> {
+            press(tab, "reversed")?;
+            let values = values(tab)?;
+            check_eq(values.len(), 10)?;
+            check(
+                values.windows(2).all(|w| w[0] > w[1]),
+                &format!("not in descending order: {values:?}"),
+            )
+        }
+
+        /// "Random array" gives ten different bars.
+        #[allow(dead_code)]
+        fn random_button_gives_ten_different_bars(tab: &Tab) -> Result<(), String> {
+            press(tab, "random")?;
+            let mut values = values(tab)?;
+            check_eq(values.len(), 10)?;
+            values.sort_unstable();
+            values.dedup();
+            check_eq(values.len(), 10)
+        }
     };
 }
 

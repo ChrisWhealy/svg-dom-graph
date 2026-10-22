@@ -15,7 +15,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Extract common functionality into `demo-common` project crate (`67143bb`)
 - Adjust layout of Text Input demo (`7772016`)
 - Removed superfluous tests, narrowed some and replaced others (`48c9a8d`) 
-- Consolidate overlapping tests (``)
+- Consolidate overlapping tests (`5d7382a`)
+- Share common assertion helper functions across tests (``)
 
 ## Added
 
