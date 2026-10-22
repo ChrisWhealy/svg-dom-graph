@@ -25,6 +25,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - setting the same text again writing nothing, and a longer text growing the box and updating the name
   - removing and putting back a label, and refusing an empty or multi-line label and an edge of another scene
   - two connectors leaving one node keeping their labels apart through a run of drags, a later label giving way to an earlier one, and a later label in the way of an earlier one that moves being moved aside
+  - a node that is not joined to the edge being moved onto its label, and the label moving clear of it
   - zooming moving labels with the content without placing them again
 - edge focus (`Scene::set_edge_focus`): the look, any number at once, nothing else changing, surviving a reroute, independence from a node's focus ring, and a repeat writing nothing
 - per-node connector fixing points (`EdgeAnchors`), including:

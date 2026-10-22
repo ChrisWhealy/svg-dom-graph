@@ -424,6 +424,38 @@ fn a_later_label_in_the_way_of_an_earlier_one_that_moves_is_moved_aside() -> Res
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A node that is moved onto a label puts the label somewhere clear of it, though the label's own edge was not routed
+/// again. The node is not joined to anything.
+#[wasm_bindgen_test]
+fn a_node_moved_onto_an_unrelated_label_moves_the_label_clear_of_it() -> Result<(), String> {
+    let scene = new_scene("label-obstacle")?;
+    let (a, b) = (node(&scene, "A", 20.0, 200.0)?, node(&scene, "B", 420.0, 200.0)?);
+    let stranger = node(&scene, "C", 300.0, 400.0)?;
+    let edge = scene.add_edge(a, b).map_err(e)?;
+    scene.set_edge_label(edge, Some("weight")).map_err(e)?;
+    let (rect_before, transform_before) = (label_rect("label-obstacle", 0)?, transform_of("label-obstacle", 0)?);
+
+    // Centre the stranger on the label.
+    let size = Size::new(60.0, 40.0);
+    let onto = Point::new(
+        rect_before.origin.x + rect_before.size.width / 2.0 - size.width / 2.0,
+        rect_before.origin.y + rect_before.size.height / 2.0 - size.height / 2.0,
+    );
+    scene.move_node(stranger, onto).map_err(e)?;
+
+    check(
+        transform_of("label-obstacle", 0)? != transform_before,
+        "the label stayed where the node was moved onto it",
+    )?;
+    let moved = Rect { origin: onto, size };
+    let label = label_rect("label-obstacle", 0)?;
+    check(
+        !overlap(label, moved),
+        &format!("the label {label:?} still overlaps the node {moved:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zooming moves the content layer, and the label with it. The label's own place does not change, because it is
 /// placed in the layer's own units.
 #[wasm_bindgen_test]

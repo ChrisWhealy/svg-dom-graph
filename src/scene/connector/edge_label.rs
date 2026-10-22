@@ -202,8 +202,30 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Places the labels of `moved`, which are edges whose route has just been written, and then any label of lower
-    /// priority that is now in the way of one of them. It does nothing, and costs nothing, in a scene with no labels.
+    /// The edges whose label stands, at least in part, under `rect`: a node that has just moved there, say. They are not
+    /// routed again by the move, so [`place_labels`](Self::place_labels) is told about them separately.
+    pub(crate) fn labels_overlapping(&self, rect: Rect) -> Vec<EdgeId> {
+        if self.label_count == 0 {
+            return Vec::new();
+        }
+        self.edge_handles
+            .iter()
+            .enumerate()
+            .filter(|(_, handle)| {
+                handle
+                    .label
+                    .as_ref()
+                    .and_then(EdgeLabel::rect)
+                    .is_some_and(|label| overlaps(padded(label), rect))
+            })
+            .map(|(index, _)| EdgeId { graph: self.graph.id, index })
+            .collect()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Places the labels of `moved`, which are the edges whose route has just been written or whose label a node has just
+    /// moved onto, and then any label of lower priority that is now in the way of one of them. It does nothing, and
+    /// costs nothing, in a scene with no labels.
     ///
     /// Edges are ranked by the order they were added in: an edge that was added earlier has priority. There are two
     /// passes, and never more, so the work is bounded and the result cannot oscillate.

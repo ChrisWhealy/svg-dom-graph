@@ -425,7 +425,14 @@ impl SceneInner {
         }
 
         if self.label_count > 0 {
-            let redrawn = self.edges_redrawn_with(id);
+            // The labels of the edges that were routed again, and also any label the node now stands on, whatever its
+            // edge: that edge was not routed again, but its label is no longer clear of the nodes.
+            let mut redrawn = self.edges_redrawn_with(id);
+            let covered = self.labels_overlapping(Rect {
+                origin: new_origin,
+                size: rect.size,
+            });
+            redrawn.extend(covered);
             self.place_labels(&redrawn, scratch)?;
         }
         Ok(())

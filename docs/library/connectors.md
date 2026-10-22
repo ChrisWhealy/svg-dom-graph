@@ -54,6 +54,8 @@ The path and the label are written from the one route.
 
 Labels are ranked by the order their edges were added in, and an earlier label has priority.
 After a connector is routed again, its label is placed first, keeping clear of every label of higher priority.
+A node that moves onto a label has the same effect, though the label's own edge was not routed again: the label of any edge that the node's new box covers is placed again with the others, and so it moves to a clear candidate if there is one.
+Only the labels under the moved node's box are looked at, by a bounding-box test, so a scene with many labels does not place them all.
 A label of lower priority that is now in the way of one that moved is then placed again, once.
 That is the whole of it: there are two passes and never more, so the work is bounded and labels cannot chase one another.
 A graph too crowded for every label to be clear is allowed to overlap, as documented above.
