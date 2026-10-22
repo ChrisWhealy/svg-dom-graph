@@ -32,7 +32,7 @@
 use crate::{
     colours::{EDGE_LABEL_FILL, EDGE_LABEL_STROKE, TEXT_FILL},
     error::Error,
-    geometry::label::{PlacerInput, place},
+    geometry::label::{PlacerInput, place, reach},
     model::edge::EdgeId,
     scene::{Scene, scene_inner::SceneInner},
 };
@@ -267,16 +267,28 @@ impl SceneInner {
         if first_pass.is_empty() {
             return Ok(());
         }
-        let vertices: Vec<Rect> = self.graph.nodes.iter().map(|node| node.rect).collect();
+        // The nodes and the labels are read once for the whole call, and the buffers for the few that are near a label are
+        // reused for each label in turn.
+        let mut obstacles = Obstacles {
+            vertices: self.graph.nodes.iter().map(|node| node.rect).collect(),
+            labels: self
+                .edge_handles
+                .iter()
+                .map(|handle| handle.label.as_ref().and_then(EdgeLabel::rect))
+                .collect(),
+            near_vertices: Vec::new(),
+            near_labels: Vec::new(),
+        };
 
         // A label whose write fails is noted to be tried again, and the others are still placed. The first error is
         // the one returned.
         let mut failure: Option<Error> = None;
         let mut place = |scene: &mut Self, index: usize| {
-            if let Err(error) = scene.place_one(index, &vertices, scratch) {
+            if let Err(error) = scene.place_one(index, &mut obstacles, scratch) {
                 scene.dirty_labels.push(index);
                 failure.get_or_insert(error);
             }
+            obstacles.labels[index] = scene.edge_handles[index].label.as_ref().and_then(EdgeLabel::rect);
         };
         for &index in &first_pass {
             place(self, index);
@@ -288,7 +300,7 @@ impl SceneInner {
             .filter_map(|&index| Some((index, self.edge_handles[index].label.as_ref()?.rect()?)))
             .collect();
         let mut lower: Vec<usize> = (0..self.edge_handles.len())
-            .filter(|index| !first_pass.contains(index))
+            .filter(|index| first_pass.binary_search(index).is_err())
             .filter(|&index| {
                 let Some(rect) = self.edge_handles[index].label.as_ref().and_then(EdgeLabel::rect) else {
                     return false;
@@ -323,25 +335,33 @@ impl SceneInner {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Places the label of the edge with index `index` from the route its connector was last written from, keeping clear
-    /// of `vertices` and of every label of higher priority, and writes it if it has moved.
-    fn place_one(&mut self, index: usize, vertices: &[Rect], scratch: &mut String) -> Result<(), Error> {
-        let above: Vec<Rect> = self
-            .edge_handles
-            .iter()
-            .take(index)
-            .filter_map(|handle| handle.label.as_ref().and_then(EdgeLabel::rect))
-            .collect();
+    /// of the nodes and of every label of higher priority, and writes it if it has moved.
+    ///
+    /// Only the nodes and labels that are near the route are handed to the placer. The others cannot touch any candidate,
+    /// see [`reach`], so leaving them out changes nothing and costs a comparison each.
+    fn place_one(&mut self, index: usize, obstacles: &mut Obstacles, scratch: &mut String) -> Result<(), Error> {
+        let Some(label_size) = self.edge_handles[index].label.as_ref().map(|label| label.size) else {
+            return Ok(());
+        };
+        let route = self.edge_handles[index].route.get();
+        let region = reach(&route, label_size);
+        let near = |rect: &Rect| region.is_none_or(|region| overlaps(region, *rect));
+        obstacles.near_vertices.clear();
+        obstacles.near_vertices.extend(obstacles.vertices.iter().copied().filter(near));
+        obstacles.near_labels.clear();
+        obstacles
+            .near_labels
+            .extend(obstacles.labels[..index].iter().flatten().copied().filter(near));
         let handle = &self.edge_handles[index];
         let Some(label) = handle.label.as_ref() else {
             return Ok(());
         };
-        let route = handle.route.get();
         let input = PlacerInput {
             route: &route,
             corner_radius: handle.radius.get(),
             label: label.size,
-            vertices,
-            others: &above,
+            vertices: &obstacles.near_vertices,
+            others: &obstacles.near_labels,
             previous: label.candidate(),
         };
         let Some(placement) = place(&input) else {
@@ -357,6 +377,18 @@ impl SceneInner {
             .ok_or(Error::UnknownEdge(EdgeId { graph: self.graph.id, index }))?;
         label.move_to(placed, scratch)
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What [`SceneInner::place_labels`] keeps clear of, read once for a whole call, with two buffers for the part of it that
+/// is near the label being placed.
+struct Obstacles {
+    /// Every node's box.
+    vertices: Vec<Rect>,
+    /// Every label's box by the index of its edge, as it is now. `None` for an edge with no label.
+    labels: Vec<Option<Rect>>,
+    near_vertices: Vec<Rect>,
+    near_labels: Vec<Rect>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

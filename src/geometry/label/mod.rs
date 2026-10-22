@@ -420,6 +420,27 @@ fn choose(scored: &[(Conflicts, u32)], previous: Option<usize>) -> Option<usize>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The part of the scene that can matter to a label on `route`: no candidate, and none of the clearance around one,
+/// reaches outside it. A node or a label that does not overlap this box cannot conflict with any candidate, so the
+/// caller can leave it out of [`PlacerInput`] without changing the result.
+///
+/// Every candidate is a box beside a point of the route, at most the label's own width and height and a small gap away,
+/// and the clearances kept around nodes and labels are smaller than the slack added here.
+pub(crate) fn reach(route: &[Point], label: Size) -> Option<Rect> {
+    let first = route.first()?;
+    let (mut low, mut high) = (*first, *first);
+    for point in route {
+        low = Point::new(low.x.min(point.x), low.y.min(point.y));
+        high = Point::new(high.x.max(point.x), high.y.max(point.y));
+    }
+    let by = LABEL_GAP + label.width + label.height + VERTEX_PADDING + LABEL_MARGIN + STROKE_ALLOWANCE + 8.0;
+    Some(Rect {
+        origin: Point::new(low.x - by, low.y - by),
+        size: Size::new(high.x - low.x + 2.0 * by, high.y - low.y + 2.0 * by),
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Chooses where the label of `input` goes: the place it would stay in, if it still can, and otherwise the best one. See
 /// this module's own doc comment for the rules. `None` for a route of fewer than two points, which has nowhere to put one.
 pub(crate) fn place(input: &PlacerInput<'_>) -> Option<Placement> {

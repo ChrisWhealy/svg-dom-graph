@@ -1,4 +1,6 @@
-use super::{ARROW_REACH, Conflicts, MAX_CANDIDATES, OPPOSITE_SIDE_PENALTY, PlacerInput, candidates, choose, place};
+use super::{
+    ARROW_REACH, Conflicts, MAX_CANDIDATES, OPPOSITE_SIDE_PENALTY, PlacerInput, candidates, choose, place, reach,
+};
 use svg_dom::root::utils::{Point, Rect, Size};
 
 const LABEL: Size = Size { width: 20.0, height: 12.0 };
@@ -355,4 +357,109 @@ fn two_labels_one_either_end_of_two_close_routes_are_told_apart() {
     let second = place(&input(&from_c_to_e, &[], &[first.rect], None)).expect("a placement");
     assert!(second.conflicts.is_clear());
     assert_eq!(super::overlap_area(super::padded(first.rect, 2.0), second.rect), 0.0);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A small deterministic generator, so that these tests need no dependency and give the same numbers on every run.
+struct Lcg(u64);
+
+impl Lcg {
+    fn next(&mut self, below: f64) -> f64 {
+        self.0 = self.0.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+        ((self.0 >> 33) as f64 / (1u64 << 31) as f64) * below
+    }
+}
+
+fn overlaps(a: Rect, b: Rect) -> bool {
+    a.origin.x < b.origin.x + b.size.width
+        && a.origin.x + a.size.width > b.origin.x
+        && a.origin.y < b.origin.y + b.size.height
+        && a.origin.y + a.size.height > b.origin.y
+}
+
+/// Leaving out every node and label that is outside [`reach`] of the route gives the very same placement, for a few
+/// hundred random scenes, and for a previous candidate as well as for none.
+#[test]
+fn leaving_out_what_is_beyond_reach_does_not_change_the_placement() {
+    let mut random = Lcg(7);
+    for round in 0..300 {
+        let route = [
+            p(random.next(600.0), random.next(600.0)),
+            p(random.next(600.0), random.next(600.0)),
+        ];
+        let vertices: Vec<Rect> = (0..60)
+            .map(|_| {
+                rect(
+                    random.next(700.0),
+                    random.next(700.0),
+                    20.0 + random.next(60.0),
+                    20.0 + random.next(40.0),
+                )
+            })
+            .collect();
+        let others: Vec<Rect> = (0..60)
+            .map(|_| {
+                rect(
+                    random.next(700.0),
+                    random.next(700.0),
+                    10.0 + random.next(40.0),
+                    12.0 + random.next(8.0),
+                )
+            })
+            .collect();
+        let region = reach(&route, LABEL).expect("a route");
+        let near = |all: &[Rect]| all.iter().copied().filter(|r| overlaps(region, *r)).collect::<Vec<_>>();
+        let (near_vertices, near_others) = (near(&vertices), near(&others));
+        for previous in [None, Some(0), Some(3)] {
+            let everything = place(&input(&route, &vertices, &others, previous));
+            let nearby = place(&input(&route, &near_vertices, &near_others, previous));
+            assert_eq!(everything, nearby, "round {round}, previous {previous:?}");
+        }
+    }
+}
+
+/// How long placing the labels of a few hundred edges takes, with and without leaving out what is far away. Run with
+/// `cargo test --release -- --ignored --nocapture label_placing_time`. It asserts nothing, since a time depends on the
+/// machine, and is here to show whether the work grows with the graph.
+#[test]
+#[ignore = "a timing, not a check"]
+fn label_placing_time() {
+    let mut random = Lcg(11);
+    for count in [50_usize, 200, 400] {
+        let vertices: Vec<Rect> = (0..count)
+            .map(|_| rect(random.next(4000.0), random.next(4000.0), 56.0, 36.0))
+            .collect();
+        let routes: Vec<[Point; 2]> = (0..count)
+            .map(|_| {
+                [
+                    p(random.next(4000.0), random.next(4000.0)),
+                    p(random.next(4000.0), random.next(4000.0)),
+                ]
+            })
+            .collect();
+        let labels: Vec<Rect> = (0..count)
+            .map(|_| rect(random.next(4000.0), random.next(4000.0), 20.0, 12.0))
+            .collect();
+        let time = |filtered: bool| {
+            let start = std::time::Instant::now();
+            for (index, route) in routes.iter().enumerate() {
+                let region = reach(route, LABEL).expect("a route");
+                let keep = |all: &[Rect]| -> Vec<Rect> {
+                    if filtered {
+                        all.iter().copied().filter(|r| overlaps(region, *r)).collect()
+                    } else {
+                        all.to_vec()
+                    }
+                };
+                let (near_vertices, near_labels) = (keep(&vertices), keep(&labels[..index]));
+                std::hint::black_box(place(&input(route, &near_vertices, &near_labels, None)));
+            }
+            start.elapsed()
+        };
+        println!(
+            "{count} labelled edges: all obstacles {:?}, nearby only {:?}",
+            time(false),
+            time(true)
+        );
+    }
 }

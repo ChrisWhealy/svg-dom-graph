@@ -11,7 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement Dijkstra's shortest path algorithm (`ecfa484`)
-- Fully implement DOM-write failure recovery (``)
+- Fully implement DOM-write failure recovery (`3bad2e2`)
 
 ## Fixed
 
@@ -19,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent overflow being reported for a settled edge that should instead be skipped (`c3fd429`)
 - Avoid vertex and edge label overlap after move (`ac6cff8`)
 - Correct another failing CI test (`78c6b1b`)
+- Avoid rebuilding label list during hot path execution (``) 
 
 # [Released]
 

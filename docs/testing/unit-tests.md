@@ -44,6 +44,8 @@ Asserting the code means they fail only for that reason and not because the crat
 
 The toolbar's own pure arithmetic is covered too.
 `src/geometry/label/unit_tests.rs` tests where an edge's label goes, without a browser: the candidates on a horizontal, vertical, sloping and elbowed route, their number, the trimmed corners and the bare arrowhead, a node or another label in the way, the least bad place when none is clear, and the rule for keeping a place.
+It also checks that leaving out the nodes and labels beyond a route's reach gives the same placement for 300 random scenes.
+An ignored test, `label_placing_time`, prints how long placing 50, 200 and 400 labels takes. Run it with `cargo test --release --lib -- --ignored --nocapture label_placing_time`.
 That rule is tested on its own with chosen scores, so eleven points of improvement is shown not to move a label and twelve is shown to.
 `src/colours/unit_tests.rs` checks the contrast, by the WCAG formula, of the colours a label and a focused edge are drawn in. It is a handful of claimed pairings, not a suite of every colour.
 `src/geometry/view/unit_tests.rs` tests zoom about a pivot, clamping at the scale limits, panning, and converting a wheel delta into a zoom factor.
