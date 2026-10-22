@@ -13,13 +13,15 @@
 # shards' timings, therefore loses nothing: every other test keeps the time it had. An entry is dropped when its test no
 # longer exists, according to `cargo nextest list`. Without cargo-nextest nothing is dropped.
 #
+# The file is .github/cdp-timings.tsv unless CDP_TIMINGS_FILE names another, which test-cdp-deal.sh does.
+#
 # Afterwards, `git diff .github/cdp-timings.tsv` shows what changed. The file is not committed for you.
 set -euo pipefail
 
 root="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
 workflow="ci.yml"
 branch="main"
-output="$root/.github/cdp-timings.tsv"
+output="${CDP_TIMINGS_FILE:-$root/.github/cdp-timings.tsv}"
 
 command -v gh > /dev/null || { echo "refresh-cdp-timings.sh: the GitHub CLI (gh) is not installed" >&2; exit 1; }
 

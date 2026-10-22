@@ -24,11 +24,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Collect CI test shard runtime data (`95bea7c`)
 - Upload CDP timing data (`a8740d2`)
 - Create shell script to refresh CDP timing data (`369ec0c`)
+- Extend scheduler regression tests (``)
 
 ## Fixed
 
 - Correct CI test duration calculation (`ad1205e`)
-- Avoid incomplete CI run from replacing entire timing history (``)
+- Avoid incomplete CI run from replacing entire timing history (`dd8a93f`)
 
 # [Released]
 
