@@ -14,13 +14,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adjust layout of Base64 demo (`b975022`)
 - Extract common functionality into `demo-common` project crate (`67143bb`)
 - Adjust layout of Text Input demo (`7772016`)
+- Removed superfluous tests, narrowed some and replaced others (``) 
 
 ## Added
 
 - Add CI `cdp-build` job to pre-build WASM module that is then downloaded by each CI test shard (`60c6914`)
 - Collect CI test shard runtime data (`95bea7c`)
 - Upload CDP timing data (`a8740d2`)
-- Create shell script to refresh CDP timing data (``)
+- Create shell script to refresh CDP timing data (`369ec0c`)
 
 # [Released]
 

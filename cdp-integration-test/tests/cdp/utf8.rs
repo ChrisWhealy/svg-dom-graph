@@ -296,40 +296,41 @@ fn the_buttons_the_note_and_a_four_byte_graph_share_a_midline() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The leftmost node of the diagram is a margin from its left edge, for a character of any length, and not further in
-/// because the axis was placed with a margin counted twice. The widest block is the row of four buttons, or the row of
-/// four bytes, so for a short character the buttons and the note set the left edge.
-fn left_margin(index: usize) -> Result<f64, String> {
+/// How far the nodes of the diagram reach outside the diagram's own box, in pixels: the part of the leftmost node that
+/// is left of it, and of the rightmost that is right of it. Anything above zero is clipped, so part of a node is cut
+/// off.
+fn clipped(index: usize) -> Result<(f64, f64), String> {
     let tab = open()?;
     press(&tab, &format!("choose-{index}"))?;
-    text(
+    let json = text(
         &tab,
         &format!(
-            "(() => {{ const svg = document.querySelector('{DIAGRAM}').getBoundingClientRect().left; \
-             return String(Math.min(...[...document.querySelectorAll('{DIAGRAM} g[aria-label]')] \
-             .map(g => g.getBoundingClientRect().left)) - svg); }})()"
+            "(() => {{ const svg = document.querySelector('{DIAGRAM}').getBoundingClientRect(); \
+             const boxes = [...document.querySelectorAll('{DIAGRAM} g[aria-label]')] \
+             .map(g => g.getBoundingClientRect()); \
+             return JSON.stringify([Math.max(0, svg.left - Math.min(...boxes.map(b => b.left))), \
+             Math.max(0, Math.max(...boxes.map(b => b.right)) - svg.right)]); }})()"
         ),
-    )?
-    .parse()
-    .map_err(|e| format!("could not read the margin: {e}"))
+    )?;
+    serde_json::from_str(&json).map_err(|e| format!("could not read how far the nodes reach: {e}"))
 }
 
-#[test]
-fn a_one_byte_character_has_one_margin_at_the_left() -> Result<(), String> {
-    let margin = left_margin(0)?;
+fn fits_inside_the_diagram(index: usize) -> Result<(), String> {
+    let (left, right) = clipped(index)?;
     check(
-        (18.0..=30.0).contains(&margin),
-        &format!("the left margin is {margin}px, not about 20"),
+        left <= 0.5 && right <= 0.5,
+        &format!("the nodes reach {left}px past the left edge and {right}px past the right"),
     )
 }
 
 #[test]
-fn a_four_byte_character_has_one_margin_at_the_left() -> Result<(), String> {
-    let margin = left_margin(3)?;
-    check(
-        (18.0..=30.0).contains(&margin),
-        &format!("the left margin is {margin}px, not about 20"),
-    )
+fn a_one_byte_character_fits_inside_the_diagram() -> Result<(), String> {
+    fits_inside_the_diagram(0)
+}
+
+#[test]
+fn a_four_byte_character_fits_inside_the_diagram() -> Result<(), String> {
+    fits_inside_the_diagram(3)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

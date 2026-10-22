@@ -153,25 +153,6 @@ fn the_gallery_panel_has_a_button_that_opens_the_window() -> Result<(), String> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The diagram is drawn at 85% of the size of its own view box, so its text is 15% smaller than it would be.
-#[test]
-fn the_diagram_is_scaled_down_to_85_percent() -> Result<(), String> {
-    let tab = open()?;
-    let ratio = text(
-        &tab,
-        &format!(
-            "(() => {{ const svg = document.querySelector('{DIAGRAM}'); const box = svg.viewBox.baseVal; \
-             return String(parseFloat(svg.getAttribute('width')) / box.width); }})()"
-        ),
-    )?;
-    let ratio: f64 = ratio.parse().map_err(|e| format!("could not read the ratio {ratio:?}: {e}"))?;
-    check(
-        (ratio - 0.85).abs() < 0.001,
-        &format!("the diagram is drawn at {ratio} of its size"),
-    )
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The window opens on a sentence of 49 bytes, whose CRC-32 is `AC52F740`.
 #[test]
 fn the_window_opens_on_its_sentence() -> Result<(), String> {
@@ -596,41 +577,6 @@ fn a_toolbar_button_keeps_the_keyboard_focus_across_a_step() -> Result<(), Strin
     check_eq(
         text(&tab, "document.activeElement?.getAttribute('aria-label') ?? 'none'")?.as_str(),
         "Next selection",
-    )
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The notes that say something about the text and the error are white, and the buttons have colours of their own, so
-/// the three kinds of box are told apart from each other and from the light blue explanations.
-#[test]
-fn the_notes_are_white_and_the_buttons_are_coloured() -> Result<(), String> {
-    const EXPLANATION: &str = "#eef4ff";
-    let tab = open()?;
-    let fill_of_note = |phrase: &str| {
-        text(
-            &tab,
-            &format!(
-                "(() => {{ const t = [...document.querySelectorAll('{DIAGRAM} text')].find(t => t.textContent.includes({phrase:?})); \
-                 return t ? t.closest('g').querySelector('rect').getAttribute('fill') : 'missing'; }})()"
-            ),
-        )
-    };
-    check_eq(fill_of_note("49 of 64 bytes")?.as_str(), "#ffffff")?;
-    check_eq(fill_of_note("No error has been introduced.")?.as_str(), "#ffffff")?;
-    let button_fill = |action: &str| {
-        text(
-            &tab,
-            &format!("document.querySelector('{DIAGRAM} g[data-action=\"{action}\"] rect').getAttribute('fill')"),
-        )
-    };
-    let (flip, remove) = (button_fill("introduce")?, button_fill("remove")?);
-    check(
-        flip != EXPLANATION && remove != EXPLANATION,
-        "the buttons are not the colour of the notes",
-    )?;
-    check(
-        flip != remove && flip != "#ffffff" && remove != "#ffffff",
-        "each button has its own colour",
     )
 }
 

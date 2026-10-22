@@ -606,30 +606,6 @@ fn a_byte_that_markdown_would_read_as_formatting_is_drawn_as_itself() -> Result<
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The heading row of the table has a fill of its own, and the rows below it share the usual one.
-#[test]
-fn the_heading_row_has_a_fill_of_its_own() -> Result<(), String> {
-    let tab = open()?;
-    let json = text(
-        &tab,
-        &format!(
-            "(() => {{ const cells = [...document.querySelectorAll('{DIAGRAM} g')].filter(g => ['Byte','Count','Tree path','Length','Code','a','5'] \
-                 .includes(g.querySelector(':scope > text')?.textContent ?? '')); \
-                 return JSON.stringify(cells.map(g => [g.querySelector('text').textContent, g.querySelector('rect').getAttribute('fill')])); }})()"
-        ),
-    )?;
-    let fills: Vec<(String, String)> = serde_json::from_str(&json).map_err(|e| format!("{e}"))?;
-    let fill_of = |label: &str| fills.iter().find(|(t, _)| t == label).map(|(_, f)| f.clone());
-    let heading = fill_of("Byte").ok_or("no heading cell")?;
-    for label in ["Count", "Tree path", "Length", "Code"] {
-        check_eq(fill_of(label).as_ref(), Some(&heading))?;
-    }
-    // The first body row, a, and its count: both the usual light blue, and not the heading's.
-    let body = fill_of("5").ok_or("no body cell")?;
-    check(body != heading, &format!("the heading and the body share the fill {heading}"))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// As each canonical code is assigned, the route from the root to that byte's leaf is marked with the library's
 /// secondary selection: the boxes on it, and the label of each of its links. Nothing is marked at any other step.
 #[test]

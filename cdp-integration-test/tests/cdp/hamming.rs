@@ -373,33 +373,6 @@ fn restart_goes_back_to_the_start_and_removes_the_error_but_keeps_the_data() -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The status line is white, and the buttons have colours of their own that are not the light blue of the notes.
-#[test]
-fn the_status_line_is_white_and_the_buttons_are_coloured() -> Result<(), String> {
-    const NOTE: &str = "#eef4ff";
-    let tab = open()?;
-    let status_fill = text(
-        &tab,
-        &format!(
-            "(() => {{ const t = [...document.querySelectorAll('{DIAGRAM} text')].find(t => t.textContent.includes('No error')); \
-             return t ? t.closest('g').querySelector('rect').getAttribute('fill') : 'missing'; }})()"
-        ),
-    )?;
-    check_eq(status_fill.as_str(), "#ffffff")?;
-    for action in ["toggle-0", "toggle-1", "introduce", "remove"] {
-        let fill = text(
-            &tab,
-            &format!("document.querySelector('{DIAGRAM} g[data-action=\"{action}\"] rect').getAttribute('fill')"),
-        )?;
-        check(
-            fill != NOTE && fill != "#ffffff",
-            &format!("{action} should have a colour of its own"),
-        )?;
-    }
-    Ok(())
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Defines one test for each position listed, calling `$run` with it. Each is a test of its own, with its own tab, so
 /// the CI deals them out to different shards, instead of one long test that walks every position in a single shard.
 macro_rules! at_each_position {

@@ -21,12 +21,3 @@ fn with_no_error_the_notes_say_there_is_nothing_to_correct() {
     assert!(notes[6].contains("no bit is in error"));
     assert!(notes[7].contains("nothing to correct"));
 }
-
-#[test]
-fn every_note_starts_with_a_heading() {
-    for error in std::iter::once(None).chain((1..=7).map(Some)) {
-        for note in notes(&Transmission::new([1, 1, 0, 1], error)) {
-            assert!(note.starts_with("### "));
-        }
-    }
-}

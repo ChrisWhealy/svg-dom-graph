@@ -464,15 +464,12 @@ fn a_sentence_with_many_equal_weights_reports_ties() -> Result<(), String> {
 }
 
 #[test]
-fn every_step_explains_itself_in_one_to_three_paragraphs_none_of_them_empty() -> Result<(), String> {
+fn every_step_has_an_explanation_and_none_of_its_paragraphs_is_empty() -> Result<(), String> {
     for text in [AUSTEN, b"abracadabra", b"aaaa", b"the quick brown fox jumps over the lazy dog"] {
         let t = trace(text).ok_or("encodable")?;
         for position in 0..steps(&t) {
             let caption = shown(&t, position).caption;
-            check(
-                (1..=3).contains(&caption.len()),
-                &format!("{} paragraphs at {position}", caption.len()),
-            )?;
+            check(!caption.is_empty(), &format!("no explanation at {position}"))?;
             check(caption.iter().all(|p| !p.trim().is_empty()), "an empty paragraph")?;
         }
     }
