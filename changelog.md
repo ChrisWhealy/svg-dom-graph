@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Removed superfluous tests, narrowed some and replaced others (`48c9a8d`) 
 - Consolidate overlapping tests (`5d7382a`)
 - Share common assertion helper functions across tests (`5e9e327`)
-- `refresh-cdp-timings.sh` prints a delta of timing changes (``)
+- `refresh-cdp-timings.sh` prints a delta of timing changes (`bf1f87e`)
+- Split accessibility test into 5 individual tests for better sharding (``)
 
 ## Added
 

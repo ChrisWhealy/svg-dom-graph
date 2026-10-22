@@ -18,14 +18,6 @@ use headless_chrome::{
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-/// The demo window pages with a stepping driver.
-const PAGES: [&str; 5] = [
-    "sha1-window.html",
-    "sha2-256-window.html",
-    "sha3-sponge-window.html",
-    "chacha20-window.html",
-    "huffman-window.html",
-];
 const DRIVER: &str = "g[aria-label^=\"Step:\"]";
 const VIEWPORT: (u32, u32) = (1800, 1800);
 
@@ -77,59 +69,86 @@ fn is_hidden(tab: &Tab, element: &Element<'_>) -> Result<bool, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn every_demos_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
-    for page in PAGES {
-        let tab = new_demo_tab(page, DRIVER, VIEWPORT)?;
-        tab.call_method(Accessibility::Enable(None))
-            .map_err(|e| format!("{page}: Accessibility.enable failed: {e}"))?;
+/// Checks one demo's window page: that every Step driver and its cells are out of the accessibility tree, and that a
+/// "Next selection" button is in it.
+fn driver_is_hidden_and_toolbar_is_not(page: &str) -> Result<(), String> {
+    let tab = new_demo_tab(page, DRIVER, VIEWPORT)?;
+    tab.call_method(Accessibility::Enable(None))
+        .map_err(|e| format!("{page}: Accessibility.enable failed: {e}"))?;
 
-        // A nested scene has its own driver, so a page can have several. Each must be hidden, along with a number cell
-        // inside it: hiding only the group's own node would not stop a screen reader reaching the cells.
-        let drivers = tab
-            .find_elements(DRIVER)
-            .map_err(|e| format!("{page}: could not find the Step drivers: {e}"))?;
-        if drivers.is_empty() {
-            return Err(format!("{page}: found no Step driver"));
-        }
-        for (index, driver) in drivers.iter().enumerate() {
-            if !is_hidden(&tab, driver)? {
-                return Err(format!("{page}: Step driver {index} is in the accessibility tree"));
-            }
-        }
-        let cells = tab
-            .find_elements(&format!("{DRIVER} text"))
-            .map_err(|e| format!("{page}: could not find the Step driver's cells: {e}"))?;
-        if cells.is_empty() {
-            return Err(format!("{page}: the Step driver has no cell text to check"));
-        }
-        for cell in cells.iter().take(3) {
-            if !is_hidden(&tab, cell)? {
-                return Err(format!("{page}: a Step driver cell is in the accessibility tree"));
-            }
-        }
-
-        // The toolbar it drives is still there, as a named button. A nested scene's toolbar can be hidden when its
-        // scene is not on show, so it is enough that one of them is exposed.
-        let buttons = tab
-            .find_elements("g[role=button][aria-label=\"Next selection\"]")
-            .map_err(|e| format!("{page}: could not find the Next button: {e}"))?;
-        let mut exposed = false;
-        for button in &buttons {
-            if let Some(node) = ax_node(&tab, button)?
-                && node["ignored"].as_bool() != Some(true)
-                && ax_string(&node, "role") == Some("button")
-                && ax_string(&node, "name") == Some("Next selection")
-            {
-                exposed = true;
-            }
-        }
-        if !exposed {
-            return Err(format!(
-                "{page}: no \"Next selection\" button is exposed as a button in the accessibility tree ({} found)",
-                buttons.len()
-            ));
+    // A nested scene has its own driver, so a page can have several. Each must be hidden, along with a number cell
+    // inside it: hiding only the group's own node would not stop a screen reader reaching the cells.
+    let drivers = tab
+        .find_elements(DRIVER)
+        .map_err(|e| format!("{page}: could not find the Step drivers: {e}"))?;
+    if drivers.is_empty() {
+        return Err(format!("{page}: found no Step driver"));
+    }
+    for (index, driver) in drivers.iter().enumerate() {
+        if !is_hidden(&tab, driver)? {
+            return Err(format!("{page}: Step driver {index} is in the accessibility tree"));
         }
     }
+    let cells = tab
+        .find_elements(&format!("{DRIVER} text"))
+        .map_err(|e| format!("{page}: could not find the Step driver's cells: {e}"))?;
+    if cells.is_empty() {
+        return Err(format!("{page}: the Step driver has no cell text to check"));
+    }
+    for cell in cells.iter().take(3) {
+        if !is_hidden(&tab, cell)? {
+            return Err(format!("{page}: a Step driver cell is in the accessibility tree"));
+        }
+    }
+
+    // The toolbar it drives is still there, as a named button. A nested scene's toolbar can be hidden when its
+    // scene is not on show, so it is enough that one of them is exposed.
+    let buttons = tab
+        .find_elements("g[role=button][aria-label=\"Next selection\"]")
+        .map_err(|e| format!("{page}: could not find the Next button: {e}"))?;
+    let mut exposed = false;
+    for button in &buttons {
+        if let Some(node) = ax_node(&tab, button)?
+            && node["ignored"].as_bool() != Some(true)
+            && ax_string(&node, "role") == Some("button")
+            && ax_string(&node, "name") == Some("Next selection")
+        {
+            exposed = true;
+        }
+    }
+    if !exposed {
+        return Err(format!(
+            "{page}: no \"Next selection\" button is exposed as a button in the accessibility tree ({} found)",
+            buttons.len()
+        ));
+    }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// One test for each page, so that the CI shards can take them one at a time.
+
+#[test]
+fn the_sha1_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
+    driver_is_hidden_and_toolbar_is_not("sha1-window.html")
+}
+
+#[test]
+fn the_sha2_256_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
+    driver_is_hidden_and_toolbar_is_not("sha2-256-window.html")
+}
+
+#[test]
+fn the_sha3_sponge_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
+    driver_is_hidden_and_toolbar_is_not("sha3-sponge-window.html")
+}
+
+#[test]
+fn the_chacha20_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
+    driver_is_hidden_and_toolbar_is_not("chacha20-window.html")
+}
+
+#[test]
+fn the_huffman_step_driver_is_hidden_from_the_accessibility_tree_and_its_toolbar_is_not() -> Result<(), String> {
+    driver_is_hidden_and_toolbar_is_not("huffman-window.html")
 }
