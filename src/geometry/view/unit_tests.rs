@@ -28,18 +28,6 @@ fn zooming_keeps_the_pivot_fixed_on_screen() -> Result<(), String> {
 }
 
 #[test]
-fn zoom_in_then_out_returns_to_the_identity() -> Result<(), String> {
-    let pivot = Point::new(64.0, 40.0);
-    let back = ViewTransform::IDENTITY
-        .zoomed_about(ZOOM_STEP, pivot)
-        .zoomed_about(1.0 / ZOOM_STEP, pivot);
-    check(
-        close(back.scale, 1.0) && close(back.tx, 0.0) && close(back.ty, 0.0),
-        "did not return to the identity",
-    )
-}
-
-#[test]
 fn scale_is_clamped_and_the_pivot_still_holds_at_the_limit() -> Result<(), String> {
     let pivot = Point::new(50.0, 50.0);
     let mut view = ViewTransform::IDENTITY;
@@ -387,20 +375,24 @@ fn the_identity_is_the_default_and_writes_as_the_identity_transform() -> Result<
     check(restored.x == p.x && restored.y == p.y, "the identity moved a point")
 }
 
-/// Zooming in then out by the same step, about any anchor, returns to the start.
+/// Zooming in then out by the same step, about any anchor, returns to the start: from the identity, and from a view that
+/// is scaled and panned, with an anchor inside and outside the visible area.
 #[test]
-fn zoom_in_then_out_about_an_arbitrary_anchor_returns_to_the_start() -> Result<(), String> {
-    let start = ViewTransform {
+fn zoom_in_then_out_returns_to_the_start() -> Result<(), String> {
+    let identity = ViewTransform::IDENTITY;
+    let moved = ViewTransform {
         scale: 1.7,
         tx: -63.0,
         ty: 28.0,
     };
-    let anchor = Point::new(-90.0, 140.0);
-    let back = start.zoomed_about(ZOOM_STEP, anchor).zoomed_about(1.0 / ZOOM_STEP, anchor);
-    check(
-        close(back.scale, start.scale) && close(back.tx, start.tx) && close(back.ty, start.ty),
-        &format!("expected {start:?}, got {back:?}"),
-    )
+    for (start, anchor) in [(identity, Point::new(64.0, 40.0)), (moved, Point::new(-90.0, 140.0))] {
+        let back = start.zoomed_about(ZOOM_STEP, anchor).zoomed_about(1.0 / ZOOM_STEP, anchor);
+        check(
+            close(back.scale, start.scale) && close(back.tx, start.tx) && close(back.ty, start.ty),
+            &format!("expected {start:?}, got {back:?}"),
+        )?;
+    }
+    Ok(())
 }
 
 /// A thousand in/out cycles, alternating anchors, must not accumulate significant error.

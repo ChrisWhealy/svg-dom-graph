@@ -8,7 +8,7 @@ use super::support::{cells, check_eq};
 fn new_defaults_to_automatic_layout() -> Result<(), String> {
     let content = DataNodeContent::new(NodeValues::U8(vec![1, 2, 3, 4, 5, 6, 7, 8]), DataFormat::Decimal);
     check_eq(content.layout(), GridLayout::Automatic)?;
-    // Automatic's own 2x4 choice for 8 values — see grid_shape_of_eight_values_prefers_two_rows_of_four above.
+    // Automatic's own 2x4 choice for 8 values — see the table of Automatic shapes in grid_shape.rs.
     check_eq(content.shape(), (2, 4))
 }
 
@@ -20,27 +20,25 @@ fn with_layout_overrides_automatics_own_shape() -> Result<(), String> {
     check_eq(content.shape(), (3, 3))
 }
 
+/// The value count is however many values were given, whatever their width, and only a count of one is a single value.
 #[test]
-fn len_reports_the_value_count_regardless_of_width() -> Result<(), String> {
-    let content = DataNodeContent::new(NodeValues::U16(vec![1, 2, 3]), DataFormat::Decimal);
-    check_eq(content.len(), 3)
+fn len_and_is_single_value_follow_the_value_count() -> Result<(), String> {
+    for (values, len, single) in [
+        (NodeValues::U8(vec![1]), 1, true),
+        (NodeValues::U8(vec![1, 2]), 2, false),
+        (NodeValues::U16(vec![1, 2, 3]), 3, false),
+        (NodeValues::U64(vec![1]), 1, true),
+    ] {
+        let content = DataNodeContent::new(values, DataFormat::Decimal);
+        check_eq(content.len(), len)?;
+        check_eq(content.is_single_value(), single)?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-//   is_single_value / type_colour
+//   type_colour / type_name
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#[test]
-fn a_single_value_is_reported_as_such() -> Result<(), String> {
-    let content = DataNodeContent::new(NodeValues::U8(vec![1]), DataFormat::Decimal);
-    check_eq(content.is_single_value(), true)
-}
-
-#[test]
-fn two_values_are_not_reported_as_a_single_value() -> Result<(), String> {
-    let content = DataNodeContent::new(NodeValues::U8(vec![1, 2]), DataFormat::Decimal);
-    check_eq(content.is_single_value(), false)
-}
 
 #[test]
 fn every_width_gets_a_distinct_type_colour() -> Result<(), String> {

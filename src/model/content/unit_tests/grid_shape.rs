@@ -8,70 +8,37 @@ use super::support::check_eq;
 //   grid_shape
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
+/// `GridLayout::Automatic` for every count whose shape shows a distinct case of the rule. A failure names the count.
 #[test]
-fn grid_shape_of_one_value_is_a_single_cell() -> Result<(), String> {
-    check_eq(grid_shape(1, GridLayout::Automatic), (1, 1))
-}
-
-#[test]
-fn grid_shape_of_two_values_is_two_rows_of_one_column() -> Result<(), String> {
-    // The example from the feature request: two values stack vertically, not side by side.
-    check_eq(grid_shape(2, GridLayout::Automatic), (2, 1))
-}
-
-#[test]
-fn grid_shape_of_three_values_prefers_a_square_over_a_single_column() -> Result<(), String> {
-    check_eq(grid_shape(3, GridLayout::Automatic), (2, 2))
-}
-
-#[test]
-fn grid_shape_of_four_values_is_an_exact_square() -> Result<(), String> {
-    check_eq(grid_shape(4, GridLayout::Automatic), (2, 2))
-}
-
-#[test]
-fn grid_shape_of_five_values_is_three_rows_of_two_columns() -> Result<(), String> {
-    check_eq(grid_shape(5, GridLayout::Automatic), (3, 2))
-}
-
-#[test]
-fn grid_shape_of_six_values_prefers_two_rows_of_three_over_three_rows_of_two() -> Result<(), String> {
-    // 2 is a power of two, strictly between 1 and 6, dividing it evenly. It gives a squarer grid (2x3, diff 1) than the
-    // sqrt-based fallback would. 3x2 is the same shape transposed. So this is really about which one
-    // best_power_of_two_rows picks as "rows". See that function's own doc comment on ties.
-    check_eq(grid_shape(6, GridLayout::Automatic), (2, 3))
-}
-
-#[test]
-fn grid_shape_of_seven_values_is_three_rows_of_three_columns() -> Result<(), String> {
-    // 7 is prime: no power of two other than the trivial 1 divides it, so this falls back to ceil(sqrt(n)).
-    check_eq(grid_shape(7, GridLayout::Automatic), (3, 3))
-}
-
-#[test]
-fn grid_shape_of_eight_values_prefers_two_rows_of_four_over_a_square_with_a_gap() -> Result<(), String> {
-    // The revised feature request's own example: 2 rows of 4 (an exact fit). It is not the 3x3 square the plain
-    // "closest to square" rule would have picked, which would leave one slot blank.
-    check_eq(grid_shape(8, GridLayout::Automatic), (2, 4))
-}
-
-#[test]
-fn grid_shape_of_twenty_five_values_is_a_five_by_five_square() -> Result<(), String> {
-    // 25 is odd (5^2): no power of two divides it, so this falls back to ceil(sqrt(n)), which happens to be an exact
-    // square anyway.
-    check_eq(grid_shape(25, GridLayout::Automatic), (5, 5))
-}
-
-#[test]
-fn grid_shape_of_twenty_values_prefers_four_rows_of_five() -> Result<(), String> {
-    // The revised feature request's own second example: of 20's power-of-two divisors (2, 4), rows = 4 gives the
-    // squarer grid (4x5, diff 1) over rows = 2 (2x10, diff 8).
-    check_eq(grid_shape(20, GridLayout::Automatic), (4, 5))
-}
-
-#[test]
-fn grid_shape_of_zero_values_is_empty() -> Result<(), String> {
-    check_eq(grid_shape(0, GridLayout::Automatic), (0, 0))
+fn automatic_layout_picks_the_expected_shape_for_each_count() -> Result<(), String> {
+    for (count, expected, why) in [
+        (0, (0, 0), "nothing to lay out"),
+        (1, (1, 1), "a single cell"),
+        // The example from the feature request: two values stack vertically, not side by side.
+        (2, (2, 1), "two values stack vertically"),
+        (3, (2, 2), "a square is preferred over a single column"),
+        (4, (2, 2), "an exact square"),
+        (5, (3, 2), "three rows of two columns"),
+        // 2 is a power of two, strictly between 1 and 6, dividing it evenly. It gives a squarer grid (2x3, diff 1)
+        // than the sqrt-based fallback would. 3x2 is the same shape transposed, so this is really about which one
+        // best_power_of_two_rows picks as "rows". See that function's own doc comment on ties.
+        (6, (2, 3), "two rows of three over three rows of two"),
+        // 7 is prime: no power of two other than the trivial 1 divides it, so this falls back to ceil(sqrt(n)).
+        (7, (3, 3), "a prime falls back to ceil(sqrt(n))"),
+        // The revised feature request's own example: 2 rows of 4 (an exact fit). It is not the 3x3 square the plain
+        // "closest to square" rule would have picked, which would leave one slot blank.
+        (8, (2, 4), "two rows of four over a square with a gap"),
+        // The revised feature request's own second example: of 20's power-of-two divisors (2, 4), rows = 4 gives the
+        // squarer grid (4x5, diff 1) over rows = 2 (2x10, diff 8).
+        (20, (4, 5), "the squarer of the power-of-two row counts"),
+        // 25 is odd (5^2): no power of two divides it, so this falls back to ceil(sqrt(n)), which happens to be an
+        // exact square anyway.
+        (25, (5, 5), "an exact square from the fallback"),
+    ] {
+        check_eq(grid_shape(count, GridLayout::Automatic), expected)
+            .map_err(|e| format!("{count} values ({why}): {e}"))?;
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -80,7 +47,7 @@ fn grid_shape_of_zero_values_is_empty() -> Result<(), String> {
 
 #[test]
 fn columns_fixes_the_column_count_regardless_of_squareness() -> Result<(), String> {
-    // 8 values, forced into 3 columns. Automatic would pick 2x4 (see the test above), but Columns overrides that
+    // 8 values, forced into 3 columns. Automatic would pick 2x4 (see the table above), but Columns overrides that
     // entirely. The result is 3 rows of 3 columns, with the last row only 2/3 full.
     check_eq(grid_shape(8, GridLayout::Columns(3)), (3, 3))
 }
@@ -97,7 +64,7 @@ fn rows_fixes_the_row_count_regardless_of_squareness() -> Result<(), String> {
 
 #[test]
 fn max_columns_caps_the_column_count_below_automatics_own_choice() -> Result<(), String> {
-    // Automatic renders 20 values as 4 rows of 5 (see grid_shape_of_twenty_values_prefers_four_rows_of_five above) —
+    // Automatic renders 20 values as 4 rows of 5 (see the table of Automatic shapes above) —
     // MaxColumns(3) caps that at 3 columns regardless, giving 7 rows of 3 (21 slots, one blank).
     check_eq(grid_shape(20, GridLayout::MaxColumns(3)), (7, 3))
 }

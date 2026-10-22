@@ -35,91 +35,46 @@ fn an_edge_id() -> EdgeId {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Each variant's message says what went wrong, and names the value that was rejected where it has one. A failure names
+/// the variant.
 #[test]
-fn unknown_node_display_says_it_does_not_belong_to_this_scene() -> Result<(), String> {
-    let message = Error::UnknownNode(a_node_id()).to_string();
-    check(message.contains("does not belong to this Scene"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn unknown_edge_display_says_it_does_not_belong_to_this_scene() -> Result<(), String> {
-    let message = Error::UnknownEdge(an_edge_id()).to_string();
-    check(message.contains("does not belong to this Scene"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn self_loop_unsupported_display_says_it_is_not_yet_supported() -> Result<(), String> {
-    let message = Error::SelfLoopUnsupported(a_node_id()).to_string();
-    check(message.contains("not yet supported"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn already_draggable_display_says_the_node_is_already_draggable() -> Result<(), String> {
-    let message = Error::AlreadyDraggable(a_node_id()).to_string();
-    check(message.contains("already draggable"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_collision_padding_display_names_the_rejected_value() -> Result<(), String> {
-    let message = Error::InvalidCollisionPadding(f64::NAN).to_string();
-    check(message.contains("NaN"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_drag_bounds_display_names_the_rejected_rect() -> Result<(), String> {
-    let rect = Rect {
+fn each_variant_displays_what_went_wrong() -> Result<(), String> {
+    let id = a_node_id();
+    let nan_origin = Rect {
         origin: Point::new(f64::NAN, 0.0),
         size: Size::new(100.0, 100.0),
     };
-    let message = Error::InvalidDragBounds(rect).to_string();
-    check(message.contains("NaN"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_toolbar_options_display_names_the_rejected_options() -> Result<(), String> {
-    let options = crate::scene::ToolbarOptions::new(crate::scene::Side::West);
-    let message = Error::InvalidToolbarOptions(options).to_string();
-    check(message.contains("West") && message.contains("button_height"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_corner_radius_display_names_the_rejected_value() -> Result<(), String> {
-    let message = Error::InvalidCornerRadius(f64::NAN).to_string();
-    check(message.contains("NaN"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_edge_anchors_display_names_the_rejected_value() -> Result<(), String> {
-    let message = Error::InvalidEdgeAnchors(0).to_string();
-    check(message.contains('0'), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_node_geometry_display_names_the_rejected_rect() -> Result<(), String> {
-    let rect = Rect {
+    let negative_width = Rect {
         origin: Point::new(0.0, 0.0),
         size: Size::new(-1.0, 1.0),
     };
-    let message = Error::InvalidNodeGeometry(rect).to_string();
-    check(message.contains("-1"), &message)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn invalid_selection_display_names_the_node_and_the_rejected_selection() -> Result<(), String> {
-    let id = a_node_id();
-    let message = Error::InvalidSelection(id, crate::scene::Selection::Cell(9)).to_string();
-    check(message.contains(&format!("{id:?}")), &message)?;
-    check(message.contains("Cell(9)"), &message)
+    let toolbar = crate::scene::ToolbarOptions::new(crate::scene::Side::West);
+    let cell_9 = format!("{id:?}");
+    for (error, fragments) in [
+        (Error::UnknownNode(id), vec!["does not belong to this Scene"]),
+        (Error::UnknownEdge(an_edge_id()), vec!["does not belong to this Scene"]),
+        (Error::SelfLoopUnsupported(id), vec!["not yet supported"]),
+        (Error::AlreadyDraggable(id), vec!["already draggable"]),
+        (Error::InvalidCollisionPadding(f64::NAN), vec!["NaN"]),
+        (Error::InvalidDragBounds(nan_origin), vec!["NaN"]),
+        (Error::InvalidToolbarOptions(toolbar), vec!["West", "button_height"]),
+        (Error::InvalidCornerRadius(f64::NAN), vec!["NaN"]),
+        (Error::InvalidEdgeAnchors(0), vec!["0"]),
+        (Error::InvalidNodeGeometry(negative_width), vec!["-1"]),
+        (
+            Error::InvalidSelection(id, crate::scene::Selection::Cell(9)),
+            vec![cell_9.as_str(), "Cell(9)"],
+        ),
+    ] {
+        let message = error.to_string();
+        for fragment in fragments {
+            check(
+                message.contains(fragment),
+                &format!("{error:?} displays {message:?}, which lacks {fragment:?}"),
+            )?;
+        }
+    }
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

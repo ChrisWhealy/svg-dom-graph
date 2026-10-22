@@ -236,24 +236,13 @@ fn out_of_range_and_label_nodes_are_rejected_and_change_nothing() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Order and duplicates do not matter, and an identical set is accepted again without changing anything.
-#[wasm_bindgen_test]
-fn order_and_duplicates_do_not_matter_and_a_repeat_is_harmless() -> Result<(), String> {
-    let g = grid("unreached-order")?;
-    g.scene.set_unreached_cells(g.node, &[9, 7, 8, 7]).map_err(|e| e.to_string())?;
-    let first = label(&g.group);
-    g.scene.set_unreached_cells(g.node, &[7, 8, 9]).map_err(|e| e.to_string())?;
-    check(label(&g.group) == first, &label(&g.group))?;
-    check(first.ends_with(", not yet computed: cells 7 to 9"), &first)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Marking the same cells again, in the order they were already given, touches nothing in the document. Unsorted input
-/// with duplicates is still accepted, and still ends in the same state.
+/// with duplicates is still accepted, and still ends in the same state, with the same accessible name.
 #[wasm_bindgen_test]
 fn repeating_the_same_marked_cells_changes_nothing_and_unsorted_input_still_works() -> Result<(), String> {
     let g = grid("unreached-repeat")?;
     g.scene.set_unreached_cells(g.node, &[2, 3, 7]).map_err(|e| e.to_string())?;
+    let name = label(&g.group);
     let seen = mutations_during(&g.group, || {
         g.scene.set_unreached_cells(g.node, &[2, 3, 7]).map_err(|e| e.to_string())
     })?;
@@ -268,5 +257,6 @@ fn repeating_the_same_marked_cells_changes_nothing_and_unsorted_input_still_work
     check(
         is_faint(&g, 2) && is_faint(&g, 7) && is_full(&g, 0),
         "the cells should still be marked",
-    )
+    )?;
+    check(label(&g.group) == name, &label(&g.group))
 }

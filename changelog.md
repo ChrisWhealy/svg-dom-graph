@@ -14,7 +14,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Adjust layout of Base64 demo (`b975022`)
 - Extract common functionality into `demo-common` project crate (`67143bb`)
 - Adjust layout of Text Input demo (`7772016`)
-- Removed superfluous tests, narrowed some and replaced others (``) 
+- Removed superfluous tests, narrowed some and replaced others (`48c9a8d`) 
+- Consolidate overlapping tests (``)
 
 ## Added
 
