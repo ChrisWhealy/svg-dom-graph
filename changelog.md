@@ -25,6 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Upload CDP timing data (`a8740d2`)
 - Create shell script to refresh CDP timing data (`369ec0c`)
 
+## Fixed
+
+- Correct CI test duration calculation (``)
+
 # [Released]
 
 ## [0.2.39] - 2026-10-21

@@ -3,8 +3,9 @@
 # `cdp-merge-timings.sh OUTPUT INPUT...`, where each INPUT is either a file of `test name<TAB>milliseconds` lines or a
 # directory, which is searched, however deeply, for files ending in `.tsv`.
 #
-# A test that appears more than once, in several files or several runs, is given the average of its times. The output is
-# sorted by name, so that a regenerated file differs from the last only where a time did.
+# A test that opens several tabs writes one line per tab. Within one file those lines are added together, to give the
+# time the whole test took. A test that appears in several files, one from each run, is then given the average of those
+# totals. The output is sorted by name, so that a regenerated file differs from the last only where a time did.
 #
 # To refresh the committed timings from a CI run, download the run's artifacts and name the directory they went to. How
 # `gh` lays the files out inside it does not matter:
@@ -31,7 +32,10 @@ for input in "$@"; do
 done
 [ "${#files[@]}" -gt 0 ] || { echo "cdp-merge-timings.sh: no .tsv files found in: $*" >&2; exit 1; }
 
-cat "${files[@]}" \
-  | awk -F'\t' 'NF == 2 && $2 + 0 > 0 { total[$1] += $2; n[$1]++ } END { for (t in total) printf "%s\t%d\n", t, total[t] / n[t] }' \
-  | sort > "$output"
+awk -F'\t' '
+  NF == 2 && $2 + 0 > 0 { per_file[FILENAME SUBSEP $1] += $2; seen[FILENAME SUBSEP $1] = $1 }
+  END {
+    for (key in per_file) { name = seen[key]; total[name] += per_file[key]; n[name]++ }
+    for (t in total) printf "%s\t%d\n", t, total[t] / n[t]
+  }' "${files[@]}" | sort > "$output"
 echo "wrote $(wc -l < "$output" | tr -d ' ') timings from ${#files[@]} files to $output"
