@@ -18,6 +18,7 @@ The algorithm is in `demo-app/src/dijkstra/algorithm/`, which touches no DOM, an
 
 Six vertices, A to F, and nine directed edges.
 The run goes from A to F.
+The table is the graph the panel opens on, so that every visit starts the same. "Restart" gives the same nine edges new random weights, each from 1 to 10 (see "Restart" below).
 
 | Edge | Weight | Edge | Weight |
 |---|---|---|---|
@@ -81,7 +82,17 @@ The walk has one position for each of these steps.
 4. The end.
    The route to F is emphasised, every edge of it at once, and the note says its length.
 
-"Next" and "Prev" move between steps, and "Restart" goes back to the first.
+"Next" and "Prev" move between steps.
+
+## Restart
+
+"Restart" goes back to the first step on a new set of random weights.
+Each of the nine edges gets a whole number from 1 to 10 from the browser's random number generator, and the run is worked out again on them.
+The announcement says "The edge weights are new" before the first step.
+The graph keeps its shape, its zoom and pan, and the places a vertex was dragged to.
+The arrays and the queue are measured again, since different weights give different strings, and the run may be shorter or longer.
+Every graph of this shape has a route from A to F, so the run always ends at F.
+The toolbar's "Prev" from the first step is the same action as "Restart", so it also gives new weights.
 Stepping back shows an earlier state: it does not undo anything, since every step is worked out beforehand.
 
 Each step is announced in a live region outside the scene: `Step 3 of 20. Edge A to B, weight 4: ...`.

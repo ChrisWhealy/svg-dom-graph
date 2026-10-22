@@ -1,4 +1,4 @@
-use super::{Error, Graph, QueueEntry, RawEdge, Relaxation, Snapshot, steps};
+use super::{Error, Graph, MAX_RANDOM_WEIGHT, QueueEntry, RawEdge, Relaxation, Snapshot, random_weights, steps};
 
 const NAMES: [&str; 6] = ["A", "B", "C", "D", "E", "F"];
 const A: usize = 0;
@@ -349,5 +349,57 @@ fn random_graphs_agree_with_bellman_ford() {
         let graph = graph(count, &edges);
         let steps = steps(&graph, 0, None).expect("a run");
         assert_eq!(last(&steps).distance, bellman_ford(count, &edges, 0), "{edges:?}");
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn random_weights_are_in_range_whatever_the_source_gives() {
+    let mut next = 0.0_f64;
+    let weights = random_weights(1000, || {
+        next = (next + 0.618_033_988_75) % 1.0;
+        next
+    });
+    assert_eq!(weights.len(), 1000);
+    assert!(weights.iter().all(|&w| (1..=MAX_RANDOM_WEIGHT).contains(&w)));
+    // The whole range is used, so none of it is out of reach.
+    assert!((1..=MAX_RANDOM_WEIGHT).all(|w| weights.contains(&w)));
+
+    // The ends of the source's range, and values it should never give.
+    for unit in [
+        0.0,
+        0.999_999_999_999,
+        1.0,
+        -1.0,
+        2.0,
+        f64::NAN,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+    ] {
+        let weights = random_weights(3, || unit);
+        assert!(weights.iter().all(|&w| (1..=MAX_RANDOM_WEIGHT).contains(&w)), "{unit}");
+    }
+    assert_eq!(random_weights(1, || 0.0), vec![1]);
+    assert_eq!(random_weights(1, || 1.0), vec![MAX_RANDOM_WEIGHT]);
+}
+
+#[test]
+fn a_run_on_random_weights_always_finds_a_route_to_the_last_vertex() {
+    let mut seed = 5_u64;
+    for _ in 0..200 {
+        let weights = random_weights(REFERENCE.len(), || {
+            seed = seed.wrapping_mul(6364136223846793005).wrapping_add(1442695040888963407);
+            (seed >> 33) as f64 / (1u64 << 31) as f64
+        });
+        let edges: Vec<RawEdge> = REFERENCE
+            .iter()
+            .zip(&weights)
+            .map(|(&(from, to, _), &w)| (from, to, w))
+            .collect();
+        let graph = graph(6, &edges);
+        let steps = steps(&graph, A, Some(F)).expect("a run");
+        let last = last(&steps);
+        assert!(last.distance[F].is_some(), "{weights:?}");
+        assert!(!last.path.is_empty());
     }
 }

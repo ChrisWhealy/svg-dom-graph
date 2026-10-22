@@ -7,7 +7,7 @@ mod algorithm;
 mod layout;
 
 use crate::source_file;
-use algorithm::{Graph, RawEdge, Relaxation, Snapshot, steps};
+use algorithm::{Graph, RawEdge, Relaxation, Snapshot, random_weights, steps};
 use demo_common::{
     focus,
     util::{
@@ -83,8 +83,9 @@ struct Model {
 }
 
 impl Model {
-    fn new() -> Result<Self, String> {
-        let graph = Graph::new(&NAMES, &EDGES).map_err(|e| e.to_string())?;
+    /// The model of the graph with these edges.
+    fn new(edges: &[RawEdge]) -> Result<Self, String> {
+        let graph = Graph::new(&NAMES, edges).map_err(|e| e.to_string())?;
         let steps = steps(&graph, SOURCE_VERTEX, Some(DESTINATION)).map_err(|e| e.to_string())?;
         let texts = steps.iter().map(|step| Texts::of(&graph, step)).collect();
         Ok(Self { graph, steps, texts })
@@ -127,9 +128,24 @@ fn model() -> Result<Rc<Model>, String> {
     if let Some(model) = RUNTIME.with_borrow(|runtime| runtime.model.clone()) {
         return Ok(model);
     }
-    let model = Rc::new(Model::new()?);
+    let model = Rc::new(Model::new(&EDGES)?);
     RUNTIME.with_borrow_mut(|runtime| runtime.model = Some(model.clone()));
     Ok(model)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Gives the same graph new random weights, and works out the run on them. The sizes of the arrays and the queue were
+/// measured from the old run's texts, so they are measured again, and everything else is kept where it is: the view,
+/// and where each vertex was dragged to.
+fn use_random_weights() -> Result<(), String> {
+    let weights = random_weights(EDGES.len(), js_sys::Math::random);
+    let edges: Vec<RawEdge> = EDGES.iter().zip(&weights).map(|(&(from, to, _), &w)| (from, to, w)).collect();
+    let model = Rc::new(Model::new(&edges)?);
+    RUNTIME.with_borrow_mut(|runtime| {
+        runtime.model = Some(model);
+        runtime.fixed = None;
+    });
+    Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -216,8 +232,9 @@ fn draw_graph(scene: &Scene, model: &Model, snapshot: &Snapshot, origins: &[Poin
 
     // Straight connectors, so that each runs from box to box in one line and its label has a long run to sit beside.
     let options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
-    let mut edges: Vec<EdgeId> = Vec::with_capacity(EDGES.len());
-    for &(from, to, weight) in &EDGES {
+    let mut edges: Vec<EdgeId> = Vec::with_capacity(model.graph.edges().len());
+    for edge in model.graph.edges() {
+        let (from, to, weight) = (edge.from, edge.to, edge.weight);
         let edge = scene.add_edge_with(vertices[from], vertices[to], options).map_err(stringify)?;
         scene.set_edge_label(edge, Some(&weight.to_string())).map_err(stringify)?;
         edges.push(edge);
@@ -357,10 +374,10 @@ fn build(position: usize) -> Result<String, String> {
             SelectionToolbarOptions::new(Side::North),
             move |_scene, _node, transition| {
                 match transition.to {
-                    Some(position) => go(position),
+                    Some(position) => go(position, false),
                     // "Restart" and "Previous" from the first position are the same transition, so both land here. Stepping
-                    // back from the start is therefore a restart.
-                    None => go(0),
+                    // back from the start is therefore a restart, with new random weights.
+                    None => go(0, true),
                 }
             },
         )
@@ -381,12 +398,20 @@ fn build(position: usize) -> Result<String, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves the diagram to step `position`, and announces it. A failure is shown in the panel's own error banner, since the
-/// toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
-fn go(position: usize) {
-    match build(position) {
+/// Moves the diagram to step `position`, and announces it. `restart` is whether the person pressed "Restart": the graph
+/// is then given new random weights, and the announcement says so first. A failure is shown in the panel's own error
+/// banner, since the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that
+/// works.
+fn go(position: usize, restart: bool) {
+    let result = if restart {
+        use_random_weights().and_then(|()| build(position))
+    } else {
+        build(position)
+    };
+    match result {
         Ok(said) => {
             clear_error(ERROR_ID);
+            let said = if restart { format!("The edge weights are new. {said}") } else { said };
             announce(ANNOUNCEMENT_ID, &said);
         },
         Err(e) => report_error(ERROR_ID, &format!("This step failed (position {position}): {e}")),
@@ -408,6 +433,9 @@ fn go(position: usize) {
 ///   has a fixed size, so no step moves anything: it shows eight entries and says how many more there are.
 /// - A **note** under the graph says what the step did, and a selection toolbar at the top steps through the run. Every
 ///   step is announced in a live region outside the scene.
+///
+/// The graph opens with fixed weights, so that every visit starts the same. "Restart" gives its edges new random weights
+/// from 1 to 10, and the run is worked out again on them.
 ///
 /// Every value is worked out in plain Rust by [`algorithm::steps`]. The library does no graph algorithm: it draws.
 ///

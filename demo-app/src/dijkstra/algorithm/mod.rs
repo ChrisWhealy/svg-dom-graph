@@ -20,6 +20,26 @@ use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 pub(super) type RawEdge = (usize, usize, i64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The largest weight a random edge is given. The smallest is 1: a weight of 0 would make two vertices the same distance
+/// from the start, which is a case the run handles but is not worth showing as an ordinary graph.
+pub(super) const MAX_RANDOM_WEIGHT: i64 = 10;
+
+/// `count` weights from 1 to [`MAX_RANDOM_WEIGHT`], each worked out from the next number of `unit`, which gives a number
+/// from 0 up to but not including 1. The caller supplies the source of randomness, so that this stays plain Rust and a
+/// test can give it a known one.
+pub(super) fn random_weights(count: usize, mut unit: impl FnMut() -> f64) -> Vec<i64> {
+    (0..count)
+        .map(|_| {
+            // A number outside 0 to 1, or not a number at all, still gives a weight in the range.
+            let fraction = unit().clamp(0.0, 1.0);
+            #[allow(clippy::cast_possible_truncation)]
+            let weight = 1 + (fraction * MAX_RANDOM_WEIGHT as f64) as i64;
+            weight.min(MAX_RANDOM_WEIGHT)
+        })
+        .collect()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One directed edge of a [`Graph`], with a weight that is not negative.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
 pub(super) struct WeightedEdge {

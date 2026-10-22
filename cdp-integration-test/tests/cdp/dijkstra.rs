@@ -444,3 +444,62 @@ fn the_arrays_the_queue_and_the_vertices_never_move_or_change_size() -> Result<(
     }
     check_eq(step_position(&tab)?, Some(count - 1))
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// "Restart" gives the graph new random weights from 1 to 10 and goes back to the first step, with the run worked out on
+/// them. The panel opens on the reference weights, so every visit starts the same, and stepping back does not change
+/// them.
+#[test]
+fn restart_gives_the_graph_new_random_weights() -> Result<(), String> {
+    let tab = open()?;
+    let weights = |tab: &Tab| -> Result<Vec<String>, String> { Ok(labels(tab)?.into_iter().map(|l| l.text).collect()) };
+    check_eq(weights(&tab)?, WEIGHTS.map(String::from).to_vec())?;
+
+    // Stepping forwards and back keeps the weights.
+    click(&tab, "Next selection")?;
+    click(&tab, "Next selection")?;
+    click(&tab, "Previous selection")?;
+    check_eq(weights(&tab)?, WEIGHTS.map(String::from).to_vec())?;
+
+    // Restart changes them, so far from the reference that the chance of the same nine is one in a billion.
+    let moved = vertex_boxes(&tab)?;
+    click(&tab, "Restart selection")?;
+    check_eq(step_position(&tab)?, Some(0))?;
+    let after = weights(&tab)?;
+    check_eq(after.len(), WEIGHTS.len())?;
+    check(
+        after.iter().all(|w| w.parse::<u32>().is_ok_and(|w| (1..=10).contains(&w))),
+        &format!("every new weight is from 1 to 10: {after:?}"),
+    )?;
+    check(
+        after != WEIGHTS.map(String::from).to_vec(),
+        "restart gave the reference weights again",
+    )?;
+    check(
+        said(&tab)?.starts_with("The edge weights are new."),
+        "the new weights are announced",
+    )?;
+
+    // The run starts again from A, and the graph is still where it was.
+    check_eq(cells(&tab, "Distance")?[0].as_str(), "0")?;
+    let again = vertex_boxes(&tab)?;
+    check(
+        again
+            .iter()
+            .zip(&moved)
+            .all(|(a, b)| (a.left - b.left).abs() < 0.5 && (a.top - b.top).abs() < 0.5),
+        "the vertices stayed where they were",
+    )?;
+
+    // Walking the whole run works on the new weights, and ends at F.
+    let count = step_count(&tab)?;
+    goto(&tab, count - 1)?;
+    check(
+        said(&tab)?.contains("shortest route"),
+        "the run on the new weights finds its route",
+    )?;
+    check(
+        !ringed(&tab)?.is_empty() || !filled_settled(&tab)?.is_empty(),
+        "the end of the run is drawn",
+    )
+}

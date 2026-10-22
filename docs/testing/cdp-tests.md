@@ -58,6 +58,7 @@ That is done at rest and after a real mouse drag of a vertex through several pla
 The examined edge is emphasised alone, and its ends ringed, and at the last step the five edges of the route are emphasised at once.
 A redraw keeps the zoom, the place a vertex was dragged to and the keyboard focus on the toolbar button.
 Every step is walked, to check that the three arrays, the queue and the vertices never move or change size.
+Restart gives new random weights from 1 to 10, goes back to the first step and announces it, while stepping back does not change them.
 The walk helpers are the ones the sorting scenarios use, and are shared: see `sorting.rs`.
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.

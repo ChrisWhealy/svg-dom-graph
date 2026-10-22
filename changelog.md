@@ -12,6 +12,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implement Dijkstra's shortest path algorithm (`ecfa484`)
 - Fully implement DOM-write failure recovery (`3bad2e2`)
+- Restarting Dijkstra demo randomises weights (``)
 
 ## Fixed
 
@@ -20,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid vertex and edge label overlap after move (`ac6cff8`)
 - Correct another failing CI test (`78c6b1b`)
 - Avoid rebuilding label list during hot path execution (`82fc904`)
-- Avoid possible integer overflow in placement scoring (``)
+- Avoid possible integer overflow in placement scoring (`2132e4e`)
 
 # [Released]
 
