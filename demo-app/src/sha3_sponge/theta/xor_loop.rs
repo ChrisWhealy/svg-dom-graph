@@ -6,7 +6,7 @@
 //! *cells* of `A`. See [`build_scene`]'s own doc comment for why. See [`XorLoopState`]'s own doc comment for why it
 //! needs its own state shape rather than sharing `support::SteppedChildState`.
 
-use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
+use demo_common::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
@@ -119,8 +119,8 @@ pub(super) fn build_scene(
     n: Option<usize>,
     display: [[u64; 5]; 5],
 ) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
-    crate::util::frame_nested_scene(&document, svg_id)?;
+    let document = demo_common::util::document()?;
+    demo_common::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -134,7 +134,7 @@ pub(super) fn build_scene(
 
     const LEFT_X: f64 = 20.0;
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    const TOP_Y: f64 = crate::util::CONTENT_TOP;
+    const TOP_Y: f64 = demo_common::util::CONTENT_TOP;
     // The gap every row transition in this diagram leaves. See `theta_d::build_scene`'s own `PREV_NEXT_Y` doc comment
     // for why a gap this size, not the tighter one an earlier version of that diagram used.
     const V_GAP: f64 = 58.0;
@@ -253,9 +253,9 @@ pub(super) fn build_scene(
     // Unstarted, the two working values are placeholders. Cells up to `n` are written to the output, in row-major
     // order.
     for node in [d_cell, a_cell] {
-        crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
+        demo_common::util::mark_unreached(&scene, node, &demo_common::util::all_if(n.is_none(), 1))?;
     }
-    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 25))?;
+    demo_common::util::mark_unreached(&scene, output, &demo_common::util::after(n, 25))?;
     if n.is_some() {
         scene
             .set_selection(output, Selection::Row { row, col: Some(col) })
@@ -270,7 +270,7 @@ pub(super) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
+    demo_common::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, output))
 }
@@ -290,9 +290,13 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<XorLoopState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            step(&state, transition.to);
-        })
+        .show_selection_toolbar(
+            output,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                step(&state, transition.to);
+            },
+        )
         .map_err(stringify)?;
     if let Some(n) = n {
         child
@@ -314,7 +318,7 @@ pub(super) fn rebuild_child(
     display: [[u64; 5]; 5],
     state: Rc<RefCell<XorLoopState>>,
 ) -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let (input, previous_id) = {
         let state = state.borrow();
         (state.input, state.child_svg_id.clone())

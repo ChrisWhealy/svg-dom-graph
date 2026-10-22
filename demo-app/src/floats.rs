@@ -2,7 +2,7 @@
 //! write them, one node per format, so that the rows line up and each format can be read against the others. See
 //! [`build_float_demo`]'s own doc comment for what each node shows.
 
-use crate::util::{ensure_svg_in, resize_svg, stringify};
+use demo_common::util::{ensure_svg_in, resize_svg, stringify};
 use std::{cell::RefCell, f64::consts::PI};
 use svg_dom::{
     SvgRoot,
@@ -182,7 +182,7 @@ fn content_group(document: &web_sys::Document) -> Result<web_sys::Element, Strin
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#float-diagram`.
 pub(crate) fn build_float_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, "float-diagram-stage", "float-diagram", Size::new(1400.0, 1700.0))?;
     // A second handle on the same `<svg>`, because `Scene::new` takes the first. It creates the pictures.
     let pictures = SvgRoot::attach("float-diagram").map_err(stringify)?;

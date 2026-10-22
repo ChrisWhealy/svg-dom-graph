@@ -6,7 +6,7 @@
 //! behind them. The pivot is now where it belongs, with the smaller elements on its left and the others on its right,
 //! so each side is sorted the same way. A range of one element is already in place.
 
-use crate::sorting::{Frame, Mark};
+use demo_common::sorting::{Frame, Mark};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The state of the sort after one step.

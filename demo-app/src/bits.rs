@@ -2,7 +2,7 @@
 //!
 //! - `panel-bits` / `#bits-diagram` — [`build_bits_demo`]: values from one to seven bits wide, single and in arrays.
 
-use crate::util::{Item, build_lines_scene, item, stringify};
+use demo_common::util::{Item, build_lines_scene, item, stringify};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{BitValues, DataFormat, DataNodeContent, NodeValues, Scene};
 

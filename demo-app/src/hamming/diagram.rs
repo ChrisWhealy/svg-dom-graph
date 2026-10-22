@@ -8,7 +8,7 @@ use super::{
     walk::{BOXES, POSITIONS},
     words,
 };
-use crate::util::{document, ensure_svg_in, hide_step_driver, required_element, resize_svg, stringify};
+use demo_common::util::{document, ensure_svg_in, hide_step_driver, required_element, resize_svg, stringify};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},

@@ -4,7 +4,7 @@
 //! - `panel-text-input` / `#text-input-diagram` — [`build_text_input_demo`]: a text input node, whose text appears in
 //!   an ASCII node and a hexdump node as it is typed.
 
-use crate::util::{document, ensure_svg_in, required_element, stringify, view_box_rect};
+use demo_common::util::{document, ensure_svg_in, required_element, stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,

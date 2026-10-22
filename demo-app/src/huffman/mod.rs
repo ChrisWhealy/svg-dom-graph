@@ -29,8 +29,8 @@ mod algorithm;
 mod walk;
 
 use crate::source_file;
-use crate::util::{CONTENT_TOP, ensure_svg_in, fit_nested_size, required_element, stringify};
 use algorithm::{MAX_INPUT_LEN, Trace};
+use demo_common::util::{CONTENT_TOP, ensure_svg_in, fit_nested_size, required_element, stringify};
 use std::{
     cell::{Cell, RefCell},
     rc::Rc,
@@ -622,7 +622,7 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
     let pass_two = model.position.checked_sub(steps(trace)).map(|index| packing(trace, index));
     let shown = walk::shown(trace, model.position);
 
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(1000.0, 800.0))?;
     required_element(&document, DIAGRAM_ID)?.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
@@ -720,7 +720,7 @@ fn build_scene(model: &Model) -> Result<(Scene, Option<NodeId>, NodeId), String>
             DataNodeContent::new(NodeValues::U16(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(DIAGRAM_ID)?;
+    demo_common::util::hide_step_driver(DIAGRAM_ID)?;
 
     // The widest the forest ever is is every byte in a row of its own, before any merge. Pass two reads from left to
     // right: the text, then the table, then the packing.
@@ -757,7 +757,7 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     scene
         .show_selection_toolbar(
             step,
-            crate::util::step_toolbar_options().with_stride(SelectionStride::new(STRIDE, "8")),
+            demo_common::util::step_toolbar_options().with_stride(SelectionStride::new(STRIDE, "8")),
             |_scene, _node, transition| {
                 go(transition.to.unwrap_or(0));
             },
@@ -773,7 +773,7 @@ fn build(model: Model) -> Result<Option<NodeId>, String> {
     // The two passes are different sizes, so the window is fitted again when the walk crosses from one to the other.
     // Not at every step, since a window that kept changing size would be hard to use.
     if was_pass_two.is_some_and(|was| was != (model_position >= pass_one_steps)) {
-        crate::util::fit_window_to_stage(DIAGRAM_ID)?;
+        demo_common::util::fit_window_to_stage(DIAGRAM_ID)?;
     }
     Ok(input)
 }
@@ -811,15 +811,15 @@ fn typed(id: NodeId, text: &str) {
 /// Shows a failure in the window's own error banner, or clears the banner after a success.
 fn report(result: Result<(), String>, what: &str) {
     match result {
-        Ok(()) => crate::util::clear_error(ERROR_ID),
-        Err(e) => crate::util::report_error(ERROR_ID, &format!("{what}: {e}")),
+        Ok(()) => demo_common::util::clear_error(ERROR_ID),
+        Err(e) => demo_common::util::report_error(ERROR_ID, &format!("{what}: {e}")),
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
 fn focused_button() -> Option<String> {
-    let document = crate::util::document().ok()?;
+    let document = demo_common::util::document().ok()?;
     let active = document.active_element()?;
     let diagram = document.get_element_by_id(DIAGRAM_ID)?;
     if diagram.contains(Some(&active)) {
@@ -833,7 +833,7 @@ fn focused_button() -> Option<String> {
 /// Gives keyboard focus to the button in the diagram named `label`, if there is one and it can take focus. A button
 /// that is disabled now is left alone.
 fn focus_button(label: &str) {
-    let Ok(document) = crate::util::document() else { return };
+    let Ok(document) = demo_common::util::document() else { return };
     let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
     if let Ok(Some(button)) = document.query_selector(&selector) {
         if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
@@ -873,7 +873,7 @@ fn focus_button(label: &str) {
 pub(crate) fn build_huffman_window() -> Result<(), String> {
     let trace = algorithm::trace(DEFAULT_TEXT.as_bytes()).ok_or("the default text cannot be encoded")?;
     build(Model::new(DEFAULT_TEXT, trace))?;
-    crate::util::fit_window_to_stage(DIAGRAM_ID)
+    demo_common::util::fit_window_to_stage(DIAGRAM_ID)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -885,7 +885,7 @@ pub(crate) fn build_huffman_window() -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#huffman-open`, or if a listener could not be attached to it.
 pub(crate) fn build_huffman_demo() -> Result<(), String> {
-    crate::util::wire_open_window(&crate::util::document()?, "huffman-open", WINDOW_PAGE, WINDOW_NAME)
+    demo_common::util::wire_open_window(&demo_common::util::document()?, "huffman-open", WINDOW_PAGE, WINDOW_NAME)
 }
 
 /// The page [`build_huffman_demo`]'s button opens.

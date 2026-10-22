@@ -6,7 +6,7 @@
 //! `#selection-thetac-diagram` instead of a nested child `<svg>`.
 
 use super::support::SteppedChildState;
-use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
+use demo_common::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
@@ -96,8 +96,8 @@ pub(crate) fn build_scene(
     n: Option<usize>,
     display: [u64; 5],
 ) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
-    crate::util::frame_nested_scene(&document, svg_id)?;
+    let document = demo_common::util::document()?;
+    demo_common::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -110,7 +110,7 @@ pub(crate) fn build_scene(
     // `0`) leaves the scene title's own band clear above it, rather than overlapping it. That band is `margin` 12 plus
     // its own ≈28-unit-tall text, an estimate as usual with no browser here to measure it. Below the scene's own title
     // and its stepping toolbar, which is at the top.
-    const TOP_Y: f64 = crate::util::CONTENT_TOP;
+    const TOP_Y: f64 = demo_common::util::CONTENT_TOP;
     let array = scene
         .add_named_data_node(
             Point::new(20.0, TOP_Y),
@@ -259,9 +259,9 @@ pub(crate) fn build_scene(
     scene.add_edge(result, output).map_err(stringify)?;
     // Unstarted, the operands are placeholders. Row `n` and the ones before it are written to the output.
     for operand in [op0, op1, op2, op3, op4] {
-        crate::util::mark_unreached(&scene, operand, &crate::util::all_if(n.is_none(), 1))?;
+        demo_common::util::mark_unreached(&scene, operand, &demo_common::util::all_if(n.is_none(), 1))?;
     }
-    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 5))?;
+    demo_common::util::mark_unreached(&scene, output, &demo_common::util::after(n, 5))?;
     let right = [array, op4, result, output]
         .into_iter()
         .map(|id| scene.node_rect(id).map(|r| r.origin.x + r.size.width))
@@ -270,7 +270,7 @@ pub(crate) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
+    demo_common::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     Ok((scene, output))
@@ -292,9 +292,13 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            step(&state, transition.to);
-        })
+        .show_selection_toolbar(
+            output,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                step(&state, transition.to);
+            },
+        )
         .map_err(stringify)?;
     if let Some(n) = n {
         child.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
@@ -333,7 +337,7 @@ pub(super) fn rebuild_child(
     display: [u64; 5],
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let (input, previous_id) = {
         let state = state.borrow();
         (state.input, state.child_svg_id.clone())

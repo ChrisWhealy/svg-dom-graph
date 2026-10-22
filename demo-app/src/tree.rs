@@ -1,7 +1,7 @@
 //! `panel-tree` / `#diagram`: a minimal directed tree with straight connectors. Shows ordinary dragging and connector
 //! reroute.
 
-use crate::util::{stringify, view_box_rect};
+use demo_common::util::{stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -35,8 +35,8 @@ thread_local! {
 ///
 /// The two child boxes are draggable. Their connectors stay attached to the root and redraw as each child moves.
 pub(crate) fn build_demo_tree() -> Result<(), String> {
-    crate::util::ensure_svg_in(
-        &crate::util::document()?,
+    demo_common::util::ensure_svg_in(
+        &demo_common::util::document()?,
         "diagram-stage",
         "diagram",
         svg_dom::root::utils::Size::new(400.0, 260.0),

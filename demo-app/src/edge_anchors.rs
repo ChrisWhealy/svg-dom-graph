@@ -2,7 +2,7 @@
 //! fixing-point slider, and a straight/elbow toggle. See [`build_edge_anchors_demo`]'s own doc comment for what it
 //! demonstrates.
 
-use crate::util::{document, required_element, required_input, stringify, view_box_rect};
+use demo_common::util::{document, required_element, required_input, stringify, view_box_rect};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
@@ -117,7 +117,7 @@ fn rebuild_edge_anchors_scene(
     fixing_points: u8,
     connector_type: ConnectorType,
 ) -> Result<EdgeAnchorsDemo, String> {
-    crate::util::ensure_svg_in(
+    demo_common::util::ensure_svg_in(
         document,
         "edge-anchors-diagram-stage",
         "edge-anchors-diagram",

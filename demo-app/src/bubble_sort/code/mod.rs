@@ -6,7 +6,7 @@
 //! after each pass one more element is in its final place at the end. If a whole pass makes no swap, the array is
 //! sorted.
 
-use crate::sorting::{Frame, Mark};
+use demo_common::sorting::{Frame, Mark};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The frame for the array `values` with `done` elements at its end in their final place. `look` is the element at the

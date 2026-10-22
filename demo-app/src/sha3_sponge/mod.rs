@@ -28,7 +28,7 @@ mod rho;
 pub(crate) mod theta;
 
 use crate::source_file;
-use crate::util::{add_backdrop_clone, all_if, ensure_svg, mark_unreached, required_element, stringify};
+use demo_common::util::{add_backdrop_clone, all_if, ensure_svg, mark_unreached, required_element, stringify};
 use keccak_f::sha3_256_run;
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
@@ -208,9 +208,9 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
     for (id, class, size) in levels {
         // A step leaves the fixed id gone and a clone under another. Restore it first, so `ensure_svg` does not add a
         // second element beside the clone.
-        crate::util::restore_slot(document, id)?;
+        demo_common::util::restore_slot(document, id)?;
         ensure_svg(document, ANCHOR, id, class, size)?;
-        crate::util::restore_slot(document, id)?;
+        demo_common::util::restore_slot(document, id)?;
     }
     Ok(())
 }
@@ -266,7 +266,7 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-close` (the anchor `create_stage_svgs` creates this panel's
 /// `<svg>`s before), or if any library call fails.
 fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     create_stage_svgs(&document)?;
     let container = required_element(&document, "sha3-sponge-diagram")?;
     container.set_inner_html("");
@@ -288,7 +288,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
 
     const LEFT_X: f64 = 20.0;
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    const TOP_Y: f64 = crate::util::CONTENT_TOP;
+    const TOP_Y: f64 = demo_common::util::CONTENT_TOP;
     const H_GAP: f64 = 40.0;
     const V_GAP: f64 = 50.0;
     let keccak_size = Size::new(160.0, 70.0);
@@ -526,7 +526,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver("sha3-sponge-diagram")?;
+    demo_common::util::hide_step_driver("sha3-sponge-diagram")?;
 
     let stage_nodes = StageNodes {
         message,
@@ -550,7 +550,7 @@ fn build_scene(stage: usize) -> Result<(Scene, NodeId), String> {
         right = right.max(rect.origin.x + rect.size.width);
         bottom = bottom.max(rect.origin.y + rect.size.height);
     }
-    crate::util::fit_nested_size(&scene, "sha3-sponge-diagram", right, bottom, false)?;
+    demo_common::util::fit_nested_size(&scene, "sha3-sponge-diagram", right, bottom, false)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
@@ -598,11 +598,15 @@ fn rebuild(stage: usize) -> Result<(), String> {
     }
 
     scene
-        .show_selection_toolbar(step, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
-            // a restart, lands on it again.
-            report_step(rebuild(transition.to.unwrap_or(0)));
-        })
+        .show_selection_toolbar(
+            step,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                // This walk is never "not started": the message is in focus from the first draw, so a step back from it, or
+                // a restart, lands on it again.
+                report_step(rebuild(transition.to.unwrap_or(0)));
+            },
+        )
         .map_err(stringify)?;
     scene.set_selection(step, Selection::Cell(stage)).map_err(stringify)?;
 
@@ -622,7 +626,7 @@ fn rebuild(stage: usize) -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#sha3-sponge-open`, or if a listener could not be attached to it.
 pub(crate) fn build_sha3_sponge_demo() -> Result<(), String> {
-    crate::util::wire_open_window(&crate::util::document()?, "sha3-sponge-open", WINDOW_PAGE, WINDOW_NAME)
+    demo_common::util::wire_open_window(&demo_common::util::document()?, "sha3-sponge-open", WINDOW_PAGE, WINDOW_NAME)
 }
 
 /// The page [`build_sha3_sponge_demo`]'s button opens.
@@ -640,8 +644,8 @@ const WINDOW_NAME: &str = "svg-dom-graph-sha3-sponge";
 /// Returns `Err` if the page is missing `#sha3-sponge-close`, or if any library call fails.
 pub(crate) fn build_sha3_sponge_window() -> Result<(), String> {
     rebuild(0)?;
-    wire_sha3_sponge_controls(crate::util::document()?)?;
-    crate::util::fit_window_to_stage("sha3-sponge-diagram")
+    wire_sha3_sponge_controls(demo_common::util::document()?)?;
+    demo_common::util::fit_window_to_stage("sha3-sponge-diagram")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -678,10 +682,10 @@ const ERROR_ID: &str = "sha3-sponge-window-error";
 /// calls it with the result of its own step. The step runs in the toolbar's own callback, which has nowhere to return
 /// an error to. Dropping it would leave the diagram half updated with no sign of why. The window's own error banner
 /// shows it. A theta scene run on the gallery's own page shows it in that panel instead. See
-/// [`crate::util::report_error`].
+/// [`demo_common::util::report_error`].
 pub(crate) fn report_step(result: Result<(), String>) {
     match result {
-        Ok(()) => crate::util::clear_error(ERROR_ID),
-        Err(e) => crate::util::report_error(ERROR_ID, &format!("This step failed: {e}")),
+        Ok(()) => demo_common::util::clear_error(ERROR_ID),
+        Err(e) => demo_common::util::report_error(ERROR_ID, &format!("This step failed: {e}")),
     }
 }

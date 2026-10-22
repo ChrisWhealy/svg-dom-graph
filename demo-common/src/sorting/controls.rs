@@ -49,9 +49,9 @@ pub(super) fn add_buttons(document: &web_sys::Document, diagram_id: &str, axis: 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Says `message` to assistive technology, in the live region that `announcement_id` names, which stays on the page.
-/// The scene is drawn again for each step, and a live region that is drawn along with it is new each time, which a
-/// screen reader may not announce. So this one is in the panel, outside the scene.
+/// Announces the contents of `message` to assistive technology in the live region identified by `announcement_id`,
+/// which stays on the page. The scene and the live region are redrawn for each step, which a screen reader may not
+/// announce. So this one is in the panel, outside the scene.
 pub(super) fn announce(announcement_id: &str, message: &str) {
     if let Some(region) = web_sys::window()
         .and_then(|w| w.document())

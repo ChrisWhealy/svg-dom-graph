@@ -33,8 +33,8 @@
 mod algorithm;
 mod walk;
 
-use crate::util::{ensure_svg_in, stringify, view_box_rect};
 use algorithm::{Operation, Rounds, STATE_WORDS, STEPS, Word};
+use demo_common::util::{ensure_svg_in, stringify, view_box_rect};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
@@ -78,7 +78,7 @@ const COLUMN_PITCH: f64 = 250.0;
 const STEP_PITCH: f64 = 90.0;
 const X_MARGIN: f64 = 40.0;
 /// Below the scene's own title and its stepping toolbar, which sit at the top.
-const Y_MARGIN: f64 = crate::util::CONTENT_TOP;
+const Y_MARGIN: f64 = demo_common::util::CONTENT_TOP;
 /// Between a state and the row of four words it feeds, or that feeds it.
 const STATE_GAP: f64 = 60.0;
 /// Between the four input words and the first step.
@@ -305,7 +305,7 @@ fn draw_quarter_round(scene: &Scene, rounds: &Rounds) -> Result<(Nodes, NodeId),
 
     let after_rect = scene.node_rect(after).map_err(stringify)?;
     let list_rect = scene.node_rect(list).map_err(stringify)?;
-    crate::util::fit_nested_size(
+    demo_common::util::fit_nested_size(
         scene,
         DIAGRAM_ID,
         list_rect.origin.x + list_rect.size.width,
@@ -364,7 +364,7 @@ fn draw_keystream(scene: &Scene, rounds: &Rounds) -> Result<(Vec<NodeId>, NodeId
 
     let block_rect = scene.node_rect(block).map_err(stringify)?;
     let after_rect = scene.node_rect(after).map_err(stringify)?;
-    crate::util::fit_nested_size(
+    demo_common::util::fit_nested_size(
         scene,
         DIAGRAM_ID,
         // Clear of the zoom toolbar, which sits at the right-hand edge.
@@ -377,7 +377,7 @@ fn draw_keystream(scene: &Scene, rounds: &Rounds) -> Result<(Vec<NodeId>, NodeId
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The node whose cells the stepping toolbar walks along, one cell for each position. It is far off-canvas, since it
-/// only drives the toolbar, and it is hidden from assistive technology. See [`crate::util::hide_step_driver`].
+/// only drives the toolbar, and it is hidden from assistive technology. See [`demo_common::util::hide_step_driver`].
 fn driver(scene: &Scene) -> Result<NodeId, String> {
     let cells: Vec<u16> = (1..=POSITIONS as u16).collect();
     let node = scene
@@ -387,7 +387,7 @@ fn driver(scene: &Scene) -> Result<NodeId, String> {
             DataNodeContent::new(NodeValues::U16(cells), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(DIAGRAM_ID)?;
+    demo_common::util::hide_step_driver(DIAGRAM_ID)?;
     Ok(node)
 }
 
@@ -467,9 +467,9 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
     let view = DEMO.with_borrow(|slot| slot.as_ref().map(|demo| demo.scene.view()));
     let focused = focused_button();
 
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(FIRST_SIZE.0, FIRST_SIZE.1))?;
-    crate::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
+    demo_common::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
     let svg = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
@@ -503,7 +503,7 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
         apply(&scene, nodes, &shown)?;
     }
 
-    let options = crate::util::step_toolbar_options().with_stride(SelectionStride::new(ROUND_STRIDE, "Round"));
+    let options = demo_common::util::step_toolbar_options().with_stride(SelectionStride::new(ROUND_STRIDE, "Round"));
     scene
         .show_selection_toolbar(driver, options, |_scene, _node, transition| go(transition.to))
         .map_err(stringify)?;
@@ -524,7 +524,7 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
     if let Some(label) = focused {
         focus_button(&label);
     }
-    crate::util::fit_window_to_stage(DIAGRAM_ID)
+    demo_common::util::fit_window_to_stage(DIAGRAM_ID)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -535,8 +535,10 @@ fn build(stage: Stage, position: Option<usize>, rounds: Rc<Rounds>) -> Result<()
 /// return it to. The banner clears again at the next step that works.
 fn go(position: Option<usize>) {
     match step_to(position) {
-        Ok(()) => crate::util::clear_error(ERROR_BANNER),
-        Err(e) => crate::util::report_error(ERROR_BANNER, &format!("This step failed (position {position:?}): {e}")),
+        Ok(()) => demo_common::util::clear_error(ERROR_BANNER),
+        Err(e) => {
+            demo_common::util::report_error(ERROR_BANNER, &format!("This step failed (position {position:?}): {e}"))
+        },
     }
 }
 
@@ -568,7 +570,7 @@ fn step_to(position: Option<usize>) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
 fn focused_button() -> Option<String> {
-    let document = crate::util::document().ok()?;
+    let document = demo_common::util::document().ok()?;
     let active = document.active_element()?;
     let diagram = document.get_element_by_id(DIAGRAM_ID)?;
     if diagram.contains(Some(&active)) {
@@ -583,7 +585,7 @@ fn focused_button() -> Option<String> {
 /// that is disabled now is left alone.
 fn focus_button(label: &str) {
     use wasm_bindgen::JsCast;
-    let Ok(document) = crate::util::document() else { return };
+    let Ok(document) = demo_common::util::document() else { return };
     let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
     if let Ok(Some(button)) = document.query_selector(&selector) {
         if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
@@ -635,5 +637,5 @@ pub(crate) fn build_chacha20_window() -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#chacha20-open`, or if a listener could not be attached to it.
 pub(crate) fn build_chacha20_demo() -> Result<(), String> {
-    crate::util::wire_open_window(&crate::util::document()?, "chacha20-open", WINDOW_PAGE, WINDOW_NAME)
+    demo_common::util::wire_open_window(&demo_common::util::document()?, "chacha20-open", WINDOW_PAGE, WINDOW_NAME)
 }

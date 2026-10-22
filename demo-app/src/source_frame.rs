@@ -51,7 +51,7 @@ pub(crate) fn demo_fn_source(source: &'static str, name: &str) -> Option<&'stati
 /// Also returns `Err` if its function's source cannot be located (see [`demo_fn_source`]), or if building any of the
 /// DOM nodes below fails.
 pub(crate) fn append_demo_source(document: &web_sys::Document, panel_id: &str) -> Result<(), String> {
-    let section = crate::util::required_element(document, panel_id)?;
+    let section = demo_common::util::required_element(document, panel_id)?;
     let panel = DEMO_PANELS
         .iter()
         .find(|panel| panel.id == panel_id)

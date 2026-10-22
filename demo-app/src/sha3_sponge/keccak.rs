@@ -7,10 +7,8 @@
 //! immediately upstream of it. "A Bytes Output" is the real result of the round.
 
 use super::keccak_f::{ROUND_CONSTANTS, ROUND_COUNT, round_traces, to_theta_grid};
-use crate::{
-    sha3_sponge::{chi, iota, pi, rho, theta},
-    util::{create_child_svg, next_child_svg_id, required_element, stringify},
-};
+use crate::sha3_sponge::{chi, iota, pi, rho, theta};
+use demo_common::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
@@ -144,7 +142,7 @@ pub(crate) fn exit_if_focused() -> bool {
 ///
 /// Returns `Err` if `svg_id` is missing from the DOM, or if any library call fails.
 fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -166,7 +164,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
 
     const LEFT_X: f64 = 20.0;
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    const TOP_Y: f64 = crate::util::CONTENT_TOP;
+    const TOP_Y: f64 = demo_common::util::CONTENT_TOP;
     const V_GAP: f64 = 50.0;
     const H_GAP: f64 = 80.0;
     let fn_size = Size::new(130.0, 60.0);
@@ -230,10 +228,10 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
         .add_named_data_node(Point::new(LEFT_X, a_out_y), "A Bytes Output", hex25(shown_output))
         .map_err(stringify)?;
     // Until the walk reaches `Iota` the output holds placeholders. Round `r`'s own input and its function row are real.
-    crate::util::mark_unreached(
+    demo_common::util::mark_unreached(
         &scene,
         a_out,
-        &crate::util::all_if(focused_function != FUNCTIONS_PER_ROUND - 1, 25),
+        &demo_common::util::all_if(focused_function != FUNCTIONS_PER_ROUND - 1, 25),
     )?;
 
     // "Round Constants" sits to the right of "A Bytes - round {round}" and the function row, not below them. Its
@@ -299,7 +297,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(svg_id)?;
+    demo_common::util::hide_step_driver(svg_id)?;
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     // No backdrop of `svg_id` here, unlike `theta::build_scene`'s own call for itself. `svg_id` is not the shallowest
@@ -315,7 +313,7 @@ fn build_scene(svg_id: &str, seed: [u64; 25], position: usize) -> Result<(Scene,
     let a_out_rect = scene.node_rect(a_out).map_err(stringify)?;
     let right = (rc_rect.origin.x + rc_rect.size.width).max(iota_rect.origin.x + iota_rect.size.width);
     let bottom = a_out_rect.origin.y + a_out_rect.size.height;
-    crate::util::resize_svg(
+    demo_common::util::resize_svg(
         &document,
         svg_id,
         Size::new(right + LEFT_X + TOOLBAR_ALLOWANCE, bottom + LEFT_X),
@@ -346,7 +344,7 @@ fn attach_toolbar(
         .show_selection_toolbar(
             step_driver,
             // `Prev`/`Next` step one function; the stride buttons step a whole round of five.
-            crate::util::step_toolbar_options().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
+            demo_common::util::step_toolbar_options().with_stride(SelectionStride::new(FUNCTIONS_PER_ROUND, "Round")),
             move |_scene, _node, transition| {
                 crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
             },
@@ -369,7 +367,7 @@ fn attach_toolbar(
 /// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
 /// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<KeccakState>>) -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let (seed, base_svg_id, previous_id) = {
         let state = state.borrow();
         (state.seed, state.base_svg_id.clone(), state.child_svg_id.clone())

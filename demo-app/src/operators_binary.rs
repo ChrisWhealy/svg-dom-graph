@@ -2,7 +2,7 @@
 //! [`BinaryOperator`] this crate names. Every result shown is computed here with plain Rust integer ops, never by the
 //! library itself — see [`build_binary_operator_demo`]'s own doc comment.
 
-use crate::util::{stringify, view_box_rect};
+use demo_common::util::{stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{SvgRoot, root::utils::Point};
 use svg_dom_graph::{
@@ -38,8 +38,8 @@ thread_local! {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#operators-binary-diagram`.
 pub(crate) fn build_binary_operator_demo() -> Result<(), String> {
-    crate::util::ensure_svg_in(
-        &crate::util::document()?,
+    demo_common::util::ensure_svg_in(
+        &demo_common::util::document()?,
         "operators-binary-diagram-stage",
         "operators-binary-diagram",
         svg_dom::root::utils::Size::new(700.0, 1120.0),

@@ -1,7 +1,7 @@
 //! `panel-elbow` / `#elbow-diagram`: two boxes, a straight/elbow toggle, and a corner-radius slider. See
 //! [`build_elbow_demo`]'s own doc comment for what it demonstrates.
 
-use crate::util::{document, required_input, required_query, stringify, view_box_rect};
+use demo_common::util::{document, required_input, required_query, stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -46,8 +46,8 @@ thread_local! {
 /// Returns `Err` if any library call fails, or if [`wire_connector_controls`] cannot wire up its controls (see that
 /// function's own `# Errors` section).
 pub(crate) fn build_elbow_demo() -> Result<(), String> {
-    crate::util::ensure_svg_in(
-        &crate::util::document()?,
+    demo_common::util::ensure_svg_in(
+        &demo_common::util::document()?,
         "elbow-diagram-stage",
         "elbow-diagram",
         svg_dom::root::utils::Size::new(420.0, 300.0),
@@ -248,7 +248,7 @@ fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
     let straight_radio = required_input(&document, "connector-type-straight")?;
     let elbow_radio = required_input(&document, "connector-type-elbow")?;
     let radius_slider = required_input(&document, "corner-radius")?;
-    let radius_output = crate::util::required_element(&document, "corner-radius-value")?;
+    let radius_output = demo_common::util::required_element(&document, "corner-radius-value")?;
     let connector_path = required_query(&document, "#elbow-diagram > g.svg-dom-graph-content > path")?;
 
     // Establishes the slider's real initial ceiling from P/Q's actual starting positions, rather than leaving it at

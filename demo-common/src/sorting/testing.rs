@@ -2,6 +2,7 @@
 
 use super::{Frame, array::INITIAL};
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every arrangement of `items`, by Heap's algorithm.
 fn permutations(items: &mut Vec<u8>, size: usize, out: &mut Vec<Vec<u8>>) {
     if size <= 1 {
@@ -15,9 +16,10 @@ fn permutations(items: &mut Vec<u8>, size: usize, out: &mut Vec<Vec<u8>>) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The arrays an algorithm is tried on: every arrangement of five different elements, arrays with repeats, the empty
 /// array and one element, an array already sorted and one in reverse, and the one the demos open on.
-pub(crate) fn inputs() -> Vec<Vec<u8>> {
+pub fn inputs() -> Vec<Vec<u8>> {
     let mut all = Vec::new();
     permutations(&mut vec![1, 2, 3, 4, 5], 5, &mut all);
     all.extend([
@@ -33,6 +35,7 @@ pub(crate) fn inputs() -> Vec<Vec<u8>> {
     all
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Checks the frames an algorithm gives for `input`, which every algorithm's must satisfy:
 ///
 /// - There is at least one frame, with a mark for every value, and the first is the array as it was given.
@@ -40,7 +43,7 @@ pub(crate) fn inputs() -> Vec<Vec<u8>> {
 /// - Between one frame and the next the array is the same, except that a frame which says it swapped two places has the
 ///   elements at those places exchanged.
 /// - Every swap is between two different places that exist.
-pub(crate) fn assert_valid_frames(frames: fn(&[u8]) -> Vec<Frame>, input: &[u8]) {
+pub fn assert_valid_frames(frames: fn(&[u8]) -> Vec<Frame>, input: &[u8]) {
     let all = frames(input);
     let mut sorted = input.to_vec();
     sorted.sort_unstable();

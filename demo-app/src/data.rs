@@ -7,7 +7,7 @@
 //!
 //! Each shows draggable nodes whose content is a [`DataNodeContent`] grid of values rather than a plain text label.
 
-use crate::util::{Item, build_lines_scene, item};
+use demo_common::util::{Item, build_lines_scene, item};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{DataFormat, DataNodeContent, GridLayout, HexDumpFormat, NodeValues, Scene};
 

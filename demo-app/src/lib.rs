@@ -86,8 +86,8 @@
 //! - `panel-quicksort` / `#quicksort-diagram` — [`quicksort::build_quicksort_demo`]: Quicksort of ten values with the
 //!   Lomuto partition, drawn as thin bars on a common baseline that are as tall as their values, so that sorting shows
 //!   as bars changing places. A red bar is the pivot and a green bar is the element being examined. The drawing, the
-//!   buttons and the stepping are shared by every sorting demo, in `sorting`; Quicksort supplies only its steps. Every
-//!   value is worked out in plain Rust.
+//!   buttons and the stepping are shared by every sorting demo, in `demo_common::sorting`; Quicksort supplies only its
+//!   steps. Every value is worked out in plain Rust.
 //! - `panel-huffman` / `#huffman-diagram` — [`huffman::build_huffman_demo`]: Huffman encoding in two passes, over a
 //!   pre-filled text typed into the scene's own text input node. Pass one counts the bytes, builds the tree one merge
 //!   at a time, reads each byte's code length and assigns the canonical codes. The table shows the tree's own paths
@@ -126,13 +126,10 @@ mod sha1;
 mod sha2_256;
 mod sha3_sponge;
 mod shell_sort;
-mod sorting;
 mod source_frame;
-mod svg_buttons;
 mod text_nodes;
 mod tree;
 mod utf8;
-mod util;
 mod wide_values;
 
 // `theta` is `sha3_sponge`'s own child module; `panel-theta` is still its own gallery entry.
@@ -321,7 +318,7 @@ const PANEL_STATE_ATTR: &str = "data-panel-state";
 /// distinguish the two: by the time it runs, the catalogue has already been validated.
 #[wasm_bindgen]
 pub fn init_panel(panel_id: &str) -> Result<(), JsValue> {
-    let document = util::document().map_err(|e| JsValue::from_str(&e))?;
+    let document = demo_common::util::document().map_err(|e| JsValue::from_str(&e))?;
 
     let Some(section) = document.get_element_by_id(panel_id) else { return Ok(()) };
     if section.has_attribute(PANEL_STATE_ATTR) {
@@ -366,7 +363,7 @@ fn run_panel(panel: &DemoPanel) -> bool {
 /// that cannot happen through the normal `cargo demo` pipeline. This function is itself only a best-effort report of
 /// some other failure. It stays silent here rather than raising a second failure of its own.
 fn report_panel_error(panel_id: &str, message: &str) {
-    let Ok(document) = util::document() else { return };
+    let Ok(document) = demo_common::util::document() else { return };
     let Some(section) = document.get_element_by_id(panel_id) else { return };
     let Ok(banner) = document.create_element("p") else { return };
     banner.set_attribute("class", "demo-error").ok();

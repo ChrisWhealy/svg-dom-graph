@@ -1,5 +1,5 @@
 [workspace]
-members = ["demo-app", "demo-server", "cdp-test-fixture", "cdp-integration-test"]
+members = ["demo-app", "demo-common", "demo-server", "cdp-test-fixture", "cdp-integration-test"]
 # Keep plain `cargo build` / `cargo test` focused on the library; the demo-app (a small worked example, consuming
 # svg-dom-graph only through its public API) and demo-server (the Actix-based static server that builds and serves
 # it — see demo-server/src/main.rs) are built only on demand, via `cargo demo` or an explicit `-p` invocation, and

@@ -5,7 +5,7 @@ use super::{
     code::{CODEWORD_LEN, Transmission},
     walk::{newest, reached},
 };
-use crate::util::{all_if, mark_unreached, stringify};
+use demo_common::util::{all_if, mark_unreached, stringify};
 use svg_dom_graph::{
     NodeId,
     scene::{Scene, Selection},

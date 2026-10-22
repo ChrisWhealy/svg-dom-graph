@@ -24,10 +24,9 @@ mod transmission;
 mod walk;
 mod words;
 
-use crate::{
-    base64::encode::utf8_prefix,
-    source_file,
-    util::{clear_error, document, fit_window_to_stage, report_error, required_element, stringify, wire_open_window},
+use crate::{base64::encode::utf8_prefix, source_file};
+use demo_common::util::{
+    clear_error, document, fit_window_to_stage, report_error, required_element, stringify, wire_open_window,
 };
 use flips::Flips;
 use std::cell::{Cell, RefCell};

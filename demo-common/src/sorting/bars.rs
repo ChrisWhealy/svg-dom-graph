@@ -50,11 +50,13 @@ pub(super) fn bar_height(value: u8) -> f64 {
     f64::from(value) * UNIT
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the bar for `value`.
 pub(super) fn bar_size(value: u8) -> Size {
     Size::new(BAR_WIDTH, bar_height(value))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The options that give a bar the fill for `mark`.
 fn options(mark: Mark) -> NodeOptions {
     let fill = match mark {

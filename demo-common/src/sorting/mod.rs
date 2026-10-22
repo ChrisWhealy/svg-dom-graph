@@ -9,11 +9,10 @@
 //! The elements are drawn as thin nodes standing on a common baseline across the scene, each as tall as its value. A
 //! swap shows as two bars changing places. The colours say what the algorithm is doing: see [`Mark`].
 
-pub(crate) mod array;
+pub mod array;
 mod bars;
 mod controls;
-#[cfg(test)]
-pub(crate) mod testing;
+pub mod testing;
 
 use crate::util::{clear_error, document, report_error, stringify};
 use std::cell::RefCell;
@@ -31,7 +30,7 @@ const TOP: f64 = 64.0;
 /// A colour alone says nothing to assistive technology, so the note of a step says what it did to which values, and the
 /// live region reads the note out.
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
-pub(crate) enum Mark {
+pub enum Mark {
     /// Nothing special: the usual light blue.
     Plain,
     /// The element the algorithm is comparing the others with. Red.
@@ -51,27 +50,27 @@ pub(crate) enum Mark {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One step of a sort, as it is drawn.
 #[derive(Clone, Debug, PartialEq, Eq)]
-pub(crate) struct Frame {
+pub struct Frame {
     /// The value of each element, left to right, which is the height of its bar.
-    pub(crate) values: Vec<u8>,
+    pub values: Vec<u8>,
     /// What the algorithm is doing with each element. There is one for each value.
-    pub(crate) marks: Vec<Mark>,
+    pub marks: Vec<Mark>,
     /// The two places whose elements this step swapped, if it swapped any. The step is drawn with the bars where they
     /// have gone, and the two bars slide from where they were.
-    pub(crate) swap: Option<(usize, usize)>,
+    pub swap: Option<(usize, usize)>,
     /// What the step did, in a sentence or two of plain text.
-    pub(crate) note: String,
+    pub note: String,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A sorting algorithm, as the demo needs it.
-pub(crate) struct Algorithm {
+pub struct Algorithm {
     /// What the ids of the panel's elements start with: `quicksort` for `quicksort-diagram-stage`, `quicksort-diagram`,
     /// `quicksort-error` and `quicksort-announcement`.
-    pub(crate) prefix: &'static str,
+    pub prefix: &'static str,
     /// Every step of sorting an array, first the array as it was given and last the sorted array. There is at least
     /// one.
-    pub(crate) frames: fn(&[u8]) -> Vec<Frame>,
+    pub frames: fn(&[u8]) -> Vec<Frame>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -87,10 +86,12 @@ struct Runtime {
     position: Option<usize>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 thread_local! {
     static RUNTIMES: RefCell<Vec<Runtime>> = const { RefCell::new(Vec::new()) };
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs `f` on the state of `algorithm`'s demo, which is made if it is not there yet.
 fn with_runtime<T>(algorithm: &Algorithm, f: impl FnOnce(&mut Runtime) -> T) -> T {
     RUNTIMES.with_borrow_mut(|all| {
@@ -208,6 +209,7 @@ fn focused_selector(diagram_id: &str) -> Option<String> {
         .map(|label| format!("#{diagram_id} g[aria-label=\"{label}\"]"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Gives keyboard focus to the element `selector` finds, if there is one and it can take focus. A toolbar button that
 /// is disabled now is left alone.
 fn focus(selector: &str) {
@@ -226,7 +228,7 @@ fn focus(selector: &str) {
 /// # Errors
 ///
 /// Returns `Err` if the panel is missing a part, or if any library call fails.
-pub(crate) fn build_demo(algorithm: &'static Algorithm) -> Result<(), String> {
+pub fn build_demo(algorithm: &'static Algorithm) -> Result<(), String> {
     let document = document()?;
     controls::watch_buttons(&document, algorithm)?;
     with_runtime(algorithm, |runtime| runtime.array = array::INITIAL.to_vec());
@@ -235,5 +237,6 @@ pub(crate) fn build_demo(algorithm: &'static Algorithm) -> Result<(), String> {
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

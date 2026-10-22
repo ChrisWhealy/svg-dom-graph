@@ -12,10 +12,8 @@ use super::{
     walk::Walk,
     words::{Words, words},
 };
-use crate::{
-    base64::encode::{length_note, utf8_prefix},
-    util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify},
-};
+use crate::base64::encode::{length_note, utf8_prefix};
+use demo_common::util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
@@ -262,7 +260,7 @@ fn add_step_driver(scene: &Scene, positions: usize) -> Result<NodeId, String> {
             DataNodeContent::new(NodeValues::U16(values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(DIAGRAM_ID)?;
+    demo_common::util::hide_step_driver(DIAGRAM_ID)?;
     Ok(step)
 }
 

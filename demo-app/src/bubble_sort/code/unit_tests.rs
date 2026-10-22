@@ -1,5 +1,5 @@
 use super::frames;
-use crate::sorting::{
+use demo_common::sorting::{
     Mark,
     testing::{assert_valid_frames, inputs},
 };

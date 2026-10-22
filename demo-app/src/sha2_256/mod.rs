@@ -28,8 +28,8 @@ mod algorithm;
 mod walk;
 
 use crate::source_file;
-use crate::util::{ensure_svg_in, fit_nested_size, stringify};
 use algorithm::{INITIAL_HASH, ROUND_CONSTANTS, Trace};
+use demo_common::util::{ensure_svg_in, fit_nested_size, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
@@ -394,9 +394,9 @@ fn apply_unreached(scene: &Scene, nodes: &Nodes, shown: &walk::Shown) -> Result<
 ///
 /// Returns `Err` if the window's own stage is missing, or if any library call fails.
 fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(1900.0, 1700.0))?;
-    crate::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
+    demo_common::util::required_element(&document, DIAGRAM_ID)?.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
     scene
@@ -570,7 +570,7 @@ fn build_scene(stage: Stage) -> Result<(Scene, Nodes, NodeId), String> {
             DataNodeContent::new(NodeValues::U8(step_values), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(DIAGRAM_ID)?;
+    demo_common::util::hide_step_driver(DIAGRAM_ID)?;
 
     // Fit this diagram's own `<svg>` to what it draws. The stepping toolbar is at the top, inside `TOP`, so no room is
     // left below for it.
@@ -618,7 +618,7 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
     if let Some(label) = focused {
         focus_button(&label);
     }
-    crate::util::fit_window_to_stage(DIAGRAM_ID)
+    demo_common::util::fit_window_to_stage(DIAGRAM_ID)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -627,8 +627,8 @@ fn build(stage: Stage, position: usize, trace: Rc<Trace>) -> Result<(), String> 
 /// the toolbar's own callback has nowhere to return it to. The banner clears again at the next step that works.
 fn go(position: usize) {
     match step_to(position) {
-        Ok(()) => crate::util::clear_error(ERROR_ID),
-        Err(e) => crate::util::report_error(ERROR_ID, &format!("This step failed (position {position}): {e}")),
+        Ok(()) => demo_common::util::clear_error(ERROR_ID),
+        Err(e) => demo_common::util::report_error(ERROR_ID, &format!("This step failed (position {position}): {e}")),
     }
 }
 
@@ -659,7 +659,7 @@ fn step_to(position: usize) -> Result<(), String> {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The accessible name of the toolbar button that has keyboard focus, if one in the diagram does.
 fn focused_button() -> Option<String> {
-    let document = crate::util::document().ok()?;
+    let document = demo_common::util::document().ok()?;
     let active = document.active_element()?;
     let diagram = document.get_element_by_id(DIAGRAM_ID)?;
     if diagram.contains(Some(&active)) {
@@ -673,7 +673,7 @@ fn focused_button() -> Option<String> {
 /// that is disabled now is left alone.
 fn focus_button(label: &str) {
     use wasm_bindgen::JsCast;
-    let Ok(document) = crate::util::document() else { return };
+    let Ok(document) = demo_common::util::document() else { return };
     let selector = format!("#{DIAGRAM_ID} g[aria-label=\"{label}\"]");
     if let Ok(Some(button)) = document.query_selector(&selector) {
         if let Ok(button) = button.dyn_into::<web_sys::SvgElement>() {
@@ -703,7 +703,7 @@ pub(crate) fn build_sha2_256_window() -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing `#sha2-256-open`, or if a listener could not be attached to it.
 pub(crate) fn build_sha2_256_demo() -> Result<(), String> {
-    crate::util::wire_open_window(&crate::util::document()?, "sha2-256-open", WINDOW_PAGE, WINDOW_NAME)
+    demo_common::util::wire_open_window(&demo_common::util::document()?, "sha2-256-open", WINDOW_PAGE, WINDOW_NAME)
 }
 
 /// The page [`build_sha2_256_demo`]'s button opens.

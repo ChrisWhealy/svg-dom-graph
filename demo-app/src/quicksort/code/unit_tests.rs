@@ -1,5 +1,5 @@
 use super::{Step, frames, steps};
-use crate::sorting::{Mark, array::LEN};
+use demo_common::sorting::{Mark, array::LEN};
 
 /// Every arrangement of `items`, by Heap's algorithm.
 fn permutations(items: &mut Vec<u8>, size: usize, out: &mut Vec<Vec<u8>>) {
@@ -265,7 +265,7 @@ fn the_smaller_elements_are_blue_and_what_is_outside_the_range_is_pale() {
 
 #[test]
 fn every_frame_is_valid_for_every_input() {
-    for input in crate::sorting::testing::inputs() {
-        crate::sorting::testing::assert_valid_frames(frames, &input);
+    for input in demo_common::sorting::testing::inputs() {
+        demo_common::sorting::testing::assert_valid_frames(frames, &input);
     }
 }

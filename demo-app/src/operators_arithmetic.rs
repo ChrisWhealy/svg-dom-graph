@@ -3,7 +3,7 @@
 //! point values. Every result shown is computed here with plain Rust arithmetic, never by the library itself — see
 //! [`build_arithmetic_operator_demo`]'s own doc comment.
 
-use crate::util::{stringify, view_box_rect};
+use demo_common::util::{stringify, view_box_rect};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -208,8 +208,8 @@ pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
         X_MARGIN + COLUMN_PITCH * columns.len() as f64 + TOOLBAR_ROOM,
         Y_MARGIN + ROW_PITCH * rows as f64,
     );
-    crate::util::ensure_svg_in(
-        &crate::util::document()?,
+    demo_common::util::ensure_svg_in(
+        &demo_common::util::document()?,
         "operators-arithmetic-diagram-stage",
         "operators-arithmetic-diagram",
         size,

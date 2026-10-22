@@ -1,5 +1,5 @@
 //! Shared by [`super::theta_c`] and [`super::theta_d`]: the live state a nested child's own selection toolbar carries
-//! across steps. `super::xor_loop` reuses `crate::util`'s own `<svg>`-cloning helpers directly, but not this module's
+//! across steps. `super::xor_loop` reuses `demo_common::util`'s own `<svg>`-cloning helpers directly, but not this module's
 //! own [`SteppedChildState`] — see [`XorLoopState`](super::xor_loop::XorLoopState)'s own doc comment for why.
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

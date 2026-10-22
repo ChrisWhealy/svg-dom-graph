@@ -6,7 +6,7 @@ use super::{
     redraw,
     walk::ARRIVAL,
 };
-use crate::{
+use demo_common::{
     svg_buttons::{self, Button},
     util::{document, stringify},
 };

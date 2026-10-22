@@ -5,7 +5,7 @@
 //!   operator nodes for each of the three.
 //! - `panel-size` / `#sizes-diagram` — [`build_sizes_demo`]: the pointer-sized `usize` and `isize`.
 
-use crate::util::{Item, build_lines_scene, ensure_svg_in, item, resize_svg, stringify};
+use demo_common::util::{Item, build_lines_scene, ensure_svg_in, item, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -131,7 +131,7 @@ pub(crate) fn build_bools_demo() -> Result<(), String> {
 ///
 /// Returns `Err` if `index.html` is missing the stage, or if any library call fails.
 fn build_truth_table(svg_id: &str, format: DataFormat) -> Result<Scene, String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, &format!("{svg_id}-stage"), svg_id, Size::new(1000.0, 800.0))?;
     let svg = SvgRoot::attach(svg_id).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;

@@ -2,7 +2,7 @@
 //! marked.
 
 use super::walk::{Newest, Progress};
-use crate::util::{all_if, mark_unreached, stringify};
+use demo_common::util::{all_if, mark_unreached, stringify};
 use svg_dom_graph::{
     NodeId,
     scene::{Scene, Selection},

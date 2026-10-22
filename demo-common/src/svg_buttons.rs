@@ -10,17 +10,18 @@ use wasm_bindgen::{JsCast, closure::Closure};
 /// The XML namespace SVG elements are created in.
 const SVG_NAMESPACE: &str = "http://www.w3.org/2000/svg";
 
-/// What a button is called, what it does, and how it looks.
-pub(crate) struct Button<'a> {
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Describes all the attributes of a button: what it is called, what it does, and how it looks etc
+pub struct Button<'a> {
     /// Its text, and its accessible name.
-    pub(crate) label: &'a str,
+    pub label: &'a str,
     /// What [`watch`] reports when it is pressed.
-    pub(crate) action: &'a str,
+    pub action: &'a str,
     /// Its fill and its outline.
-    pub(crate) colours: (&'a str, &'a str),
+    pub colours: (&'a str, &'a str),
     /// `Some(on)` makes it a toggle button, and sets `aria-pressed` to say which state it is in. `None` is a plain
     /// button.
-    pub(crate) pressed: Option<bool>,
+    pub pressed: Option<bool>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -29,7 +30,7 @@ pub(crate) struct Button<'a> {
 /// # Errors
 ///
 /// Returns `Err` if the scene has no content layer.
-pub(crate) fn layer(document: &web_sys::Document, diagram_id: &str) -> Result<web_sys::Element, String> {
+pub fn layer(document: &web_sys::Document, diagram_id: &str) -> Result<web_sys::Element, String> {
     document
         .query_selector(&format!("#{diagram_id} > g.svg-dom-graph-content"))
         .map_err(|e| format!("could not look for the scene's layer: {e:?}"))?
@@ -43,7 +44,7 @@ pub(crate) fn layer(document: &web_sys::Document, diagram_id: &str) -> Result<we
 /// # Errors
 ///
 /// Returns `Err` if an element could not be made or added.
-pub(crate) fn add_button(
+pub fn add_button(
     document: &web_sys::Document,
     layer: &web_sys::Element,
     area: Rect,
@@ -120,11 +121,7 @@ pub(crate) fn add_button(
 /// # Errors
 ///
 /// Returns `Err` if the stage is missing, or a listener could not be attached.
-pub(crate) fn watch(
-    document: &web_sys::Document,
-    stage_id: &str,
-    on_press: impl Fn(&str) + 'static,
-) -> Result<(), String> {
+pub fn watch(document: &web_sys::Document, stage_id: &str, on_press: impl Fn(&str) + 'static) -> Result<(), String> {
     let stage = required_element(document, stage_id)?;
     let on_press = Rc::new(on_press);
     let action_of = |target: Option<web_sys::EventTarget>| {

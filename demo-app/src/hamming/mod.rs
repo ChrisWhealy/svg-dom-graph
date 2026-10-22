@@ -21,11 +21,9 @@ mod snake;
 mod walk;
 mod words;
 
-use crate::{
-    source_file,
-    util::{clear_error, document, fit_window_to_stage, report_error, stringify, wire_open_window},
-};
+use crate::source_file;
 use code::{CODEWORD_LEN, Transmission};
+use demo_common::util::{clear_error, document, fit_window_to_stage, report_error, stringify, wire_open_window};
 use std::cell::RefCell;
 use svg_dom_graph::scene::{Scene, Selection, SelectionToolbarOptions, Side};
 use wasm_bindgen::JsCast;

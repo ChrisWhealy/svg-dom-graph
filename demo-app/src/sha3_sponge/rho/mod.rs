@@ -3,7 +3,7 @@
 //! NIST FIPS 202. [`ROTATION_OFFSETS`] holds those offsets reduced modulo 64. The result is written into the matching
 //! cell of `Rho`'s own output. Its input is the state `Theta` produced.
 
-use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
+use demo_common::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
@@ -113,8 +113,8 @@ pub(super) fn exit_if_focused() -> bool {
 ///
 /// Returns `Err` if `svg_id` is missing from the DOM, or if any library call fails.
 fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
-    crate::util::frame_nested_scene(&document, svg_id)?;
+    let document = demo_common::util::document()?;
+    demo_common::util::frame_nested_scene(&document, svg_id)?;
     required_element(&document, svg_id)?.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
@@ -124,7 +124,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
 
     const LEFT_X: f64 = 20.0;
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    const TOP_Y: f64 = crate::util::CONTENT_TOP;
+    const TOP_Y: f64 = demo_common::util::CONTENT_TOP;
     const V_GAP: f64 = 58.0;
     let hex = |value: u64| DataNodeContent::new(NodeValues::U64(vec![value]), DataFormat::Hexadecimal);
     let hex25 = |values: [u64; 25]| {
@@ -171,8 +171,8 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .map_err(stringify)?;
     centre_on(rotl_node, 0.5)?;
     // Unstarted, the lane and its rotation are placeholders: nothing has been selected to rotate yet.
-    crate::util::mark_unreached(&scene, lane_node, &crate::util::all_if(n.is_none(), 1))?;
-    crate::util::mark_unreached(&scene, rotl_node, &crate::util::all_if(n.is_none(), 1))?;
+    demo_common::util::mark_unreached(&scene, lane_node, &demo_common::util::all_if(n.is_none(), 1))?;
+    demo_common::util::mark_unreached(&scene, rotl_node, &demo_common::util::all_if(n.is_none(), 1))?;
 
     let table_node = scene
         .add_named_data_node(
@@ -215,7 +215,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         scene.set_secondary_selection(output, &[n]).map_err(stringify)?;
     }
     // Lanes after `n` are not written yet.
-    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 25))?;
+    demo_common::util::mark_unreached(&scene, output, &demo_common::util::after(n, 25))?;
 
     let sides = |from, to| ConnectorOptions::default().with_from_side(Some(from)).with_to_side(Some(to));
     scene
@@ -239,7 +239,7 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
+    demo_common::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
 
     Ok((scene, input_node))
@@ -254,9 +254,13 @@ fn build_scene(svg_id: &str, input: [u64; 25], n: Option<usize>) -> Result<(Scen
 /// Returns `Err` if showing the toolbar or reapplying the selection fails.
 fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), String> {
     child
-        .show_selection_toolbar(driver, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
-        })
+        .show_selection_toolbar(
+            driver,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                crate::sha3_sponge::report_step(rebuild_child(transition.to, state.clone()));
+            },
+        )
         .map_err(stringify)?;
     if let Some(n) = n {
         child.set_selection(driver, grid_cell(n, 5)).map_err(stringify)?;
@@ -273,7 +277,7 @@ fn attach_toolbar(child: &Scene, driver: NodeId, n: Option<usize>, state: Rc<Ref
 /// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
 /// or if any library call fails.
 fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let (input, previous_id) = {
         let state = state.borrow();
         (state.input, state.child_svg_id.clone())
@@ -315,7 +319,7 @@ fn rebuild_child(to: Option<usize>, state: Rc<RefCell<RhoState>>) -> Result<(), 
 ///
 /// Returns `Err` if the stage is missing from the DOM, or if any library call fails.
 pub(super) fn build_initial_scene(input: [u64; 25]) -> Result<Scene, String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let stale = document
         .query_selector_all("[id^=\"sha3-sponge-rho-child-\"]")
         .map_err(|e| format!("could not search for stale Rho children: {e:?}"))?;
@@ -324,7 +328,7 @@ pub(super) fn build_initial_scene(input: [u64; 25]) -> Result<Scene, String> {
             element.remove();
         }
     }
-    crate::util::ensure_svg(
+    demo_common::util::ensure_svg(
         &document,
         "sha3-sponge-close",
         CHILD_SVG_ID,

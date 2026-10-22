@@ -6,8 +6,8 @@
 pub(crate) mod encode;
 mod layout;
 
-use crate::{
-    source_file,
+use crate::source_file;
+use demo_common::{
     svg_buttons::{self, Button},
     util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify},
 };

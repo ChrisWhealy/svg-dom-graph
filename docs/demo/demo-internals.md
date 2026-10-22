@@ -27,7 +27,7 @@ Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is
   A later reselection is a no-op.
   Also owns the `demo_gallery!` macro that builds the registry.
   It also owns the panel-lifecycle bookkeeping (`run_panel`, `report_panel_error`) that reports a build failure directly in the gallery instead of panicking.
-- `demo-app/src/util.rs`<br>Small DOM/error helpers shared by more than one demo module.
+- `demo-common/src/util.rs`<br>Small DOM/error helpers shared by more than one demo module. `demo-common` is a crate of its own, which `demo-app` depends on. It also holds `svg_buttons.rs` and the `sorting/` module that every sorting demo shares.
 - `demo-app/src/source_frame.rs`<br>Builds each panel's own collapsible `<details>` block, showing the exact Rust source of the function that built it — sliced from that demo's own module source, embedded at compile time.
 - `demo-app/src/tree.rs`, `elbow.rs`, `edge_anchors.rs`, `data.rs`, `operators_unary.rs`, `operators_binary.rs`, `operators_arithmetic.rs`, `operators_chained.rs`, and `selection.rs`<br>One module per demo panel, each owning its own `build_*` function and any struct/helper only it needs.
   `operators_unary.rs`/`operators_binary.rs`/`operators_arithmetic.rs` each show one operand node (or two) feeding an operator node, for every `UnaryOperator`/`BinaryOperator`/`ArithmeticOperator` this crate names.

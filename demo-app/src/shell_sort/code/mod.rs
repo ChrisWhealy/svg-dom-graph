@@ -9,7 +9,7 @@
 //!
 //! The gaps are the ones Shell first suggested: half the length, then half of that, and so on down to 1.
 
-use crate::sorting::{Frame, Mark};
+use demo_common::sorting::{Frame, Mark};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The gaps for an array of `len` elements, from the largest: half of `len`, then half of that, down to 1.

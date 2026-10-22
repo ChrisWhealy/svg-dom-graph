@@ -7,7 +7,7 @@
 //! - `panel-selection-hexdump` / `#selection-hexdump-diagram` — [`build_selection_hexdump_demo`].
 //! - `panel-selection-thetac` / `#selection-thetac-diagram` — [`build_selection_thetac_demo`].
 
-use crate::util::{ensure_svg_in, required_element, resize_svg, stringify};
+use demo_common::util::{ensure_svg_in, required_element, resize_svg, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
@@ -127,7 +127,7 @@ struct ThetaCDemo {
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#selection-1d-diagram-stage` or
 /// `#selection-1d-index`.
 pub(crate) fn build_selection_1d_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let one_d_values: Vec<u8> = vec![10, 20, 30, 40, 50, 60];
     ensure_svg_in(
         &document,
@@ -168,7 +168,7 @@ pub(crate) fn build_selection_1d_demo() -> Result<(), String> {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing either canvas or either status line.
 pub(crate) fn build_selection_2d_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
 
     // Ten values over four columns: a 3×4 shape with the last row short by two cells.
     let two_d_content = DataNodeContent::new(NodeValues::U8((1..=10).collect()), DataFormat::Decimal)
@@ -221,7 +221,7 @@ pub(crate) fn build_selection_2d_demo() -> Result<(), String> {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#selection-thetac-diagram-stage`.
 pub(crate) fn build_selection_thetac_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(
         &document,
         "selection-thetac-diagram-stage",
@@ -259,7 +259,7 @@ fn hex_dump_status(to: Option<usize>) -> String {
 /// Returns `Err` if `index.html` is missing `#selection-hexdump-index` or `#selection-hexdump-diagram-stage`, or if any
 /// library call fails.
 pub(crate) fn build_selection_hexdump_demo() -> Result<(), String> {
-    let document = &crate::util::document()?;
+    let document = &demo_common::util::document()?;
     ensure_svg_in(
         document,
         "selection-hexdump-diagram-stage",
@@ -481,9 +481,13 @@ fn rebuild_theta_c_diagram(n: Option<usize>, display: [u64; 5], state: Rc<RefCel
     }
 
     scene
-        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            step_theta_c(&state, transition.to);
-        })
+        .show_selection_toolbar(
+            output,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                step_theta_c(&state, transition.to);
+            },
+        )
         .map_err(stringify)?;
     if let Some(n) = n {
         scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;

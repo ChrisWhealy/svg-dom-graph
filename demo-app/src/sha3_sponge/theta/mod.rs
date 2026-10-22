@@ -21,8 +21,8 @@ mod unit_tests;
 use crate::{
     selection::{INITIAL_5X5_BUFFER, THETA_C_INPUT},
     source_file,
-    util::{add_backdrop_clone, required_element, stringify},
 };
+use demo_common::util::{add_backdrop_clone, required_element, stringify};
 use support::SteppedChildState;
 
 use std::{cell::RefCell, rc::Rc};
@@ -146,7 +146,7 @@ thread_local! {
 ///
 /// Returns `Err` if `index.html` is missing any element this function needs, or if any library call fails.
 pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 5]) -> Result<Scene, String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
 
     // Derived from `svg_id` itself, not a literal. So a second call, nested elsewhere under a different `svg_id`,
     // targets its own three distinct elements instead of colliding with this one's.
@@ -157,10 +157,10 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     // Stepping `ThetaC`/`ThetaD`/`XOR loop` leaves each fixed id gone. A host that rebuilds this scene, as every Keccak
     // round does, needs them back.
     for id in [&thetac_child_id, &thetad_child_id, &xorloop_child_id] {
-        crate::util::restore_slot(&document, id)?;
+        demo_common::util::restore_slot(&document, id)?;
     }
 
-    crate::util::frame_nested_scene(&document, svg_id)?;
+    demo_common::util::frame_nested_scene(&document, svg_id)?;
     // Cleared first. A host that rebuilds this scene (each Keccak round does) would otherwise draw a second copy of
     // every node, and of the stepping toolbar, on top of the first.
     required_element(&document, svg_id)?.set_inner_html("");
@@ -198,7 +198,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     let fn_size = Size::new(fn_width, fn_height);
 
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    let mut row_top = crate::util::CONTENT_TOP;
+    let mut row_top = demo_common::util::CONTENT_TOP;
 
     let a = parent
         .add_named_data_node(Point::new(array_left_margin, row_top), "A Bytes", a_content())
@@ -302,7 +302,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
             DataNodeContent::new(NodeValues::U8(vec![1, 2, 3]), DataFormat::Decimal).with_layout(GridLayout::Rows(1)),
         )
         .map_err(stringify)?;
-    crate::util::hide_step_driver(svg_id)?;
+    demo_common::util::hide_step_driver(svg_id)?;
     // "Theta Output" holds zeros until the walk reaches `XOR loop`, the last function. At that point it shows the real
     // result, whether or not the user ever stepped inside any of the three. The nested scenes show the same values when
     // entered, since all of them are computed from `a_grid`.
@@ -312,7 +312,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     parent
         .show_selection_toolbar(
             step_driver,
-            crate::util::step_toolbar_options(),
+            demo_common::util::step_toolbar_options(),
             move |scene, driver, transition| {
                 // This walk is never "not started": a step back from the first function, or a restart, stays on it.
                 let position = transition.to.unwrap_or(0);
@@ -327,7 +327,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     parent.set_selection(step_driver, Selection::Cell(0)).map_err(stringify)?;
 
     let theta_out_rect = parent.node_rect(theta_out).map_err(stringify)?;
-    crate::util::fit_nested_size(
+    demo_common::util::fit_nested_size(
         &parent,
         svg_id,
         (a_rect.origin.x + a_rect.size.width).max(theta_out_rect.origin.x + theta_out_rect.size.width),
@@ -338,7 +338,7 @@ pub(crate) fn build_scene(svg_id: &str, with_backdrop: bool, a_grid: [[u64; 5]; 
     // Fitting `svg_id` just resized the stage whenever it is the stage's own base diagram (`panel-theta`), after each
     // child was already framed against the old, larger stage. Frame them again so none overhangs the new one.
     for child_id in [&thetac_child_id, &thetad_child_id, &xorloop_child_id] {
-        crate::util::frame_nested_scene(&document, child_id)?;
+        demo_common::util::frame_nested_scene(&document, child_id)?;
     }
 
     parent.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
@@ -373,7 +373,7 @@ pub(crate) fn output(a: [[u64; 5]; 5]) -> [[u64; 5]; 5] {
 fn show_theta_output(scene: &Scene, output: NodeId, result: &[u64], position: usize) -> Result<(), String> {
     let values = if position >= 2 { result.to_vec() } else { vec![0; result.len()] };
     scene.set_data_values(output, NodeValues::U64(values)).map_err(stringify)?;
-    crate::util::mark_unreached(scene, output, &crate::util::all_if(position < 2, result.len()))
+    demo_common::util::mark_unreached(scene, output, &demo_common::util::all_if(position < 2, result.len()))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -406,7 +406,7 @@ fn focus_function(scene: &Scene, functions: [NodeId; 3], current: usize) -> Resu
 ///
 /// Returns `Err` if `index.html` is missing `#theta-diagram`/`#theta-close`, or if any library call fails.
 pub(crate) fn build_theta_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     create_stage_svgs(&document)?;
     build_scene("theta-diagram", true, THETA_C_INPUT)?;
     wire_theta_controls(document)
@@ -430,7 +430,7 @@ fn create_stage_svgs(document: &web_sys::Document) -> Result<(), String> {
         ("theta-diagram-xorloop-child", Some("nested-scene"), Size::new(1400.0, 780.0)),
     ];
     for (id, class, size) in levels {
-        crate::util::ensure_svg(document, ANCHOR, id, class, size)?;
+        demo_common::util::ensure_svg(document, ANCHOR, id, class, size)?;
     }
     Ok(())
 }

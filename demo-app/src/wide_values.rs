@@ -2,7 +2,7 @@
 //! whole range, and a `Uuid` in every way a `UuidFormat` can write it. See [`build_wide_demo`]'s own doc comment for
 //! what each node shows.
 
-use crate::util::{ensure_svg_in, resize_svg, stringify};
+use demo_common::util::{ensure_svg_in, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
@@ -114,7 +114,7 @@ fn example_as_guid_bytes() -> Uuid {
 ///
 /// Returns `Err` if any library call fails, or if `index.html` is missing `#wide-diagram`.
 pub(crate) fn build_wide_demo() -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     ensure_svg_in(&document, "wide-diagram-stage", "wide-diagram", Size::new(1400.0, 2200.0))?;
     let svg = SvgRoot::attach("wide-diagram").map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;

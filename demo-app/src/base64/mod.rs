@@ -5,9 +5,9 @@
 
 pub(crate) mod encode;
 
-use crate::{
-    source_file,
-    util::{MARGIN, document, ensure_svg_in, mark_unreached, required_element, required_input, resize_svg, stringify},
+use crate::source_file;
+use demo_common::util::{
+    MARGIN, document, ensure_svg_in, mark_unreached, required_element, required_input, resize_svg, stringify,
 };
 use encode::{Alphabet, PADDING, encode, length_note, utf8_prefix};
 use std::cell::{Cell, RefCell};

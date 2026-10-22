@@ -1,7 +1,7 @@
 //! Laying the boxes of one column out on an axis.
 
 use super::WORD_COLUMNS;
-use crate::util::stringify;
+use demo_common::util::stringify;
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     NodeId,

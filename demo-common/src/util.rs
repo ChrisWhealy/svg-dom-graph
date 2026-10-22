@@ -12,6 +12,22 @@ use svg_dom_graph::{
 use wasm_bindgen::{JsCast, JsValue, prelude::Closure};
 use web_sys::HtmlInputElement;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The space left of the first node and above the first line of [`lay_out_lines`], and between one node and the next,
+/// and one line and the next.
+pub const MARGIN: f64 = 20.0;
+const H_GAP: f64 = 30.0;
+const V_GAP: f64 = 36.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `y` of a scene's first row when its stepping toolbar is at the top: below the scene's own title and the toolbar.
+/// See [`step_toolbar_options`].
+pub const CONTENT_TOP: f64 = 100.0;
+
+/// How far a scene's stepping toolbar sits from its top edge: below the scene's own title.
+const STEP_TOOLBAR_TOP_MARGIN: f64 = 52.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 thread_local! {
     // A fresh numeric suffix for every step's own nested child `<svg>` id. It is shared by every demo module that steps
     // a nested child this way: `theta`'s own `theta_c`/`theta_d`/`xor_loop`, and `sha3_sponge::keccak`. See
@@ -20,9 +36,24 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+thread_local! {
+    // Every nested `<svg>`'s own frame size, by `data-frame-key` — the source of `<style
+    // id="nested-scene-frame-rules">`'s own text. See [`frame_nested_scene`].
+    static FRAME_RULES: std::cell::RefCell<Vec<(String, f64, f64)>> = const { std::cell::RefCell::new(Vec::new()) };
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Converts any displayable error into this crate's own `String` error type.
+///
+/// Lets a library `Error` and a demo-only DOM failure share one `Result` and one `?`, throughout this crate.
+pub fn stringify<E: std::fmt::Display>(err: E) -> String {
+    err.to_string()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A fresh, never-reused id for this step's own nested child `<svg>`, prefixed with `prefix`. Shares one counter across
 /// every demo module that calls this, so every id handed out is unique regardless of which nested child it backs.
-pub(crate) fn next_child_svg_id(prefix: &str) -> String {
+pub fn next_child_svg_id(prefix: &str) -> String {
     NEXT_CHILD_SVG_SUFFIX.with(|counter| {
         let n = counter.get();
         counter.set(n + 1);
@@ -44,7 +75,7 @@ pub(crate) fn next_child_svg_id(prefix: &str) -> String {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `before_id`, or if creating or inserting the element fails.
-pub(crate) fn ensure_svg(
+pub fn ensure_svg(
     document: &web_sys::Document,
     before_id: &str,
     id: &str,
@@ -70,7 +101,7 @@ pub(crate) fn ensure_svg(
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `parent_id`, or if creating or appending the element fails.
-pub(crate) fn ensure_svg_in(document: &web_sys::Document, parent_id: &str, id: &str, size: Size) -> Result<(), String> {
+pub fn ensure_svg_in(document: &web_sys::Document, parent_id: &str, id: &str, size: Size) -> Result<(), String> {
     if document.get_element_by_id(id).is_some() {
         return Ok(());
     }
@@ -126,7 +157,7 @@ fn new_svg(
 /// # Errors
 ///
 /// Returns `Err` if `id` is missing, has no numeric `width`/`height`, or a DOM write fails.
-pub(crate) fn frame_nested_scene(document: &web_sys::Document, id: &str) -> Result<(), String> {
+pub fn frame_nested_scene(document: &web_sys::Document, id: &str) -> Result<(), String> {
     let svg = required_element(document, id)?;
     let class = svg.get_attribute("class").unwrap_or_default();
     if !class.split_whitespace().any(|c| c == "nested-scene") {
@@ -173,12 +204,6 @@ pub(crate) fn frame_nested_scene(document: &web_sys::Document, id: &str) -> Resu
         },
     };
     record_frame_rule(document, key, frame_w, frame_h)
-}
-
-thread_local! {
-    // Every nested `<svg>`'s own frame size, by `data-frame-key` — the source of `<style
-    // id="nested-scene-frame-rules">`'s own text. See [`frame_nested_scene`].
-    static FRAME_RULES: std::cell::RefCell<Vec<(String, f64, f64)>> = const { std::cell::RefCell::new(Vec::new()) };
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -235,7 +260,7 @@ fn record_frame_rule(document: &web_sys::Document, key: String, width: f64, heig
 /// # Errors
 ///
 /// Returns `Err` if `id` is missing, or a DOM write or layout pass fails.
-pub(crate) fn fit_nested_size(
+pub fn fit_nested_size(
     scene: &svg_dom_graph::scene::Scene,
     id: &str,
     content_right: f64,
@@ -290,7 +315,7 @@ fn set_style_vars(element: &web_sys::Element, vars: &[(&str, String)]) -> Result
 ///
 /// Returns `Err` if `previous_id` names no element currently in the DOM, or if cloning or inserting the fresh element
 /// fails.
-pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, next_id: &str) -> Result<(), String> {
+pub fn create_child_svg(document: &web_sys::Document, previous_id: &str, next_id: &str) -> Result<(), String> {
     let previous = required_element(document, previous_id)?;
     let fresh = previous
         .clone_node_with_deep(false)
@@ -321,7 +346,7 @@ pub(crate) fn create_child_svg(document: &web_sys::Document, previous_id: &str, 
 /// # Errors
 ///
 /// Returns `Err` if the DOM cannot be searched or an attribute cannot be written.
-pub(crate) fn restore_slot(document: &web_sys::Document, slot_id: &str) -> Result<(), String> {
+pub fn restore_slot(document: &web_sys::Document, slot_id: &str) -> Result<(), String> {
     let found = document
         .query_selector_all(&format!("[data-slot=\"{slot_id}\"]"))
         .map_err(|e| format!("could not search for the #{slot_id} slot: {e:?}"))?;
@@ -392,7 +417,7 @@ pub(crate) fn restore_slot(document: &web_sys::Document, slot_id: &str) -> Resul
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `svg_id`, or if cloning, adjusting, or inserting the duplicate fails.
-pub(crate) fn add_backdrop_clone(document: &web_sys::Document, svg_id: &str) -> Result<(), String> {
+pub fn add_backdrop_clone(document: &web_sys::Document, svg_id: &str) -> Result<(), String> {
     // Removes whichever backdrop clone a previous call of this function already left behind for `svg_id`. See this
     // function's own doc comment for why a leftover one would otherwise go on obscuring real content forever.
     if let Ok(Some(stale)) = document.query_selector(&format!("[data-backdrop-for={svg_id:?}]")) {
@@ -440,20 +465,12 @@ pub(crate) fn add_backdrop_clone(document: &web_sys::Document, svg_id: &str) -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Converts any displayable error into this crate's own `String` error type.
-///
-/// Lets a library `Error` and a demo-only DOM failure share one `Result` and one `?`, throughout this crate.
-pub(crate) fn stringify<E: std::fmt::Display>(err: E) -> String {
-    err.to_string()
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The current page's `Document`, or `Err` if there is no global `window` or no `document` on it.
 ///
 /// Neither should be possible in a real browser. Returned as a graceful `Err` anyway, not a panic. This crate already
 /// has clean ways to report a failure — `init_panel`'s own returned `Result`, or `report_panel_error`'s visible banner
 /// for one inside a demo's own build function.
-pub(crate) fn document() -> Result<web_sys::Document, String> {
+pub fn document() -> Result<web_sys::Document, String> {
     web_sys::window()
         .ok_or_else(|| "no global window".to_owned())?
         .document()
@@ -470,7 +487,7 @@ pub(crate) fn document() -> Result<web_sys::Document, String> {
 /// # Errors
 ///
 /// Returns `Err` if `#svg_id` holds no node named "Step".
-pub(crate) fn hide_step_driver(svg_id: &str) -> Result<(), String> {
+pub fn hide_step_driver(svg_id: &str) -> Result<(), String> {
     let selector = format!("#{svg_id} g[aria-label^=\"Step:\"]");
     document()?
         .query_selector(&selector)
@@ -482,7 +499,7 @@ pub(crate) fn hide_step_driver(svg_id: &str) -> Result<(), String> {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Looks up `id` in `document`, or `Err` if `index.html` does not define it.
-pub(crate) fn required_element(document: &web_sys::Document, id: &str) -> Result<web_sys::Element, String> {
+pub fn required_element(document: &web_sys::Document, id: &str) -> Result<web_sys::Element, String> {
     document
         .get_element_by_id(id)
         .ok_or_else(|| format!("index.html must define #{id}"))
@@ -492,7 +509,7 @@ pub(crate) fn required_element(document: &web_sys::Document, id: &str) -> Result
 /// Looks up `id` in `document` as an `<input>` element.
 ///
 /// `Err` if `index.html` does not define `#id`, or defines it as something other than `<input>`.
-pub(crate) fn required_input(document: &web_sys::Document, id: &str) -> Result<HtmlInputElement, String> {
+pub fn required_input(document: &web_sys::Document, id: &str) -> Result<HtmlInputElement, String> {
     required_element(document, id)?
         .dyn_into::<HtmlInputElement>()
         .map_err(|_| format!("#{id} must be an <input>"))
@@ -500,7 +517,7 @@ pub(crate) fn required_input(document: &web_sys::Document, id: &str) -> Result<H
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs `selector` against `document`, or `Err` if nothing matches.
-pub(crate) fn required_query(document: &web_sys::Document, selector: &str) -> Result<web_sys::Element, String> {
+pub fn required_query(document: &web_sys::Document, selector: &str) -> Result<web_sys::Element, String> {
     document
         .query_selector(selector)
         .map_err(|e| format!("query_selector({selector:?}) failed: {e:?}"))?
@@ -517,7 +534,7 @@ pub(crate) fn required_query(document: &web_sys::Document, selector: &str) -> Re
 /// # Errors
 ///
 /// Returns `Err` if `svg` has no `viewBox` attribute, or its value is not exactly four numbers.
-pub(crate) fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
+pub fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
     let value = svg
         .root
         .get_attribute("viewBox")
@@ -559,7 +576,7 @@ pub(crate) fn view_box_rect(svg: &SvgRoot) -> Result<Rect, String> {
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `#id`, or a DOM write fails.
-pub(crate) fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> Result<(), String> {
+pub fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> Result<(), String> {
     let svg = required_element(document, id)?;
     let (width, height) = (size.width, size.height);
     svg.set_attribute("width", &width.to_string())
@@ -581,7 +598,7 @@ pub(crate) fn resize_svg(document: &web_sys::Document, id: &str, size: Size) -> 
 /// # Errors
 ///
 /// Returns `Err` if `button_id` is missing, or if a listener could not be attached to it.
-pub(crate) fn wire_open_window(
+pub fn wire_open_window(
     document: &web_sys::Document,
     button_id: &str,
     page: &'static str,
@@ -616,7 +633,7 @@ pub(crate) fn wire_open_window(
 /// # Errors
 ///
 /// Returns `Err` if the diagram or its stage cannot be found.
-pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
+pub fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
     let document = document()?;
     let window = web_sys::window().ok_or("no window")?;
     let diagram = required_element(&document, diagram_id)?;
@@ -663,7 +680,7 @@ pub(crate) fn fit_window_to_stage(diagram_id: &str) -> Result<(), String> {
 ///
 /// A page with no such element is the gallery itself, which a shared demo can also run in. There the message goes into
 /// a `.demo-error` paragraph at the end of the section on show instead, which [`clear_error`] removes again.
-pub(crate) fn report_error(banner_id: &str, message: &str) {
+pub fn report_error(banner_id: &str, message: &str) {
     web_sys::console::error_1(&message.into());
     let Ok(document) = document() else { return };
     if let Some(banner) = document.get_element_by_id(banner_id) {
@@ -689,7 +706,7 @@ pub(crate) fn report_error(banner_id: &str, message: &str) {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Hides the banner [`report_error`] showed, or removes the paragraph it added to the gallery's section, once whatever
 /// failed has worked again. Does nothing if there is none.
-pub(crate) fn clear_error(banner_id: &str) {
+pub fn clear_error(banner_id: &str) {
     let Ok(document) = document() else { return };
     if let Some(banner) = document.get_element_by_id(banner_id) {
         banner.set_text_content(None);
@@ -700,18 +717,10 @@ pub(crate) fn clear_error(banner_id: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The `y` of a scene's first row when its stepping toolbar is at the top: below the scene's own title and the toolbar.
-/// See [`step_toolbar_options`].
-pub(crate) const CONTENT_TOP: f64 = 100.0;
-
-/// How far a scene's stepping toolbar sits from its top edge: below the scene's own title.
-const STEP_TOOLBAR_TOP_MARGIN: f64 = 52.0;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The options for a stepping toolbar at the top of its scene, below the scene's own title. A scene with one starts its
 /// first row at [`CONTENT_TOP`], and fits its `<svg>` with `fit_nested_size`'s `step_toolbar` set to `false`, since no
 /// room is needed below the content for it.
-pub(crate) fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOptions {
+pub fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOptions {
     let mut options = svg_dom_graph::scene::SelectionToolbarOptions::new(svg_dom_graph::scene::Side::North);
     options.margin = STEP_TOOLBAR_TOP_MARGIN;
     options
@@ -723,7 +732,7 @@ pub(crate) fn step_toolbar_options() -> svg_dom_graph::scene::SelectionToolbarOp
 /// # Errors
 ///
 /// Returns `Err` if the library call fails.
-pub(crate) fn mark_unreached(
+pub fn mark_unreached(
     scene: &svg_dom_graph::scene::Scene,
     node: svg_dom_graph::NodeId,
     cells: &[usize],
@@ -731,35 +740,32 @@ pub(crate) fn mark_unreached(
     scene.set_unreached_cells(node, cells).map_err(stringify)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every one of `count` cells if `unreached`, and none otherwise.
-pub(crate) fn all_if(unreached: bool, count: usize) -> Vec<usize> {
+pub fn all_if(unreached: bool, count: usize) -> Vec<usize> {
     if unreached { (0..count).collect() } else { Vec::new() }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cells of an array of `count` that a walk standing at `at` has not reached yet, when it fills the array one cell
 /// at a time in order and has written cells `0..=at`. All of them before the walk has started.
-pub(crate) fn after(at: Option<usize>, count: usize) -> Vec<usize> {
+pub fn after(at: Option<usize>, count: usize) -> Vec<usize> {
     let first = at.map_or(0, |n| n + 1);
     (first..count).collect()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One data node of a line in [`lay_out_lines`]: a `name` shown over its box, and its `content`.
-pub(crate) struct Item {
-    pub(crate) name: String,
-    pub(crate) content: DataNodeContent,
+pub struct Item {
+    pub name: String,
+    pub content: DataNodeContent,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An [`Item`] named `name` that holds `content`.
-pub(crate) fn item(name: impl Into<String>, content: DataNodeContent) -> Item {
+pub fn item(name: impl Into<String>, content: DataNodeContent) -> Item {
     Item { name: name.into(), content }
 }
-
-/// The space left of the first node and above the first line of [`lay_out_lines`], and between one node and the next,
-/// and one line and the next.
-pub(crate) const MARGIN: f64 = 20.0;
-const H_GAP: f64 = 30.0;
-const V_GAP: f64 = 36.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds each item of each of `lines` to `scene` as a named data node, left to right along a line and top to bottom down
@@ -773,7 +779,7 @@ const V_GAP: f64 = 36.0;
 /// # Errors
 ///
 /// Returns `Err` if any library call fails.
-pub(crate) fn lay_out_lines(scene: &Scene, lines: Vec<Vec<Item>>, top: f64) -> Result<(f64, f64, Vec<NodeId>), String> {
+pub fn lay_out_lines(scene: &Scene, lines: Vec<Vec<Item>>, top: f64) -> Result<(f64, f64, Vec<NodeId>), String> {
     let mut y = top;
     let mut ids = Vec::new();
     let mut right: f64 = 0.0;
@@ -801,7 +807,7 @@ pub(crate) fn lay_out_lines(scene: &Scene, lines: Vec<Vec<Item>>, top: f64) -> R
 /// # Errors
 ///
 /// Returns `Err` if `index.html` is missing `#{svg_id}-stage`, or if any library call fails.
-pub(crate) fn build_lines_scene(svg_id: &str, lines: Vec<Vec<Item>>, draggable: bool) -> Result<Scene, String> {
+pub fn build_lines_scene(svg_id: &str, lines: Vec<Vec<Item>>, draggable: bool) -> Result<Scene, String> {
     /// Room east of the widest line for the zoom toolbar.
     const TOOLBAR_ROOM: f64 = 80.0;
 

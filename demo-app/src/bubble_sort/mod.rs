@@ -5,10 +5,8 @@
 
 mod code;
 
-use crate::{
-    sorting::{self, Algorithm},
-    source_file,
-};
+use crate::source_file;
+use demo_common::sorting::{self, Algorithm};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
@@ -16,10 +14,10 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 /// The files behind this demo: the algorithm, then what every sorting demo shares: the bars, the buttons and the walk.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     source_file!("bubble_sort/code/mod.rs", "code/mod.rs"),
-    source_file!("sorting/mod.rs", "../sorting/mod.rs"),
-    source_file!("sorting/bars.rs", "../sorting/bars.rs"),
-    source_file!("sorting/controls.rs", "../sorting/controls.rs"),
-    source_file!("sorting/array.rs", "../sorting/array.rs"),
+    source_file!("sorting/mod.rs", "../../../demo-common/src/sorting/mod.rs"),
+    source_file!("sorting/bars.rs", "../../../demo-common/src/sorting/bars.rs"),
+    source_file!("sorting/controls.rs", "../../../demo-common/src/sorting/controls.rs"),
+    source_file!("sorting/array.rs", "../../../demo-common/src/sorting/array.rs"),
     source_file!("bubble_sort/mod.rs", "mod.rs"),
 ];
 

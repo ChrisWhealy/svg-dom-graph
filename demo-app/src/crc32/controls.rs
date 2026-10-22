@@ -4,8 +4,8 @@ use super::{
     ANNOUNCEMENT_ID, DEMO, DIAGRAM_ID, FLIPS, INITIAL_TEXT, INPUT_LEN, STAGE_ID, build, flips::Flips, report,
     walk::Walk,
 };
-use crate::{
-    base64::encode::utf8_prefix,
+use crate::base64::encode::utf8_prefix;
+use demo_common::{
     svg_buttons::{self, Button},
     util::{document, stringify},
 };

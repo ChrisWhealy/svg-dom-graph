@@ -47,6 +47,14 @@ jobs:
       - name: Unit tests (demo-app)
         run: cargo test -p svg-dom-graph-demo
 
+      # demo-common holds what the demos share (DOM helpers, SVG buttons, the sorting visualisation). Its unit tests are
+      # plain `#[test]`s that run natively, and `--all-targets` lints them too.
+      - name: Clippy (demo-common)
+        run: cargo clippy -p demo-common --all-targets -- -D warnings
+
+      - name: Unit tests (demo-common)
+        run: cargo test -p demo-common
+
       # The CDP tests' own static file server is plain native code too, and the shards below run only the browser tests
       # (`--test cdp`), so its unit tests, such as the one that a query string is not part of a file's name, run here.
       # `--lib` selects them without starting a browser.
@@ -86,7 +94,7 @@ jobs:
       # linting it here is a standing check that the library's public surface is sufficient for a real consumer, the
       # same reasoning svg-dom's own CI applies to its demo-app job.
       - name: Clippy (demo-app, wasm32 target)
-        run: cargo clippy -p svg-dom-graph-demo --target wasm32-unknown-unknown -- -D warnings
+        run: cargo clippy -p svg-dom-graph-demo -p demo-common --target wasm32-unknown-unknown -- -D warnings
 
       # jetli/wasm-pack-action was previously used here, but its last release (v0.4.0, 2022) declares a `node16`
       # runtime, which GitHub has deprecated — every job using it now emits a dependency-maintenance warning even
@@ -122,7 +130,7 @@ jobs:
       - name: Check the library builds on the declared MSRV
         run: cargo check --lib --target wasm32-unknown-unknown
       - name: Check demo-app builds on the declared MSRV
-        run: cargo check -p svg-dom-graph-demo --target wasm32-unknown-unknown
+        run: cargo check -p svg-dom-graph-demo -p demo-common --target wasm32-unknown-unknown
 
   browser-tests:
     name: wasm-pack test (${{ matrix.browser }})

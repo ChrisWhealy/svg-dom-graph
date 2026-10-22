@@ -2,7 +2,7 @@
 //! rebuilt, via `Scene::replace_container_child`, every time that toolbar steps to a new row of `ThetaC`'s own output.
 
 use super::support::SteppedChildState;
-use crate::util::{create_child_svg, next_child_svg_id, required_element, stringify};
+use demo_common::util::{create_child_svg, next_child_svg_id, required_element, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
@@ -82,8 +82,8 @@ pub(super) fn build_scene(
     n: Option<usize>,
     display: [u64; 5],
 ) -> Result<(Scene, NodeId), String> {
-    let document = crate::util::document()?;
-    crate::util::frame_nested_scene(&document, svg_id)?;
+    let document = demo_common::util::document()?;
+    demo_common::util::frame_nested_scene(&document, svg_id)?;
     let container = required_element(&document, svg_id)?;
     container.set_inner_html("");
     let svg = svg_dom::SvgRoot::attach(svg_id).map_err(stringify)?;
@@ -97,7 +97,7 @@ pub(super) fn build_scene(
 
     const LEFT_X: f64 = 20.0;
     // Below the scene's own title and its stepping toolbar, which is at the top.
-    const INPUT_Y: f64 = crate::util::CONTENT_TOP;
+    const INPUT_Y: f64 = demo_common::util::CONTENT_TOP;
     const PREV_NEXT_Y: f64 = INPUT_Y + 150.0;
     const MID_Y: f64 = PREV_NEXT_Y + 130.0;
     const OUTPUT_Y: f64 = MID_Y + 130.0;
@@ -170,9 +170,9 @@ pub(super) fn build_scene(
     scene.add_edge(xor_node, output).map_err(stringify)?;
     // Unstarted, `prev` and `next` are placeholders. Cell `n` and the ones before it are written to the output.
     for node in [prev_node, next_node] {
-        crate::util::mark_unreached(&scene, node, &crate::util::all_if(n.is_none(), 1))?;
+        demo_common::util::mark_unreached(&scene, node, &demo_common::util::all_if(n.is_none(), 1))?;
     }
-    crate::util::mark_unreached(&scene, output, &crate::util::after(n, 5))?;
+    demo_common::util::mark_unreached(&scene, output, &demo_common::util::after(n, 5))?;
     if let Some(n) = n {
         scene.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
     }
@@ -185,7 +185,7 @@ pub(super) fn build_scene(
         .into_iter()
         .fold(0.0, f64::max);
     let output_rect = scene.node_rect(output).map_err(stringify)?;
-    crate::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
+    demo_common::util::fit_nested_size(&scene, svg_id, right, output_rect.origin.y + output_rect.size.height, false)?;
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
     Ok((scene, output))
 }
@@ -203,9 +203,13 @@ pub(super) fn attach_toolbar(
     state: Rc<RefCell<SteppedChildState>>,
 ) -> Result<(), String> {
     child
-        .show_selection_toolbar(output, crate::util::step_toolbar_options(), move |_scene, _node, transition| {
-            step(&state, transition.to);
-        })
+        .show_selection_toolbar(
+            output,
+            demo_common::util::step_toolbar_options(),
+            move |_scene, _node, transition| {
+                step(&state, transition.to);
+            },
+        )
         .map_err(stringify)?;
     if let Some(n) = n {
         child.set_selection(output, Selection::Cell(n)).map_err(stringify)?;
@@ -223,7 +227,7 @@ pub(super) fn attach_toolbar(
 /// Returns `Err` if [`SCENE`] was never initialised, if the outgoing child's own `<svg>` is not currently in the DOM,
 /// or if any library call fails.
 fn rebuild_child(to: Option<usize>, display: [u64; 5], state: Rc<RefCell<SteppedChildState>>) -> Result<(), String> {
-    let document = crate::util::document()?;
+    let document = demo_common::util::document()?;
     let (input, previous_id) = {
         let state = state.borrow();
         (state.input, state.child_svg_id.clone())
