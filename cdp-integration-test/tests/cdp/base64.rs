@@ -115,6 +115,50 @@ fn typing_encodes_the_new_text_with_the_padding_each_final_group_needs() -> Resu
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The left and right edges of the node whose accessible name starts with `name`, and of the diagram itself.
+fn edges(tab: &Tab, name: &str) -> Result<(f64, f64, f64), String> {
+    let json = text(
+        tab,
+        &format!(
+            "(() => {{ const r = document \
+             .querySelector('{DIAGRAM} g[aria-label^=\"{name}\"]').getBoundingClientRect(); \
+             const d = document.querySelector('{DIAGRAM}').getBoundingClientRect(); \
+             return JSON.stringify([r.left, r.right, d.left]); }})()"
+        ),
+    )?;
+    let [left, right, diagram]: [f64; 3] =
+        serde_json::from_str(&json).map_err(|e| format!("could not read the edges of {name}: {e}"))?;
+    Ok((left, right, diagram))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The gap between the two hex dumps is the same as the margin to the left of the first, and the six-bit values are
+/// centred on the midline of the two together.
+#[test]
+fn the_hex_dumps_are_a_margin_apart_and_the_six_bit_values_are_centred_under_them() -> Result<(), String> {
+    let tab = open()?;
+    let (input_left, input_right, diagram_left) = edges(&tab, "Input bytes")?;
+    let (text_left, text_right, _) = edges(&tab, "Base64 text")?;
+    let (six_left, six_right, _) = edges(&tab, "Six-bit values")?;
+    let tolerance = 1.5;
+    let near = |a: f64, b: f64| (a - b).abs() <= tolerance;
+    check(
+        near(text_left - input_right, input_left - diagram_left),
+        &format!(
+            "the gap {} is not the margin {}",
+            text_left - input_right,
+            input_left - diagram_left
+        ),
+    )?;
+    let above = (input_left + text_right) / 2.0;
+    let below = (six_left + six_right) / 2.0;
+    check(
+        near(above, below),
+        &format!("the midline above is {above}, but the six-bit values' is {below}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An empty text has nothing to encode, so the six-bit values and the Base64 text are not drawn, and typing again
 /// brings them back.
 #[test]

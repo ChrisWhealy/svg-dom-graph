@@ -65,10 +65,12 @@ const INPUT_LEN: usize = 256;
 /// How many values the six-bit node lays out on a row, which is four whole groups.
 const ROW_LEN: usize = 16;
 
-/// The gap between the two hex dumps of a row, wide enough for a connector, and the room east of them for the zoom
-/// toolbar.
+/// The gap that leaves room for the note beside the text box, and the room east of the nodes for the zoom toolbar.
 const GAP: f64 = 100.0;
 const TOOLBAR_ROOM: f64 = 80.0;
+
+/// The gap between the two hex dumps of a row, which is the same as the margin on their left.
+const NODE_GAP: f64 = MARGIN;
 
 /// How wide the text box is, at most, and how wide the note beside it is.
 const INPUT_WIDTH: f64 = 580.0;
@@ -165,7 +167,10 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
         // under whichever of the two is lower.
         let characters = scene
             .add_named_data_node(
-                Point::new(hexdump_rect.origin.x + hexdump_rect.size.width + GAP, hexdump_rect.origin.y),
+                Point::new(
+                    hexdump_rect.origin.x + hexdump_rect.size.width + NODE_GAP,
+                    hexdump_rect.origin.y,
+                ),
                 "Base64 text",
                 DataNodeContent::new(
                     NodeValues::U8(encoded.text.clone()),
@@ -177,16 +182,20 @@ fn build(text: &str, alphabet: Alphabet) -> Result<NodeId, String> {
         let sextets_top = (hexdump_rect.origin.y + hexdump_rect.size.height)
             .max(characters_rect.origin.y + characters_rect.size.height)
             + ROW_GAP;
+        let sextets_content = DataNodeContent::new(
+            NodeValues::Bits(BitValues::new(6, encoded.sextets.clone()).map_err(stringify)?),
+            DataFormat::Binary,
+        )
+        .with_layout(GridLayout::Columns(ROW_LEN));
+        // The six-bit values are centred on the midline of the two nodes above them, taken together.
+        let sextets_size = scene
+            .measure_named_data_node("Six-bit values", &sextets_content)
+            .map_err(stringify)?;
+        let row_left = hexdump_rect.origin.x;
+        let row_right = characters_rect.origin.x + characters_rect.size.width;
+        let sextets_left = (row_left + row_right - sextets_size.width) / 2.0;
         let sextets = scene
-            .add_named_data_node(
-                Point::new(MARGIN, sextets_top),
-                "Six-bit values",
-                DataNodeContent::new(
-                    NodeValues::Bits(BitValues::new(6, encoded.sextets.clone()).map_err(stringify)?),
-                    DataFormat::Binary,
-                )
-                .with_layout(GridLayout::Columns(ROW_LEN)),
-            )
+            .add_named_data_node(Point::new(sextets_left, sextets_top), "Six-bit values", sextets_content)
             .map_err(stringify)?;
         // The six bits behind a padding character are zeros that the padding made up, so the encoding does not use
         // them.
