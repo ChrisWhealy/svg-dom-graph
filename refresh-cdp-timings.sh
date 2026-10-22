@@ -9,6 +9,10 @@
 # .github/scripts/cdp-merge-timings.sh, and the temporary directory is removed. A run that failed still counts, since
 # the shards upload their timings whether or not a test failed. A run that was cancelled or skipped is passed over.
 #
+# The new times replace the old ones only for the tests the run measured. A run that stopped early, with only some
+# shards' timings, therefore loses nothing: every other test keeps the time it had. An entry is dropped when its test no
+# longer exists, according to `cargo nextest list`. Without cargo-nextest nothing is dropped.
+#
 # Afterwards, `git diff .github/cdp-timings.tsv` shows what changed. The file is not committed for you.
 set -euo pipefail
 
@@ -50,4 +54,28 @@ else
 fi
 
 echo "using run $run"
-"$root/.github/scripts/cdp-merge-timings.sh" "$output" "$work/download"
+"$root/.github/scripts/cdp-merge-timings.sh" "$work/new.tsv" "$work/download"
+
+# Old entries first, then the new, so that a test the run measured takes its new time.
+touch "$output"
+awk -F'\t' 'NF == 2 { time[$1] = $2 } END { for (t in time) printf "%s\t%s\n", t, time[t] }' "$output" "$work/new.tsv" \
+  | sort > "$work/merged.tsv"
+
+if tests="$(cd "$root" && cargo nextest list -p cdp-integration-test --test cdp --message-format oneline 2> /dev/null)" \
+  && [ -n "$tests" ]; then
+  echo "$tests" | sed 's/^[^ ]* //' | sort > "$work/tests.txt"
+  : > "$work/pruned.tsv"
+  while IFS=$'\t' read -r name millis; do
+    if grep -qxF -- "$name" "$work/tests.txt"; then
+      printf '%s\t%s\n' "$name" "$millis" >> "$work/pruned.tsv"
+    else
+      echo "dropping $name, which no longer exists" >&2
+    fi
+  done < "$work/merged.tsv"
+else
+  echo "cargo nextest list failed, so no obsolete entries were dropped" >&2
+  cp "$work/merged.tsv" "$work/pruned.tsv"
+fi
+
+cp "$work/pruned.tsv" "$output"
+echo "kept $(wc -l < "$output" | tr -d ' ') timings, $(wc -l < "$work/new.tsv" | tr -d ' ') of them from run $run"

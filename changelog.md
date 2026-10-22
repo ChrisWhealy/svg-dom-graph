@@ -27,7 +27,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct CI test duration calculation (``)
+- Correct CI test duration calculation (`ad1205e`)
+- Avoid incomplete CI run from replacing entire timing history (``)
 
 # [Released]
 
