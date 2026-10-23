@@ -13,7 +13,7 @@ use svg_dom_graph::{
     EdgeEnd, EndpointProblem, Error, NodeId,
     scene::{
         ClockPosition, ConnectorOptions, ConnectorType, EdgeAnchors, EllipseOptions, EllipseRadii, NodeValues, Scene,
-        Side, ToolbarOptions,
+        Selection, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -922,5 +922,57 @@ fn a_press_on_the_painted_ellipse_drags_it_and_does_not_pan_the_view() -> Result
     check(
         content_transform("ellipse-painted")? == before_view,
         "the view panned when the ellipse was dragged",
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An ellipse, and so a circle, is a plain label node as far as selection goes. Every call that needs a data node
+/// refuses it with `InvalidSelection`, as it does a rectangle's plain label, and changes nothing.
+#[wasm_bindgen_test]
+fn the_selection_calls_refuse_an_ellipse_and_a_circle_as_they_refuse_any_plain_node() -> Result<(), String> {
+    let scene = new_scene("ellipse-selection")?;
+    let ellipse = scene
+        .add_ellipse_node(Point::new(120.0, 120.0), EllipseRadii::new(80.0, 40.0), "Ellipse")
+        .map_err(e)?;
+    let circle = scene.add_circle_node(Point::new(320.0, 120.0), 30.0, "Circle").map_err(e)?;
+    let rectangle = scene
+        .add_node(Point::new(480.0, 100.0), Size::new(80.0, 40.0), "Rectangle")
+        .map_err(e)?;
+    let labels = |index: u32| -> Result<Option<String>, String> {
+        Ok(nth_group("ellipse-selection", index)?.get_attribute("aria-label"))
+    };
+    let before = (labels(0)?, labels(1)?);
+
+    for (name, node) in [("ellipse", ellipse), ("circle", circle), ("rectangle", rectangle)] {
+        let primary = scene.set_selection(node, Selection::Cell(0));
+        check(
+            matches!(primary, Err(Error::InvalidSelection(id, Selection::Cell(0))) if id == node),
+            &format!("set_selection on the {name}: {primary:?}"),
+        )?;
+        let secondary = scene.set_secondary_selection(node, &[0]);
+        check(
+            matches!(secondary, Err(Error::InvalidSelection(..))),
+            &format!("set_secondary_selection on the {name}: {secondary:?}"),
+        )?;
+        let unreached = scene.set_unreached_cells(node, &[0]);
+        check(
+            matches!(unreached, Err(Error::InvalidSelection(..))),
+            &format!("set_unreached_cells on the {name}: {unreached:?}"),
+        )?;
+        let toolbar = scene.show_selection_toolbar(node, SelectionToolbarOptions::new(Side::North), |_, _, _| {});
+        check(
+            matches!(toolbar, Err(Error::InvalidSelection(..))),
+            &format!("show_selection_toolbar on the {name}: {toolbar:?}"),
+        )?;
+    }
+
+    // Nothing was written: the accessible names are as they were, and no selection toolbar was drawn.
+    check((labels(0)?, labels(1)?) == before, "a refused call changed an accessible name")?;
+    check(
+        document()
+            .query_selector("#ellipse-selection [aria-label=\"Selection controls\"]")
+            .map_err(|e| format!("{e:?}"))?
+            .is_none(),
+        "a refused call drew a selection toolbar",
     )
 }

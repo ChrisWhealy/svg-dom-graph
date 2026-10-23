@@ -33,6 +33,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - mixed ellipse and rectangle edges in both directions, and a rectangle edge unchanged beside ellipses
   - a clock position on a rectangle, a fraction on an ellipse, a clock with a side, and an off-cardinal elbow, each refused by name, including by `set_connector_type`, which leaves the path as it was
   - `set_edge_anchors` and `set_data_values` refusing an ellipse
+  - `set_selection`, `set_secondary_selection`, `set_unreached_cells` and `show_selection_toolbar` each refusing an ellipse, a circle and a rectangle's plain label alike with `InvalidSelection`, and a refused call changing no accessible name and drawing no toolbar
   - focus ringing the ellipse outline, dragging and `move_node`, and the accessible name and relationship clause
   - an elbow that leaves a box whose east side is past its target going east, south, west and south, and none of its segments passing through the box
   - a detour round a tall ellipse going over the top of it, with every point of every leg outside the painted curve
