@@ -56,6 +56,9 @@
 //!   kept beside their connectors and apart while a vertex is dragged with a real mouse, the examined edge and then the
 //!   whole route emphasised, what a redraw keeps, and the arrays and queue never moving. Also runs against the built demo
 //!   gallery.
+//! - [`springs`] — the weighted springs panel: a real drag moves the neighbours, the graph settles and no frame is left
+//!   pending at rest, Reset is disabled while a circle is held, a held circle goes quiet without sleeping, and a hidden
+//!   or left page stops cleanly.
 //! - [`step_driver_accessibility`] — each stepping demo's off-canvas "Step" driver is absent from Chrome's
 //!   accessibility tree, and the toolbar it drives is still exposed. Also runs against the built demo gallery.
 //!
@@ -104,6 +107,7 @@ mod row_labels;
 mod shell_sort;
 mod small_drag;
 mod sorting;
+mod springs;
 mod step_driver_accessibility;
 mod text_nodes;
 mod text_selection;

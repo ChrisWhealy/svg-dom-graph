@@ -9,6 +9,16 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
+- observing a drag (`Scene::make_draggable_with_observer`), in `tests/drag/drag_observer.rs`, through the public paths only:
+  - `Start`, `Applied` and `End` in order with the committed origins, and the scene readable and already up to date inside the callback
+  - a move whose node transform fails sending no `Applied`, with `End` reporting the old origin and `node_rect` unchanged
+  - a label that fails after the node has moved sending no `Applied`, the move staying committed, and `End` reporting the new origin
+  - `Cancel` reporting the last committed origin and discarding a pending position, and a second pointer being ignored
+  - a push clear reported as an extra `Applied` and `End` carrying the corrected origin, and a same-origin move reported as a harmless duplicate
+  - dropping the handle ending events and releasing the callback's captures, leaving the node draggable and `AlreadyDraggable` for any second registration, and a callback that drops its own handle
+  - a failed registration installing nothing and returning no handle
+  - `move_node` leaving the model unchanged when the node transform fails, keeping the move when a label fails after it, a later different-origin move putting the connector right, and a same-origin move retrying the label and nothing more
+  - the test-only `FailingWrites` filtering by element and by one-shot count
 - confining a drag to the visible area (`DragOptions::confine_to_view`, on by default):
   - a node with no bounds stopping at the near corner and the far corner of the scene when dragged far past either
   - `confine_to_view(false)` leaving it free to go anywhere

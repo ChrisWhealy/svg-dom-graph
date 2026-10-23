@@ -16,6 +16,9 @@
 //! - `panel-ellipse` / `#ellipse-diagram` — [`ellipse::build_ellipse_demo`]: circles and ellipses that grow to hold their
 //!   labels, joined to each other and to a rectangle, and a clock ellipse whose connector leaves at the minute a slider
 //!   chooses. See that function's own doc comment for what it demonstrates.
+//! - `panel-springs` / `#springs-diagram` — [`springs::build_springs_demo`]: the Dijkstra graph as damped springs whose
+//!   stiffness is the edge weight. Drag a circle and its neighbours are pulled and pushed, then settle and stop asking
+//!   for frames. The physics is in `demo-common`, and the library only reports the drag.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -136,6 +139,7 @@ mod sha2_256;
 mod sha3_sponge;
 mod shell_sort;
 mod source_frame;
+mod springs;
 mod text_nodes;
 mod tree;
 mod utf8;
@@ -242,6 +246,7 @@ demo_gallery! {
     "panel-shell-sort" => shell_sort::build_shell_sort_demo + shell_sort::FILES,
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
     "panel-dijkstra" => dijkstra::build_dijkstra_demo + dijkstra::FILES,
+    "panel-springs" => springs::build_springs_demo + springs::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

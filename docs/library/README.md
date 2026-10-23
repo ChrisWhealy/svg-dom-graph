@@ -24,6 +24,7 @@
 | [Floating Point Values](floating-point.md) | `F32` and `F64`, `FloatFormat`, decimal places against significant digits, special values and widths |
 | [128-bit Values and UUIDs](uuids-and-128-bit-values.md) | `U128`, `I128`, `Uuid`, `UuidFormat`, the byte layouts of a UUID and why no operator accepts one |
 | [Booleans and Pointer-sized Integers](bools-and-sizes.md) | `Bool`, `BoolFormat`, `Usize`, `Isize`, which operators accept a Boolean, and the width of the target |
+| [Observing a Drag](drag-observation.md) | `make_draggable_with_observer`, `DragPhase`, `DragObserverHandle`, what each event carries, who owns the callback, and the commit order of `move_node` |
 | [Ellipse Nodes](ellipse-nodes.md) | `add_ellipse_node`, circles and ellipses, how a label grows the shape, the centre convention, clock positions on connectors, and what is refused |
 | [Text Cells](text-cells.md) | `Text`, `DataFormat::Text`, what a cell may hold, how its width is found, and the cell-width hint |
 | [Text Nodes](text-nodes.md) | Markdown nodes, the Markdown they understand, and text input nodes |

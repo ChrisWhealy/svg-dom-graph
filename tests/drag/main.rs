@@ -5,6 +5,8 @@
 //! pipeline actually reaches the browser, not just that `svg-dom-graph`'s own Rust state changed correctly.
 //!
 //! - [`drag_basics`] — ordinary dragging: coordinate conversion, reroute, listener lifetime, pointer/button edge cases.
+//! - [`drag_observer`] — `Scene::make_draggable_with_observer`: the events of a drag and their order, what a failed write
+//!   sends, dropping the handle, failed registration, and the commit order of `move_node` that the events depend on.
 //! - [`collision_resolution`] — dropping a dragged node onto another: `CollisionPolicy`, ties, degenerate cases.
 //! - [`scene_validation`] — self-loop rejection, cross-scene id isolation, node geometry validation.
 //! - [`connectors`] — `ConnectorType`: corner-radius validation, live updates, clamping, `Straight`/`Elbow` toggling.
@@ -70,6 +72,7 @@ mod collision_resolution;
 mod connectors;
 mod data_node;
 mod drag_basics;
+mod drag_observer;
 mod edge_anchors;
 mod edge_focus;
 mod edge_labels;

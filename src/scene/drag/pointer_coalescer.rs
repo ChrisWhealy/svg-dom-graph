@@ -1,3 +1,4 @@
+use super::observer::{DragPhase, WeakObserver, notify};
 use crate::{
     error::Error,
     model::node::NodeId,
@@ -19,14 +20,26 @@ struct CoalescerState {
     /// Reused across every applied position, in and across frames. Every other `move_node` caller in this crate reuses
     /// one scratch buffer for the same reason, rather than allocating a fresh `String` per call.
     scratch: RefCell<String>,
+    /// The observer of this node's drag, if it has one. Held weakly, so the coalescer never keeps a callback alive.
+    observer: Option<WeakObserver>,
 }
 
 impl CoalescerState {
     /// Applies `origin` immediately, synchronously, using this state's own reused scratch buffer. Shared by
     /// [`PointerCoalescer::apply_now`] and the `requestAnimationFrame` callback itself.
+    ///
+    /// If the move succeeded, the observer is told, and only after the scene and the scratch buffer have both been
+    /// released, so the observer can use the scene. A move that returns an error tells it nothing, and its error is dropped
+    /// here exactly as it always was.
     fn apply_now(&self, origin: Point) {
-        if let Some(inner) = self.inner.upgrade() {
-            let _ = inner.borrow_mut().move_node(self.id, origin, &mut self.scratch.borrow_mut());
+        let Some(inner) = self.inner.upgrade() else { return };
+        let moved = {
+            let mut scene = inner.borrow_mut();
+            let mut scratch = self.scratch.borrow_mut();
+            scene.move_node(self.id, origin, &mut scratch).is_ok()
+        };
+        if moved {
+            notify(self.observer.as_ref(), self.id, DragPhase::Applied { origin });
         }
     }
 }
@@ -66,19 +79,25 @@ pub(super) struct PointerCoalescer {
 }
 
 impl PointerCoalescer {
-    /// Creates a coalescer that applies coalesced positions to node `id`, against `inner`.
+    /// Creates a coalescer that applies coalesced positions to node `id`, against `inner`, and tells `observer`, if there
+    /// is one, about each move that succeeds.
     ///
     /// # Errors
     ///
     /// Returns [`Error::Svg`] (wrapping [`svg_dom::Error::Dom`]) if no `window` is available. Expected never to happen
     /// in this crate's only supported environment, a real browser tab, but checked rather than assumed — see
     /// `svg-dom`'s own `AnimationLoop::start` for the same check.
-    pub(super) fn new(inner: Weak<RefCell<SceneInner>>, id: NodeId) -> Result<Self, Error> {
+    pub(super) fn new(
+        inner: Weak<RefCell<SceneInner>>,
+        id: NodeId,
+        observer: Option<WeakObserver>,
+    ) -> Result<Self, Error> {
         let state = Rc::new(CoalescerState {
             inner,
             id,
             pending: Cell::new(None),
             scratch: RefCell::new(String::new()),
+            observer,
         });
 
         // The frame callback holds the state strongly. That is no cycle: the state does not hold the frame request.
@@ -116,6 +135,13 @@ impl PointerCoalescer {
     /// [`flush`](Self::flush) first if a stale one could otherwise still fire afterward and overwrite this.
     pub(super) fn apply_now(&self, origin: Point) {
         self.state.apply_now(origin);
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Tells the observer of this node's drag, if it has one that is still there, that `phase` happened. The scene must
+    /// not be borrowed by the caller.
+    pub(super) fn notify(&self, phase: DragPhase) {
+        notify(self.state.observer.as_ref(), self.state.id, phase);
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

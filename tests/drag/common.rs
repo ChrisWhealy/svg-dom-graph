@@ -348,22 +348,46 @@ pub fn attribute_writes_during(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes `Element.setAttribute` throw for the named attributes while it is alive, and puts the real one back when
 /// dropped. For a test that needs a DOM write to fail on purpose and then succeed on a retry.
+///
+/// By default every element's write of those attributes fails, every time. [`on_element`](Self::on_element) narrows it to
+/// one concrete element, and can make it fail once only, so a test can let the node group's `transform` succeed and then
+/// fail the `transform` of an edge label that is written straight after it. Test-only: nothing here is public API.
 pub struct FailingWrites;
 
 impl FailingWrites {
+    /// Every write of any of `names`, by any element, fails until this is dropped.
     pub fn start(names: &[&str]) -> Result<Self, String> {
+        Self::install(None, names, false)
+    }
+
+    /// Writes of any of `names` by `element`, and by no other element, fail until this is dropped. With `once`, only the
+    /// first one does.
+    pub fn on_element(element: &web_sys::Element, names: &[&str], once: bool) -> Result<Self, String> {
+        Self::install(Some(element), names, once)
+    }
+
+    fn install(element: Option<&web_sys::Element>, names: &[&str], once: bool) -> Result<Self, String> {
         let list = names.iter().map(|n| format!("{n:?}")).collect::<Vec<_>>().join(", ");
-        js_sys::Function::new_no_args(&format!(
-            "const proto = Element.prototype;
-             if (!proto.__originalSetAttribute) {{ proto.__originalSetAttribute = proto.setAttribute; }}
-             const failing = [{list}];
-             proto.setAttribute = function (name, value) {{
-                 if (failing.includes(name)) {{ throw new Error('injected failure writing ' + name); }}
-                 return proto.__originalSetAttribute.apply(this, arguments);
-             }};"
-        ))
-        .call0(&wasm_bindgen::JsValue::NULL)
-        .map_err(|e| format!("{e:?}"))?;
+        let install = js_sys::Function::new_with_args(
+            "target, once",
+            &format!(
+                "const proto = Element.prototype;
+                 if (!proto.__originalSetAttribute) {{ proto.__originalSetAttribute = proto.setAttribute; }}
+                 const failing = [{list}];
+                 let fired = false;
+                 proto.setAttribute = function (name, value) {{
+                     if ((target === null || this === target) && failing.includes(name) && !(once && fired)) {{
+                         fired = true;
+                         throw new Error('injected failure writing ' + name);
+                     }}
+                     return proto.__originalSetAttribute.apply(this, arguments);
+                 }};"
+            ),
+        );
+        let target = element.map_or(wasm_bindgen::JsValue::NULL, |e| e.clone().into());
+        install
+            .call2(&wasm_bindgen::JsValue::NULL, &target, &wasm_bindgen::JsValue::from_bool(once))
+            .map_err(|e| format!("{e:?}"))?;
         Ok(Self)
     }
 }

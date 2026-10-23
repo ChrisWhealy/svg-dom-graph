@@ -7,7 +7,9 @@ mod algorithm;
 mod layout;
 
 use crate::source_file;
-use algorithm::{Graph, RawEdge, Relaxation, Snapshot, random_weights, steps};
+use algorithm::{Graph, RawEdge, Relaxation, Snapshot, steps};
+// The weighted springs demo gives its springs weights from the same range, 1 to 10.
+pub(crate) use algorithm::random_weights;
 use demo_common::{
     focus,
     util::{
@@ -15,7 +17,9 @@ use demo_common::{
         resize_svg, stringify,
     },
 };
-use layout::{NAMES, Placement, Texts, VERTEX_RADIUS, vertex_centre, vertex_origins};
+use layout::{Placement, Texts, vertex_centre};
+// What the weighted springs demo imports, so that it never keeps a second copy of the graph.
+pub(crate) use layout::{NAMES, VERTEX_RADIUS, graph_region, vertex_origins};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
@@ -48,7 +52,7 @@ const ANNOUNCEMENT_ID: &str = "dijkstra-announcement";
 
 /// The graph: the weights of its edges, in the order they are drawn, which is the order their labels are ranked in. The
 /// vertices are [`NAMES`], and A is where the run starts. The run stops when it settles F.
-const EDGES: [RawEdge; 9] = [
+pub(crate) const EDGES: [RawEdge; 9] = [
     (0, 1, 4),
     (0, 2, 2),
     (2, 1, 1),

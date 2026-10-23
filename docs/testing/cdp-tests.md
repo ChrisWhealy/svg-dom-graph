@@ -61,6 +61,14 @@ Every step is walked, to check that the three arrays, the queue and the vertices
 Restart gives new random weights from 1 to 10, goes back to the first step and announces it, while stepping back does not change them.
 The walk helpers are the ones the sorting scenarios use, and are shared: see `sorting.rs`.
 
+Its `springs.rs` scenario runs against the same gallery, and asks what the native tests of the solver, the clock, the command bridge and the controller's decisions cannot: what reaches the page.
+A real mouse drags B and the neighbours move, the graph settles, the panel says `sleeping`, and `data-physics-pending` is `0`, so no animation frame is left running at rest.
+A circle held by a pointer disables Reset, which comes back by itself after the release and then restores every position. A held circle that goes quiet stops requesting frames without being reported as sleeping, and a new position wakes it.
+Two circles held at once settle together, and a second press during the catch-up takes over without an error.
+Randomising the weights changes the labels and moves nothing at rest. Pause cancels the frame and Resume carries on, a hidden page pauses and showing it resumes, and leaving the page tears the demo down so that a late event reaches nothing.
+A real mouse cannot be held by the suite's helper, so the tests that need a circle held dispatch pointer events in the page, as the library's own listeners receive them.
+The Dijkstra panel is checked to be unchanged.
+
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 
 Needs the latest version of the Chrome/Chromium binary to be locally installed.

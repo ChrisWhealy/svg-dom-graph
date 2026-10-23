@@ -17,7 +17,7 @@ use std::{cmp::Reverse, collections::BinaryHeap, fmt};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One directed edge, as the caller gave it: from a vertex number, to a vertex number, with a weight that may be
 /// negative, so that the check for it has something to refuse.
-pub(super) type RawEdge = (usize, usize, i64);
+pub(crate) type RawEdge = (usize, usize, i64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The largest weight a random edge is given. The smallest is 1: a weight of 0 would make two vertices the same distance
@@ -27,7 +27,7 @@ pub(super) const MAX_RANDOM_WEIGHT: i64 = 10;
 /// `count` weights from 1 to [`MAX_RANDOM_WEIGHT`], each worked out from the next number of `unit`, which gives a number
 /// from 0 up to but not including 1. The caller supplies the source of randomness, so that this stays plain Rust and a
 /// test can give it a known one.
-pub(super) fn random_weights(count: usize, mut unit: impl FnMut() -> f64) -> Vec<i64> {
+pub(crate) fn random_weights(count: usize, mut unit: impl FnMut() -> f64) -> Vec<i64> {
     (0..count)
         .map(|_| {
             // A number outside 0 to 1, or not a number at all, still gives a weight in the range.

@@ -13,7 +13,7 @@
 
 use super::{
     DragState, GRAB_STYLE, GRABBING_STYLE, client_to_user_space, collision_policy::CollisionPolicy,
-    drag_start::DragStart, pointer_coalescer::PointerCoalescer,
+    drag_start::DragStart, observer::DragPhase, pointer_coalescer::PointerCoalescer,
 };
 use crate::{
     geometry::{clamp_to_bounds, invert_matrix, view::ViewTransform},
@@ -44,6 +44,7 @@ pub(super) fn pointerdown(
     group_weak: WeakSvgNode,
     inner_weak: Weak<RefCell<SceneInner>>,
     drag_start: DragState,
+    coalescer: PointerCoalescer,
 ) -> impl FnMut(PointerEvent) + 'static {
     move |evt| {
         // Ignores a pointerdown while a drag is already active. Otherwise a second pointer touching this
@@ -98,6 +99,8 @@ pub(super) fn pointerdown(
             view,
             visible,
         }));
+        // Told once the drag is established, and with no borrow of the scene held, so the observer can read it.
+        coalescer.notify(DragPhase::Start { origin: rect.origin });
     }
 }
 
@@ -210,20 +213,48 @@ pub(super) fn pointerup(
         // `CollisionPolicy::Allow` leaves the drop exactly where the pointer released it — nothing more to do.
         // `PushClear` pushes this node back to a clear position, along the line to where it started this drag,
         // if the drop overlaps another node.
-        let CollisionPolicy::PushClear { padding } = collision else { return };
-        let Some(inner) = inner_weak.upgrade() else { return };
-        let Some(corrected_origin) = inner.borrow().resolve_overlap(id, start.box_origin, padding) else {
-            return;
-        };
-        // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not just
-        // pointermove's, so this correction can never undo pointermove's own clamping.
-        let view_now = inner.borrow().view;
-        let corrected_origin = match region(confinement, &start, view_now) {
-            Some(region) => clamp_to_bounds(corrected_origin, start.box_size, region),
-            None => corrected_origin,
-        };
-        coalescer.apply_now(corrected_origin);
+        if let CollisionPolicy::PushClear { padding } = collision {
+            push_clear(id, padding, confinement, &start, &inner_weak, &coalescer);
+        }
+
+        // The drag is over, and the node is where it is going to stay: after the last pending move and any push clear.
+        // The origin is read from the scene, which is authoritative, and no borrow of it is held.
+        if let Some(origin) = committed_origin(&inner_weak, id) {
+            coalescer.notify(DragPhase::End { origin });
+        }
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The origin the scene has for node `id` now, or `None` if the scene or the node is gone.
+fn committed_origin(inner_weak: &Weak<RefCell<SceneInner>>, id: NodeId) -> Option<Point> {
+    let inner = inner_weak.upgrade()?;
+    let rect = inner.borrow().node_rect(id).ok()?;
+    Some(rect.origin)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Pushes node `id` back clear of any node it was dropped on, if it was dropped on one.
+fn push_clear(
+    id: NodeId,
+    padding: f64,
+    confinement: Confinement,
+    start: &DragStart,
+    inner_weak: &Weak<RefCell<SceneInner>>,
+    coalescer: &PointerCoalescer,
+) {
+    let Some(inner) = inner_weak.upgrade() else { return };
+    let Some(corrected_origin) = inner.borrow().resolve_overlap(id, start.box_origin, padding) else {
+        return;
+    };
+    // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not just
+    // pointermove's, so this correction can never undo pointermove's own clamping.
+    let view_now = inner.borrow().view;
+    let corrected_origin = match region(confinement, start, view_now) {
+        Some(region) => clamp_to_bounds(corrected_origin, start.box_size, region),
+        None => corrected_origin,
+    };
+    coalescer.apply_now(corrected_origin);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -231,7 +262,9 @@ pub(super) fn pointerup(
 /// interrupted by a system gesture. Without this handler, `drag_start` would stay set, so a later stray pointermove
 /// (including one for an unrelated pointer id) would move the box using a stale drag.
 pub(super) fn pointercancel(
+    id: NodeId,
     group_weak: WeakSvgNode,
+    inner_weak: Weak<RefCell<SceneInner>>,
     drag_start: DragState,
     coalescer: PointerCoalescer,
 ) -> impl FnMut(PointerEvent) + 'static {
@@ -247,5 +280,9 @@ pub(super) fn pointercancel(
         // Discards any position pushed since the last applied frame, rather than applying it — the drag was
         // interrupted, not completed. See `PointerCoalescer::cancel`'s own doc comment.
         coalescer.cancel();
+        // After the discard, so the origin is the last position that was really drawn, never one that was only pushed.
+        if let Some(origin) = committed_origin(&inner_weak, id) {
+            coalescer.notify(DragPhase::Cancel { origin });
+        }
     }
 }

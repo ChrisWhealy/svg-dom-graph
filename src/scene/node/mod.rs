@@ -309,9 +309,25 @@ impl Scene {
     /// not rely on that remaining true forever. Checked before touching the scene, so a rejected call leaves the node
     /// exactly as it was.
     ///
-    /// Also returns a wrapped [`Error::Svg`] if redrawing an incident connector fails partway through. This is the same
-    /// "can leave some incident connectors already redrawn and others not" property [`Scene::set_edge_anchors`]'s own
-    /// doc comment already describes, for the same reason.
+    /// Also returns a wrapped [`Error::Svg`] if a write fails.
+    ///
+    /// # When a write fails: what is committed, and what is not
+    ///
+    /// The node's own transform is written first, and the node's position in the model, which [`node_rect`](Self::node_rect)
+    /// reports, is only changed once that write has succeeded. So:
+    ///
+    /// * If the node's transform cannot be written, the call returns an error and the node is exactly where it was, in the
+    ///   model and on the page. `node_rect` never describes a position that was not drawn.
+    /// * Once the transform has been written, the move is **committed and is not rolled back**. If a connector or an edge
+    ///   label then fails to update, the call returns an error, the node stays moved, and `node_rect` reports the new
+    ///   position. Some incident connectors can already be redrawn and others not, the same property
+    ///   [`Scene::set_edge_anchors`]'s own doc comment describes, for the same reason.
+    ///
+    /// Recovery is eventual rerouting, not rollback. The next move of the node, or of any node at the other end of one of
+    /// its edges, to a *different* origin recomputes every incident connector from the then-current positions, so a stale
+    /// connector is put right then. A call that moves a node to the origin it already has redraws no connector: it only
+    /// retries an edge label that failed to place, which is not a general queue of stale connectors. A stale connector
+    /// can remain until the next real move, or an explicit reroute such as [`set_connector_type`](Self::set_connector_type).
     pub fn move_node(&self, id: NodeId, top_left: Point) -> Result<(), Error> {
         let size = self.inner.borrow().node_rect(id)?.size;
         let rect = Rect { origin: top_left, size };

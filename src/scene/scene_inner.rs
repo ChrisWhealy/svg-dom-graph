@@ -410,6 +410,14 @@ impl SceneInner {
             return self.retry_dirty_labels(scratch);
         }
 
+        // The node's transform is written first, and the model only follows once that has succeeded. If the write fails,
+        // `node_rect` still says where the node really is, and not a place it was never drawn. After that point nothing
+        // is rolled back: the node has moved, and a connector or label that then fails to update leaves it moved. See
+        // [`Scene::move_node`](crate::scene::Scene::move_node)'s own doc comment.
+        let handles = self.node_handle(id).ok_or(Error::UnknownNode(id))?;
+        handles
+            .group
+            .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
         self.graph.set_node_rect(
             id,
             Rect {
@@ -417,11 +425,7 @@ impl SceneInner {
                 size: rect.size,
             },
         );
-
         let handles = self.node_handle(id).ok_or(Error::UnknownNode(id))?;
-        handles
-            .group
-            .set_transform_fmt(scratch, format_args!("translate({}, {})", new_origin.x, new_origin.y))?;
         let own_input_edges = handles.binary_operator_input_edges;
 
         // `id` is itself a binary operator node. Its own two input edges are redrawn together, once, below. Two

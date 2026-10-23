@@ -32,6 +32,7 @@ features = [
     "HtmlInputElement",
     "KeyboardEvent",
     "Location",
+    "MediaQueryList",
     "NodeList",
     "Window",
 ]

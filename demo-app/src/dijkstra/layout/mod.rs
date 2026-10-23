@@ -11,11 +11,11 @@
 
 use super::algorithm::{Graph, Snapshot};
 use demo_common::util::MARGIN;
-use svg_dom::root::utils::{Point, Size};
+use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The name of each vertex. A static slice, so that it labels the rows of the arrays.
-pub(super) const NAMES: [&str; 6] = ["A", "B", "C", "D", "E", "F"];
+pub(crate) const NAMES: [&str; 6] = ["A", "B", "C", "D", "E", "F"];
 
 /// How many entries of the queue are shown. The row after them says how many more there are.
 pub(super) const QUEUE_ENTRIES: usize = 8;
@@ -37,11 +37,22 @@ pub(super) const TOP: f64 = 64.0;
 
 /// The radius of a vertex, which is a circle. A single letter fits it with room to spare, so it is never made larger,
 /// and the focus ring has room.
-pub(super) const VERTEX_RADIUS: f64 = 22.0;
+pub(crate) const VERTEX_RADIUS: f64 = 22.0;
 
 /// How wide the part of the scene that holds the graph is, and how tall.
 const GRAPH_WIDTH: f64 = 560.0;
 const GRAPH_HEIGHT: f64 = 310.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The part of the scene that holds the graph: where a vertex can be dragged to, and the one rectangle that anything
+/// else that needs the edge of the graph, such as the weighted springs demo's physics, must use. It is derived from the
+/// same constants as the layout, so there is never a second copy of it to drift.
+pub(crate) fn graph_region() -> Rect {
+    Rect {
+        origin: Point::new(MARGIN, TOP),
+        size: Size::new(GRAPH_WIDTH, GRAPH_HEIGHT),
+    }
+}
 
 /// The gap between the graph and the arrays, between one array and the next, and between rows of the scene.
 const GAP: f64 = 50.0;
@@ -62,7 +73,7 @@ pub(super) fn vertex_centre(origin: Point) -> Point {
 ///
 /// The numbers are where the centres are. The vertices were boxes of 56 by 36 before they were circles, and the centres
 /// stay where they were, so the corner of the 44 by 44 square is 6 further right and 4 higher than that of the box.
-pub(super) fn vertex_origins() -> [Point; 6] {
+pub(crate) fn vertex_origins() -> [Point; 6] {
     let at = |x: f64, y: f64| Point::new(MARGIN + x + 6.0, TOP + y - 4.0);
     [
         at(0.0, 124.0),   // A

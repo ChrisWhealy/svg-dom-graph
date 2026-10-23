@@ -3,6 +3,7 @@ mod drag_options;
 mod drag_start;
 mod handlers;
 mod install_guard;
+mod observer;
 mod pointer_coalescer;
 
 use super::{Scene, client_to_user_space};
@@ -11,6 +12,8 @@ use collision_policy::CollisionPolicy;
 pub use drag_options::DragOptions;
 use drag_start::DragStart;
 use install_guard::InstallGuard;
+pub use observer::{DragObserverHandle, DragPhase};
+use observer::{ObserverSlot, WeakObserver};
 use pointer_coalescer::PointerCoalescer;
 use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::Rect;
@@ -124,6 +127,85 @@ impl Scene {
     /// underlying `addEventListener` DOM call itself failed. `id` is not marked draggable, and none of this method's
     /// own listeners are left dangling on it. A failed call can safely be retried.
     pub fn make_draggable_with(&self, id: NodeId, options: DragOptions) -> Result<(), Error> {
+        self.install_drag(id, options, None)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Wires up pointer dragging for node `id` exactly as [`make_draggable_with`](Self::make_draggable_with) does, and
+    /// also tells `on_drag` what the drag does, as a [`DragPhase`]: that it started, that each move was drawn, and that it
+    /// ended or was cancelled.
+    ///
+    /// This is for a host that keeps something else in step with a dragged node, such as a physics simulation. It
+    /// follows the library's own drag, which already gets the pointer, the zoom and the bounds right, and adds no second
+    /// set of pointer listeners.
+    ///
+    /// The drag itself is unchanged: the same listeners, the same pointer capture and the same coalescing of moves to
+    /// one a frame.
+    ///
+    /// # Ownership
+    ///
+    /// The returned [`DragObserverHandle`] owns the callback, and the drag listeners hold it only weakly. **Keep the
+    /// handle for as long as the events are wanted.** The observer stops the moment the handle is dropped, and a handle
+    /// that is not bound to anything is dropped at once, which `#[must_use]` warns about.
+    ///
+    /// **Dropping the handle is final for that node.** It does not remove the drag listeners, and it does not let the node
+    /// be made draggable again: a later call to this method or to [`make_draggable_with`](Self::make_draggable_with)
+    /// returns [`Error::AlreadyDraggable`]. There is no way to attach a different observer to a node that is already
+    /// draggable.
+    ///
+    /// # Timing and re-entrancy
+    ///
+    /// Events are delivered synchronously, from inside the pointer event handler or the animation frame that caused
+    /// them, and never while the scene is borrowed, so `on_drag` may call any method of the scene, `node_rect` included.
+    /// It must not assume it runs at a frame boundary, and it should do little: a host that has more to do queues the
+    /// event and does it later.
+    ///
+    /// [`DragPhase::Applied`] is sent only for a move that succeeded. A move that failed to write sends nothing, and the
+    /// error is dropped as it is for an unobserved drag. A host that wants the position the scene really has asks
+    /// [`node_rect`](Self::node_rect), and [`DragPhase::End`] and [`DragPhase::Cancel`] carry it.
+    ///
+    /// ```no_run
+    /// use std::{cell::RefCell, rc::Rc};
+    /// use svg_dom::root::utils::{Point, Size};
+    /// use svg_dom_graph::scene::{DragOptions, DragPhase, Scene};
+    ///
+    /// # fn demo(scene: &Scene) -> Result<(), svg_dom_graph::Error> {
+    /// let node = scene.add_node(Point::new(10.0, 10.0), Size::new(60.0, 30.0), "A")?;
+    /// let log = Rc::new(RefCell::new(Vec::new()));
+    /// let sink = log.clone();
+    /// let handle = scene.make_draggable_with_observer(node, DragOptions::default(), move |_id, phase| {
+    ///     if let DragPhase::End { origin } = phase {
+    ///         sink.borrow_mut().push(origin);
+    ///     }
+    /// })?;
+    /// // Keep `handle` for as long as the events are wanted.
+    /// # drop(handle);
+    /// # Ok(())
+    /// # }
+    /// ```
+    ///
+    /// # Errors
+    ///
+    /// The same as [`make_draggable_with`](Self::make_draggable_with): [`Error::UnknownNode`],
+    /// [`Error::AlreadyDraggable`], [`Error::InvalidCollisionPadding`] and [`Error::InvalidDragBounds`], and a wrapped
+    /// [`Error::Svg`] if a listener could not be registered. All are checked, or rolled back, before the call returns, so
+    /// a failed call installs nothing, makes no node draggable and returns no handle.
+    pub fn make_draggable_with_observer(
+        &self,
+        id: NodeId,
+        options: DragOptions,
+        on_drag: impl Fn(NodeId, DragPhase) + 'static,
+    ) -> Result<DragObserverHandle, Error> {
+        let slot = ObserverSlot::new(on_drag);
+        // If installing fails, `slot` is dropped here, with the callback in it, and nothing was left behind.
+        self.install_drag(id, options, Some(Rc::downgrade(&slot)))?;
+        Ok(DragObserverHandle::new(slot))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The installation both public methods share: validate, register the four listeners transactionally, and mark the
+    /// node draggable. `observer` is `None` for an unobserved drag.
+    fn install_drag(&self, id: NodeId, options: DragOptions, observer: Option<WeakObserver>) -> Result<(), Error> {
         validate_options(&options)?;
         let group = self.undragged_group(id)?;
         let guard = InstallGuard::new(group.clone());
@@ -132,7 +214,7 @@ impl Scene {
         // Coalesces this node's own pointermove positions to at most one applied `move_node` per animation frame — see
         // `PointerCoalescer`'s own doc comment. Created once here, alongside `drag_start`, and reused across every drag
         // this node goes through for as long as it stays draggable, not just the next one.
-        let coalescer = PointerCoalescer::new(Rc::downgrade(&self.inner), id)?;
+        let coalescer = PointerCoalescer::new(Rc::downgrade(&self.inner), id, observer)?;
         let inner_weak = Rc::downgrade(&self.inner);
 
         // Each handler holds only weak references — see `handlers`' own module doc comment for why.
@@ -141,6 +223,7 @@ impl Scene {
             group.downgrade(),
             inner_weak.clone(),
             drag_start.clone(),
+            coalescer.clone(),
         ))?;
         let confinement = handlers::Confinement {
             bounds: options.bounds,
@@ -157,11 +240,17 @@ impl Scene {
             options.collision,
             confinement,
             group.downgrade(),
-            inner_weak,
+            inner_weak.clone(),
             drag_start.clone(),
             coalescer.clone(),
         ))?;
-        group.on_pointercancel(handlers::pointercancel(group.downgrade(), drag_start, coalescer))?;
+        group.on_pointercancel(handlers::pointercancel(
+            id,
+            group.downgrade(),
+            inner_weak,
+            drag_start,
+            coalescer,
+        ))?;
 
         // Every listener has now registered successfully.
         //
