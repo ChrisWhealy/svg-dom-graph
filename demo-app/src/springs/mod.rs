@@ -69,8 +69,8 @@ const BUTTON_HEIGHT: f64 = 36.0;
 const BUTTON_GAP: f64 = 16.0;
 const BUTTON_ROW_GAP: f64 = 16.0;
 
-/// What each button is called, what it does, and its fill and outline. Reset is the amber of a change that moves things,
-/// Pause is blue, and new weights are the calm green of the Dijkstra demo's.
+/// What each button is called, what it does, and its fill and outline. Reset is the amber of a change that moves
+/// things, Pause is blue, and new weights are the calm green of the Dijkstra demo's.
 const BUTTONS: [Button<'static>; 3] = [
     Button {
         label: "Reset",
@@ -109,16 +109,17 @@ struct ObserverBinding {
 struct Listener {
     target: web_sys::EventTarget,
     event: &'static str,
-    closure: Closure<dyn FnMut()>,
+    closure: Closure<dyn FnMut(web_sys::Event)>,
 }
 
 impl Listener {
     fn new(
         target: &web_sys::EventTarget,
         event: &'static str,
-        handler: impl FnMut() + 'static,
+        handler: impl FnMut(&web_sys::Event) + 'static,
     ) -> Result<Self, String> {
-        let closure = Closure::<dyn FnMut()>::new(handler);
+        let mut handler = handler;
+        let closure = Closure::<dyn FnMut(web_sys::Event)>::new(move |event: web_sys::Event| handler(&event));
         target
             .add_event_listener_with_callback(event, closure.as_ref().unchecked_ref())
             .map_err(|e| format!("could not attach a {event} listener: {e:?}"))?;
@@ -127,6 +128,15 @@ impl Listener {
             event,
             closure,
         })
+    }
+}
+
+impl Listener {
+    /// Leaves the listener registered for good. For a listener that runs [`teardown`], which would otherwise drop the
+    /// closure that is in the middle of being called: the browser reports that as a closure invoked after it was
+    /// dropped.
+    fn leave_registered(self) {
+        std::mem::forget(self);
     }
 }
 
@@ -166,12 +176,15 @@ thread_local! {
 ///    Randomise weights changes the weights alone. Reset is refused while a pointer holds a circle or a released one is
 ///    still catching up.
 ///
-/// The demo is torn down when the page is hidden for good (`pagehide`): the bridge shuts down, the pending frame is
-/// cancelled, the observers are dropped, the listeners are removed and then the controller goes.
+/// A page the browser keeps in its back-forward cache is only suspended: `pagehide` with `persisted` set pauses the
+/// physics as for a hidden page, and `pageshow` resumes it from a fresh clock. Any other `pagehide` means the page is
+/// gone for good, and the demo is torn down: the bridge shuts down, the pending frame is cancelled, the observers are
+/// dropped, the listeners are removed and then the controller goes.
 ///
 /// # Errors
 ///
-/// Returns `Err` if the panel is missing a part, if a library call fails, or if the graph is not one the solver accepts.
+/// Returns `Err` if the panel is missing a part, if a library call fails, or if the graph is not one the solver
+/// accepts.
 pub(crate) fn build_springs_demo() -> Result<(), String> {
     let document = document()?;
     let fixture = Fixture::dijkstra();
@@ -303,8 +316,8 @@ fn observe(scene: &Scene, node: NodeId, drag: DragOptions, bridge: &Rc<Bridge>) 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires the three buttons in the scene, the page's visibility, the preference for reduced motion, and the page being left, to
-/// `bridge`, and returns the listeners so they can be removed again.
+/// Wires the three buttons in the scene, the page's visibility, the preference for reduced motion, and the page being
+/// left, to `bridge`, and returns the listeners so they can be removed again.
 ///
 /// # Errors
 ///
@@ -332,7 +345,7 @@ fn wire_controls(
 
     // A hidden page is paused, and shown again it resumes from a fresh clock.
     let (weak, page) = (Rc::downgrade(bridge), document.clone());
-    listeners.push(Listener::new(document, "visibilitychange", move || {
+    listeners.push(Listener::new(document, "visibilitychange", move |_| {
         if let Some(bridge) = weak.upgrade() {
             bridge.dispatch(ControllerCommand::SetHidden(page.hidden()));
         }
@@ -346,25 +359,56 @@ fn wire_controls(
             bridge.dispatch(ControllerCommand::SetReducedMotion(true));
         }
         let (weak, watched) = (Rc::downgrade(bridge), query.clone());
-        listeners.push(Listener::new(&query, "change", move || {
+        listeners.push(Listener::new(&query, "change", move |_| {
             if let Some(bridge) = weak.upgrade() {
                 bridge.dispatch(ControllerCommand::SetReducedMotion(watched.matches()));
             }
         })?);
     }
 
-    // Leaving the page tears the demo down in order.
+    // A page that is left for good tears the demo down in order. A page the browser keeps in its back-forward cache is
+    // restored as it was, with its panel still marked as built, so nothing would ever build it again. It is only
+    // suspended: the physics is paused as for a hidden page, and `pageshow` resumes it from a fresh clock.
     if let Some(window) = web_sys::window() {
-        listeners.push(Listener::new(&window, "pagehide", teardown)?);
+        let weak = Rc::downgrade(bridge);
+        // Not kept in `listeners`: tearing down drops them, and this one is running when it does. It stays registered,
+        // and a `pagehide` after the teardown finds nothing to tear down.
+        Listener::new(&window, "pagehide", move |event| {
+            if is_persisted(event) {
+                if let Some(bridge) = weak.upgrade() {
+                    bridge.dispatch(ControllerCommand::SetHidden(true));
+                }
+            } else {
+                teardown();
+            }
+        })?
+        .leave_registered();
+        let (weak, page) = (Rc::downgrade(bridge), document.clone());
+        listeners.push(Listener::new(&window, "pageshow", move |event| {
+            if is_persisted(event) {
+                if let Some(bridge) = weak.upgrade() {
+                    bridge.dispatch(ControllerCommand::SetHidden(page.hidden()));
+                }
+            }
+        })?);
     }
     Ok(listeners)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Tears the demo down, in this order: the bridge refuses new commands and forgets the queued ones, the pending frame is
-/// cancelled, every observer registration and its lease is dropped, the listeners are removed, and last the controller
-/// and everything it owns is released. A frame, a drag event or a click that is late after this reaches nothing, and
-/// reactivates nothing.
+/// Whether `event` is a page transition that keeps the page alive: it is going into, or coming out of, the browser's
+/// back-forward cache. Any other event, or one that cannot say, counts as a page that is gone for good.
+fn is_persisted(event: &web_sys::Event) -> bool {
+    event
+        .dyn_ref::<web_sys::PageTransitionEvent>()
+        .is_some_and(web_sys::PageTransitionEvent::persisted)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Tears the demo down, in this order: the bridge refuses new commands and forgets the queued ones, the pending frame
+/// is cancelled, every observer registration and its lease is dropped, the listeners are removed, and last the
+/// controller and everything it owns is released. A frame, a drag event or a click that is late after this reaches
+/// nothing, and reactivates nothing.
 pub(crate) fn teardown() {
     let Some(runtime) = RUNTIME.with_borrow_mut(Option::take) else {
         return;

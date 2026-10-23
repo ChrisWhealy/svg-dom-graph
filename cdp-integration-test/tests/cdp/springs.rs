@@ -2,9 +2,9 @@
 //! circle and its neighbours follow, the network settles, and at rest the page has no animation frame pending.
 //!
 //! The physics itself, the frame clock, the command bridge and the controller's decisions are covered by native unit
-//! tests. What they cannot reach is the browser: that a real drag reaches the observer, that frames are really requested
-//! while the graph moves and really stop when it rests, that the controls are disabled when they must be, and that a
-//! page that is hidden or left stops cleanly.
+//! tests. What they cannot reach is the browser: that a real drag reaches the observer, that frames are really
+//! requested while the graph moves and really stop when it rests, that the controls are unavailable when they must be,
+//! and that a page that is hidden, suspended or left stops cleanly.
 //!
 //! A real mouse cannot be held by this suite's helper, which presses, moves and releases in one call. The tests that
 //! need a circle held, or two held at once, dispatch pointer events in the page instead, as the library's own drag
@@ -188,8 +188,8 @@ fn a_real_drag_moves_the_neighbours_and_the_graph_settles_and_stops_asking_for_f
     )
 }
 
-/// While a pointer holds a circle, Reset is unavailable. After the release it comes back by itself, and then it puts every
-/// circle back where it started, gives the springs new weights and a tension, and the network settles by itself.
+/// While a pointer holds a circle, Reset is unavailable. After the release it comes back by itself, and then it puts
+/// every circle back where it started, gives the springs new weights and a tension, and the network settles by itself.
 #[test]
 fn reset_is_unavailable_while_a_circle_is_held_and_after_it_restarts_the_network() -> Result<(), String> {
     let tab = open()?;
@@ -260,8 +260,8 @@ fn the_buttons_are_drawn_in_the_scene() -> Result<(), String> {
     check(found == "[1,1,1,0]", &found)
 }
 
-/// A held circle that has not moved goes quiet: the panel keeps saying it is dragging, but no frame is pending, and it is
-/// never reported as sleeping. A new position wakes it.
+/// A held circle that has not moved goes quiet: the panel keeps saying it is dragging, but no frame is pending, and it
+/// is never reported as sleeping. A new position wakes it.
 #[test]
 fn a_held_circle_that_goes_quiet_stops_requesting_frames_without_sleeping_and_a_move_wakes_it() -> Result<(), String> {
     let tab = open()?;
@@ -417,17 +417,78 @@ fn leaving_the_page_tears_the_demo_down_and_a_late_event_reaches_nothing() -> Re
     let result = run(
         &tab,
         &format!(
-            "{} fire('pointerdown', cx, cy); fire('pointermove', cx + 60, cy + 25); await sleep(100); \
-             window.dispatchEvent(new Event('pagehide')); await sleep(100); \
+            "{} const errors = []; window.addEventListener('error', e => errors.push(e.message)); \
+             fire('pointerdown', cx, cy); fire('pointermove', cx + 60, cy + 25); await sleep(100); \
+             window.dispatchEvent(new PageTransitionEvent('pagehide', {{ persisted: false }})); await sleep(100); \
              const panel = document.querySelector('{PANEL}'); \
              const pending = panel.dataset.physicsPending; \
              const before = {POSITIONS}; \
              fire('pointermove', cx + 90, cy + 40); fire('pointerup', cx + 90, cy + 40); await sleep(300); \
-             return JSON.stringify([pending, document.getElementById('springs-error').hidden]);",
+             return JSON.stringify([pending, document.getElementById('springs-error').hidden, errors]);",
             pointer_helpers("B", 1)
         ),
     )?;
-    check(result == "[\"0\",true]", &result)
+    // No uncaught error either: a listener that drops itself while it runs is reported by the browser as one.
+    check(result == "[\"0\",true,[]]", &result)
+}
+
+/// Drags B with a real mouse and says whether its neighbour A was pulled along.
+fn a_drag_of_b_moves_a(tab: &Tab) -> Result<bool, String> {
+    let before = centre(tab, "A")?;
+    let (x, y) = centre(tab, "B")?;
+    drag(tab, &[(x, y), (x + 30.0, y + 10.0), (x + 60.0, y + 25.0)])?;
+    wait_for_state(tab, "sleeping", 25)?;
+    Ok(centre(tab, "A")? != before)
+}
+
+/// A page the browser puts in its back-forward cache is suspended and not torn down. Restored, its panel is still
+/// marked as built and is never built again, so the demo that was already running has to be the one that carries on.
+#[test]
+fn a_page_suspended_in_the_back_forward_cache_resumes_and_still_responds_to_a_drag() -> Result<(), String> {
+    let tab = open()?;
+    run(
+        &tab,
+        "window.dispatchEvent(new PageTransitionEvent('pagehide', { persisted: true })); return 'suspended';",
+    )?;
+    wait_for_state(&tab, "paused", 5)?;
+    check(pending(&tab)? == "0", "a frame was pending while the page was suspended")?;
+    run(
+        &tab,
+        "window.dispatchEvent(new PageTransitionEvent('pageshow', { persisted: true })); return 'restored';",
+    )?;
+    wait_for_state(&tab, "sleeping", 25)?;
+    check(
+        a_drag_of_b_moves_a(&tab)?,
+        "a drag after the restore did not move B's neighbour",
+    )?;
+    check(
+        text(&tab, "document.getElementById('springs-error').hidden.toString()")? == "true",
+        "an error was shown",
+    )?;
+    // The buttons work too.
+    let labels = weights(&tab)?;
+    press(&tab, "randomise")?;
+    wait_for_state(&tab, "sleeping", 25)?;
+    check(weights(&tab)? != labels, "a button did nothing after the restore")
+}
+
+/// A real round trip away from the panel and back. Whether the browser restores the page from its cache or loads it
+/// again, a drag afterwards must still move B's neighbour.
+#[test]
+fn navigating_away_and_back_leaves_a_panel_that_still_responds_to_a_drag() -> Result<(), String> {
+    let tab = open()?;
+    tab.navigate_to("about:blank")
+        .map_err(|e| format!("could not navigate away: {e}"))?;
+    tab.wait_until_navigated()
+        .map_err(|e| format!("did not finish navigating away: {e}"))?;
+    text(&tab, "history.back(), 'back'")?;
+    tab.wait_for_element_with_custom_timeout("#springs-diagram g[aria-label^=\"Zoom in\"]", Duration::from_secs(30))
+        .map_err(|e| format!("the panel did not come back: {e}"))?;
+    wait_for_state(&tab, "sleeping", 25)?;
+    check(
+        a_drag_of_b_moves_a(&tab)?,
+        "a drag after coming back did not move B's neighbour",
+    )
 }
 
 /// The Dijkstra demo is untouched by the springs: its own panel still builds and still finds the route of length 13.

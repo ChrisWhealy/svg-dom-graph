@@ -69,6 +69,7 @@ The measured time from releasing B after dragging it (+60, +25) over a fifth of 
 * **Reduced motion.** With `prefers-reduced-motion: reduce` nothing is animated. Each change settles at once, and the circles jump to where the graph comes to rest.
 * **A failure drawing.** If a circle cannot be drawn, the physics stops. The solver's circles are put where the page really has them, the reason is shown, and Resume, or Reset, clears it. Nothing is retried quietly.
 * **Leaving the page.** The demo is torn down in order: new commands are refused and queued ones forgotten, the pending frame is cancelled, the drag observers are dropped, the listeners are removed, and then the controller is released. A frame or a click that arrives late reaches nothing.
+* **Back-forward cache.** A page the browser keeps in its back-forward cache is not torn down, because it comes back with its panel already marked as built and nothing would build it again. `pagehide` with `persisted` set pauses the physics as for a hidden page, and `pageshow` with `persisted` set resumes it from a fresh clock. A `pagehide` that is not persisted tears the demo down as above.
 
 ## Accessibility
 

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Test corner hit-testing requirements (`a5070ee`)
 - Add explicit plain-node rejection tests for selection (`4fae672`)
 - Add force-directed graphs (`3594cca`)
+- Add new force-directed graph file (`7a4ccc6`)
 
 ## Changed
 
@@ -24,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct detour routing to avoid node crossing and prevent nodes from being dragged out of the scene (`8367176`)
+- Avoid a page restored from the cache from having inactive physics (``)
 
 # [Released]
 
