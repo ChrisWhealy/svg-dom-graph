@@ -8,3 +8,15 @@ demo = "run -p demo-server"
 
 # Run Chrome DevTools Protocol based browser test crate
 cdp-test = "test -p cdp-integration-test"
+
+# Let the compiler use WebAssembly's 128-bit vector instructions.
+# 
+# The complex-number kernels in `demo-common/src/complex` are plain loops over arrays in which the real and imaginary
+# values have been split, and with this flag LLVM turns them into `f64x2` and `f32x4` operations. Without it they are
+# ordinary scalar (that is non-SIMD) code. Still correct, only slower.
+#
+# The browser must support WebAssembly SIMD (every current Chrome, Firefox and Safari does). One that does not will fail
+# to load the whole demo, not fall back. Setting `RUSTFLAGS` in the environment replaces this flag, it does not add to
+# it.
+[target.wasm32-unknown-unknown]
+rustflags = ["-C", "target-feature=+simd128"]

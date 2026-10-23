@@ -1,0 +1,242 @@
+//! The scalar tests, written once and run for both precisions.
+
+macro_rules! scalar_tests {
+    ($module:ident, $name:ident, $float:ident, $tol:expr) => {
+        mod $module {
+            use crate::complex::$name;
+            use std::mem::{align_of, size_of};
+
+            fn close(a: $name, b: $name) -> bool {
+                (a - b).norm() <= $tol
+            }
+
+            #[test]
+            fn a_complex_number_is_two_packed_floats() {
+                assert_eq!(size_of::<$name>(), 2 * size_of::<$float>());
+                assert_eq!(align_of::<$name>(), align_of::<$float>());
+
+                let numbers = [$name::new(1.0, 2.0), $name::new(3.0, 4.0)];
+                // SAFETY: `$name` is `repr(C)` with two `$float` fields and no padding, so two of them are four
+                // `$float`s.
+                let flat: &[$float] = unsafe { std::slice::from_raw_parts(numbers.as_ptr().cast(), 4) };
+                assert_eq!(flat, &[1.0, 2.0, 3.0, 4.0]);
+            }
+
+            #[test]
+            fn addition_subtraction_and_negation() {
+                let (a, b) = ($name::new(1.0, 2.0), $name::new(-3.0, 0.5));
+
+                assert_eq!(a + b, $name::new(-2.0, 2.5));
+                assert_eq!(a - b, $name::new(4.0, 1.5));
+                assert_eq!(-a, $name::new(-1.0, -2.0));
+                assert_eq!(a.sum_and_difference(b), (a + b, a - b));
+            }
+
+            #[test]
+            fn multiplication_follows_i_squared_is_minus_one() {
+                assert_eq!($name::I * $name::I, $name::new(-1.0, 0.0));
+                assert_eq!($name::new(1.0, 2.0) * $name::new(3.0, 4.0), $name::new(-5.0, 10.0));
+                assert_eq!($name::new(1.0, 2.0) * $name::ONE, $name::new(1.0, 2.0));
+            }
+
+            #[test]
+            fn scaling_by_a_real_matches_the_full_product() {
+                let z = $name::new(1.5, -2.5);
+
+                assert_eq!(z * 2.0, z * $name::from_real(2.0));
+                assert_eq!(2.0 * z, z * 2.0);
+                assert_eq!(z / 2.0, $name::new(0.75, -1.25));
+            }
+
+            #[test]
+            fn a_quarter_turn_needs_no_multiplication_and_matches_the_product() {
+                let z = $name::new(3.0, -4.0);
+
+                assert_eq!(z.mul_i(), z * $name::I);
+                assert_eq!(z.mul_neg_i(), z * -$name::I);
+                assert_eq!(z.mul_i().mul_neg_i(), z);
+            }
+
+            #[test]
+            fn division_undoes_multiplication() {
+                let (a, b) = ($name::new(1.0, 2.0), $name::new(3.0, -4.0));
+
+                assert!(close(a * b / b, a));
+                // Both branches of Smith's algorithm: the divisor's larger part is the real one, then the imaginary
+                // one.
+                assert!(close(a / $name::new(5.0, 1.0) * $name::new(5.0, 1.0), a));
+                assert!(close(a / $name::new(1.0, 5.0) * $name::new(1.0, 5.0), a));
+            }
+
+            #[test]
+            fn division_does_not_overflow_when_the_plain_formula_would() {
+                let big = $name::new($float::MAX / 2.0, $float::MAX / 2.0);
+                let quotient = big / big;
+
+                assert!(quotient.is_finite());
+                assert!(close(quotient, $name::ONE));
+            }
+
+            #[test]
+            fn the_assigning_operators_match_the_plain_ones() {
+                let (a, b) = ($name::new(1.0, 2.0), $name::new(3.0, -4.0));
+
+                let mut z = a;
+                z += b;
+                assert_eq!(z, a + b);
+                z = a;
+                z -= b;
+                assert_eq!(z, a - b);
+                z = a;
+                z *= b;
+                assert_eq!(z, a * b);
+                z = a;
+                z /= b;
+                assert_eq!(z, a / b);
+                z = a;
+                z *= 3.0;
+                assert_eq!(z, a * 3.0);
+                z = a;
+                z /= 4.0;
+                assert_eq!(z, a / 4.0);
+            }
+
+            #[test]
+            fn norm_conjugate_and_argument() {
+                let z = $name::new(3.0, 4.0);
+
+                assert_eq!(z.norm(), 5.0);
+                assert_eq!(z.norm_sqr(), 25.0);
+                assert_eq!(z.conj(), $name::new(3.0, -4.0));
+                assert_eq!(z * z.conj(), $name::from_real(25.0));
+                assert!(($name::I.arg() - std::$float::consts::FRAC_PI_2).abs() < $tol);
+                assert!(($name::new(-1.0, 0.0).arg() - std::$float::consts::PI).abs() < $tol);
+            }
+
+            #[test]
+            fn polar_form_round_trips() {
+                let z = $name::new(-1.25, 0.75);
+                let (norm, arg) = z.to_polar();
+
+                assert!(close($name::from_polar(norm, arg), z));
+                assert!(close($name::cis(std::$float::consts::PI), $name::new(-1.0, 0.0)));
+            }
+
+            #[test]
+            fn a_non_finite_part_is_noticed() {
+                assert!($name::new(1.0, 2.0).is_finite());
+                assert!(!$name::new($float::NAN, 0.0).is_finite());
+                assert!(!$name::new(0.0, $float::INFINITY).is_finite());
+            }
+
+            #[test]
+            fn numbers_sum_and_convert() {
+                let total: $name = [$name::new(1.0, 1.0), $name::new(2.0, -3.0)].into_iter().sum();
+
+                assert_eq!(total, $name::new(3.0, -2.0));
+                assert_eq!($name::from(2.5), $name::new(2.5, 0.0));
+                assert_eq!($name::from((1.0, -1.0)), $name::new(1.0, -1.0));
+                assert_eq!($name::default(), $name::ZERO);
+            }
+
+            #[test]
+            fn quarter_turn_roots_are_exact() {
+                assert_eq!($name::unit_root(0, 8), $name::ONE);
+                assert_eq!($name::unit_root(2, 8), $name::I);
+                assert_eq!($name::unit_root(4, 8), $name::new(-1.0, 0.0));
+                assert_eq!($name::unit_root(6, 8), $name::new(0.0, -1.0));
+                assert_eq!($name::unit_root(3, 12), $name::I);
+            }
+
+            #[test]
+            fn an_eighth_turn_root_has_equal_parts() {
+                let root = $name::unit_root(1, 8);
+
+                assert!((root.re - std::$float::consts::FRAC_1_SQRT_2).abs() < $tol);
+                assert!((root.im - std::$float::consts::FRAC_1_SQRT_2).abs() < $tol);
+            }
+
+            #[test]
+            fn every_root_lies_on_the_unit_circle_at_its_angle() {
+                for n in [1, 2, 3, 5, 6, 7, 8, 12, 64, 1000] {
+                    for k in 0..n {
+                        let root = $name::unit_root(k, n);
+                        let expected = $name::cis(2.0 * std::$float::consts::PI * k as $float / n as $float);
+
+                        assert!((root.norm() - 1.0).abs() < $tol, "|root({k}, {n})|");
+                        assert!(close(root, expected), "root({k}, {n}) is {root}, expected {expected}");
+                    }
+                }
+            }
+
+            #[test]
+            fn roots_are_conjugate_symmetric_to_the_last_bit() {
+                for n in [3, 5, 8, 12, 64, 1000] {
+                    for k in 1..n {
+                        assert_eq!($name::unit_root(n - k, n), $name::unit_root(k, n).conj(), "n = {n}, k = {k}");
+                    }
+                }
+            }
+
+            #[test]
+            fn k_is_taken_modulo_n() {
+                assert_eq!($name::unit_root(3, 8), $name::unit_root(11, 8));
+                assert_eq!($name::unit_root(8, 8), $name::ONE);
+                assert_eq!($name::unit_root(usize::MAX, 1), $name::ONE);
+            }
+
+            #[test]
+            fn the_roots_sum_to_zero_and_multiply_by_adding_exponents() {
+                for n in [2, 3, 8, 13, 64] {
+                    let total: $name = $name::unit_roots(n, n).into_iter().sum();
+                    assert!(total.norm() < $tol * n as $float, "the {n} roots sum to {total}");
+                }
+
+                let n = 16;
+                for (j, k) in [(1, 2), (5, 9), (15, 15)] {
+                    assert!(close(
+                        $name::unit_root(j, n) * $name::unit_root(k, n),
+                        $name::unit_root(j + k, n)
+                    ));
+                }
+            }
+
+            #[test]
+            fn a_root_raised_to_n_is_one() {
+                let n = 32;
+                let root = $name::unit_root(1, n);
+                let power = (0..n).fold($name::ONE, |acc, _| acc * root);
+
+                assert!(close(power, $name::ONE));
+            }
+
+            #[test]
+            fn the_table_of_roots_has_the_requested_length_and_order() {
+                let table = $name::unit_roots(8, 4);
+
+                assert_eq!(table.len(), 4);
+                assert_eq!(table[0], $name::ONE);
+                assert_eq!(table[2], $name::I);
+                assert!($name::unit_roots(8, 0).is_empty());
+            }
+
+            #[test]
+            #[should_panic(expected = "order zero")]
+            fn there_is_no_root_of_order_zero() {
+                let _ = $name::unit_root(0, 0);
+            }
+
+            #[test]
+            fn display_signs_precision_and_negative_zero() {
+                assert_eq!($name::new(1.0, 2.0).to_string(), "1+2i");
+                assert_eq!($name::new(1.0, -2.0).to_string(), "1-2i");
+                assert_eq!(format!("{:.3}", $name::new(0.7074, -0.7074)), "0.707-0.707i");
+                assert_eq!(format!("{:.3}", $name::new(-0.0, -0.0)), "0.000+0.000i");
+                assert_eq!(format!("{:.1}", $name::new(-0.0004, 0.0)), "-0.0+0.0i");
+            }
+        }
+    };
+}
+
+scalar_tests!(double, Complex, f64, 1e-12);
+scalar_tests!(single, Complex32, f32, 1e-5);
