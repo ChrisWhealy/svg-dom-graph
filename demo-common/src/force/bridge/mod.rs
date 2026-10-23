@@ -47,8 +47,10 @@ pub trait CommandTarget<C> {
     /// those are queued behind it.
     fn apply(&mut self, command: C) -> ApplyOutcome;
 
-    /// Called once after a drain has finished, with the controller's borrow released by the bridge first. A controller
-    /// uses it to work out whether it needs a frame, so a command that arrived while it was busy cannot leave it asleep.
+    /// Called once after the queue has been run, with the controller's borrow released by the bridge first. A
+    /// controller uses it to work out whether it needs a frame, so a command that arrived while it was busy cannot
+    /// leave it asleep. A command dispatched from here is queued, and the bridge runs it and reconciles again before it
+    /// is idle.
     fn reconcile(&mut self);
 }
 
@@ -75,7 +77,12 @@ pub struct CommandBridge<C, T> {
     next_ticket: Cell<u64>,
 }
 
-/// Puts the drain flag back, and then reconciles, when a drain ends by any route, including an early return.
+/// How many times a drain may run the queue and reconcile before it stops. A controller whose `reconcile` queues a new
+/// command every time it runs would otherwise never let the drain end. What is left stays queued, and runs on the next
+/// dispatch.
+const MAX_CYCLES: usize = 64;
+
+/// Puts the drain flag back when a drain ends by any route, including an early return.
 struct DrainGuard<'a, C: BridgeCommand, T: CommandTarget<C>> {
     bridge: &'a CommandBridge<C, T>,
 }
@@ -83,16 +90,6 @@ struct DrainGuard<'a, C: BridgeCommand, T: CommandTarget<C>> {
 impl<C: BridgeCommand, T: CommandTarget<C>> Drop for DrainGuard<'_, C, T> {
     fn drop(&mut self) {
         self.bridge.draining.set(false);
-        // The controller's borrow was released before this guard went, since the guard was made first. If it cannot be
-        // taken now, the controller is being worked on by something that will reconcile when it finishes.
-        if self.bridge.shut_down.get() {
-            return;
-        }
-        if let Some(controller) = self.bridge.controller.upgrade() {
-            if let Ok(mut controller) = controller.try_borrow_mut() {
-                controller.reconcile();
-            }
-        }
     }
 }
 
@@ -129,34 +126,55 @@ impl<C: BridgeCommand, T: CommandTarget<C>> CommandBridge<C, T> {
         self.drain(Some(ticket))
     }
 
-    /// Runs whatever is queued, if nothing is already running it. `watch` is the ticket of the command whose outcome is
+    /// Runs whatever is queued, if nothing is already running it, then reconciles, and goes round again if the
+    /// reconciliation queued anything, until the queue is empty. `watch` is the ticket of the command whose outcome is
     /// wanted.
+    ///
+    /// The drain flag stays set throughout, reconciliation included, so a command dispatched from `reconcile` is queued
+    /// behind it and run by the next time round, and never left stranded.
     fn drain(&self, watch: Option<u64>) -> DispatchOutcome {
         // A nested call, from a command that is running, appends to the queue and leaves the outer loop to run it.
         if self.draining.replace(true) {
             return DispatchOutcome::Queued;
         }
-        // Made before the controller is borrowed, so it is dropped after it.
         let _guard = DrainGuard { bridge: self };
         let Some(controller) = self.controller.upgrade() else {
             self.queue.borrow_mut().clear();
             return DispatchOutcome::Discarded;
         };
-        let Ok(mut controller) = controller.try_borrow_mut() else {
-            return DispatchOutcome::Queued;
-        };
         let mut mine: Option<ApplyOutcome> = None;
-        loop {
-            let next = self.queue.borrow_mut().pop_front();
-            let Some((ticket, command)) = next else {
-                break;
-            };
-            if self.shut_down.get() || command.is_stale() {
-                continue;
+        for cycle in 0..MAX_CYCLES {
+            {
+                let Ok(mut controller) = controller.try_borrow_mut() else {
+                    // The controller is being worked on by something that will reconcile when it finishes.
+                    if cycle == 0 {
+                        return DispatchOutcome::Queued;
+                    }
+                    break;
+                };
+                loop {
+                    let next = self.queue.borrow_mut().pop_front();
+                    let Some((ticket, command)) = next else {
+                        break;
+                    };
+                    if self.shut_down.get() || command.is_stale() {
+                        continue;
+                    }
+                    let outcome = controller.apply(command);
+                    if Some(ticket) == watch {
+                        mine = Some(outcome);
+                    }
+                }
             }
-            let outcome = controller.apply(command);
-            if Some(ticket) == watch {
-                mine = Some(outcome);
+            if self.shut_down.get() {
+                break;
+            }
+            // The controller's borrow was released above, so it can take its own.
+            if let Ok(mut controller) = controller.try_borrow_mut() {
+                controller.reconcile();
+            }
+            if self.queue.borrow().is_empty() {
+                break;
             }
         }
         match mine {
@@ -172,8 +190,8 @@ impl<C: BridgeCommand, T: CommandTarget<C>> CommandBridge<C, T> {
         self.queue.borrow().len()
     }
 
-    /// Discards every queued command and refuses every later one. A command that is running may finish. Called first when
-    /// a demo is torn down.
+    /// Discards every queued command and refuses every later one. A command that is running may finish. Called first
+    /// when a demo is torn down.
     pub fn shut_down(&self) {
         self.shut_down.set(true);
         self.queue.borrow_mut().clear();

@@ -26,7 +26,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Correct detour routing to avoid node crossing and prevent nodes from being dragged out of the scene (`8367176`)
 - Avoid a page restored from the cache from having inactive physics (`ef745f1`)
-- Ensure a queued pause is a true toggle (``)
+- Ensure a queued pause is a true toggle (`3224b63`)
+- Ensure commands dispatched during `reconcile()` do not become stranded (``)
 
 # [Released]
 

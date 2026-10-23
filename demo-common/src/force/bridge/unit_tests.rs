@@ -50,6 +50,10 @@ struct Controller {
     reconciles: u32,
     /// Whether `reconcile` could take the controller's own borrow, which it must be able to.
     nested_dispatch_outcomes: Vec<DispatchOutcome>,
+    /// Commands that `reconcile` dispatches, one lot for each time it runs, taken from the front.
+    from_reconcile: Vec<Vec<Cmd>>,
+    /// What those dispatches returned.
+    reconcile_outcomes: Vec<DispatchOutcome>,
 }
 
 impl CommandTarget<Cmd> for Controller {
@@ -75,6 +79,13 @@ impl CommandTarget<Cmd> for Controller {
 
     fn reconcile(&mut self) {
         self.reconciles += 1;
+        if !self.from_reconcile.is_empty() {
+            let bridge = self.bridge.upgrade().expect("the bridge");
+            for cmd in self.from_reconcile.remove(0) {
+                // The controller is borrowed here, so this must queue and not panic.
+                self.reconcile_outcomes.push(bridge.dispatch(cmd));
+            }
+        }
     }
 }
 
@@ -84,6 +95,8 @@ fn setup() -> (Rc<RefCell<Controller>>, Rc<CommandBridge<Cmd, Controller>>) {
         applied: Vec::new(),
         reconciles: 0,
         nested_dispatch_outcomes: Vec::new(),
+        from_reconcile: Vec::new(),
+        reconcile_outcomes: Vec::new(),
     }));
     let bridge = Rc::new(CommandBridge::new(&controller));
     controller.borrow_mut().bridge = Rc::downgrade(&bridge);
@@ -243,4 +256,54 @@ fn reconcile_runs_after_the_whole_drain_including_commands_queued_during_it() {
     // One drain, so one reconcile, after all three commands.
     assert_eq!(controller.borrow().applied.len(), 3);
     assert_eq!(controller.borrow().reconciles, 1);
+}
+
+#[test]
+fn a_command_dispatched_from_reconcile_is_run_and_reconciled_before_the_bridge_is_idle() {
+    let (controller, bridge) = setup();
+    controller.borrow_mut().from_reconcile = vec![vec![Cmd::Pause(true)]];
+    bridge.dispatch(Cmd::Reset);
+    // The command queued by reconcile ran now, not at the next external dispatch, and the bridge is idle.
+    assert_eq!(controller.borrow().applied, vec![Cmd::Reset, Cmd::Pause(true)]);
+    assert_eq!(controller.borrow().reconcile_outcomes, vec![DispatchOutcome::Queued]);
+    assert_eq!(bridge.pending(), 0);
+    // Reconciled again after it, since it may have changed what the controller needs.
+    assert_eq!(controller.borrow().reconciles, 2);
+    // And the next dispatch is an ordinary one.
+    assert_eq!(bridge.dispatch(Cmd::Reset), DispatchOutcome::Executed);
+}
+
+#[test]
+fn commands_dispatched_from_successive_reconciles_all_run_in_order() {
+    let (controller, bridge) = setup();
+    controller.borrow_mut().from_reconcile = vec![vec![Cmd::Frame(1), Cmd::Reset], vec![Cmd::Pause(false)]];
+    bridge.dispatch(Cmd::Refused);
+    assert_eq!(
+        controller.borrow().applied,
+        vec![Cmd::Refused, Cmd::Frame(1), Cmd::Reset, Cmd::Pause(false)]
+    );
+    assert_eq!(bridge.pending(), 0);
+    assert_eq!(controller.borrow().reconciles, 3);
+}
+
+#[test]
+fn a_reconcile_that_always_dispatches_does_not_stop_the_drain_ending() {
+    let (controller, bridge) = setup();
+    controller.borrow_mut().from_reconcile = vec![vec![Cmd::Reset]; 1000];
+    bridge.dispatch(Cmd::Reset);
+    // The drain ended after its cap, with what was left queued for the next dispatch, and the flag was put back.
+    assert!(controller.borrow().applied.len() <= MAX_CYCLES + 1);
+    assert_eq!(bridge.pending(), 1);
+    controller.borrow_mut().from_reconcile.clear();
+    assert_eq!(bridge.dispatch(Cmd::Pause(true)), DispatchOutcome::Executed);
+    assert_eq!(bridge.pending(), 0);
+}
+
+#[test]
+fn a_shut_down_bridge_runs_nothing_even_when_reconcile_would_dispatch() {
+    let (controller, bridge) = setup();
+    controller.borrow_mut().from_reconcile = vec![vec![Cmd::Pause(true)]];
+    bridge.shut_down();
+    assert_eq!(bridge.dispatch(Cmd::Reset), DispatchOutcome::Discarded);
+    assert!(controller.borrow().applied.is_empty());
 }
