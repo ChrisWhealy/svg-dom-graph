@@ -5,14 +5,15 @@
 //! `src/scene/connector`. These tests are about what reaches the page.
 
 use crate::common::{
-    check, check_close, first_point_of_path, last_point_of_path, make_svg, nth_group, path_d, the_connector,
+    check, check_close, dispatch_pointer_event, first_point_of_path, group_translate, last_point_of_path, make_svg,
+    nth_group, path_d, the_connector,
 };
 use svg_dom::root::utils::{Point, Rect, Size};
 use svg_dom_graph::{
     EdgeEnd, EndpointProblem, Error, NodeId,
     scene::{
         ClockPosition, ConnectorOptions, ConnectorType, EdgeAnchors, EllipseOptions, EllipseRadii, NodeValues, Scene,
-        Side,
+        Side, ToolbarOptions,
     },
 };
 use wasm_bindgen_test::wasm_bindgen_test;
@@ -772,5 +773,154 @@ fn a_detour_round_a_tall_ellipse_stays_outside_the_painted_curve() -> Result<(),
     check(
         points.iter().any(|&(_, y)| y < 160.0),
         &format!("it does not go over the top: {points:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The element the browser's own hit testing finds at `(x, y)` in `svg`'s user space, with the page scrolled so that the
+/// scene is on screen. This is real SVG pointer targeting, as a mouse press would get it. It is not worked out from the
+/// scene's own stored geometry.
+fn element_at(svg: &web_sys::Element, x: f64, y: f64) -> Result<web_sys::Element, String> {
+    svg.scroll_into_view();
+    let area = svg.get_bounding_client_rect();
+    let (client_x, client_y) = (area.left() + x, area.top() + y);
+    web_sys::window()
+        .and_then(|window| window.document())
+        .ok_or("a document")?
+        .element_from_point(client_x as f32, client_y as f32)
+        .ok_or_else(|| format!("nothing at client ({client_x}, {client_y}), which is user ({x}, {y})"))
+}
+
+/// The client position of a point in `svg`'s user space, with the scene scrolled on screen.
+fn client_of(svg: &web_sys::Element, x: f64, y: f64) -> (i32, i32) {
+    svg.scroll_into_view();
+    let area = svg.get_bounding_client_rect();
+    ((area.left() + x).round() as i32, (area.top() + y).round() as i32)
+}
+
+#[wasm_bindgen_test]
+fn a_press_in_an_unpainted_corner_of_the_enclosing_rectangle_pans_the_view_and_does_not_drag_the_ellipse()
+-> Result<(), String> {
+    let svg_root = make_svg("ellipse-corner", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
+    let scene = Scene::new(svg_root).map_err(e)?;
+    // Centre (200, 150), radii (100, 60): its enclosing rectangle is x 100 to 300 and y 90 to 210.
+    let ellipse = scene
+        .add_ellipse_node(Point::new(200.0, 150.0), EllipseRadii::new(100.0, 60.0), "Ellipse")
+        .map_err(e)?;
+    scene.make_draggable(ellipse).map_err(e)?;
+    // A toolbar gives the scene its background pan surface, which sits under the content. Put it at the bottom, clear of
+    // the corner used here.
+    scene.show_toolbar(ToolbarOptions::new(Side::South)).map_err(e)?;
+
+    let svg = document().get_element_by_id("ellipse-corner").ok_or("no svg")?;
+    let group = nth_group("ellipse-corner", 0)?;
+    let before_group = group_translate(&group)?;
+    let before_view = content_transform("ellipse-corner")?;
+
+    // The top-left corner of the enclosing rectangle: inside the rectangle, and outside the curve.
+    let corner = (110.0, 95.0);
+    check(
+        ((corner.0 - 200.0) / 100.0_f64).powi(2) + ((corner.1 - 150.0) / 60.0_f64).powi(2) > 1.0,
+        "the corner is not outside the ellipse",
+    )?;
+    let target = element_at(&svg, corner.0, corner.1)?;
+    check(
+        !group.contains(Some(&target)),
+        &format!(
+            "the browser hit the ellipse's group at its unpainted corner: {}",
+            target.tag_name()
+        ),
+    )?;
+    check(
+        target.get_attribute("aria-hidden").as_deref() == Some("true"),
+        "the browser did not hit the pan surface at the corner",
+    )?;
+
+    // The middle of the ellipse, by contrast, is the ellipse's own.
+    let inside = element_at(&svg, 200.0, 150.0)?;
+    check(
+        group.contains(Some(&inside)),
+        &format!("the middle of the ellipse hit {}", inside.tag_name()),
+    )?;
+    // And so is a point near its edge but inside the curve.
+    let near_edge = element_at(&svg, 200.0, 95.0)?;
+    check(
+        group.contains(Some(&near_edge)),
+        &format!("a point inside the curve hit {}", near_edge.tag_name()),
+    )?;
+
+    // A real press at the corner goes to whatever the browser found there. Dragging it pans the view.
+    let (down_x, down_y) = client_of(&svg, corner.0, corner.1);
+    dispatch_pointer_event(&target, "pointerdown", down_x, down_y, 1)?;
+    dispatch_pointer_event(&target, "pointermove", down_x + 40, down_y + 25, 1)?;
+    dispatch_pointer_event(&target, "pointerup", down_x + 40, down_y + 25, 1)?;
+
+    check(group_translate(&group)? == before_group, "the ellipse moved")?;
+    let after_view = content_transform("ellipse-corner")?;
+    check(
+        after_view != before_view && after_view.starts_with("translate(40, 25)"),
+        &format!("the view did not pan: {before_view} then {after_view}"),
+    )?;
+    // The ellipse did not take the focus, nor was it given the focus ring.
+    let active = document().active_element();
+    check(
+        active.is_none_or(|element| !group.contains(Some(&element))),
+        "the ellipse took the focus",
+    )?;
+    check(
+        child(&group, "ellipse")?.get_attribute("stroke-width").as_deref() == Some("1.5"),
+        "the ellipse was given the focus ring",
+    )
+}
+
+fn document() -> web_sys::Document {
+    web_sys::window().and_then(|window| window.document()).expect("a document")
+}
+
+/// The `transform` of the scene's content layer, which is its zoom and pan.
+fn content_transform(id: &str) -> Result<String, String> {
+    document()
+        .query_selector(&format!("#{id} > g.svg-dom-graph-content"))
+        .map_err(|e| format!("{e:?}"))?
+        .ok_or("no content layer")?
+        .get_attribute("transform")
+        .ok_or_else(|| "the content layer has no transform yet".to_owned())
+        .or_else(|_| Ok("translate(0, 0) scale(1)".to_owned()))
+}
+
+#[wasm_bindgen_test]
+fn a_press_on_the_painted_ellipse_drags_it_and_does_not_pan_the_view() -> Result<(), String> {
+    let svg_root = make_svg("ellipse-painted", Size::new(400.0, 300.0), Size::new(400.0, 300.0));
+    let scene = Scene::new(svg_root).map_err(e)?;
+    let ellipse = scene
+        .add_ellipse_node(Point::new(200.0, 150.0), EllipseRadii::new(100.0, 60.0), "Ellipse")
+        .map_err(e)?;
+    scene.make_draggable(ellipse).map_err(e)?;
+    scene.show_toolbar(ToolbarOptions::new(Side::South)).map_err(e)?;
+
+    let svg = document().get_element_by_id("ellipse-painted").ok_or("no svg")?;
+    let group = nth_group("ellipse-painted", 0)?;
+    let before_view = content_transform("ellipse-painted")?;
+    let (x0, y0) = group_translate(&group)?;
+
+    // Pressed inside the curve, near the left end of the ellipse where a rectangle's side would be.
+    let target = element_at(&svg, 125.0, 150.0)?;
+    check(
+        group.contains(Some(&target)),
+        &format!("the browser did not hit the ellipse: {}", target.tag_name()),
+    )?;
+    let (down_x, down_y) = client_of(&svg, 125.0, 150.0);
+    // The browser found the ellipse's own group, or something inside it, so a real press would bubble up to the group's
+    // listeners. The test events do not bubble, so they go to the group itself.
+    dispatch_pointer_event(&group, "pointerdown", down_x, down_y, 1)?;
+    dispatch_pointer_event(&group, "pointermove", down_x + 30, down_y + 20, 1)?;
+    dispatch_pointer_event(&group, "pointerup", down_x + 30, down_y + 20, 1)?;
+
+    let (x1, y1) = group_translate(&group)?;
+    check_close(x1 - x0, 30.0)?;
+    check_close(y1 - y0, 20.0)?;
+    check(
+        content_transform("ellipse-painted")? == before_view,
+        "the view panned when the ellipse was dragged",
     )
 }

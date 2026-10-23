@@ -11,6 +11,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement a ellipse and circle nodes (`21d759c`)
+- Test corner hit-testing requirements (``)
 
 ## Changed
 
@@ -18,7 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct detour routing to avoid node crossing and prevent nodes from being dragged out of the scene (``)
+- Correct detour routing to avoid node crossing and prevent nodes from being dragged out of the scene (`8367176`)
 
 # [Released]
 
