@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.42] - 2026-10-23
 
 ## Added
@@ -33,9 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure a queued pause is a true toggle (`3224b63`)
 - Ensure commands dispatched during `reconcile()` do not become stranded (`f5a67c6`)
 - Correct behaviour of "Reset" and "Randomise weights" buttons in weighted springs demo (`e89ec50`)
-- Allow weighted spring nodes to be dragged to the upper edge of the scene (``)
-
-# [Released]
+- Allow weighted spring nodes to be dragged to the upper edge of the scene (`55a1d22`)
 
 ## [0.2.41] - 2026-10-23
 
