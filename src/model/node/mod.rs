@@ -5,6 +5,7 @@ pub(crate) use node_content::NodeContent;
 pub use node_id::NodeId;
 
 use super::edge::EdgeId;
+use crate::geometry::ellipse::EllipseRadii;
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -21,4 +22,8 @@ pub(crate) struct Node {
     /// These are kept beside the node itself rather than in a separate node-keyed map. So a node and its own incidence
     /// data can never drift out of sync with each other.
     pub incident: Vec<EdgeId>,
+    /// The radii of an elliptical node, whose `rect` is then the rectangle that encloses it. `None` for a rectangle.
+    ///
+    /// Kept beside `rect` so that routing never has to infer a shape from a rectangle alone.
+    pub ellipse: Option<EllipseRadii>,
 }

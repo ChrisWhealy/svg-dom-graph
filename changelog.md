@@ -8,9 +8,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## [0.2.42] - 2026-10-23
 
+## Added
+
+- Implement a ellipse and circle nodes (``)
+
 ## Changed
 
-- Rearrange the Dijkstra demo node layout (``)
+- Rearrange the Dijkstra demo node layout (`bd69336`)
 
 # [Released]
 

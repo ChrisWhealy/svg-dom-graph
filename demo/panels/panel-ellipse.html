@@ -1,0 +1,24 @@
+<section class="section" id="panel-ellipse" data-group="Basic Nodes" data-label="Ellipses and circles" data-order="40">
+    <h2>Ellipses and circles</h2>
+    <p>An ellipse is simply a circle with two differing radii. If you want to create a circle, then you effectively
+        create an ellipse with only one radius.</p>
+    <p>When you add a label to an ellipse, the label keeps its normal size and the ellipse will stretch to accommodate
+        it by the same factor in both directions. This means that the ellispe or circle will always maintain its aspect
+        ratio, </p>
+    <p>In the example below, the circle labelled <em>A</em> naturally fits inside the circle, but the circle labelled
+        <em>Distance</em> has expanded to accommodate this longer label.
+    </p>
+    <p>A straight connector follows the line drawn between the centres of the two nodes. The rectangle shows that
+        different node shapes can be connected in either direction.</p>
+    <p>On the right, the connector leaves the clock ellipse in the direction you choose. The direction corresponds to
+        the minutes on a clock face with 0 being north, 15 east, 30 south and 45 west. The position at which the
+        connector is anchored is calculated as the crossing point of a line drawn between the centres of the two nodes.
+    </p>
+    <p class="controls">
+        <label for="ellipse-minute">Clock position: <output id="ellipse-minute-value">10</output>
+            (<output id="ellipse-minute-bearing">60&deg; clockwise from north</output>)</label><br />
+        <input type="range" id="ellipse-minute" min="0" max="59" step="1" value="10" />
+    </p>
+    <div class="canvas" id="ellipse-diagram-stage">
+    </div>
+</section>

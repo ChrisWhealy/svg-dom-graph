@@ -13,6 +13,9 @@
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`edge_anchors::build_edge_anchors_demo`]: a parent with a
 //!   growing and shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own
 //!   doc comment for what it demonstrates.
+//! - `panel-ellipse` / `#ellipse-diagram` — [`ellipse::build_ellipse_demo`]: circles and ellipses that grow to hold their
+//!   labels, joined to each other and to a rectangle, and a clock ellipse whose connector leaves at the minute a slider
+//!   chooses. See that function's own doc comment for what it demonstrates.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -117,6 +120,7 @@ mod data;
 mod dijkstra;
 mod edge_anchors;
 mod elbow;
+mod ellipse;
 mod floats;
 mod hamming;
 mod highlight;
@@ -204,6 +208,7 @@ demo_gallery! {
     "panel-tree" => tree::build_demo_tree,
     "panel-elbow" => elbow::build_elbow_demo,
     "panel-edge-anchors" => edge_anchors::build_edge_anchors_demo,
+    "panel-ellipse" => ellipse::build_ellipse_demo,
     "panel-unsigned" => data::build_unsigned_demo,
     "panel-signed" => data::build_signed_demo,
     "panel-hexdump" => data::build_hexdump_demo,

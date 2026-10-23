@@ -5,6 +5,7 @@
 - [Directed Tree](directed-tree.md)
 - [Connector Routing](connector-routing.md)
 - [Fixing points](fixing-points.md)
+- [Ellipses and circles](ellipses.md)
 - [Data Node](data-node.md)
 - [Floating Point](floating-point.md)
 - [128-bit Values and UUIDs](wide-values.md)

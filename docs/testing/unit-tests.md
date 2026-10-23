@@ -52,6 +52,12 @@ That rule is tested on its own with chosen scores, so eleven points of improveme
 `src/scene/toolbar/unit_tests.rs` tests where the bar and its buttons sit against each edge, and parsing a `viewBox`.
 It also tests recovering the visible part of user space from a rendered box and a screen matrix, for a `viewBox` origin, `meet`, `slice`, and a box offset on the page.
 
+`src/geometry/ellipse/unit_tests.rs` tests the geometry of an elliptical node, without a browser: the clock positions and the rays they name, which cardinal a direction is nearest to and its clockwise ties, where a straight connector lands, the radii that hold a label, and the finite checks on all of them.
+
+`src/scene/connector/unit_tests.rs` also routes with an ellipse at one end or both, without a browser: a straight edge between two ellipses and between an ellipse and a rectangle, coincident centres, a forced side, an explicit clock position, the cardinal an elbow leaves by and its tie, each end of an edge using its own bearing, unmatched sides at a mixed pair, and a route of at most six finite points. It also covers a box past its target leaving by east and turning south, west and south, the gap kept from the node it leaves, an ellipse's east point doing the same, and the automatic cardinal snapping as a rectangle is moved without any route going through either node.
+
+`src/geometry/unit_tests.rs` checks every pairing of two sides over a grid of relative places: each elbow route leaves outward, arrives from outside, has axis-aligned segments and at most six points, and a route that was already fine is unchanged. The expected points are worked out from the ellipse equation and the directions, and not by reading what `route` produced.
+
 The zoom tests also check that the zoom percentage the accessible name shows changes exactly when the label's text would, so comparing it is a faithful stand-in for asking the DOM.
 The zoom tests also check that writing the `transform` attribute and the accessible name reuses its buffer and never reallocates it once it has grown to fit.
 The zoom tests also check re-reading a point under a changed view: that `apply` and `unapply` are inverses, that an unchanged view changes nothing, that the same screen position is a different content point after a zoom or a pan, and that the point found is always drawn where the pointer is.

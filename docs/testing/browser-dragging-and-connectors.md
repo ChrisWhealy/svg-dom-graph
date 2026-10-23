@@ -18,6 +18,19 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a rejected `bounds` leaving the node not draggable at all, and
   - `CollisionPolicy::PushClear`'s own corrective push staying within `bounds` too, not just the pointermove that preceded it
 - straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
+- ellipse nodes (`Scene::add_ellipse_node`):
+  - a real `<ellipse>` and a text in a group, with the ellipse's own centre at `(rx, ry)` and no rectangle outline
+  - `node_rect` being the enclosing rectangle, with the centre where it was put
+  - a label that does not fit growing the ellipse about the same centre, keeping the ratio, with the text and margin inside the curve as the browser measures it
+  - a circle staying a circle, a single letter fitting radius 22, the label centred, and the margin and fill options
+  - invalid radii, centre, margin and a label that overflows being refused with nothing drawn, and an empty label giving a valid ellipse
+  - a straight edge landing on both outlines, an elbow leaving by a cardinal point, an explicit minute landing on the ray and staying there after a move, and a forced side landing on its cardinal point
+  - mixed ellipse and rectangle edges in both directions, and a rectangle edge unchanged beside ellipses
+  - a clock position on a rectangle, a fraction on an ellipse, a clock with a side, and an off-cardinal elbow, each refused by name, including by `set_connector_type`, which leaves the path as it was
+  - `set_edge_anchors` and `set_data_values` refusing an ellipse
+  - focus ringing the ellipse outline, dragging and `move_node`, and the accessible name and relationship clause
+  - an elbow that leaves a box whose east side is past its target going east, south, west and south, and none of its segments passing through the box
+  - `add_circle_node` being `add_ellipse_node` with equal radii: the same size, centre and fill, growing to hold a label and staying a circle, refused by name with the radius in both places, and joined by connectors
 - edge labels (`Scene::set_edge_label`):
   - the group in the content layer with its text, background, name and marker, taking no pointer events
   - the label being clear of its line, its arrowhead and both nodes, at rest and through a run of moves

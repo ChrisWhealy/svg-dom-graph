@@ -8,7 +8,7 @@
 //!
 //! # The candidates
 //!
-//! A route has two to four points, so one to three straight runs. A run is _usable_ where it is not rounded away at a
+//! A route has two to six points, so one to five straight runs. A run is _usable_ where it is not rounded away at a
 //! corner, and not next to the arrowhead or the box it starts at. The corner trim is that of the path itself: the
 //! smaller of the corner radius and half of each run meeting there.
 //!
@@ -48,6 +48,9 @@ use svg_dom::root::utils::{Point, Rect, Size};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The most candidates a label ever has: up to four anchors, each on both sides of its run.
 pub(crate) const MAX_CANDIDATES: usize = 8;
+
+/// The most straight runs a route has: one fewer than the most points a route can hold.
+const MAX_RUNS: usize = 5;
 
 /// How many points of soft score another clear candidate must beat the label's current one by, to be moved to.
 pub(crate) const SWITCH_THRESHOLD: u32 = 12;
@@ -135,7 +138,7 @@ impl Conflicts {
 /// Everything a label's place depends on.
 #[derive(Clone, Copy, Debug)]
 pub(crate) struct PlacerInput<'a> {
-    /// The connector's route: two to four points.
+    /// The connector's route: two to six points.
     pub(crate) route: &'a [Point],
     /// The radius the connector's corners are rounded by.
     pub(crate) corner_radius: f64,
@@ -197,15 +200,15 @@ fn distance(a: Point, b: Point) -> f64 {
 /// The runs of `route`, each with the part of it that can take a label. A corner is trimmed by the smaller of `radius` and
 /// half of each run meeting there, as the path itself rounds it. The first run leaves [`START_CLEARANCE`] bare, and the
 /// last [`ARROW_REACH`]. A run that is too short for that is usable at its middle only.
-fn runs(route: &[Point], radius: f64) -> ([Run; 3], usize) {
+fn runs(route: &[Point], radius: f64) -> ([Run; MAX_RUNS], usize) {
     let blank = Run {
         from: Point::new(0.0, 0.0),
         to: Point::new(0.0, 0.0),
         length: 0.0,
         usable: (0.0, 0.0),
     };
-    let mut out = [blank; 3];
-    let count = route.len().saturating_sub(1).min(3);
+    let mut out = [blank; MAX_RUNS];
+    let count = route.len().saturating_sub(1).min(MAX_RUNS);
     let length = |i: usize| distance(route[i], route[i + 1]);
     for i in 0..count {
         let own = length(i);
@@ -276,7 +279,10 @@ pub(crate) fn candidates(route: &[Point], corner_radius: f64, label: Size) -> Ca
     if count == 0 {
         return out;
     }
-    let mut order = [0_usize, 1, 2];
+    let mut order = [0_usize; MAX_RUNS];
+    for (i, slot) in order.iter_mut().enumerate() {
+        *slot = i;
+    }
     let order = &mut order[..count];
     // Longest first, and of runs as long, the later one: it is further from the source.
     order.sort_by(|&a, &b| runs[b].usable_length().total_cmp(&runs[a].usable_length()).then(b.cmp(&a)));

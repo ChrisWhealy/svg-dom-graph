@@ -7,10 +7,15 @@ mod edge_label;
 use super::{Scene, node::EdgeAnchors};
 use crate::{
     colours::{CONNECTOR_STROKE, EDGE_FOCUS_STROKE},
-    error::Error,
+    error::{EdgeEnd, EndpointProblem, Error},
     geometry::{
-        binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route, forced_anchor,
-        position_anchor, route::Route, route::straight_route, side::Side, snapped_anchor,
+        binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route,
+        ellipse::{ClockPosition, EllipseRadii, automatic_cardinal, boundary_towards, clock_point},
+        forced_anchor, position_anchor,
+        route::Route,
+        route::straight_route,
+        side::Side,
+        snapped_anchor,
     },
     model::{edge::EdgeId, node::NodeId},
 };
@@ -54,6 +59,42 @@ fn validate_connector_type(connector_type: ConnectorType) -> Result<(), Error> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks the options of both ends of a new edge against the shapes of the nodes there, before anything is drawn.
+///
+/// An end that is a rectangle must have no clock position. An end that is an ellipse must not combine a clock position
+/// with a forced side, nor be given a position along a side, and an elbow can use only a cardinal clock position. Both
+/// ends are checked before either is acted on, so a bad option on one cannot leave a connector half made at the other.
+fn validate_ends(inner: &super::SceneInner, from: NodeId, to: NodeId, options: ConnectorOptions) -> Result<(), Error> {
+    let ends = [
+        (
+            EdgeEnd::From,
+            from,
+            options.from_side,
+            options.from_position,
+            options.from_clock,
+        ),
+        (EdgeEnd::To, to, options.to_side, options.to_position, options.to_clock),
+    ];
+    for (endpoint, node, side, position, clock) in ends {
+        let is_ellipse = inner.graph.node(node).is_some_and(|node| node.ellipse.is_some());
+        let problem = |problem| Err(Error::InvalidEllipseEndpoint { endpoint, problem });
+        match (is_ellipse, clock) {
+            (false, Some(_)) => return problem(EndpointProblem::ClockOnRectangle),
+            (true, Some(_)) if side.is_some() => return problem(EndpointProblem::ClockWithSide),
+            _ => {},
+        }
+        if is_ellipse && position.is_some() {
+            return problem(EndpointProblem::FractionOnEllipse);
+        }
+        let is_elbow = matches!(options.connector_type, ConnectorType::Elbow { .. });
+        if let Some(position) = clock.filter(|position| is_elbow && !position.is_cardinal()) {
+            return Err(Error::InvalidEllipseElbowClock(position));
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One endpoint's anchor point for a straight connector, honouring `anchors` and `forced_side`.
 ///
 /// `forced_side: Some(side)` anchors on `side` regardless of `towards`, via [`forced_anchor`] — see
@@ -93,6 +134,90 @@ fn elbow_anchor(rect: Rect, towards: Point, anchors: Option<EdgeAnchors>, forced
         Some(EdgeAnchors(n)) => snapped_anchor(rect, towards, n),
         None => edge_anchor(rect, towards),
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What [`route`] needs to know about one end of an edge besides its rectangle: whether the node there is an ellipse,
+/// and the clock position the edge was given for that end.
+///
+/// A rectangle end has neither, and keeps every rule it had before ellipses existed.
+#[derive(Debug, Clone, Copy, Default, PartialEq)]
+pub(crate) struct End {
+    /// The radii of the ellipse at this end, or `None` for a rectangle. The ellipse is centred on the rectangle's centre.
+    pub(crate) radii: Option<EllipseRadii>,
+    /// The minute the edge was given for this end. Only ever `Some` for an ellipse.
+    pub(crate) clock: Option<ClockPosition>,
+}
+
+impl End {
+    /// An end that is a rectangle.
+    pub(crate) const RECTANGLE: Self = Self { radii: None, clock: None };
+}
+
+/// The cardinal clock position of a side.
+fn cardinal_of(side: Side) -> ClockPosition {
+    match side {
+        Side::North => ClockPosition::NORTH,
+        Side::East => ClockPosition::EAST,
+        Side::South => ClockPosition::SOUTH,
+        Side::West => ClockPosition::WEST,
+    }
+}
+
+/// The side that a cardinal clock position leaves by. A position that is not a cardinal has no side, and is east.
+fn side_of(position: ClockPosition) -> Side {
+    match position {
+        ClockPosition::NORTH => Side::North,
+        ClockPosition::SOUTH => Side::South,
+        ClockPosition::WEST => Side::West,
+        _ => Side::East,
+    }
+}
+
+/// One endpoint's anchor point for a straight connector at an ellipse centred at `centre`.
+///
+/// A forced side lands on that side's cardinal point, and an explicit clock position on its own point. With neither, the
+/// end is where the line towards the other node's centre crosses the outline, and it is never snapped to a cardinal.
+/// Coincident centres give the east point. If the numbers overflow, the centre is used, which cannot happen for an
+/// ellipse that was accepted.
+fn ellipse_straight_anchor(
+    centre_point: Point,
+    radii: EllipseRadii,
+    forced_side: Option<Pin>,
+    clock: Option<ClockPosition>,
+    towards: Point,
+) -> Point {
+    let point = if let Some(Pin { side, .. }) = forced_side {
+        clock_point(centre_point, radii, cardinal_of(side))
+    } else if let Some(position) = clock {
+        clock_point(centre_point, radii, position)
+    } else {
+        boundary_towards(centre_point, radii, towards)
+    };
+    point.unwrap_or(centre_point)
+}
+
+/// One endpoint's anchor point and side for an elbowed connector at an ellipse centred at `centre`.
+///
+/// The end is always at a cardinal point: the forced side, else the cardinal clock position the edge was given, else the
+/// cardinal that the other node's centre is nearest to by angle, worked out from this ellipse's own centre. The side is
+/// the one that cardinal leaves by, which is what the elbow router needs.
+fn ellipse_elbow_anchor(
+    centre_point: Point,
+    radii: EllipseRadii,
+    forced_side: Option<Pin>,
+    clock: Option<ClockPosition>,
+    towards: Point,
+) -> (Point, Side) {
+    let cardinal = if let Some(Pin { side, .. }) = forced_side {
+        cardinal_of(side)
+    } else if let Some(position) = clock.filter(|position| position.is_cardinal()) {
+        position
+    } else {
+        automatic_cardinal(centre_point, towards)
+    };
+    let point = clock_point(centre_point, radii, cardinal).unwrap_or(centre_point);
+    (point, side_of(cardinal))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -144,19 +269,34 @@ pub(crate) fn route(
     to: Rect,
     to_anchors: Option<EdgeAnchors>,
     to_side: Option<Pin>,
+    from_end: End,
+    to_end: End,
     to_override: Option<BinaryOperatorRoute>,
 ) -> (Route, f64) {
     let from_centre = centre(from);
     let to_centre = centre(to);
 
+    // Each end is worked out from its own shape and its own direction: the other end is only ever a centre to aim at.
+    let straight_end = |rect: Rect, own_centre: Point, towards: Point, anchors, side, end: End| match end.radii {
+        Some(radii) => ellipse_straight_anchor(own_centre, radii, side, end.clock, towards),
+        None => straight_anchor(rect, towards, anchors, side),
+    };
+    let elbow_end = |rect: Rect, own_centre: Point, towards: Point, anchors, side, end: End| match end.radii {
+        Some(radii) => ellipse_elbow_anchor(own_centre, radii, side, end.clock, towards),
+        None => elbow_anchor(rect, towards, anchors, side),
+    };
+
     match connector_type {
         ConnectorType::Straight => {
-            let start = straight_anchor(from, to_centre, from_anchors, from_side);
-            let end = to_override.map_or_else(|| straight_anchor(to, from_centre, to_anchors, to_side), |o| o.anchor);
+            let start = straight_end(from, from_centre, to_centre, from_anchors, from_side, from_end);
+            let end = to_override.map_or_else(
+                || straight_end(to, to_centre, from_centre, to_anchors, to_side, to_end),
+                |o| o.anchor,
+            );
             (straight_route(start, end), 0.0)
         },
         ConnectorType::Elbow { corner_radius } => {
-            let (start, start_side) = elbow_anchor(from, to_centre, from_anchors, from_side);
+            let (start, start_side) = elbow_end(from, from_centre, to_centre, from_anchors, from_side, from_end);
             let route = match to_override {
                 Some(BinaryOperatorRoute {
                     anchor,
@@ -169,7 +309,7 @@ pub(crate) fn route(
                     sibling_end: None,
                 }) => elbow_route(start, start_side, anchor, side),
                 None => {
-                    let (end, end_side) = elbow_anchor(to, from_centre, to_anchors, to_side);
+                    let (end, end_side) = elbow_end(to, to_centre, from_centre, to_anchors, to_side, to_end);
                     elbow_route(start, start_side, end, end_side)
                 },
             };
@@ -226,7 +366,10 @@ impl Scene {
             return Err(Error::SelfLoopUnsupported(from));
         }
 
+        validate_ends(&inner, from, to, options)?;
+
         let to_override = inner.binary_operator_to_override(from, to);
+        let (from_end, to_end) = (inner.end_of(from, options.from_clock), inner.end_of(to, options.to_clock));
         let (vertices, radius) = route(
             options.connector_type,
             from_rect,
@@ -241,6 +384,8 @@ impl Scene {
                 side,
                 position: options.to_position,
             }),
+            from_end,
+            to_end,
             to_override,
         );
         // Taken out for the call so `inner.svg` can be borrowed for it without also needing `inner` mutability. See
@@ -266,6 +411,8 @@ impl Scene {
                 to_side: options.to_side,
                 from_position: options.from_position,
                 to_position: options.to_position,
+                from_clock: options.from_clock,
+                to_clock: options.to_clock,
                 port_marker: None,
                 route: Cell::new(vertices),
                 radius: Cell::new(radius),
@@ -342,6 +489,10 @@ impl Scene {
     ///
     /// Returns [`Error::UnknownEdge`] if `id` does not name an edge in this scene.
     ///
+    /// Returns [`Error::InvalidEllipseElbowClock`] if `connector_type` is an elbow and either end of the edge was given a
+    /// clock position that is not 0, 15, 30 or 45. Checked before anything is redrawn or recorded, so the edge is left as
+    /// it was.
+    ///
     /// Also returns an error — [`Error::UnknownNode`] or a wrapped [`Error::Svg`] — if the redraw itself fails once
     /// underway. The stored connector type is only updated once the new path has actually been written. A failure of
     /// the path leaves `id` rendered and recorded exactly as it was before the call.
@@ -362,6 +513,15 @@ impl Scene {
         let handle = inner.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
         if handle.connector_type == connector_type {
             return Ok(());
+        }
+        // An elbow can use only a cardinal clock position, so a straight edge that has any other cannot become one. This
+        // is checked before anything is redrawn or recorded.
+        if matches!(connector_type, ConnectorType::Elbow { .. }) {
+            for position in [handle.from_clock, handle.to_clock].into_iter().flatten() {
+                if !position.is_cardinal() {
+                    return Err(Error::InvalidEllipseElbowClock(position));
+                }
+            }
         }
 
         // Taken out for the call so `redraw_edge_with_type` can freely borrow the rest of `inner`, then put back. See

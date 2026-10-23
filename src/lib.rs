@@ -28,5 +28,5 @@ pub mod scene;
 #[cfg(test)]
 mod test_support;
 
-pub use error::Error;
+pub use error::{EdgeEnd, EndpointProblem, Error};
 pub use model::{edge::EdgeId, node::NodeId};

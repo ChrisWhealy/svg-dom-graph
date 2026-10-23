@@ -1,4 +1,4 @@
-use crate::scene::{ConnectorType, Side};
+use crate::scene::{ClockPosition, ConnectorType, Side};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Configures how [Scene::add_edge_with](crate::scene::Scene::add_edge_with) draws a connector.
@@ -33,6 +33,12 @@ pub struct ConnectorOptions {
     pub from_position: Option<f64>,
     /// The same choice as [`from_position`](Self::from_position), for this connector's own `to` endpoint instead.
     pub to_position: Option<f64>,
+    /// Puts this connector's own `from` endpoint at this minute round the ellipse it leaves, `0` being north and the
+    /// minutes running clockwise. Only an elliptical node can have one. `None` (the default) leaves the end to the
+    /// ellipse's own automatic rule. See [`with_from_clock`](Self::with_from_clock).
+    pub from_clock: Option<ClockPosition>,
+    /// The same choice as [`from_clock`](Self::from_clock), for this connector's own `to` endpoint instead.
+    pub to_clock: Option<ClockPosition>,
 }
 
 impl ConnectorOptions {
@@ -101,6 +107,43 @@ impl ConnectorOptions {
         self
     }
 
+    /// Returns `self` with `from_clock` set to `position`: the connector's own `from` endpoint is put at that minute
+    /// round the ellipse it leaves. `0` is north, `15` east, `30` south and `45` west, and the minutes run clockwise.
+    ///
+    /// A minute is a **direction from the centre**. The end is where a ray from the centre in that direction crosses the
+    /// outline, and it is not the point at that angle of the ellipse's own parameter. On a long, thin ellipse the two
+    /// are far apart, and only the ray keeps minute 10 pointing 60° from north.
+    ///
+    /// * A **straight** connector can use any minute, 0 to 59.
+    /// * An **elbow** connector leaves an ellipse horizontally or vertically, so it can use only 0, 15, 30 and 45.
+    ///   Any other minute is [`Error::InvalidEllipseElbowClock`](crate::error::Error::InvalidEllipseElbowClock).
+    /// * A rectangle has no clock positions. A clock position on an end that is a rectangle is
+    ///   [`Error::InvalidEllipseEndpoint`](crate::error::Error::InvalidEllipseEndpoint) with
+    ///   [`EndpointProblem::ClockOnRectangle`](crate::error::EndpointProblem::ClockOnRectangle).
+    /// * A clock position cannot be combined with a forced side or a position along a side for the same end, and each is
+    ///   an error that names the problem.
+    ///
+    /// The clock position stays with the edge. It is not changed when the node moves, and there is no way to change it
+    /// afterwards. [`Scene::set_connector_type`](crate::scene::Scene::set_connector_type) checks it against the new type.
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::{ClockPosition, ConnectorOptions};
+    /// let options = ConnectorOptions::default().with_from_clock(Some(ClockPosition::try_from(10).unwrap()));
+    /// assert_eq!(options.from_clock.map(ClockPosition::minute), Some(10));
+    /// ```
+    #[must_use]
+    pub fn with_from_clock(mut self, position: Option<ClockPosition>) -> Self {
+        self.from_clock = position;
+        self
+    }
+
+    /// The same choice as [`with_from_clock`](Self::with_from_clock), for this connector's own `to` endpoint instead.
+    #[must_use]
+    pub fn with_to_clock(mut self, position: Option<ClockPosition>) -> Self {
+        self.to_clock = position;
+        self
+    }
+
     /// The same forced choice as [`with_from_side`](Self::with_from_side), for this connector's own `to` endpoint
     /// instead.
     ///
@@ -131,6 +174,8 @@ impl Default for ConnectorOptions {
             to_side: None,
             from_position: None,
             to_position: None,
+            from_clock: None,
+            to_clock: None,
         }
     }
 }

@@ -97,14 +97,26 @@ pub(super) fn draw_box(
     group.set_transform_fmt(scratch, format_args!("translate({}, {})", rect.origin.x, rect.origin.y))?;
 
     guard.disarm();
-    Ok(BoxHandles {
+    Ok(plain_box_handles(group, rect_el, edge_anchors, label))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The handles of a plain node: a group, the shape that outlines it, and nothing else. Shared by [`draw_box`] and the
+/// elliptical node, which differ only in the outline.
+pub(super) fn plain_box_handles(
+    group: SvgNode,
+    outer_rect: SvgNode,
+    edge_anchors: Option<EdgeAnchors>,
+    label: &str,
+) -> BoxHandles {
+    BoxHandles {
         group,
         draggable: false,
         enterable: false,
         edge_anchors,
         binary_operator_inputs: None,
         binary_operator_input_edges: None,
-        outer_rect: rect_el,
+        outer_rect,
         cell_rects: Vec::new(),
         cell_texts: Vec::new(),
         replaceable: false,
@@ -120,7 +132,7 @@ pub(super) fn draw_box(
         edge_anchors_stale: false,
         ref_name: label.to_owned(),
         child: None,
-    })
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

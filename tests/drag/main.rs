@@ -14,6 +14,8 @@
 //!   edge changed, surviving a reroute, and independent of a node's focus ring.
 //! - [`edge_labels`] — `Scene::set_edge_label`: a label beside its connector and clear of the line, the arrowhead and
 //!   the nodes, placed again when the connector is, kept apart from the labels of other edges, and removed with `None`.
+//! - [`ellipse`] — `Scene::add_ellipse_node`: a real `<ellipse>` grown, never shrunk, to hold its label inside the curve,
+//!   its enclosing rectangle and centre, validation, and connectors, clock positions, focus and moves.
 //! - [`node_rect`] — `Scene::node_rect`: a plain node's own exact constructed rect, a data node's own auto-computed
 //!   one, `UnknownNode` rejection, and reflecting a node's own position after a drag moves it.
 //! - [`move_node`] covers `Scene::move_node`. It moves a node and reroutes its edges exactly as a drag does, and checks
@@ -72,6 +74,7 @@ mod edge_anchors;
 mod edge_focus;
 mod edge_labels;
 mod element_labels;
+mod ellipse;
 mod focus;
 mod measure;
 mod move_node;

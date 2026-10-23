@@ -1050,3 +1050,128 @@ fn elbow_path_into_panics_in_debug_on_a_non_axis_aligned_segment() {
     let mut d = String::new();
     elbow_path_into(&vertices, 2.0, &mut d);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// An elbow route never doubles back through either node.
+
+const SIDES: [side::Side; 4] = [side::Side::North, side::Side::East, side::Side::South, side::Side::West];
+
+fn unit(side: side::Side) -> (f64, f64) {
+    match side {
+        side::Side::North => (0.0, -1.0),
+        side::Side::East => (1.0, 0.0),
+        side::Side::South => (0.0, 1.0),
+        side::Side::West => (-1.0, 0.0),
+    }
+}
+
+/// The unit step of a segment along one axis, or `None` for a segment with no length.
+fn direction(from: Point, to: Point) -> Option<(f64, f64)> {
+    let (dx, dy) = (to.x - from.x, to.y - from.y);
+    if dx == 0.0 && dy == 0.0 {
+        None
+    } else if dx != 0.0 && dy != 0.0 {
+        Some((f64::NAN, f64::NAN))
+    } else {
+        Some((dx.signum() * f64::from(dx != 0.0), dy.signum() * f64::from(dy != 0.0)))
+    }
+}
+
+#[test]
+fn every_elbow_route_leaves_outward_arrives_from_outside_and_is_made_of_axis_aligned_segments() -> Result<(), String> {
+    let starts = [Point::new(0.0, 0.0)];
+    let offsets = [-300.0, -100.0, -25.0, -5.0, 0.0, 5.0, 25.0, 100.0, 300.0];
+    for start in starts {
+        for start_side in SIDES {
+            for end_side in SIDES {
+                for dx in offsets {
+                    for dy in offsets {
+                        let end = Point::new(start.x + dx, start.y + dy);
+                        let route = elbow_route(start, start_side, end, end_side);
+                        let what = format!("{start_side:?} to {end_side:?} at ({dx}, {dy}): {route:?}");
+                        if route.len() > 6 {
+                            return Err(format!("too many points, {what}"));
+                        }
+                        if route[0] != start || route[route.len() - 1] != end {
+                            return Err(format!("does not join the anchors, {what}"));
+                        }
+                        for pair in route.windows(2) {
+                            let aligned = pair[0].x == pair[1].x || pair[0].y == pair[1].y;
+                            if !aligned || pair.iter().any(|p| !p.x.is_finite() || !p.y.is_finite()) {
+                                return Err(format!("a segment is not axis-aligned or finite, {what}"));
+                            }
+                        }
+                        // The same point twice in a row is never stored, so every segment has a direction.
+                        if route.len() > 1 {
+                            let first = direction(route[0], route[1]);
+                            if first != Some(unit(start_side)) {
+                                return Err(format!("does not leave outward, {what}"));
+                            }
+                            let last = direction(route[route.len() - 2], route[route.len() - 1]);
+                            let (ux, uy) = unit(end_side);
+                            if last != Some((-ux + 0.0, -uy + 0.0)) {
+                                return Err(format!("does not arrive from outside, {what}"));
+                            }
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_route_that_is_already_fine_is_not_changed() -> Result<(), String> {
+    // East to a point below and to the right, entered from above: east, then south, in one corner.
+    let start = Point::new(0.0, 0.0);
+    let end = Point::new(200.0, 100.0);
+    let direct = elbow_route(start, side::Side::East, end, side::Side::North);
+    check_eq(direct[..].to_vec(), vec![start, Point::new(200.0, 0.0), end])?;
+    // Opposite sides facing each other with room between them: one midpoint channel, as before.
+    let facing = elbow_route(start, side::Side::East, Point::new(100.0, 50.0), side::Side::West);
+    check_eq(
+        facing[..].to_vec(),
+        vec![start, Point::new(50.0, 0.0), Point::new(50.0, 50.0), Point::new(100.0, 50.0)],
+    )
+}
+
+#[test]
+fn an_east_side_past_its_target_goes_out_south_back_and_south_into_a_north_side() -> Result<(), String> {
+    let start = Point::new(100.0, 0.0);
+    let end = Point::new(20.0, 200.0);
+    let route = elbow_route(start, side::Side::East, end, side::Side::North);
+    check_eq(
+        route[..].to_vec(),
+        vec![
+            start,
+            Point::new(120.0, 0.0),
+            Point::new(120.0, 180.0),
+            Point::new(20.0, 180.0),
+            end,
+        ],
+    )
+}
+
+#[test]
+fn two_sides_facing_away_from_each_other_get_a_channel_between_them_with_a_stub_at_each_end() -> Result<(), String> {
+    // East of the first node, and west of the second, which is behind it and below: the ends face away from each other.
+    let start = Point::new(100.0, 0.0);
+    let end = Point::new(0.0, 50.0);
+    let route = elbow_route(start, side::Side::East, end, side::Side::West);
+    check_eq(
+        route[..].to_vec(),
+        vec![
+            start,
+            Point::new(120.0, 0.0),
+            Point::new(120.0, 25.0),
+            Point::new(-20.0, 25.0),
+            Point::new(-20.0, 50.0),
+            end,
+        ],
+    )?;
+    // Level ends have no room between them, so the channel is two stubs below both.
+    let level = elbow_route(Point::new(100.0, 0.0), side::Side::East, Point::new(0.0, 0.0), side::Side::West);
+    check_eq(level.len(), 6)?;
+    check_eq(level[2].y, 40.0)
+}

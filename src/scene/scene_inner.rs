@@ -287,6 +287,17 @@ impl SceneInner {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The shape of node `id`, and the clock position an edge was given for the end that `id` is, for
+    /// [`connector::route`]. A node that is not an ellipse gives [`connector::End::RECTANGLE`], and its clock position is
+    /// then always `None`.
+    pub(super) fn end_of(&self, id: NodeId, clock: Option<crate::scene::ClockPosition>) -> connector::End {
+        connector::End {
+            radii: self.graph.node(id).and_then(|node| node.ellipse),
+            clock,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The current [`EdgeAnchors`] configuration of node `id`.
     ///
     /// # Errors
@@ -549,8 +560,10 @@ impl SceneInner {
         }
         let handle = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
         let (connector_type, from_side, to_side) = (handle.connector_type, handle.source_pin(), handle.target_pin());
+        let (from_end, to_end) = (self.end_of(edge.from, handle.from_clock), self.end_of(edge.to, handle.to_clock));
         let (vertices, radius) = connector::route(
-            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
+            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, from_end, to_end,
+            to_override,
         );
         self.write_edge_path(id, &vertices, radius, scratch)
     }
@@ -606,6 +619,8 @@ impl SceneInner {
             // `to_override` (below) replaces this connector's own `to`-side anchor outright — see `route`'s own doc
             // comment — so whatever `to_side` this edge might otherwise have stored is moot here.
             None,
+            connector::End::RECTANGLE,
+            connector::End::RECTANGLE,
             Some(connector::BinaryOperatorRoute {
                 anchor: anchor_a,
                 side: side_a,
@@ -625,6 +640,8 @@ impl SceneInner {
             to_rect,
             to_edge_anchors,
             None,
+            connector::End::RECTANGLE,
+            connector::End::RECTANGLE,
             Some(connector::BinaryOperatorRoute {
                 anchor: anchor_b,
                 side: side_b,
@@ -667,8 +684,13 @@ impl SceneInner {
         let to_override = self.binary_operator_to_override(edge.from, edge.to);
         let existing = self.edge_handle(id).ok_or(Error::UnknownEdge(id))?;
         let (from_side, to_side) = (existing.source_pin(), existing.target_pin());
+        let (from_end, to_end) = (
+            self.end_of(edge.from, existing.from_clock),
+            self.end_of(edge.to, existing.to_clock),
+        );
         let (vertices, radius) = connector::route(
-            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, to_override,
+            connector_type, from_rect, from_anchors, from_side, to_rect, to_anchors, to_side, from_end, to_end,
+            to_override,
         );
         elbow_path_into(&vertices, radius, scratch);
 

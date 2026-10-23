@@ -53,6 +53,7 @@ impl Graph {
             rect,
             content: content.into(),
             incident: Vec::new(),
+            ellipse: None,
         });
         id
     }

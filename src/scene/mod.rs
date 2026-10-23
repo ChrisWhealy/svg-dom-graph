@@ -19,7 +19,11 @@ mod selection_toolbar;
 mod toolbar;
 mod view_input;
 
-pub use crate::geometry::{side::Side, view::ViewTransform};
+pub use crate::geometry::{
+    ellipse::{ClockPosition, ClockPositionError, EllipseRadii},
+    side::Side,
+    view::ViewTransform,
+};
 pub use crate::model::content::{
     ArithmeticOperator, BinaryOperator, BitValues, BoolFormat, ByteOrder, DataFormat, DataNodeContent, FloatFormat,
     FloatNotation, FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle, MAX_BIT_WIDTH, MAX_FLOAT_DIGITS,
@@ -28,7 +32,7 @@ pub use crate::model::content::{
 pub(crate) use box_handles::{BoxHandles, CellGrid, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragOptions, collision_policy::CollisionPolicy};
-pub use node::{EdgeAnchors, NodeOptions};
+pub use node::{EdgeAnchors, EllipseOptions, NodeOptions};
 pub use scene_title::SceneTitleOptions;
 pub use selection_toolbar::{SelectionStride, SelectionToolbarOptions, SelectionTransition};
 pub use toolbar::ToolbarOptions;

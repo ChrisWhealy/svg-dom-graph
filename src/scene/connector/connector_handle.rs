@@ -23,6 +23,10 @@ pub(crate) struct ConnectorHandle {
     pub(crate) from_position: Option<f64>,
     /// The same pin as [`from_position`](Self::from_position), for the `to` endpoint.
     pub(crate) to_position: Option<f64>,
+    /// The clock positions this connector's own ends were given, for an end that is an ellipse. They are never changed
+    /// after the edge is added.
+    pub(crate) from_clock: Option<crate::scene::ClockPosition>,
+    pub(crate) to_clock: Option<crate::scene::ClockPosition>,
 
     /// The small "L"/"R" text label marking this edge's operand identity at a non-commutative two-input operator's own
     /// input anchor. `None` for every other edge — see `add_two_input_operator_node_with`'s own `commutes` parameter.

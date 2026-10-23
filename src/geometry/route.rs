@@ -1,23 +1,28 @@
 use svg_dom::root::utils::Point;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Up to four connector route points, stored inline rather than on the heap.
+/// The most points a route can have.
+pub(crate) const MAX_POINTS: usize = 6;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Up to [`MAX_POINTS`] connector route points, stored inline rather than on the heap.
 ///
-/// Every route this crate computes has at most four points: a straight connector always has two, an elbow has two to
-/// four — see [`straight_route`] and [`elbow_route`]. A fixed-size buffer avoids a heap allocation on every redraw,
-/// which matters here since a drag redraws every incident edge on every pointer-move.
+/// Every route this crate computes has at most six points: a straight connector always has two, and an elbow has two to
+/// six — see [`straight_route`] and [`elbow_route`]. Six is the most an elbow needs when its two ends face away from
+/// each other, which takes a short stub out of each end and a channel between them. A fixed-size buffer avoids a heap
+/// allocation on every redraw, which matters here since a drag redraws every incident edge on every pointer-move.
 ///
 /// Derefs to `&[Point]`, so it can be used almost anywhere a point slice is expected.
 #[derive(Clone, Copy)]
 pub(crate) struct Route {
-    points: [Point; 4],
+    points: [Point; MAX_POINTS],
     len: usize,
 }
 
 impl Route {
     pub(crate) fn new() -> Self {
         Self {
-            points: [Point::new(0.0, 0.0); 4],
+            points: [Point::new(0.0, 0.0); MAX_POINTS],
             len: 0,
         }
     }
@@ -29,7 +34,7 @@ impl Route {
     ///
     /// # Panics
     ///
-    /// Panics if the route already holds four points. Every caller in this module pushes at most four, so this can only
+    /// Panics if the route already holds [`MAX_POINTS`] points. Every caller in this module pushes at most that many, so this can only
     /// fire from a bug in this module itself, not from anything external.
     pub(crate) fn push(&mut self, point: Point) {
         if self.len > 0 && self.points[self.len - 1] == point {

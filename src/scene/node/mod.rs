@@ -10,6 +10,7 @@ mod construction_guard;
 mod container;
 pub(in crate::scene) mod data;
 mod edge_anchors;
+mod ellipse;
 mod markdown;
 mod node_options;
 mod operator;
@@ -25,6 +26,7 @@ use crate::{
     scene::DataNodeContent,
 };
 pub use edge_anchors::EdgeAnchors;
+pub use ellipse::EllipseOptions;
 pub use node_options::NodeOptions;
 use svg_dom::root::utils::{Point, Rect};
 
@@ -191,6 +193,9 @@ impl Scene {
     /// Returns [`Error::InvalidEdgeAnchors`] if `edge_anchors` is `Some(EdgeAnchors(0))`. Checked before touching the
     /// scene, so a rejected call leaves the node exactly as it was.
     ///
+    /// Returns [`Error::EdgeAnchorsUnsupportedForEllipse`] if `id` is an elliptical node. `EdgeAnchors(n)` means `n`
+    /// fixing points on each side of a rectangle, and an ellipse has no sides. Checked before touching the scene.
+    ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
     ///
     /// Also returns an error — [`Error::UnknownEdge`] or a wrapped [`Error::Svg`] — if redrawing an incident connector
@@ -201,6 +206,9 @@ impl Scene {
         validate_edge_anchors(edge_anchors)?;
 
         let mut inner = self.inner.borrow_mut();
+        if inner.graph.node(id).is_some_and(|node| node.ellipse.is_some()) {
+            return Err(Error::EdgeAnchorsUnsupportedForEllipse(id));
+        }
         let handles = inner.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
         // The same anchors are a no-op only once every incident edge has been redrawn for them. After a redraw that
         // failed part way, repeating them redraws again.

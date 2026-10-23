@@ -3,6 +3,7 @@
 //! Kept free of any DOM/wasm dependency, so it stays testable with a plain `cargo test`. This mirrors how `svg-dom`
 //! itself separates pure geometry math from its DOM-facing code.
 
+pub(crate) mod ellipse;
 pub(crate) mod label;
 pub(crate) mod route;
 pub(crate) mod side;
@@ -605,12 +606,29 @@ pub(crate) fn binary_operator_elbow_route(
 ///   both west, the bends lie [`SAME_SIDE_CLEARANCE`] beyond the outer of the two, so the connector enters its last node
 ///   from outside it.
 ///
-/// Returns 2 to 4 points. The first point is always `start`. The last is always `end`.
+/// Returns 2 to 6 points. The first point is always `start`. The last is always `end`.
+///
+/// The route never doubles back through either node. It leaves `start` in the direction `start_side` faces, and it arrives
+/// at `end` from outside it. If the fewest-corner route above would not, as when a box's east side is already past the
+/// node it is joined to, the route instead goes out of the first node by a short stub, turns, and comes in by a short stub
+/// at the last. See [`detour_elbow_route`].
 ///
 /// Takes `start`/`end` and their sides as plain arguments, rather than computing them itself. The same corner-building
 /// logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or [`snapped_anchor`]'s
 /// evenly-spaced candidates.
 pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
+    let direct = direct_elbow_route(start, start_side, end, end_side);
+    if leaves_and_arrives_outside(&direct, start_side, end_side) {
+        direct
+    } else {
+        detour_elbow_route(start, start_side, end, end_side)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The route [`elbow_route`] starts from: the fewest corners that join the two anchors. It does not look at whether it
+/// leaves the first node in the direction that node's side faces, or arrives at the last from outside it.
+fn direct_elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
     let mut route = route::Route::new();
     route.push(start);
 
@@ -641,6 +659,109 @@ pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_
     }
     route.push(end);
     route
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The direction a side faces, away from its node, as a unit step in SVG coordinates: east is `+x` and south is `+y`.
+fn outward(side: side::Side) -> (f64, f64) {
+    match side {
+        side::Side::East => (1.0, 0.0),
+        side::Side::West => (-1.0, 0.0),
+        side::Side::North => (0.0, -1.0),
+        side::Side::South => (0.0, 1.0),
+    }
+}
+
+/// The unit step from `from` to `to`, when they differ along exactly one axis, and `None` when they are the same point.
+/// A segment of an elbow route is always along one axis.
+fn step(from: Point, to: Point) -> Option<(f64, f64)> {
+    let (dx, dy) = (to.x - from.x, to.y - from.y);
+    if dx == 0.0 && dy == 0.0 {
+        None
+    } else if dy == 0.0 {
+        Some((dx.signum(), 0.0))
+    } else {
+        Some((0.0, dy.signum()))
+    }
+}
+
+/// Whether `route` leaves its first node in the direction `start_side` faces, and arrives at its last node from outside
+/// it, so moving towards the node and not away from it. A route that does neither doubles back through a node.
+///
+/// A route with a single point, or one whose first or last segment has no length, has no direction to check, and is
+/// accepted.
+fn leaves_and_arrives_outside(route: &[Point], start_side: side::Side, end_side: side::Side) -> bool {
+    let Some((first, second)) = route.first().zip(route.get(1)) else {
+        return true;
+    };
+    let leaves = step(*first, *second).is_none_or(|direction| direction == outward(start_side));
+    let [.., before_last, last] = route else {
+        return leaves;
+    };
+    let (out_x, out_y) = outward(end_side);
+    let arrives = step(*before_last, *last).is_none_or(|direction| direction == (-out_x, -out_y));
+    leaves && arrives
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// How far out of its node a detour connector goes before it first turns, and how far from the last node it is when it
+/// makes its last turn. This is the clearance kept between the connector and the nodes at both ends, and it is the same
+/// as [`SAME_SIDE_CLEARANCE`].
+pub(crate) const STUB: f64 = SAME_SIDE_CLEARANCE;
+
+/// A route that always leaves `start` away from its node and arrives at `end` from outside its node, for the cases where
+/// [`direct_elbow_route`] does neither.
+///
+/// It leaves by a stub of [`STUB`] units straight out of the first node, and ends with a stub of the same length into
+/// the last, and joins the two stub ends with the fewest corners that do not double back along either stub:
+///
+/// 1. One corner, going along the first stub's own axis first or second, whichever does not reverse the stub or the last
+///    one.
+/// 2. If the two ends face along the same axis and neither of those works, which happens when each faces away from the
+///    other, a channel half way between them across the stub axes, with two corners.
+///
+/// So a connector that leaves the east side of a box that is already past its target goes east, then south, then west,
+/// then south into the target. It has up to six points.
+fn detour_elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
+    let (sx, sy) = outward(start_side);
+    let (ex, ey) = outward(end_side);
+    let stub_end = Point::new(start.x + sx * STUB, start.y + sy * STUB);
+    let end_stub = Point::new(end.x + ex * STUB, end.y + ey * STUB);
+
+    // `corner`'s two legs: the stub end to it, and it to the end stub. The first must not turn straight back along the
+    // stub, and the second must not arrive moving the way the last stub faces, which would run back along it.
+    let acceptable = |corner: Point| {
+        let first = step(stub_end, corner);
+        let last = step(corner, end_stub);
+        first.is_none_or(|direction| direction != (-sx, -sy)) && last.is_none_or(|direction| direction != (ex, ey))
+    };
+
+    let mut route = route::Route::new();
+    route.push(start);
+    route.push(stub_end);
+    let along_first = Point::new(stub_end.x, end_stub.y);
+    let along_second = Point::new(end_stub.x, stub_end.y);
+    if let Some(corner) = [along_first, along_second].into_iter().find(|&corner| acceptable(corner)) {
+        route.push(corner);
+    } else if is_horizontal(start_side) {
+        // Each end faces away from the other along x. A channel runs between them at a y that is clear of both stubs.
+        let y = channel(stub_end.y, end_stub.y);
+        route.push(Point::new(stub_end.x, y));
+        route.push(Point::new(end_stub.x, y));
+    } else {
+        let x = channel(stub_end.x, end_stub.x);
+        route.push(Point::new(x, stub_end.y));
+        route.push(Point::new(x, end_stub.y));
+    }
+    route.push(end_stub);
+    route.push(end);
+    route
+}
+
+/// The coordinate of the channel between two stub ends that are `a` and `b` along the axis the channel is measured on:
+/// half way between them, or [`STUB`] units clear of both if they are level, so the channel is never along either stub.
+fn channel(a: f64, b: f64) -> f64 {
+    if (a - b).abs() < 1.0 { a + 2.0 * STUB } else { (a + b) / 2.0 }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

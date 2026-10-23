@@ -3,9 +3,56 @@
 //! Wraps [`svg_dom::Error`] for anything that comes from the underlying DOM library, and adds variants for graph-domain
 //! problems detected by this crate. For example, a [`NodeId`]/[`EdgeId`] used with a `Scene` that did not create it.
 
+use crate::geometry::ellipse::ClockPosition;
 use crate::model::{edge::EdgeId, node::NodeId};
 use std::fmt;
-use svg_dom::root::utils::Rect;
+use svg_dom::root::utils::{Point, Rect};
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Which end of an edge a problem is about.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum EdgeEnd {
+    /// The node the edge leaves.
+    From,
+    /// The node the edge arrives at.
+    To,
+}
+
+impl fmt::Display for EdgeEnd {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            EdgeEnd::From => "from",
+            EdgeEnd::To => "to",
+        })
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What is wrong with the options given for one end of an edge that touches an elliptical node.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+#[non_exhaustive]
+pub enum EndpointProblem {
+    /// A clock position was given for a node that is a rectangle. Clock positions are for ellipses only.
+    ClockOnRectangle,
+    /// A position along a side, as a fraction, was given for an ellipse. An ellipse has no sides to measure along.
+    FractionOnEllipse,
+    /// A clock position and a forced side were both given for the same end. They name the same thing in two ways, so
+    /// neither can be left to win.
+    ClockWithSide,
+}
+
+impl fmt::Display for EndpointProblem {
+    fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
+        f.write_str(match self {
+            EndpointProblem::ClockOnRectangle => {
+                "a clock position is only for an ellipse, and this node is a rectangle"
+            },
+            EndpointProblem::FractionOnEllipse => "a position along a side is not for an ellipse, which has no sides",
+            EndpointProblem::ClockWithSide => "a clock position and a forced side cannot both be given for one end",
+        })
+    }
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An error from a `svg-dom-graph` operation.
@@ -257,6 +304,40 @@ pub enum Error {
     /// own zoom buttons at odds with what `Scene::zoom_scale` reports. Rejected before writing anything, so a rejected
     /// call leaves the current view exactly as it was.
     InvalidView(crate::scene::ViewTransform),
+    /// `Scene::add_ellipse_node` or `Scene::add_ellipse_node_with` was given a centre or radii that cannot make an
+    /// ellipse, or radii that the label makes too large to represent.
+    ///
+    /// The centre must be finite. Both radii must be finite and greater than zero. The radii that the label needs, and
+    /// the rectangle that encloses them, must also be finite. Rejected before drawing anything or touching the graph, so
+    /// a rejected call leaves the scene exactly as it was.
+    InvalidEllipseGeometry {
+        /// The centre that was given.
+        centre: Point,
+        /// The horizontal radius that was given.
+        rx: f64,
+        /// The vertical radius that was given.
+        ry: f64,
+    },
+    /// `EllipseOptions::inner_margin` is not a finite value `>= 0.0`. Rejected before any SVG is created.
+    InvalidEllipseMargin(f64),
+    /// The options for one end of an edge cannot be used with the node at that end. See [`EndpointProblem`].
+    ///
+    /// Rejected before the edge is drawn or recorded, so a rejected call leaves the scene exactly as it was.
+    InvalidEllipseEndpoint {
+        /// Which end of the edge.
+        endpoint: EdgeEnd,
+        /// What is wrong with it.
+        problem: EndpointProblem,
+    },
+    /// An elbow connector was asked to leave an ellipse at a clock position that is not 0, 15, 30 or 45. An elbow
+    /// leaves by a cardinal point only. A straight connector can use any minute.
+    ///
+    /// Returned both when an edge is added and when `Scene::set_connector_type` would turn a straight edge that has such
+    /// a clock position into an elbow. In both cases nothing is changed.
+    InvalidEllipseElbowClock(ClockPosition),
+    /// `Scene::set_edge_anchors` was called on an elliptical node. `EdgeAnchors(n)` means `n` fixing points on each
+    /// side of a rectangle, and an ellipse has no sides. Nothing is changed.
+    EdgeAnchorsUnsupportedForEllipse(NodeId),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -267,6 +348,25 @@ impl fmt::Display for Error {
             Error::UnknownNode(id) => write!(f, "node {id:?} does not belong to this Scene"),
             Error::UnknownEdge(id) => write!(f, "edge {id:?} does not belong to this Scene"),
             Error::SelfLoopUnsupported(id) => write!(f, "self-loop on node {id:?} is not yet supported"),
+            Error::InvalidEllipseGeometry { centre, rx, ry } => write!(
+                f,
+                "ellipse centre {centre:?} with radii {rx} and {ry} is invalid: the centre and the radii, as the label \
+                 makes them, must be finite, and the radii must be > 0.0"
+            ),
+            Error::InvalidEllipseMargin(margin) => {
+                write!(f, "ellipse inner margin {margin} is not a finite value >= 0.0")
+            },
+            Error::InvalidEllipseEndpoint { endpoint, problem } => {
+                write!(f, "invalid options for the {endpoint} end of the edge: {problem}")
+            },
+            Error::InvalidEllipseElbowClock(position) => write!(
+                f,
+                "an elbow connector can leave an ellipse only at clock position 0, 15, 30 or 45, not {}",
+                position.minute()
+            ),
+            Error::EdgeAnchorsUnsupportedForEllipse(id) => {
+                write!(f, "node {id:?} is an ellipse, which has no sides to put fixing points on")
+            },
             Error::AlreadyDraggable(id) => write!(f, "node {id:?} is already draggable"),
             Error::AlreadyEnterable(id) => write!(f, "node {id:?} is already enterable"),
             Error::InvalidCollisionPadding(padding) => {
