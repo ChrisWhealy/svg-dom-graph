@@ -18,7 +18,7 @@
 - [ChaCha20](chacha20.md)
 - [Huffman Encoding](huffman.md)
 - [Dijkstra's Shortest Paths](dijkstra.md)
-- [Weighted springs](springs.md)
+- [Force-directed Graphs (Weighted springs)](springs.md)
 - [Internal Workings of the Demo Server](demo-internals.md)
 
 ## Running the Demo

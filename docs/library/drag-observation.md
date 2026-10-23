@@ -98,4 +98,4 @@ fn watch(scene: &Scene) -> Result<(DragObserverHandle, Rc<RefCell<Vec<Point>>>),
 }
 ```
 
-The weighted springs demo is the first user: see [Weighted springs](../demo/springs.md).
+The weighted springs demo is the first user: see [Force-directed Graphs (Weighted springs)](../demo/springs.md).

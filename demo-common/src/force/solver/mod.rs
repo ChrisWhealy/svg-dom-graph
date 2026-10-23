@@ -22,11 +22,11 @@
 //!
 //! # Sleep is an observed result
 //!
-//! After each step the free particles are inspected. The system is quiet for a step only if every free particle is slow,
-//! has a small acceleration after the constraints are taken into account, and nothing penetrates by more than a tenth of
-//! a unit. After 24 quiet steps in a row with no pin, it sleeps and wants no more frames. With a pin held and its proxy
-//! arrived, the same 24 quiet steps let it stop asking for frames while still reporting [`Status::Dragging`]. See
-//! [`SpringSystem::wants_frames`].
+//! After each step the free particles are inspected. The system is quiet for a step only if every free particle is
+//! slow, has a small acceleration after the constraints are taken into account, and nothing penetrates by more than a
+//! tenth of a unit. After 24 quiet steps in a row with no pin, it sleeps and wants no more frames. With a pin held and
+//! its proxy arrived, the same 24 quiet steps let it stop asking for frames while still reporting [`Status::Dragging`].
+//! See [`SpringSystem::wants_frames`].
 //!
 //! A watchdog counts the simulated time since the last release or parameter change in which no pin was held. If it
 //! reaches 20 seconds the system is [`Status::Unsettled`], which is never reported as convergence.
@@ -158,9 +158,12 @@ impl Bounds {
     }
 
     fn is_valid(&self) -> bool {
+        // The width and height are derived, and two finite edges can be further apart than any number can say.
         [self.left, self.top, self.right, self.bottom].iter().all(|v| v.is_finite())
             && self.right > self.left
             && self.bottom > self.top
+            && (self.right - self.left).is_finite()
+            && (self.bottom - self.top).is_finite()
     }
 
     /// `centre` moved inside the rectangle that a circle of `radius` can have its centre in.
@@ -217,6 +220,11 @@ impl Default for Params {
 }
 
 impl Params {
+    /// The stiffness of a spring of `weight`.
+    fn stiffness_of(&self, weight: f64) -> f64 {
+        self.base_stiffness * weight / self.reference_weight
+    }
+
     fn validate(&self) -> Result<(), SolverError> {
         let ok = |value: f64, positive: bool| value.is_finite() && if positive { value > 0.0 } else { value >= 0.0 };
         let valid = ok(self.mass, true)
@@ -225,7 +233,10 @@ impl Params {
             && ok(self.damping, false)
             && ok(self.collision_gap, false)
             && ok(self.proxy_speed_limit, true)
-            && ok(self.contact_stiffness, false);
+            && ok(self.contact_stiffness, false)
+            // A stiffness is `base_stiffness * weight / reference_weight`, and each of those is finite on its own. So
+            // the stiffest spring that a weight can ask for must be finite too, or a permitted weight could overflow.
+            && self.stiffness_of(MAX_WEIGHT).is_finite();
         if valid { Ok(()) } else { Err(SolverError::InvalidParams) }
     }
 }
@@ -261,6 +272,9 @@ pub enum SolverError {
     InvalidTension(usize),
     /// The number of tension factors given is not the number of springs.
     WrongTensionCount,
+    /// A number worked out for a spring, its rest length or its stiffness, is not finite even though everything it was
+    /// worked out from is. The positions are too far apart, or the values too large, to be told apart.
+    NonFiniteSpring(usize),
 }
 
 impl fmt::Display for SolverError {
@@ -286,6 +300,12 @@ impl fmt::Display for SolverError {
                 )
             },
             SolverError::WrongTensionCount => write!(f, "the number of tensions is not the number of springs"),
+            SolverError::NonFiniteSpring(spring) => {
+                write!(
+                    f,
+                    "the length or stiffness of spring {spring} is too large to be a finite number"
+                )
+            },
         }
     }
 }
@@ -465,7 +485,12 @@ impl SpringSystem {
             if !weight.is_finite() || !(0.0..=MAX_WEIGHT).contains(&weight) {
                 return Err(SolverError::InvalidWeight(index));
             }
+            // The difference of two finite centres can overflow, and so a rest length must be checked once it is worked
+            // out.
             let rest_length = (particles[to].centre - particles[from].centre).length();
+            if !rest_length.is_finite() {
+                return Err(SolverError::NonFiniteSpring(index));
+            }
             if rest_length <= 1e-9 {
                 return Err(SolverError::ZeroRestLength(index));
             }
@@ -473,7 +498,7 @@ impl SpringSystem {
                 from,
                 to,
                 weight,
-                stiffness: params.base_stiffness * weight / params.reference_weight,
+                stiffness: params.stiffness_of(weight),
                 rest_length,
             });
         }
@@ -573,8 +598,8 @@ impl SpringSystem {
         }
     }
 
-    /// Whether a frame should be scheduled. It is not while paused, unsettled, asleep, or holding a pin that has arrived
-    /// with 24 quiet steps behind it and nothing new to look at.
+    /// Whether a frame should be scheduled. It is not while paused, unsettled, asleep, or holding a pin that has
+    /// arrived with 24 quiet steps behind it and nothing new to look at.
     ///
     /// A held node that stops asking for frames is *quiescent*, which is not the same as sleeping. A new target, a new
     /// pin or a release asks for frames again.
@@ -594,8 +619,8 @@ impl SpringSystem {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Notes that something changed that the system must settle again from: the quiet run, the time budget and any sleep
-    /// or unsettled verdict are all begun afresh.
+    /// Notes that something changed that the system must settle again from: the quiet run, the time budget and any
+    /// sleep or unsettled verdict are all begun afresh.
     fn disturb(&mut self) {
         self.asleep = false;
         self.unsettled = false;
@@ -607,8 +632,8 @@ impl SpringSystem {
     /// Pins particle `index` for a held vertex whose circle is now at `actual`.
     ///
     /// A particle that is free is pinned where `actual` is, with no velocity. One that is already pinned, as when a new
-    /// press comes while the proxy is still catching up, keeps its proxy where it is and only has its target changed, so
-    /// nothing jumps. Either way a pending release is cancelled.
+    /// press comes while the proxy is still catching up, keeps its proxy where it is and only has its target changed,
+    /// so nothing jumps. Either way a pending release is cancelled.
     ///
     /// Returns `false`, and changes nothing, for an unknown particle or a position that is not finite.
     pub fn begin_pin(&mut self, index: usize, actual: Vec2) -> bool {
@@ -631,8 +656,8 @@ impl SpringSystem {
 
     /// Tells a held particle that its vertex is now at `actual`, which is where the scene committed it.
     ///
-    /// If that is the target it already has, the quiet run is kept and the system is asked for one frame to check, and a
-    /// target that has changed begins a new run. A particle that is not held is left alone.
+    /// If that is the target it already has, the quiet run is kept and the system is asked for one frame to check, and
+    /// a target that has changed begins a new run. A particle that is not held is left alone.
     ///
     /// Returns whether a held pin was updated.
     pub fn update_pin_target(&mut self, index: usize, actual: Vec2) -> bool {
@@ -665,8 +690,8 @@ impl SpringSystem {
     }
 
     /// The drag was cancelled and the last committed position of the vertex is `actual`. It behaves like
-    /// [`end_pin`](Self::end_pin): the proxy catches up to that position and then lets go, and no position newer than it
-    /// is used.
+    /// [`end_pin`](Self::end_pin): the proxy catches up to that position and then lets go, and no position newer than
+    /// it is used.
     pub fn cancel_pin(&mut self, index: usize, actual: Vec2) -> bool {
         self.release_pin(index, actual)
     }
@@ -691,7 +716,8 @@ impl SpringSystem {
     ///
     /// Returns [`SolverError::WrongWeightCount`] unless there is one weight for each spring, and
     /// [`SolverError::InvalidWeight`] for a weight that is not finite or is outside `0..=`[`MAX_WEIGHT`]. Nothing is
-    /// changed then.
+    /// changed then. A weight whose stiffness would not be finite gives [`SolverError::NonFiniteSpring`], and also
+    /// changes nothing.
     pub fn set_weights(&mut self, weights: &[f64]) -> Result<(), SolverError> {
         if weights.len() != self.springs.len() {
             return Err(SolverError::WrongWeightCount);
@@ -699,9 +725,14 @@ impl SpringSystem {
         if let Some(bad) = weights.iter().position(|w| !w.is_finite() || !(0.0..=MAX_WEIGHT).contains(w)) {
             return Err(SolverError::InvalidWeight(bad));
         }
-        for (spring, &weight) in self.springs.iter_mut().zip(weights) {
+        // Worked out first, so that a stiffness that overflows changes nothing.
+        let stiffnesses: Vec<f64> = weights.iter().map(|&w| self.params.stiffness_of(w)).collect();
+        if let Some(bad) = stiffnesses.iter().position(|k| !k.is_finite()) {
+            return Err(SolverError::NonFiniteSpring(bad));
+        }
+        for ((spring, &weight), stiffness) in self.springs.iter_mut().zip(weights).zip(stiffnesses) {
             spring.weight = weight;
-            spring.stiffness = self.params.base_stiffness * weight / self.params.reference_weight;
+            spring.stiffness = stiffness;
         }
         self.disturb();
         Ok(())
@@ -716,7 +747,8 @@ impl SpringSystem {
     ///
     /// Returns [`SolverError::WrongTensionCount`] unless there is one factor for each spring, and
     /// [`SolverError::InvalidTension`] for a factor that is not finite, is not above zero, or is above
-    /// [`MAX_TENSION_FACTOR`]. Nothing is changed then.
+    /// [`MAX_TENSION_FACTOR`]. Returns [`SolverError::NonFiniteSpring`] if a rest length would be too large to be a
+    /// finite number. Nothing is changed then.
     pub fn set_tension(&mut self, factors: &[f64]) -> Result<(), SolverError> {
         if factors.len() != self.springs.len() {
             return Err(SolverError::WrongTensionCount);
@@ -727,8 +759,18 @@ impl SpringSystem {
         {
             return Err(SolverError::InvalidTension(bad));
         }
-        for ((spring, &natural), &factor) in self.springs.iter_mut().zip(&self.natural_lengths).zip(factors) {
-            spring.rest_length = natural * factor;
+        // Worked out first, so that a rest length that overflows changes nothing.
+        let lengths: Vec<f64> = self
+            .natural_lengths
+            .iter()
+            .zip(factors)
+            .map(|(natural, factor)| natural * factor)
+            .collect();
+        if let Some(bad) = lengths.iter().position(|l| !l.is_finite()) {
+            return Err(SolverError::NonFiniteSpring(bad));
+        }
+        for (spring, length) in self.springs.iter_mut().zip(lengths) {
+            spring.rest_length = length;
         }
         self.disturb();
         Ok(())
@@ -748,8 +790,8 @@ impl SpringSystem {
         Ok(())
     }
 
-    /// Stops or resumes the system. Nothing moves while it is paused, and no pin or position is lost. Resuming begins the
-    /// settling again from a fresh quiet run, but it keeps no time from before the pause against the watchdog.
+    /// Stops or resumes the system. Nothing moves while it is paused, and no pin or position is lost. Resuming begins
+    /// the settling again from a fresh quiet run, but it keeps no time from before the pause against the watchdog.
     pub fn set_paused(&mut self, paused: bool) {
         if self.paused == paused {
             return;
@@ -804,8 +846,9 @@ impl SpringSystem {
         }
     }
 
-    /// Runs the system, ignoring time and frames, until it sleeps or the watchdog runs out. Returns whether it slept. It
-    /// is for a page that asks for reduced motion, which jumps to the resting arrangement and does not animate to it.
+    /// Runs the system, ignoring time and frames, until it sleeps or the watchdog runs out. Returns whether it slept.
+    /// It is for a page that asks for reduced motion, which jumps to the resting arrangement and does not animate to
+    /// it.
     pub fn settle_now(&mut self) -> bool {
         let limit = (WATCHDOG_SECONDS / FIXED_DT) as usize + 1;
         for _ in 0..limit {
@@ -931,7 +974,8 @@ impl SpringSystem {
         deepest
     }
 
-    /// The force of spring `index`, as a positive number for a stretched spring and a negative one for a compressed one.
+    /// The force of spring `index`, as a positive number for a stretched spring and a negative one for a compressed
+    /// one.
     pub fn spring_tension(&self, index: usize) -> Option<f64> {
         let spring = self.springs.get(index)?;
         let length = (self.particles[spring.to].centre - self.particles[spring.from].centre).length();
@@ -1086,9 +1130,9 @@ impl SpringSystem {
 
     /// Advances the system by `dt` seconds, clamped to a safe length.
     ///
-    /// Pinned proxies move first, towards their targets and at their speed limit. Springs and contacts then act on every
-    /// particle's position, and only the free ones are integrated. It does nothing, and says so, when the system is
-    /// asleep, paused or unsettled, or if `dt` is not a positive finite number.
+    /// Pinned proxies move first, towards their targets and at their speed limit. Springs and contacts then act on
+    /// every particle's position, and only the free ones are integrated. It does nothing, and says so, when the system
+    /// is asleep, paused or unsettled, or if `dt` is not a positive finite number.
     ///
     /// If any number in the result is not finite the whole step is undone, and the system reports itself unsettled.
     pub fn step(&mut self, dt: f64) -> StepOutcome {

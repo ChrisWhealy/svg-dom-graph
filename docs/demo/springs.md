@@ -1,6 +1,6 @@
 # Weighted springs
 
-The Dijkstra graph drawn as a network of springs.
+The Dijkstra graph drawn as a force-directed graph (a network of springs).
 The panel is in the "Graph algorithms" group, beside [Dijkstra's Shortest Paths](dijkstra.md).
 It uses the same six circles, in the same places, joined by the same nine edges with the same weights.
 Nothing about it changes the Dijkstra demo.
