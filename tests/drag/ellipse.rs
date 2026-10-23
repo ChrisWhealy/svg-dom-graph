@@ -732,3 +732,45 @@ fn a_circle_node_joins_connectors_like_any_other_node() -> Result<(), String> {
     check(on_outline(first_point_of_path(&d)?, Point::new(100.0, 100.0), 30.0, 30.0), &d)?;
     check(on_outline(last_point_of_path(&d)?, Point::new(400.0, 100.0), 30.0, 30.0), &d)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[wasm_bindgen_test]
+fn a_detour_round_a_tall_ellipse_stays_outside_the_painted_curve() -> Result<(), String> {
+    let scene = new_scene("ellipse-round")?;
+    // A tall ellipse, centred at (300, 260), and a rectangle behind it and below its centre, as the routing tests have
+    // them. The connector leaves the ellipse by its east point and enters the rectangle from the north.
+    let ellipse = scene
+        .add_ellipse_node(Point::new(300.0, 260.0), EllipseRadii::new(20.0, 100.0), "")
+        .map_err(e)?;
+    let rectangle = scene
+        .add_node(Point::new(160.0, 260.0), Size::new(80.0, 40.0), "R")
+        .map_err(e)?;
+    scene
+        .add_edge_with(
+            ellipse,
+            rectangle,
+            ConnectorOptions::default()
+                .with_from_side(Some(Side::East))
+                .with_to_side(Some(Side::North)),
+        )
+        .map_err(e)?;
+    let rect = scene.node_rect(ellipse).map_err(e)?;
+    let (cx, cy) = (rect.origin.x + rect.size.width / 2.0, rect.origin.y + rect.size.height / 2.0);
+    let (rx, ry) = (rect.size.width / 2.0, rect.size.height / 2.0);
+    let points = path_points(&path_d(&the_connector("ellipse-round")?)?)?;
+    check(points.len() == 6, &format!("{points:?}"))?;
+    // Every point along every leg is outside the ellipse, except the first point, which is on it.
+    for pair in points.windows(2) {
+        for step in 1..=400 {
+            let t = f64::from(step) / 400.0;
+            let (x, y) = (pair[0].0 + (pair[1].0 - pair[0].0) * t, pair[0].1 + (pair[1].1 - pair[0].1) * t);
+            let inside = ((x - cx) / rx).powi(2) + ((y - cy) / ry).powi(2) < 1.0 - 1e-9;
+            check(!inside, &format!("({x}, {y}) of {pair:?} is inside the painted ellipse"))?;
+        }
+    }
+    // It goes up and over the top of the ellipse, which is at y = 160, and not across its middle.
+    check(
+        points.iter().any(|&(_, y)| y < 160.0),
+        &format!("it does not go over the top: {points:?}"),
+    )
+}

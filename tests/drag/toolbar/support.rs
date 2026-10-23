@@ -5,7 +5,7 @@
 
 use crate::common::make_svg;
 use svg_dom::root::utils::{Point, Size};
-use svg_dom_graph::scene::{Scene, ToolbarOptions};
+use svg_dom_graph::scene::{DragOptions, Scene, ToolbarOptions};
 
 pub(super) fn new_scene(id: &str) -> Result<Scene, String> {
     Scene::new(make_svg(id, Size::new(400.0, 300.0), Size::new(400.0, 300.0))).map_err(|e| e.to_string())
@@ -195,7 +195,12 @@ pub(super) fn draggable_node_scene(id: &str) -> Result<Scene, String> {
     let node = scene
         .add_node(Point::new(100.0, 100.0), Size::new(60.0, 30.0), "A")
         .map_err(|e| e.to_string())?;
-    scene.make_draggable(node).map_err(|e| e.to_string())?;
+    // Not confined to the visible area. These tests are about how a drag follows the pointer across a change of view, and
+    // they put the pointer, and so a wheel zoom's pivot, far from the scene, where a confined node would be held at the
+    // edge of what is then visible.
+    scene
+        .make_draggable_with(node, DragOptions::default().with_confine_to_view(false))
+        .map_err(|e| e.to_string())?;
     scene.show_toolbar(ToolbarOptions::default()).map_err(|e| e.to_string())?;
     Ok(scene)
 }

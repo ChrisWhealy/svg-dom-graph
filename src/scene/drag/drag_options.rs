@@ -26,9 +26,10 @@ pub struct DragOptions {
     /// Confines the dragged node's own top-left corner so the whole box stays inside `bounds`, for as long as this node
     /// stays draggable.
     ///
-    /// `None` (the default) leaves dragging unconstrained: a node can be dropped anywhere, including outside its own
-    /// `<svg>`'s visible area. Once dropped there, it stays rendered but clipped, so it can no longer be clicked to
-    /// pick it up again.
+    /// `None` (the default) keeps the node inside the part of the scene that is visible, as the view is when it is
+    /// dragged, so the whole box stays on screen. See [`confine_to_view`](Self::confine_to_view). A node dropped outside
+    /// the visible area stays rendered but clipped, and can no longer be clicked to pick it up again, which is what this
+    /// default prevents.
     ///
     /// `Some(bounds)` clamps every drag move, and any collision-resolution push, to stay inside `bounds`. A node larger
     /// than `bounds` on some axis pins to `bounds`'s own near edge on that axis instead — see [`crate::geometry`]'s own
@@ -39,6 +40,17 @@ pub struct DragOptions {
     /// own `# Errors` section. A zero width or height is accepted: `clamp_to_bounds` already gives that a deterministic
     /// result.
     pub bounds: Option<Rect>,
+    /// Whether a node that has no [`bounds`](Self::bounds) of its own is kept inside the visible area of the scene. `true`
+    /// by default.
+    ///
+    /// The visible area is the part of the `<svg>` that the browser shows, found when the drag starts, and carried through
+    /// any zoom or pan made during the drag. A box larger than it on some axis pins to its near edge on that axis.
+    /// Without this, a scene that has no zoom or pan controls would lose any node dropped past its edge for good.
+    ///
+    /// `false` leaves a node with no `bounds` free to go anywhere. Only an application that provides another way to bring
+    /// a node back should do that. See [`with_confine_to_view`](Self::with_confine_to_view). It has no effect on a node
+    /// that has `bounds`, which are always used.
+    pub confine_to_view: bool,
 }
 
 impl DragOptions {
@@ -55,6 +67,21 @@ impl DragOptions {
         self
     }
 
+    /// Returns `self` with `confine_to_view` set to `confine`: whether a node with no [`bounds`](Self::bounds) is kept
+    /// inside the scene's visible area. It is `true` by default.
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::DragOptions;
+    /// assert!(DragOptions::default().confine_to_view);
+    /// assert!(!DragOptions::default().with_confine_to_view(false).confine_to_view);
+    /// ```
+    #[must_use]
+    pub fn with_confine_to_view(mut self, confine: bool) -> Self {
+        self.confine_to_view = confine;
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Returns `self` with `bounds` set to `bounds`.
     ///
     /// ```
@@ -73,12 +100,14 @@ impl DragOptions {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Default for DragOptions {
-    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding, and no `bounds` — unconstrained dragging,
+    /// [`CollisionPolicy::PushClear`] with 6 user-space units of padding, and no `bounds`, so a node is kept inside the
+    /// scene's visible area, since `confine_to_view` is `true`. This is
     /// [Scene::make_draggable](crate::scene::Scene::make_draggable)'s own behaviour.
     fn default() -> Self {
         Self {
             collision: CollisionPolicy::PushClear { padding: 6.0 },
             bounds: None,
+            confine_to_view: true,
         }
     }
 }

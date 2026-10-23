@@ -16,7 +16,7 @@ use super::{
     drag_start::DragStart, pointer_coalescer::PointerCoalescer,
 };
 use crate::{
-    geometry::{clamp_to_bounds, invert_matrix},
+    geometry::{clamp_to_bounds, invert_matrix, view::ViewTransform},
     model::node::NodeId,
     scene::scene_inner::SceneInner,
 };
@@ -77,10 +77,17 @@ pub(super) fn pointerdown(
 
         let _ = group.as_element().set_pointer_capture(evt.pointer_id());
         let _ = group.set_attr("style", GRABBING_STYLE);
-        let (rect, view) = {
+        let (rect, view, visible) = {
             let inner = inner.borrow();
             let Ok(rect) = inner.node_rect(id) else { return };
-            (rect, inner.view)
+            // A scene that is not being displayed, or has no area, has no edge to keep a node inside.
+            let visible = Some(inner.visible_area()).filter(|area| {
+                area.size.width.is_finite()
+                    && area.size.height.is_finite()
+                    && area.size.width > 0.0
+                    && area.size.height > 0.0
+            });
+            (rect, inner.view, visible)
         };
         drag_start.set(Some(DragStart {
             pointer_id: evt.pointer_id(),
@@ -89,14 +96,42 @@ pub(super) fn pointerdown(
             box_size: rect.size,
             inverse_ctm,
             view,
+            visible,
         }));
     }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where a dragged node may go: its own bounds, or else the visible area of the scene unless that is turned off. See
+/// [`DragOptions::bounds`](crate::scene::DragOptions::bounds) and
+/// [`DragOptions::confine_to_view`](crate::scene::DragOptions::confine_to_view).
+#[derive(Clone, Copy)]
+pub(super) struct Confinement {
+    pub(super) bounds: Option<Rect>,
+    pub(super) confine_to_view: bool,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The rectangle of content coordinates that a dragged node's whole box must stay inside, or `None` if it is free to go
+/// anywhere.
+///
+/// The node's own `bounds` are used if it has any. Otherwise, unless `confine_to_view` is off, it is kept inside the part
+/// of the scene that is visible, as the view is now. That is the edge of the scene, and a node dropped past it renders
+/// clipped, cannot be clicked, and so cannot be picked up again.
+fn region(confinement: Confinement, start: &DragStart, view_now: ViewTransform) -> Option<Rect> {
+    confinement.bounds.or_else(|| {
+        confinement
+            .confine_to_view
+            .then_some(start.visible)
+            .flatten()
+            .map(|visible| view_now.content_in(visible))
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Moves the node under the pointer, clamped to `bounds`, for the pointer that started the drag only.
 pub(super) fn pointermove(
-    bounds: Option<Rect>,
+    confinement: Confinement,
     inner_weak: Weak<RefCell<SceneInner>>,
     drag_start: DragState,
     coalescer: PointerCoalescer,
@@ -128,8 +163,8 @@ pub(super) fn pointermove(
         // `bounds`, even for one frame. See `DragOptions::bounds`'s own doc comment for why this matters — a
         // node dropped outside its `<svg>`'s visible area renders clipped, and can no longer be clicked to pick
         // up again.
-        let new_origin = match bounds {
-            Some(bounds) => clamp_to_bounds(new_origin, start.box_size, bounds),
+        let new_origin = match region(confinement, &start, view_now) {
+            Some(region) => clamp_to_bounds(new_origin, start.box_size, region),
             None => new_origin,
         };
 
@@ -144,7 +179,7 @@ pub(super) fn pointermove(
 pub(super) fn pointerup(
     id: NodeId,
     collision: CollisionPolicy,
-    bounds: Option<Rect>,
+    confinement: Confinement,
     group_weak: WeakSvgNode,
     inner_weak: Weak<RefCell<SceneInner>>,
     drag_start: DragState,
@@ -182,8 +217,9 @@ pub(super) fn pointerup(
         };
         // The collision push can itself land outside `bounds`, near an edge — clamp its result too, not just
         // pointermove's, so this correction can never undo pointermove's own clamping.
-        let corrected_origin = match bounds {
-            Some(bounds) => clamp_to_bounds(corrected_origin, start.box_size, bounds),
+        let view_now = inner.borrow().view;
+        let corrected_origin = match region(confinement, &start, view_now) {
+            Some(region) => clamp_to_bounds(corrected_origin, start.box_size, region),
             None => corrected_origin,
         };
         coalescer.apply_now(corrected_origin);

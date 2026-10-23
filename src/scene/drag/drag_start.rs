@@ -1,5 +1,5 @@
 use crate::geometry::view::ViewTransform;
-use svg_dom::root::utils::{Matrix2D, Point, Size};
+use svg_dom::root::utils::{Matrix2D, Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The pointer position and box origin recorded when a drag starts.
@@ -39,4 +39,11 @@ pub(super) struct DragStart {
     /// itself can all change it mid-drag. Each pointermove compares this with the view as it is now, and re-reads the
     /// pointer's content position under that, so the node goes on following the pointer.
     pub(super) view: ViewTransform,
+    /// The part of the `<svg>`'s own user space that is visible, measured once at pointerdown. A node that has no bounds
+    /// of its own is kept inside this, which is where the scene's edge is. `None` if it could not be measured, or has no
+    /// area, in which case the drag is not confined.
+    ///
+    /// Measured once because reading it needs the browser's layout, which is too costly on every pointermove. It does
+    /// not change during a drag unless the page is resized, and a resize mid-drag is not followed.
+    pub(super) visible: Option<Rect>,
 }

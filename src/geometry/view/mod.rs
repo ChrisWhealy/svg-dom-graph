@@ -3,7 +3,7 @@
 //! Kept free of any DOM dependency, so it stays testable with a plain `cargo test`.
 
 use std::fmt::Write as _;
-use svg_dom::root::utils::Point;
+use svg_dom::root::utils::{Point, Rect, Size};
 
 /// The smallest scale factor a [`ViewTransform`] will zoom out to.
 pub(crate) const MIN_SCALE: f64 = 0.25;
@@ -89,6 +89,16 @@ impl ViewTransform {
     /// The content point that is drawn at `v` under this transform: the inverse of [`apply`](Self::apply).
     pub(crate) fn unapply(self, v: Point) -> Point {
         Point::new((v.x - self.tx) / self.scale, (v.y - self.ty) / self.scale)
+    }
+
+    /// The part of content that is drawn inside `area`, which is a rectangle of the `<svg>`'s own user space: the
+    /// inverse of [`apply`](Self::apply) for a rectangle. It is `area` itself under the identity transform, and it is
+    /// larger than `area` when zoomed out and smaller when zoomed in.
+    pub(crate) fn content_in(self, area: Rect) -> Rect {
+        Rect {
+            origin: self.unapply(area.origin),
+            size: Size::new(area.size.width / self.scale, area.size.height / self.scale),
+        }
     }
 
     /// Re-reads a content point under a different view.

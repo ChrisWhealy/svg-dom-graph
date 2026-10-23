@@ -10,6 +10,7 @@ use crate::{
     error::{EdgeEnd, EndpointProblem, Error},
     geometry::{
         binary_operator_elbow_route, boundary_point, centre, edge_anchor, elbow_path_into, elbow_route,
+        elbow_route_around,
         ellipse::{ClockPosition, EllipseRadii, automatic_cardinal, boundary_towards, clock_point},
         forced_anchor, position_anchor,
         route::Route,
@@ -310,7 +311,7 @@ pub(crate) fn route(
                 }) => elbow_route(start, start_side, anchor, side),
                 None => {
                     let (end, end_side) = elbow_end(to, to_centre, from_centre, to_anchors, to_side, to_end);
-                    elbow_route(start, start_side, end, end_side)
+                    elbow_route_around(start, start_side, end, end_side, Some((from, to)))
                 },
             };
             (route, corner_radius)

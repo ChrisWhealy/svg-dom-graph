@@ -9,6 +9,11 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
 - foreign-scene node and edge ids
 - unique marker ids across scenes sharing one `<svg>`
 - drop-collision handling (`CollisionPolicy::PushClear`/`Allow`), and rejecting a second `make_draggable` call for the same node
+- confining a drag to the visible area (`DragOptions::confine_to_view`, on by default):
+  - a node with no bounds stopping at the near corner and the far corner of the scene when dragged far past either
+  - `confine_to_view(false)` leaving it free to go anywhere
+  - explicit `bounds` replacing the visible area, even where they are larger
+  - the visible area following a zoom, so a node stops at the edge of what is shown
 - `DragOptions::bounds`:
   - clamping a drag to a rectangle at both edges
   - leaving an unbounded drag unconstrained
@@ -30,6 +35,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - `set_edge_anchors` and `set_data_values` refusing an ellipse
   - focus ringing the ellipse outline, dragging and `move_node`, and the accessible name and relationship clause
   - an elbow that leaves a box whose east side is past its target going east, south, west and south, and none of its segments passing through the box
+  - a detour round a tall ellipse going over the top of it, with every point of every leg outside the painted curve
   - `add_circle_node` being `add_ellipse_node` with equal radii: the same size, centre and fill, growing to hold a label and staying a circle, refused by name with the radius in both places, and joined by connectors
 - edge labels (`Scene::set_edge_label`):
   - the group in the content layer with its text, background, name and marker, taking no pointer events

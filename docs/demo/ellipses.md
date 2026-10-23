@@ -16,7 +16,7 @@ The first three connectors are straight, and each lands on the curved outline on
 The last two are elbows.
 The elbow from the wide ellipse leaves by its south point, since the rectangle is below it.
 The elbow from the rectangle is forced to leave by its east side, because a box as wide as this one leaves by its top when left to itself, and that would run the connector up through the wide ellipse.
-Drag the rectangle so that its east side is further right than the clock ellipse's north point, and above it. The connector still leaves east, then turns south, west and south into the north point, and keeps a clear gap from the rectangle as it turns. An elbow never goes back into the node it is leaving.
+Drag the rectangle so that its east side is further right than the clock ellipse's north point, and above it. The connector still leaves east, then turns south, west and south into the north point, and keeps a clear gap from the rectangle as it turns. An elbow never goes back into the node it is leaving, and it keeps out of both the nodes it joins: where the direct route would cross one, it goes round it with a clear gap.
 
 ## On the right
 

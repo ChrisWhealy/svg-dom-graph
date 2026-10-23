@@ -90,3 +90,12 @@ fn disarming_a_guard_leaves_its_listeners_installed() -> Result<(), String> {
         "pointerdown listener was removed even though the guard was disarmed",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_new_drag_options_confines_a_node_to_the_visible_area_and_has_no_bounds_of_its_own() {
+    let options = DragOptions::default();
+    assert!(options.confine_to_view);
+    assert_eq!(options.bounds, None);
+    assert!(!options.with_confine_to_view(false).confine_to_view);
+}

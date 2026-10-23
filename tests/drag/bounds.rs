@@ -70,10 +70,12 @@ fn dragging_past_the_far_edge_clamps_to_bounds_own_far_corner() -> Result<(), St
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// `Scene::make_draggable` (no `bounds`) stays exactly as unconstrained as before this feature existed — a plain
-/// regression guard against clamping ever applying unconditionally.
+/// A node with no `bounds` of its own is kept inside the visible area of the scene. `Scene::make_draggable` is such a
+/// node. Dragged far past the top-left corner it stops at `(0, 0)`, and past the bottom-right it stops with its far
+/// corner on the edge: `x = 400 - 90 = 310`, `y = 260 - 50 = 210`. Without this, a scene with no zoom or pan controls
+/// would lose a node dropped past its edge, which renders clipped and cannot be clicked again.
 #[wasm_bindgen_test]
-fn dragging_without_bounds_stays_unconstrained() -> Result<(), String> {
+fn dragging_with_no_bounds_is_kept_inside_the_visible_area() -> Result<(), String> {
     let svg = make_svg("bounds-none", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
 
     let scene = Scene::new(svg).map_err(|e| e.to_string())?;
@@ -87,10 +89,99 @@ fn dragging_without_bounds_stays_unconstrained() -> Result<(), String> {
     dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
     dispatch_pointer_event(&group_a, "pointermove", -900, -900, 1)?;
     dispatch_pointer_event(&group_a, "pointerup", -900, -900, 1)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 0.0)?;
+    check_close(y, 0.0)?;
+
+    dispatch_pointer_event(&group_a, "pointerdown", 20, 20, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", 1500, 1500, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", 1500, 1500, 1)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 310.0)?;
+    check_close(y, 210.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `confine_to_view(false)` restores the old behaviour: a node with no `bounds` goes wherever the pointer takes it.
+#[wasm_bindgen_test]
+fn dragging_is_unconstrained_when_confine_to_view_is_off() -> Result<(), String> {
+    let svg = make_svg("bounds-unconfined", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(100.0, 100.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    scene
+        .make_draggable_with(a, DragOptions::default().with_confine_to_view(false))
+        .map_err(|e| e.to_string())?;
+
+    let group_a = nth_group("bounds-unconfined", 0)?;
+
+    dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", -900, -900, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", -900, -900, 1)?;
 
     let (x, y) = group_translate(&group_a)?;
     check_close(x, -900.0)?;
     check_close(y, -900.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Explicit `bounds` win over the visible area: a node with a smaller rectangle is held to that, and a node with a larger
+/// one is held to that, even past the edge of what is visible.
+#[wasm_bindgen_test]
+fn explicit_bounds_override_the_visible_area() -> Result<(), String> {
+    let svg = make_svg("bounds-explicit", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(100.0, 100.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    let wider = Rect {
+        origin: Point::new(-500.0, -500.0),
+        size: Size::new(2000.0, 2000.0),
+    };
+    scene
+        .make_draggable_with(a, DragOptions::default().with_bounds(Some(wider)))
+        .map_err(|e| e.to_string())?;
+    let group_a = nth_group("bounds-explicit", 0)?;
+
+    dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", -300, -300, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", -300, -300, 1)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, -300.0)?;
+    check_close(y, -300.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The visible area is the part of the scene that is shown under the view as it is. After `zoom_in` about the centre,
+/// (200, 130), of a 400 x 260 scene, the translation is (-50, -32.5) at 1.25. So content from 40 to 360 across and 26 to
+/// 234 down is visible, and a 90 x 50 node stops at x = 40 and y = 26 at the near corner, and at x = 270 and y = 184 at
+/// the far one.
+#[wasm_bindgen_test]
+fn the_visible_area_follows_the_zoom() -> Result<(), String> {
+    let svg = make_svg("bounds-zoomed", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let a = scene
+        .add_node(Point::new(150.0, 100.0), Size::new(90.0, 50.0), "A")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(a).map_err(|e| e.to_string())?;
+    scene.zoom_in().map_err(|e| e.to_string())?;
+    let group_a = nth_group("bounds-zoomed", 0)?;
+
+    dispatch_pointer_event(&group_a, "pointerdown", 160, 110, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", -2000, -2000, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", -2000, -2000, 1)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 40.0)?;
+    check_close(y, 26.0)?;
+
+    dispatch_pointer_event(&group_a, "pointerdown", 100, 100, 1)?;
+    dispatch_pointer_event(&group_a, "pointermove", 3000, 3000, 1)?;
+    dispatch_pointer_event(&group_a, "pointerup", 3000, 3000, 1)?;
+    let (x, y) = group_translate(&group_a)?;
+    check_close(x, 270.0)?;
+    check_close(y, 184.0)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

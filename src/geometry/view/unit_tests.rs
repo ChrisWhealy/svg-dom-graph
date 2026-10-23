@@ -518,3 +518,67 @@ fn the_reinterpreted_point_is_drawn_where_the_pointer_is() -> Result<(), String>
         &format!("{on_screen:?} vs {drawn:?}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn the_content_in_an_area_is_the_area_itself_under_the_identity() -> Result<(), String> {
+    let area = Rect {
+        origin: Point::new(10.0, 20.0),
+        size: Size::new(400.0, 260.0),
+    };
+    check(
+        ViewTransform::IDENTITY.content_in(area) == area,
+        "the identity changed the area",
+    )
+}
+
+#[test]
+fn the_content_in_an_area_is_smaller_when_zoomed_in_and_larger_when_zoomed_out() -> Result<(), String> {
+    let area = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 260.0),
+    };
+    // Zoomed in about the centre (200, 130): content from 40 to 360 across and 26 to 234 down is visible.
+    let zoomed_in = ViewTransform::IDENTITY.zoomed_about(1.25, Point::new(200.0, 130.0));
+    let content = zoomed_in.content_in(area);
+    check(
+        close(content.origin.x, 40.0)
+            && close(content.origin.y, 26.0)
+            && close(content.size.width, 320.0)
+            && close(content.size.height, 208.0),
+        &format!("{content:?}"),
+    )?;
+    let zoomed_out = ViewTransform::IDENTITY.zoomed_about(0.5, Point::new(200.0, 130.0));
+    let content = zoomed_out.content_in(area);
+    check(
+        close(content.origin.x, -200.0)
+            && close(content.origin.y, -130.0)
+            && close(content.size.width, 800.0)
+            && close(content.size.height, 520.0),
+        &format!("{content:?}"),
+    )
+}
+
+#[test]
+fn the_content_in_an_area_follows_a_pan_and_its_corners_are_drawn_at_the_corners_of_the_area() -> Result<(), String> {
+    let area = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: Size::new(400.0, 260.0),
+    };
+    let view = ViewTransform {
+        scale: 2.0,
+        tx: -300.0,
+        ty: 40.0,
+    };
+    let content = view.content_in(area);
+    // The content corners are the ones that `apply` draws at the area's corners.
+    let near = view.apply(content.origin);
+    let far = view.apply(Point::new(
+        content.origin.x + content.size.width,
+        content.origin.y + content.size.height,
+    ));
+    check(
+        close(near.x, 0.0) && close(near.y, 0.0) && close(far.x, 400.0) && close(far.y, 260.0),
+        &format!("{near:?} {far:?}"),
+    )
+}

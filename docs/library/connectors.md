@@ -17,7 +17,14 @@ A connector is a directed, arrow-tipped line between two nodes, drawn either as 
    When they would not, for example when a box's east side is already further east than the point it is joined to, the connector instead goes out of the box by a stub of 20 units, turns, and comes in by a stub of the same length at the other end.
    So it leaves east, turns south, runs west past the target, and turns south into it.
    That gives the connector a clear gap of at least 20 units from the node it is leaving while it turns round.
-   A route can have up to six points. Where the two ends face away from each other, a channel half way between them joins the two stubs.
+
+   The connector also keeps out of the two nodes it joins.
+   Its fewest-corner route is used only if it goes through neither node.
+   Otherwise the shortest of a set of candidates is used, each with up to two corners on a channel that is 20 units outside one of the two nodes, or half way between the two ends.
+   So a connector can go round the top of a tall ellipse and not across the middle of it, on whichever side is shorter.
+   A node counts by the rectangle that encloses it, which is conservative for an ellipse: the connector keeps clear of its corners as well as its curve.
+   A route can have up to six points.
+   If the two nodes overlap, no route is clear of both, and the connector is drawn the way it would be without this rule.
    The route does not avoid any node other than the two it joins.
 
    `ConnectorOptions` can also force the side of a node that a connector leaves from, or arrives at, with `with_from_side` and `with_to_side`.

@@ -142,8 +142,12 @@ impl Scene {
             inner_weak.clone(),
             drag_start.clone(),
         ))?;
+        let confinement = handlers::Confinement {
+            bounds: options.bounds,
+            confine_to_view: options.confine_to_view,
+        };
         group.on_pointermove(handlers::pointermove(
-            options.bounds,
+            confinement,
             inner_weak.clone(),
             drag_start.clone(),
             coalescer.clone(),
@@ -151,7 +155,7 @@ impl Scene {
         group.on_pointerup(handlers::pointerup(
             id,
             options.collision,
-            options.bounds,
+            confinement,
             group.downgrade(),
             inner_weak,
             drag_start.clone(),

@@ -469,3 +469,129 @@ fn the_automatic_cardinal_of_an_ellipse_still_snaps_as_the_rectangle_moves_and_n
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// A detour never passes through either node, however the two are placed.
+
+#[test]
+fn a_detour_goes_round_a_tall_ellipse_and_not_through_it() -> Result<(), String> {
+    // A tall ellipse with its east point forced, and a rectangle behind it and below its centre, entered from the north.
+    // Turning north at the first stub would run the channel straight across the ellipse, whose rectangle spans y from
+    // -100 to 100.
+    let radii = EllipseRadii::new(20.0, 100.0);
+    let ellipse = ellipse_rect(0.0, 0.0, radii);
+    let rectangle = box_at(-140.0, 0.0, 80.0, 40.0);
+    let east = Pin {
+        side: Side::East,
+        position: None,
+    };
+    let north = Pin {
+        side: Side::North,
+        position: None,
+    };
+    let points = go(
+        ELBOW,
+        (ellipse, ellipse_end(radii, None), Some(east)),
+        (rectangle, End::RECTANGLE, Some(north)),
+    );
+    check_eq(goes_through(&points, ellipse), false)?;
+    check_eq(goes_through(&points, rectangle), false)?;
+    // It goes up and over: out by the east point, up above the ellipse's rectangle by a clear 20 units, across, and down
+    // into the rectangle's north point.
+    check_eq(
+        points,
+        vec![
+            Point::new(20.0, 0.0),
+            Point::new(40.0, 0.0),
+            Point::new(40.0, -120.0),
+            Point::new(-100.0, -120.0),
+            Point::new(-100.0, -20.0),
+            Point::new(-100.0, 0.0),
+        ],
+    )?;
+    // The curve itself is clear too: the horizontal leg at y = -120 is 20 above the top of the ellipse at y = -100.
+    Ok(())
+}
+
+#[test]
+fn the_painted_ellipse_is_clear_of_every_leg_as_well_as_its_rectangle() -> Result<(), String> {
+    let radii = EllipseRadii::new(20.0, 100.0);
+    let ellipse = ellipse_rect(0.0, 0.0, radii);
+    let rectangle = box_at(-140.0, 0.0, 80.0, 40.0);
+    let east = Pin {
+        side: Side::East,
+        position: None,
+    };
+    let north = Pin {
+        side: Side::North,
+        position: None,
+    };
+    let points = go(
+        ELBOW,
+        (ellipse, ellipse_end(radii, None), Some(east)),
+        (rectangle, End::RECTANGLE, Some(north)),
+    );
+    // Sample every leg finely. No sample is inside the curve, except the start, which is on it.
+    for pair in points.windows(2) {
+        for step in 1..=200 {
+            let t = f64::from(step) / 200.0;
+            let (x, y) = (pair[0].x + (pair[1].x - pair[0].x) * t, pair[0].y + (pair[1].y - pair[0].y) * t);
+            let inside = (x / 20.0).powi(2) + (y / 100.0).powi(2) < 1.0 - 1e-9;
+            if inside {
+                return Err(format!("({x}, {y}) of {pair:?} is inside the ellipse"));
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn wherever_the_target_is_no_elbow_route_with_an_ellipse_or_a_box_at_either_end_passes_through_either_node()
+-> Result<(), String> {
+    let radii = EllipseRadii::new(60.0, 30.0);
+    let ellipse = ellipse_rect(0.0, 0.0, radii);
+    let sides = [Side::North, Side::East, Side::South, Side::West];
+    for x in [-300.0, -150.0, -40.0, 0.0, 40.0, 150.0, 300.0] {
+        for y in [-300.0, -150.0, -80.0, 0.0, 80.0, 150.0, 300.0] {
+            // The target is a box whose rectangle is clear of the ellipse's. Cases that overlap have no clear route.
+            let target = box_at(x - 40.0, y - 15.0, 80.0, 30.0);
+            let overlaps_the_ellipse = target.origin.x < 60.0
+                && target.origin.x + 80.0 > -60.0
+                && target.origin.y < 30.0
+                && target.origin.y + 30.0 > -30.0;
+            if overlaps_the_ellipse {
+                continue;
+            }
+            for from_side in sides {
+                for to_side in sides {
+                    let (from_pin, to_pin) = (
+                        Pin {
+                            side: from_side,
+                            position: None,
+                        },
+                        Pin { side: to_side, position: None },
+                    );
+                    for (source, target_end) in [
+                        ((ellipse, ellipse_end(radii, None), from_pin), (target, End::RECTANGLE, to_pin)),
+                        ((target, End::RECTANGLE, from_pin), (ellipse, ellipse_end(radii, None), to_pin)),
+                    ] {
+                        let (from_rect, to_rect) = (source.0, target_end.0);
+                        let points = go(
+                            ELBOW,
+                            (source.0, source.1, Some(source.2)),
+                            (target_end.0, target_end.1, Some(target_end.2)),
+                        );
+                        let what = format!("{from_side:?} to {to_side:?}, target at ({x}, {y}): {points:?}");
+                        if points.len() > 6 {
+                            return Err(format!("too many points, {what}"));
+                        }
+                        if goes_through(&points, from_rect) || goes_through(&points, to_rect) {
+                            return Err(format!("passes through a node, {what}"));
+                        }
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}

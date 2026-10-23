@@ -617,12 +617,160 @@ pub(crate) fn binary_operator_elbow_route(
 /// logic then works whichever rule chose the anchors — [`edge_anchor`]'s own single midpoint, or [`snapped_anchor`]'s
 /// evenly-spaced candidates.
 pub(crate) fn elbow_route(start: Point, start_side: side::Side, end: Point, end_side: side::Side) -> route::Route {
+    elbow_route_around(start, start_side, end, end_side, None)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`elbow_route`], but also keeping the route out of the two nodes it joins, when their rectangles are given.
+///
+/// `nodes` is the rectangle of the node at `start` and then the rectangle of the node at `end`. For an ellipse it is the
+/// rectangle that encloses it, which is conservative: the route stays clear of the corners of that rectangle as well as
+/// of the curve. A route counts as passing through a node only if a segment goes through the inside of its rectangle.
+/// Running along an edge, or touching it at the anchor, does not count.
+///
+/// 1. The fewest-corner route is used if it leaves and arrives the right way, and goes through neither node.
+/// 2. Otherwise the best of a set of candidate routes is used: see [`planned_elbow_route`].
+/// 3. If no candidate is clear, which can happen when the two nodes overlap, the route is the old detour, or the
+///    fewest-corner route if that at least leaves and arrives the right way. It then does not avoid the nodes, and no
+///    route could.
+///
+/// With `nodes` as `None` the route is not checked against any node, and only has to leave and arrive the right way.
+pub(crate) fn elbow_route_around(
+    start: Point,
+    start_side: side::Side,
+    end: Point,
+    end_side: side::Side,
+    nodes: Option<(Rect, Rect)>,
+) -> route::Route {
     let direct = direct_elbow_route(start, start_side, end, end_side);
-    if leaves_and_arrives_outside(&direct, start_side, end_side) {
+    let facing_right = leaves_and_arrives_outside(&direct, start_side, end_side);
+    let clear =
+        |route: &[Point]| nodes.is_none_or(|(from, to)| !passes_through(route, from) && !passes_through(route, to));
+    if facing_right && clear(&direct) {
+        return direct;
+    }
+    if let Some(planned) = nodes.and_then(|nodes| planned_elbow_route(start, start_side, end, end_side, nodes)) {
+        return planned;
+    }
+    if facing_right {
         direct
     } else {
         detour_elbow_route(start, start_side, end, end_side)
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Whether any segment of the axis-aligned `route` passes through the inside of `rect`. A segment that runs along an edge
+/// of `rect`, or only touches it, does not.
+fn passes_through(route: &[Point], rect: Rect) -> bool {
+    let (left, right) = (rect.origin.x, rect.origin.x + rect.size.width);
+    let (top, bottom) = (rect.origin.y, rect.origin.y + rect.size.height);
+    route.windows(2).any(|pair| {
+        let (a, b) = (pair[0], pair[1]);
+        if a.y == b.y {
+            a.y > top && a.y < bottom && a.x.min(b.x) < right && a.x.max(b.x) > left
+        } else {
+            a.x > left && a.x < right && a.y.min(b.y) < bottom && a.y.max(b.y) > top
+        }
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The best elbow route that leaves `start` and arrives at `end` the right way and goes through neither node, or `None`
+/// if there is none among the candidates.
+///
+/// Every candidate leaves by a stub of [`STUB`] units and ends with one, and joins the two stub ends with up to two
+/// corners. The corners are on a channel: a line parallel to one axis, at one of the coordinates that matter. Those are
+/// the two stub ends, the middle between them, and [`STUB`] units outside each node's rectangle on every side. So a
+/// connector can go round a node, with a clear gap, on whichever side is shortest.
+///
+/// A candidate is accepted if it does not turn straight back on itself anywhere, does not run back along either stub,
+/// and passes through neither rectangle. The accepted candidate with the shortest total length wins, and a candidate with
+/// fewer corners wins a tie. The first generated wins a tie after that, so the choice is the same every time.
+fn planned_elbow_route(
+    start: Point,
+    start_side: side::Side,
+    end: Point,
+    end_side: side::Side,
+    (from, to): (Rect, Rect),
+) -> Option<route::Route> {
+    let (sx, sy) = outward(start_side);
+    let (ex, ey) = outward(end_side);
+    let p = Point::new(start.x + sx * STUB, start.y + sy * STUB);
+    let q = Point::new(end.x + ex * STUB, end.y + ey * STUB);
+
+    // The coordinates a channel can be at.
+    let around = |rect: Rect| {
+        [
+            (rect.origin.x - STUB, rect.origin.x + rect.size.width + STUB),
+            (rect.origin.y - STUB, rect.origin.y + rect.size.height + STUB),
+        ]
+    };
+    let (from_around, to_around) = (around(from), around(to));
+    let xs = [
+        p.x,
+        q.x,
+        (p.x + q.x) / 2.0,
+        from_around[0].0,
+        from_around[0].1,
+        to_around[0].0,
+        to_around[0].1,
+    ];
+    let ys = [
+        p.y,
+        q.y,
+        (p.y + q.y) / 2.0,
+        from_around[1].0,
+        from_around[1].1,
+        to_around[1].0,
+        to_around[1].1,
+    ];
+
+    // The corner lists to try, in the order they are preferred when they tie: none, one corner, then channels.
+    let mut candidates: Vec<[Option<Point>; 2]> = vec![[None, None]];
+    candidates.push([Some(Point::new(p.x, q.y)), None]);
+    candidates.push([Some(Point::new(q.x, p.y)), None]);
+    for &y in &ys {
+        candidates.push([Some(Point::new(p.x, y)), Some(Point::new(q.x, y))]);
+    }
+    for &x in &xs {
+        candidates.push([Some(Point::new(x, p.y)), Some(Point::new(x, q.y))]);
+    }
+
+    let mut best: Option<(f64, route::Route)> = None;
+    for corners in candidates {
+        let mut route = route::Route::new();
+        for point in [start, p].into_iter().chain(corners.into_iter().flatten()).chain([q, end]) {
+            route.push(point);
+        }
+        if !is_acceptable(&route, start_side, end_side) || passes_through(&route, from) || passes_through(&route, to) {
+            continue;
+        }
+        // A corner counts a little, so that of two routes as long as each other the one with fewer wins.
+        let cost = route
+            .windows(2)
+            .map(|pair| (pair[1].x - pair[0].x).abs() + (pair[1].y - pair[0].y).abs())
+            .sum::<f64>()
+            + 1e-6 * route.len() as f64;
+        if best.as_ref().is_none_or(|(cheapest, _)| cost < *cheapest) {
+            best = Some((cost, route));
+        }
+    }
+    best.map(|(_, route)| route)
+}
+
+/// Whether `route` is made of axis-aligned segments, leaves and arrives the right way, and never turns straight back on
+/// itself at a corner.
+fn is_acceptable(route: &[Point], start_side: side::Side, end_side: side::Side) -> bool {
+    if !leaves_and_arrives_outside(route, start_side, end_side) {
+        return false;
+    }
+    let steps: Option<Vec<(f64, f64)>> = route.windows(2).map(|pair| step(pair[0], pair[1])).collect();
+    let Some(steps) = steps else {
+        return false;
+    };
+    let aligned = route.windows(2).all(|pair| pair[0].x == pair[1].x || pair[0].y == pair[1].y);
+    aligned && steps.windows(2).all(|pair| pair[0] != (-pair[1].0, -pair[1].1))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
