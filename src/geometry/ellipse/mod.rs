@@ -33,9 +33,6 @@
 //! factor, so a circle stays a circle and the ratio of the radii is kept. The label's box and its margin are then inside
 //! the curved outline at every corner, and not merely inside the bounding rectangle.
 
-// Nothing calls these yet. Later phases of the elliptical node feature draw the node and route its connectors from them.
-#![allow(dead_code)]
-
 use std::fmt;
 use svg_dom::root::utils::{Point, Rect, Size};
 

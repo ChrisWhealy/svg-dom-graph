@@ -38,7 +38,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - an elbow that leaves a box whose east side is past its target going east, south, west and south, and none of its segments passing through the box
   - a detour round a tall ellipse going over the top of it, with every point of every leg outside the painted curve
   - real SVG hit testing, using the browser's own `elementFromPoint`: an unpainted corner of the enclosing rectangle is the pan surface and not the ellipse, and the middle and a point near the edge but inside the curve are the ellipse's own
-  - a press at that corner, sent to the element the browser found, panning the view while the ellipse does not move, take the focus or get the focus ring, and a press on the painted ellipse dragging it without panning
+  - a press at that corner, sent to the element the browser found, panning the view (the test shows a toolbar, which turns the background pan surface on) while the ellipse does not move, take the focus or get the focus ring, and a press on the painted ellipse dragging it without panning
   - `add_circle_node` being `add_ellipse_node` with equal radii: the same size, centre and fill, growing to hold a label and staying a circle, refused by name with the radius in both places, and joined by connectors
 - edge labels (`Scene::set_edge_label`):
   - the group in the content layer with its text, background, name and marker, taking no pointer events

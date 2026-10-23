@@ -12,12 +12,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implement a ellipse and circle nodes (`21d759c`)
 - Test corner hit-testing requirements (`a5070ee`)
-- Add explicit plain-node rejection tests for selection (``)
+- Add explicit plain-node rejection tests for selection (`4fae672`)
 
 ## Changed
 
 - Rearrange the Dijkstra demo node layout (`bd69336`)
 - Change Dijkstra demo to use circular nodes (`c4d1937`)
+- Doc only: Update geometry docs (``) 
 
 ## Fixed
 

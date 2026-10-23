@@ -97,7 +97,9 @@ Those are conservative at the curved corners: two ellipses can count as overlapp
 Edge labels treat an ellipse the same way, so a label may stand a little further from the curve than it needs to, and never over it.
 
 Only the painted ellipse and its label take pointer events.
-Dragging from a corner of the enclosing rectangle that is outside the curve pans the view.
+A press in a corner of the enclosing rectangle that is outside the curve goes to whatever is behind the ellipse, and it never starts a drag of the ellipse.
+If background panning is active, which depends on `set_pan_mode` and on whether a toolbar is shown, it pans the view. See [Pan and Wheel Zoom](pan-and-wheel-zoom.md).
+If it is not, the press does nothing.
 
 There is no setter for the label or the radii after the node is added.
 There are no rotated ellipses.
