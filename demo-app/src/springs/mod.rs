@@ -168,10 +168,10 @@ thread_local! {
 ///    reaches the neighbours as a bounded sequence of small moves.
 /// 3. Everything the controller is asked to do is queued in a bridge first. Nothing is lost if the controller is busy.
 /// 4. A frame is requested only while the physics has something to do. At rest, none is pending.
-/// 5. The three buttons are drawn in the scene, so they zoom and pan with it. Reset puts the circles back and gives the
-///    springs new random weights and a random tension, so the network settles by itself. Pause pauses and resumes, and
-///    Randomise weights changes the weights alone. Reset is refused while a pointer holds a circle or a released one is
-///    still catching up.
+/// 5. The three buttons are drawn in the scene, so they zoom and pan with it. Randomise weights gives
+///    the springs new random weights and a random tension, so the network starts to move and settles by itself. Reset
+///    puts the circles back where they started, and every spring back to its starting length. Pause pauses and
+///    resumes. Reset is refused while a pointer holds a circle or a released one is still catching up.
 ///
 /// A page the browser keeps in its back-forward cache is only suspended: `pagehide` with `persisted` set pauses the
 /// physics as for a hidden page, and `pageshow` resumes it from a fresh clock. Any other `pagehide` means the page is

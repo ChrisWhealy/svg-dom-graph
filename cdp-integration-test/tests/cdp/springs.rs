@@ -189,9 +189,9 @@ fn a_real_drag_moves_the_neighbours_and_the_graph_settles_and_stops_asking_for_f
 }
 
 /// While a pointer holds a circle, Reset is unavailable. After the release it comes back by itself, and then it puts
-/// every circle back where it started, gives the springs new weights and a tension, and the network settles by itself.
+/// every circle back where it started, and nothing else changes: the weights are kept.
 #[test]
-fn reset_is_unavailable_while_a_circle_is_held_and_after_it_restarts_the_network() -> Result<(), String> {
+fn reset_is_unavailable_while_a_circle_is_held_and_after_it_puts_the_layout_back() -> Result<(), String> {
     let tab = open()?;
     let start = positions(&tab)?;
     let labels = weights(&tab)?;
@@ -209,8 +209,7 @@ fn reset_is_unavailable_while_a_circle_is_held_and_after_it_restarts_the_network
     check(held == "[true,\"dragging\"]", &held)?;
     // Not run for the user: nothing was queued, and the circle is not put back by itself.
     wait_for_state(&tab, "sleeping", 25)?;
-    let dropped = positions(&tab)?;
-    check(dropped != start, "Reset ran although it was unavailable")?;
+    check(positions(&tab)? != start, "Reset ran although it was unavailable")?;
     check(
         text(
             &tab,
@@ -219,20 +218,20 @@ fn reset_is_unavailable_while_a_circle_is_held_and_after_it_restarts_the_network
         "Reset did not come back",
     )?;
     press(&tab, "reset")?;
-    // The reset is not a settled arrangement: the tension has the network moving, and then it comes to rest again.
     wait_for_state(&tab, "sleeping", 25)?;
-    check(weights(&tab)? != labels, "Reset did not give the springs new weights")?;
-    check(positions(&tab)? != dropped, "Reset did not move the network")?;
+    check(positions(&tab)? == start, "Reset did not put every circle back")?;
+    check(weights(&tab)? == labels, "Reset changed the weights")?;
     check(pending(&tab)? == "0", "a frame was pending at rest")
 }
 
-/// Reset on a network that is already at rest starts it moving, with nothing dragged.
+/// Randomise weights on a network at rest gives the springs new weights and a tension, which starts it moving with
+/// nothing dragged. Reset then puts the layout back, and it stays there.
 #[test]
-fn reset_sets_a_network_at_rest_moving_by_itself() -> Result<(), String> {
+fn randomising_sets_a_network_at_rest_moving_by_itself_and_reset_puts_it_back() -> Result<(), String> {
     let tab = open()?;
-    let start = positions(&tab)?;
+    let (start, labels) = (positions(&tab)?, weights(&tab)?);
     check(physics(&tab)? == "sleeping", "not at rest to begin with")?;
-    press(&tab, "reset")?;
+    press(&tab, "randomise")?;
     let woke = run(
         &tab,
         &format!(
@@ -244,7 +243,18 @@ fn reset_sets_a_network_at_rest_moving_by_itself() -> Result<(), String> {
     )?;
     check(woke == "running", &format!("the network did not start moving: {woke}"))?;
     wait_for_state(&tab, "sleeping", 25)?;
-    check(positions(&tab)? != start, "the network came to rest where it started")
+    let now = weights(&tab)?;
+    check(now != labels, "the weights did not change")?;
+    check(
+        now.split(',').all(|w| w.parse::<u32>().is_ok_and(|w| (1..=10).contains(&w))),
+        &format!("every new weight is from 1 to 10: {now}"),
+    )?;
+    check(positions(&tab)? != start, "the network came to rest where it started")?;
+    check(pending(&tab)? == "0", "a frame was pending at rest")?;
+    press(&tab, "reset")?;
+    wait_for_state(&tab, "sleeping", 25)?;
+    check(positions(&tab)? == start, "Reset did not put the layout back")?;
+    check(weights(&tab)? == now, "Reset changed the weights")
 }
 
 /// The three buttons are in the scene, so they zoom and pan with it, and none is an HTML button.
@@ -341,26 +351,6 @@ fn a_second_press_during_the_catch_up_takes_over_and_the_graph_still_settles() -
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// New random weights change the labels and the stiffness, and nothing about where the circles are.
-#[test]
-fn randomising_the_weights_changes_the_labels_and_moves_nothing_in_a_graph_at_rest() -> Result<(), String> {
-    let tab = open()?;
-    let (labels, places) = (weights(&tab)?, positions(&tab)?);
-    press(&tab, "randomise")?;
-    wait_for_state(&tab, "sleeping", 25)?;
-    let now = weights(&tab)?;
-    check(now != labels, "the weights did not change")?;
-    check(
-        now.split(',').all(|w| w.parse::<u32>().is_ok_and(|w| (1..=10).contains(&w))),
-        &format!("every new weight is from 1 to 10: {now}"),
-    )?;
-    check(
-        positions(&tab)? == places,
-        "the circles moved although only the weights changed",
-    )?;
-    check(pending(&tab)? == "0", "a frame was pending at rest")
-}
-
 /// Pause stops the physics and its frames, and Resume starts it again from a fresh clock.
 #[test]
 fn pause_stops_the_physics_and_its_frames_and_resume_carries_on() -> Result<(), String> {

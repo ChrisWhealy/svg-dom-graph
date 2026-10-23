@@ -119,7 +119,7 @@ fn reset_is_rejected_while_a_circle_is_held_and_says_why() {
     let mut core = core();
     core.drag_start(1, b_centre(&core));
     assert!(!core.reset_enabled());
-    let (outcome, moves) = core.reset(&NEW_WEIGHTS, &FLAT);
+    let (outcome, moves) = core.reset();
     assert_eq!(outcome, ApplyOutcome::Rejected);
     assert!(moves.is_empty());
     assert_eq!(core.feedback(), Some(Feedback::ResetUnavailable));
@@ -138,7 +138,7 @@ fn reset_is_rejected_while_a_released_proxy_is_draining_and_allowed_once_it_has_
     core.drag_start(1, start);
     core.drag_applied(1, start + Vec2::new(90.0, 0.0));
     core.drag_end(1, start + Vec2::new(90.0, 0.0));
-    assert_eq!(core.reset(&NEW_WEIGHTS, &FLAT).0, ApplyOutcome::Rejected);
+    assert_eq!(core.reset().0, ApplyOutcome::Rejected);
     assert!(core.feedback().is_some());
     // Run until the proxy lets go: the feedback clears by itself and Reset is back, without being run for the user.
     run_until(&mut core, 200, |c| c.reset_enabled());
@@ -156,11 +156,12 @@ fn a_reset_that_runs_when_it_is_allowed_puts_every_circle_back_and_returns_what_
     core.drag_applied(1, start + Vec2::new(60.0, 25.0));
     core.drag_end(1, start + Vec2::new(60.0, 25.0));
     run_until(&mut core, 600, |c| c.status() == Status::Sleeping);
-    let (outcome, moves) = core.reset(&NEW_WEIGHTS, &FLAT);
+    let (outcome, moves) = core.reset();
     assert_eq!(outcome, ApplyOutcome::Applied);
     assert_eq!(b_centre(&core), start);
     assert!(!moves.is_empty());
-    // New weights alone wake the system for a moment, and with no tension nothing pulls, so it goes back to sleep.
+    // Putting the lengths back wakes the system for a moment, and with every spring at its length nothing pulls, so it
+    // goes back to sleep where it was put.
     run_until(&mut core, 100, |c| c.status() == Status::Sleeping);
     assert_eq!(b_centre(&core), start);
     // Every circle that was away from its place is in the list, to its starting place.
@@ -170,7 +171,7 @@ fn a_reset_that_runs_when_it_is_allowed_puts_every_circle_back_and_returns_what_
 #[test]
 fn reset_when_nothing_has_moved_has_nothing_to_draw() {
     let mut core = core();
-    let (outcome, moves) = core.reset(&NEW_WEIGHTS, &FLAT);
+    let (outcome, moves) = core.reset();
     assert_eq!(outcome, ApplyOutcome::Applied);
     assert!(moves.is_empty());
 }
@@ -181,7 +182,7 @@ fn randomising_weights_changes_stiffness_only_and_does_not_move_a_graph_at_rest(
     let mut core = core();
     let before = b_centre(&core);
     assert_eq!(
-        core.randomise(&[10.0, 1.0, 3.0, 7.0, 2.0, 9.0, 4.0, 6.0, 8.0]),
+        core.randomise(&[10.0, 1.0, 3.0, 7.0, 2.0, 9.0, 4.0, 6.0, 8.0], &FLAT),
         ApplyOutcome::Applied
     );
     assert_eq!(core.weights()[0], 10.0);
@@ -194,10 +195,10 @@ fn randomising_weights_changes_stiffness_only_and_does_not_move_a_graph_at_rest(
 #[test]
 fn weights_the_solver_refuses_are_rejected_with_feedback_and_change_nothing() {
     let mut core = core();
-    assert_eq!(core.randomise(&[1.0, 2.0]), ApplyOutcome::Rejected);
+    assert_eq!(core.randomise(&[1.0, 2.0], &FLAT), ApplyOutcome::Rejected);
     assert_eq!(core.feedback(), Some(Feedback::WeightsRefused));
     assert_eq!(core.weights(), vec![4.0, 2.0, 1.0, 5.0, 8.0, 10.0, 2.0, 6.0, 3.0]);
-    assert_eq!(core.randomise(&[3.0; 9]), ApplyOutcome::Applied);
+    assert_eq!(core.randomise(&[3.0; 9], &FLAT), ApplyOutcome::Applied);
     assert_eq!(core.feedback(), None);
 }
 
@@ -230,7 +231,7 @@ fn pausing_stops_frames_and_resuming_starts_from_a_fresh_clock_so_nothing_catche
 #[test]
 fn a_hidden_page_pauses_and_says_so_and_showing_it_again_resumes_unless_the_user_paused() {
     let mut core = core();
-    core.randomise(&[5.0; 9]);
+    core.randomise(&[5.0; 9], &FLAT);
     core.set_hidden(true);
     assert_eq!(core.status(), Status::Paused);
     assert_eq!(core.status_text(), "Paused: the page is hidden.");
@@ -247,10 +248,10 @@ fn a_hidden_page_pauses_and_says_so_and_showing_it_again_resumes_unless_the_user
 #[test]
 fn a_frame_after_the_system_went_idle_is_only_a_baseline() {
     let mut core = core();
-    core.randomise(&[5.0; 9]);
+    core.randomise(&[5.0; 9], &FLAT);
     run_until(&mut core, 300, |c| c.status() == Status::Sleeping);
     core.settled_down();
-    core.randomise(&[2.0; 9]);
+    core.randomise(&[2.0; 9], &FLAT);
     // Asleep for a long time, then woken: the first frame must not run the steps of the whole gap.
     assert!(core.frame(9_000_000.0).is_empty());
     assert!(core.system().quiet_streak() < QUIET_STEPS);
@@ -276,7 +277,7 @@ fn with_reduced_motion_no_frame_is_ever_wanted_and_a_disturbance_settles_at_once
 #[test]
 fn settling_does_nothing_without_reduced_motion() {
     let mut core = core();
-    core.randomise(&[5.0; 9]);
+    core.randomise(&[5.0; 9], &FLAT);
     assert!(core.settle().is_empty());
     assert_eq!(core.status(), Status::Running);
 }
@@ -303,7 +304,7 @@ fn a_drawing_failure_resyncs_to_where_the_page_really_is_pauses_and_says_why() {
 fn the_status_text_names_each_state_in_words() {
     let mut core = core();
     assert!(core.status_text().starts_with("Sleeping"));
-    core.randomise(&[5.0; 9]);
+    core.randomise(&[5.0; 9], &FLAT);
     assert!(core.status_text().starts_with("Running"));
     let start = b_centre(&core);
     core.drag_start(1, start);
@@ -312,48 +313,65 @@ fn the_status_text_names_each_state_in_words() {
     assert!(core.status_text().starts_with("Finishing input"));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn a_reset_applies_the_new_weights_and_a_tension_that_makes_the_network_settle_by_itself() {
+fn randomising_applies_the_weights_and_a_tension_that_makes_the_network_settle_by_itself() {
     let mut core = core();
     assert_eq!(core.status(), Status::Sleeping);
+    let start = b_centre(&core);
     let tension = [0.7, 1.5, 1.0, 1.3, 0.8, 1.0, 1.6, 0.6, 1.2];
-    let (outcome, _) = core.reset(&NEW_WEIGHTS, &tension);
-    assert_eq!(outcome, ApplyOutcome::Applied);
+    assert_eq!(core.randomise(&NEW_WEIGHTS, &tension), ApplyOutcome::Applied);
     assert_eq!(core.weights(), NEW_WEIGHTS.to_vec());
-    // Nothing had been dragged, yet the springs now pull, so the network is awake and asks for frames.
+    // Nothing had been dragged and no circle was moved, yet the springs now pull, so the network is awake.
+    assert_eq!(b_centre(&core), start);
     assert_ne!(core.status(), Status::Sleeping);
     assert!(core.wants_frame());
-    let start = b_centre(&core);
     run_until(&mut core, 2000, |c| c.status() == Status::Sleeping);
     assert_ne!(b_centre(&core), start, "the circles never moved");
 }
 
 #[test]
-fn a_reset_with_no_tension_goes_back_to_sleep_without_moving() {
+fn randomising_with_no_tension_goes_back_to_sleep_without_moving() {
     let mut core = core();
-    let (outcome, moves) = core.reset(&NEW_WEIGHTS, &FLAT);
-    assert_eq!(outcome, ApplyOutcome::Applied);
-    assert!(moves.is_empty());
     let start = b_centre(&core);
+    assert_eq!(core.randomise(&NEW_WEIGHTS, &FLAT), ApplyOutcome::Applied);
     run_until(&mut core, 100, |c| c.status() == Status::Sleeping);
     assert_eq!(b_centre(&core), start);
 }
 
 #[test]
-fn a_reset_the_solver_will_not_take_changes_nothing_and_says_so() {
+fn a_randomise_the_solver_will_not_take_changes_nothing_and_says_so() {
     let mut core = core();
     let before = core.weights();
     // Good weights but a bad tension: the weights must not have been applied either.
-    let (outcome, moves) = core.reset(&NEW_WEIGHTS, &[1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
+    let outcome = core.randomise(&NEW_WEIGHTS, &[1.0, 1.0, 0.0, 1.0, 1.0, 1.0, 1.0, 1.0, 1.0]);
     assert_eq!(outcome, ApplyOutcome::Rejected);
-    assert!(moves.is_empty());
     assert_eq!(core.weights(), before);
     assert_eq!(core.status(), Status::Sleeping);
-    assert_eq!(core.feedback(), Some(Feedback::ResetRefused));
+    assert_eq!(core.feedback(), Some(Feedback::WeightsRefused));
     // A good one afterwards clears the feedback.
-    assert_eq!(core.reset(&NEW_WEIGHTS, &FLAT).0, ApplyOutcome::Applied);
+    assert_eq!(core.randomise(&NEW_WEIGHTS, &FLAT), ApplyOutcome::Applied);
     assert_eq!(core.feedback(), None);
+}
+
+#[test]
+fn reset_keeps_the_weights_and_puts_every_spring_back_to_its_length_so_the_layout_stays_put() {
+    let mut core = core();
+    let start = b_centre(&core);
+    let natural: Vec<f64> = core.system().springs().iter().map(|s| s.rest_length).collect();
+    core.randomise(&NEW_WEIGHTS, &[0.7, 1.5, 1.0, 1.3, 0.8, 1.0, 1.6, 0.6, 1.2]);
+    run_until(&mut core, 2000, |c| c.status() == Status::Sleeping);
+    assert_ne!(b_centre(&core), start);
+    let (outcome, moves) = core.reset();
+    assert_eq!(outcome, ApplyOutcome::Applied);
+    assert!(!moves.is_empty());
+    // The weights are as randomised, and the lengths are the starting ones.
+    assert_eq!(core.weights(), NEW_WEIGHTS.to_vec());
+    let now: Vec<f64> = core.system().springs().iter().map(|s| s.rest_length).collect();
+    assert_eq!(now, natural);
+    // And the network does not wander off again: it is at rest where it started.
+    run_until(&mut core, 100, |c| c.status() == Status::Sleeping);
+    assert_eq!(b_centre(&core), start);
 }
 
 #[test]
@@ -368,7 +386,7 @@ fn random_tension_stays_in_range_whatever_the_source_gives() {
 }
 
 #[test]
-fn the_tension_chosen_for_a_reset_always_settles_in_time_and_is_in_range() {
+fn the_tension_chosen_for_a_randomise_always_settles_in_time_and_is_in_range() {
     let mut state = 987_654_321_u64;
     let mut unit = move || {
         state = state
@@ -384,8 +402,9 @@ fn the_tension_chosen_for_a_reset_always_settles_in_time_and_is_in_range() {
         assert_eq!(tension.len(), 9);
         assert!(tension.iter().all(|f| (low..=high).contains(f)), "{tension:?}");
         assert!(core.settles(&weights, &tension), "{tension:?} was chosen but does not settle");
-        // The choice is what a reset then runs, and the network does come to rest.
-        assert_eq!(core.reset(&weights, &tension).0, ApplyOutcome::Applied);
+        // The choice is what a randomise then runs, from wherever the last one left the circles, and the network does
+        // come to rest.
+        assert_eq!(core.randomise(&weights, &tension), ApplyOutcome::Applied);
         run_until(&mut core, 2000, |c| c.status() == Status::Sleeping);
     }
 }

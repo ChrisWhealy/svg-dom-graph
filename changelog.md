@@ -23,7 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Update geometry docs (`543504b`)
 - Doc only: Change `make_draggable_with_observer()` example to return `Result<DragObserverHandle, Error>` (`982be3b`)
 - Validate derived numerical quantities as well as input values (`473103d`)
-- Refactor `demo-server::panels::AssembleError` (``)
+- Refactor `demo-server::panels::AssembleError` (`0babd01`)
 
 ## Fixed
 
@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Avoid a page restored from the cache from having inactive physics (`ef745f1`)
 - Ensure a queued pause is a true toggle (`3224b63`)
 - Ensure commands dispatched during `reconcile()` do not become stranded (`f5a67c6`)
+- Correct behaviour of "Reset" and "Randomise weights" buttons in weighted springs demo (``)
 
 # [Released]
 

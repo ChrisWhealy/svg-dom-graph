@@ -15,11 +15,11 @@
 use demo_common::force::{
     bridge::ApplyOutcome,
     clock::FrameClock,
-    solver::{FIXED_DT, SolverError, SpringSystem, Status, Vec2},
+    solver::{FIXED_DT, SpringSystem, Status, Vec2},
 };
 
-/// The range of the random factors that give the springs their tension on a reset. Below 1 a spring is squeezed where the
-/// circles are, and above 1 it is stretched.
+/// The range of the random factors that give the springs their tension when the weights are randomised. Below 1 a
+/// spring is squeezed where the circles are, and above 1 it is stretched.
 pub(super) const TENSION_RANGE: (f64, f64) = (0.6, 1.6);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -28,9 +28,9 @@ pub(super) const TENSION_RANGE: (f64, f64) = (0.6, 1.6);
 pub(super) enum Feedback {
     /// Reset was asked for while a pointer held a circle or a released one was still catching up.
     ResetUnavailable,
-    /// New weights were refused, because the solver would not take them.
+    /// New weights or a new tension were refused, because the solver would not take them.
     WeightsRefused,
-    /// A reset was refused, because the solver would not take the new weights or tension.
+    /// A reset was refused, because the solver would not take the starting lengths back.
     ResetRefused,
 }
 
@@ -39,7 +39,7 @@ impl Feedback {
     pub(super) fn message(self) -> &'static str {
         match self {
             Feedback::ResetUnavailable => "Reset unavailable while dragging or finishing input.",
-            Feedback::WeightsRefused => "The new weights were refused and nothing changed.",
+            Feedback::WeightsRefused => "The new weights and tension were refused and nothing changed.",
             Feedback::ResetRefused => "The reset was refused and nothing changed.",
         }
     }
@@ -52,8 +52,8 @@ const TRIAL_STEPS: usize = 1200;
 /// How many random tensions are tried before giving up and leaving the springs as long as they are.
 const TRIAL_ATTEMPTS: usize = 12;
 
-/// One random tension factor for each of `count` springs, from `unit`, which gives numbers from 0 to 1. A number outside
-/// that range, or not a number at all, still gives a factor in [`TENSION_RANGE`].
+/// One random tension factor for each of `count` springs, from `unit`, which gives numbers from 0 to 1. A number
+/// outside that range, or not a number at all, still gives a factor in [`TENSION_RANGE`].
 pub(super) fn random_tension(count: usize, mut unit: impl FnMut() -> f64) -> Vec<f64> {
     let (low, high) = TENSION_RANGE;
     (0..count)
@@ -168,7 +168,8 @@ impl Core {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// A frame arrived at `timestamp_ms`. Runs as many fixed steps as the clock allows, and returns the circles to move.
+    /// A frame arrived at `timestamp_ms`. Runs as many fixed steps as the clock allows, and returns the circles to
+    /// move.
     pub(super) fn frame(&mut self, timestamp_ms: f64) -> Vec<(usize, Vec2)> {
         let steps = self.clock.advance(timestamp_ms);
         for _ in 0..steps {
@@ -181,7 +182,8 @@ impl Core {
         self.moves()
     }
 
-    /// With reduced motion, runs the physics to rest at once, if it has anything to do, and returns the circles to move.
+    /// With reduced motion, runs the physics to rest at once, if it has anything to do, and returns the circles to
+    /// move.
     pub(super) fn settle(&mut self) -> Vec<(usize, Vec2)> {
         if self.reduced_motion && self.system.wants_frames() {
             self.system.settle_now();
@@ -219,14 +221,12 @@ impl Core {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Puts every circle back where it started, with `weights` for the springs and `tension` for their rest lengths. A
-    /// tension that is not 1 leaves a spring stretched or squeezed where the circles are, so the network starts to
-    /// settle by itself.
+    /// Puts every circle back where it started, and every spring back to the length it started at, so the layout is
+    /// as it was when the panel opened and stays there. The weights are kept.
     ///
     /// It is refused, changing nothing, while a pointer holds a circle or a released one is still catching up, and the
-    /// feedback says so. It is refused too if the solver will not take the weights or the tension, and nothing is
-    /// changed then either. Returns the outcome and the circles to move.
-    pub(super) fn reset(&mut self, weights: &[f64], tension: &[f64]) -> (ApplyOutcome, Vec<(usize, Vec2)>) {
+    /// feedback says so. Returns the outcome and the circles to move.
+    pub(super) fn reset(&mut self) -> (ApplyOutcome, Vec<(usize, Vec2)>) {
         if !self.reset_enabled() {
             self.feedback = Some(Feedback::ResetUnavailable);
             return (ApplyOutcome::Rejected, Vec::new());
@@ -234,7 +234,7 @@ impl Core {
         // Tried on a copy first, so a refusal part-way through leaves the real system as it was.
         let mut next = self.system.clone();
         next.reset();
-        if next.set_weights(weights).and_then(|()| next.set_tension(tension)).is_err() {
+        if next.set_tension(&vec![1.0; next.springs().len()]).is_err() {
             self.feedback = Some(Feedback::ResetRefused);
             return (ApplyOutcome::Rejected, Vec::new());
         }
@@ -247,15 +247,17 @@ impl Core {
         (ApplyOutcome::Applied, self.moves())
     }
 
-    /// Whether a network with these `weights` and this `tension`, put back where it started, comes to rest within
-    /// `steps` fixed steps. It is tried on a copy, so nothing here changes.
+    /// Whether a network with these `weights` and this `tension`, started from the circles where they are now and at
+    /// rest, comes to rest within `steps` fixed steps. It is tried on a copy, so nothing here changes.
     ///
-    /// A tension that stretches the springs against the edge of the region can leave the circles creeping so slowly that
-    /// the watchdog would run out first, and then the panel would say it never settled. So a reset only takes a tension
-    /// that has been seen to settle.
+    /// A tension that stretches the springs against the edge of the region can leave the circles creeping so slowly
+    /// that the watchdog would run out first, and then the panel would say it never settled. So only a tension that has
+    /// been seen to settle is taken.
     pub(super) fn settles_within(&self, weights: &[f64], tension: &[f64], steps: usize) -> bool {
         let mut trial = self.system.clone();
-        trial.reset();
+        let centres: Vec<Vec2> = (0..trial.len()).filter_map(|index| trial.centre(index)).collect();
+        // Where the circles are now, with no velocity and no pin, as if every one had been let go and had come to rest.
+        trial.resync_centres(&centres);
         // A paused system takes no steps, and a pause is the user's, not part of what is being asked.
         trial.set_paused(false);
         if trial.set_weights(weights).and_then(|()| trial.set_tension(tension)).is_err() {
@@ -270,13 +272,13 @@ impl Core {
         trial.status() == Status::Sleeping
     }
 
-    /// [`Self::settles_within`] for the longest a reset allows.
+    /// [`Self::settles_within`] for the longest a trial is allowed.
     #[cfg(test)]
     pub(super) fn settles(&self, weights: &[f64], tension: &[f64]) -> bool {
         self.settles_within(weights, tension, TRIAL_STEPS)
     }
 
-    /// A random tension for a reset with these `weights`, drawn from `unit` (numbers from 0 to 1) and known to settle.
+    /// A random tension for these `weights`, drawn from `unit` (numbers from 0 to 1) and known to settle.
     /// If none of several tries does, every spring is left as long as it is, which always does.
     pub(super) fn choose_tension(&self, weights: &[f64], unit: impl FnMut() -> f64) -> Vec<f64> {
         self.choose_tension_in(weights, unit, TRIAL_ATTEMPTS, TRIAL_STEPS)
@@ -300,20 +302,23 @@ impl Core {
         vec![1.0; count]
     }
 
-    /// Gives the springs these weights. Refused, changing nothing, if the solver will not take them.
-    pub(super) fn randomise(&mut self, weights: &[f64]) -> ApplyOutcome {
-        match self.system.set_weights(weights) {
-            Ok(()) => {
-                if self.feedback == Some(Feedback::WeightsRefused) {
-                    self.feedback = None;
-                }
-                ApplyOutcome::Applied
-            },
-            Err(SolverError::WrongWeightCount | SolverError::InvalidWeight(_)) | Err(_) => {
-                self.feedback = Some(Feedback::WeightsRefused);
-                ApplyOutcome::Rejected
-            },
+    /// Gives the springs these `weights` and this `tension`, a rest length of each one's starting length times its
+    /// factor. The circles are not moved: a tension that is not 1 leaves the springs stretched or squeezed where the
+    /// circles stand, so the network starts to move and settles by itself.
+    ///
+    /// Refused, changing nothing, if the solver will not take either, and the feedback says so.
+    pub(super) fn randomise(&mut self, weights: &[f64], tension: &[f64]) -> ApplyOutcome {
+        // Tried on a copy first, so taking the weights and then refusing the tension changes nothing.
+        let mut next = self.system.clone();
+        if next.set_weights(weights).and_then(|()| next.set_tension(tension)).is_err() {
+            self.feedback = Some(Feedback::WeightsRefused);
+            return ApplyOutcome::Rejected;
         }
+        if self.feedback == Some(Feedback::WeightsRefused) {
+            self.feedback = None;
+        }
+        self.system = next;
+        ApplyOutcome::Applied
     }
 
     /// The user paused or resumed. A resume starts from a fresh clock and keeps no time against the watchdog.
@@ -350,8 +355,8 @@ impl Core {
         self.reduced_motion = reduced;
     }
 
-    /// Drawing failed. The solver's circles are put where the page really has them, the physics is paused, and `message`
-    /// says why. Resuming, or resetting, clears it.
+    /// Drawing failed. The solver's circles are put where the page really has them, the physics is paused, and
+    /// `message` says why. Resuming, or resetting, clears it.
     pub(super) fn fail(&mut self, centres: &[Vec2], message: String) {
         if self.system.resync_centres(centres) {
             self.drawn = centres.to_vec();

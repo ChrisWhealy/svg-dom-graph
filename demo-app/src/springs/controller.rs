@@ -44,7 +44,7 @@ pub(super) enum ControllerCommand {
     Drag { id: NodeId, phase: DragPhase, lease: Weak<()> },
     /// An animation frame arrived at this browser timestamp.
     Frame { timestamp_ms: f64 },
-    /// The user asked to put the circles back where they started, with new random weights and tension.
+    /// The user asked to put the circles back where they started.
     Reset,
     /// The user pressed Pause or Resume. Whether that pauses or resumes is decided when the command runs, from the
     /// state then, never from the state when the button was pressed: two presses queued together are a pause and a
@@ -54,7 +54,7 @@ pub(super) enum ControllerCommand {
     SetHidden(bool),
     /// The page's preference for reduced motion changed.
     SetReducedMotion(bool),
-    /// The user asked for new random weights.
+    /// The user asked for new random weights and tension.
     RandomizeWeights,
 }
 
@@ -282,25 +282,23 @@ impl Controller {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Gives the springs new random weights, and shows them on the edge labels.
+    /// Gives the springs new random weights and a random tension that is known to settle, and shows the weights on the
+    /// edge labels. The circles stay where they are, and the network starts to move and comes to rest by itself.
     fn randomise(&mut self) -> ApplyOutcome {
         let weights = self.new_weights();
-        let outcome = self.core.randomise(&weights);
+        let tension = self.core.choose_tension(&weights, js_sys::Math::random);
+        let outcome = self.core.randomise(&weights, &tension);
         if outcome == ApplyOutcome::Applied {
             self.show_weights(&weights);
         }
         outcome
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Puts the circles back, and gives the springs new random weights and a random tension that is known to settle, so
-    /// the network starts to move and comes to rest by itself. The labels change only if the reset was done.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Puts the circles back where they started, with every spring at its starting length. The weights are kept.
     fn reset(&mut self) -> ApplyOutcome {
-        let weights = self.new_weights();
-        let tension = self.core.choose_tension(&weights, js_sys::Math::random);
-        let (outcome, moves) = self.core.reset(&weights, &tension);
+        let (outcome, moves) = self.core.reset();
         if outcome == ApplyOutcome::Applied {
-            self.show_weights(&weights);
             self.draw(moves);
         }
         outcome

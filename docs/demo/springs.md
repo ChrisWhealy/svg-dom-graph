@@ -13,9 +13,9 @@ Dijkstra's algorithm reads the same number as the cost of travelling the edge, a
 
 * **Drag any circle.** The circles joined to it are pulled and pushed, and the disturbance spreads through the graph. A circle cannot be dragged out of the graph's region, and the physics keeps the circles from overlapping.
 * **Let go.** The network settles under damping, and then stops moving and stops asking the browser for frames.
-* **Reset.** Puts every circle back where it started, gives the nine springs new random weights, and gives each spring a random tension: its rest length becomes between 0.6 and 1.6 times its natural length, so the springs are stretched or squeezed where the circles stand. The network then starts to move at once, and settles by itself. It is refused while a pointer holds a circle, and while a released circle is still catching up, and the line under the buttons says why. The button looks faded and is marked `aria-disabled` then.
+* **Reset.** Puts every circle back where it started, and every spring back to its starting length, so the layout is as it was when the panel opened and stays there. The weights are kept. It is refused while a pointer holds a circle, and while a released circle is still catching up, and the line above the diagram says why. The button looks faded and is marked `aria-disabled` then.
 * **Pause and Resume.** Stops the physics without losing anything.
-* **Randomise weights.** Gives the nine springs new weights from 1 to 10, and shows them on the edge labels.
+* **Randomise weights.** Gives the nine springs new weights from 1 to 10, and shows them on the edge labels. It also gives each spring a random tension: its rest length becomes between 0.6 and 1.6 times its natural length, so the springs are stretched or squeezed where the circles stand. The circles are not moved, but the network starts to move at once, and settles by itself.
 * The three buttons are drawn inside the scene, below the graph, so they zoom and pan with it. They work from the keyboard too: Tab to one, then Enter or Space.
 * The zoom buttons and a drag on the background work as in every other demo, and the physics does not depend on either.
 
@@ -27,10 +27,10 @@ A line above the diagram says what the physics is doing, and a second line says 
 
 Each spring's **natural length** is the distance between its ends **when the panel first opens**.
 So the graph starts at rest, with every spring exactly at its length and no force on any of them, whatever its weight.
-Randomising the weights alone changes no force at rest and moves nothing. It only changes how hard each spring pulls once it is stretched, which you see while you drag.
-Reset is different, because it also gives each spring a rest length of its natural length times a random factor.
-The factor is counted from the natural length every time, so pressing Reset again never compounds.
-A tension that stretches the springs against the edge of the region can leave the circles creeping for longer than the 20 second guard allows, so Reset tries each random tension on a copy first, and takes only one that comes to rest within ten seconds.
+Changing the weights alone changes no force at rest and moves nothing. It only changes how hard each spring pulls once it is stretched, which you see while you drag.
+Randomise weights is different, because it also gives each spring a rest length of its natural length times a random factor.
+The factor is counted from the natural length every time, so pressing it again never compounds, and Reset puts every spring back to the natural length.
+A tension that stretches the springs against the edge of the region can leave the circles creeping for longer than the 20 second guard allows, so Randomise weights tries each random tension on a copy first, starting from where the circles are, and takes only one that comes to rest within ten seconds.
 If twelve tries in a row fail, which is very unlikely, the springs are left as long as they are and only the weights change.
 
 The nine edges form a chain of triangles, which is rigid: it has no way to flex without stretching a spring.
