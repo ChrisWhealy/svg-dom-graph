@@ -2,8 +2,8 @@
 //! so the layout and every string can be tested without a browser.
 //!
 //! The scene has the graph on the left, with a box for each vertex. On the right are three arrays side by side, one row
-//! for each vertex: the distance, the vertex it was reached from, and whether it is settled. Under them is the queue.
-//! Under the graph is a note about the step.
+//! for each vertex: the distance, the vertex it was reached from, and whether it is settled. The queue is beside them, to
+//! the right of the last. Under the graph is a note about the step. That makes the scene wide and not tall.
 //!
 //! Nothing is placed from what a step shows. The graph's boxes are where the demo, or the person dragging them, left
 //! them. The arrays and the queue are placed from their sizes, which do not change from step to step: see
@@ -85,7 +85,8 @@ pub(super) struct Placement {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the three arrays, the queue and the note go, given the size of each array and of the queue, which do not change
-/// from step to step. The arrays are side by side, with the queue below them, and the note is below the graph.
+/// from step to step. The arrays are side by side, with the queue to the right of them, in line with their tops, and the
+/// note is below the graph.
 ///
 /// `note_room` is how tall the note can be before it would reach the bottom of the scene. A taller note makes the
 /// scene taller, and moves nothing.
@@ -95,10 +96,10 @@ pub(super) fn place(arrays: [Size; 3], queue: Size, note_room: f64) -> Placement
     let previous = Point::new(distance.x + arrays[0].width + ARRAY_GAP, TOP);
     let settled = Point::new(previous.x + arrays[1].width + ARRAY_GAP, TOP);
     let tallest = arrays.iter().map(|size| size.height).fold(0.0, f64::max);
-    let queue_origin = Point::new(left, TOP + tallest + ROW_GAP);
+    let queue_origin = Point::new(settled.x + arrays[2].width + ARRAY_GAP, TOP);
     let note = Point::new(MARGIN, TOP + GRAPH_HEIGHT + ROW_GAP);
-    let right = settled.x + arrays[2].width;
-    let bottom = (queue_origin.y + queue.height).max(note.y + note_room);
+    let right = queue_origin.x + queue.width;
+    let bottom = (TOP + tallest).max(queue_origin.y + queue.height).max(note.y + note_room);
     Placement {
         distance,
         previous,

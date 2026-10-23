@@ -1,6 +1,7 @@
 use super::{
-    GRAPH_HEIGHT, GRAPH_WIDTH, NAMES, NO_PREDECESSOR, QUEUE_CELLS, QUEUE_ENTRIES, TOOLBAR_ROOM, TOP, Texts, UNREACHED,
-    VERTEX_HEIGHT, VERTEX_WIDTH, distance_text, place, previous_text, queue_texts, vertex_origins, widest_by,
+    GRAPH_HEIGHT, GRAPH_WIDTH, NAMES, NO_PREDECESSOR, QUEUE_CELLS, QUEUE_ENTRIES, ROW_GAP, TOOLBAR_ROOM, TOP, Texts,
+    UNREACHED, VERTEX_HEIGHT, VERTEX_WIDTH, distance_text, place, previous_text, queue_texts, vertex_origins,
+    widest_by,
 };
 use crate::dijkstra::algorithm::{Graph, QueueEntry, RawEdge, Snapshot, steps};
 use demo_common::util::MARGIN;
@@ -99,7 +100,7 @@ fn array() -> Size {
 }
 
 #[test]
-fn the_arrays_sit_side_by_side_to_the_right_of_the_graph_with_the_queue_below_them() {
+fn the_arrays_sit_side_by_side_to_the_right_of_the_graph_with_the_queue_beside_them() {
     let placement = place(
         [array(), Size::new(100.0, 250.0), Size::new(90.0, 250.0)],
         Size::new(150.0, 280.0),
@@ -118,9 +119,27 @@ fn the_arrays_sit_side_by_side_to_the_right_of_the_graph_with_the_queue_below_th
         assert!(a.0 >= MARGIN + GRAPH_WIDTH, "{a:?} is not right of the graph");
     }
     assert!(
-        placement.queue.y > placement.distance.y + 250.0,
-        "the queue is below the arrays"
+        placement.queue.x >= placement.settled.x + 90.0,
+        "the queue is right of the last array"
     );
+    assert_eq!(
+        placement.queue.y, placement.distance.y,
+        "the queue is level with the arrays' tops"
+    );
+}
+
+#[test]
+fn putting_the_queue_beside_the_arrays_makes_the_scene_wider_and_shorter_than_putting_it_below() {
+    let (arrays, queue) = ([array(); 3], Size::new(150.0, 280.0));
+    let placement = place(arrays, queue, 150.0);
+    let below_height = TOP + array().height + ROW_GAP + queue.height + MARGIN;
+    assert!(
+        placement.canvas.height < below_height,
+        "{} is not under {below_height}",
+        placement.canvas.height
+    );
+    let below_width = placement.settled.x + array().width + MARGIN + TOOLBAR_ROOM;
+    assert!(placement.canvas.width > below_width);
 }
 
 #[test]
@@ -135,7 +154,7 @@ fn the_note_is_below_the_graph_and_as_wide_as_it() {
 fn the_scene_holds_everything_and_has_room_for_the_zoom_toolbar() {
     let queue = Size::new(150.0, 280.0);
     let placement = place([array(); 3], queue, 150.0);
-    let right = placement.settled.x + array().width;
+    let right = placement.queue.x + queue.width;
     assert_eq!(placement.canvas.width, right + MARGIN + TOOLBAR_ROOM);
     assert!(placement.canvas.height >= placement.queue.y + queue.height + MARGIN);
     assert!(placement.canvas.height >= placement.note.y + 150.0 + MARGIN);

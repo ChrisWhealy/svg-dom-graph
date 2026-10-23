@@ -65,6 +65,7 @@ The queue is shown nearest first, as `(distance, vertex)`.
 That is the order the entries would be taken in, which is not the order a binary heap keeps them in.
 An entry that is out of date says `stale`, and is ignored when it comes out.
 
+It stands to the right of the three arrays, level with their tops, so the scene is wide and not tall.
 It has a fixed size: eight rows for entries, and a ninth that says how many more there are, such as `+3 more`.
 Unused rows are empty and are read out as `empty`.
 So however many entries there are, nothing in the scene moves.

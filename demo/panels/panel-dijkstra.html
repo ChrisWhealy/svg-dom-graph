@@ -1,17 +1,43 @@
-<section class="section" id="panel-dijkstra" data-group="Graph algorithms" data-label="Dijkstra's shortest paths" data-order="10">
+<section class="section" id="panel-dijkstra" data-group="Graph algorithms" data-label="Dijkstra's shortest paths"
+    data-order="10">
     <h2>Dijkstra's Shortest Paths</h2>
-    <p><em>Dijkstra's algorithm</em> finds the shortest route from one vertex of a weighted graph to the others. Each
-        vertex keeps a <em>distance</em>, the length of the shortest route found to it so far, which starts as
-        <code>&infin;</code> for every vertex except the source, where it is 0. A <em>queue</em> holds the vertices the
-        algorithm has reached.</p>
-    <p>The algorithm takes the nearest vertex from the queue and <em>settles</em> it: no route found later can be
-        shorter. Then it looks at every edge that leaves that vertex. If going along the edge gives its far end a
-        distance that is strictly shorter than the one it has, the distance is replaced and the vertex is remembered as
-        the <em>predecessor</em>, which is where the route came from. The old entry for that vertex stays in the queue,
-        out of date, and is ignored when it comes out. Weights must not be negative.</p>
-    <p>Here the run goes from A to F. Press Next to step along it, and drag a vertex to move it. The shortest route to F,
-        found by following the predecessors back from F, is A, C, B, D, E, F, with a length of 13. The first route found
-        to B is not the shortest one.</p>
+    <p><em>Dijkstra's algorithm</em> finds the shortest route from one vertex of a weighted graph to another.</p>
+    <p>The algorithm works by repeatedly applying two steps:</p>
+    <ol>
+        <li>Update cost estimates of visiting neighbouring vertices</li>
+        <li>Choose which vertex to visit next</li>
+    </ol>
+
+    <p>For each vertex, a list is kept that holds two values:</p>
+    <ul>
+        <li>The path length (or weight or cost) found so far to that vertex</li>
+        <li>The vertex we started from to get there</li>
+    </ul>
+
+    <p>Notice that we use the idea of a cost <em>estimate</em>. Until all the vertices in the graph have been traversed,
+        we cannot yet be certain that shortest path has been found, so each traversal cost is treated as a temporary
+        value that might, in future, be reduced.</p>
+    <p>Before we start traversing the graph, we have no idea what the cost will be of getting from one vertex to
+        another, so all the costs starts at infinity. At the start however, all we can say for certain is that if we
+        start at vertex <code>A</code>, then the cost of getting to vertex <code>A</code> is zero &mdash; because we're
+        already there!</p>
+    <p>It should also be pointed out that this implementation of Dijkstra's algorithm only works for edge weights
+        greater than zero.</p>
+
+    <h3>Update cost estimates of visiting neighbouring vertices</h3>
+    <p>Once we have determined the cost of reaching a particular vertex, we will label that vertex as <em>visited</em>
+        or <em>explored</em> or, as we say in this demo <em>settled</em>. We look at the current cost estimate we held
+        for visiting that node, and if we find we have traversed a cheapr path, then we can reduce our cost estimate.
+        This means that on the first visit to a vertex, the actual cost will always be smaller than infinity, so that
+        value is replaced with the cost found so far.</p>
+    <p>The cost estimate of visiting a vertex is the sum of the edge costs currently traversed before arriving at that
+        vertex. What we can be certain of is that the cost estimate of visiting a vertex may go down, but it will never
+        go up.</p>
+
+    <h3>Choose which vertex to visit next</h3>
+    <p>The rule for choosing which vertex to visit next is simply to follow the edge with the lowest cost or weight.
+        Now that we have visited this vertex, we first mark it as <em>settled</em> and we then repeat the two steps
+        listed above.</p>
     <p class="demo-error" id="dijkstra-error" hidden></p>
     <!-- Said by a screen reader at each step. It is here, not in the scene, because the scene is redrawn for each step,
          and a screen reader may not announce the new live region after it a redraw. -->
