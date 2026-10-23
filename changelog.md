@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: Change `make_draggable_with_observer()` example to return `Result<DragObserverHandle, Error>` (`982be3b`)
 - Validate derived numerical quantities as well as input values (`473103d`)
 - Refactor `demo-server::panels::AssembleError` (`0babd01`)
-- Refactor `demo-common/src/force/solver/mod.rs` and `unit_tests.rs` (``)
+- Refactor `demo-common/src/force/solver/mod.rs` and `unit_tests.rs` (`49177ce`)
 
 ## Fixed
 
@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure a queued pause is a true toggle (`3224b63`)
 - Ensure commands dispatched during `reconcile()` do not become stranded (`f5a67c6`)
 - Correct behaviour of "Reset" and "Randomise weights" buttons in weighted springs demo (`e89ec50`)
+- Allow weighted spring nodes to be dragged to the upper edge of the scene (``)
 
 # [Released]
 

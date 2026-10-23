@@ -257,6 +257,33 @@ fn randomising_sets_a_network_at_rest_moving_by_itself_and_reset_puts_it_back() 
     check(weights(&tab)? == now, "Reset changed the weights")
 }
 
+/// A circle can be dragged right up to the margin at the top of the scene, as near as it can go to the left, and no
+/// further. No room is kept there for a toolbar, because this scene has none.
+#[test]
+fn a_circle_can_be_dragged_to_the_top_margin_of_the_scene_and_no_further() -> Result<(), String> {
+    let tab = open()?;
+    let result = run(
+        &tab,
+        &format!(
+            "{} const svg = document.getElementById('springs-diagram').getBoundingClientRect(); \
+             const box = () => g.querySelector('ellipse').getBoundingClientRect(); \
+             fire('pointerdown', cx, cy); \
+             for (let i = 1; i <= 10; i++) {{ fire('pointermove', cx, cy - i * 40); await sleep(30); }} \
+             await sleep(400); \
+             const top = box().top - svg.top, left = box().left - svg.left; \
+             fire('pointerup', cx, cy - 400); \
+             return JSON.stringify([Math.round(top), Math.round(left)]);",
+            pointer_helpers("B", 1)
+        ),
+    )?;
+    // The scene's margin is 20 units, and the view is not zoomed.
+    check(
+        result.starts_with("[20,"),
+        &format!("B stopped at {result}, not at the 20 unit margin"),
+    )?;
+    wait_for_state(&tab, "sleeping", 25)
+}
+
 /// The three buttons are in the scene, so they zoom and pan with it, and none is an HTML button.
 #[test]
 fn the_buttons_are_drawn_in_the_scene() -> Result<(), String> {

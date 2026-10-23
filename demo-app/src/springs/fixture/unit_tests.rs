@@ -38,11 +38,11 @@ fn the_edges_are_the_nine_the_dijkstra_demo_draws_with_their_weights_in_the_same
 }
 
 #[test]
-fn the_solver_bounds_are_the_one_graph_region_and_every_centre_is_inside_it_inset_by_the_radius() {
+fn the_solver_bounds_are_the_one_springs_region_and_every_centre_is_inside_it_inset_by_the_radius() {
     let fixture = fixture();
-    assert_eq!(fixture.region, graph_region());
+    let region = springs_region(graph_region());
+    assert_eq!(fixture.region, region);
     let bounds = fixture.bounds();
-    let region = graph_region();
     assert_eq!(
         (bounds.left, bounds.top, bounds.right, bounds.bottom),
         (
@@ -64,6 +64,22 @@ fn the_solver_bounds_are_the_one_graph_region_and_every_centre_is_inside_it_inse
     }
     // The inset is what a dragged circle's enclosing square may occupy: the same limits for a circle's centre.
     assert_eq!(bounds.left + VERTEX_RADIUS, MARGIN + VERTEX_RADIUS);
+}
+
+#[test]
+fn the_springs_region_reaches_the_top_margin_and_is_otherwise_the_graph_region() {
+    let graph = graph_region();
+    let region = springs_region(graph);
+    // The room the Dijkstra demo keeps for its stepping toolbar is given back: the same margin on the top as the left.
+    assert_eq!(region.origin, Point::new(graph.origin.x, MARGIN));
+    assert_eq!(region.origin.y, region.origin.x);
+    // Nothing else moves, so the scene is as big as it was and the buttons stay where they were.
+    assert_eq!(region.origin.x + region.size.width, graph.origin.x + graph.size.width);
+    assert_eq!(region.origin.y + region.size.height, graph.origin.y + graph.size.height);
+    // Every circle starts inside it, and the room that was added is room to drag into.
+    assert!(region.size.height > graph.size.height);
+    let bounds = fixture().bounds();
+    assert!(fixture().centres.iter().all(|c| c.y - VERTEX_RADIUS >= bounds.top));
 }
 
 #[test]

@@ -4,9 +4,23 @@
 
 use crate::dijkstra::{EDGES, NAMES, VERTEX_RADIUS, graph_region, vertex_origins};
 use demo_common::force::solver::{Bounds, Params, SolverError, SpringSystem, Vec2};
-use svg_dom::root::utils::Rect;
+use demo_common::util::MARGIN;
+use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The region the springs live in: the Dijkstra graph's region, reaching up to the margin at the top of the scene.
+///
+/// The Dijkstra demo keeps its graph below a stepping toolbar fixed to the top edge, and `graph_region` starts below it.
+/// This scene has no such toolbar, so the room that was kept for it is given back, and a circle can be dragged as near
+/// the top as it can be to the left. The bottom and right edges are `graph`'s, and so the scene's size does not change.
+pub(super) fn springs_region(graph: Rect) -> Rect {
+    let bottom = graph.origin.y + graph.size.height;
+    Rect {
+        origin: Point::new(graph.origin.x, MARGIN),
+        size: Size::new(graph.size.width, bottom - MARGIN),
+    }
+}
+
 /// Everything needed to build the physics for the Dijkstra graph.
 #[derive(Clone, Debug)]
 pub(super) struct Fixture {
@@ -23,7 +37,10 @@ pub(super) struct Fixture {
 impl Fixture {
     /// The fixture of the Dijkstra demo as it is now.
     pub(super) fn dijkstra() -> Self {
-        Self::from_parts(vertex_origins().iter().map(|o| Vec2::new(o.x, o.y)).collect(), graph_region())
+        Self::from_parts(
+            vertex_origins().iter().map(|o| Vec2::new(o.x, o.y)).collect(),
+            springs_region(graph_region()),
+        )
     }
 
     /// A fixture with the given top-left corners, for the Dijkstra edges and radius, inside `region`.

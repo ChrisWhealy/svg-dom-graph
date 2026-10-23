@@ -11,7 +11,7 @@ Dijkstra's algorithm reads the same number as the cost of travelling the edge, a
 
 ## What you can do
 
-* **Drag any circle.** The circles joined to it are pulled and pushed, and the disturbance spreads through the graph. A circle cannot be dragged out of the graph's region, and the physics keeps the circles from overlapping.
+* **Drag any circle.** The circles joined to it are pulled and pushed, and the disturbance spreads through the graph. A circle cannot be dragged out of the graph's region, which reaches the same 20 unit margin on the top as on the left (the Dijkstra demo keeps room there for its stepping toolbar, but this scene has none), and the physics keeps the circles from overlapping.
 * **Let go.** The network settles under damping, and then stops moving and stops asking the browser for frames.
 * **Reset.** Puts every circle back where it started, and every spring back to its starting length, so the layout is as it was when the panel opened and stays there. The weights are kept. It is refused while a pointer holds a circle, and while a released circle is still catching up, and the line above the diagram says why. The button looks faded and is marked `aria-disabled` then.
 * **Pause and Resume.** Stops the physics without losing anything.
