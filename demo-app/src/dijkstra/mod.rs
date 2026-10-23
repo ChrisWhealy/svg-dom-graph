@@ -15,7 +15,7 @@ use demo_common::{
         resize_svg, stringify,
     },
 };
-use layout::{NAMES, Placement, Texts, vertex_origins, vertex_size};
+use layout::{NAMES, Placement, Texts, VERTEX_RADIUS, vertex_centre, vertex_origins};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
@@ -24,8 +24,8 @@ use svg_dom::{
 use svg_dom_graph::{
     EdgeId, NodeId,
     scene::{
-        BoolFormat, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, GridLayout, LabellingStyle,
-        NodeOptions, NodeValues, Scene, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
+        BoolFormat, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, EllipseOptions, GridLayout,
+        LabellingStyle, NodeValues, Scene, Selection, SelectionToolbarOptions, Side, ToolbarOptions,
     },
 };
 
@@ -112,7 +112,7 @@ struct Runtime {
     scene: Option<Scene>,
     /// The vertices of that scene, in the order of [`NAMES`].
     vertices: Vec<NodeId>,
-    /// Where each vertex's box is, as the last scene had it: where the person dragged it to, or where it started.
+    /// Where the square that encloses each vertex is, by its top-left corner, as the last scene had it: where the person dragged it to, or where it started.
     origins: Vec<Point>,
     /// The step the scene on the page is at.
     position: Option<usize>,
@@ -212,7 +212,7 @@ fn fixed(scene: &Scene, model: &Model) -> Result<Rc<Fixed>, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Draws the graph for `snapshot`: a draggable box for each vertex at its origin, a connector for each edge with its
+/// Draws the graph for `snapshot`: a draggable circle for each vertex, centred in the square whose top-left corner is its origin, a connector for each edge with its
 /// weight on it, and the emphasis for the step.
 ///
 /// A settled vertex has a fill. The vertex being worked on has a focus ring, and so does the end of the edge being
@@ -224,13 +224,18 @@ fn draw_graph(scene: &Scene, model: &Model, snapshot: &Snapshot, origins: &[Poin
     for (index, name) in NAMES.iter().enumerate() {
         let fill = snapshot.settled[index].then_some(SETTLED_FILL);
         let node = scene
-            .add_node_with(origins[index], vertex_size(), *name, NodeOptions::default().with_fill(fill))
+            .add_circle_node_with(
+                vertex_centre(origins[index]),
+                VERTEX_RADIUS,
+                *name,
+                EllipseOptions::default().with_fill(fill),
+            )
             .map_err(stringify)?;
         scene.make_draggable(node).map_err(stringify)?;
         vertices.push(node);
     }
 
-    // Straight connectors, so that each runs from box to box in one line and its label has a long run to sit beside.
+    // Straight connectors, so that each runs from circle to circle in one line and its label has a long run to sit beside.
     let options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
     let mut edges: Vec<EdgeId> = Vec::with_capacity(model.graph.edges().len());
     for edge in model.graph.edges() {
@@ -422,8 +427,8 @@ fn go(position: usize, restart: bool) {
 /// Builds the Dijkstra demo: a weighted directed graph of six vertices, and the run of Dijkstra's algorithm from A to F
 /// on it, one step at a time.
 ///
-/// - The **graph** is on the left. A box is a vertex, and can be dragged. A connector is a directed edge, and its
-///   weight is on a label beside it, which follows the connector as a box is dragged. A settled vertex is filled lilac.
+/// - The **graph** is on the left. A circle is a vertex, and can be dragged. A connector is a directed edge, and its
+///   weight is on a label beside it, which follows the connector as a circle is dragged. A settled vertex is filled lilac.
 ///   The vertex being worked on has a focus ring, and so does the end of the edge being looked at. That edge is
 ///   emphasised, and so is every edge of the shortest route when the run has found it.
 /// - The three **arrays** are the distance to each vertex, where it was reached from, and whether it is settled. An

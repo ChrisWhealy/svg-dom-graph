@@ -11,11 +11,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implement a ellipse and circle nodes (`21d759c`)
-- Test corner hit-testing requirements (``)
+- Test corner hit-testing requirements (`a5070ee`)
 
 ## Changed
 
 - Rearrange the Dijkstra demo node layout (`bd69336`)
+- Change Dijkstra demo to use circular nodes (``)
 
 ## Fixed
 

@@ -35,9 +35,9 @@ pub(super) const TOOLBAR_ROOM: f64 = 80.0;
 /// Where the top of the scene's content is: below the stepping toolbar, which is fixed to the top edge.
 pub(super) const TOP: f64 = 64.0;
 
-/// The size of a vertex's box.
-pub(super) const VERTEX_WIDTH: f64 = 56.0;
-pub(super) const VERTEX_HEIGHT: f64 = 36.0;
+/// The radius of a vertex, which is a circle. A single letter fits it with room to spare, so it is never made larger,
+/// and the focus ring has room.
+pub(super) const VERTEX_RADIUS: f64 = 22.0;
 
 /// How wide the part of the scene that holds the graph is, and how tall.
 const GRAPH_WIDTH: f64 = 560.0;
@@ -49,16 +49,21 @@ const ARRAY_GAP: f64 = 24.0;
 const ROW_GAP: f64 = 30.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The size of a vertex's box.
-pub(super) fn vertex_size() -> Size {
-    Size::new(VERTEX_WIDTH, VERTEX_HEIGHT)
+/// The centre of the circle whose enclosing square has its top-left corner at `origin`. A vertex is kept as the top-left
+/// corner of its square, which is what the scene's own positions are, and is given to the scene as a centre.
+pub(super) fn vertex_centre(origin: Point) -> Point {
+    Point::new(origin.x + VERTEX_RADIUS, origin.y + VERTEX_RADIUS)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where each vertex's box starts, in the order of [`NAMES`]. The graph is laid out by hand: no connector passes through
-/// a box, and the two that leave C go off in different directions, so their labels have room.
+/// Where the square that encloses each vertex starts, in the order of [`NAMES`]. The graph is laid out by hand: no
+/// connector passes through a vertex, and the two that leave C go off in different directions, so their labels have
+/// room.
+///
+/// The numbers are where the centres are. The vertices were boxes of 56 by 36 before they were circles, and the centres
+/// stay where they were, so the corner of the 44 by 44 square is 6 further right and 4 higher than that of the box.
 pub(super) fn vertex_origins() -> [Point; 6] {
-    let at = |x: f64, y: f64| Point::new(MARGIN + x, TOP + y);
+    let at = |x: f64, y: f64| Point::new(MARGIN + x + 6.0, TOP + y - 4.0);
     [
         at(0.0, 124.0),   // A
         at(166.0, 14.0),  // B

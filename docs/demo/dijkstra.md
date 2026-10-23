@@ -31,7 +31,7 @@ The table is the graph the panel opens on, so that every visit starts the same. 
 The shortest route to F is A, C, B, D, E, F, with a length of 13.
 The first route found to B, directly from A, is not its shortest one.
 
-A vertex is a box that can be dragged.
+A vertex is a circle that can be dragged. It has a radius of 22, which a single letter fits with room to spare, so it is never made larger.
 Its connectors are straight, and follow it.
 A vertex that is settled is filled lilac.
 The vertex being worked on has a focus ring, and so has the far end of the edge being looked at.
@@ -39,7 +39,7 @@ The vertex being worked on has a focus ring, and so has the far end of the edge 
 ## Edge labels
 
 Each connector has a label with its weight, made with `Scene::set_edge_label`.
-It is beside the line, clear of the arrowhead, the boxes and the other labels, and it follows its connector as a box is dragged.
+It is beside the line, clear of the arrowhead, the circles and the other labels, and it follows its connector as a circle is dragged.
 The two edges that leave C, to D and to E, go off in different directions, so their labels have room, and dragging C does not bring them together.
 See [Connectors](../library/connectors.md) for how a label is placed.
 

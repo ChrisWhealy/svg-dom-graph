@@ -1,6 +1,6 @@
 use super::{
     GRAPH_HEIGHT, GRAPH_WIDTH, NAMES, NO_PREDECESSOR, QUEUE_CELLS, QUEUE_ENTRIES, ROW_GAP, TOOLBAR_ROOM, TOP, Texts,
-    UNREACHED, VERTEX_HEIGHT, VERTEX_WIDTH, distance_text, place, previous_text, queue_texts, vertex_origins,
+    UNREACHED, VERTEX_RADIUS, distance_text, place, previous_text, queue_texts, vertex_centre, vertex_origins,
     widest_by,
 };
 use crate::dijkstra::algorithm::{Graph, QueueEntry, RawEdge, Snapshot, steps};
@@ -30,7 +30,14 @@ type Box4 = (f64, f64, f64, f64);
 fn vertex_boxes() -> Vec<Box4> {
     vertex_origins()
         .iter()
-        .map(|origin| (origin.x, origin.y, origin.x + VERTEX_WIDTH, origin.y + VERTEX_HEIGHT))
+        .map(|origin| {
+            (
+                origin.x,
+                origin.y,
+                origin.x + 2.0 * VERTEX_RADIUS,
+                origin.y + 2.0 * VERTEX_RADIUS,
+            )
+        })
         .collect()
 }
 
@@ -284,5 +291,29 @@ fn the_widest_of_every_string_a_column_shows_is_as_wide_as_each_of_them() {
         let widest = widest_by(column.clone(), measure).expect("measured").expect("some strings");
         let widest_width = measure(&widest).expect("measured");
         assert!(column.iter().all(|text| measure(text).expect("measured") <= widest_width));
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn the_centre_of_a_vertex_is_half_a_square_in_from_its_corner() {
+    let centre = vertex_centre(Point::new(100.0, 50.0));
+    assert_eq!((centre.x, centre.y), (100.0 + VERTEX_RADIUS, 50.0 + VERTEX_RADIUS));
+}
+
+#[test]
+fn the_vertices_are_where_they_were_when_they_were_boxes() {
+    // The centres of the 56 by 36 boxes that the vertices were before they were circles.
+    let box_centres = [
+        (0.0, 124.0),
+        (166.0, 14.0),
+        (150.0, 234.0),
+        (336.0, 124.0),
+        (346.0, 264.0),
+        (500.0, 180.0),
+    ];
+    for (origin, (x, y)) in vertex_origins().iter().zip(box_centres) {
+        let centre = vertex_centre(*origin);
+        assert_eq!((centre.x, centre.y), (MARGIN + x + 28.0, TOP + y + 18.0));
     }
 }
