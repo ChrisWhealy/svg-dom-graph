@@ -399,3 +399,28 @@ fn a_tension_that_never_settles_is_not_chosen_and_the_fallback_leaves_every_spri
     // With no steps allowed in the trial nothing can settle by moving, so only a flat network passes.
     assert_eq!(tension, vec![1.0; 9]);
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn two_queued_toggles_are_a_pause_and_a_resume_and_leave_the_original_state() {
+    use crate::springs::controller::ControllerCommand;
+    use demo_common::force::bridge::BridgeCommand;
+
+    // A toggle is never merged into another command, or two of them into one.
+    let mut tail = ControllerCommand::TogglePaused;
+    assert!(!ControllerCommand::merge_into_tail(&mut tail, &ControllerCommand::TogglePaused));
+
+    // Each runs against the state it finds, so the second undoes the first.
+    let mut core = core();
+    assert!(!core.is_user_paused());
+    core.toggle_user_paused();
+    assert!(core.is_user_paused());
+    core.toggle_user_paused();
+    assert!(!core.is_user_paused());
+
+    // The same from a state that began paused.
+    core.set_user_paused(true);
+    core.toggle_user_paused();
+    core.toggle_user_paused();
+    assert!(core.is_user_paused());
+}

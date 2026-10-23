@@ -17,10 +17,7 @@ use demo_common::{
     },
     util::{clear_error, report_error},
 };
-use std::{
-    cell::Cell,
-    rc::{Rc, Weak},
-};
+use std::rc::{Rc, Weak};
 use svg_dom::root::utils::Point;
 use svg_dom_graph::{
     EdgeId, NodeId,
@@ -49,8 +46,10 @@ pub(super) enum ControllerCommand {
     Frame { timestamp_ms: f64 },
     /// The user asked to put the circles back where they started, with new random weights and tension.
     Reset,
-    /// The user paused or resumed.
-    SetPaused(bool),
+    /// The user pressed Pause or Resume. Whether that pauses or resumes is decided when the command runs, from the
+    /// state then, never from the state when the button was pressed: two presses queued together are a pause and a
+    /// resume.
+    TogglePaused,
     /// The page was hidden or shown.
     SetHidden(bool),
     /// The page's preference for reduced motion changed.
@@ -141,8 +140,6 @@ pub(super) struct Controller {
     edges: Vec<EdgeId>,
     animation: Option<Rc<AnimationLoop>>,
     view: PanelView,
-    /// Whether the user has paused, mirrored for the Pause button's handler, which cannot borrow the controller.
-    paused_mirror: Rc<Cell<bool>>,
     /// The state last published, so only a change of it is announced.
     announced: Option<Status>,
     /// The vertex a pointer is holding, for the announcement.
@@ -150,14 +147,7 @@ pub(super) struct Controller {
 }
 
 impl Controller {
-    pub(super) fn new(
-        core: Core,
-        scene: Scene,
-        nodes: Vec<NodeId>,
-        edges: Vec<EdgeId>,
-        view: PanelView,
-        paused_mirror: Rc<Cell<bool>>,
-    ) -> Self {
+    pub(super) fn new(core: Core, scene: Scene, nodes: Vec<NodeId>, edges: Vec<EdgeId>, view: PanelView) -> Self {
         Self {
             core,
             scene,
@@ -165,7 +155,6 @@ impl Controller {
             edges,
             animation: None,
             view,
-            paused_mirror,
             announced: None,
             holding: None,
         }
@@ -346,7 +335,6 @@ impl Controller {
             .set_text_content(Some(self.core.feedback().map_or("", |f| f.message())));
         set_available(&self.view.reset, self.core.reset_enabled());
         let paused = self.core.is_user_paused();
-        self.paused_mirror.set(paused);
         let name = if paused { "Resume" } else { "Pause" };
         let _ = self.view.pause.set_attribute("aria-label", name);
         let _ = self
@@ -401,8 +389,8 @@ impl CommandTarget<ControllerCommand> for Controller {
                 ApplyOutcome::Applied
             },
             ControllerCommand::Reset => self.reset(),
-            ControllerCommand::SetPaused(paused) => {
-                self.core.set_user_paused(paused);
+            ControllerCommand::TogglePaused => {
+                self.core.toggle_user_paused();
                 ApplyOutcome::Applied
             },
             ControllerCommand::SetHidden(hidden) => {

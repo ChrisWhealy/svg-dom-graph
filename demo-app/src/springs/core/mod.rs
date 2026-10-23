@@ -325,6 +325,11 @@ impl Core {
         self.apply_pause();
     }
 
+    /// The user pressed Pause or Resume: the opposite of what they are now.
+    pub(super) fn toggle_user_paused(&mut self) {
+        self.set_user_paused(!self.user_paused);
+    }
+
     /// The page was hidden or shown again.
     pub(super) fn set_hidden(&mut self, hidden: bool) {
         self.hidden = hidden;

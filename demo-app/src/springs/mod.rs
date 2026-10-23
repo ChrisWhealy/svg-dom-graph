@@ -29,10 +29,7 @@ use demo_common::{
     util::{MARGIN, document, ensure_svg_in, required_element, stringify},
 };
 use fixture::Fixture;
-use std::{
-    cell::{Cell, RefCell},
-    rc::Rc,
-};
+use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
@@ -222,15 +219,7 @@ pub(crate) fn build_springs_demo() -> Result<(), String> {
     let view = PanelView::find(&document, DIAGRAM_ID)?;
 
     // The controller, and the bridge that is the only way into it.
-    let paused_mirror = Rc::new(Cell::new(false));
-    let controller = Rc::new(RefCell::new(Controller::new(
-        core,
-        scene.clone(),
-        nodes.clone(),
-        edges,
-        view,
-        paused_mirror.clone(),
-    )));
+    let controller = Rc::new(RefCell::new(Controller::new(core, scene.clone(), nodes.clone(), edges, view)));
     let bridge: Rc<Bridge> = Rc::new(CommandBridge::new(&controller));
 
     let frame_bridge = Rc::downgrade(&bridge);
@@ -251,7 +240,7 @@ pub(crate) fn build_springs_demo() -> Result<(), String> {
         .map(|node| observe(&scene, *node, drag, &bridge))
         .collect::<Result<Vec<_>, _>>()?;
 
-    let listeners = wire_controls(&document, &bridge, &paused_mirror)?;
+    let listeners = wire_controls(&document, &bridge)?;
     let hidden = document.hidden();
     RUNTIME.with_borrow_mut(|slot| {
         *slot = Some(Runtime {
@@ -322,19 +311,15 @@ fn observe(scene: &Scene, node: NodeId, drag: DragOptions, bridge: &Rc<Bridge>) 
 /// # Errors
 ///
 /// Returns `Err` if a control is missing or a listener cannot be attached.
-fn wire_controls(
-    document: &web_sys::Document,
-    bridge: &Rc<Bridge>,
-    paused_mirror: &Rc<Cell<bool>>,
-) -> Result<Vec<Listener>, String> {
+fn wire_controls(document: &web_sys::Document, bridge: &Rc<Bridge>) -> Result<Vec<Listener>, String> {
     let mut listeners = Vec::new();
     // The buttons are in the scene, and one pair of listeners on the stage finds them by their action. Those listeners
     // cannot be removed, so they hold the bridge weakly, and after the teardown they reach nothing.
-    let (weak, mirror) = (Rc::downgrade(bridge), paused_mirror.clone());
+    let weak = Rc::downgrade(bridge);
     svg_buttons::watch(document, STAGE_ID, move |action| {
         let command = match action {
             RESET_ACTION => ControllerCommand::Reset,
-            PAUSE_ACTION => ControllerCommand::SetPaused(!mirror.get()),
+            PAUSE_ACTION => ControllerCommand::TogglePaused,
             RANDOMISE_ACTION => ControllerCommand::RandomizeWeights,
             _ => return,
         };
