@@ -74,12 +74,18 @@ Recovery is eventual rerouting and not rollback. See `Scene::move_node`.
 
 ## Example
 
+The caller must keep the handle.
+A helper that installs the observer and returns without handing the handle back ends the notifications as it returns.
+So this one returns the handle, together with the log it fills.
+
 ```rust,no_run
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::root::utils::{Point, Size};
-use svg_dom_graph::scene::{DragOptions, DragPhase, Scene};
+use svg_dom_graph::scene::{DragObserverHandle, DragOptions, DragPhase, Scene};
 
-fn watch(scene: &Scene) -> Result<(), svg_dom_graph::Error> {
+/// Returns the handle, and with it the log of where each drag ended.
+/// The caller keeps the handle for as long as the events are wanted, and the notifications stop when it is dropped.
+fn watch(scene: &Scene) -> Result<(DragObserverHandle, Rc<RefCell<Vec<Point>>>), svg_dom_graph::Error> {
     let node = scene.add_node(Point::new(10.0, 10.0), Size::new(60.0, 30.0), "A")?;
     let log = Rc::new(RefCell::new(Vec::new()));
     let sink = log.clone();
@@ -88,9 +94,7 @@ fn watch(scene: &Scene) -> Result<(), svg_dom_graph::Error> {
             sink.borrow_mut().push(origin);
         }
     })?;
-    // Keep `handle` for as long as the events are wanted.
-    drop(handle);
-    Ok(())
+    Ok((handle, log))
 }
 ```
 

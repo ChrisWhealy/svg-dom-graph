@@ -164,24 +164,29 @@ impl Scene {
     /// error is dropped as it is for an unobserved drag. A host that wants the position the scene really has asks
     /// [`node_rect`](Self::node_rect), and [`DragPhase::End`] and [`DragPhase::Cancel`] carry it.
     ///
+    /// The caller must keep the handle. A helper that only installs the observer, and returns without handing the handle
+    /// back, ends the notifications as it returns:
+    ///
     /// ```no_run
     /// use std::{cell::RefCell, rc::Rc};
     /// use svg_dom::root::utils::{Point, Size};
-    /// use svg_dom_graph::scene::{DragOptions, DragPhase, Scene};
+    /// use svg_dom_graph::scene::{DragObserverHandle, DragOptions, DragPhase, Scene};
     ///
-    /// # fn demo(scene: &Scene) -> Result<(), svg_dom_graph::Error> {
-    /// let node = scene.add_node(Point::new(10.0, 10.0), Size::new(60.0, 30.0), "A")?;
-    /// let log = Rc::new(RefCell::new(Vec::new()));
-    /// let sink = log.clone();
-    /// let handle = scene.make_draggable_with_observer(node, DragOptions::default(), move |_id, phase| {
-    ///     if let DragPhase::End { origin } = phase {
-    ///         sink.borrow_mut().push(origin);
-    ///     }
-    /// })?;
-    /// // Keep `handle` for as long as the events are wanted.
-    /// # drop(handle);
-    /// # Ok(())
-    /// # }
+    /// /// Returns the handle, and with it the log of where each drag ended. The caller keeps the handle for as long as
+    /// /// the events are wanted, and the notifications stop when it is dropped.
+    /// fn watch(
+    ///     scene: &Scene,
+    /// ) -> Result<(DragObserverHandle, Rc<RefCell<Vec<Point>>>), svg_dom_graph::Error> {
+    ///     let node = scene.add_node(Point::new(10.0, 10.0), Size::new(60.0, 30.0), "A")?;
+    ///     let log = Rc::new(RefCell::new(Vec::new()));
+    ///     let sink = log.clone();
+    ///     let handle = scene.make_draggable_with_observer(node, DragOptions::default(), move |_id, phase| {
+    ///         if let DragPhase::End { origin } = phase {
+    ///             sink.borrow_mut().push(origin);
+    ///         }
+    ///     })?;
+    ///     Ok((handle, log))
+    /// }
     /// ```
     ///
     /// # Errors
