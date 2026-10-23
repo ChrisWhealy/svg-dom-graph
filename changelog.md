@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Change Dijkstra demo to use circular nodes (`c4d1937`)
 - Doc only: Update geometry docs (`543504b`)
 - Doc only: Change `make_draggable_with_observer()` example to return `Result<DragObserverHandle, Error>` (`982be3b`)
-- Validate derived numerical quantities as well as input values (``)
+- Validate derived numerical quantities as well as input values (`473103d`)
+- Refactor `demo-server::panels::AssembleError` (``)
 
 ## Fixed
 
