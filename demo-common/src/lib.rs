@@ -2,7 +2,8 @@
 //!
 //! - [`util`] — small DOM and error helpers, the layout of the stepping toolbar, and the helpers that dim the parts of
 //!   a scene a walk has not reached.
-//! - [`complex`] — complex numbers on `f64`, with the roots of unity, for the demos that transform signals.
+//! - [`complex`] — split-layout buffers of complex numbers, for the demos that transform signals. The numbers themselves
+//!   are the library's own, `svg_dom_graph::complex`, and are re-exported.
 //! - [`focus`] — noting which button has keyboard focus before a redraw, and giving it to the new copy afterwards.
 //! - [`force`] — what a force-directed demo shares: the pure spring solver, the frame clock, the lossless command bridge
 //!   and a timestamped animation frame.

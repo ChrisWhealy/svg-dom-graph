@@ -17,9 +17,13 @@
 //! whichever of several independent demo panels the caller selects. Each panel attaches to its own `<svg>` element and
 //! builds its own demo graph.
 //!
+//! [`complex`] holds the complex numbers that a data node can show: [`scene::NodeValues::Complex64`] and
+//! [`scene::NodeValues::Complex32`], written by [`scene::DataFormat::ComplexNumber`].
+//!
 //! See [`geometry::boundary_point`] for the routing math and [`scene::Scene`] for the public rendering API.
 
 pub(crate) mod colours;
+pub mod complex;
 pub(crate) mod error;
 pub mod geometry;
 pub(crate) mod model;

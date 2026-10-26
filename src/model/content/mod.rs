@@ -109,6 +109,8 @@
 mod bit_values;
 mod bool_format;
 mod byte_order;
+mod complex_format;
+mod complex_icon;
 mod data_format;
 mod data_node_content;
 mod float_format;
@@ -123,6 +125,11 @@ mod uuid_format;
 pub use bit_values::{BitValues, MAX_BIT_WIDTH};
 pub use bool_format::BoolFormat;
 pub use byte_order::ByteOrder;
+pub use complex_format::{AngleUnit, ComplexNumberFormat, ComplexStyle};
+pub(crate) use complex_format::{CellText, exponent_parts, matrix_rows};
+#[cfg(test)]
+pub(crate) use complex_icon::IconPaths;
+pub(crate) use complex_icon::{ICON_GAP, ICON_MARGIN, ICON_SIZE, IconKind, axes_path, icon_paths, line_widths};
 pub use data_format::DataFormat;
 pub use data_node_content::DataNodeContent;
 pub use float_format::{FloatFormat, FloatNotation, FloatPrecision, MAX_FLOAT_DIGITS};

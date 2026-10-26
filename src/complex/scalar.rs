@@ -56,11 +56,13 @@ macro_rules! define_complex {
             ///
             /// A forward transform uses the conjugates of these.
             ///
-            /// # Panics
+            /// # Errors
             ///
-            /// If `n` is zero.
-            pub fn unit_root(k: usize, n: usize) -> Self {
-                assert!(n > 0, "there are no roots of unity of order zero");
+            /// Returns [`RootOfUnityError::ZeroOrder`] if `n` is zero, since there is no root of order zero.
+            pub fn unit_root(k: usize, n: usize) -> Result<Self, $crate::complex::RootOfUnityError> {
+                if n == 0 {
+                    return Err($crate::complex::RootOfUnityError::ZeroOrder);
+                }
 
                 // The wide type means that `4 * r` cannot overflow, whatever `n` is.
                 let (n, r) = (n as u128, (k as u128) % (n as u128));
@@ -80,16 +82,25 @@ macro_rules! define_complex {
                     if mirrored { (sin, cos) } else { (cos, sin) }
                 };
 
-                match quadrant {
+                // Each part is negated as `0 - part`, which is `+0` for a zero, where `-part` would be `-0`. A root on an
+                // axis then has a zero that is written `0`, and not `-0`.
+                Ok(match quadrant {
                     0 => Self::new(x, y),
-                    1 => Self::new(-y, x),
-                    2 => Self::new(-x, -y),
-                    _ => Self::new(y, -x),
-                }
+                    1 => Self::new(0.0 - y, x),
+                    2 => Self::new(0.0 - x, 0.0 - y),
+                    _ => Self::new(y, 0.0 - x),
+                })
             }
 
             /// The first `count` of the `n` roots of unity, in order, for a transform to read from.
-            pub fn unit_roots(n: usize, count: usize) -> Vec<Self> {
+            ///
+            /// # Errors
+            ///
+            /// Returns [`RootOfUnityError::ZeroOrder`] if `n` is zero, even if `count` is too.
+            pub fn unit_roots(n: usize, count: usize) -> Result<Vec<Self>, $crate::complex::RootOfUnityError> {
+                if n == 0 {
+                    return Err($crate::complex::RootOfUnityError::ZeroOrder);
+                }
                 (0..count).map(|k| Self::unit_root(k, n)).collect()
             }
 
@@ -156,6 +167,8 @@ macro_rules! define_complex {
         }
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Add implementations
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl Add for $name {
             type Output = Self;
 
@@ -165,6 +178,16 @@ macro_rules! define_complex {
             }
         }
 
+        impl AddAssign for $name {
+            #[inline]
+            fn add_assign(&mut self, other: Self) {
+                *self = *self + other;
+            }
+        }
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Subtract implementations
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl Sub for $name {
             type Output = Self;
 
@@ -174,6 +197,16 @@ macro_rules! define_complex {
             }
         }
 
+        impl SubAssign for $name {
+            #[inline]
+            fn sub_assign(&mut self, other: Self) {
+                *self = *self - other;
+            }
+        }
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Multiplication implementations
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl Mul for $name {
             type Output = Self;
 
@@ -183,6 +216,41 @@ macro_rules! define_complex {
             }
         }
 
+        impl Mul<$float> for $name {
+            type Output = Self;
+
+            #[inline]
+            fn mul(self, factor: $float) -> Self {
+                self.scale(factor)
+            }
+        }
+
+        impl Mul<$name> for $float {
+            type Output = $name;
+
+            #[inline]
+            fn mul(self, number: $name) -> $name {
+                number.scale(self)
+            }
+        }
+
+        impl MulAssign for $name {
+            #[inline]
+            fn mul_assign(&mut self, other: Self) {
+                *self = *self * other;
+            }
+        }
+
+        impl MulAssign<$float> for $name {
+            #[inline]
+            fn mul_assign(&mut self, factor: $float) {
+                *self = self.scale(factor);
+            }
+        }
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        // Division implementations
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl Div for $name {
             type Output = Self;
 
@@ -207,33 +275,6 @@ macro_rules! define_complex {
             }
         }
 
-        impl Neg for $name {
-            type Output = Self;
-
-            #[inline]
-            fn neg(self) -> Self {
-                Self::new(-self.re, -self.im)
-            }
-        }
-
-        impl Mul<$float> for $name {
-            type Output = Self;
-
-            #[inline]
-            fn mul(self, factor: $float) -> Self {
-                self.scale(factor)
-            }
-        }
-
-        impl Mul<$name> for $float {
-            type Output = $name;
-
-            #[inline]
-            fn mul(self, number: $name) -> $name {
-                number.scale(self)
-            }
-        }
-
         impl Div<$float> for $name {
             type Output = Self;
 
@@ -245,38 +286,10 @@ macro_rules! define_complex {
             }
         }
 
-        impl AddAssign for $name {
-            #[inline]
-            fn add_assign(&mut self, other: Self) {
-                *self = *self + other;
-            }
-        }
-
-        impl SubAssign for $name {
-            #[inline]
-            fn sub_assign(&mut self, other: Self) {
-                *self = *self - other;
-            }
-        }
-
-        impl MulAssign for $name {
-            #[inline]
-            fn mul_assign(&mut self, other: Self) {
-                *self = *self * other;
-            }
-        }
-
         impl DivAssign for $name {
             #[inline]
             fn div_assign(&mut self, other: Self) {
                 *self = *self / other;
-            }
-        }
-
-        impl MulAssign<$float> for $name {
-            #[inline]
-            fn mul_assign(&mut self, factor: $float) {
-                *self = self.scale(factor);
             }
         }
 
@@ -287,6 +300,17 @@ macro_rules! define_complex {
             }
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+        impl Neg for $name {
+            type Output = Self;
+
+            #[inline]
+            fn neg(self) -> Self {
+                Self::new(-self.re, -self.im)
+            }
+        }
+
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl Sum for $name {
             #[inline]
             fn sum<I: Iterator<Item = Self>>(numbers: I) -> Self {
@@ -294,6 +318,7 @@ macro_rules! define_complex {
             }
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         impl From<$float> for $name {
             #[inline]
             fn from(re: $float) -> Self {
@@ -308,6 +333,7 @@ macro_rules! define_complex {
             }
         }
 
+        // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
         /// Written as `re+imi` or `re-imi`, with the same precision, if any, for both parts.
         /// A negative zero is written as zero, so that a rounded result never reads `-0.000`.
         impl fmt::Display for $name {
@@ -325,4 +351,5 @@ macro_rules! define_complex {
     };
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(super) use define_complex;

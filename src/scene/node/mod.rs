@@ -48,6 +48,8 @@ fn validate_edge_anchors(edge_anchors: Option<EdgeAnchors>) -> Result<(), Error>
 /// * [`Error::InvalidFloatFormat`] if `Float` content is not `f32` or `f64`, or asks for too many digits,
 /// * [`Error::InvalidUuidFormat`] if `Uuid` content is not `Uuid` values,
 /// * [`Error::InvalidBoolFormat`] if `Bool` content is not `Bool` values,
+/// * [`Error::InvalidComplexFormat`] if `ComplexNumber` content is not `Complex32` or `Complex64`, or asks for too many
+///   digits,
 /// * [`Error::InvalidTextContent`] if `Text` values and the `Text` format do not go together, or a string, or the cell
 ///   width hint, has a control character in it, or
 /// * [`Error::InvalidGridLayout`] if a non-`PlainText` grid layout wraps `0`.
@@ -78,6 +80,9 @@ fn validate_data_content(content: &DataNodeContent) -> Result<(), Error> {
     }
     if !content.bool_format_is_valid() {
         return Err(Error::InvalidBoolFormat);
+    }
+    if !content.complex_format_is_valid() {
+        return Err(Error::InvalidComplexFormat);
     }
     if !content.text_is_valid() {
         return Err(Error::InvalidTextContent);

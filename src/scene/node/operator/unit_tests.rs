@@ -229,3 +229,77 @@ fn an_unknown_operand_is_still_reported_as_unknown_by_the_integer_check() -> Res
         "an id from another graph is unknown",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   check_complex_operands: only addition, subtraction, multiplication and division act on complex numbers.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+fn complex_node(graph: &mut Graph) -> NodeId {
+    let values = NodeValues::Complex64(vec![crate::complex::Complex::new(1.0, 2.0)]);
+    graph.add_node(rect(), DataNodeContent::new(values, DataFormat::Decimal))
+}
+
+#[test]
+fn an_operator_a_complex_number_has_a_meaning_under_accepts_it() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let z = complex_node(&mut graph);
+    check(
+        check_complex_operands(&graph, &[z], "MUL", true).is_ok(),
+        "multiplication acts on a complex number",
+    )
+}
+
+#[test]
+fn any_other_operator_refuses_a_complex_operand_by_name() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let z = complex_node(&mut graph);
+    let number = graph.add_node(rect(), content(NodeValues::F64(vec![1.0])));
+    check(
+        matches!(
+            check_complex_operands(&graph, &[z], "ROL 3", false),
+            Err(Error::OperatorOnComplex { ref operator }) if operator == "ROL 3"
+        ),
+        "expected OperatorOnComplex naming ROL 3",
+    )?;
+    check(
+        matches!(
+            check_complex_operands(&graph, &[number, z], "MOD", false),
+            Err(Error::OperatorOnComplex { .. })
+        ),
+        "a complex number as the second operand is refused too",
+    )?;
+    check(
+        check_complex_operands(&graph, &[number], "MOD", false).is_ok(),
+        "a float is an ordinary operand",
+    )
+}
+
+#[test]
+fn a_complex_operand_is_not_a_float_to_the_integer_check() -> Result<(), String> {
+    let mut graph = Graph::new();
+    let z = complex_node(&mut graph);
+    // The bitwise operators refuse it by the complex check, which names it. The integer check does not claim it.
+    check(
+        check_integer_operands(&graph, &[z], "AND").is_ok(),
+        "the integer check leaves complex numbers to the complex check",
+    )
+}
+
+#[test]
+fn an_operators_result_cannot_be_a_matrix() -> Result<(), String> {
+    let result = |format| {
+        let values = NodeValues::Complex64(vec![crate::complex::Complex::new(1.0, 2.0)]);
+        DataNodeContent::new(values, DataFormat::ComplexNumber(format, crate::scene::ComplexStyle::default()))
+    };
+    check(
+        validate_operator_result(&result(crate::scene::ComplexNumberFormat::Polar)).is_ok(),
+        "a polar result is one line",
+    )?;
+    check(
+        matches!(
+            validate_operator_result(&result(crate::scene::ComplexNumberFormat::Matrix)),
+            Err(Error::InvalidComplexFormat)
+        ),
+        "a matrix is two rows, in a cell one row high",
+    )
+}

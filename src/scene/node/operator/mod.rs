@@ -55,6 +55,10 @@ fn validate_operator_result(result: &DataNodeContent) -> Result<(), Error> {
     if result.len() != 1 {
         return Err(Error::OperatorResultNotSingleValue(result.len()));
     }
+    // An operator's result is one line in a cell one line high. A matrix is two rows, and does not fit.
+    if result.is_matrix() {
+        return Err(Error::InvalidComplexFormat);
+    }
     Ok(())
 }
 
@@ -110,6 +114,9 @@ struct TwoInputKind {
     commutes: bool,
     /// `true` for a binary (bitwise) operator, which needs integer operands.
     bitwise: bool,
+    /// `true` for an operator that a complex number has a meaning under: addition, subtraction, multiplication and
+    /// division.
+    complex_ok: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -170,6 +177,22 @@ fn check_bool_operands(graph: &Graph, operands: &[NodeId], operator: &str, logic
     for &operand in operands {
         if operand_content(graph, operand)?.holds_bools() {
             return Err(Error::OperatorOnBool { operator: operator.to_owned() });
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Returns [`Error::OperatorOnComplex`] if `allowed` is `false` and any of `operands` holds complex numbers. A complex
+/// number has a meaning under addition, subtraction, multiplication and division, which are `allowed`. It has none under
+/// a unary or bitwise operator, which act on bits, or under modulus, which needs an ordering to leave a remainder.
+fn check_complex_operands(graph: &Graph, operands: &[NodeId], operator: &str, allowed: bool) -> Result<(), Error> {
+    if allowed {
+        return Ok(());
+    }
+    for &operand in operands {
+        if operand_content(graph, operand)?.holds_complex() {
+            return Err(Error::OperatorOnComplex { operator: operator.to_owned() });
         }
     }
     Ok(())
@@ -576,6 +599,7 @@ impl Scene {
             check_not_uuid_operands(&inner.graph, &[input], &label)?;
             check_not_text_operands(&inner.graph, &[input], &label)?;
             check_bool_operands(&inner.graph, &[input], &label, operator == UnaryOperator::Not)?;
+            check_complex_operands(&inner.graph, &[input], &label, false)?;
             check_integer_operands(&inner.graph, &[input], &label)?;
             insert_operator_node(&mut inner, top_left, &label, result, options, None)?.0
         };
@@ -658,6 +682,7 @@ impl Scene {
             label: operator.label(),
             commutes: operator.commutes(),
             bitwise: true,
+            complex_ok: false,
         };
         self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
     }
@@ -736,6 +761,7 @@ impl Scene {
             label: operator.label(),
             commutes: operator.commutes(),
             bitwise: false,
+            complex_ok: operator != ArithmeticOperator::Modulus,
         };
         self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
     }
@@ -755,7 +781,12 @@ impl Scene {
         result: DataNodeContent,
         options: NodeOptions,
     ) -> Result<NodeId, Error> {
-        let TwoInputKind { label, commutes, bitwise } = kind;
+        let TwoInputKind {
+            label,
+            commutes,
+            bitwise,
+            complex_ok,
+        } = kind;
         validate_new_operator(top_left, &result, options)?;
         if inputs.0 == inputs.1 {
             return Err(Error::DuplicateOperands(inputs.0));
@@ -767,6 +798,7 @@ impl Scene {
             check_not_uuid_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             check_not_text_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             check_bool_operands(&inner.graph, &[inputs.0, inputs.1], label, bitwise)?;
+            check_complex_operands(&inner.graph, &[inputs.0, inputs.1], label, complex_ok)?;
             if bitwise {
                 check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
             }

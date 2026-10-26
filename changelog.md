@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Support for a complex number data type optimised for SIMD instructions (``)
+- Support for a complex number data type optimised for SIMD instructions (`94ab77d`)
+- Move `ComplexNumber` data format to library and add demo panel (``)
 
 # [Released]
 

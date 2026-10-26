@@ -3,8 +3,16 @@
 macro_rules! scalar_tests {
     ($module:ident, $name:ident, $float:ident, $tol:expr) => {
         mod $module {
-            use crate::complex::$name;
+            use crate::complex::{RootOfUnityError, $name};
             use std::mem::{align_of, size_of};
+
+            fn root(k: usize, n: usize) -> $name {
+                $name::unit_root(k, n).expect("a root of a non-zero order")
+            }
+
+            fn roots(n: usize, count: usize) -> Vec<$name> {
+                $name::unit_roots(n, count).expect("roots of a non-zero order")
+            }
 
             fn close(a: $name, b: $name) -> bool {
                 (a - b).norm() <= $tol
@@ -141,16 +149,16 @@ macro_rules! scalar_tests {
 
             #[test]
             fn quarter_turn_roots_are_exact() {
-                assert_eq!($name::unit_root(0, 8), $name::ONE);
-                assert_eq!($name::unit_root(2, 8), $name::I);
-                assert_eq!($name::unit_root(4, 8), $name::new(-1.0, 0.0));
-                assert_eq!($name::unit_root(6, 8), $name::new(0.0, -1.0));
-                assert_eq!($name::unit_root(3, 12), $name::I);
+                assert_eq!(root(0, 8), $name::ONE);
+                assert_eq!(root(2, 8), $name::I);
+                assert_eq!(root(4, 8), $name::new(-1.0, 0.0));
+                assert_eq!(root(6, 8), $name::new(0.0, -1.0));
+                assert_eq!(root(3, 12), $name::I);
             }
 
             #[test]
             fn an_eighth_turn_root_has_equal_parts() {
-                let root = $name::unit_root(1, 8);
+                let root = root(1, 8);
 
                 assert!((root.re - std::$float::consts::FRAC_1_SQRT_2).abs() < $tol);
                 assert!((root.im - std::$float::consts::FRAC_1_SQRT_2).abs() < $tol);
@@ -160,7 +168,7 @@ macro_rules! scalar_tests {
             fn every_root_lies_on_the_unit_circle_at_its_angle() {
                 for n in [1, 2, 3, 5, 6, 7, 8, 12, 64, 1000] {
                     for k in 0..n {
-                        let root = $name::unit_root(k, n);
+                        let root = root(k, n);
                         let expected = $name::cis(2.0 * std::$float::consts::PI * k as $float / n as $float);
 
                         assert!((root.norm() - 1.0).abs() < $tol, "|root({k}, {n})|");
@@ -173,38 +181,47 @@ macro_rules! scalar_tests {
             fn roots_are_conjugate_symmetric_to_the_last_bit() {
                 for n in [3, 5, 8, 12, 64, 1000] {
                     for k in 1..n {
-                        assert_eq!($name::unit_root(n - k, n), $name::unit_root(k, n).conj(), "n = {n}, k = {k}");
+                        assert_eq!(root(n - k, n), root(k, n).conj(), "n = {n}, k = {k}");
+                    }
+                }
+            }
+
+            #[test]
+            fn a_root_on_an_axis_has_a_positive_zero_and_never_a_negative_one() {
+                for n in [4, 8, 12, 16] {
+                    for k in 0..n {
+                        let root = root(k, n);
+                        for part in [root.re, root.im] {
+                            assert!(part != 0.0 || part.is_sign_positive(), "root({k}, {n}) is {root:?}");
+                        }
                     }
                 }
             }
 
             #[test]
             fn k_is_taken_modulo_n() {
-                assert_eq!($name::unit_root(3, 8), $name::unit_root(11, 8));
-                assert_eq!($name::unit_root(8, 8), $name::ONE);
-                assert_eq!($name::unit_root(usize::MAX, 1), $name::ONE);
+                assert_eq!(root(3, 8), root(11, 8));
+                assert_eq!(root(8, 8), $name::ONE);
+                assert_eq!(root(usize::MAX, 1), $name::ONE);
             }
 
             #[test]
             fn the_roots_sum_to_zero_and_multiply_by_adding_exponents() {
                 for n in [2, 3, 8, 13, 64] {
-                    let total: $name = $name::unit_roots(n, n).into_iter().sum();
+                    let total: $name = roots(n, n).into_iter().sum();
                     assert!(total.norm() < $tol * n as $float, "the {n} roots sum to {total}");
                 }
 
                 let n = 16;
                 for (j, k) in [(1, 2), (5, 9), (15, 15)] {
-                    assert!(close(
-                        $name::unit_root(j, n) * $name::unit_root(k, n),
-                        $name::unit_root(j + k, n)
-                    ));
+                    assert!(close(root(j, n) * root(k, n), root(j + k, n)));
                 }
             }
 
             #[test]
             fn a_root_raised_to_n_is_one() {
                 let n = 32;
-                let root = $name::unit_root(1, n);
+                let root = root(1, n);
                 let power = (0..n).fold($name::ONE, |acc, _| acc * root);
 
                 assert!(close(power, $name::ONE));
@@ -212,18 +229,30 @@ macro_rules! scalar_tests {
 
             #[test]
             fn the_table_of_roots_has_the_requested_length_and_order() {
-                let table = $name::unit_roots(8, 4);
+                let table = roots(8, 4);
 
                 assert_eq!(table.len(), 4);
                 assert_eq!(table[0], $name::ONE);
                 assert_eq!(table[2], $name::I);
-                assert!($name::unit_roots(8, 0).is_empty());
+                assert!(roots(8, 0).is_empty());
             }
 
             #[test]
-            #[should_panic(expected = "order zero")]
-            fn there_is_no_root_of_order_zero() {
-                let _ = $name::unit_root(0, 0);
+            fn there_is_no_root_of_order_zero_and_asking_for_one_is_an_error_not_a_panic() {
+                assert_eq!($name::unit_root(0, 0), Err(RootOfUnityError::ZeroOrder));
+                assert_eq!($name::unit_root(5, 0), Err(RootOfUnityError::ZeroOrder));
+                assert_eq!($name::unit_root(usize::MAX, 0), Err(RootOfUnityError::ZeroOrder));
+                assert_eq!($name::unit_roots(0, 3), Err(RootOfUnityError::ZeroOrder));
+                assert_eq!($name::unit_roots(0, 0), Err(RootOfUnityError::ZeroOrder));
+            }
+
+            #[test]
+            fn the_error_says_what_is_wrong_and_is_a_standard_error() {
+                let error = $name::unit_root(0, 0).expect_err("order zero");
+
+                assert_eq!(error.to_string(), "there are no roots of unity of order zero");
+                let boxed: Box<dyn std::error::Error> = Box::new(error);
+                assert!(boxed.source().is_none());
             }
 
             #[test]

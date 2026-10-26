@@ -11,6 +11,10 @@
 //! - [`bit_values`] — `NodeValues::Bits`: validation, the digits of each format, and the width of a cell.
 //! - [`bools_and_sizes`] — `Bool`, `Usize` and `Isize`: every `BoolFormat`, a Boolean's fixed width, and a pointer-
 //!   sized integer's width.
+//! - [`complex`] — `Complex32`/`Complex64`: every `ComplexNumberFormat`, both angle units, special values, the matrix text
+//!   and the width of a cell.
+//! - [`complex_icon`] — the pictures at the front of a polar and a rectangular cell: the arrow, the two legs, their scale,
+//!   and the numbers that cannot be drawn.
 //! - [`content`] — the default and overridden layout, the value count, a single value, and the type colour and name.
 //! - [`selection`] — `resolve_selection` (including incomplete grids), `ResolvedBand::contains`,
 //!   `Selection::describe_into`, and `natural_selection`/`flat_index`.
@@ -23,6 +27,8 @@
 
 mod bit_values;
 mod bools_and_sizes;
+mod complex;
+mod complex_icon;
 mod content;
 mod floats;
 mod formatting;

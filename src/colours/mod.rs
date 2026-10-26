@@ -142,6 +142,28 @@ pub(crate) const TYPE_COLOUR_F32: &str = "#d0e3fb";
 /// The `f64` shade — a deeper sky blue than [`TYPE_COLOUR_F32`].
 pub(crate) const TYPE_COLOUR_F64: &str = "#a8c8f2";
 
+/// The `complex32` shade — a pastel periwinkle. A complex number is two floats, but it is not a float, so it takes a
+/// hue of its own, between the sky blue of the floats and the lavender of `u32`. The `complex64` shade is the deeper of
+/// the two, as a float's is.
+pub(crate) const TYPE_COLOUR_COMPLEX32: &str = "#d3d6f6";
+
+/// The `complex64` shade — a deeper periwinkle than [`TYPE_COLOUR_COMPLEX32`].
+pub(crate) const TYPE_COLOUR_COMPLEX64: &str = "#b3b8ee";
+
+/// The strokes of the small pictures at the front of a polar cell and a rectangular cell, drawn over the pastel of a
+/// complex number. All are dark enough to have a contrast of over 3 to 1 against both shades, the least WCAG asks of a
+/// graphic that carries information. The arrow of a polar number is navy. The adjacent leg of a rectangular number, along
+/// the real axis, is green, and the opposite leg, along the imaginary axis, is purple, as in the demo's Argand diagrams.
+pub(crate) const PICTURE_VECTOR_STROKE: &str = "#1a365d";
+pub(crate) const PICTURE_REAL_STROKE: &str = "#22543d";
+pub(crate) const PICTURE_IMAGINARY_STROKE: &str = "#44337a";
+
+/// The two faint lines through the middle of a picture, the real axis and the imaginary axis.
+pub(crate) const PICTURE_AXES_STROKE: &str = "#5a608f";
+
+/// The colour of a matrix's brackets, which are drawn over a cell's own type colour.
+pub(crate) const MATRIX_BRACKET_STROKE: &str = "#3a3f5c";
+
 /// The background of an edge label: white, so that the label reads over a connector's line and a pastel box alike.
 /// Against [`TEXT_FILL`] it has a contrast ratio of over 15 to 1, far above the 4.5 to 1 that WCAG asks of text.
 pub(crate) const EDGE_LABEL_FILL: &str = "#ffffff";

@@ -156,6 +156,12 @@ pub enum Error {
     /// `DataFormat::Bool` content that is not `Bool` values. Rejected before drawing anything or touching the graph's
     /// model, so a rejected call leaves the scene unchanged.
     InvalidBoolFormat,
+    /// `DataFormat::ComplexNumber` content that is not `Complex32` or `Complex64` values, or whose
+    /// [`crate::scene::ComplexStyle`] asks for more than [`crate::scene::MAX_FLOAT_DIGITS`] digits, or for no significant
+    /// digits at all, or the [`Matrix`](crate::scene::ComplexNumberFormat::Matrix) form as the result of an operator node,
+    /// whose cell is one line high. Rejected before drawing anything or touching the graph's model, so a rejected call
+    /// leaves the scene unchanged.
+    InvalidComplexFormat,
     /// `DataFormat::Text` content that is not `Text` values, `Text` values under another format, or a string that holds a
     /// line break or another control character. Rejected before drawing anything or touching the graph's model, so a
     /// rejected call leaves the scene unchanged.
@@ -223,6 +229,13 @@ pub enum Error {
     /// and every arithmetic operator are not, since there is no sum of two Booleans and no `true` to rotate. Rejected
     /// before drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
     OperatorOnBool { operator: String },
+    /// An operator node was given complex numbers as operands, and it is not one that a complex number has a meaning
+    /// under.
+    ///
+    /// Addition, subtraction, multiplication and division are accepted. Every unary operator, every binary (bitwise)
+    /// operator and modulus are not, since a complex number has no bits to rotate and no remainder. Rejected before
+    /// drawing anything or touching the graph's model, so a rejected call leaves the scene unchanged.
+    OperatorOnComplex { operator: String },
     /// A two-input operator constructor — `Scene::add_binary_operator_node`/`_with`, or
     /// `Scene::add_arithmetic_operator_node`/`_with` — was given the same node as both of `inputs`.
     ///
@@ -420,6 +433,13 @@ impl fmt::Display for Error {
             },
             Error::InvalidUuidFormat => write!(f, "a UUID format needs Uuid values"),
             Error::InvalidBoolFormat => write!(f, "a Boolean format needs Bool values"),
+            Error::InvalidComplexFormat => {
+                write!(
+                    f,
+                    "a complex number format needs Complex32 or Complex64 values, from 1 to {max} significant digits, or from 0 to {max} decimal places",
+                    max = crate::scene::MAX_FLOAT_DIGITS
+                )
+            },
             Error::InvalidTextContent => {
                 write!(
                     f,
@@ -459,6 +479,9 @@ impl fmt::Display for Error {
                     f,
                     "{operator} cannot act on bool: only NOT, AND, OR, XOR, NAND, NOR and XNOR can"
                 )
+            },
+            Error::OperatorOnComplex { operator } => {
+                write!(f, "{operator} cannot act on complex numbers: only ADD, SUB, MUL and DIV can")
             },
             Error::OperatorResultNotSingleValue(len) => {
                 write!(f, "operator result must hold exactly one value, found {len}")

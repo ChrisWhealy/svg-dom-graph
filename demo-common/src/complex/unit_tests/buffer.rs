@@ -108,7 +108,7 @@ macro_rules! buffer_tests {
                 for half in LENGTHS {
                     let start = 3;
                     let data = numbers(start + 2 * half + 2, 0.25);
-                    let twiddles = $buf::unit_roots(2 * half.max(1), half);
+                    let twiddles = $buf::unit_roots(2 * half.max(1), half).expect("a non-zero order");
 
                     let mut buffer = $buf::from_complex(&data);
                     buffer.butterfly(start, half, &twiddles);
@@ -127,7 +127,7 @@ macro_rules! buffer_tests {
             fn a_butterfly_leaves_everything_outside_its_block_alone() {
                 let data = numbers(20, 0.0);
                 let mut buffer = $buf::from_complex(&data);
-                buffer.butterfly(6, 4, &$buf::unit_roots(8, 4));
+                buffer.butterfly(6, 4, &$buf::unit_roots(8, 4).expect("a non-zero order"));
 
                 assert_eq!(&buffer.to_complex()[..6], &data[..6]);
                 assert_eq!(&buffer.to_complex()[14..], &data[14..]);
@@ -148,11 +148,17 @@ macro_rules! buffer_tests {
 
             #[test]
             fn the_table_of_roots_is_the_scalar_roots_split() {
-                let table = $buf::unit_roots(16, 8);
+                let table = $buf::unit_roots(16, 8).expect("a non-zero order");
 
                 for k in 0..8 {
-                    assert_eq!(table.get(k), $name::unit_root(k, 16));
+                    assert_eq!(table.get(k), $name::unit_root(k, 16).expect("a non-zero order"));
                 }
+            }
+
+            #[test]
+            fn the_table_of_roots_of_order_zero_is_an_error() {
+                assert!($buf::unit_roots(0, 4).is_err());
+                assert!($buf::unit_roots(0, 0).is_err());
             }
 
             #[test]
@@ -175,7 +181,7 @@ macro_rules! buffer_tests {
             #[test]
             #[should_panic(expected = "outside the buffer")]
             fn a_butterfly_block_beyond_the_end_is_refused() {
-                $buf::new(8).butterfly(5, 2, &$buf::unit_roots(8, 2));
+                $buf::new(8).butterfly(5, 2, &$buf::unit_roots(8, 2).expect("a non-zero order"));
             }
 
             #[test]

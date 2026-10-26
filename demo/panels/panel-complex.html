@@ -1,0 +1,55 @@
+<section class="section" id="panel-complex" data-group="Data Nodes" data-label="Complex numbers" data-order="100">
+    <h2>Complex numbers</h2>
+    <p>A data node can hold complex numbers, in single or double precision, and write each one in whichever form suits
+        the job. The Argand diagrams below draw the complex plane: the real part runs along the horizontal axis and the
+        imaginary part up the vertical one, so every number is a point, and every form is a different way of saying where
+        it is.</p>
+    <dl>
+        <dt>Rectangular</dt>
+        <dd>
+            <p>The two steps along the axes: <code>a</code> across and <code>b</code> up, written <code>a + bi</code>.
+                On the diagram they are the two dashed lines from the dot to the axes. Adding two numbers adds their
+                parts. In a node, a small picture of the two legs begins each cell: the adjacent leg along the real
+                axis, in green, and the opposite leg up or down to the number, in purple.</p>
+        </dd>
+        <dt>Polar</dt>
+        <dd>
+            <p>The distance from the origin, the <em>modulus</em> <code>r</code>, and the angle <code>&theta;</code>
+                from the positive real axis, written <code>r &ang; &theta;</code>. On the diagram they are the solid
+                line and the arc. The angle is measured anticlockwise, so a number below the real axis has a negative
+                angle. Multiplying two numbers multiplies their moduli and adds their angles. The angle can be written
+                in degrees, the default, or in radians. In a node, a small arrow begins each cell, from the origin to the number, so it
+                shows the general direction, and how long each number is against the longest in the node. It is a
+                sparkline and not a plot, so read the value from the text.</p>
+        </dd>
+        <dt>Trigonometric and exponential</dt>
+        <dd>
+            <p><code>r (cos &theta; + i sin &theta;)</code> is the polar form with the point spelled out as its two
+                legs. Euler's formula says the same thing as <code>r e<sup>i&theta;</sup></code>, which a node draws with the
+                exponent raised and smaller: an <code>i</code> and then the angle. An exponent is always in radians, so
+                the exponential form is, whatever unit the polar form uses.</p>
+        </dd>
+        <dt>Log-polar</dt>
+        <dd>
+            <p>The pair <code>(ln r, &theta;)</code>. It is the real and imaginary parts of the complex logarithm
+                <code>ln z = ln r + i&theta;</code>, so a product, which multiplies the moduli, adds the first number
+                of each pair as well as the second. The log of the modulus of zero is <code>-inf</code>.</p>
+        </dd>
+        <dt>Matrix</dt>
+        <dd>
+            <p>A complex number <code>a + bi</code> turns and stretches the plane, and the real 2&times;2 matrix with
+                <code>a</code> on the diagonal and <code>-b</code> and <code>b</code> off it does exactly the same.
+                Multiplying two such matrices is multiplying the two numbers. It is drawn as two rows between brackets
+                in a cell that is two rows high.</p>
+        </dd>
+    </dl>
+    <p>The last diagram shows the eighth roots of unity, the numbers that, raised to the eighth power, give
+        <code>1</code>. They are evenly spaced round the unit circle, 45&deg; apart, and are the twiddle factors of an
+        eight-point Fourier transform. In the polar node every modulus is exactly <code>1</code> and the angles go up in
+        steps of 45&deg;.</p>
+    <p>Hover over a node to see its type: <code>complex64</code> has <code>f64</code> parts, and
+        <code>complex32</code> has <code>f32</code> parts. Under the hexadecimal and binary formats a complex number
+        shows the bits of its real part and then of its imaginary part.</p>
+    <div class="canvas" id="complex-diagram-stage" style="margin-top: 1.5rem;">
+    </div>
+</section>

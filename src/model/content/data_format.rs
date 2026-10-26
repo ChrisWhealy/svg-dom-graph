@@ -1,4 +1,4 @@
-use super::{BoolFormat, FloatFormat, HexDumpFormat, UuidFormat};
+use super::{BoolFormat, ComplexNumberFormat, ComplexStyle, FloatFormat, HexDumpFormat, UuidFormat};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How [`super::DataNodeContent`] renders each value's digits. See this module's own doc comment for exactly what each
@@ -72,4 +72,21 @@ pub enum DataFormat {
     /// monospaced font on a black background, with no box or gap round each line. Every line is the same width, so a
     /// node that is changed to other bytes of the same count does not outgrow its box.
     HexDump(HexDumpFormat),
+    /// A complex number written in the [`ComplexNumberFormat`] given: rectangular, polar, trigonometric, exponential,
+    /// log-polar or as a real 2×2 matrix. The [`ComplexStyle`] says how the numbers inside it are written: the unit of an
+    /// angle, and the digits.
+    ///
+    /// Only for [`NodeValues::Complex32`](super::NodeValues::Complex32) and
+    /// [`NodeValues::Complex64`](super::NodeValues::Complex64). Any other content, and a style asking for more than
+    /// [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) digits, is rejected with
+    /// [`Error::InvalidComplexFormat`](crate::error::Error::InvalidComplexFormat). A [`Float`](Self::Float) format is
+    /// rejected for complex values, since they are not floats.
+    ///
+    /// A matrix is drawn as two rows between brackets, so its cells are twice as high as any other. Every other format
+    /// is one line. A number's width depends on its digits, so a node whose numbers are replaced by wider ones will
+    /// outgrow its cells. See [`ComplexNumberFormat`] for what each form looks like.
+    ///
+    /// [`Decimal`](Self::Decimal) writes a complex number in rectangular form with the shortest digits. Every other
+    /// format shows the IEEE-754 bits of the real part and then of the imaginary part.
+    ComplexNumber(ComplexNumberFormat, ComplexStyle),
 }

@@ -5,10 +5,19 @@ use super::super::{
     OUTER_PADDING, halo_icon, label_group, render_guard::RenderGuard,
 };
 use crate::{
-    colours::{BOX_STROKE, NAMED_BOX_FILL, PLAIN_BOX_FILL, TEXT_FILL},
+    colours::{
+        BOX_STROKE, MATRIX_BRACKET_STROKE, NAMED_BOX_FILL, PICTURE_AXES_STROKE, PICTURE_IMAGINARY_STROKE,
+        PICTURE_REAL_STROKE, PICTURE_VECTOR_STROKE, PLAIN_BOX_FILL, TEXT_FILL,
+    },
     error::Error,
-    model::content::{HexDumpFormat, full_width},
-    scene::{BoxHandles, CellGrid, DataDecor, DataNodeContent, HexMarks, LabellingStyle, Pool, Selection, group_gaps},
+    model::content::{
+        CellText, HexDumpFormat, ICON_GAP, ICON_MARGIN, ICON_SIZE, IconKind, axes_path, exponent_parts, full_width,
+        icon_paths, line_widths, matrix_rows,
+    },
+    scene::{
+        BoxHandles, CellGrid, CellPicture, DataDecor, DataNodeContent, HexMarks, LabellingStyle, Pool, Selection,
+        group_gaps,
+    },
 };
 use svg_dom::{
     DominantBaseline, SvgNode, SvgRoot, TextAnchor,
@@ -38,6 +47,20 @@ pub(crate) const TOOLBAR_ROW_HEIGHT: f64 = 36.0;
 /// The narrowest a named data node with a toolbar row is drawn, so that the bar of Prev, Next and Restart fits. A wider
 /// bar, one with the stride buttons, is the caller's to make room for.
 const TOOLBAR_MIN_WIDTH: f64 = 220.0;
+
+/// The distance between the two rows of a [`ComplexNumberFormat::Matrix`](crate::scene::ComplexNumberFormat::Matrix)
+/// cell, from baseline to baseline. A little more than the font size, so that the rows do not touch.
+pub(crate) const MATRIX_LINE_HEIGHT: f64 = GRID_FONT_SIZE * 1.3;
+
+/// The room a matrix cell leaves for a bracket on each side of its rows, on top of [`CELL_PADDING`].
+const MATRIX_BRACKET_ROOM: f64 = 8.0;
+
+/// How much smaller than the cell's own text an exponent is, and how far it is raised, as parts of the font size.
+const EXPONENT_SCALE: f64 = 0.72;
+const EXPONENT_RISE: f64 = 0.42;
+
+/// How far the arms of a matrix bracket reach in towards the rows.
+const MATRIX_BRACKET_ARM: f64 = 4.0;
 
 /// The height of one line of a hex dump, which a terminal sets close: with no box or gap around it, the lines of a
 /// dump are as tall as their text, plus a little leading.
@@ -170,6 +193,7 @@ pub(super) fn draw_content_box(
             decor: DataDecor {
                 hex_marks,
                 toolbar_slot: frame.toolbar_slot,
+                pictures: cells.pictures,
             },
             cell_stroke_width: match (content.is_single_value(), content.hex_dump()) {
                 (true, _) => "1.5",
@@ -212,6 +236,9 @@ struct GridLayoutMetrics {
     single_value: bool,
     /// The gap between one cell and the next, [`CELL_GAP`], or none for a hex dump, whose lines touch.
     gap: f64,
+    /// The room at the front of each cell for its picture and the gap after it, or `0.0` for a cell with none. The text
+    /// is centred in the rest.
+    picture_room: f64,
 }
 
 impl GridLayoutMetrics {
@@ -225,6 +252,12 @@ impl GridLayoutMetrics {
     fn measure(svg: &SvgRoot, guard: &mut RenderGuard, content: &DataNodeContent) -> Result<Self, Error> {
         let mut widest = String::new();
         content.widest_cell_string(&mut widest);
+        // A matrix is two rows of the same length, so its width is that of one row.
+        if content.is_matrix() {
+            if let Some((row, _)) = matrix_rows(&widest) {
+                widest = row.to_owned();
+            }
+        }
         // A hex dump is measured as a run of characters that are not spaces, whose width is that of a full line, because
         // a line ends in spaces that a measurement might leave out. Under a monospace font every character is as wide
         // as any other, so it also gives the width of one character, which places the marks of a selected byte.
@@ -237,6 +270,10 @@ impl GridLayoutMetrics {
         guard.track(measure_el.clone());
         measure_el.set_font_family(GRID_FONT_FAMILY)?;
         measure_el.set_font_size(GRID_FONT_SIZE)?;
+        // An exponent is drawn smaller and raised, so it is measured as drawn, and not as a full-size run of characters.
+        if content.cell_text() == CellText::Exponent {
+            write_cell_text(&measure_el, &widest, CellText::Exponent, None)?;
+        }
         if content.preserves_spaces() {
             measure_el.set_attr("style", "white-space: pre")?;
         }
@@ -297,15 +334,30 @@ impl GridLayoutMetrics {
             guard.release();
         }
 
+        // A picture is as high as `icon_scale` lines of text, and a cell that is not tall enough for it grows.
+        let picture_side = if content.icon_kind().is_some() {
+            content.icon_scale() * CELL_HEIGHT
+        } else {
+            0.0
+        };
+        let picture_room = if picture_side > 0.0 { picture_side + ICON_GAP } else { 0.0 };
+        let cell_height = (CELL_HEIGHT + 2.0 * CELL_PADDING).max(picture_side + 2.0 * ICON_MARGIN);
+
         // A hex dump is a screen of text, so a line is as wide as its text and as tall as the terminal sets it, with
         // nothing round it and nothing between it and the next. The node's own padding is the screen's margin.
         let (cell, gap) = if content.hex_dump().is_some() {
             (Size::new(max_width, TERMINAL_LINE_HEIGHT), 0.0)
-        } else {
+        } else if content.is_matrix() {
+            // Two rows between a pair of brackets.
             (
-                Size::new(max_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING),
+                Size::new(
+                    max_width + 2.0 * (CELL_PADDING + MATRIX_BRACKET_ROOM),
+                    2.0 * MATRIX_LINE_HEIGHT + 2.0 * CELL_PADDING,
+                ),
                 CELL_GAP,
             )
+        } else {
+            (Size::new(max_width + 2.0 * CELL_PADDING + picture_room, cell_height), CELL_GAP)
         };
         Ok(Self::new(
             cell,
@@ -314,6 +366,7 @@ impl GridLayoutMetrics {
             content.column_group(),
             content.is_single_value(),
             gap,
+            picture_room,
         ))
     }
 
@@ -324,6 +377,7 @@ impl GridLayoutMetrics {
         column_group: usize,
         single_value: bool,
         gap: f64,
+        picture_room: f64,
     ) -> Self {
         Self {
             cell,
@@ -333,6 +387,7 @@ impl GridLayoutMetrics {
             column_group,
             single_value,
             gap,
+            picture_room,
         }
     }
 
@@ -628,6 +683,55 @@ pub(crate) fn new_dim_block(svg: &SvgRoot, group: &SvgNode, fill: &str) -> Resul
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes `cell_text` as the content of a cell's `<text>`, built as `style` says. Any `<tspan>` the text already had is
+/// replaced.
+///
+/// * [`CellText::Plain`] is one run of text, set as the text itself.
+/// * [`CellText::Matrix`] is two rows. Each is a `<tspan>` of its own, centred on `centre_x`, and the second is one
+///   [`MATRIX_LINE_HEIGHT`] below the first. Without a `centre_x` it is drawn as one line instead.
+/// * [`CellText::Exponent`] is the base, and then the exponent as a `<tspan>` that is smaller and raised. It follows the
+///   base on the same line, so it needs no position of its own.
+///
+/// Drawing a cell, measuring one, and rewriting its value all go through here, so none can disagree about how a cell is
+/// built.
+pub(crate) fn write_cell_text(
+    text: &SvgNode,
+    cell_text: &str,
+    style: CellText,
+    centre_x: Option<f64>,
+) -> Result<(), svg_dom::Error> {
+    match (style, centre_x) {
+        (CellText::Matrix, Some(x)) => {
+            if let Some((first, second)) = matrix_rows(cell_text) {
+                // Setting the text content removes every child, the old rows included.
+                text.set_text("");
+                text.tspan_line(x, 0.0, first)?;
+                text.tspan_line(x, MATRIX_LINE_HEIGHT, second)?;
+                return Ok(());
+            }
+        },
+        (CellText::Exponent, _) => {
+            if let Some((base, exponent)) = exponent_parts(cell_text) {
+                text.set_text("");
+                text.tspan(base)?;
+                let raised = text.tspan_dy(-GRID_FONT_SIZE * EXPONENT_RISE, exponent)?;
+                raised.set_font_size(GRID_FONT_SIZE * EXPONENT_SCALE)?;
+                return Ok(());
+            }
+        },
+        _ => {},
+    }
+    text.set_text(cell_text);
+    Ok(())
+}
+
+/// The `y` of a matrix cell's `<text>`, which is where its first row is centred. The second row is one line lower, so the
+/// pair is centred on the middle of a cell that starts at `top` and is `height` high.
+pub(crate) fn matrix_text_y(top: f64, height: f64) -> f64 {
+    top + (height - MATRIX_LINE_HEIGHT) / 2.0
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What [`draw_cells`] drew, flat and in row-major order.
 struct DrawnCells {
     /// Every cell's own `<rect>`. For a single value, the content box itself.
@@ -636,6 +740,9 @@ struct DrawnCells {
     texts: Vec<SvgNode>,
     /// Where every cell sits, local to the group.
     grid: CellGrid,
+    /// The picture at the front of every cell of a polar or rectangular complex number, in cell order, and empty for any
+    /// other content.
+    pictures: Vec<CellPicture>,
     /// The one value's own formatted text, for a single value. Empty for a grid, whose own `aria-label` names a value
     /// count instead. See [`describe`].
     single_value_text: String,
@@ -668,12 +775,16 @@ fn draw_cells(
         rects: Vec::with_capacity(if single_value { 1 } else { len }),
         texts: Vec::with_capacity(len),
         grid,
+        pictures: Vec::new(),
         single_value_text: String::new(),
     };
     if single_value {
         cells.rects.push(content_rect_el.clone());
     }
 
+    let style = content.cell_text();
+    let picture_kind = content.icon_kind();
+    let max_modulus = content.max_modulus();
     let mut text_scratch = String::new();
     let mut label_scratch = String::new();
     let mut name_scratch = String::new();
@@ -683,7 +794,7 @@ fn draw_cells(
             return;
         }
         let result = (|| -> Result<(), Error> {
-            let text = svg.text(Point::origin(), cell_text)?;
+            let text = svg.text(Point::origin(), if style == CellText::Plain { cell_text } else { "" })?;
             guard.track(text.clone());
             text.set_text_anchor(TextAnchor::Middle)?;
             text.set_dominant_baseline(DominantBaseline::Middle)?;
@@ -698,17 +809,15 @@ fn draw_cells(
             }
             cells.texts.push(text.clone());
 
-            if single_value {
+            // Where this cell is. A single value fills the content box, which is already drawn, and each value of a grid
+            // has a rectangle of its own.
+            let cell_origin = if single_value {
                 cells.single_value_text.push_str(content.spoken(cell_text));
-                text.set_attr_display(scratch, "x", content_origin.x + layout.cell.width / 2.0)?;
-                text.set_attr_display(scratch, "y", content_origin.y + layout.cell.height / 2.0)?;
-                group.append(&text)?;
-                guard.release();
+                content_origin
             } else {
                 let Some(cell_origin) = grid.cell_rect(i).map(|r| r.origin) else {
                     return Ok(());
                 };
-
                 let cell_rect = svg.rect(cell_origin, layout.cell)?;
                 guard.track(cell_rect.clone());
                 cell_rect.set_fill(type_colour)?;
@@ -716,9 +825,33 @@ fn draw_cells(
                 cell_rect.set_stroke_width(if content.hex_dump().is_some() { 0.0 } else { 1.0 })?;
                 group.append(&cell_rect)?;
                 guard.release();
+                cells.rects.push(cell_rect);
+                cell_origin
+            };
 
-                text.set_attr_display(scratch, "x", cell_origin.x + layout.cell.width / 2.0)?;
-                text.set_attr_display(scratch, "y", cell_origin.y + layout.cell.height / 2.0)?;
+            // The text is centred in what is left of the cell after the room for its picture.
+            let centre_x = cell_origin.x + (layout.cell.width + layout.picture_room) / 2.0;
+            text.set_attr_display(scratch, "x", centre_x)?;
+            let centre_y = if style == CellText::Matrix {
+                matrix_text_y(cell_origin.y, layout.cell.height)
+            } else {
+                cell_origin.y + layout.cell.height / 2.0
+            };
+            text.set_attr_display(scratch, "y", centre_y)?;
+            if style != CellText::Plain {
+                write_cell_text(&text, cell_text, style, Some(centre_x))?;
+            }
+            if style == CellText::Matrix {
+                draw_matrix_brackets(svg, group, guard, cell_origin, layout.cell)?;
+            }
+            if let Some(kind) = picture_kind {
+                let vector = content.complex_at(i);
+                cells
+                    .pictures
+                    .push(draw_picture(svg, group, guard, cell_origin, layout, kind, vector, max_modulus)?);
+            }
+
+            if !single_value {
                 let col = i % layout.cols;
                 if let (Some(style), 0) = (content.labelling(), col) {
                     style.label_into(i, layout.cols, &mut label_scratch);
@@ -736,11 +869,9 @@ fn draw_cells(
                     &mut name_scratch,
                 );
                 text.set_attr("aria-label", &name_scratch)?;
-                group.append(&text)?;
-                guard.release();
-
-                cells.rects.push(cell_rect);
             }
+            group.append(&text)?;
+            guard.release();
             Ok(())
         })();
         if let Err(e) = result {
@@ -784,6 +915,120 @@ pub(super) fn cell_name_into(labelling: Option<LabellingStyle>, i: usize, cols: 
         None => {},
     }
     let _ = write!(out, "row {}, column {}: {text}", i / cols, i % cols);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the two tall brackets of a matrix cell that has `origin` and `size`, as one path. They are decoration: hidden from
+/// assistive technology, which is told the matrix by the cell's text, and they take no pointer events.
+fn draw_matrix_brackets(
+    svg: &SvgRoot,
+    group: &SvgNode,
+    guard: &mut RenderGuard,
+    origin: Point,
+    size: Size,
+) -> Result<(), Error> {
+    let (left, right) = (origin.x + CELL_PADDING, origin.x + size.width - CELL_PADDING);
+    let (top, bottom) = (origin.y + CELL_PADDING * 0.75, origin.y + size.height - CELL_PADDING * 0.75);
+    let arm = MATRIX_BRACKET_ARM;
+    let d = format!(
+        "M {} {top} H {left} V {bottom} H {} M {} {top} H {right} V {bottom} H {}",
+        left + arm,
+        left + arm,
+        right - arm,
+        right - arm,
+    );
+    let path = svg.path(&d)?;
+    guard.track(path.clone());
+    path.set_fill("none")?;
+    path.set_stroke(MATRIX_BRACKET_STROKE)?;
+    path.set_stroke_width(1.5)?;
+    path.set_attr("aria-hidden", "true")?;
+    path.set_attr("pointer-events", "none")?;
+    group.append(&path)?;
+    guard.release();
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Draws the picture at the front of a cell that has `origin` and `size`, for the number `vector` that the cell holds, as
+/// a group of the two faint axes and the two paths of the vector. It is decoration, hidden from assistive technology,
+/// which is told the number by the cell's text, and it takes no pointer events. Its paths are returned, so that
+/// [`update_picture`] can rewrite them when the number changes.
+#[allow(clippy::too_many_arguments)]
+fn draw_picture(
+    svg: &SvgRoot,
+    group: &SvgNode,
+    guard: &mut RenderGuard,
+    origin: Point,
+    layout: &GridLayoutMetrics,
+    kind: IconKind,
+    vector: Option<(f64, f64)>,
+    max_modulus: f64,
+) -> Result<CellPicture, Error> {
+    // The paths are worked out in a box of `ICON_SIZE`, and the group scales that box to the side the layout gave it. A
+    // line is given a width that the scaling takes back to a thin one, and does not grow with the picture.
+    let side = layout.picture_room - ICON_GAP;
+    let (line_width, axes_width) = line_widths(side / ICON_SIZE);
+    let picture = svg.group()?;
+    guard.track(picture.clone());
+    picture.set_attr(
+        "transform",
+        &format!(
+            "translate({:.2} {:.2}) scale({:.4})",
+            origin.x + CELL_PADDING,
+            origin.y + (layout.cell.height - side) / 2.0,
+            side / ICON_SIZE
+        ),
+    )?;
+    picture.set_attr("aria-hidden", "true")?;
+    picture.set_attr("pointer-events", "none")?;
+
+    let axes = svg.path(&axes_path())?;
+    axes.set_fill("none")?;
+    axes.set_stroke(PICTURE_AXES_STROKE)?;
+    axes.set_stroke_width(axes_width)?;
+    axes.set_attr("stroke-opacity", "0.55")?;
+    picture.append(&axes)?;
+
+    let paths = vector.map(|(re, im)| icon_paths(kind, re, im, max_modulus)).unwrap_or_default();
+    let (first_stroke, second_stroke) = match kind {
+        IconKind::Polar => (PICTURE_VECTOR_STROKE, PICTURE_VECTOR_STROKE),
+        IconKind::Rectangular => (PICTURE_REAL_STROKE, PICTURE_IMAGINARY_STROKE),
+    };
+    let leg = |d: &str, stroke: &str| -> Result<SvgNode, Error> {
+        let path = svg.path(d)?;
+        path.set_fill("none")?;
+        path.set_stroke(stroke)?;
+        path.set_stroke_width(line_width)?;
+        path.set_attr("stroke-linecap", "round")?;
+        path.set_attr("stroke-linejoin", "round")?;
+        picture.append(&path)?;
+        Ok(path)
+    };
+    let (primary, secondary) = (leg(&paths.primary, first_stroke)?, leg(&paths.secondary, second_stroke)?);
+
+    group.append(&picture)?;
+    guard.release();
+    Ok(CellPicture { primary, secondary })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Rewrites the two paths of `picture` for the number `vector`, drawn to the scale that `max_modulus` sets. A number that
+/// cannot be drawn leaves them empty. Drawing a cell and rewriting its number both build the paths here, so the two cannot
+/// disagree.
+///
+/// # Errors
+///
+/// Returns `Err` if an attribute cannot be set.
+pub(crate) fn update_picture(
+    picture: &CellPicture,
+    kind: IconKind,
+    vector: Option<(f64, f64)>,
+    max_modulus: f64,
+) -> Result<(), svg_dom::Error> {
+    let paths = vector.map(|(re, im)| icon_paths(kind, re, im, max_modulus)).unwrap_or_default();
+    picture.primary.set_attr("d", &paths.primary)?;
+    picture.secondary.set_attr("d", &paths.secondary)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

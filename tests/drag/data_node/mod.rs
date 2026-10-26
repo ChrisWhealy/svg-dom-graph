@@ -13,6 +13,8 @@
 //!   and no operator accepting a UUID.
 //! - [`bools_and_sizes`] — `NodeValues::Bool`, `Usize` and `Isize`: each `BoolFormat`, icons spoken as words, cells
 //!   that stay wide enough when a value flips, and the logical operators.
+//! - [`complex`] — `NodeValues::Complex32`/`Complex64` and `DataFormat::ComplexNumber`: every form, the matrix drawn as
+//!   two rows between brackets, what a screen reader is told, and the operators that accept a complex number.
 //! - [`text`] — `NodeValues::Text` and `DataFormat::Text`: strings drawn as they are, cells wide enough, the cell-width
 //!   hint, replacements, and what is refused.
 //! - [`validation`] — empty content, a zero grid layout and a blank name are rejected before anything is drawn.
@@ -24,6 +26,7 @@
 mod accessibility;
 mod bools_and_sizes;
 mod cell_rect;
+mod complex;
 mod dragging_and_connectors;
 mod floats;
 mod grid_layout;

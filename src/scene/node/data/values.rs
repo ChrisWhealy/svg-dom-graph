@@ -1,8 +1,12 @@
 //! Reading and replacing a data node's cells: `Scene::cell_rect` and `Scene::set_data_values`.
 
-use super::draw::cell_name_into;
+use super::{
+    super::CELL_HEIGHT,
+    draw::{cell_name_into, update_picture, write_cell_text},
+};
 use crate::{
     error::Error,
+    model::content::ICON_GAP,
     model::node::{NodeContent, NodeId},
     scene::{NodeValues, Scene, Selection, scene_inner::SceneInner},
 };
@@ -94,6 +98,19 @@ impl Scene {
         // that changes nothing never writes the name, so it formats nothing.
         let single_value = content.is_single_value();
         let icon = content.is_bool_icon();
+        let text_style = content.cell_text();
+        let grid = handles.cell_grid;
+        // The pictures of a polar or rectangular complex number are drawn to the scale of the largest modulus, so a
+        // replacement that changes it changes every picture, and one that does not changes only the pictures of the cells
+        // that changed.
+        let picture_kind = content.icon_kind();
+        let old_max_modulus = content.max_modulus();
+        let picture_room = if picture_kind.is_some() {
+            content.icon_scale() * CELL_HEIGHT + ICON_GAP
+        } else {
+            0.0
+        };
+        let mut changed_cells = Vec::new();
         let mut old_text = String::new();
         if single_value && content.differs_from(&values) {
             content.single_cell_string_into(&mut old_text);
@@ -114,7 +131,15 @@ impl Scene {
         let mut name_scratch = String::new();
         let accepted = content.try_replace_values(values, &mut scratch, |i, text| -> Result<(), svg_dom::Error> {
             let Some(cell) = handles.cell_texts.get(i) else { return Ok(()) };
-            cell.set_text(text);
+            // A matrix is two rows, so it is rebuilt in place, centred where its cell's text is. An exponent is rebuilt in
+            // place too. Any other text is set whole.
+            let centre_x = grid
+                .and_then(|grid| grid.cell_rect(i))
+                .map(|rect| rect.origin.x + (rect.size.width + picture_room) / 2.0);
+            write_cell_text(cell, text, text_style, centre_x)?;
+            if picture_kind.is_some() {
+                changed_cells.push(i);
+            }
             // A mark's colour follows its shape, and its accessible name says the word and not the mark. No other text
             // ever changes colour, so only a mark is given a fill, and every other cell is written no more than before.
             if icon {
@@ -133,6 +158,22 @@ impl Scene {
         })?;
         if !accepted {
             return Err(Error::IncompatibleNodeValues(id));
+        }
+        // The pictures are rewritten once the numbers are committed, from the numbers the node holds now.
+        if let Some(kind) = picture_kind {
+            let max_modulus = content.max_modulus();
+            let rewrite_all = max_modulus.to_bits() != old_max_modulus.to_bits();
+            let every_cell = 0..handles.decor.pictures.len();
+            let cells: &mut dyn Iterator<Item = usize> = if rewrite_all {
+                &mut every_cell.into_iter()
+            } else {
+                &mut changed_cells.into_iter()
+            };
+            for i in cells {
+                if let Some(picture) = handles.decor.pictures.get(i) {
+                    update_picture(picture, kind, content.complex_at(i), max_modulus)?;
+                }
+            }
         }
         // The marks over a selected byte of a hex dump show what the byte was, so they are written again.
         if let (Some(marks), Some(grid)) = (&mut handles.decor.hex_marks, handles.cell_grid) {

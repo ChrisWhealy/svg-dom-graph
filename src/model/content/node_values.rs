@@ -1,16 +1,19 @@
 use super::{
-    ByteOrder, DataFormat, FloatFormat,
+    ByteOrder, ComplexNumberFormat, ComplexStyle, DataFormat, FloatFormat,
     bit_values::{BitValues, format_bits_binary_into, format_bits_hex_into},
     bool_format::format_bool_into,
+    complex_format::{format_complex32_into, format_complex64_into},
     float_format::{FloatLike, format_float_into, widest_float},
     format_ascii_into, format_binary_into, format_decimal_into, format_hex_into,
     uuid_format::{Uuid, format_uuid_into},
 };
 use crate::colours::{
-    TYPE_COLOUR_BITS, TYPE_COLOUR_BOOL, TYPE_COLOUR_F32, TYPE_COLOUR_F64, TYPE_COLOUR_I8, TYPE_COLOUR_I16,
-    TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE, TYPE_COLOUR_TEXT, TYPE_COLOUR_U8,
-    TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128, TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
+    TYPE_COLOUR_BITS, TYPE_COLOUR_BOOL, TYPE_COLOUR_COMPLEX32, TYPE_COLOUR_COMPLEX64, TYPE_COLOUR_F32, TYPE_COLOUR_F64,
+    TYPE_COLOUR_I8, TYPE_COLOUR_I16, TYPE_COLOUR_I32, TYPE_COLOUR_I64, TYPE_COLOUR_I128, TYPE_COLOUR_ISIZE,
+    TYPE_COLOUR_TEXT, TYPE_COLOUR_U8, TYPE_COLOUR_U16, TYPE_COLOUR_U32, TYPE_COLOUR_U64, TYPE_COLOUR_U128,
+    TYPE_COLOUR_USIZE, TYPE_COLOUR_UUID,
 };
+use crate::complex::{Complex, Complex32};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reorders `bytes` (already big-endian, from `to_be_bytes()`) per `order` — a no-op for `BigEndian`, reversed for
@@ -60,6 +63,7 @@ fn pick_widest<T: Word>(values: &[T], format: DataFormat) -> Option<T> {
         | DataFormat::HexDump(_)
         | DataFormat::Uuid(_)
         | DataFormat::Bool(_)
+        | DataFormat::ComplexNumber(..)
         | DataFormat::Text => values.first().copied(),
     }
 }
@@ -168,6 +172,7 @@ macro_rules! impl_word {
                     | DataFormat::Float(_)
                     | DataFormat::Uuid(_)
                     | DataFormat::Bool(_)
+                    | DataFormat::ComplexNumber(..)
                     | DataFormat::Text => {
                         let (magnitude, negative) = self.split_sign();
                         format_decimal_into(magnitude, negative, out);
@@ -196,7 +201,11 @@ impl Cell for Uuid {
             // A UUID is written as its own text under `Uuid`. Every other format reads its 128 bits as a number or as
             // bytes, as a `u128` would, and the default text is what a node that is given no format says reads best.
             DataFormat::Uuid(uuid_format) => format_uuid_into(self, uuid_format, out),
-            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Bool(_) | DataFormat::Text => {
+            DataFormat::Decimal
+            | DataFormat::Float(_)
+            | DataFormat::Bool(_)
+            | DataFormat::ComplexNumber(..)
+            | DataFormat::Text => {
                 format_decimal_into(self.as_u128(), false, out);
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes(self.to_bytes(), byte_order), out),
@@ -219,7 +228,11 @@ impl Cell for bool {
         match format {
             DataFormat::Bool(bool_format) => format_bool_into(self, bool_format, out),
             // Every other format reads a Boolean as the single byte it is held in: `1` or `0`.
-            DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Text => {
+            DataFormat::Decimal
+            | DataFormat::Float(_)
+            | DataFormat::Uuid(_)
+            | DataFormat::ComplexNumber(..)
+            | DataFormat::Text => {
                 format_decimal_into(u128::from(byte), false, out);
             },
             DataFormat::Hexadecimal => format_hex_into(order_bytes([byte], byte_order), out),
@@ -240,7 +253,11 @@ macro_rules! impl_float_cell {
         impl Cell for $width {
             fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
                 match format {
-                    DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
+                    DataFormat::Decimal
+                    | DataFormat::Uuid(_)
+                    | DataFormat::Bool(_)
+                    | DataFormat::ComplexNumber(..)
+                    | DataFormat::Text => {
                         format_float_into(self, FloatFormat::shortest(), out);
                     },
                     DataFormat::Float(float_format) => format_float_into(self, float_format, out),
@@ -262,11 +279,58 @@ macro_rules! impl_float_cell {
 impl_float_cell!(f32, f64);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+macro_rules! impl_complex_cell {
+    ($($complex:ty, $float:ty, $write:ident);+ $(;)?) => {$(
+        impl Cell for $complex {
+            fn format_into(self, format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+                // The IEEE-754 bits of the real part and then of the imaginary part, each in the selected byte order.
+                // A pair is in memory as two floats, so it is the floats and not the whole pair that are reversed.
+                let bytes = || {
+                    const WIDTH: usize = std::mem::size_of::<$float>();
+                    let mut bytes = [0_u8; 2 * WIDTH];
+                    bytes[..WIDTH].copy_from_slice(&order_bytes(self.re.to_be_bytes(), byte_order));
+                    bytes[WIDTH..].copy_from_slice(&order_bytes(self.im.to_be_bytes(), byte_order));
+                    bytes
+                };
+                match format {
+                    DataFormat::ComplexNumber(complex_format, style) => $write(self, complex_format, style, out),
+                    // A float, UUID or Boolean format means nothing for a complex number, and is rejected before one
+                    // is ever drawn. It reads as the rectangular form with the shortest digits if it does get here.
+                    DataFormat::Decimal
+                    | DataFormat::Float(_)
+                    | DataFormat::Uuid(_)
+                    | DataFormat::Bool(_)
+                    | DataFormat::Text => {
+                        $write(self, ComplexNumberFormat::Rectangular, ComplexStyle::shortest(), out);
+                    },
+                    DataFormat::Hexadecimal => format_hex_into(bytes(), out),
+                    DataFormat::Binary => format_binary_into(bytes(), out),
+                    DataFormat::Ascii | DataFormat::PlainText | DataFormat::HexDump(_) => {
+                        format_ascii_into(bytes(), out);
+                    },
+                }
+            }
+
+            fn same_as(self, other: Self) -> bool {
+                self.re.to_bits() == other.re.to_bits() && self.im.to_bits() == other.im.to_bits()
+            }
+        }
+    )+};
+}
+
+impl_complex_cell!(Complex, f64, format_complex64_into; Complex32, f32, format_complex32_into);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Formats one value of `width` bits into `out` per `format`. A float, UUID or Boolean format means nothing for these
 /// values, and is rejected before one is ever drawn. It reads as the plain decimal number if it does get here.
 fn format_bits_into(value: u8, width: u8, format: DataFormat, out: &mut String) {
     match format {
-        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
+        DataFormat::Decimal
+        | DataFormat::Float(_)
+        | DataFormat::Uuid(_)
+        | DataFormat::Bool(_)
+        | DataFormat::ComplexNumber(..)
+        | DataFormat::Text => {
             format_decimal_into(u128::from(value), false, out);
         },
         DataFormat::Hexadecimal => format_bits_hex_into(value, width, out),
@@ -281,9 +345,12 @@ fn format_bits_into(value: u8, width: u8, format: DataFormat, out: &mut String) 
 fn format_widest_bits(bits: &BitValues, format: DataFormat, out: &mut String) {
     let values = bits.values();
     let widest = match format {
-        DataFormat::Decimal | DataFormat::Float(_) | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
-            values.iter().copied().max()
-        },
+        DataFormat::Decimal
+        | DataFormat::Float(_)
+        | DataFormat::Uuid(_)
+        | DataFormat::Bool(_)
+        | DataFormat::ComplexNumber(..)
+        | DataFormat::Text => values.iter().copied().max(),
         _ => values.first().copied(),
     };
     if let Some(value) = widest {
@@ -347,9 +414,11 @@ fn format_widest<T: Word>(values: &[T], format: DataFormat, byte_order: ByteOrde
 /// binary and `Ascii` formats show a fixed number of bytes, so the first value is as wide as any.
 fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
     match format {
-        DataFormat::Decimal | DataFormat::Uuid(_) | DataFormat::Bool(_) | DataFormat::Text => {
-            widest_float(values, FloatFormat::shortest(), out)
-        },
+        DataFormat::Decimal
+        | DataFormat::Uuid(_)
+        | DataFormat::Bool(_)
+        | DataFormat::ComplexNumber(..)
+        | DataFormat::Text => widest_float(values, FloatFormat::shortest(), out),
         DataFormat::Float(float_format) => widest_float(values, float_format, out),
         DataFormat::Hexadecimal
         | DataFormat::Binary
@@ -374,6 +443,39 @@ fn widest_float_cell<T: Cell + FloatLike>(values: &[T], format: DataFormat, byte
 fn widest_bool_cell(values: &[bool], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
     if !values.is_empty() {
         false.format_into(format, byte_order, out);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Formats into `out` the text of whichever complex number of `values` takes the most characters under `format`, and
+/// nothing if there are none. See [`NodeValues::widest_cell_string`].
+///
+/// Nothing orders complex numbers by the width of their text. A number's width follows its signs, its digits and the
+/// modulus and angle that are worked out from it, so every number is formatted and measured, as the shortest digits of
+/// a float are. The hexadecimal, binary and `Ascii` formats show a fixed number of bytes, so the first is as wide as
+/// any. A matrix is two lines of the same length, so its character count is its width too, and the drawing code
+/// measures the first line. The most characters is only a start, since the drawing code measures the text itself: a
+/// character such as `∠` can come from a font whose advance differs from the monospace font's.
+fn widest_complex_cell<T: Cell>(values: &[T], format: DataFormat, byte_order: ByteOrder, out: &mut String) {
+    match format {
+        DataFormat::Hexadecimal
+        | DataFormat::Binary
+        | DataFormat::Ascii
+        | DataFormat::PlainText
+        | DataFormat::HexDump(_) => {
+            if let Some(&first) = values.first() {
+                first.format_into(format, byte_order, out);
+            }
+        },
+        _ => {
+            let mut candidate = String::new();
+            for &value in values {
+                value.format_into(format, byte_order, &mut candidate);
+                if candidate.chars().count() > out.chars().count() {
+                    std::mem::swap(out, &mut candidate);
+                }
+            }
+        },
     }
 }
 
@@ -503,6 +605,12 @@ pub enum NodeValues {
     Uuid(Vec<Uuid>),
     /// Boolean values. See [`BoolFormat`](super::BoolFormat).
     Bool(Vec<bool>),
+    /// Complex numbers whose parts are `f32`. See [`ComplexNumberFormat`](super::ComplexNumberFormat). A number is
+    /// 8 bytes wide, and its type name is `complex32`.
+    Complex32(Vec<Complex32>),
+    /// Complex numbers whose parts are `f64`. See [`ComplexNumberFormat`](super::ComplexNumberFormat). A number is
+    /// 16 bytes wide, and its type name is `complex64`.
+    Complex64(Vec<Complex>),
     /// Values fewer than eight bits wide, all of one width. See [`BitValues`].
     Bits(BitValues),
     /// Text: one string for each cell. See "Text" above, and [`DataFormat::Text`].
@@ -538,6 +646,8 @@ impl NodeValues {
             Self::F64(v) => v.len(),
             Self::Uuid(v) => v.len(),
             Self::Bool(v) => v.len(),
+            Self::Complex32(v) => v.len(),
+            Self::Complex64(v) => v.len(),
             Self::Bits(b) => b.values().len(),
             Self::Text(v) => v.len(),
         }
@@ -566,6 +676,13 @@ impl NodeValues {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`NodeValues::Complex32`] and [`NodeValues::Complex64`], the only values a
+    /// [`DataFormat::ComplexNumber`] can format.
+    pub(super) fn is_complex(&self) -> bool {
+        matches!(self, Self::Complex32(_) | Self::Complex64(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `true` for [`NodeValues::Text`], the only values a [`DataFormat::Text`] can format.
     pub(super) fn is_text(&self) -> bool {
         matches!(self, Self::Text(_))
@@ -584,6 +701,30 @@ impl NodeValues {
     /// `true` for [`NodeValues::Uuid`], the only values a [`DataFormat::Uuid`] can format.
     pub(super) fn is_uuid(&self) -> bool {
         matches!(self, Self::Uuid(_))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The real and imaginary parts of value `index`, widened to `f64`, or `None` for values that are not complex numbers
+    /// or an `index` past the last.
+    pub(super) fn complex_at(&self, index: usize) -> Option<(f64, f64)> {
+        match self {
+            Self::Complex64(v) => v.get(index).map(|z| (z.re, z.im)),
+            Self::Complex32(v) => v.get(index).map(|z| (f64::from(z.re), f64::from(z.im))),
+            _ => None,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The largest modulus among the complex numbers held that has one, which is the finite ones, or `0.0` if there is no
+    /// such number. It sets the scale that every picture of a node is drawn to.
+    pub(super) fn complex_max_modulus(&self) -> f64 {
+        let largest =
+            |moduli: &mut dyn Iterator<Item = f64>| moduli.filter(|modulus| modulus.is_finite()).fold(0.0, f64::max);
+        match self {
+            Self::Complex64(v) => largest(&mut v.iter().map(|z| z.re.hypot(z.im))),
+            Self::Complex32(v) => largest(&mut v.iter().map(|z| f64::from(z.re).hypot(f64::from(z.im)))),
+            _ => 0.0,
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -611,6 +752,8 @@ impl NodeValues {
             (Self::F64(a), Self::F64(b)) => same(a, b),
             (Self::Uuid(a), Self::Uuid(b)) => same(a, b),
             (Self::Bool(a), Self::Bool(b)) => same(a, b),
+            (Self::Complex32(a), Self::Complex32(b)) => same(a, b),
+            (Self::Complex64(a), Self::Complex64(b)) => same(a, b),
             (Self::Bits(a), Self::Bits(b)) => a == b,
             (Self::Text(a), Self::Text(b)) => a == b,
             _ => false,
@@ -652,6 +795,8 @@ impl NodeValues {
             Self::F64(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::Uuid(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::Bool(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::Complex32(v) => for_each_formatted(v, format, byte_order, scratch, f),
+            Self::Complex64(v) => for_each_formatted(v, format, byte_order, scratch, f),
             Self::Bits(b) => {
                 let mut f = f;
                 for (i, &value) in b.values().iter().enumerate() {
@@ -701,6 +846,8 @@ impl NodeValues {
             (Self::F64(v), Self::F64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::Uuid(v), Self::Uuid(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::Bool(v), Self::Bool(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::Complex32(v), Self::Complex32(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
+            (Self::Complex64(v), Self::Complex64(o)) => try_for_each_changed(v, o, format, byte_order, scratch, f),
             (Self::Bits(v), Self::Bits(o)) if v.width() == o.width() => {
                 let mut f = f;
                 for (i, (&value, &was)) in v.values().iter().zip(o.values()).enumerate() {
@@ -753,6 +900,8 @@ impl NodeValues {
             Self::F64(v) => widest_float_cell(v, format, byte_order, out),
             Self::Uuid(v) => format_widest(v, format, byte_order, out),
             Self::Bool(v) => widest_bool_cell(v, format, byte_order, out),
+            Self::Complex32(v) => widest_complex_cell(v, format, byte_order, out),
+            Self::Complex64(v) => widest_complex_cell(v, format, byte_order, out),
             Self::Bits(b) => format_widest_bits(b, format, out),
             // The most characters is only a start. The drawing code measures every string, since a character's width
             // depends on the font it comes from.
@@ -791,6 +940,8 @@ impl NodeValues {
             Self::F64(v) => format_first(v, format, byte_order, out),
             Self::Uuid(v) => format_first(v, format, byte_order, out),
             Self::Bool(v) => format_first(v, format, byte_order, out),
+            Self::Complex32(v) => format_first(v, format, byte_order, out),
+            Self::Complex64(v) => format_first(v, format, byte_order, out),
             Self::Bits(b) => b.values().first().is_some_and(|&value| {
                 format_bits_into(value, b.width(), format, out);
                 true
@@ -832,6 +983,8 @@ impl NodeValues {
             Self::F64(_) => TYPE_COLOUR_F64,
             Self::Uuid(_) => TYPE_COLOUR_UUID,
             Self::Bool(_) => TYPE_COLOUR_BOOL,
+            Self::Complex32(_) => TYPE_COLOUR_COMPLEX32,
+            Self::Complex64(_) => TYPE_COLOUR_COMPLEX64,
             Self::Bits(_) => TYPE_COLOUR_BITS,
             Self::Text(_) => TYPE_COLOUR_TEXT,
         }
@@ -863,6 +1016,8 @@ impl NodeValues {
             Self::F64(_) => "f64",
             Self::Uuid(_) => "uuid",
             Self::Bool(_) => "bool",
+            Self::Complex32(_) => "complex32",
+            Self::Complex64(_) => "complex64",
             Self::Text(_) => "text",
             Self::Bits(b) => match b.width() {
                 1 => "1-bit",

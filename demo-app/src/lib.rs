@@ -118,6 +118,7 @@ mod bits;
 mod bools_and_sizes;
 mod bubble_sort;
 mod chacha20;
+mod complex_numbers;
 mod crc32;
 mod data;
 mod dijkstra;
@@ -222,6 +223,7 @@ demo_gallery! {
     "panel-128-bit" => wide_values::build_wide_demo,
     "panel-size" => bools_and_sizes::build_sizes_demo,
     "panel-bool" => bools_and_sizes::build_bools_demo,
+    "panel-complex" => complex_numbers::build_complex_demo + complex_numbers::FILES,
     "panel-operators-unary" => operators_unary::build_unary_operator_demo,
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,

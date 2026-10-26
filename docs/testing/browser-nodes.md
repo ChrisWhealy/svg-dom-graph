@@ -25,6 +25,21 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
   - an `f32` and an `f64` being different types for replacement and for an operator
   - a unary or binary operator refusing floating point operands, and drawing nothing, while an arithmetic operator accepts them
+- complex values (`NodeValues::Complex32`/`Complex64`, `DataFormat::ComplexNumber`):
+  - every one-line form being written as asked and every cell being wide enough, and the cells of a grid of numbers all being the width of the widest
+  - a polar and a rectangular cell each beginning with a hidden picture of its number, the text starting clear of it, and no other form having one
+  - a polar picture being one arrow in the number's own direction and a rectangular one a horizontal adjacent leg and a vertical opposite leg that meet at the number
+  - a picture being redrawn when its number is replaced, every picture being redrawn when the largest modulus changes, and a number that cannot be drawn having a picture that draws nothing
+  - the icon scale setting the size of the picture, as a multiple of a line of text, a cell growing taller to hold a large one and staying as tall for a small one, the text staying clear, the lines being as thin on a large picture as on a small one, and a scale out of range or not a number being rejected before anything is drawn
+  - an exponent being a smaller, raised `<tspan>` that starts with an `i`, rebuilt in place on a replacement, with the cell still named as one line
+  - a matrix being two `<tspan>` rows between a pair of hidden brackets, in a cell taller than a rectangular one that holds both rows
+  - a matrix being rewritten in place, with two rows after every replacement and the node keeping its size
+  - a matrix being named for assistive technology as one line, and a single number naming its type and value, with both following a replacement
+  - the angle unit and the digits of a style changing what is written
+  - an `f32` and an `f64` complex number being different types for replacement
+  - addition, subtraction, multiplication and division accepting complex operands, while a modulus, a bitwise operator and a unary operator refuse them by name, a matrix result is refused, and nothing is drawn for a refusal
+  - a complex format for other values, too many digits, and a float format for complex values, all rejected before anything is drawn
+  - decimal and hexadecimal being written for complex numbers
 - text values (`NodeValues::Text`, `DataFormat::Text`):
   - each string drawn as it is, with Unicode and empty ones included, one cell each, every cell the same width and every string inside its cell
   - a string that looks like markup drawn as those characters, and making no element

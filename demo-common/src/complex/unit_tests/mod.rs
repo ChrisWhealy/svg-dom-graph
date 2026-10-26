@@ -1,7 +1,5 @@
-//! Internal unit tests for the complex numbers.
+//! Internal unit tests for the complex buffers, written once as a macro and run for both precisions.
 //!
-//! - [`scalar`] — the arithmetic, the polar form, the roots of unity and the display, for `f64` and `f32` alike.
 //! - [`buffer`] — the split buffers and their kernels, checked against the scalar type.
 
 mod buffer;
-mod scalar;

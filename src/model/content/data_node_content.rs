@@ -333,7 +333,7 @@ impl DataNodeContent {
     /// [`DataFormat::Text`], whose strings may have runs of spaces in them. Unlike a plain text or hex dump node, a text
     /// node is still a grid, so it still has its layout checked.
     pub(crate) fn preserves_spaces(&self) -> bool {
-        self.keeps_spaces() || self.is_text()
+        self.keeps_spaces() || self.is_text() || self.is_matrix()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -363,6 +363,66 @@ impl DataNodeContent {
             DataFormat::Float(float_format) => self.values.is_float() && float_format.is_valid(),
             _ => true,
         }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` if this content holds complex numbers.
+    pub(crate) fn holds_complex(&self) -> bool {
+        self.values.is_complex()
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `false` for [`DataFormat::ComplexNumber`] content whose values are not complex numbers, or whose style asks for
+    /// more digits than [`MAX_FLOAT_DIGITS`](super::MAX_FLOAT_DIGITS) or for no significant digits. Every other content
+    /// is valid.
+    pub(crate) fn complex_format_is_valid(&self) -> bool {
+        match self.format {
+            DataFormat::ComplexNumber(_, style) => self.values.is_complex() && style.is_valid(),
+            _ => true,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// `true` for [`ComplexNumberFormat::Matrix`] content, whose cells are two rows high.
+    pub(crate) fn is_matrix(&self) -> bool {
+        matches!(self.format, DataFormat::ComplexNumber(ComplexNumberFormat::Matrix, _))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How a cell's text is built from the one line it is written as: the line itself, two rows for a matrix, or a base
+    /// with a raised exponent for an exponential form.
+    pub(crate) fn cell_text(&self) -> CellText {
+        match self.format {
+            DataFormat::ComplexNumber(ComplexNumberFormat::Matrix, _) => CellText::Matrix,
+            DataFormat::ComplexNumber(ComplexNumberFormat::Exponential, _) => CellText::Exponent,
+            _ => CellText::Plain,
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The picture each cell begins with, or `None` for content that has no pictures. Only polar and rectangular
+    /// complex numbers have one.
+    pub(crate) fn icon_kind(&self) -> Option<IconKind> {
+        IconKind::of(self.format).filter(|_| self.values.is_complex())
+    }
+
+    /// The scale of each picture, as a multiple of the height of a line of text. The default for any content whose style
+    /// says none.
+    pub(crate) fn icon_scale(&self) -> f64 {
+        match self.format {
+            DataFormat::ComplexNumber(_, style) => style.icon_scale(),
+            _ => ComplexStyle::default().icon_scale(),
+        }
+    }
+
+    /// The real and imaginary parts of value `index`, for its picture.
+    pub(crate) fn complex_at(&self, index: usize) -> Option<(f64, f64)> {
+        self.values.complex_at(index)
+    }
+
+    /// The scale every picture is drawn to. See [`NodeValues::complex_max_modulus`].
+    pub(crate) fn max_modulus(&self) -> f64 {
+        self.values.complex_max_modulus()
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

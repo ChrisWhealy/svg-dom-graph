@@ -46,13 +46,21 @@ macro_rules! define_buffer {
             }
 
             /// The first `count` of the `n` roots of unity, split, for a transform stage to read in step with its data.
-            pub fn unit_roots(n: usize, count: usize) -> Self {
+            ///
+            /// # Errors
+            ///
+            /// Returns [`RootOfUnityError::ZeroOrder`](svg_dom_graph::complex::RootOfUnityError::ZeroOrder) if `n` is
+            /// zero, even if `count` is too.
+            pub fn unit_roots(n: usize, count: usize) -> Result<Self, svg_dom_graph::complex::RootOfUnityError> {
+                if n == 0 {
+                    return Err(svg_dom_graph::complex::RootOfUnityError::ZeroOrder);
+                }
                 let mut roots = Self::new(count);
 
                 for k in 0..count {
-                    roots.set(k, $complex::unit_root(k, n));
+                    roots.set(k, $complex::unit_root(k, n)?);
                 }
-                roots
+                Ok(roots)
             }
 
             pub fn len(&self) -> usize {

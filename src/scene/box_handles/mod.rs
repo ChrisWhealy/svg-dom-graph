@@ -350,4 +350,15 @@ pub(crate) struct DataDecor {
     /// Where a selection toolbar docks, local to the node's group: the row under the name, across the node's whole
     /// width. `None` unless the node is named and asked for a row by `DataNodeContent::with_toolbar`.
     pub(crate) toolbar_slot: Option<Rect>,
+    /// The picture at the front of each cell of a polar or rectangular complex number, in cell order. Empty for any other
+    /// node.
+    pub(crate) pictures: Vec<CellPicture>,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The two paths of one cell's picture, whose data is rewritten when the cell's number changes. A polar picture draws only
+/// the first, and a rectangular picture draws both, as the adjacent and the opposite leg.
+pub(crate) struct CellPicture {
+    pub(crate) primary: SvgNode,
+    pub(crate) secondary: SvgNode,
 }

@@ -10,6 +10,7 @@
 - [Floating Point](floating-point.md)
 - [128-bit Values and UUIDs](wide-values.md)
 - [Booleans and Pointer-sized Integers](bools-and-sizes.md)
+- [Complex Numbers](complex-numbers.md)
 - [Operator Nodes](operator-nodes.md)
 - [Cell Selection](cell-selection.md)
 - [Text Nodes](text-nodes.md)

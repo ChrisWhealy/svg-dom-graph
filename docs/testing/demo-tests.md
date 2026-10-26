@@ -11,6 +11,8 @@ The first runs `demo-app`'s native unit tests.
 These are the syntax highlighter in `highlight/unit_tests.rs`, and `unit_tests.rs`, whose `every_registered_demo_has_extractable_source` guards against a `demo_gallery!` entry whose source text `demo_fn_source` can no longer locate.
 Each hash demo's own panel also has a test that it shows the calculation and the walk behind its one function.
 
+`complex_numbers/argand/unit_tests.rs` checks the arithmetic of the Argand diagram, which needs no browser: where a number lands on the page and that the imaginary axis points up it, which way an arc sweeps and when it is the large one, the tick step, how a number is written without trailing zeros or a negative zero, and where a label goes beside a point or along a line, and that it is never upside down.
+
 The hash demos are the bulk of these tests, because each keeps its calculation and its walk in plain Rust that needs no browser:
 
 * `sha1/algorithm/` and `sha2_256/algorithm/` check the standard's constants, and check the digests of several messages against published values, including the empty message, `"abc"`, the demo's own message, and the longest message that fits one block.

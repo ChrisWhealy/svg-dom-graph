@@ -76,3 +76,24 @@ fn a_boolean_mark_reads_against_its_halo() {
         assert!(ratio >= 4.5, "{ink} is {ratio:.2} to 1 against its halo, and needs 4.5 to 1");
     }
 }
+
+#[test]
+fn complex_cells_and_their_brackets_read_against_the_text_colour() {
+    for fill in [TYPE_COLOUR_COMPLEX32, TYPE_COLOUR_COMPLEX64] {
+        let ratio = contrast(TEXT_FILL, fill);
+        assert!(ratio >= 4.5, "text on {fill} is {ratio:.2} to 1, and needs 4.5 to 1");
+
+        let bracket = contrast(MATRIX_BRACKET_STROKE, fill);
+        assert!(bracket >= 3.0, "a bracket on {fill} is {bracket:.2} to 1, and needs 3 to 1");
+    }
+}
+
+#[test]
+fn the_strokes_of_a_complex_picture_can_be_told_from_the_cell_behind_them() {
+    for fill in [TYPE_COLOUR_COMPLEX32, TYPE_COLOUR_COMPLEX64] {
+        for stroke in [PICTURE_VECTOR_STROKE, PICTURE_REAL_STROKE, PICTURE_IMAGINARY_STROKE] {
+            let ratio = contrast(stroke, fill);
+            assert!(ratio >= 3.0, "{stroke} is {ratio:.2} to 1 against {fill}, and needs 3 to 1");
+        }
+    }
+}

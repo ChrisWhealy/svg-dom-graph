@@ -25,11 +25,12 @@ pub use crate::geometry::{
     view::ViewTransform,
 };
 pub use crate::model::content::{
-    ArithmeticOperator, BinaryOperator, BitValues, BoolFormat, ByteOrder, DataFormat, DataNodeContent, FloatFormat,
-    FloatNotation, FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle, MAX_BIT_WIDTH, MAX_FLOAT_DIGITS,
-    NodeValues, Selection, UnaryOperator, Uuid, UuidCase, UuidFormat, UuidLayout, UuidStyle,
+    AngleUnit, ArithmeticOperator, BinaryOperator, BitValues, BoolFormat, ByteOrder, ComplexNumberFormat, ComplexStyle,
+    DataFormat, DataNodeContent, FloatFormat, FloatNotation, FloatPrecision, GridLayout, HexDumpFormat, LabellingStyle,
+    MAX_BIT_WIDTH, MAX_FLOAT_DIGITS, NodeValues, Selection, UnaryOperator, Uuid, UuidCase, UuidFormat, UuidLayout,
+    UuidStyle,
 };
-pub(crate) use box_handles::{BoxHandles, CellGrid, DataDecor, HexMarks, Pool, group_gaps};
+pub(crate) use box_handles::{BoxHandles, CellGrid, CellPicture, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragObserverHandle, DragOptions, DragPhase, collision_policy::CollisionPolicy};
 pub use node::{EdgeAnchors, EllipseOptions, NodeOptions};
