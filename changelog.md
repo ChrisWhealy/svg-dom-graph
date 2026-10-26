@@ -27,7 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Rearrange `ComplexNumber` demo panel (`08e95e2`)
 - Apply STE100 style rules to markdown docs (`f0af8c8`)
-- Refactors modules with > 1000 SLOC (``)
+- Refactors modules with > 1000 SLOC (`511ef6e`)
 
 # [Released]
 
