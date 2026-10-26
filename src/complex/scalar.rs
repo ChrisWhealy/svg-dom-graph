@@ -214,12 +214,20 @@ macro_rules! define_complex {
                 x * Self::pow2(k.clamp(-Self::SCALE_STEP, Self::SCALE_STEP))
             }
 
-            /// `true` if the larger of `x` and `y` is zero, or is between `2^-(BIAS / 2)` and `2^(BIAS / 2)`: a size at
-            /// which the plain formulas cannot overflow or lose their digits to underflow.
-            fn is_comfortable(x: $float, y: $float) -> bool {
-                let larger = x.abs().max(y.abs());
-                let half = Self::BIAS / 2;
-                larger == 0.0 || (larger >= Self::pow2(-half) && larger <= Self::pow2(half))
+            /// `true` if `x` is zero, or its size is between `2^-(BIAS / 4)` and `2^(BIAS / 4)`: a size at which Smith's
+            /// algorithm cannot overflow, and cannot lose a term to underflow.
+            ///
+            /// Every part is checked, and not the larger part of each number, because Smith's algorithm multiplies a part
+            /// of one number by the *ratio* of the two parts of the other, and that ratio can be tiny when the parts of a
+            /// number are very different in size. A ratio can be as small as `2^-(BIAS / 2)` for parts in this band,
+            /// and a part times that is no smaller than `2^-(3 * BIAS / 4)`, which is a normal number. A part outside the
+            /// band can pair with another to make a product that underflows to zero where the quotient is a number that
+            /// is perfectly representable. For example, `2^-511 * (2^-1074 / 2^-500)` is `2^-1085`, which is zero, where
+            /// the real part of `(2^-511 i) / (2^-500 + 2^-1074 i)` is `2^-585`.
+            fn is_comfortable(x: $float) -> bool {
+                let quarter = Self::BIAS / 4;
+                let size = x.abs();
+                size == 0.0 || (size >= Self::pow2(-quarter) && size <= Self::pow2(quarter))
             }
 
             /// `(a + bi) / (c + di)` by Smith's algorithm: divide through by the larger part of the divisor, so that
@@ -236,36 +244,71 @@ macro_rules! define_complex {
                 }
             }
 
+            /// `x` as a mantissa and an exponent: `x = mantissa * 2^exponent`, with the size of the mantissa between 1 and 2.
+            /// `None` for zero, which has neither. Exact, for a subnormal number too.
+            fn split(x: $float) -> Option<($float, i32)> {
+                (x != 0.0).then(|| {
+                    let exponent = Self::ilogb(x);
+                    (Self::scaled_by_pow2(x, -exponent), exponent)
+                })
+            }
+
+            /// The product of two numbers that are [`split`](Self::split): the mantissas are multiplied and the exponents
+            /// are added. `None` if either is zero. The exponent is an `i32`, so it cannot overflow or underflow.
+            fn times(x: Option<($float, i32)>, y: Option<($float, i32)>) -> Option<($float, i32)> {
+                let ((mantissa_x, exponent_x), (mantissa_y, exponent_y)) = (x?, y?);
+                Some((mantissa_x * mantissa_y, exponent_x + exponent_y))
+            }
+
+            /// The sum of two numbers that are split, whatever their sizes. The one with the smaller exponent is shifted
+            /// down to the larger, which can only make its mantissa smaller, so nothing overflows, and a number too
+            /// small to matter is shifted out of the sum, as it is in any sum.
+            fn plus(x: Option<($float, i32)>, y: Option<($float, i32)>) -> Option<($float, i32)> {
+                match (x, y) {
+                    (Some((mantissa_x, exponent_x)), Some((mantissa_y, exponent_y))) => {
+                        let exponent = exponent_x.max(exponent_y);
+                        Some((
+                            Self::scaled_by_pow2(mantissa_x, exponent_x - exponent)
+                                + Self::scaled_by_pow2(mantissa_y, exponent_y - exponent),
+                            exponent,
+                        ))
+                    },
+                    (only, None) | (None, only) => only,
+                }
+            }
+
             /// `(a + bi) / (c + di)` for finite numbers of any size, with a divisor that is not zero.
             ///
-            /// The numerator and the divisor are each scaled, by a power of two, until the larger of its parts is between
-            /// 1 and 2. That is exact, and it puts every number where Smith's algorithm cannot overflow or underflow.
-            /// The quotient is then scaled back by the difference of the two powers, in one rounding. So the quotient
-            /// of two numbers of the same enormous size is worked out as that of two numbers near 1, and is `1`, and a
+            /// Every part of both numbers is split into a mantissa, between 1 and 2, and an exponent, which is an integer
+            /// and so cannot overflow or underflow. The quotient is `(ac + bd) / (c² + d²)` for the real part and
+            /// `(bc - ad) / (c² + d²)` for the imaginary part, and each product, sum and quotient is worked out on the
+            /// mantissas, with the exponents carried beside them. Only at the very end is the exponent of the quotient put
+            /// back, in one rounding.
+            ///
+            /// So nothing is lost on the way, whatever the sizes of the four parts, and not only when the two numbers are
+            /// each of one size. That matters when a part is very small beside another, as in
+            /// `(2^-511 i) / (2^-500 + 2^-1074 i)`, whose real part is `2^-585`: Smith's algorithm would multiply `2^-511` by
+            /// the ratio `2^-1074 / 2^-500`, and the product, `2^-1085`, is zero. Here it is `2^-1585 / 2^-1000`. The
+            /// quotient of two numbers of the same enormous size is the quotient of two numbers near 1, and is `1`, and a
             /// quotient that really is too large or too small becomes infinity or zero, never `NaN`.
             fn divide_scaled(a: $float, b: $float, c: $float, d: $float) -> Self {
-                let exponent = |x: $float, y: $float| {
-                    let (x, y) = (x.abs(), y.abs());
-                    // The exponent of the larger. A part that is zero has no exponent.
-                    match (x == 0.0, y == 0.0) {
-                        (true, true) => None,
-                        (false, true) => Some(Self::ilogb(x)),
-                        (true, false) => Some(Self::ilogb(y)),
-                        (false, false) => Some(Self::ilogb(x).max(Self::ilogb(y))),
-                    }
-                };
-                let Some(divisor) = exponent(c, d) else {
+                let (a, b, c, d) = (Self::split(a), Self::split(b), Self::split(c), Self::split(d));
+                let negated = |x: Option<($float, i32)>| x.map(|(mantissa, exponent)| (-mantissa, exponent));
+
+                let real = Self::plus(Self::times(a, c), Self::times(b, d));
+                let imaginary = Self::plus(Self::times(b, c), negated(Self::times(a, d)));
+                let Some((denominator, denominator_exponent)) = Self::plus(Self::times(c, c), Self::times(d, d)) else {
+                    // The divisor is zero, which `div` has dealt with, and a number divided by nothing is not here.
                     return Self::ZERO;
                 };
-                // Nothing divided by a number is nothing.
-                let Some(numerator) = exponent(a, b) else {
-                    return Self::ZERO;
+                // The mantissa of a sum of squares is at least 1, so this is a division by a number that is not zero.
+                let quotient = |numerator: Option<($float, i32)>| match numerator {
+                    Some((mantissa, exponent)) => {
+                        Self::scaled_by_pow2(mantissa / denominator, exponent - denominator_exponent)
+                    },
+                    None => 0.0,
                 };
-                let down = |x: $float, e: i32| Self::scaled_by_pow2(x, -e);
-                let quotient =
-                    Self::divide_smith(down(a, numerator), down(b, numerator), down(c, divisor), down(d, divisor));
-                let back = numerator - divisor;
-                Self::new(Self::scaled_by_pow2(quotient.re, back), Self::scaled_by_pow2(quotient.im, back))
+                Self::new(quotient(real), quotient(imaginary))
             }
         }
 
@@ -359,10 +402,11 @@ macro_rules! define_complex {
 
             /// Divides by `other`, and gives a number that is right at any size.
             ///
-            /// * Numbers of ordinary size are divided by Smith's algorithm, which is the quick way.
-            /// * Numbers near either end of the range, which that would overflow on or lose their digits to, are scaled
-            ///   by powers of two first, and the quotient scaled back, so `MAX` over `MAX` is `1` and not `NaN`. See
-            ///   [`divide_scaled`](Self::divide_scaled).
+            /// * Numbers of ordinary size, every part of which is zero or between `2^-(BIAS / 4)` and `2^(BIAS / 4)`, are
+            ///   divided by Smith's algorithm, which is the quick way.
+            /// * Any other number, whether a part is very large or very small, or the parts of a number are very
+            ///   different in size, is scaled by powers of two first, and the quotient scaled back, so `MAX` over `MAX` is
+            ///   `1` and not `NaN`.
             /// * Dividing by zero is dividing each part by the real part of the divisor: an infinity, or `NaN` for a
             ///   numerator of zero.
             /// * A number that is not finite is divided as Smith's algorithm divides it.
@@ -375,7 +419,7 @@ macro_rules! define_complex {
                 if !(a.is_finite() && b.is_finite() && c.is_finite() && d.is_finite()) {
                     return Self::divide_smith(a, b, c, d);
                 }
-                if Self::is_comfortable(a, b) && Self::is_comfortable(c, d) {
+                if [a, b, c, d].into_iter().all(Self::is_comfortable) {
                     Self::divide_smith(a, b, c, d)
                 } else {
                     Self::divide_scaled(a, b, c, d)

@@ -13,9 +13,16 @@ Both come from one macro, so the two precisions cannot drift apart.
 
 It has the arithmetic (`+`, `-`, `*`, `/`, `-z`, the assigning forms, and multiplication and division by a real), `conj`, `norm`, `norm_sqr`, `arg`, `from_polar`, `cis`, and `mul_i` and `mul_neg_i`, which turn a number by a quarter turn with no multiplication.
 Division of numbers of ordinary size is Smith's algorithm, which divides through by the larger part of the divisor so that nothing is squared.
-Smith's algorithm alone still overflows for numbers near the largest, since its numerator and denominator are sums of two numbers that are each near the limit: `(1e308 + 1e308i) / (1e308 + 1e308i)` is `NaN` by it, and is `1` here.
-So a number whose larger part is outside `2^-(BIAS/2)` to `2^(BIAS/2)`, about `1e-154` to `1e154` for `f64` and `1e-19` to `1e19` for `f32`, is divided by scaling the numerator and the divisor by powers of two until each is near 1, and then scaling the quotient back by the difference, in one rounding.
-Scaling by a power of two is exact, so nothing is lost by it, and the scaling reaches the subnormal numbers, whose exponent it reads from the bits.
+It is used only when **every part** of both numbers is zero, or has a size between `2^-(BIAS/4)` and `2^(BIAS/4)`, about `1e-77` to `1e77` for `f64` and `1e-9` to `1e9` for `f32`.
+Smith's algorithm multiplies a part of one number by the *ratio* of the two parts of the other, and for parts in that band the ratio is no smaller than `2^-(BIAS/2)` and the product no smaller than `2^-(3 * BIAS/4)`, which is a normal number, so nothing overflows and no term is lost to underflow.
+Judging the numbers by their larger part alone is not enough: `(2^-511 i) / (2^-500 + 2^-1074 i)` has a real part of `2^-585`, but Smith's algorithm multiplies `2^-511` by the ratio `2^-574` and gets `2^-1085`, which is zero. The `f32` equivalent is `2^-63`, `2^-60` and `2^-149`.
+Smith's algorithm alone also still overflows for numbers near the largest: `(1e308 + 1e308i) / (1e308 + 1e308i)` is `NaN` by it, and is `1` here.
+
+Every other division is worked out on the **mantissas and exponents** of the four parts.
+Each part is split into a mantissa between 1 and 2 and an exponent, which is an integer and so cannot overflow or underflow, and the quotient `(ac + bd) / (c² + d²)` and `(bc - ad) / (c² + d²)` is worked out on the mantissas with the exponents carried beside them. A sum shifts the term with the smaller exponent down to the larger, which can only make it smaller.
+Only at the very end is the exponent of the quotient put back, in one rounding.
+So nothing is lost on the way, whatever the sizes of the four parts, whether the numbers are enormous, tiny, or have parts of very different sizes.
+Splitting and scaling by a power of two are exact, and they reach the subnormal numbers, whose exponent is read from the bits.
 A quotient that is really too large is infinity, and one that is too small is zero, and neither is ever `NaN`.
 Division by zero is each part divided by the real part of the divisor, so it is an infinity, or `NaN` for a numerator of zero, and a number that is not finite is divided as Smith's algorithm divides it.
 

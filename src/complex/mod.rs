@@ -22,9 +22,10 @@
 //! other angle to the first eighth of a turn before calling `sin_cos`, so that the table a transform reads is both
 //! symmetric and as accurate as the precision allows.
 //!
-//! Complex division is Smith's algorithm for numbers of ordinary size. For numbers near the ends of the range it
-//! scales the numerator and the divisor by powers of two first, so that it is right at any size, and never `NaN`
-//! where the quotient is finite. Division by a real is a true division. Everything else is the schoolbook formula.
+//! Complex division is Smith's algorithm when every part of both numbers is of ordinary size. Any other division,
+//! including one whose parts are of very different sizes, is worked out on the mantissas and exponents of the four parts,
+//! so that it is right at any size, and never `NaN` where the quotient is finite. Division by a real is a true division.
+//! Everything else is the schoolbook formula.
 
 use std::{
     fmt,

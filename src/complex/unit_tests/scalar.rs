@@ -211,6 +211,169 @@ macro_rules! scalar_tests {
                 }
             }
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            //   Parts of very different sizes
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+            /// The exponent of the smallest number there is.
+            fn smallest_exponent() -> i32 {
+                $float::MIN_EXP - $float::MANTISSA_DIGITS as i32
+            }
+
+            fn power(exponent: i32) -> $float {
+                $name::scaled_by_pow2(1.0, exponent)
+            }
+
+            /// `value` is `2^exponent` to the precision of the tests.
+            fn is_power(value: $float, exponent: i32) -> bool {
+                let expected = power(exponent);
+                (value - expected).abs() <= expected * $tol
+            }
+
+            #[test]
+            fn a_part_that_is_tiny_beside_another_does_not_make_the_quotient_zero() {
+                // (2^eb * i) / (2^ec + 2^smallest * i). The real part of the quotient is `b d / (c^2 + d^2)`, which is
+                // `2^(eb + smallest - 2 ec)`, and the imaginary part is `b c / (c^2 + d^2)`, which is `2^(eb - ec)`.
+                // Smith's algorithm multiplies `b` by the ratio `d / c`, and that product is `2^(eb + smallest - ec)`,
+                // which is below the smallest number there is, so it was zero. Every part is in the band that was thought
+                // comfortable, which was judged by the larger part of each number only.
+                let (eb, ec) = if $float::MAX_EXP > 200 { (-511, -500) } else { (-63, -60) };
+                let quotient = $name::new(0.0, power(eb)) / $name::new(power(ec), smallest());
+
+                let real = eb + smallest_exponent() - 2 * ec;
+                assert!(
+                    is_power(quotient.re, real),
+                    "the real part was {:e}, and should be 2^{real}",
+                    quotient.re
+                );
+                assert!(is_power(quotient.im, eb - ec), "the imaginary part was {:e}", quotient.im);
+            }
+
+            #[test]
+            fn the_same_quotient_with_the_parts_in_every_other_place_is_right_too() {
+                let (eb, ec) = if $float::MAX_EXP > 200 { (-511, -500) } else { (-63, -60) };
+                let (tiny, b, c) = (smallest(), power(eb), power(ec));
+
+                // (b + 0i) / (c + d i): the imaginary part of the quotient is the small one, `-b d / (c^2 + d^2)`.
+                let quotient = $name::new(b, 0.0) / $name::new(c, tiny);
+                assert!(is_power(quotient.re, eb - ec), "{quotient:?}");
+                assert!(is_power(-quotient.im, eb + smallest_exponent() - 2 * ec), "{quotient:?}");
+
+                // The small part in the divisor's real part, which is then the smaller of its parts: (b i) / (d + c i) is
+                // `b (c + d i) / (c^2 + d^2)`.
+                let quotient = $name::new(0.0, b) / $name::new(tiny, c);
+                assert!(is_power(quotient.re, eb - ec), "{quotient:?}");
+                assert!(is_power(quotient.im, eb + smallest_exponent() - 2 * ec), "{quotient:?}");
+
+                // The small part in the numerator: (tiny + b i) / (c + 0i) is (tiny / c) + (b / c) i.
+                let quotient = $name::new(tiny, b) / $name::new(c, 0.0);
+                assert!(is_power(quotient.im, eb - ec), "{quotient:?}");
+            }
+
+            #[test]
+            fn a_huge_numerator_over_a_divisor_with_a_tiny_part_keeps_the_part_that_is_still_representable() {
+                // `b d / c^2` is `2^(eb + smallest - 2 ec)`. The divisor's parts differ in size by more than the smallest
+                // number can hold as a ratio, so a division that scales the divisor down by its larger part loses `d`, and
+                // with it a real part that is, because the numerator is huge, a perfectly good number.
+                let (eb, ec) = if $float::MAX_EXP > 200 { (1000, 100) } else { (100, 20) };
+                let quotient = $name::new(0.0, power(eb)) / $name::new(power(ec), smallest());
+
+                let real = eb + smallest_exponent() - 2 * ec;
+                assert!(quotient.re != 0.0, "the real part was lost: {quotient:?}");
+                assert!(
+                    is_power(quotient.re, real),
+                    "the real part was {:e}, and should be 2^{real}",
+                    quotient.re
+                );
+                assert!(is_power(quotient.im, eb - ec), "{quotient:?}");
+            }
+
+            #[test]
+            fn every_part_must_be_in_the_comfortable_band_for_the_quick_algorithm() {
+                let quarter = ($float::MAX_EXP - 1) / 4;
+
+                assert!($name::is_comfortable(0.0) && $name::is_comfortable(-0.0));
+                assert!($name::is_comfortable(1.0) && $name::is_comfortable(-3.5));
+                assert!($name::is_comfortable(power(quarter)) && $name::is_comfortable(power(-quarter)));
+                assert!(!$name::is_comfortable(power(quarter + 1)));
+                assert!(!$name::is_comfortable(power(-quarter - 1)));
+                assert!(!$name::is_comfortable(smallest()) && !$name::is_comfortable(MAX));
+            }
+
+            #[test]
+            fn the_quick_algorithm_and_the_scaled_one_agree_wherever_the_quick_one_is_used() {
+                // Every combination of parts that are zero, or in the comfortable band at five sizes and both signs.
+                let quarter = ($float::MAX_EXP - 1) / 4;
+                let mut parts = vec![0.0 as $float];
+                for exponent in [-quarter, -quarter / 2, 0, quarter / 2, quarter] {
+                    parts.push(power(exponent) * 1.25);
+                    parts.push(-power(exponent) * 1.75);
+                }
+                for &a in &parts {
+                    for &b in &parts {
+                        for &c in &parts {
+                            for &d in &parts {
+                                if c == 0.0 && d == 0.0 {
+                                    continue;
+                                }
+                                let quick = $name::new(a, b) / $name::new(c, d);
+                                let scaled = $name::divide_scaled(a, b, c, d);
+                                // Both are right, and differ by the rounding of the different order of the sums. A part that
+                                // cancels is the size of the rounding of the parts it cancels between.
+                                let allowed = |x: $float, y: $float| {
+                                    (x - y).abs()
+                                        <= (x.abs().max(y.abs()) * $tol).max(quick.re.abs().max(quick.im.abs()) * $tol)
+                                };
+                                assert!(
+                                    allowed(quick.re, scaled.re) && allowed(quick.im, scaled.im),
+                                    "({a:e} + {b:e}i) / ({c:e} + {d:e}i): {quick:?} against {scaled:?}"
+                                );
+                            }
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn single_precision_division_agrees_with_double_precision_for_parts_of_every_size() {
+                // Every part of a single precision number is comfortable in double precision, so double precision's own
+                // division is a trustworthy answer for it, and is rounded to single precision to compare.
+                if std::mem::size_of::<$float>() != 4 {
+                    return;
+                }
+                let mut parts = vec![0.0_f64];
+                for exponent in [-149, -126, -100, -60, -20, 0, 20, 60, 100, 127] {
+                    parts.push(2.0_f64.powi(exponent) * 1.3);
+                    parts.push(-(2.0_f64.powi(exponent)) * 1.9);
+                }
+                for &a in &parts {
+                    for &b in &parts {
+                        for &c in &parts {
+                            for &d in &parts {
+                                if c == 0.0 && d == 0.0 {
+                                    continue;
+                                }
+                                let single =
+                                    $name::new(a as $float, b as $float) / $name::new(c as $float, d as $float);
+                                let double = crate::complex::Complex::new(f64::from(a as f32), f64::from(b as f32))
+                                    / crate::complex::Complex::new(f64::from(c as f32), f64::from(d as f32));
+                                for (got, want) in [(single.re, double.re as $float), (single.im, double.im as $float)]
+                                {
+                                    assert!(!got.is_nan(), "NaN for ({a:e} + {b:e}i) / ({c:e} + {d:e}i)");
+                                    // A part that is close to zero beside the other is as accurate as the larger of the two.
+                                    let larger = (double.re.abs().max(double.im.abs())) as $float;
+                                    let allowed = (larger * 1e-5).max(smallest() * 4.0);
+                                    assert!(
+                                        got == want || (got - want).abs() <= allowed,
+                                        "({a:e} + {b:e}i) / ({c:e} + {d:e}i): {got:e} against {want:e}"
+                                    );
+                                }
+                            }
+                        }
+                    }
+                }
+            }
+
             #[test]
             fn division_by_zero_is_an_infinity_and_nothing_divided_by_nothing_is_nan() {
                 let by_zero = $name::new(1.0, 2.0) / $name::ZERO;
