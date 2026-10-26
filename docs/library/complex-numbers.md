@@ -86,6 +86,7 @@ Two faint lines through the middle of the box are the real axis and the imaginar
 Every picture of a node is drawn to the same scale, which the largest modulus of its numbers sets, so a number twice as long as another is drawn twice as long, and the longest reaches nine units from the middle.
 An arrow is never drawn shorter than a ninth of the box unless the number is zero, which is a dot, so that a small number is still seen.
 A number that is not finite has a picture that draws nothing.
+The scale is never worked out as a number of its own: each part is divided by the largest modulus first and then multiplied by the reach, since `reach / largest` is infinite for a largest as small as the smallest subnormal number, and would put `inf` and `NaN` in the path of a number that is perfectly finite. A number so much larger than the largest that its picture could not be put on the page, which only happens when the largest was not worked out from it, draws nothing too.
 
 The picture is decoration.
 It is hidden from assistive technology and takes no pointer events, because the cell's text already says the number.

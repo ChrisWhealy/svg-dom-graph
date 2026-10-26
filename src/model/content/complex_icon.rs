@@ -92,22 +92,31 @@ pub(crate) fn axes_path() -> String {
 /// The path data of the picture of `re + im·i`, in a box of [`ICON_SIZE`] whose top left corner is the origin, drawn to the
 /// scale that `max_modulus` sets: a number of that modulus reaches the edge of the picture's range.
 ///
-/// A number that is not finite, or a `max_modulus` that is not a positive finite number, gives empty paths. Zero is a
-/// dot, and not an arrow with no length.
+/// A number that is not finite, or a `max_modulus` that is not a positive finite number, gives empty paths. So does one so
+/// much larger than `max_modulus` that its picture could not be put on the page. Zero is a dot, and not an arrow with no
+/// length.
+///
+/// Each part is first divided by `max_modulus`, and only then multiplied by the reach of the picture. The scale
+/// `REACH / max_modulus` is not worked out as a number of its own, since for a very small but finite `max_modulus` it is
+/// infinite: it is for the smallest subnormal number, and `0 * inf` and `inf - inf` are `NaN` in the path. A part is no
+/// larger than the modulus it belongs to, so its share of the largest modulus is a number that cannot overflow.
 pub(crate) fn icon_paths(kind: IconKind, re: f64, im: f64, max_modulus: f64) -> IconPaths {
     if !(re.is_finite() && im.is_finite() && max_modulus.is_finite() && max_modulus > 0.0) {
         return IconPaths::default();
     }
     let middle = ICON_SIZE / 2.0;
-    let scale = REACH / max_modulus;
+    let (share_re, share_im) = (re / max_modulus, im / max_modulus);
     match kind {
         IconKind::Polar => IconPaths {
-            primary: arrow(middle, re, im, scale),
+            primary: arrow(middle, share_re, share_im),
             secondary: String::new(),
         },
         IconKind::Rectangular => {
             // The real part runs along the page and the imaginary part up it, and the page's `y` points down.
-            let (x, y) = (middle + re * scale, middle - im * scale);
+            let (x, y) = (middle + REACH * share_re, middle - REACH * share_im);
+            if !(x.is_finite() && y.is_finite()) {
+                return IconPaths::default();
+            }
             IconPaths {
                 primary: format!("M {middle:.2} {middle:.2} H {x:.2}"),
                 secondary: format!("M {x:.2} {middle:.2} V {y:.2}"),
@@ -117,17 +126,24 @@ pub(crate) fn icon_paths(kind: IconKind, re: f64, im: f64, max_modulus: f64) -> 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// An arrow from `(middle, middle)` to `re + im·i` at `scale` user units to the unit, with the arrowhead of two short
-/// strokes that sweep back from the tip.
-fn arrow(middle: f64, re: f64, im: f64, scale: f64) -> String {
-    let length = re.hypot(im) * scale;
+/// An arrow from `(middle, middle)` to the number whose parts are `share_re` and `share_im` of the largest modulus, with the
+/// arrowhead of two short strokes that sweep back from the tip. It is empty if the arrow would not fit on the page.
+///
+/// The length is the modulus of the two shares, times the reach, and the direction is the shares divided by that modulus.
+/// Both are worked out from the shares, and never from the number's own parts, which may be anywhere in the range.
+fn arrow(middle: f64, share_re: f64, share_im: f64) -> String {
+    let share = share_re.hypot(share_im);
+    let length = share * REACH;
+    if !length.is_finite() {
+        return String::new();
+    }
     if length == 0.0 {
         // A zero-length stroke with a round cap is a dot.
         return format!("M {middle:.2} {middle:.2} h 0");
     }
     // The number is drawn no shorter than `SHORTEST`, in its own direction, so that it is seen.
     let shown = length.max(SHORTEST);
-    let (cos, sin) = (re / re.hypot(im), im / re.hypot(im));
+    let (cos, sin) = (share_re / share, share_im / share);
     let (tip_x, tip_y) = (middle + shown * cos, middle - shown * sin);
     // The head is as long as it can be, up to `HEAD`, without being longer than the shaft.
     let head = HEAD.min(shown * 0.6);

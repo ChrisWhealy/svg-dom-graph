@@ -224,3 +224,131 @@ fn a_scale_that_is_not_a_positive_number_gives_a_finite_width() -> Result<(), St
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Numbers at the ends of the range
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Every number in the path data, whatever letter it follows, including one that is `inf` or `NaN`.
+fn every_number(paths: &IconPaths) -> Vec<f64> {
+    numbers(&paths.primary).into_iter().chain(numbers(&paths.secondary)).collect()
+}
+
+/// Sizes from the smallest subnormal number to the largest, with the subnormal and normal numbers either side of the line
+/// between them.
+fn sizes() -> [f64; 10] {
+    [
+        f64::from_bits(1),
+        f64::from_bits(7),
+        f64::MIN_POSITIVE / 4.0,
+        f64::MIN_POSITIVE,
+        1e-300,
+        1e-10,
+        1.0,
+        1e10,
+        1e300,
+        f64::MAX,
+    ]
+}
+
+#[test]
+fn the_smallest_number_there_is_gets_a_picture_with_real_coordinates() -> Result<(), String> {
+    let tiny = f64::from_bits(1);
+
+    for kind in [IconKind::Polar, IconKind::Rectangular] {
+        let paths = icon_paths(kind, tiny, 0.0, tiny);
+        check(
+            !paths.primary.is_empty(),
+            &format!("{kind:?} drew nothing for the smallest number"),
+        )?;
+        for value in every_number(&paths) {
+            check(
+                value.is_finite() && (0.0..=ICON_SIZE).contains(&value),
+                &format!("{kind:?} has {value}"),
+            )?;
+        }
+    }
+    // It is the largest, so it reaches the edge of the range, as any largest number does.
+    let arrow = numbers(&polar(tiny, 0.0, tiny).primary);
+    check(
+        (arrow[2] - (MIDDLE + 9.0)).abs() < 1e-9,
+        &format!("the arrow reaches {}", arrow[2]),
+    )
+}
+
+#[test]
+fn a_small_number_beside_a_smaller_largest_is_drawn_in_proportion() -> Result<(), String> {
+    // Three smallest steps against a largest of five, which is 3-4-5 in the units of the smallest number.
+    let unit = f64::from_bits(1);
+    let paths = polar(3.0 * unit, 4.0 * unit, 5.0 * unit);
+    let arrow = numbers(&paths.primary);
+
+    check((arrow[2] - (MIDDLE + 9.0 * 0.6)).abs() < 1e-9, &format!("across {}", arrow[2]))?;
+    check((arrow[3] - (MIDDLE - 9.0 * 0.8)).abs() < 1e-9, &format!("up {}", arrow[3]))?;
+    let legs = rectangular(3.0 * unit, 4.0 * unit, 5.0 * unit);
+    check_eq(legs.primary, "M 11.00 11.00 H 16.40".to_owned())?;
+    check_eq(legs.secondary, "M 16.40 11.00 V 3.80".to_owned())
+}
+
+#[test]
+fn every_coordinate_is_finite_and_inside_the_box_for_numbers_of_every_size() -> Result<(), String> {
+    for kind in [IconKind::Polar, IconKind::Rectangular] {
+        for &largest in &sizes() {
+            // Each part is no larger than the modulus that it belongs to, and a modulus no larger than the largest.
+            for &part in sizes().iter().filter(|&&size| size <= largest) {
+                for (re, im) in [(part, 0.0), (0.0, -part), (-part, part / 2.0)] {
+                    let paths = icon_paths(kind, re, im, largest);
+                    for value in every_number(&paths) {
+                        check(
+                            value.is_finite() && (-1e-9..=ICON_SIZE + 1e-9).contains(&value),
+                            &format!("{kind:?} of {re:e} + {im:e}i against {largest:e} reaches {value}"),
+                        )?;
+                    }
+                }
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_number_too_much_larger_than_the_largest_to_draw_gives_no_path_and_never_a_nan() -> Result<(), String> {
+    // A number can only be this much larger than the largest if the largest was not worked out from it, which is so when
+    // its modulus overflowed. Its picture cannot be put on the page, and is empty, and is not `inf`.
+    for kind in [IconKind::Polar, IconKind::Rectangular] {
+        for (re, im, max) in [
+            (f64::MAX, 0.0, 1e-300),
+            (f64::MAX, f64::MAX, 1.0),
+            (f64::MAX, f64::MAX, f64::from_bits(1)),
+            (0.0, -f64::MAX, f64::MIN_POSITIVE),
+        ] {
+            let paths = icon_paths(kind, re, im, max);
+            for value in every_number(&paths) {
+                check(
+                    value.is_finite(),
+                    &format!("{kind:?} of {re:e} + {im:e}i against {max:e} has {value}"),
+                )?;
+            }
+        }
+    }
+    check_eq(polar(f64::MAX, 0.0, 1e-300), IconPaths::default())?;
+    check_eq(rectangular(f64::MAX, 0.0, 1e-300), IconPaths::default())
+}
+
+#[test]
+fn the_largest_number_alone_reaches_the_edge_too() -> Result<(), String> {
+    for kind in [IconKind::Polar, IconKind::Rectangular] {
+        let paths = icon_paths(kind, f64::MAX, 0.0, f64::MAX);
+        check(
+            !paths.primary.is_empty(),
+            &format!("{kind:?} drew nothing for the largest number"),
+        )?;
+        for value in every_number(&paths) {
+            check(
+                value.is_finite() && (0.0..=ICON_SIZE).contains(&value),
+                &format!("{kind:?} has {value}"),
+            )?;
+        }
+    }
+    Ok(())
+}
