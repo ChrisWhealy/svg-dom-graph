@@ -357,6 +357,20 @@ macro_rules! buffer_tests {
             }
 
             #[test]
+            #[should_panic(expected = "outside the buffer")]
+            fn a_block_whose_width_alone_overflows_is_refused() {
+                // Twice this does not fit in a `usize`, though the block starts at zero.
+                $buf::new(8).butterfly(0, usize::MAX / 2 + 1, &$buf::new(1));
+            }
+
+            #[test]
+            #[should_panic(expected = "outside the buffer")]
+            fn a_block_whose_end_overflows_is_refused() {
+                // The width fits, but the start plus the width does not.
+                $buf::new(8).butterfly(usize::MAX - 1, 2, &$buf::new(1));
+            }
+
+            #[test]
             #[should_panic(expected = "fewer twiddle factors")]
             fn a_butterfly_without_enough_twiddles_is_refused() {
                 $buf::new(8).butterfly(0, 4, &$buf::new(3));

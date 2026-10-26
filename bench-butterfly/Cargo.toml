@@ -1,0 +1,24 @@
+[package]
+name = "butterfly-bench"
+version = "0.0.0"
+edition = "2024"
+rust-version = "1.85"
+description = "Checks that the split-buffer butterfly vectorises on wasm32, and times it. See README.md."
+publish = false
+
+[lib]
+crate-type = ["cdylib"]
+
+[dependencies]
+demo-common = { path = "../demo-common" }
+svg-dom-graph = { path = ".." }
+
+[profile.release]
+opt-level = 3
+lto = true
+codegen-units = 1
+panic = "abort"
+
+# Its own workspace, because it is built twice with different `RUSTFLAGS` and run by `run.sh`, never as part of the
+# library's or the demo's build.
+[workspace]

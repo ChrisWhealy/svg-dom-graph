@@ -227,7 +227,12 @@ macro_rules! define_buffer {
             ///
             /// If the block does not lie inside the buffer, or `twiddles` has fewer than `half` factors.
             pub fn butterfly(&mut self, start: usize, half: usize, twiddles: &Self) {
-                let end = start.checked_add(half.saturating_mul(2)).filter(|&end| end <= self.len());
+                // Each step is checked, so a width or an end that does not fit in a `usize` is refused like any block that
+                // is too long, and never wraps round to look as if it fits.
+                let end = half
+                    .checked_mul(2)
+                    .and_then(|width| start.checked_add(width))
+                    .filter(|&end| end <= self.len());
                 let end = end.expect("the butterfly block lies outside the buffer");
                 assert!(twiddles.len() >= half, "fewer twiddle factors than butterflies");
 
