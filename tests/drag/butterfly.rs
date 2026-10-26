@@ -504,6 +504,39 @@ fn a_butterfly_must_be_made_of_complex_numbers() -> Result<(), String> {
     check(groups("bf-not-complex")? == before, "a rejected call drew something")
 }
 
+/// An operand that holds several complex numbers is refused, as a result that does is, and nothing is drawn.
+#[wasm_bindgen_test]
+fn an_operand_holding_several_complex_numbers_is_refused_and_the_scene_is_left_alone() -> Result<(), String> {
+    let (scene, operands) = scene_with_operands("bf-many-operand")?;
+    let several = scene
+        .add_data_node(
+            Point::new(600.0, 20.0),
+            DataNodeContent::new(
+                NodeValues::Complex64(vec![Complex::new(1.0, 2.0), Complex::new(3.0, 4.0)]),
+                DataFormat::Decimal,
+            ),
+        )
+        .map_err(e)?;
+    let (nodes, connectors) = (groups("bf-many-operand")?, connector_count("bf-many-operand")?);
+    // Each of the three operand places is tried in turn with the several-valued node.
+    for replaced in [
+        ButterflyOperands::new(several, operands.b, operands.twiddle),
+        ButterflyOperands::new(operands.a, several, operands.twiddle),
+        ButterflyOperands::new(operands.a, operands.b, several),
+    ] {
+        let result = scene.add_butterfly_node(Point::new(300.0, 100.0), replaced, results());
+        check(
+            matches!(result, Err(Error::ButterflyNotComplex(Some(id))) if id == several),
+            &format!("{result:?}"),
+        )?;
+    }
+    check(groups("bf-many-operand")? == nodes, "a rejected call drew a node")?;
+    check(
+        connector_count("bf-many-operand")? == connectors,
+        "a rejected call drew a connector",
+    )
+}
+
 #[wasm_bindgen_test]
 fn the_twiddle_factor_and_b_must_be_different_nodes() -> Result<(), String> {
     let (scene, operands) = scene_with_operands("bf-duplicate")?;

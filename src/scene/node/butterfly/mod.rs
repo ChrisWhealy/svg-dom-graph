@@ -255,7 +255,9 @@ impl Scene {
         {
             let inner = self.inner.borrow();
             for id in [operands.a, operands.b, operands.twiddle] {
-                if !super::operator::operand_content(&inner.graph, id)?.holds_complex() {
+                // Each operand is one complex number, as each result is: a grid of them has no single value to multiply.
+                let content = super::operator::operand_content(&inner.graph, id)?;
+                if !content.holds_complex() || content.len() != 1 {
                     return Err(Error::ButterflyNotComplex(Some(id)));
                 }
             }
