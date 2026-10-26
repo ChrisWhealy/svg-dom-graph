@@ -71,6 +71,13 @@ Each of those nodes keeps the place in the frame that it had when the butterfly 
 A move works out where each one goes from where the frame is, not by a distance.
 Do not call `make_draggable` on the frame, because it is already draggable.
 
+The frame's rectangle is a little wider than the box that is drawn.
+It reaches 10 units west of the box, to hold the half of each input port that sticks out.
+A node is kept inside the visible area as a rectangle.
+So dragging the frame to the left edge of the view leaves the ports whole, and does not clip them.
+The position that `add_butterfly_node` and `move_butterfly` take is the corner of that rectangle.
+The box itself begins 10 units east of it.
+
 The ports and the operator nodes are not draggable on their own.
 They keep their place in the frame.
 

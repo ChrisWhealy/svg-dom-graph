@@ -17,7 +17,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Give FFT direction an explicit contract (Docs and tests only) (`8034761`)
 - Add `bench-butterfly` project crate for simd128 tests (`3e61028`)
-- Reject multiple float values as input to Butterfly group (``)
+- Reject multiple float values as input to Butterfly group (`7734e0c`)
+- Prevent Butterfly input ports being clipped at viewport boundary (``)
 
 ## Fixed
 

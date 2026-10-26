@@ -111,8 +111,12 @@ fn the_three_ports_are_circles_in_order_down_the_frames_west_edge() -> Result<()
     let at = layout(Point::new(100.0, 40.0), product, sum, difference);
     let [a, b, w] = at.ports;
     check(
-        a.x == at.frame.origin.x && b.x == a.x && w.x == a.x,
-        "a port is not on the west edge",
+        a.x == at.frame.origin.x + PORT_PROTRUSION && b.x == a.x && w.x == a.x,
+        "a port is not on the west edge of the box",
+    )?;
+    check(
+        a.x - PORT_RADIUS >= at.frame.origin.x,
+        "a port sticks out of the frame's rectangle",
     )?;
     check(a.y < b.y && b.y < w.y, "the ports are not in the order A, B, W")?;
     check(a.y - PORT_RADIUS >= at.frame.origin.y, "A sticks out of the top")?;
@@ -229,5 +233,27 @@ fn the_targets_depend_only_on_where_the_frame_is_and_not_on_how_it_got_there() -
     check(
         member_targets(Point::new(10.0, 20.0), &offsets) == member_targets(Point::new(10.0, 20.0), &offsets),
         "the same corner gave two sets of targets",
+    )
+}
+
+#[test]
+fn the_frames_rectangle_holds_every_port_whole_so_that_confining_it_keeps_them_visible() -> Result<(), String> {
+    let (product, sum, difference) = sizes();
+    let at = layout(Point::new(100.0, 40.0), product, sum, difference);
+    for port in at.ports {
+        // The most that a port reaches, which is a little more than its radius in a browser with a wide letter.
+        let reach = PORT_PROTRUSION;
+        check(
+            port.x - reach >= at.frame.origin.x - 1e-9,
+            "a port sticks out west of the frame's rectangle",
+        )?;
+        check(
+            port.y - reach >= at.frame.origin.y && port.y + reach <= at.frame.origin.y + at.frame.size.height,
+            "a port sticks out above or below",
+        )?;
+    }
+    check(
+        PORT_PROTRUSION >= PORT_RADIUS,
+        "the protrusion is less than a port's own radius",
     )
 }

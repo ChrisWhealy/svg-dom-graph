@@ -288,10 +288,19 @@ fn the_frame_has_three_input_ports_that_are_fixing_points_for_the_connectors() -
         .map(|&id| scene.node_rect(id).map_err(e))
         .collect::<Result<_, _>>()?;
     let centre = |r: Rect| Point::new(r.origin.x + r.size.width / 2.0, r.origin.y + r.size.height / 2.0);
+    // The ports are centred on the west edge of the drawn box, so their centres are level with one another. The frame's
+    // rectangle reaches west far enough to hold every one whole, which keeps them from being clipped at the edge of the
+    // visible area when the frame is dragged to it.
     for r in &rects {
         check(
-            (centre(*r).x - frame.origin.x).abs() < 0.01,
-            "a port is not centred on the west edge",
+            (centre(*r).x - centre(rects[0]).x).abs() < 0.01,
+            "the ports are not in one column",
+        )?;
+        check(
+            r.origin.x >= frame.origin.x - 0.01
+                && r.origin.y >= frame.origin.y
+                && r.origin.y + r.size.height <= frame.origin.y + frame.size.height,
+            &format!("a port {r:?} sticks out of the frame's rectangle {frame:?}"),
         )?;
     }
     check(

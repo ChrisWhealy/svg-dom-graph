@@ -6,9 +6,9 @@
 //!
 //! ```text
 //!   ┌ Butterfly ──────────────────┐
-//!   (A)─────────────────► [ ADD ]│
-//!   │                  ╲ ╱        │
-//!   (B)─┐               ╳        │
+//!   (A)──────────────—───► [ ADD ]│
+//!   │                ╲ ╱          │
+//!   (B)─┐             ╳           │
 //!   (W)─┴► [ MUL ] ──╱ ╲─► [ SUB ]│
 //!   └─────────────────────────────┘
 //! ```
@@ -54,6 +54,12 @@ const TITLE_ROOM: f64 = 30.0;
 const COLUMN_GAP: f64 = 2.0 * SAME_SIDE_CLEARANCE;
 /// The gap between the addition and the subtraction, which the crossing lines span.
 const ROW_GAP: f64 = 60.0;
+/// How far the frame's node reaches west of the box that is drawn, to hold the half of each port that sticks out of it.
+///
+/// A node is kept inside the visible area as a rectangle, and that is the frame's rectangle. So it must contain the ports as
+/// well as the box, or dragging the frame to the left edge would clip them. It is a little more than a port's radius, since
+/// a port grows to hold its letter, and a letter is wider in some browsers than in others.
+const PORT_PROTRUSION: f64 = 10.0;
 /// The radius of an input port, a circle centred on the frame's west edge. It is as small as holds its letter.
 const PORT_RADIUS: f64 = 8.0;
 /// The size of a port's letter, smaller than a node's label so that the port can be small.
@@ -166,10 +172,11 @@ fn input_slots(height: f64) -> [f64; 2] {
 /// addition and slopes down into the subtraction, so those two lines cross once, between the columns. There is room above
 /// the addition for the frame's title.
 ///
-/// The three input ports are circles centred on the frame's west edge. `A` is level with the addition's first fixing
+/// The three input ports are circles centred on the west edge of the box that is drawn, which is [`PORT_PROTRUSION`] in
+/// from the west edge of the frame's rectangle, so that the rectangle holds them whole. `A` is level with the addition's first fixing
 /// point. `B` and `W` are one above the other, centred on the multiplication, and far enough apart not to touch.
 fn layout(top_left: Point, product: Size, sum: Size, difference: Size) -> Layout {
-    let left = PORT_RADIUS + PORT_RUN;
+    let left = PORT_PROTRUSION + PORT_RADIUS + PORT_RUN;
     let right_x = left + product.width + COLUMN_GAP;
     let right_width = sum.width.max(difference.width);
     let first_row = TITLE_ROOM;
@@ -195,9 +202,9 @@ fn layout(top_left: Point, product: Size, sum: Size, difference: Size) -> Layout
         sum: at(right_x, first_row),
         difference: at(right_x, difference_y),
         ports: [
-            at(0.0, first_row + a_slot),
-            at(0.0, product_middle - apart),
-            at(0.0, product_middle + apart),
+            at(PORT_PROTRUSION, first_row + a_slot),
+            at(PORT_PROTRUSION, product_middle - apart),
+            at(PORT_PROTRUSION, product_middle + apart),
         ],
     }
 }
@@ -220,7 +227,9 @@ impl Scene {
     /// product, so they show `a + w·b` and `a − w·b`. `svg-dom-graph` never does this arithmetic. `results` must already
     /// hold the three values, worked out by the caller.
     ///
-    /// `top_left` is the frame's top left corner, and the frame is sized to hold its three operator nodes.
+    /// `top_left` is the top left corner of the frame's rectangle, which holds the frame's box, its three operator nodes
+    /// and the half of each input port that sticks out west of the box. The box itself begins a little east of that
+    /// corner. So dragging the frame to the edge of the visible area keeps the ports whole.
     /// The frame is already draggable, and dragging it carries the three operator nodes along.
     /// To move a butterfly from code, use [`move_butterfly`](Self::move_butterfly).
     /// Do not call `make_draggable` on [`Butterfly::frame`]: it is already draggable.
@@ -284,7 +293,7 @@ impl Scene {
             FRAME_LABEL,
             NodeOptions::default().with_fill(Some(FRAME_FILL)),
         )?;
-        self.retitle_frame(frame)?;
+        self.shape_frame(frame, layout.frame.size.width)?;
         // The three input ports are circles on the frame's west edge. They are nodes, so a connector can end at one, and
         // another can start from it.
         let port = |at: Point, name: &str| {
@@ -382,14 +391,20 @@ impl Scene {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Moves the frame's title to its top left corner, clear of the connectors that cross the frame's middle.
-    fn retitle_frame(&self, frame: NodeId) -> Result<(), Error> {
+    /// Draws the frame's box [`PORT_PROTRUSION`] in from the west edge of its rectangle, and moves its title to the box's top
+    /// left corner, clear of the ports and of the connectors that cross the frame's middle.
+    ///
+    /// The frame is made as a plain node, whose box fills its rectangle. The rectangle is the width that keeps the ports
+    /// inside it, so the box is narrowed to leave them room, by moving its west edge east.
+    fn shape_frame(&self, frame: NodeId, width: f64) -> Result<(), Error> {
         let inner = self.inner.borrow();
-        let group = inner.node_handle(frame).ok_or(Error::UnknownNode(frame))?.group.clone();
-        if let Some(title) = group.query_selector("text")? {
+        let handles = inner.node_handle(frame).ok_or(Error::UnknownNode(frame))?;
+        handles.outer_rect.set_attr("x", &PORT_PROTRUSION.to_string())?;
+        handles.outer_rect.set_attr("width", &(width - PORT_PROTRUSION).to_string())?;
+        if let Some(title) = handles.group.query_selector("text")? {
             title.set_text_anchor(TextAnchor::Start)?;
             title.set_dominant_baseline(DominantBaseline::Hanging)?;
-            title.set_attr("x", &(PORT_RADIUS + FRAME_PADDING / 2.0).to_string())?;
+            title.set_attr("x", &(PORT_PROTRUSION + PORT_RADIUS + FRAME_PADDING / 2.0).to_string())?;
             title.set_attr("y", &(FRAME_PADDING / 2.0).to_string())?;
         }
         Ok(())
