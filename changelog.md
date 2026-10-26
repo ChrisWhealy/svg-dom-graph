@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.44] - 2026-10-26
 
 ## Added
@@ -23,8 +25,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Prevent partial movement failure from permanently misaligning butterfly (`3966d1e`)
-
-# [Released]
 
 ## [0.2.43] - 2026-10-26
 
