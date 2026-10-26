@@ -39,7 +39,7 @@ use widest::*;
 /// places or significant digits, in plain or scientific notation, and [`DataFormat::Decimal`] writes their shortest
 /// digits. [`DataFormat::Hexadecimal`] and [`DataFormat::Binary`] show their IEEE-754 bits, in the selected [`ByteOrder`].
 /// Unlike an integer, a float has `NaN`, the infinities and a negative zero, and its text takes a number of characters
-/// that depends on far more than its size. See [`FloatFormat`] for each of those.
+/// that depends on far more than its size. See [`crate::model::content::float_format::FloatFormat`] for each of those.
 ///
 /// # UUIDs
 ///

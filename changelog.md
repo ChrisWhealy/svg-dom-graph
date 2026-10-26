@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Ensure very small complex values do not generate invalid SVG coordinates (`23a10fc`)
 - Prevent Smith's algorithm fast path from underflowing (`eadcdac`)
 - Avoid resorting picture stale-state vector (`f7caae5`)
+- Correct `cargo doc` error (``)
 
 ## Changed
 
