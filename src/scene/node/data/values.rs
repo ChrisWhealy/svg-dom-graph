@@ -170,8 +170,8 @@ impl Scene {
         if let Some(kind) = picture_kind {
             let max_modulus = content.max_modulus();
             let rewrite_all = max_modulus.to_bits() != old_max_modulus.to_bits();
-            let stale: Vec<bool> = handles.decor.pictures.iter().map(|picture| picture.stale).collect();
-            let to_write = pictures_to_write(handles.decor.pictures.len(), &changed_cells, &stale, rewrite_all);
+            let pictures = &handles.decor.pictures;
+            let to_write = pictures_to_write(pictures.len(), &changed_cells, |i| pictures[i].stale, rewrite_all);
             for &i in &to_write {
                 handles.decor.pictures[i].stale = true;
             }

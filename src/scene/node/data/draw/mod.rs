@@ -1020,26 +1020,33 @@ fn draw_picture(
 /// Which pictures of a node of `count` pictures a replacement has to write, in order.
 ///
 /// * Every picture, if `rewrite_all`, because the scale they are all drawn to has changed.
-/// * Otherwise the pictures of the `changed` cells, and every picture that is `stale`: one that an earlier replacement
-///   began to write and did not finish. Its number is already in the model, so nothing about it looks changed, and only
-///   its stale mark says that it is wrong.
+/// * Otherwise the pictures of the `changed` cells, and every picture for which `is_stale` is true: one that an earlier
+///   replacement began to write and did not finish. Its number is already in the model, so nothing about it looks
+///   changed, and only its stale mark says that it is wrong.
 ///
-/// An index past `count` is dropped, and none is listed twice.
-pub(crate) fn pictures_to_write(count: usize, changed: &[usize], stale: &[bool], rewrite_all: bool) -> Vec<usize> {
+/// `changed` must be in ascending order, as the cells of a replacement are visited. The two are merged in one pass over
+/// the pictures, so nothing is sorted and no list of stale marks is built. An index past `count` is dropped, and none is
+/// listed twice.
+pub(crate) fn pictures_to_write(
+    count: usize,
+    changed: &[usize],
+    is_stale: impl Fn(usize) -> bool,
+    rewrite_all: bool,
+) -> Vec<usize> {
     if rewrite_all {
         return (0..count).collect();
     }
-    let mut wanted: Vec<usize> = changed.iter().copied().filter(|&i| i < count).collect();
-    wanted.extend(
-        stale
-            .iter()
-            .take(count)
-            .enumerate()
-            .filter(|&(_, &is_stale)| is_stale)
-            .map(|(i, _)| i),
-    );
-    wanted.sort_unstable();
-    wanted.dedup();
+    debug_assert!(changed.windows(2).all(|pair| pair[0] <= pair[1]), "changed cells must ascend");
+    let mut wanted = Vec::with_capacity(changed.len().min(count));
+    let mut next_changed = 0;
+    for i in 0..count {
+        while next_changed < changed.len() && changed[next_changed] < i {
+            next_changed += 1;
+        }
+        if changed.get(next_changed) == Some(&i) || is_stale(i) {
+            wanted.push(i);
+        }
+    }
     wanted
 }
 
