@@ -43,13 +43,30 @@
                 in a cell that is two rows high.</p>
         </dd>
     </dl>
-    <p>The last diagram shows the eighth roots of unity, the numbers that, raised to the eighth power, give
-        <code>1</code>. They are evenly spaced round the unit circle, 45&deg; apart, and are the twiddle factors of an
-        eight-point Fourier transform. In the polar node every modulus is exactly <code>1</code> and the angles go up in
-        steps of 45&deg;.</p>
     <p>Hover over a node to see its type: <code>complex64</code> has <code>f64</code> parts, and
         <code>complex32</code> has <code>f32</code> parts. Under the hexadecimal and binary formats a complex number
         shows the bits of its real part and then of its imaginary part.</p>
-    <div class="canvas" id="complex-diagram-stage" style="margin-top: 1.5rem;">
+
+    <h3>One number, seven ways</h3>
+    <p>Drag the slider under the diagram to change the real part <code>a</code>, and the one beside it to change the
+        imaginary part <code>b</code>. Each is exactly as long as the axis it lies along, so its thumb is directly under
+        or beside the point of the axis whose value it stands for. The diagram is drawn again, and each of the seven nodes
+        shows the new number in its own form. A slider has the keyboard too: Tab to it, and use the arrow keys, Home and
+        End.</p>
+    <p class="demo-error" id="complex-error" hidden></p>
+    <div class="canvas" id="complex-diagram-stage" style="margin-top: 1rem;">
+    </div>
+
+    <h3>The roots of unity</h3>
+    <p>The numbers that, raised to the power <code>n</code>, give <code>1</code>. They are evenly spaced round the unit
+        circle, <code>360&deg;/n</code> apart, and are the twiddle factors of an <code>n</code>-point Fourier transform.
+        In the polar node every modulus is exactly <code>1</code> and the angles go up in steps of
+        <code>360&deg;/n</code>. The slider sets <code>n</code>.</p>
+    <div class="controls">
+        <label for="complex-roots-count">The number of roots, <code>n</code> = <output id="complex-roots-readout"
+                for="complex-roots-count">8</output></label>
+        <input type="range" id="complex-roots-count" min="1" max="20" step="1" value="8">
+    </div>
+    <div class="canvas" id="complex-roots-stage" style="margin-top: 1rem;">
     </div>
 </section>

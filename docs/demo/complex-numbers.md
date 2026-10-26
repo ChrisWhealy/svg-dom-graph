@@ -5,25 +5,23 @@ The real part of a number runs along the horizontal axis and the imaginary part 
 The diagrams are SVG drawn by the demo, in the scene's own group, so they zoom and pan with the nodes.
 Each is described as a whole to assistive technology.
 
-* **One number in each quadrant.**<br>
-  Four diagrams, one for `3 + 2i`, `-2 + 3i`, `-3 - 2i` and `2 - 3i`.
-  Each marks the modulus as a solid line from the origin and the angle as an arc from the real axis, and writes both on the diagram: `r = 3.61` and `θ = 33.69°`.
-  The dot is labelled with the number in rectangular form.
-  Under each diagram is a node holding the same number in polar form, which begins with a small arrow in the direction of the number, drawn twice as high as a line of text with `ComplexStyle::with_icon_scale(2.0)`, so the labels, the digits and the arrow can be read against one another.
-  The angle of a number in the third or fourth quadrant is negative, because it is measured clockwise.
 * **One number, seven ways.**<br>
-  `3 + 4i`, whose modulus is exactly 5, drawn large, with its real part and imaginary part dashed to the axes as well.
-  Beside it is a node for each way of writing it: rectangular, polar in degrees, trigonometric, polar in radians, exponential, log-polar and matrix.
-  The rectangular node begins with a picture of the two legs, the adjacent along the real axis in green and the opposite up or down in purple, and the polar node with a picture of the hypotenuse.
-  The exponential node writes its exponent raised and smaller, an `i` and then the angle in radians.
-  The matrix is the one node whose cell is two rows high.
-* **The eighth roots of unity.**<br>
-  The eight points of the unit circle that, raised to the eighth power, give 1, which are the twiddle factors of an eight-point Fourier transform.
-  Each is 45° further round than the one before.
-  A rectangular node and a polar node hold the same eight numbers in two rows of four.
-  In the polar node every modulus is exactly 1 and the angles go up in steps of 45°, and its eight arrows are all the same length and turn round in eighths.
-  In the rectangular node the legs of the pictures shrink to nothing on the axes and are equal at 45°.
+  A diagram of `3 + 4i`, whose modulus is exactly 5, with its real part and imaginary part dashed to the axes, and its modulus and angle, all written on the diagram.
+  A slider runs along the bottom of the diagram and sets the real part. A second runs up its left side and sets the imaginary part.
+  Each is **exactly as long as the axis it lies along**, from -5 to 5, so its thumb is directly under, or beside, the point of the axis whose value it stands for.
+  That is done by making the slider one thumb wider than the axis, since a thumb's centre travels from half a thumb in at one end to half a thumb in at the other. The thumb is given the same width in every browser, and the track is drawn as exactly that much shorter than the input, by a style that the demo puts in the page itself with the width that `THUMB` says, and not by `style.css`: the length and the style that makes it true must come from one place, and a stylesheet that a browser has kept from an earlier visit cannot change them. The geometry was measured in Chrome and Firefox, at the default zoom and zoomed in three times: the input is always the axis plus one thumb, scaled.
+  The vertical slider is the same element turned a quarter turn anticlockwise, so its minimum is at the bottom.
+  Both are range inputs inside the scene (an HTML `<input>` in a `<foreignObject>`), so they zoom and pan with the diagram. They have the keyboard, and each is named, and its value is read as a number to one place.
+  As either moves, the diagram is drawn again, and each of the seven nodes is given the new number with `Scene::set_data_values`, which rewrites its cell, its picture and its exponent, and nothing else:
+  rectangular, polar in degrees, trigonometric, polar in radians, exponential, log-polar and matrix.
+  A node is never resized by `set_data_values`, so each is first drawn for whichever number the sliders can reach that makes its form widest (the corners, a very small number whose logarithm is long, and zero), found by measuring each in the page, and is then given `3 + 4i`. No number the sliders reach can be wider than its cell.
+* **The roots of unity.**<br>
+  The points of the unit circle that, raised to the power `n`, give 1, which are the twiddle factors of an `n`-point Fourier transform.
+  A slider above the diagram sets `n` from 1 to 20. The upper limit is arbitrary, and is `MOST` in `roots.rs`.
+  A node cannot be given more numbers than it was drawn with, and the library cannot remove one, so a change of `n` draws the diagram and its two nodes, rectangular and polar, again from nothing, and carries the zoom and pan over to the new one.
+  The slider is an ordinary HTML control outside the scene, so that it is not drawn again as the scene is, and a drag of it is not broken.
+  In the polar node every modulus is exactly 1 and the angles go up in steps of 360°/`n`, and its arrows are all the same length and turn round in `n`ths.
 
-The arithmetic of a diagram (where a number lands on the page, which way an arc runs, and how a label is placed) is pure and is tested natively. The drawing is not.
+The arithmetic of a diagram (where a number lands on the page, which way an arc runs, and how a label is placed) and of a slider (its length against its axis, and which end of it is the minimum) is pure and is tested natively. The drawing is not.
 
 See [Complex Numbers](../library/complex-numbers.md) for the types and formats themselves.

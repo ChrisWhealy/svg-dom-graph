@@ -123,7 +123,6 @@ fn a_label_is_pushed_away_from_the_origin_on_the_side_it_faces() {
 #[test]
 fn the_guides_say_which_marks_they_draw() {
     assert!(!Guides::None.rectangular() && !Guides::None.polar());
-    assert!(!Guides::Polar.rectangular() && Guides::Polar.polar());
     assert!(Guides::Both.rectangular() && Guides::Both.polar());
 }
 

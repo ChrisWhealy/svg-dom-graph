@@ -32,6 +32,9 @@ const LABEL_SIZE: f64 = 12.0;
 const TICK_SIZE: f64 = 10.0;
 const POINT_RADIUS: f64 = 4.5;
 
+/// How far an arrowhead's tip is past the end of its axis.
+const ARROW_OVERHANG: f64 = 4.0;
+
 /// The angle arc is this far from the origin at most, in user units, so that it does not swamp a short modulus.
 const MAX_ARC_RADIUS: f64 = 34.0;
 
@@ -162,9 +165,8 @@ pub(super) fn line_label(centre: Point, angle: f64, along: f64, offset: f64, sid
 pub(super) enum Guides {
     /// Only the dot, and its label.
     None,
-    /// The modulus, from the origin to the dot, and the angle, as an arc from the real axis.
-    Polar,
-    /// That, and the real part and the imaginary part too: two dashed lines from the dot to the axes.
+    /// The modulus, from the origin to the dot, and the angle, as an arc from the real axis, and the real part and the
+    /// imaginary part too: two dashed lines from the dot to the axes.
     Both,
 }
 
@@ -174,7 +176,7 @@ impl Guides {
     }
 
     fn polar(self) -> bool {
-        matches!(self, Self::Polar | Self::Both)
+        self == Self::Both
     }
 }
 
@@ -194,11 +196,28 @@ pub(super) struct Argand {
     pub side: f64,
     /// The plane shows `-extent` to `extent` on both axes.
     pub extent: f64,
+    /// The axes, and the numbers written along them, run from `-axis_half` to `axis_half`, which is less than `extent`
+    /// to leave room past their ends for the arrowheads and names. A slider beside an axis is as long as the axis, and
+    /// takes this as the greatest value it can give.
+    pub axis_half: f64,
     /// Draw the unit circle, and join each mark to the origin by a thin spoke. For the roots of unity.
     pub unit_circle: bool,
     pub marks: Vec<Mark>,
     /// Read out by assistive technology in place of the drawing.
     pub description: String,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+impl Argand {
+    /// How the plane of this diagram maps onto the page.
+    pub(super) fn plane(&self) -> Plane {
+        Plane::new(self.top_left, self.side, self.extent)
+    }
+
+    /// How long each axis is on the page, from one end to the other. The sliders beside the axes are this long.
+    pub(super) fn axis_length(&self) -> f64 {
+        2.0 * self.axis_half * self.plane().scale
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -315,7 +334,7 @@ fn draw_plane(canvas: &Canvas<'_>, diagram: &Argand, plane: Plane) -> Result<(),
     canvas.add(&background)?;
 
     let step = tick_step(extent);
-    let ticks = (extent / step).floor() as i32;
+    let ticks = (diagram.axis_half / step).floor() as i32;
     for n in -ticks..=ticks {
         let at = f64::from(n) * step;
         let (horizontal, vertical) = (
@@ -340,9 +359,10 @@ fn draw_plane(canvas: &Canvas<'_>, diagram: &Argand, plane: Plane) -> Result<(),
         }
     }
 
-    // The axes run nearly to the edge, ending in arrowheads.
-    let (left, right) = (top_left.x + 6.0, top_left.x + side - 8.0);
-    let (top, bottom) = (top_left.y + 8.0, top_left.y + side - 6.0);
+    // Each axis runs from `-axis_half` to `axis_half`, and ends in an arrowhead just past that.
+    let reach = diagram.axis_half * plane.scale;
+    let (left, right) = (plane.centre.x - reach, plane.centre.x + reach);
+    let (top, bottom) = (plane.centre.y - reach, plane.centre.y + reach);
     canvas.line(
         Point::new(left, plane.centre.y),
         Point::new(right, plane.centre.y),
@@ -378,13 +398,13 @@ fn draw_plane(canvas: &Canvas<'_>, diagram: &Argand, plane: Plane) -> Result<(),
         )
     };
     canvas.path(
-        &head(Point::new(right + 2.0, plane.centre.y), (1.0, 0.0)),
+        &head(Point::new(right + ARROW_OVERHANG, plane.centre.y), (1.0, 0.0)),
         AXIS_STROKE,
         "none",
         1.5,
     )?;
     canvas.path(
-        &head(Point::new(plane.centre.x, top - 2.0), (0.0, -1.0)),
+        &head(Point::new(plane.centre.x, top - ARROW_OVERHANG), (0.0, -1.0)),
         AXIS_STROKE,
         "none",
         1.5,
