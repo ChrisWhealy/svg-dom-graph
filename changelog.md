@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Give FFT direction an explicit contract (Docs and tests only) (`8034761`)
-- Add `bench-butterfly` project crate for simd128 tests (``)
+- Add `bench-butterfly` project crate for simd128 tests (`3e61028`)
 
 # [Released]
 
