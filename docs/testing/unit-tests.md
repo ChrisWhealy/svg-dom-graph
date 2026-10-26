@@ -89,7 +89,7 @@ The rejection names the operator and the type.
 
 ### Cell names
 
-`src/scene/node/data/draw/unit_tests.rs` covers the accessible name of a cell:
+`src/scene/node/data/draw/unit_tests.rs` covers grid arithmetic, the accessible name of a cell:
 
 * an unlabelled cell
 * a numeric or alphabetic one
@@ -318,7 +318,7 @@ It also covers these cases:
 * a detour over the top of a tall ellipse and not through it, with every leg sampled against the curve
 * a sweep of both nodes, every pair of forced sides and both directions, checking that no elbow route passes through either node
 
-`src/geometry/unit_tests.rs` checks every pairing of two sides over a grid of relative places.
+`src/geometry/unit_tests/elbow.rs` checks every pairing of two sides over a grid of relative places.
 Each elbow route leaves outward, arrives from outside, has axis-aligned segments and at most six points.
 A route that was already fine is unchanged.
 The expected points come from the ellipse equation and the directions, and not from reading what `route` produced.

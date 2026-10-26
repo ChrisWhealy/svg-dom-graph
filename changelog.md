@@ -21,12 +21,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent node inconsistency is picture update fails (`eec22b7`)
 - Ensure very small complex values do not generate invalid SVG coordinates (`23a10fc`)
 - Prevent Smith's algorithm fast path from underflowing (`eadcdac`)
-- Avoid resorting picture stale-state vector (``)
+- Avoid resorting picture stale-state vector (`f7caae5`)
 
 ## Changed
 
 - Rearrange `ComplexNumber` demo panel (`08e95e2`)
 - Apply STE100 style rules to markdown docs (`f0af8c8`)
+- Refactors modules with > 1000 SLOC (``)
 
 # [Released]
 

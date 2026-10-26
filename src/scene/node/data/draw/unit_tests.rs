@@ -1,11 +1,12 @@
 //! The pure parts of drawing a data node: grid arithmetic and the node's accessible name. Neither touches the DOM, so
 //! both run under a plain `cargo test`.
 
-use super::*;
+use super::{frame::*, *};
 use crate::{
-    scene::{DataFormat, NodeValues},
+    scene::{DataFormat, NodeValues, node::OUTER_PADDING},
     test_support::check,
 };
+use svg_dom::root::utils::Size;
 
 fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), String> {
     check(got == expected, &format!("expected {expected:?}, got {got:?}"))
