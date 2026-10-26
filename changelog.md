@@ -16,10 +16,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct failing `wasm-pack` tests (`a81631a`)
+- Correct complex division for large finite values (``)
 
 ## Changed
 
-- Rearrange `ComplexNumber` demo panel (``)
+- Rearrange `ComplexNumber` demo panel (`08e95e2`)
 
 # [Released]
 

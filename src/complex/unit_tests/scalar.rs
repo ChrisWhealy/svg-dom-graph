@@ -85,6 +85,219 @@ macro_rules! scalar_tests {
                 assert!(close(quotient, $name::ONE));
             }
 
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            //   Division at the ends of the range
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+            const MAX: $float = $float::MAX;
+            /// The smallest positive number there is, which is subnormal.
+            fn smallest() -> $float {
+                $float::from_bits(1)
+            }
+
+            #[test]
+            fn a_number_divided_by_itself_is_one_at_every_size_including_the_largest() {
+                for factor in [1.0, 0.9, 0.5, 0.25] {
+                    let big = MAX * factor;
+                    let z = $name::new(big, big);
+
+                    assert_eq!(z / z, $name::ONE, "factor {factor}");
+                    assert_eq!($name::new(big, 0.0) / $name::new(big, 0.0), $name::ONE);
+                    assert_eq!($name::new(0.0, big) / $name::new(0.0, big), $name::ONE);
+                    assert_eq!($name::new(big, -big) / $name::new(big, -big), $name::ONE);
+                }
+            }
+
+            #[test]
+            fn a_number_divided_by_itself_is_one_at_the_smallest_sizes() {
+                for tiny in [
+                    smallest(),
+                    smallest() * 3.0,
+                    $float::MIN_POSITIVE / 2.0,
+                    $float::MIN_POSITIVE,
+                    $float::MIN_POSITIVE * 3.0,
+                ] {
+                    let z = $name::new(tiny, tiny);
+
+                    assert_eq!(z / z, $name::ONE, "tiny {tiny:e}");
+                    assert_eq!($name::new(tiny, 0.0) / $name::new(tiny, 0.0), $name::ONE);
+                    assert_eq!($name::new(0.0, tiny) / $name::new(0.0, tiny), $name::ONE);
+                }
+            }
+
+            #[test]
+            fn smiths_algorithm_alone_overflows_where_the_division_does_not() {
+                // This is the case that the scaling is for: both parts and the divisor near the largest number. The
+                // denominator and the numerator both overflow to infinity, and infinity over infinity is `NaN`.
+                let big = MAX * 0.9;
+                let alone = $name::divide_smith(big, big, big, big);
+
+                assert!(alone.re.is_nan(), "Smith's algorithm alone gave {alone:?}");
+                assert_eq!($name::new(big, big) / $name::new(big, big), $name::ONE);
+            }
+
+            #[test]
+            fn the_quotient_of_large_numbers_that_is_large_is_found_exactly() {
+                // (MAX + MAX i) / (1 + i) is MAX, because the sum of two MAXes over two is MAX. The sum overflows, and the
+                // quotient does not.
+                let quotient = $name::new(MAX, MAX) / $name::new(1.0, 1.0);
+
+                assert_eq!(quotient, $name::new(MAX, 0.0));
+            }
+
+            #[test]
+            fn the_quotient_of_large_numbers_with_different_parts_is_right() {
+                // (1 + 0.5i) / (0.5 + i) = 0.8 - 0.6i, whatever size both are.
+                let quotient = $name::new(MAX, MAX / 2.0) / $name::new(MAX / 2.0, MAX);
+
+                assert!(close(quotient, $name::new(0.8, -0.6)), "{quotient}");
+                let tiny = smallest() * 1024.0;
+                let quotient = $name::new(tiny, tiny / 2.0) / $name::new(tiny / 2.0, tiny);
+                assert!(close(quotient, $name::new(0.8, -0.6)), "{quotient}");
+            }
+
+            #[test]
+            fn a_quotient_that_is_too_large_is_infinite_and_one_that_is_too_small_is_zero_and_neither_is_nan() {
+                let large = $name::new(MAX, 0.0) / $name::new(smallest(), 0.0);
+                assert!(large.re.is_infinite() && large.im == 0.0, "{large:?}");
+
+                let small = $name::new(smallest(), 0.0) / $name::new(MAX, 0.0);
+                assert!(small.re == 0.0 && small.im == 0.0, "{small:?}");
+
+                let one_over_max = $name::ONE / $name::new(MAX, 0.0);
+                assert!((one_over_max.re - 1.0 / MAX).abs() <= smallest(), "{one_over_max:?}");
+            }
+
+            #[test]
+            fn a_subnormal_numerator_is_divided_without_losing_it() {
+                assert_eq!($name::new(smallest(), 0.0) / $name::ONE, $name::new(smallest(), 0.0));
+                assert_eq!($name::new(smallest(), smallest()) / $name::new(2.0, 0.0), $name::new(0.0, 0.0));
+                let quotient = $name::new(smallest() * 8.0, 0.0) / $name::new(2.0, 0.0);
+                assert_eq!(quotient, $name::new(smallest() * 4.0, 0.0));
+            }
+
+            #[test]
+            fn division_agrees_with_the_exact_answer_for_every_pair_of_sizes_from_one_end_of_the_range_to_the_other() {
+                let edge = $float::MAX_EXP - 4;
+                let (a0, b0) = ($name::new(1.1, -0.7), $name::new(0.9, 1.3));
+                // The exact quotient of the two small numbers, which is then scaled by the difference of the sizes.
+                let exact = a0 / b0;
+
+                for ka in [-edge, -edge / 2, 0, edge / 2, edge] {
+                    for kb in [-edge, -edge / 2, 0, edge / 2, edge] {
+                        let (a, b) = (
+                            $name::new($name::scaled_by_pow2(a0.re, ka), $name::scaled_by_pow2(a0.im, ka)),
+                            $name::new($name::scaled_by_pow2(b0.re, kb), $name::scaled_by_pow2(b0.im, kb)),
+                        );
+                        let got = a / b;
+                        let expected = $name::new(
+                            $name::scaled_by_pow2(exact.re, ka - kb),
+                            $name::scaled_by_pow2(exact.im, ka - kb),
+                        );
+
+                        for (got, expected) in [(got.re, expected.re), (got.im, expected.im)] {
+                            assert!(!got.is_nan(), "NaN for sizes {ka} and {kb}");
+                            if expected.is_finite() {
+                                let allowed = (expected.abs() * $tol).max(smallest() * 4.0);
+                                assert!(
+                                    (got - expected).abs() <= allowed,
+                                    "sizes {ka}, {kb}: {got:e} against {expected:e}"
+                                );
+                            } else {
+                                assert_eq!(got, expected, "sizes {ka}, {kb}");
+                            }
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn division_by_zero_is_an_infinity_and_nothing_divided_by_nothing_is_nan() {
+                let by_zero = $name::new(1.0, 2.0) / $name::ZERO;
+                assert!(by_zero.re.is_infinite() && by_zero.im.is_infinite(), "{by_zero:?}");
+
+                assert!(($name::ZERO / $name::ZERO).re.is_nan());
+            }
+
+            #[test]
+            fn a_number_that_is_not_finite_divides_as_it_always_did() {
+                assert!(($name::new($float::NAN, 1.0) / $name::new(2.0, 1.0)).re.is_nan());
+                // A finite number over an infinite one is zero.
+                assert_eq!($name::new(1.0, 1.0) / $name::new($float::INFINITY, 0.0), $name::ZERO);
+            }
+
+            #[test]
+            fn division_by_a_real_is_a_true_division_at_every_size() {
+                let tiny = smallest() * 20.0;
+
+                assert_eq!($name::new(tiny, 0.0) / tiny, $name::ONE);
+                assert_eq!($name::new(smallest(), smallest()) / smallest(), $name::new(1.0, 1.0));
+                assert_eq!($name::new(MAX, MAX) / MAX, $name::new(1.0, 1.0));
+                // The reciprocal of the smallest number is infinite, which is what a reciprocal multiplied through gave.
+                let mut z = $name::new(smallest(), 0.0);
+                z /= smallest();
+                assert_eq!(z, $name::ONE);
+
+                let by_zero = $name::new(1.0, 1.0) / 0.0;
+                assert!(by_zero.re.is_infinite() && by_zero.im.is_infinite());
+            }
+
+            #[test]
+            fn division_by_a_real_matches_scaling_by_the_reciprocal_for_numbers_of_ordinary_size() {
+                for divisor in [2.0, 4.0, 0.5, 8.0] {
+                    let z = $name::new(3.0, -5.0);
+
+                    assert_eq!(z / divisor, z.scale(1.0 / divisor));
+                }
+            }
+
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            //   The parts of the exponent
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+            #[test]
+            fn the_exponent_of_a_number_is_found_for_normal_and_subnormal_numbers_alike() {
+                assert_eq!($name::ilogb(1.0), 0);
+                assert_eq!($name::ilogb(1.999), 0);
+                assert_eq!($name::ilogb(2.0), 1);
+                assert_eq!($name::ilogb(0.75), -1);
+                assert_eq!($name::ilogb(-8.0), 3);
+                assert_eq!($name::ilogb(MAX), $float::MAX_EXP - 1);
+                assert_eq!($name::ilogb($float::MIN_POSITIVE), $float::MIN_EXP - 1);
+                // The subnormal numbers go on down from there, one exponent to each doubling.
+                assert_eq!($name::ilogb($float::MIN_POSITIVE / 2.0), $float::MIN_EXP - 2);
+                assert_eq!($name::ilogb(smallest()), $float::MIN_EXP - $float::MANTISSA_DIGITS as i32);
+                assert_eq!(
+                    $name::ilogb(smallest() * 3.0),
+                    $float::MIN_EXP - $float::MANTISSA_DIGITS as i32 + 1
+                );
+            }
+
+            #[test]
+            fn scaling_by_a_power_of_two_is_exact_and_rounds_once_at_the_ends() {
+                for k in -100..=100 {
+                    for x in [1.0 as $float, 1.5, -2.75, 0.3] {
+                        assert_eq!($name::scaled_by_pow2(x, k), x * (2.0 as $float).powi(k), "{x} scaled by {k}");
+                    }
+                }
+                let largest_power = $float::MAX_EXP - 1;
+                assert_eq!($name::scaled_by_pow2(1.0, largest_power), (2.0 as $float).powi(largest_power));
+                assert!($name::scaled_by_pow2(1.0, largest_power + 1).is_infinite());
+                assert!($name::scaled_by_pow2(-1.0, largest_power + 1) < 0.0);
+                assert_eq!(
+                    $name::scaled_by_pow2(1.0, $float::MIN_EXP - $float::MANTISSA_DIGITS as i32),
+                    smallest()
+                );
+                // Half the smallest number is a tie, and rounds to the even one, which is zero.
+                assert_eq!(
+                    $name::scaled_by_pow2(1.0, $float::MIN_EXP - $float::MANTISSA_DIGITS as i32 - 1),
+                    0.0
+                );
+                assert_eq!($name::scaled_by_pow2(MAX, -10 * $float::MAX_EXP), 0.0);
+                assert_eq!($name::scaled_by_pow2(smallest(), 10 * $float::MAX_EXP), $float::INFINITY);
+                assert_eq!($name::scaled_by_pow2(0.0, 5000), 0.0);
+            }
+
             #[test]
             fn the_assigning_operators_match_the_plain_ones() {
                 let (a, b) = ($name::new(1.0, 2.0), $name::new(3.0, -4.0));

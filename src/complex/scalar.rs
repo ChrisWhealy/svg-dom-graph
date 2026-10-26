@@ -164,6 +164,109 @@ macro_rules! define_complex {
             pub fn sum_and_difference(self, other: Self) -> (Self, Self) {
                 (self + other, self - other)
             }
+
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+            // What division needs. Everything here is exact: it only moves the exponent of a float.
+            // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+            /// The bits of a stored mantissa, and the bias of the exponent, of this float type.
+            const MANTISSA_BITS: u32 = $float::MANTISSA_DIGITS - 1;
+            const BIAS: i32 = $float::MAX_EXP - 1;
+
+            /// How far a number is scaled by one step of [`scaled_by_pow2`](Self::scaled_by_pow2). Small enough that a
+            /// number between a third and three, scaled down by it, is still a normal number, so a step never rounds.
+            const SCALE_STEP: i32 = Self::BIAS - 3;
+
+            /// The exponent of the finite, non-zero `x`: the `e` for which `x` is between `2^e` and `2^(e + 1)`. It is
+            /// found for a subnormal number too, whose exponent field is zero.
+            fn ilogb(x: $float) -> i32 {
+                let bits = u64::from(x.to_bits());
+                let mantissa = bits & ((1_u64 << Self::MANTISSA_BITS) - 1);
+                let width = (std::mem::size_of::<$float>() * 8) as u32 - Self::MANTISSA_BITS - 1;
+                let field = ((bits >> Self::MANTISSA_BITS) & ((1_u64 << width) - 1)) as i32;
+                if field == 0 {
+                    // A subnormal number is `mantissa * 2^-(bias + mantissa bits - 1)`.
+                    (63 - mantissa.leading_zeros()) as i32 - (Self::BIAS + Self::MANTISSA_BITS as i32 - 1)
+                } else {
+                    field - Self::BIAS
+                }
+            }
+
+            /// `2^k`, for any `k` a normal number can have: from `1 - BIAS` to `BIAS`.
+            fn pow2(k: i32) -> $float {
+                let bits = ((k + Self::BIAS) as u64) << Self::MANTISSA_BITS;
+                $float::from_bits(bits as _)
+            }
+
+            /// `x * 2^k`, for any `k`, rounded once. It is what `scalbn` is in C. A number is scaled in steps that keep a
+            /// number of the size this is used for normal, and the last step is the only one that can round, as it does
+            /// when the result is subnormal. A result too large is infinite and one too small is zero, as it should be.
+            fn scaled_by_pow2(x: $float, k: i32) -> $float {
+                let (mut x, mut k) = (x, k);
+                while k > Self::SCALE_STEP && x.is_finite() && x != 0.0 {
+                    x *= Self::pow2(Self::SCALE_STEP);
+                    k -= Self::SCALE_STEP;
+                }
+                while k < -Self::SCALE_STEP && x != 0.0 {
+                    x *= Self::pow2(-Self::SCALE_STEP);
+                    k += Self::SCALE_STEP;
+                }
+                x * Self::pow2(k.clamp(-Self::SCALE_STEP, Self::SCALE_STEP))
+            }
+
+            /// `true` if the larger of `x` and `y` is zero, or is between `2^-(BIAS / 2)` and `2^(BIAS / 2)`: a size at
+            /// which the plain formulas cannot overflow or lose their digits to underflow.
+            fn is_comfortable(x: $float, y: $float) -> bool {
+                let larger = x.abs().max(y.abs());
+                let half = Self::BIAS / 2;
+                larger == 0.0 || (larger >= Self::pow2(-half) && larger <= Self::pow2(half))
+            }
+
+            /// `(a + bi) / (c + di)` by Smith's algorithm: divide through by the larger part of the divisor, so that
+            /// nothing is squared. It overflows, or loses its digits, only if the numbers are near the ends of the range.
+            fn divide_smith(a: $float, b: $float, c: $float, d: $float) -> Self {
+                if c.abs() >= d.abs() {
+                    let ratio = d / c;
+                    let denominator = c + d * ratio;
+                    Self::new((a + b * ratio) / denominator, (b - a * ratio) / denominator)
+                } else {
+                    let ratio = c / d;
+                    let denominator = c * ratio + d;
+                    Self::new((a * ratio + b) / denominator, (b * ratio - a) / denominator)
+                }
+            }
+
+            /// `(a + bi) / (c + di)` for finite numbers of any size, with a divisor that is not zero.
+            ///
+            /// The numerator and the divisor are each scaled, by a power of two, until the larger of its parts is between
+            /// 1 and 2. That is exact, and it puts every number where Smith's algorithm cannot overflow or underflow.
+            /// The quotient is then scaled back by the difference of the two powers, in one rounding. So the quotient
+            /// of two numbers of the same enormous size is worked out as that of two numbers near 1, and is `1`, and a
+            /// quotient that really is too large or too small becomes infinity or zero, never `NaN`.
+            fn divide_scaled(a: $float, b: $float, c: $float, d: $float) -> Self {
+                let exponent = |x: $float, y: $float| {
+                    let (x, y) = (x.abs(), y.abs());
+                    // The exponent of the larger. A part that is zero has no exponent.
+                    match (x == 0.0, y == 0.0) {
+                        (true, true) => None,
+                        (false, true) => Some(Self::ilogb(x)),
+                        (true, false) => Some(Self::ilogb(y)),
+                        (false, false) => Some(Self::ilogb(x).max(Self::ilogb(y))),
+                    }
+                };
+                let Some(divisor) = exponent(c, d) else {
+                    return Self::ZERO;
+                };
+                // Nothing divided by a number is nothing.
+                let Some(numerator) = exponent(a, b) else {
+                    return Self::ZERO;
+                };
+                let down = |x: $float, e: i32| Self::scaled_by_pow2(x, -e);
+                let quotient =
+                    Self::divide_smith(down(a, numerator), down(b, numerator), down(c, divisor), down(d, divisor));
+                let back = numerator - divisor;
+                Self::new(Self::scaled_by_pow2(quotient.re, back), Self::scaled_by_pow2(quotient.im, back))
+            }
         }
 
         // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -254,23 +357,28 @@ macro_rules! define_complex {
         impl Div for $name {
             type Output = Self;
 
-            /// Smith's algorithm: divide through by the larger part of the divisor, so that nothing is squared.
+            /// Divides by `other`, and gives a number that is right at any size.
+            ///
+            /// * Numbers of ordinary size are divided by Smith's algorithm, which is the quick way.
+            /// * Numbers near either end of the range, which that would overflow on or lose their digits to, are scaled
+            ///   by powers of two first, and the quotient scaled back, so `MAX` over `MAX` is `1` and not `NaN`. See
+            ///   [`divide_scaled`](Self::divide_scaled).
+            /// * Dividing by zero is dividing each part by the real part of the divisor: an infinity, or `NaN` for a
+            ///   numerator of zero.
+            /// * A number that is not finite is divided as Smith's algorithm divides it.
             #[inline]
             fn div(self, other: Self) -> Self {
-                if other.re.abs() >= other.im.abs() {
-                    let ratio = other.im / other.re;
-                    let denominator = other.re + other.im * ratio;
-                    Self::new(
-                        (self.re + self.im * ratio) / denominator,
-                        (self.im - self.re * ratio) / denominator,
-                    )
+                let (a, b, c, d) = (self.re, self.im, other.re, other.im);
+                if c == 0.0 && d == 0.0 {
+                    return Self::new(a / c, b / c);
+                }
+                if !(a.is_finite() && b.is_finite() && c.is_finite() && d.is_finite()) {
+                    return Self::divide_smith(a, b, c, d);
+                }
+                if Self::is_comfortable(a, b) && Self::is_comfortable(c, d) {
+                    Self::divide_smith(a, b, c, d)
                 } else {
-                    let ratio = other.re / other.im;
-                    let denominator = other.re * ratio + other.im;
-                    Self::new(
-                        (self.re * ratio + self.im) / denominator,
-                        (self.im * ratio - self.re) / denominator,
-                    )
+                    Self::divide_scaled(a, b, c, d)
                 }
             }
         }
@@ -278,11 +386,13 @@ macro_rules! define_complex {
         impl Div<$float> for $name {
             type Output = Self;
 
-            /// One division, shared between both parts as a reciprocal multiplied through, as a transform scales by
-            /// `1/n`.
+            /// Divides each part by `divisor`. It is a true division, so it is right at any size: a reciprocal
+            /// multiplied through would overflow for a divisor near the smallest, and divide `1e-320` by `1e-320` to
+            /// infinity. To scale many numbers by one divisor, take the reciprocal once and use
+            /// [`scale`](Self::scale), as a transform does by `1/n`.
             #[inline]
             fn div(self, divisor: $float) -> Self {
-                self.scale(divisor.recip())
+                Self::new(self.re / divisor, self.im / divisor)
             }
         }
 

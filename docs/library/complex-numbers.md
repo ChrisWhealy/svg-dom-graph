@@ -12,7 +12,15 @@ Each of `Complex` and `Complex32` is a `repr(C)` pair, so a slice of them is int
 Both come from one macro, so the two precisions cannot drift apart.
 
 It has the arithmetic (`+`, `-`, `*`, `/`, `-z`, the assigning forms, and multiplication and division by a real), `conj`, `norm`, `norm_sqr`, `arg`, `from_polar`, `cis`, and `mul_i` and `mul_neg_i`, which turn a number by a quarter turn with no multiplication.
-Division is Smith's algorithm, so it does not overflow when the plain formula would.
+Division of numbers of ordinary size is Smith's algorithm, which divides through by the larger part of the divisor so that nothing is squared.
+Smith's algorithm alone still overflows for numbers near the largest, since its numerator and denominator are sums of two numbers that are each near the limit: `(1e308 + 1e308i) / (1e308 + 1e308i)` is `NaN` by it, and is `1` here.
+So a number whose larger part is outside `2^-(BIAS/2)` to `2^(BIAS/2)`, about `1e-154` to `1e154` for `f64` and `1e-19` to `1e19` for `f32`, is divided by scaling the numerator and the divisor by powers of two until each is near 1, and then scaling the quotient back by the difference, in one rounding.
+Scaling by a power of two is exact, so nothing is lost by it, and the scaling reaches the subnormal numbers, whose exponent it reads from the bits.
+A quotient that is really too large is infinity, and one that is too small is zero, and neither is ever `NaN`.
+Division by zero is each part divided by the real part of the divisor, so it is an infinity, or `NaN` for a numerator of zero, and a number that is not finite is divided as Smith's algorithm divides it.
+
+Division by a real is a true division of each part, and not a reciprocal multiplied through, which overflows for a divisor near the smallest: `1e-320 / 1e-320` is `1`.
+To scale many numbers by one divisor, as a transform does by `1/n`, take the reciprocal once and use `scale`.
 Nothing uses `mul_add`, because WebAssembly has no fused multiply-add, and the function would be a call into a software routine.
 
 `Complex::unit_root(k, n)` is the `k`th of the `n` roots of unity, `e^(2πik/n)`.
