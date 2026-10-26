@@ -9,12 +9,15 @@ This demo currently shows the first pass.
 Every value on screen is a real result, worked out in plain Rust.
 The library never computes anything: the demo works out each value and then hands it to `svg-dom-graph` to draw.
 
-The scene is large, so the gallery panel keeps the description and a button that opens the scene in a window of its own, sized to fit it.
+The scene is large, so the gallery panel keeps the description and a button.
+The button opens the scene in a window of its own, sized to fit it.
 
-The text to encode is a text input node at the top of the diagram, pre-filled with the first sentence of Jane Austen's *Pride and Prejudice*.
+The text to encode is a text input node at the top of the diagram.
+It is pre-filled with the first sentence of Jane Austen's *Pride and Prejudice*.
 That is 116 bytes, with 26 distinct bytes, among them a capital letter, a comma and a full stop.
 The text can be up to 128 bytes.
-Editing it draws the diagram again, from the first step, and the keyboard focus and the caret go back into the new text box, so typing carries on.
+Editing it draws the diagram again, from the first step.
+The keyboard focus and the caret go back into the new text box, so typing carries on.
 A text that cannot be encoded, because it is empty or too long, says why in the line below the text box.
 The diagram then keeps showing the last text that could be encoded.
 
@@ -44,7 +47,8 @@ The walk has one position for each of these steps, and "Next" and "Prev" move be
   The step says so when a tie decided which tree was taken.
 * **Code lengths.**<br>
   A byte's code length is the depth of its leaf.
-  A text of one distinct byte has a tree of one node, whose depth of 0 would be an empty code, so it is given length 1.
+  A text of one distinct byte has a tree of one node.
+  Its depth of 0 would be an empty code, so it is given length 1.
 * **Canonical codes.**<br>
   One step for each byte, in canonical order.
 
@@ -57,7 +61,8 @@ Both are valid, and both have the same length.
 
 Canonical codes are handed out shortest first, and by byte value among bytes of one length.
 Each is the previous code plus 1, shifted left by however many bits longer it is.
-For the text `abracadabra`, the tree gives `b`, `c` and `d` the paths `110`, `100` and `101`, and the canonical codes are `100`, `101` and `110`.
+For the text `abracadabra`, the tree gives `b`, `c` and `d` the paths `110`, `100` and `101`.
+The canonical codes are `100`, `101` and `110`.
 
 A decoder can rebuild canonical codes from the lengths alone, so only the lengths ever need to be sent, and not the tree.
 This is why the demo uses them.
@@ -73,10 +78,12 @@ Its heading row has a fill of its own, so it reads as a heading.
 As each canonical code is assigned, the route from the root down to that byte's leaf is marked with the library's secondary selection.
 Every box on the route is marked, and so is the `0` or `1` label of every link.
 Reading the labels down the route spells the byte's tree path, and the byte's row in the table is ringed.
-This is what makes the difference between a tree path and a canonical code visible: the route shows where the tree put the byte, and the code beside it shows what was assigned instead.
+This makes the difference between a tree path and a canonical code visible.
+The route shows where the tree put the byte, and the code beside it shows what was assigned instead.
 
 The boxes of the tree are data nodes, so that they can be marked this way.
-A leaf holds its byte and count as text, a branch holds its weight, and a link's label holds a bit, so each kind has its own colour.
+A leaf holds its byte and count as text, a branch holds its weight, and a link's label holds a bit.
+So each kind has its own colour.
 
 ## Reading the explanation
 
@@ -95,5 +102,6 @@ Stepping backwards is the same work as stepping forwards.
 
 The diagram is sized for the finished tree, so it does not change size as it is stepped.
 The room for the explanation is kept at the height of its tallest step, for the same reason.
-The levels of the tree are spaced far enough apart for the two elbow connectors of a link, with their arrowheads, and the small box that labels the link.
+The levels of the tree are spaced far enough apart to hold the two elbow connectors of a link.
+They also hold the arrowheads and the small box that labels the link.
 A long text gives a wide tree, so the window is sized to fit it, and the zoom buttons scale it.

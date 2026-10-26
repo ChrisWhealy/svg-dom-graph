@@ -14,4 +14,5 @@ Drag a box to see the connector reroute.
 The slider's own `max` value dynamically tracks how much rounding room the nodes' current positions actually allow.
 See the doc comment for `build_elbow_demo` in `demo-app/src/elbow.rs` for exactly how this works.
 
-Drag the boxes close together and watch the corner radius slider itself get pulled down, not just the rendered corner; drag them apart again and the sliders' maximum value rises with it.
+Drag the boxes close together and watch the corner radius slider itself get pulled down, not just the rendered corner.
+Drag them apart again, and the sliders' maximum value rises with it.

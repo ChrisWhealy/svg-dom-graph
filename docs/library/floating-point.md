@@ -1,9 +1,11 @@
 # Floating Point Values
 
 `NodeValues::F32` and `NodeValues::F64` hold IEEE-754 floating point values.
-Like the integers, every value of a node shares one type, an `f32` and an `f64` are different types, and an operator's operands and result must be the same type.
+Like the integers, every value of a node shares one type.
+An `f32` and an `f64` are different types, and an operator's operands and result must be the same type.
 
-A float needs more than an integer does when it is written as text, because it has digits on both sides of a point, an exponent, and values that are not numbers at all.
+A float needs more than an integer does when written as text.
+It has digits on both sides of a point, an exponent, and values that are not numbers at all.
 So a float has a format of its own, and the width of its cells is worked out with all of that in mind.
 
 ## Writing a float
@@ -35,13 +37,15 @@ Significant digits count from the first digit that is not zero, wherever the poi
 | `0.0012345678` | `0.001` | `0.00123` |
 
 A value always shows exactly the digits asked for, so `5` to 3 significant digits is `5.00`.
-In scientific notation, the precision counts the digits of the mantissa: its decimal places are the digits after the mantissa's point, and its significant digits are all of them.
+In scientific notation, the precision counts the digits of the mantissa.
+Its decimal places are the digits after the mantissa's point, and its significant digits are all of them.
 
 No more than `MAX_FLOAT_DIGITS` (40) digits can be asked for, and at least one significant digit.
 Content that asks for more, or that holds integers, is rejected with `Error::InvalidFloatFormat` before anything is drawn.
 
 `DataFormat::Decimal` on a float is the same as `FloatFormat::shortest()`.
-That is how Rust prints a float, so `0.1 + 0.2` is `0.30000000000000004`, and an `f32` and an `f64` of the same decimal literal can differ, because they are different values.
+That is how Rust prints a float, so `0.1 + 0.2` is `0.30000000000000004`.
+An `f32` and an `f64` of the same decimal literal can differ, because they are different values.
 `DataFormat::Hexadecimal` and `DataFormat::Binary` show the IEEE-754 bits instead, in the selected byte order, so `1.0_f32` is `3F 80 00 00`.
 
 ## Special values and signs
@@ -68,19 +72,25 @@ The width depends on:
 With a fixed number of decimal places or significant digits, the width follows the magnitude and nothing else.
 So the widest value is one of a few extremes: the largest and smallest magnitude of each sign, the zeros, and any `NaN` or infinity.
 One pass over the values finds them, and only those few are formatted.
-The shortest form has no such order, because a short value such as `0.5` can be bigger than a long one such as `0.30000000000000004`, so every value is measured.
+The shortest form has no such order, because a short value such as `0.5` can be bigger than a long one such as `0.30000000000000004`.
+So every value is measured.
 
 ## Operator nodes
 
 The unary and binary operators (`NOT`, the shifts and rotations, `AND`, `OR`, `XOR` and their negations) act on the bits of an integer.
-They have no meaning for a float in ordinary arithmetic, so `add_unary_operator_node` and `add_binary_operator_node` reject floating point operands with `Error::OperatorNeedsIntegers`, even when the operands and the result are all the same float type.
+They have no meaning for a float in ordinary arithmetic.
+So `add_unary_operator_node` and `add_binary_operator_node` reject floating point operands with `Error::OperatorNeedsIntegers`.
+They do so even when the operands and the result are all the same float type.
 The arithmetic operators (`ADD`, `SUB`, `MUL`, `DIV`, `MOD`) mean something for a float, and accept one.
 As ever, the library never computes anything: the caller works out the result.
 
 ## Replacing values
 
 `Scene::set_data_values` works as it does for the integers: the new values must be the same type and count.
-A float counts as unchanged only if it has the same bits, so replacing `0.0` with `-0.0` is a change, and replacing `NaN` with `NaN` is not.
+A float counts as unchanged only if it has the same bits.
+So replacing `0.0` with `-0.0` is a change, and replacing `NaN` with `NaN` is not.
 
 Each cell keeps the width it was drawn with.
-A format whose width follows the value, which is every one but hexadecimal and binary, can need more room for a new value than the node was drawn for, and the text then overflows its cell.
+A format whose width follows the value can need more room for a new value than the node was drawn for.
+Every format but hexadecimal and binary has such a width.
+The text then overflows its cell.

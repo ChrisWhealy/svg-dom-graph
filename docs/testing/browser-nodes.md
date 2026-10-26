@@ -12,7 +12,8 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a named data node's own `aria-label` including both its given `name` and its real value, e.g. `"B: u64 = AB CD EF 01 23 45 67 89"`
   - rejecting an empty or whitespace-only `name` before touching the scene, while still accepting one merely padded with whitespace, unchanged
   - a multi-value grid's own `aria-label` spelling out its row/column shape, e.g. `"2 rows by 3 columns"`, not just its flat value count
-  - each cell's own `<text>` carrying its own `aria-label`, e.g. `"row 1, column 2: 6"`, naming its row and column directly rather than leaving that relationship implicit in its `x`/`y` position
+  - each cell's own `<text>` carrying its own `aria-label`, e.g. `"row 1, column 2: 6"`
+    - it names its row and column directly, rather than leaving that relationship implicit in its `x`/`y` position
   - dragging a data node moves its own `<g>` transform; every cell's local coordinates stay unchanged
   - a data node combined with custom `EdgeAnchors`
   - a data node combined with `DragOptions::bounds`, when the node is itself wider than the bounds rectangle
@@ -20,35 +21,59 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
 - floating point values (`NodeValues::F32`/`F64`, `DataFormat::Float`):
   - decimal places and significant digits being written as asked, and scientific notation, `NaN`, the infinities and negative zero
   - hexadecimal showing the IEEE-754 bits
-  - every cell being wide enough for its widest value, in five formats with five different widest values: a tiny value under significant digits, a many-digit negative value under decimal places, a long exponent, `-inf` among short numbers, and an awkward sum under the shortest form
+  - every cell being wide enough for its widest value, in five formats with five different widest values
+  - three of the widest values: a tiny value under significant digits, a many-digit negative value under decimal places, and a long exponent
+  - the other two: `-inf` among short numbers, and an awkward sum under the shortest form
   - an invalid float format being rejected before anything is drawn
   - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
   - an `f32` and an `f64` being different types for replacement and for an operator
   - a unary or binary operator refusing floating point operands, and drawing nothing, while an arithmetic operator accepts them
 - complex values (`NodeValues::Complex32`/`Complex64`, `DataFormat::ComplexNumber`):
-  - every one-line form being written as asked and every cell being wide enough, and the cells of a grid of numbers all being the width of the widest
-  - a polar and a rectangular cell each beginning with a hidden picture of its number, the text starting clear of it, and no other form having one
-  - a polar picture being one arrow in the number's own direction and a rectangular one a horizontal adjacent leg and a vertical opposite leg that meet at the number
-  - a picture being redrawn when its number is replaced, every picture being redrawn when the largest modulus changes, and a number that cannot be drawn having a picture that draws nothing
-  - the icon scale setting the size of the picture, as a multiple of a line of text, a cell growing taller to hold a large one and staying as tall for a small one, the text staying clear, the lines being as thin on a large picture as on a small one, and a scale out of range or not a number being rejected before anything is drawn
-  - a picture whose write fails after the new numbers are committed (the write of its `d` is made to fail) being written by a retry given the same numbers, so that it matches a node drawn from them, and the same for a replacement that rescales every picture and fails part way, and for the second leg of a rectangular picture, and a clean node writing no path for a replacement that changes nothing
-  - an exponent being a smaller, raised `<tspan>` that starts with an `i`, rebuilt in place on a replacement, with the cell still named as one line
+  - every one-line form being written as asked, and every cell being wide enough
+    - the cells of a grid of numbers all being the width of the widest
+  - a polar and a rectangular cell each beginning with a hidden picture of its number
+    - the text starting clear of the picture
+    - no other form having one
+  - a polar picture being one arrow in the number's own direction
+  - a rectangular picture being a horizontal adjacent leg and a vertical opposite leg that meet at the number
+  - a picture being redrawn when its number is replaced
+  - every picture being redrawn when the largest modulus changes
+  - a number that cannot be drawn having a picture that draws nothing
+  - the icon scale setting the size of the picture, as a multiple of a line of text
+  - a cell growing taller to hold a large picture, and staying as tall for a small one
+  - the text staying clear of the picture
+  - the lines being as thin on a large picture as on a small one
+  - a scale out of range or not a number being rejected before anything is drawn
+  - a picture whose write fails after the new numbers are committed being written by a retry given the same numbers
+  - the failure comes from making the write of the picture's `d` fail, and the retry leaves the picture matching a node drawn from those numbers
+  - the same retry repairing a replacement that rescales every picture and fails part way
+  - the same retry repairing the second leg of a rectangular picture
+  - a clean node writing no path for a replacement that changes nothing
+  - an exponent being a smaller, raised `<tspan>` that starts with an `i`
+    - it is rebuilt in place on a replacement
+    - the cell is still named as one line
   - a matrix being two `<tspan>` rows between a pair of hidden brackets, in a cell taller than a rectangular one that holds both rows
   - a matrix being rewritten in place, with two rows after every replacement and the node keeping its size
   - a matrix being named for assistive technology as one line, and a single number naming its type and value, with both following a replacement
   - the angle unit and the digits of a style changing what is written
   - an `f32` and an `f64` complex number being different types for replacement
-  - addition, subtraction, multiplication and division accepting complex operands, while a modulus, a bitwise operator and a unary operator refuse them by name, a matrix result is refused, and nothing is drawn for a refusal
+  - addition, subtraction, multiplication and division accepting complex operands
+  - a modulus, a bitwise operator and a unary operator refusing complex operands by name
+  - a matrix result being refused, and nothing being drawn for a refusal
   - a complex format for other values, too many digits, and a float format for complex values, all rejected before anything is drawn
   - decimal and hexadecimal being written for complex numbers
 - text values (`NodeValues::Text`, `DataFormat::Text`):
-  - each string drawn as it is, with Unicode and empty ones included, one cell each, every cell the same width and every string inside its cell
+  - each string drawn as it is, with Unicode and empty ones included, one cell each
+    - every cell the same width, and every string inside its cell
   - a string that looks like markup drawn as those characters, and making no element
   - runs of spaces kept
   - the cell-width hint widening the cells without being drawn, counted or named, and a string wider than the hint still fitting
   - with a hint as wide as every later value, a replacement changing no cell and no box
   - an empty cell named `empty`, and a replacement keeping the names up to date
-  - text values with another format, another values type with the text format, and a control character in a string or the hint, all rejected before anything is drawn
+  - these all rejected before anything is drawn:
+    - text values with another format
+    - another values type with the text format
+    - a control character in a string or the hint
   - a bad replacement leaving the node as it was, and no operator accepting text
 - signed values (`NodeValues::I8`/`I16`/`I32`/`I64`):
   - a sign being shown only for a negative value, and never a `+`
@@ -63,14 +88,19 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
 - operator nodes (`UnaryOperator`/`BinaryOperator`/`ArithmeticOperator`, `Scene::add_unary_operator_node`/`add_binary_operator_node`/`add_arithmetic_operator_node`):
   - a unary node's two-row label/value rendering, and a binary or arithmetic node's own two auto-wired input edges
   - rejecting mismatched operand widths, duplicate operands, a non-data operand, and a multi-value result, all before drawing anything
-  - dragging an operator node reroutes its input connector; dragging either operand of a same-side pair re-splits both connectors live, without either ever crossing back through its own dragged source box
-  - same-side operand collision handling: splitting to distinct anchor points, including an exact-crossing tie between two distinct operands, and honouring a configured `EdgeAnchors` count instead of the unconfigured default's fixed three-way split
+  - dragging an operator node rerouting its input connector
+  - dragging either operand of a same-side pair re-splitting both connectors live
+    - neither ever crosses back through its own dragged source box
+  - same-side operand collision handling: splitting to distinct anchor points, including an exact-crossing tie between two distinct operands
+  - honouring a configured `EdgeAnchors` count instead of the unconfigured default's fixed three-way split
   - operands on different sides of the operator keep the plain single-anchor midpoint, unaffected by the same-side split logic
-  - a non-commutative binary or arithmetic operator's own two operand connectors carry labelled "L"/"R" port markers, preserving each operand's own identity even after a drag re-splits both connectors
+  - a non-commutative binary or arithmetic operator's two operand connectors carrying labelled "L"/"R" port markers
+    - each operand keeps its own identity even after a drag re-splits both connectors
   - a commutative operator draws no port markers at all, since neither operand side carries meaning
   - operator-to-operator chaining: dragging any one node in a chain reroutes only its own incident connectors, leaving the rest of the chain untouched
 - measuring and placing nodes (`Scene::node_rect`, `move_node`, `measure_data_node`, `measure_named_data_node`, `measure_operator_box`):
-  - a measurement being exactly the size the equivalent `add_*` call then draws, for a plain node, a grid, a named data node, and every kind of operator node
+  - a measurement being exactly the size the equivalent `add_*` call then draws
+    - this holds for a plain node, a grid, a named data node, and every kind of operator node
   - a measurement leaving no residual DOM and not accumulating over repeated calls
   - `move_node` rerouting every connector already attached, including an operator node's own auto-wired inputs
   - none of a drag's bounds clamping or collision handling being applied to `move_node`

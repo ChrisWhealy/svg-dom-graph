@@ -6,7 +6,8 @@
 cargo test -p cdp-integration-test
 ```
 
-Runs a further, heavier integration layer against a real, local Chrome instance over the Chrome DevTools Protocol (via [`headless_chrome`](https://crates.io/crates/headless_chrome)), dispatching real `Input.dispatchMouseEvent` sequences rather than `EventTarget::dispatchEvent`.
+Runs a further, heavier integration layer against a real, local Chrome instance over the Chrome DevTools Protocol (via [`headless_chrome`](https://crates.io/crates/headless_chrome)).
+It dispatches real `Input.dispatchMouseEvent` sequences rather than `EventTarget::dispatchEvent`.
 
 Unlike `wasm-pack test`'s synthetic events, this goes through the browser's own hit-testing, pointer capture and default-action machinery.
 This is the only way to catch, for example, a missing `prevent_default()` that lets a drag fall through to the browser's native text-selection gesture.
@@ -23,9 +24,11 @@ A node drag that travels across empty background stays a node drag, so the scene
 Pressing on a node never gives the pan surface a capture, even though it lies behind the node.
 
 Its `pan.rs` scenario also covers the keyboard, through the browser's own focus order and real key events rather than a synthetic `keydown`.
-Pressing Tab puts focus on the scene's keyboard focus target, not on the application's `<svg>`, and the arrow keys then pan it by 40 units a press.
+Pressing Tab puts focus on the scene's keyboard focus target, not on the application's `<svg>`.
+The arrow keys then pan it by 40 units a press.
 
-Its `pan.rs` scenario also zooms with a real Ctrl and wheel event in the middle of a real node drag and a real pan, with pointer capture held.
+Its `pan.rs` scenario also zooms with a real Ctrl and wheel event.
+The zoom happens in the middle of a real node drag and a real pan, with pointer capture held.
 The fixture switches wheel zoom on with no toolbar.
 
 That last scenario is `#[ignore]`d, and is run on its own:
@@ -35,9 +38,11 @@ cargo test -p cdp-integration-test -- --ignored
 ```
 
 A real mouse wheel is only delivered to a tab the browser treats as active.
-Every other CDP test opens its own tab in the one shared Chrome and runs at the same time, so with the rest of the suite the wheel call times out.
+Every other CDP test opens its own tab in the one shared Chrome and runs at the same time.
+So with the rest of the suite the wheel call times out.
 Both scenarios pass alone.
-What it adds over the synthetic browser tests is a genuine wheel event during a genuine, pointer-captured gesture, and that the gesture composes with a view change is proved by those synthetic tests.
+It adds a genuine wheel event during a genuine, pointer-captured gesture, which the synthetic browser tests lack.
+Those synthetic tests prove that the gesture composes with a view change.
 
 Its own `accessibility_tree.rs` scenario asks a different question: not what the rendered DOM's own attributes say, but what Chrome's own computed accessibility tree actually exposes.
 `wasm-pack test`'s own DOM-attribute checks can prove `role`/`aria-label` land on the right element.
@@ -49,24 +54,39 @@ That is the precise reason `role="group"` was chosen over `role="img"` when draw
 Its own `row_labels.rs` scenario checks that no row label spills out of its node, in a real browser.
 The fixture's ninth node has rows labelled in Latin, CJK, and a letter with combining marks, which are scripts of unequal glyph width.
 The test asserts that the bounding box of every visible label lies inside the node's outer rectangle.
-It checks that observable contract, and does not repeat the width algorithm, and it assumes nothing about which label is widest, because that depends on the fonts the machine has.
+It checks that observable contract, and does not repeat the width algorithm.
+It assumes nothing about which label is widest, because that depends on the fonts the machine has.
 
-Its own `dijkstra.rs` scenario runs against the built demo gallery, and asks what the native tests of the algorithm and of the label placer cannot: what reaches the page.
-Every edge has a label with its weight, named for its edge, and the arrays hold text, with `∞` and `—` drawn, and empty queue rows read out as `empty`.
+Its own `dijkstra.rs` scenario runs against the built demo gallery.
+It asks what the native tests of the algorithm and of the label placer cannot: what reaches the page.
+Every edge has a label with its weight, named for its edge.
+The arrays hold text, with `∞` and `—` drawn, and empty queue rows read out as `empty`.
 Each label is checked against the boxes, the other labels and its own line, sampled along the real path.
-That is done at rest and after a real mouse drag of a vertex through several places, which is the case that matters: C to D and C to E leave one vertex together, and dragging it must not bring their labels together.
+The check runs at rest, and after a real mouse drag of a vertex through several places.
+That drag is the case that matters.
+C to D and C to E leave one vertex together, and dragging it must not bring their labels together.
 The examined edge is emphasised alone, and its ends ringed, and at the last step the five edges of the route are emphasised at once.
 A redraw keeps the zoom, the place a vertex was dragged to and the keyboard focus on the toolbar button.
 Every step is walked, to check that the three arrays, the queue and the vertices never move or change size.
 Restart gives new random weights from 1 to 10, goes back to the first step and announces it, while stepping back does not change them.
 The walk helpers are the ones the sorting scenarios use, and are shared: see `sorting.rs`.
 
-Its `springs.rs` scenario runs against the same gallery, and asks what the native tests of the solver, the clock, the command bridge and the controller's decisions cannot: what reaches the page.
-A real mouse drags B and the neighbours move, the graph settles, the panel says `sleeping`, and `data-physics-pending` is `0`, so no animation frame is left running at rest.
-A circle held by a pointer disables Reset, which comes back by itself after the release and then restores every position and keeps the weights. Randomise weights sets a network at rest moving by itself, and Reset puts the layout back. A held circle that goes quiet stops requesting frames without being reported as sleeping, and a new position wakes it.
+Its `springs.rs` scenario runs against the same gallery.
+It asks what the native tests of the solver, the clock, the command bridge and the controller's decisions cannot: what reaches the page.
+A real mouse drags B and the neighbours move, and the graph settles.
+The panel says `sleeping`, and `data-physics-pending` is `0`, so no animation frame is left running at rest.
+A circle held by a pointer disables Reset.
+Reset comes back by itself after the release, and then restores every position and keeps the weights.
+Randomise weights sets a network at rest moving by itself, and Reset puts the layout back.
+A held circle that goes quiet stops requesting frames without being reported as sleeping.
+A new position wakes it.
 Two circles held at once settle together, and a second press during the catch-up takes over without an error.
-Randomising the weights changes the labels and moves nothing at rest. Pause cancels the frame and Resume carries on, a hidden page pauses and showing it resumes, and leaving the page tears the demo down so that a late event reaches nothing.
-A real mouse cannot be held by the suite's helper, so the tests that need a circle held dispatch pointer events in the page, as the library's own listeners receive them.
+Randomising the weights changes the edge labels.
+Pause cancels the frame, and Resume carries on.
+A hidden page pauses, and showing it resumes.
+Leaving the page tears the demo down, so that a late event reaches nothing.
+The suite's helper cannot hold a real mouse button.
+So the tests that need a circle held dispatch pointer events in the page, as the library's own listeners receive them.
 The Dijkstra panel is checked to be unchanged.
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.

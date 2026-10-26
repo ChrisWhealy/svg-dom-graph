@@ -9,7 +9,8 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
 
    `NodeOptions`/`EdgeAnchors` configure how many connector fixing points a node's own sides offer.
 
-   `NodeOptions::with_fill` gives a plain node a fill of its own, which is how a heading row of a table made of plain nodes is told apart from the rows below it.
+    `NodeOptions::with_fill` gives a plain node a fill of its own.
+    That tells a heading row of a table made of plain nodes apart from the rows below it.
    A data node's fill says what type it holds, so it is not changed by this.
 
 - `add_data_node`/`add_data_node_with` draw a node whose content is a grid of `DataNodeContent` values instead of a plain label, self-sizing to fit.
@@ -21,8 +22,18 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
    A value then reads as a variable, not just a bare type — `"B: u64 = ..."` rather than `"u64 = ..."`.
   `name` must not be empty or hold only whitespace.
 
-  A `DataNodeContent` holds the values, in one of nineteen types: six unsigned widths (`NodeValues::U8`, `U16`, `U32`, `U64`, `U128` or `Usize`), their signed equivalents (`I8`, `I16`, `I32`, `I64`, `I128` or `Isize`), floating point (`F32` or `F64`, described in [Floating Point Values](floating-point.md)), `Uuid`, described in [128-bit Values and UUIDs](uuids-and-128-bit-values.md), `Bool`, described in [Booleans and Pointer-sized Integers](bools-and-sizes.md), complex numbers (`Complex32` or `Complex64`), described in [Complex Numbers](complex-numbers.md), and `Text`, described in [Text Cells](text-cells.md).
-  Every value in a node shares one type, so an operator's operands and result must too, and a signed type is a different type from its unsigned equivalent.
+  A `DataNodeContent` holds the values, in one of nineteen types:
+
+  * six unsigned widths: `NodeValues::U8`, `U16`, `U32`, `U64`, `U128` or `Usize`
+  * their signed equivalents: `I8`, `I16`, `I32`, `I64`, `I128` or `Isize`
+  * floating point: `F32` or `F64`, described in [Floating Point Values](floating-point.md)
+  * `Uuid`, described in [128-bit Values and UUIDs](uuids-and-128-bit-values.md)
+  * `Bool`, described in [Booleans and Pointer-sized Integers](bools-and-sizes.md)
+  * complex numbers: `Complex32` or `Complex64`, described in [Complex Numbers](complex-numbers.md)
+  * `Text`, described in [Text Cells](text-cells.md)
+
+  Every value in a node shares one type, so an operator's operands and result must too.
+  A signed type is a different type from its unsigned equivalent.
   A unary or binary operator needs integer operands, and an arithmetic operator accepts floats too.
   A signed value shows a sign only when it is negative, and hexadecimal, binary and `Ascii` show its two's-complement representation in the selected byte order.
 
@@ -37,14 +48,19 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
   - `with_byte_order` shows the bytes of each value big-endian, the default, or little-endian.
 
   A node's size is never known in advance, because it depends on the text the browser renders.
-  `node_rect` reports the rectangle a node was actually drawn at, `cell_rect` that of one of its cells, and `measure_data_node`, `measure_named_data_node` and `measure_operator_box` report what a node would measure without drawing it.
-  `move_node` then puts a node exactly where a caller wants it, which makes it possible to centre one node under another whose width was not known until it was drawn.
+  `node_rect` reports the rectangle a node was actually drawn at, and `cell_rect` reports that of one of its cells.
+  `measure_data_node`, `measure_named_data_node` and `measure_operator_box` report what a node would measure without drawing it.
+  `move_node` then puts a node exactly where a caller wants it.
+  So a caller can centre one node under another whose width was not known until it was drawn.
   `move_node` redraws the connectors attached to the node, but applies none of the bounds clamping or collision handling a drag does.
 
 - `set_data_values` replaces the values of an existing data node without redrawing it.
-  The new values must have the same type and count as the node was drawn with, so its size, shape, connectors, selection and marks are all unchanged.
-  Its accessible name is rewritten to quote the new values, and a value with more decimal digits than the node was drawn with overflows its cell.
-  An operator node's own result can be replaced in the same way, and the caller works out the new result, as it did when it added the node.
+  The new values must have the same type and count as the node was drawn with.
+  So its size, shape, connectors, selection and marks are all unchanged.
+  Its accessible name is rewritten to quote the new values.
+  A value with more decimal digits than the node was drawn with overflows its cell.
+  An operator node's own result can be replaced in the same way.
+  The caller works out the new result, as it did when it added the node.
   Nothing downstream of that node changes, so a node that takes it as an operand keeps the result it was given.
   This is what lets a stepping demo update a diagram in place instead of drawing it again.
 

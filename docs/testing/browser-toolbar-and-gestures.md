@@ -41,5 +41,6 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a toolbar button never starting a pan, but still clicking
   - the pan cursor returning to idle after a release and after a cancel, and a new pan starting cleanly after either
   - showing and hiding the toolbar, and toggling the input modes, repeatedly leaving exactly one surface and no leftover handler
-    A leaked wheel listener cannot zoom, because it holds only a weak reference to a surface that is gone, but it would still cancel the event.
+    A leaked wheel listener cannot zoom, because it holds only a weak reference to a surface that is gone.
+    It would still cancel the event.
     So the tests tear everything down at the end and check that a modified wheel is no longer cancelled by anything.

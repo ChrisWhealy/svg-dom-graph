@@ -1,7 +1,8 @@
 # Text Cells
 
 `NodeValues::Text` holds strings, one to a cell, and `DataFormat::Text` writes them.
-Like every other type, all the values of a node share one, and a text node has a colour of its own, a pale neutral grey, and a name for assistive technology: `text`.
+Like every other type, all the values of a node share one.
+A text node has a colour of its own, a pale neutral grey, and a name for assistive technology: `text`.
 
 ```rust
 DataNodeContent::new(
@@ -34,13 +35,15 @@ An empty cell is read out as `empty`, because a blank cell would be read out as 
 ## How wide a cell is
 
 A string has no fixed width.
-A character such as `∞` or `—` may come from a font other than the monospace font the cells use, with an advance of its own, and a character count says nothing about that.
+A character such as `∞` or `—` may come from a font other than the monospace font the cells use.
+Such a font gives it an advance of its own, and a character count says nothing about that.
 So the browser measures every string, and every cell takes the width of the widest, plus its padding.
 
 `set_data_values` does not resize cells.
 A node that is drawn showing `∞` and is later given `1250` would have to outgrow its cells.
 `DataNodeContent::with_cell_width_hint` prevents that.
-It gives a sample string, which is measured and nothing else: it is never drawn, never counted as a value, and never part of a node's name.
+It gives a sample string, which is measured and nothing else.
+The sample is never drawn, never counted as a value, and never part of a node's name.
 Each cell is at least as wide as the sample, and a string that is wider than the sample still gets the room it needs.
 A caller who wants a width that never changes chooses the widest string the node will ever show.
 The sample is held to the same rule as a cell, so it may not contain a control character.

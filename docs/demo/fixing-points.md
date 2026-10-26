@@ -8,9 +8,10 @@ This is applicable for both straight and elbow connectors.
 ![Fixing Points Elbow](../../img/demo-fixing-points%202.png)
 
 `0` maps to `None`, which drops back to the default arrangement where a connector automatically anchors to the node's centre.
-An important distinction here is that the point along the edge to which the connector anchors will vary based on the angle between the centres of the nodes.
+The point along the edge where the connector anchors varies with the angle between the centres of the nodes.
 
-`1` `EdgeAnchors` locks the connector(s) to the edge's midpoint; therefore, no matter what the angle between the two nodes, the connector will always anchor to the midpoint.
+`1` `EdgeAnchors` locks the connector(s) to the edge's midpoint.
+So whatever the angle between the two nodes, the connector always anchors to the midpoint.
 
 `2` or more `EdgeAnchors` snap the connector(s) to the nearest of that many candidate anchor points.
 

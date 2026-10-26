@@ -6,8 +6,12 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - every button having the `button` role, an explicit name that does not depend on its visible "100%", and a place in the Tab order
   - a focused button drawing a thicker, differently coloured border, and blur restoring it
   - activating an `aria-disabled` button, by click, Enter, or Space, doing nothing at all, and writing nothing to the DOM
-  - the scene adding a keyboard focus target of its own, a `<rect>` with the `application` role, a name reporting its zoom, and a description of its keys, and none of those going on the application's `<svg>`
-  - the application's own `<svg>` role, `tabindex`, name, and description being untouched, not just at the end but throughout a sequence of showing, zooming, panning, changing every mode, moving, and hiding the toolbar, checked with a `MutationObserver` on the `<svg>`'s attributes that must record nothing
+  - the scene adding a keyboard focus target of its own: a `<rect>` with the `application` role
+  - the focus target having a name that reports its zoom, and a description of its keys
+  - none of those going on the application's `<svg>`
+  - the application's own `<svg>` role, `tabindex`, name and description being untouched
+  - the same holding throughout a sequence of showing, zooming, panning, changing every mode, moving, and hiding the toolbar
+  - a `MutationObserver` on the `<svg>`'s attributes checking this, and recording nothing
   - a key sent to the `<svg>` itself being neither handled nor cancelled
   - the focus target drawing nothing until it has focus, then outlining the visible area, and blur removing the outline
   - the focus target taking no pointer events, lying between the pan surface and the content layer, covering the same area, and leaving panning working
@@ -20,7 +24,8 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - hiding the toolbar removing the whole focus target, with its tab stop, role, name, description, and key listener, and leaving the `<svg>` as it was
   - zooming adding no live region, and rewriting no button state attribute that did not change
 - responsive layouts:
-  - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size rather than the `0 × 0` that `svg-dom` caches for it
+  - an `<svg>` sized purely by CSS, with no `viewBox` and no size attributes, being laid out against its rendered size
+    - not the `0 × 0` that `svg-dom` caches for it
   - a resize not being picked up until `refresh_layout` is called, which pins down the documented requirement so it is not mistaken for a bug
   - an `<svg>` with a `viewBox` needing no refresh when only its CSS size changes
 - the visible area under different `viewBox` origins, aspect ratios, and CSS scales:

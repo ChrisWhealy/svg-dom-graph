@@ -5,7 +5,8 @@ A circle is an ellipse with equal radii.
 `Scene::add_circle_node(centre, radius, label)` adds one, and is exactly `add_ellipse_node` with `EllipseRadii::circle(radius)`.
 `add_circle_node_with` takes the same `EllipseOptions` as `add_ellipse_node_with`.
 A circle that grows to hold its label stays a circle.
-Where this page says ellipse, a circle is meant too, and a bad radius is reported as `InvalidEllipseGeometry` with both radii set to the one that was given.
+Where this page says ellipse, a circle is meant too.
+A bad radius is reported as `InvalidEllipseGeometry`, with both radii set to the one that was given.
 The radii are semi-axes measured from the centre, and not diameters.
 `rx` is horizontal and `ry` is vertical.
 The ellipse is not rotated.
@@ -52,7 +53,8 @@ That is the difference from a rectangle, whose exit side depends on its aspect r
 A wide ellipse still leaves by east for a target 40° above east, where a rectangle of the same proportions would leave by north.
 
 The rectangle end of a mixed edge keeps the rule it always had.
-The two ends need not leave and arrive on matching sides, and an elbow can leave an ellipse by east and arrive at a rectangle through its top.
+The two ends need not leave and arrive on matching sides.
+An elbow can leave an ellipse by east and arrive at a rectangle through its top.
 
 If the two centres are the same point there is no direction, and an ellipse end is its east point.
 
@@ -69,7 +71,8 @@ It is not the point at that angle of the ellipse's own parameter, which on a lon
 
 * A straight connector can use any minute.
 * An elbow connector can use only 0, 15, 30 and 45, since it must leave an ellipse horizontally or vertically.
-* The clock position stays with the edge. It is not changed when a node moves, and there is no way to change it afterwards.
+* The clock position stays with the edge.
+  It does not change when a node moves, and nothing can change it afterwards.
 
 ### What is refused
 
@@ -94,15 +97,20 @@ An ellipse is a plain node, so the calls that refuse a plain node, such as `set_
 
 The scene keeps the rectangle that encloses an ellipse for dragging, view bounds and collision tests.
 Those are conservative at the curved corners: two ellipses can count as overlapping when their curves do not touch.
-Edge labels treat an ellipse the same way, so a label may stand a little further from the curve than it needs to, and never over it.
+Edge labels treat an ellipse the same way.
+So a label may stand a little further from the curve than it needs to, and never over it.
 
 Only the painted ellipse and its label take pointer events.
-A press in a corner of the enclosing rectangle that is outside the curve goes to whatever is behind the ellipse, and it never starts a drag of the ellipse.
-If background panning is active, which depends on `set_pan_mode` and on whether a toolbar is shown, it pans the view. See [Pan and Wheel Zoom](pan-and-wheel-zoom.md).
+A press in a corner of the enclosing rectangle that is outside the curve goes to whatever is behind the ellipse.
+It never starts a drag of the ellipse.
+If background panning is active, the pointer pans the view.
+Panning depends on `set_pan_mode` and on whether a toolbar is shown.
+See [Pan and Wheel Zoom](pan-and-wheel-zoom.md).
 If it is not, the press does nothing.
 
 There is no setter for the label or the radii after the node is added.
 There are no rotated ellipses.
-Any untrusted label length, radius or number of edges at one node must be limited by the application, as for every other node. See [Security](../security.md).
+The application must limit any untrusted label length, radius or number of edges at one node, as for every other node.
+See [Security](../security.md).
 
 The geometry is in `src/geometry/ellipse/`, which touches no DOM and is tested with `cargo test`.

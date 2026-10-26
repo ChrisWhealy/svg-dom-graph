@@ -2,7 +2,8 @@
 
 `NodeValues::U128` and `NodeValues::I128` are the 128-bit integers.
 `NodeValues::Uuid` holds `Uuid` values, which are also 128 bits wide but are not numbers.
-Like every other type, all the values of a node share one, and each has its own colour and its own name for assistive technology: `u128`, `i128` and `uuid`.
+Like every other type, all the values of a node share one.
+Each has its own colour and its own name for assistive technology: `u128`, `i128` and `uuid`.
 
 ## `u128` and `i128`
 
@@ -38,11 +39,13 @@ A UUID has five fields: a 32-bit one, two 16-bit ones, and then eight bytes.
 RFC 9562 stores every field most significant byte first, so the sixteen bytes are the digits of the text in order.
 A Microsoft GUID in memory stores the first three fields least significant byte first.
 So the bytes `33 22 11 00 55 44 77 66 88 99 AA BB CC DD EE FF` are the UUID `00112233-4455-6677-8899-aabbccddeeff` under `UuidLayout::Guid`, and a different UUID, `33221100-5544-7766-8899-aabbccddeeff`, under `UuidLayout::Rfc`.
-The text of a UUID is the same in both, since it writes the fields themselves, and it is the bytes held in the `Uuid` that the layout changes the meaning of.
+The text of a UUID is the same in both, since it writes the fields themselves.
+The layout changes the meaning of the bytes held in the `Uuid`.
 
 ### Other formats
 
-`DataFormat::Hexadecimal`, `Binary` and `Ascii` show a UUID's sixteen bytes as they are held, in the node's `ByteOrder`, and `DataFormat::Decimal` shows the 128 bits as one number.
+`DataFormat::Hexadecimal`, `Binary` and `Ascii` show a UUID's sixteen bytes as they are held, in the node's `ByteOrder`.
+`DataFormat::Decimal` shows the 128 bits as one number.
 `ByteOrder` has no effect on `DataFormat::Uuid`, since its format names the layout itself.
 
 ### Restrictions

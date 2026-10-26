@@ -2,7 +2,8 @@
 
 `Scene::make_draggable_with_observer(node, options, on_drag)` makes a node draggable exactly as `make_draggable_with` does, and also tells `on_drag` what the drag does.
 It is for a host that keeps something else in step with a dragged node, such as a physics simulation.
-It follows the library's own drag, which already gets the pointer, the zoom, the bounds and the collision push right, and it adds no second set of pointer listeners.
+It follows the library's own drag, which already gets the pointer, the zoom, the bounds and the collision push right.
+It adds no second set of pointer listeners.
 
 The drag itself is unchanged: the same listeners, the same pointer capture, and the same coalescing of moves to one a frame.
 
@@ -30,7 +31,8 @@ Events for two nodes can interleave, since two pointers can drag two nodes at on
 A move that returns an error sends nothing, and its error is dropped exactly as it is for an unobserved drag.
 So a host never sees an `Applied` for a position the page does not have.
 
-A move to the origin the node already has still succeeds, and still sends `Applied`, since it can retry an edge label that failed to place earlier.
+A move to the origin the node already has still succeeds, and still sends `Applied`.
+It can retry an edge label that failed to place earlier.
 A duplicate `Applied` is therefore possible and harmless.
 
 After a failed write the host can find out where the node really is.
@@ -38,17 +40,28 @@ After a failed write the host can find out where the node really is.
 
 ### A push clear is reported
 
-When the collision policy pushes a dropped node back clear of another, that is one more move, so it is one more `Applied`, and then `End` carries the corrected origin.
+When the collision policy pushes a dropped node back clear of another, that is one more move.
+So it is one more `Applied`, and then `End` carries the corrected origin.
 
 ## The handle owns the observer
 
 The method returns a `DragObserverHandle`.
 It is the only strong owner of the callback.
-The drag listeners and the coalescer hold only a weak reference to the slot the callback sits in, so the callback can capture whatever it likes, a host controller included, without a cycle through the scene.
+The drag listeners and the coalescer hold only a weak reference to the slot the callback sits in.
+So the callback can capture whatever it likes, a host controller included, without a cycle through the scene.
 
-* **Keep the handle for as long as the events are wanted.** The observer stops the moment the handle is dropped. A handle that is not bound to anything is dropped at once, which `#[must_use]` warns about.
-* **Dropping the handle is final for that node.** It ends observation of that node for good. It does not remove the drag listeners and it does not make the node eligible for another call, so a later `make_draggable`, or a second `make_draggable_with_observer`, returns `Error::AlreadyDraggable`. There is no way to attach a different observer to a node that is already draggable.
-* A notification already running when the handle is dropped finishes. None is delivered after it. The callback may even drop its own handle.
+* **Keep the handle for as long as the events are wanted.**<br>
+  The observer stops the moment the handle is dropped.
+  A handle that is not bound to anything is dropped at once, which `#[must_use]` warns about.
+* **Dropping the handle is final for that node.**<br>
+  It ends observation of that node for good.
+  It does not remove the drag listeners, and it does not make the node eligible for another call.
+  So a later `make_draggable`, or a second `make_draggable_with_observer`, returns `Error::AlreadyDraggable`.
+  No other observer can attach to a node that is already draggable.
+* **A running notification finishes.**<br>
+  A notification already running when the handle is dropped finishes.
+  None is delivered after it.
+  The callback may even drop its own handle.
 * The callback's captures are released when the handle is dropped.
 
 The handle is not `Clone`.
@@ -57,7 +70,8 @@ The handle is not `Clone`.
 
 Events are delivered synchronously, from inside the pointer event handler or the animation frame that caused them.
 They are delivered with **no borrow of the scene held**, so the callback may call any method of the scene, `node_rect` and `move_node` included.
-It must not assume it runs at a frame boundary, and it should do little: a host that has more to do queues the event and does it later.
+It must not assume it runs at a frame boundary, and it should do little.
+A host that has more to do queues the event and does it later.
 
 ## Failed registration
 
@@ -69,8 +83,11 @@ Each is checked, or rolled back, before the call returns, so a failed call insta
 The events rely on a small change to the order in which `move_node` commits a move.
 It writes the node's transform first, and only then changes the node's position in the model.
 So if the transform cannot be written, `node_rect` still says where the node really is, and no `Applied` is sent.
-Once the transform has been written the move is committed, and it is **not rolled back**: if a connector or an edge label then fails to update, the call returns an error, the node stays moved, and `End` and `Cancel` report the new position.
-Recovery is eventual rerouting and not rollback. See `Scene::move_node`.
+The move is committed once the transform has been written, and it is **not rolled back**.
+If a connector or an edge label then fails to update, the call returns an error and the node stays moved.
+`End` and `Cancel` report the new position.
+Recovery is eventual rerouting and not rollback.
+See `Scene::move_node`.
 
 ## Example
 

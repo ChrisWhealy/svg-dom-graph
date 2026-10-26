@@ -4,8 +4,17 @@
 
 Demonstrates the idea that rather than simply having a text label, a node can have a specific type of `DataNodeContent`.
 
-At the moment, the data types are limited to `u8`/`u16`/`u32`/`u64`, their signed equivalents `i8`/`i16`/`i32`/`i64`, the 128-bit `u128`/`i128`, `Uuid` (see [128-bit Values and UUIDs](wide-values.md)), the pointer-sized `usize`/`isize` and `bool` (see [Booleans and Pointer-sized Integers](bools-and-sizes.md)), floating point `f32`/`f64` (see [Floating Point](floating-point.md)), and complex numbers (see [Complex Numbers](complex-numbers.md)).
-They can be formatted as decimal, hexadecimal, or binary, and `u8` values that are text can also be drawn as `DataFormat::Ascii`, one character to a cell, or as `DataFormat::PlainText`, one box holding the whole string.
+At the moment, the data types are limited to these:
+
+* `u8`/`u16`/`u32`/`u64`, and their signed equivalents `i8`/`i16`/`i32`/`i64`
+* the 128-bit `u128`/`i128`, and `Uuid` (see [128-bit Values and UUIDs](wide-values.md))
+* the pointer-sized `usize`/`isize`, and `bool` (see [Booleans and Pointer-sized Integers](bools-and-sizes.md))
+* floating point `f32`/`f64` (see [Floating Point](floating-point.md))
+* complex numbers (see [Complex Numbers](complex-numbers.md))
+
+They can be formatted as decimal, hexadecimal, or binary.
+`u8` values that are text can also be drawn as `DataFormat::Ascii`, one character to a cell.
+They can also be drawn as `DataFormat::PlainText`, one box holding the whole string.
 
 If `DataNodeContent` is an array, the data will be presented in the form of a grid having a particular type of `GridLayout`.
 
@@ -28,7 +37,9 @@ Nodes in this panel are draggable and have built-in connector routing and drag-c
 
 ***Displaying Binary or Hexadecimal Values***<br>
 Displaying successive byte-groups as a long string would make the end of one string and the start of the next indistinguishable.
-Therefore, each value is displayed in a separate box, coloured according to its own type — `u8`, `u16`, `u32`, `u64`, `u128` or `usize`, or a deeper shade of the same colour for the signed `i8`, `i16`, `i32`, `i64`, `i128` or `isize`.
+Therefore, each value is displayed in a separate box, coloured according to its own type.
+The unsigned types are `u8`, `u16`, `u32`, `u64`, `u128` and `usize`.
+The signed types, `i8`, `i16`, `i32`, `i64`, `i128` and `isize`, use a deeper shade of the same colour.
 
 As far as assistive technology is concerned, colour alone does not convey any useful information.
 Therefore, the node's type name is attached both as an SVG `<title>` (shown as a browser tooltip) and as an `aria-label`.

@@ -15,9 +15,14 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a label that fails after the node has moved sending no `Applied`, the move staying committed, and `End` reporting the new origin
   - `Cancel` reporting the last committed origin and discarding a pending position, and a second pointer being ignored
   - a push clear reported as an extra `Applied` and `End` carrying the corrected origin, and a same-origin move reported as a harmless duplicate
-  - dropping the handle ending events and releasing the callback's captures, leaving the node draggable and `AlreadyDraggable` for any second registration, and a callback that drops its own handle
+  - dropping the handle ending events and releasing the callback's captures
+    - the node staying draggable, and `AlreadyDraggable` for any second registration
+    - a callback that drops its own handle
   - a failed registration installing nothing and returning no handle
-  - `move_node` leaving the model unchanged when the node transform fails, keeping the move when a label fails after it, a later different-origin move putting the connector right, and a same-origin move retrying the label and nothing more
+  - `move_node` leaving the model unchanged when the node transform fails
+  - `move_node` keeping the move when a label fails after it
+  - a later different-origin move putting the connector right
+  - a same-origin move retrying the label and nothing more
   - the test-only `FailingWrites` filtering by element and by one-shot count
 - confining a drag to the visible area (`DragOptions::confine_to_view`, on by default):
   - a node with no bounds stopping at the near corner and the far corner of the scene when dragged far past either
@@ -32,44 +37,74 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - accepting a zero-width/height rectangle
   - a rejected `bounds` leaving the node not draggable at all, and
   - `CollisionPolicy::PushClear`'s own corrective push staying within `bounds` too, not just the pointermove that preceded it
-- straight and elbow connector routing (`ConnectorType`), including corner-radius validation and live updates via `set_connector_type`, plus clamping to the available room and its automatic restoration once a drag gives a corner more room
+- straight and elbow connector routing (`ConnectorType`)
+  - corner-radius validation, and live updates via `set_connector_type`
+  - clamping to the available room, and its automatic restoration once a drag gives a corner more room
 - ellipse nodes (`Scene::add_ellipse_node`):
   - a real `<ellipse>` and a text in a group, with the ellipse's own centre at `(rx, ry)` and no rectangle outline
   - `node_rect` being the enclosing rectangle, with the centre where it was put
-  - a label that does not fit growing the ellipse about the same centre, keeping the ratio, with the text and margin inside the curve as the browser measures it
+  - a label that does not fit growing the ellipse about the same centre, keeping the ratio
+    - the text and margin staying inside the curve as the browser measures it
   - a circle staying a circle, a single letter fitting radius 22, the label centred, and the margin and fill options
   - invalid radii, centre, margin and a label that overflows being refused with nothing drawn, and an empty label giving a valid ellipse
-  - a straight edge landing on both outlines, an elbow leaving by a cardinal point, an explicit minute landing on the ray and staying there after a move, and a forced side landing on its cardinal point
+  - a straight edge landing on both outlines
+  - an elbow leaving by a cardinal point
+  - an explicit minute landing on the ray, and staying there after a move
+  - a forced side landing on its cardinal point
   - mixed ellipse and rectangle edges in both directions, and a rectangle edge unchanged beside ellipses
-  - a clock position on a rectangle, a fraction on an ellipse, a clock with a side, and an off-cardinal elbow, each refused by name, including by `set_connector_type`, which leaves the path as it was
+  - each of these refused by name:
+    - a clock position on a rectangle
+    - a fraction on an ellipse
+    - a clock with a side
+    - an off-cardinal elbow
+  - `set_connector_type` refusing them too, and leaving the path as it was
   - `set_edge_anchors` and `set_data_values` refusing an ellipse
-  - `set_selection`, `set_secondary_selection`, `set_unreached_cells` and `show_selection_toolbar` each refusing an ellipse, a circle and a rectangle's plain label alike with `InvalidSelection`, and a refused call changing no accessible name and drawing no toolbar
+  - `set_selection`, `set_secondary_selection`, `set_unreached_cells` and `show_selection_toolbar` each refusing an ellipse, a circle and a rectangle's plain label alike with `InvalidSelection`
+  - a refused call changing no accessible name and drawing no toolbar
   - focus ringing the ellipse outline, dragging and `move_node`, and the accessible name and relationship clause
-  - an elbow that leaves a box whose east side is past its target going east, south, west and south, and none of its segments passing through the box
+  - an elbow that leaves a box whose east side is past its target going east, south, west and south
+    - none of its segments passing through the box
   - a detour round a tall ellipse going over the top of it, with every point of every leg outside the painted curve
-  - real SVG hit testing, using the browser's own `elementFromPoint`: an unpainted corner of the enclosing rectangle is the pan surface and not the ellipse, and the middle and a point near the edge but inside the curve are the ellipse's own
-  - a press at that corner, sent to the element the browser found, panning the view (the test shows a toolbar, which turns the background pan surface on) while the ellipse does not move, take the focus or get the focus ring, and a press on the painted ellipse dragging it without panning
-  - `add_circle_node` being `add_ellipse_node` with equal radii: the same size, centre and fill, growing to hold a label and staying a circle, refused by name with the radius in both places, and joined by connectors
+  - real SVG hit testing, using the browser's own `elementFromPoint`
+  - an unpainted corner of the enclosing rectangle is the pan surface and not the ellipse
+  - the middle, and a point near the edge but inside the curve, are the ellipse's own
+  - a press at that corner, sent to the element the browser found, panning the view
+  - the test shows a toolbar, which turns the background pan surface on
+  - the ellipse not moving, taking the focus or getting the focus ring during that press
+  - a press on the painted ellipse dragging it without panning
+  - `add_circle_node` being `add_ellipse_node` with equal radii: the same size, centre and fill
+  - a circle growing to hold a label and staying a circle
+  - a circle refused by name with the radius in both places, and joined by connectors
 - edge labels (`Scene::set_edge_label`):
   - the group in the content layer with its text, background, name and marker, taking no pointer events
   - the label being clear of its line, its arrowhead and both nodes, at rest and through a run of moves
   - a change of connector type placing the label beside the new route, clear of every run of an elbow
   - setting the same text again writing nothing, and a longer text growing the box and updating the name
   - removing and putting back a label, and refusing an empty or multi-line label and an edge of another scene
-  - two connectors leaving one node keeping their labels apart through a run of drags, a later label giving way to an earlier one, and a later label in the way of an earlier one that moves being moved aside
+  - two connectors leaving one node keeping their labels apart through a run of drags
+  - a later label giving way to an earlier one
+  - a later label in the way of an earlier one that moves being moved aside
   - a node that is not joined to the edge being moved onto its label, and the label moving clear of it
   - a label whose write failed on purpose being placed again by a move that leaves a node where it is
   - zooming moving labels with the content without placing them again
-- edge focus (`Scene::set_edge_focus`): the look, any number at once, nothing else changing, surviving a reroute, independence from a node's focus ring, and a repeat writing nothing
+- edge focus (`Scene::set_edge_focus`):
+  - the look, and any number at once
+  - nothing else changing, and surviving a reroute
+  - independence from a node's focus ring
+  - a repeat writing nothing
 - per-node connector fixing points (`EdgeAnchors`), including:
   - zero-value rejection
-  - matching the elbow connector's default midpoint anchor at one fixing point (this does not hold for a straight connector, whose unsnapped default is the continuous ray/boundary crossing)
+  - matching the elbow connector's default midpoint anchor at one fixing point
+    - this does not hold for a straight connector
+    - its unsnapped default is the continuous ray/boundary crossing
   - a straight connector's own snap onto a fixing point and its exact round trip back to `None`'s boundary crossing
   - live reconfiguration via `set_edge_anchors` reaching every incident edge
 
 - relationships (`Scene::add_edge`/`Scene::add_edge_with`):
   - both of a new edge's own endpoints get their own `aria-label`/`<title>` extended with an "Output to"/"Input from" clause naming the other
-  - a source feeding more than one destination gets one "Output to" clause per edge, in the order each edge was added, never merged into a list
+  - a source feeding more than one destination gets one "Output to" clause per edge
+    - the clauses follow the order the edges were added, and are never merged into a list
   - a binary operator's own two auto-wired inputs each append their own "Input from" clause, in the same order the operator constructor received them
-  - a plain label node, which starts with no `aria-label` at all, has one seeded with its own visible text the first time a clause is appended
+  - a plain label node starts with no `aria-label` at all
+    - it has one seeded with its own visible text the first time a clause is appended
   - a relationship clause survives a later `Scene::set_selection` on the same node, rather than being truncated away

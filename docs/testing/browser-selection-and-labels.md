@@ -13,16 +13,23 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - numeric and alphabetic labels reading as expected, including past `z`
   - the label sitting left of its cell at the data text's own size, and costing a node a little width and no height
   - a label being hidden from assistive technology and quoted in the cell's accessible name, including after `set_data_values`
-  - a `Text` label naming its row: it is drawn beside that row, introduced as a "row label" in the name, and left out of both when the row has none
+  - a `Text` label naming its row
+    - it is drawn beside that row
+    - it is introduced as a "row label" in the name
+    - it is left out of both when the row has none
   - a node's width following the *rendered* width of its widest label, whatever the script, not its character count
-  - a label for a row that has no cell taking no room, while a node asked for three rows keeps its height when only two have values
+  - a label for a row that has no cell taking no room
+    - a node asked for three rows keeps its height when only two have values
 
 - cell selection (`Selection`, `Scene::set_selection`):
   - `Selection::Cell`/`Row`/`Column` recolouring a single-value node, a one-dimensional grid and a two-dimensional grid's row/column band plus its own optional focused cell
   - `Selection::None` fully resetting a previously selected node, not just the cells a prior call touched
   - the focused cell's own thicker stroke width, distinguishing it from a banded cell and from an unselected one by more than colour alone
-  - the node's own `aria-label` describing the current selection as text, exposing it to assistive technology as well as through the visual properties of colour and stroke width
-  - rejecting a `Selection` that names a plain label node, a foreign-scene id, or a cell/row/column index out of range for the node's own actual value count or grid shape, all before recolouring anything
+  - the node's own `aria-label` describing the current selection as text
+    - this exposes it to assistive technology, as well as through the visual properties of colour and stroke width
+  - rejecting a `Selection` that names a plain label node, or a foreign-scene id
+  - rejecting a cell, row or column index out of range for the node's own actual value count or grid shape
+  - every rejection coming before anything is recoloured
 - the selection toolbar (`Scene::show_selection_toolbar`):
   - showing and hiding it, and rejecting a node that is not a data node, and invalid options
   - resetting the node to unstarted when it is shown

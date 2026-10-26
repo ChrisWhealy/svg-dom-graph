@@ -24,14 +24,16 @@ This document offer guidance related to application hardening, not a vulnerabili
 ## What Is Not a Problem
 
 Node names and labels are safe to take from untrusted sources as far as injection is concerned.
-A label such as `<script>alert("You've been hacked!")</script>` is passed to `svg-dom`'s text setters, which use `textContent`, so the content is never `eval`ed; it is simply rendered as plain text.
+A label such as `<script>alert("You've been hacked!")</script>` is passed to `svg-dom`'s text setters, which use `textContent`.
+So the content is never `eval`ed, and is simply rendered as plain text.
 
 `svg-dom-graph` does not expose caller-supplied attribute names, URLs, CSS, or paint strings.
 Every attribute name and style it writes is fixed in the crate.
 
 The toolbar, panning, and wheel zoom add no caller-supplied input.
 The zoom scale is limited to 0.25 to 4.0, and panning only changes a single `transform` attribute, so neither changes the size of the DOM.
-While wheel zoom is active, a Ctrl or Cmd plus wheel event over the scene is cancelled so the browser does not zoom the whole page.
+While wheel zoom is active, the scene cancels a Ctrl or Cmd plus wheel event over it.
+So the browser does not zoom the whole page.
 By default that is only while a toolbar is shown, but an application can set it to be always on or always off.
 
 Node coordinates and dimensions must be finite, dimensions must be positive, and elbow corner radii must be finite and non-negative.
@@ -47,7 +49,8 @@ An application that builds a `Scene` from externally supplied data must impose i
 A data node's grid can hold an arbitrarily large number of cells, and each multi-value cell creates DOM elements.
 A crafted description can therefore produce a very large DOM tree, with a correspondingly high CPU and memory cost.
 
-Replacing the values of a node with `set_data_values` rewrites every cell that changed, so a node of a very large number of cells is also expensive to update repeatedly.
+Replacing the values of a node with `set_data_values` rewrites every cell that changed.
+So a node of a very large number of cells is also expensive to update repeatedly.
 
 The same applies to the total number of nodes and edges in the scene.
 
@@ -74,10 +77,12 @@ A node's degree matters separately from the total edge count, for two reasons.
 
 ### String Lengths
 
-Plain-node labels are unrestricted strings, and so are the `name` of a named data node, the label of a container node, and the text of the scene title.
+Plain-node labels are unrestricted strings.
+So are the `name` of a named data node, the label of a container node, and the text of the scene title.
 Each one becomes DOM text, is retained as the node's `ref_name`, and is measured by the browser with `getBBox()`.
 The same names are then copied into the accessibility relationship strings described above.
-Text is always taken from the rendered width, so a label in any script is handled, but a very long one costs a very wide measurement and box.
+Text is always taken from the rendered width, so a label in any script is handled.
+A very long one costs a very wide measurement and box.
 
 `LabellingStyle::Text` and the label of a `SelectionStride` take `&'static str`, so they can only be text compiled into the application.
 They cannot be built from untrusted input without deliberately leaking it.

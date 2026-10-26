@@ -35,7 +35,8 @@ The screenshots show arrays, bothe with and without labelling.
 ![Two-dimensional array cell selection 5](../../img/demo-cell-selection-2d%205.png)
 ![Two-dimensional array cell selection 6](../../img/demo-cell-selection-2d%206.png)
 
-A grid can contain an incomplete last row or column: `GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns` can leave a row or column short of real cells.
+A grid can contain an incomplete last row or column.
+`GridLayout::Automatic`, or an over-specified `GridLayout::Rows` or `GridLayout::Columns`, can leave a row or column short of real cells.
 
 Attempting to `set_selection` with a `Selection` that names a non-existent cell, will be rejected before any rendering takes place.
 
@@ -64,12 +65,16 @@ So each step clears and redraws the whole diagram from scratch with the current 
 `demo-app`'s own `edge_anchors::rebuild_edge_anchors_scene` already takes the same approach, for a different reason — a fixing-point count with a different child spread.
 
 `A` and `O` each keep their own real shape — `A` is `[5; [5; u64]]`, `O` is `[5; u64]` — rather than folding into one shared grid.
-The stepping toolbar is at the top of the diagram, and the rows of `A` are labelled `0-4`, `5-9` and so on with `LabellingStyle::Text`, so each row shows the range of flat positions it holds.
+The stepping toolbar is at the top of the diagram.
+The rows of `A` are labelled `0-4`, `5-9` and so on with `LabellingStyle::Text`.
+So each row shows the range of flat positions it holds.
 `A` sits at the top of the canvas, above the chain it feeds; `O` sits directly below the chain's own final `XOR` node.
 `A`'s own row `n` is banded, and `O`'s own cell `n` is focused, via the same `Scene::set_selection` each step reapplies to both.
 A connector only ever lands on a node's own outer edge, never a specific cell inside it — `svg-dom-graph` connects whole nodes, not cells.
-Putting `O` right after the chain, with nothing else in between, is what lets a plain edge from the chain's own final `XOR` node reach `O` directly, reading as "into the output."
-That final `XOR` node's own position is fixed — the same position it would occupy for `n == 3` — rather than tracking `n`.
+Putting `O` right after the chain, with nothing else in between, lets a plain edge from the chain's own final `XOR` node reach `O` directly.
+The edge then reads as "into the output."
+That final `XOR` node's own position is fixed, rather than tracking `n`.
+It is the same position the node would occupy for `n == 3`.
 Nothing sits between it and `O`, regardless of which row is current.
 So there was never a correctness reason for it to move.
 

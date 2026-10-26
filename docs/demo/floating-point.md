@@ -2,7 +2,8 @@
 
 Demonstrates `NodeValues::F32` and `F64`, and every way `FloatFormat` can write them.
 
-Nine values are shown one to a row in a node for each format, and the rows line up, so a row can be read across to see one value written every way.
+Nine values are shown one to a row in a node for each format.
+The rows line up, so a row can be read across to see one value written every way.
 The values are `pi`, a tiny negative number, a large number, `0.1 + 0.2`, zero, negative zero, `NaN`, infinity and negative infinity.
 The first node of each line is labelled with what each row is.
 
