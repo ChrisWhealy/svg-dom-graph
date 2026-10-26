@@ -6,12 +6,16 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.42] - 2026-10-23
+## [0.2.43] - 2026-10-26
 
 ## Added
 
 - Support for a complex number data type optimised for SIMD instructions (`94ab77d`)
-- Move `ComplexNumber` data format to library and add demo panel (``)
+- Move `ComplexNumber` data format to library and add demo panel (`9e6d7cc`)
+
+## Fixed
+
+- Correct failing `wasm-pack` tests (``)
 
 # [Released]
 

@@ -514,18 +514,19 @@ fn a_picture_follows_its_number_and_the_scale_of_the_node() -> Result<(), String
     let tip = numbers(&after[1].1[1]);
     check(tip[3] > 11.0, &format!("-i points down the page: {:?}", after[1].1[1]))?;
 
-    // The second becomes four times as large, so the first is drawn a quarter as long, though it did not change.
+    // The second becomes twice as large, so the first is drawn half as long, though it did not change. (A quarter as long
+    // would be shorter than the shortest arrow that is drawn, which is longer than that.)
     scene
         .set_data_values(
             node,
-            NodeValues::Complex64(vec![Complex::new(1.0, 0.0), Complex::new(0.0, -4.0)]),
+            NodeValues::Complex64(vec![Complex::new(1.0, 0.0), Complex::new(0.0, -2.0)]),
         )
         .map_err(|e| e.to_string())?;
     let rescaled = pictures_of("cx-pic-follow")?;
     check(rescaled[0].1 != after[0].1, "the first picture follows the new scale")?;
     let (was, now) = (numbers(&after[0].1[1])[2] - 11.0, numbers(&rescaled[0].1[1])[2] - 11.0);
     check(
-        (was - 9.0).abs() < 0.01 && (now - 2.25).abs() < 0.01,
+        (was - 9.0).abs() < 0.01 && (now - 4.5).abs() < 0.01,
         &format!("the arrow went from {was} to {now}"),
     )?;
     check_fits("cx-pic-follow")
@@ -632,6 +633,16 @@ fn picture_and_cell(id: &str) -> Result<(f64, f64, bool), String> {
     Ok((picture.width(), cell.height(), text.left() >= picture.right() - 0.5))
 }
 
+/// The scale of the first picture of node `id`, as its transform says: how many times its 22 unit design is enlarged.
+fn picture_scale(id: &str) -> Result<f64, String> {
+    let transform = pictures_of(id)?.remove(0).0.get_attribute("transform").ok_or("no transform")?;
+    transform
+        .split("scale(")
+        .nth(1)
+        .and_then(|rest| rest.trim_end_matches(')').parse().ok())
+        .ok_or_else(|| format!("no scale in {transform}"))
+}
+
 /// The scale of the picture is a multiple of the height of a line of text. A larger one draws a larger picture, makes the
 /// cell taller to hold it, and still leaves the text clear. A smaller one leaves the cell the height it was.
 #[wasm_bindgen_test]
@@ -647,20 +658,34 @@ fn the_icon_scale_sets_the_size_of_the_picture_and_the_cell_grows_to_hold_it() -
     let (small_width, small_height, small_clear) = picture_and_cell("cx-scale-small")?;
     let (rect_width, _, rect_clear) = picture_and_cell("cx-scale-rect")?;
 
-    // The box is 3 lines of text, against the default 1.2, so 2.5 times as wide. The picture's own bounding box is of its
-    // axes, which span a fixed share of the box, so the ratio is what matters and not the size.
-    let ratio = large_width / default_width;
+    // The box is 3 lines of text, against the default 1.2, so it is scaled 2.5 times as much. That is read from the
+    // transform the picture was given and not from its bounding box, because a browser may or may not count the width of
+    // the lines in a box, and the two answers differ by a few units.
+    let (default_scale, large_scale, small_scale, rect_scale) = (
+        picture_scale("cx-scale-default")?,
+        picture_scale("cx-scale-large")?,
+        picture_scale("cx-scale-small")?,
+        picture_scale("cx-scale-rect")?,
+    );
     check(
-        (ratio - 2.5).abs() < 0.1,
-        &format!("3.0 against 1.2 should be 2.5 times as wide, was {ratio}"),
+        (large_scale / default_scale - 2.5).abs() < 0.01,
+        &format!(
+            "3.0 against 1.2 should be scaled 2.5 times as much, was {}",
+            large_scale / default_scale
+        ),
     )?;
     check(
-        small_width < default_width,
-        &format!("0.5 is smaller than the default: {small_width} against {default_width}"),
+        small_scale < default_scale,
+        &format!("0.5 is smaller than the default: {small_scale} against {default_scale}"),
     )?;
     check(
-        (rect_width - large_width).abs() < 0.5,
+        (rect_scale - large_scale).abs() < 0.001,
         "a rectangular picture is the same size as a polar one",
+    )?;
+    // Whatever a browser counts, a larger picture is a wider box.
+    check(
+        large_width > default_width && default_width > small_width && rect_width > default_width,
+        &format!("widths {small_width}, {default_width}, {large_width} should grow with the scale"),
     )?;
     check(
         large_height > default_height + 20.0,
