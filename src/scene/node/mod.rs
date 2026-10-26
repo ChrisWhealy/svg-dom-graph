@@ -26,6 +26,7 @@ use crate::{
     model::node::NodeId,
     scene::DataNodeContent,
 };
+pub(in crate::scene) use butterfly::ButterflyUnit;
 pub use butterfly::{Butterfly, ButterflyOperands, ButterflyResults};
 pub use edge_anchors::EdgeAnchors;
 pub use ellipse::EllipseOptions;

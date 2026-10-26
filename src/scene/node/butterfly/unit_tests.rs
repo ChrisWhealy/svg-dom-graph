@@ -201,3 +201,33 @@ fn the_channel_in_front_of_the_subtraction_is_half_way_across_the_gap_after_the_
         &format!("the channel is at {channel}, the middle is {middle}"),
     )
 }
+
+#[test]
+fn every_member_goes_to_the_frames_corner_plus_its_own_offset() -> Result<(), String> {
+    let offsets = [
+        Point::new(0.0, 30.0),
+        Point::new(0.0, 80.0),
+        Point::new(0.0, 100.0),
+        Point::new(40.0, 70.0),
+        Point::new(140.0, 30.0),
+        Point::new(140.0, 90.0),
+    ];
+    let targets = member_targets(Point::new(200.0, 50.0), &offsets);
+    for (target, offset) in targets.into_iter().zip(offsets) {
+        check(
+            target == Point::new(200.0 + offset.x, 50.0 + offset.y),
+            &format!("{target:?} is not the corner plus {offset:?}"),
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn the_targets_depend_only_on_where_the_frame_is_and_not_on_how_it_got_there() -> Result<(), String> {
+    // This is what makes a move that is made again a no-op for a member that is already there.
+    let offsets = [Point::new(1.0, 2.0); 6];
+    check(
+        member_targets(Point::new(10.0, 20.0), &offsets) == member_targets(Point::new(10.0, 20.0), &offsets),
+        "the same corner gave two sets of targets",
+    )
+}

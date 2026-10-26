@@ -99,9 +99,9 @@ pub(super) struct SceneInner {
     /// buffer instead. It is reused for the lifetime of one drag rather than the whole scene. That is already the right
     /// shape for a handler that fires far more often, for as long as a single gesture lasts.
     pub scratch: String,
-    /// The drag observer of each butterfly's frame. It carries the frame's operator nodes along when the frame is
-    /// dragged, and stops when the scene, which owns it here, is dropped. See [`node::butterfly`](super::node).
-    pub butterflies: Vec<super::DragObserverHandle>,
+    /// Each butterfly: where its members sit in its frame, and the drag observer of the frame that keeps them there. It
+    /// stops when the scene, which owns it here, is dropped. See [`node::butterfly`](super::node).
+    pub butterflies: Vec<super::node::ButterflyUnit>,
 }
 
 impl Drop for SceneInner {

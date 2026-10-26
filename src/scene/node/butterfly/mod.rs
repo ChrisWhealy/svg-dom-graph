@@ -36,7 +36,7 @@ use crate::{
         EllipseOptions, Scene, Side,
     },
 };
-use std::{cell::Cell, rc::Rc};
+use std::rc::Rc;
 use svg_dom::{
     DominantBaseline, TextAnchor,
     root::utils::{Point, Rect, Size},
@@ -344,8 +344,19 @@ impl Scene {
             sum,
             difference,
         };
-        let observer = self.carry_members_with_frame(butterfly)?;
-        self.inner.borrow_mut().butterflies.push(observer);
+        // Where each member sits in the frame, measured once, which is what every later move puts it back to.
+        let frame_origin = self.node_rect(frame)?.origin;
+        let mut offsets = [Point::origin(); 6];
+        for (offset, id) in offsets.iter_mut().zip(butterfly.members()) {
+            let at = self.node_rect(id)?.origin;
+            *offset = Point::new(at.x - frame_origin.x, at.y - frame_origin.y);
+        }
+        let observer = self.carry_members_with_frame(butterfly, offsets)?;
+        self.inner.borrow_mut().butterflies.push(ButterflyUnit {
+            frame,
+            offsets,
+            _observer: observer,
+        });
         rollback.disarm();
         Ok(butterfly)
     }
@@ -384,36 +395,63 @@ impl Scene {
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves a butterfly so that its frame's top left corner is at `top_left`, and its three ports and three operator nodes
-    /// move by the same amount. Every connector that reaches any of them is drawn again.
+    /// go with it, each to the same place in the frame as before. Every connector that reaches any of them is drawn again.
     ///
     /// # Errors
     ///
-    /// The errors of [`move_node`](Self::move_node). The frame moves first. If a later move fails, the frame and the
-    /// operator nodes before it stay moved, and the next successful move puts the rest right.
-    pub fn move_butterfly(&self, butterfly: &Butterfly, top_left: Point) -> Result<(), Error> {
-        let from = self.node_rect(butterfly.frame)?.origin;
-        self.move_node(butterfly.frame, top_left)?;
-        self.shift_members(butterfly, Point::new(top_left.x - from.x, top_left.y - from.y))
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Moves each port and operator node of `butterfly` by `delta`.
-    fn shift_members(&self, butterfly: &Butterfly, delta: Point) -> Result<(), Error> {
-        for id in butterfly.members() {
-            let at = self.node_rect(id)?.origin;
-            self.move_node(id, Point::new(at.x + delta.x, at.y + delta.y))?;
-        }
-        Ok(())
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Makes the frame of `butterfly` draggable, and moves its operator nodes by however far the frame has moved.
+    /// The errors of [`move_node`](Self::move_node), and [`Error::UnknownNode`] if `butterfly` was not made by this scene.
     ///
-    /// Each report of the drag, whether a move, the end, or a cancel, carries the frame's origin. The operator nodes
-    /// are moved by the difference from the origin last seen. A member that cannot be moved is skipped: the drag cannot
-    /// report an error, and the next report moves the member again by the whole distance it is behind.
-    fn carry_members_with_frame(&self, butterfly: Butterfly) -> Result<crate::scene::DragObserverHandle, Error> {
-        let last = Rc::new(Cell::new(self.node_rect(butterfly.frame)?.origin));
+    /// The frame moves first, and if it cannot, nothing else moves. Otherwise every other node is moved, whether or not an
+    /// earlier one failed, and the first error is returned. Each node goes to a place worked out from where the frame
+    /// now is, not by a distance, so moving again to the same `top_left` puts any node that was left behind right, and
+    /// leaves every other node exactly where it is.
+    pub fn move_butterfly(&self, butterfly: &Butterfly, top_left: Point) -> Result<(), Error> {
+        let offsets = self.butterfly_offsets(butterfly.frame)?;
+        self.move_node(butterfly.frame, top_left)?;
+        self.place_members(butterfly, top_left, &offsets)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The offsets of each port and operator node of the butterfly whose frame is `frame`, from the frame's top left
+    /// corner. They were measured when the butterfly was made, and never change.
+    fn butterfly_offsets(&self, frame: NodeId) -> Result<[Point; 6], Error> {
+        self.inner
+            .borrow()
+            .butterflies
+            .iter()
+            .find(|unit| unit.frame == frame)
+            .map(|unit| unit.offsets)
+            .ok_or(Error::UnknownNode(frame))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Moves each port and operator node of `butterfly` to where `frame_origin` and its own offset in the frame put it.
+    ///
+    /// Each move is to an absolute place, so it can be made again: a node that is already there is not moved further,
+    /// and one that was left behind catches up. Every node is tried even if an earlier one fails, so one that cannot
+    /// move does not strand the rest. The first error is the one returned.
+    fn place_members(&self, butterfly: &Butterfly, frame_origin: Point, offsets: &[Point; 6]) -> Result<(), Error> {
+        let mut first_error = None;
+        for (id, target) in butterfly.members().into_iter().zip(member_targets(frame_origin, offsets)) {
+            if let Err(error) = self.move_node(id, target) {
+                first_error.get_or_insert(error);
+            }
+        }
+        first_error.map_or(Ok(()), Err)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes the frame of `butterfly` draggable, and keeps its ports and operator nodes in place on it.
+    ///
+    /// Each report of the drag, whether the start, a move, the end or a cancel, carries the frame's origin. Every one
+    /// puts each member where that origin and the member's own offset say, so no report depends on one before it. A
+    /// member that could not be moved is tried again by the next report, which is idempotent for the rest. The drag
+    /// cannot report an error, so a failure is not returned.
+    fn carry_members_with_frame(
+        &self,
+        butterfly: Butterfly,
+        offsets: [Point; 6],
+    ) -> Result<crate::scene::DragObserverHandle, Error> {
         let scene = Rc::downgrade(&self.inner);
         // The frame lies over its own operator nodes, so a drop that pushed it clear of every node it overlaps would
         // always push it away from them. Nothing it is dropped on is checked.
@@ -426,18 +464,27 @@ impl Scene {
                 | DragPhase::Cancel { origin } => origin,
             };
             let Some(inner) = scene.upgrade() else { return };
-            let scene = Scene { inner };
-            let seen = last.get();
-            if matches!(phase, DragPhase::Start { .. }) {
-                last.set(origin);
-                return;
-            }
-            let delta = Point::new(origin.x - seen.x, origin.y - seen.y);
-            if scene.shift_members(&butterfly, delta).is_ok() {
-                last.set(origin);
-            }
+            let _ = (Scene { inner }).place_members(&butterfly, origin, &offsets);
         })
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where each member of a butterfly goes when its frame's top left corner is at `frame_origin`: the corner plus the
+/// member's own offset, in the order of [`Butterfly::members`].
+fn member_targets(frame_origin: Point, offsets: &[Point; 6]) -> [Point; 6] {
+    offsets.map(|offset| Point::new(frame_origin.x + offset.x, frame_origin.y + offset.y))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A butterfly that this scene keeps: where each member sits in its frame, and the drag observer that keeps them there.
+///
+/// The scene owns it, so the observer stops with the scene.
+pub(in crate::scene) struct ButterflyUnit {
+    frame: NodeId,
+    /// The offsets of the members from the frame's top left corner, in the order of [`Butterfly::members`].
+    offsets: [Point; 6],
+    _observer: crate::scene::DragObserverHandle,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

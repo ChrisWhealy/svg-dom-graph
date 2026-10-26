@@ -65,12 +65,21 @@ The letter is drawn at `EllipseOptions::with_font_size(Some(9.0))`, since a circ
 ## Moving it
 
 The frame is already draggable.
-Dragging it carries the three ports and the three operator nodes by the same amount, and their connectors follow.
+Dragging it carries the three ports and the three operator nodes with it, and their connectors follow.
 `Scene::move_butterfly` does the same from code.
+Each of those nodes keeps the place in the frame that it had when the butterfly was made.
+A move works out where each one goes from where the frame is, not by a distance.
 Do not call `make_draggable` on the frame, because it is already draggable.
 
 The ports and the operator nodes are not draggable on their own.
 They keep their place in the frame.
+
+A move can fail part way, for example when a write to the page fails.
+`move_butterfly` then tries every node, and returns the first error.
+Because each node is sent to a place and not along a distance, moving again to the same place is safe.
+A node that was left behind catches up, and one that had already moved stays where it is.
+A drag cannot report an error.
+So each of its reports puts every node in place, and the next one puts right a node that failed.
 
 Dropping the frame never pushes it aside.
 The frame lies over its own operator nodes, so the usual push clear of an overlapped node would always push it away from them.
@@ -99,5 +108,5 @@ So a failed call leaves the scene as it was.
 * A butterfly takes complex numbers only.
 * The frame's label is fixed.
 * The library has no way to remove a butterfly once it is drawn.
-* If moving one operator node fails during a drag, the drag cannot report it.
-  The next report of the drag moves that node again by the whole distance it is behind.
+* If moving a node fails during a drag, the drag cannot report it.
+  The next report of the drag puts that node in place, and no other node is moved further.

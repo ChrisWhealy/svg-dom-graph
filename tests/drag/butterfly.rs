@@ -568,3 +568,111 @@ fn a_failure_while_drawing_removes_everything_the_call_added() -> Result<(), Str
         "the retry drew seven nodes: the frame, three ports and three operator nodes",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every port and operator node is at the frame's corner plus the offset it had when the butterfly was made.
+fn check_in_place(scene: &Scene, butterfly: &Butterfly, offsets: &Offsets) -> Result<(), String> {
+    let frame = origin_of(scene, butterfly.frame)?;
+    for &(id, (dx, dy)) in offsets.iter() {
+        let at = origin_of(scene, id)?;
+        check(
+            (at.x - frame.x - dx).abs() < 1e-6 && (at.y - frame.y - dy).abs() < 1e-6,
+            &format!("{id:?} is at {at:?}, not at the frame {frame:?} plus ({dx}, {dy})"),
+        )?;
+    }
+    Ok(())
+}
+
+/// A node, and how far it is from the frame's top left corner.
+type Offsets = Vec<(NodeId, (f64, f64))>;
+
+/// The offset of every member from the frame, as the butterfly was drawn.
+fn offsets_of(scene: &Scene, butterfly: &Butterfly) -> Result<Offsets, String> {
+    let frame = origin_of(scene, butterfly.frame)?;
+    [
+        butterfly.port_a,
+        butterfly.port_b,
+        butterfly.port_w,
+        butterfly.product,
+        butterfly.sum,
+        butterfly.difference,
+    ]
+    .into_iter()
+    .map(|id| {
+        let at = origin_of(scene, id)?;
+        Ok((id, (at.x - frame.x, at.y - frame.y)))
+    })
+    .collect()
+}
+
+/// A move that fails part way can be made again to the same place. The node that failed catches up, and the nodes that
+/// had already moved are not moved a second time.
+#[wasm_bindgen_test]
+fn a_move_that_failed_part_way_is_put_right_by_moving_to_the_same_place_again() -> Result<(), String> {
+    let (scene, butterfly) = add_butterfly("bf-retry")?;
+    let offsets = offsets_of(&scene, &butterfly)?;
+    let target = Point::new(520.0, 240.0);
+
+    // The second port's own move cannot be written, once.
+    let port_b = nth_group("bf-retry", 5)?;
+    let failed = {
+        let _failing = FailingWrites::on_element(&port_b, &["transform"], true)?;
+        scene.move_butterfly(&butterfly, target)
+    };
+    check(failed.is_err(), "the move was meant to fail")?;
+    check(origin_of(&scene, butterfly.frame)? == target, "the frame did not move")?;
+    // Every other node was still moved, and the one that failed was left where it was.
+    check(
+        origin_of(&scene, butterfly.port_a)?.x > 400.0 && origin_of(&scene, butterfly.sum)?.x > 400.0,
+        "the nodes after the failed one were not moved",
+    )?;
+    check(origin_of(&scene, butterfly.port_b)?.x < 400.0, "the node that failed moved")?;
+
+    // The same move again: nothing is injected now, and the node left behind catches up.
+    scene.move_butterfly(&butterfly, target).map_err(e)?;
+    check_in_place(&scene, &butterfly, &offsets)?;
+    // And a third time changes nothing.
+    scene.move_butterfly(&butterfly, target).map_err(e)?;
+    check_in_place(&scene, &butterfly, &offsets)
+}
+
+/// A drag in which one member's move cannot be written does not leave that member behind, or push any member past the
+/// frame, whether it is put right by a later report of the same drag or by the next drag.
+#[wasm_bindgen_test]
+fn a_drag_that_loses_a_write_does_not_make_any_member_overshoot_or_stay_behind() -> Result<(), String> {
+    let (scene, butterfly) = add_butterfly("bf-drag-failure")?;
+    let offsets = offsets_of(&scene, &butterfly)?;
+    let frame_group = nth_group("bf-drag-failure", 3)?;
+    let port_b = nth_group("bf-drag-failure", 5)?;
+
+    // The first move that is applied cannot write the second port, and after that everything writes.
+    {
+        let _failing = FailingWrites::on_element(&port_b, &["transform"], true)?;
+        dispatch_pointer_event(&frame_group, "pointerdown", 320, 120, 1)?;
+        dispatch_pointer_event(&frame_group, "pointermove", 380, 160, 1)?;
+        dispatch_pointer_event(&frame_group, "pointerup", 380, 160, 1)?;
+    }
+    check(
+        origin_of(&scene, butterfly.frame)? != Point::new(300.0, 100.0),
+        "the frame did not move",
+    )?;
+    // The end of the drag, and every report before it, puts each member at the frame's corner plus its offset.
+    check_in_place(&scene, &butterfly, &offsets)?;
+
+    // The next drag adds a distance to each member's own place, and not to a stale one.
+    dispatch_pointer_event(&frame_group, "pointerdown", 380, 160, 1)?;
+    dispatch_pointer_event(&frame_group, "pointermove", 440, 200, 1)?;
+    dispatch_pointer_event(&frame_group, "pointerup", 440, 200, 1)?;
+    check_in_place(&scene, &butterfly, &offsets)
+}
+
+/// A butterfly made by another scene is refused, and nothing moves.
+#[wasm_bindgen_test]
+fn moving_a_butterfly_that_belongs_to_another_scene_is_refused() -> Result<(), String> {
+    let (_scene, butterfly) = add_butterfly("bf-own")?;
+    let (other, _) = add_butterfly("bf-other")?;
+    let before = origin_of(&other, butterfly.frame).ok();
+    let refused = other.move_butterfly(&butterfly, Point::new(10.0, 10.0));
+    check(matches!(refused, Err(Error::UnknownNode(_))), &format!("{refused:?}"))?;
+    check(origin_of(&other, butterfly.frame).ok() == before, "something moved")
+}
