@@ -1,0 +1,21 @@
+<section class="section" id="panel-butterfly" data-group="Operators" data-label="Butterfly" data-order="50">
+    <h2>Radix-2 Butterfly</h2>
+    <p>The butterfly operation is the building block of a fast Fourier transform. As the name implies, the Radix-2
+        version of the Butterfly reads the two values being combined (<code>a</code> and <code>b</code>) and a third
+        twiddle factor <code>w</code>. The value of <code>b</code> is then multipled by the twiddle factor and the
+        result is the sum and difference of <code>a + w&middot;b</code> and <code>a &minus; w&middot;b</code>.</p>
+    <p>In this example, <code>a</code> is <code>2 + i</code> and <code>b</code> is <code>1 + 2i</code>. The slider
+        sets the value of <code>k</code> that appears in the calculation of the twiddle factor <code>w =
+            e<sup>&minus;2&pi;ik/8</sup></code> of an eight-point transform, so the multiplication turns <code>b</code>
+        by one more eighth of a turn for each step.</p>
+    <p>As with all other operator nodes, the Butterfly does not perform any calculations. It simply displays the values
+        calculated in plain Rust.</p>
+    <p class="demo-error" id="butterfly-error" hidden></p>
+    <div class="controls">
+        <label for="butterfly-twiddle">The twiddle factor <code>k</code> in <code>e<sup>&minus;2&pi;ik/8</sup></code> =
+            <output id="butterfly-twiddle-readout" for="butterfly-twiddle">1</output></label>
+        <input type="range" id="butterfly-twiddle" min="0" max="7" step="1" value="1">
+    </div>
+    <div class="canvas" id="butterfly-stage" style="margin-top: 1rem;">
+    </div>
+</section>

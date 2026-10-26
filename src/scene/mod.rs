@@ -33,7 +33,7 @@ pub use crate::model::content::{
 pub(crate) use box_handles::{BoxHandles, CellGrid, CellPicture, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragObserverHandle, DragOptions, DragPhase, collision_policy::CollisionPolicy};
-pub use node::{EdgeAnchors, EllipseOptions, NodeOptions};
+pub use node::{Butterfly, ButterflyOperands, ButterflyResults, EdgeAnchors, EllipseOptions, NodeOptions};
 pub use scene_title::SceneTitleOptions;
 pub use selection_toolbar::{SelectionStride, SelectionToolbarOptions, SelectionTransition};
 pub use toolbar::ToolbarOptions;
@@ -185,6 +185,7 @@ impl Scene {
             dirty_labels: Vec::new(),
             arrow,
             scratch: String::new(),
+            butterflies: Vec::new(),
             parent: None,
             navigation: navigation.clone(),
         }));

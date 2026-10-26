@@ -6,6 +6,7 @@
 //! This file keeps only what more than one of them shares: [`EdgeAnchors`] validation, shared style constants, and
 //! [`Scene::set_edge_anchors`]/[`Scene::set_focus`], each of which applies to any node kind.
 
+mod butterfly;
 mod construction_guard;
 mod container;
 pub(in crate::scene) mod data;
@@ -25,6 +26,7 @@ use crate::{
     model::node::NodeId,
     scene::DataNodeContent,
 };
+pub use butterfly::{Butterfly, ButterflyOperands, ButterflyResults};
 pub use edge_anchors::EdgeAnchors;
 pub use ellipse::EllipseOptions;
 pub use node_options::NodeOptions;

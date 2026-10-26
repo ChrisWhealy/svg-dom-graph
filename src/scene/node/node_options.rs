@@ -25,6 +25,13 @@ pub struct NodeOptions {
     /// [`Scene::add_markdown_node_with`](crate::scene::Scene::add_markdown_node_with) read it. A data node's own fill
     /// says what type it holds, so it is not changed by this.
     pub fill: Option<&'static str>,
+    /// For a two-input operator node, the side that both of its input connectors arrive on, whichever way their operands
+    /// lie. They are split across that side's fixing points, so give the node `EdgeAnchors(2)` to put one on each.
+    ///
+    /// `None` (the default) lets each connector arrive on the side that faces its operand. Only the two-input operator
+    /// constructors, [`Scene::add_binary_operator_node_with`](crate::scene::Scene::add_binary_operator_node_with) and
+    /// [`Scene::add_arithmetic_operator_node_with`](crate::scene::Scene::add_arithmetic_operator_node_with), read it.
+    pub input_side: Option<crate::scene::Side>,
 }
 
 impl NodeOptions {
@@ -57,6 +64,21 @@ impl NodeOptions {
     #[must_use]
     pub fn with_fill(mut self, fill: Option<&'static str>) -> Self {
         self.fill = fill;
+        self
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Returns `self` with `input_side` set to `input_side`: the side that both input connectors of a two-input operator
+    /// node arrive on. See [`input_side`](Self::input_side).
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::{NodeOptions, Side};
+    /// let options = NodeOptions::default().with_input_side(Some(Side::West));
+    /// assert_eq!(options.input_side, Some(Side::West));
+    /// ```
+    #[must_use]
+    pub fn with_input_side(mut self, input_side: Option<crate::scene::Side>) -> Self {
+        self.input_side = input_side;
         self
     }
 }

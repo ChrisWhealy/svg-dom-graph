@@ -976,3 +976,39 @@ fn the_selection_calls_refuse_an_ellipse_and_a_circle_as_they_refuse_any_plain_n
         "a refused call drew a selection toolbar",
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[wasm_bindgen_test]
+fn a_smaller_label_font_lets_a_circle_be_smaller_and_a_bad_font_size_is_refused() -> Result<(), String> {
+    let scene = new_scene("ellipse-font-size")?;
+    let usual = scene.add_circle_node(Point::new(100.0, 100.0), 4.0, "W").map_err(e)?;
+    let small = scene
+        .add_circle_node_with(
+            Point::new(200.0, 100.0),
+            4.0,
+            "W",
+            EllipseOptions::default().with_font_size(Some(8.0)),
+        )
+        .map_err(e)?;
+    let (usual, small) = (
+        scene.node_rect(usual).map_err(e)?.size.width,
+        scene.node_rect(small).map_err(e)?.size.width,
+    );
+    check(
+        small < usual,
+        &format!("a smaller font made a circle {small} wide, against {usual}"),
+    )?;
+    for size in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        let refused = scene.add_circle_node_with(
+            Point::new(300.0, 100.0),
+            22.0,
+            "A",
+            EllipseOptions::default().with_font_size(Some(size)),
+        );
+        check(
+            matches!(refused, Err(Error::InvalidEllipseFontSize(_))),
+            &format!("{size}: {refused:?}"),
+        )?;
+    }
+    Ok(())
+}

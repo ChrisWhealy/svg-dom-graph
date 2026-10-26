@@ -43,6 +43,7 @@ fn route_with_a_different_side_override_matches_plain_elbow_route_not_the_siblin
         anchor: Point::new(50.0, 0.0),
         side: Side::North,
         sibling_end: None,
+        channel_before: false,
     };
 
     let (got, _) = route(

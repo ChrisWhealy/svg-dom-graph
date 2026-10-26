@@ -260,3 +260,70 @@ fn exchanging_the_two_operand_positions_of_a_subtract_node_preserves_lhs_rhs_ide
 
     crate::common::check_port_marker_identity("operator-markers-exchange-identity")
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An "L" or "R" marker is drawn inside the operator's box, so the connector's arrowhead, which ends on the box's edge,
+/// never overlaps it. The box is wider than a commutative operator's showing the same value, to make the room, and
+/// `measure_operator_box` reports the same size that the node draws.
+#[wasm_bindgen_test]
+fn port_markers_are_inside_a_box_that_is_wider_for_them_and_measuring_agrees_with_drawing() -> Result<(), String> {
+    let id = "operator-markers-inside";
+    let scene =
+        Scene::new(make_svg(id, Size::new(600.0, 400.0), Size::new(600.0, 400.0))).map_err(|e| e.to_string())?;
+    let value = || DataNodeContent::new(NodeValues::U8(vec![3]), DataFormat::Decimal);
+    let a = scene
+        .add_data_node(Point::new(10.0, 10.0), value())
+        .map_err(|e| e.to_string())?;
+    let b = scene
+        .add_data_node(Point::new(10.0, 200.0), value())
+        .map_err(|e| e.to_string())?;
+    let subtract = scene
+        .add_arithmetic_operator_node(Point::new(300.0, 80.0), ArithmeticOperator::Subtract, (a, b), value())
+        .map_err(|e| e.to_string())?;
+    let add = scene
+        .add_arithmetic_operator_node(Point::new(300.0, 250.0), ArithmeticOperator::Add, (a, b), value())
+        .map_err(|e| e.to_string())?;
+    let (subtract_rect, add_rect) = (
+        scene.node_rect(subtract).map_err(|e| e.to_string())?,
+        scene.node_rect(add).map_err(|e| e.to_string())?,
+    );
+    check(
+        subtract_rect.size.width > add_rect.size.width + 30.0,
+        "the box with markers is not wider",
+    )?;
+    check(
+        subtract_rect.size.height > add_rect.size.height,
+        "the box with markers is not taller",
+    )?;
+    for (operator, label) in [(ArithmeticOperator::Subtract, "SUB"), (ArithmeticOperator::Add, "ADD")] {
+        let measured = scene.measure_operator_box(label, &value()).map_err(|e| e.to_string())?;
+        let drawn = if operator == ArithmeticOperator::Subtract { subtract_rect } else { add_rect };
+        check(
+            (measured.width - drawn.size.width).abs() < 0.01 && (measured.height - drawn.size.height).abs() < 0.01,
+            &format!("{label} measured {measured:?} but drew {:?}", drawn.size),
+        )?;
+    }
+
+    // Both markers are inside the box, on the side that faces their operand.
+    for n in 0..2 {
+        let marker = nth_port_marker(id, n)?;
+        let x: f64 = marker
+            .get_attribute("x")
+            .ok_or("no x")?
+            .parse()
+            .map_err(|e: std::num::ParseFloatError| e.to_string())?;
+        let y: f64 = marker
+            .get_attribute("y")
+            .ok_or("no y")?
+            .parse()
+            .map_err(|e: std::num::ParseFloatError| e.to_string())?;
+        check(
+            x > subtract_rect.origin.x
+                && x < subtract_rect.origin.x + subtract_rect.size.width
+                && y > subtract_rect.origin.y
+                && y < subtract_rect.origin.y + subtract_rect.size.height,
+            &format!("marker {n} is at ({x}, {y}), outside {subtract_rect:?}"),
+        )?;
+    }
+    Ok(())
+}

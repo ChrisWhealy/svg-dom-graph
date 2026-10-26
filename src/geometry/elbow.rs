@@ -25,6 +25,9 @@ use svg_dom::root::utils::{Point, Rect};
 /// width. The connector therefore visibly cut back through its own box, no matter how far the jog was pushed out. Going
 /// further never helps once the jog is already at the box's own exit height.
 ///
+/// `channel_before` is `true` for an operator whose inputs are forced onto one side. Its other routes then turn on a
+/// channel just in front of the operator: see [`elbow_route_with_channel_before`].
+///
 /// Falls back to plain [`elbow_route`] whenever `start_side` and `end_side` are not both horizontal or both vertical —
 /// the same shape [`elbow_route`] itself requires for its own two-bend jog.
 pub(crate) fn binary_operator_elbow_route(
@@ -33,7 +36,17 @@ pub(crate) fn binary_operator_elbow_route(
     end: Point,
     end_side: Side,
     sibling_end: Point,
+    channel_before: bool,
 ) -> route::Route {
+    // Any route but the drifted one: turned on a channel in front of the operator if its inputs are forced onto a side,
+    // and otherwise half way between the two ends.
+    let ordinary = || {
+        if channel_before {
+            elbow_route_with_channel_before(start, start_side, end, end_side)
+        } else {
+            elbow_route(start, start_side, end, end_side)
+        }
+    };
     if is_horizontal(start_side) != is_horizontal(end_side) {
         return elbow_route(start, start_side, end, end_side);
     }
@@ -46,12 +59,40 @@ pub(crate) fn binary_operator_elbow_route(
     let is_near = end_along < sibling_end_along;
     let drifted_past_the_far_target = is_near && start_along > sibling_end_along;
     if !drifted_past_the_far_target {
-        return elbow_route(start, start_side, end, end_side);
+        return ordinary();
     }
 
     let mut route = route::Route::new();
     route.push(start);
     route.push(if horizontal { Point::new(start.x, end.y) } else { Point::new(end.x, start.y) });
+    route.push(end);
+    route
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The elbow route into a node whose inputs are forced onto one side: it runs along `start`'s own row, turns on a channel
+/// [`SAME_SIDE_CLEARANCE`] in front of the node, and runs along the node's own input row.
+///
+/// Plain [`elbow_route`] turns half way between the two ends, which can be anywhere: inside another node that lies
+/// between them. A channel just in front of the node it feeds is always in the gap that precedes that node. So a
+/// connector can be kept clear of a node that sits beside the one it feeds, by leaving a gap there.
+///
+/// Only applies to the case it is made for: `start` leaves to the east and `end` arrives from the west, the two are on
+/// different rows, and the channel is east of `start`. Anything else is plain [`elbow_route`].
+pub(crate) fn elbow_route_with_channel_before(
+    start: Point,
+    start_side: Side,
+    end: Point,
+    end_side: Side,
+) -> route::Route {
+    let channel = end.x - SAME_SIDE_CLEARANCE;
+    if start_side != Side::East || end_side != Side::West || start.y == end.y || channel <= start.x {
+        return elbow_route(start, start_side, end, end_side);
+    }
+    let mut route = route::Route::new();
+    route.push(start);
+    route.push(Point::new(channel, start.y));
+    route.push(Point::new(channel, end.y));
     route.push(end);
     route
 }
@@ -124,7 +165,7 @@ pub(crate) fn elbow_route_around(
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether any segment of the axis-aligned `route` passes through the inside of `rect`. A segment that runs along an
 /// edge of `rect`, or only touches it, does not.
-fn passes_through(route: &[Point], rect: Rect) -> bool {
+pub(super) fn passes_through(route: &[Point], rect: Rect) -> bool {
     let (left, right) = (rect.origin.x, rect.origin.x + rect.size.width);
     let (top, bottom) = (rect.origin.y, rect.origin.y + rect.size.height);
     route.windows(2).any(|pair| {

@@ -13,21 +13,21 @@ fn check_eq<T: PartialEq + std::fmt::Debug>(got: T, expected: T) -> Result<(), S
 
 #[test]
 fn a_wide_label_sets_the_box_width() -> Result<(), String> {
-    let layout = OperatorLayout::new(200.0, 50.0);
+    let layout = OperatorLayout::new(200.0, 50.0, false);
     // The label's own width plus padding beats the value cell plus outer padding.
     check_eq(layout.size.width, 200.0 + 2.0 * CELL_PADDING)
 }
 
 #[test]
 fn a_wide_value_sets_the_box_width() -> Result<(), String> {
-    let layout = OperatorLayout::new(10.0, 200.0);
+    let layout = OperatorLayout::new(10.0, 200.0, false);
     check_eq(layout.size.width, 200.0 + 2.0 * CELL_PADDING + 2.0 * OUTER_PADDING)
 }
 
 #[test]
 fn the_value_cell_is_centred_and_never_reaches_a_side_edge() -> Result<(), String> {
     for (label, value) in [(200.0, 50.0), (10.0, 200.0), (80.0, 80.0)] {
-        let layout = OperatorLayout::new(label, value);
+        let layout = OperatorLayout::new(label, value, false);
         let left = layout.value_cell_origin.x;
         let right = layout.size.width - (left + layout.value_cell_size.width);
         check_eq(left, right)?;
@@ -41,7 +41,7 @@ fn the_value_cell_is_centred_and_never_reaches_a_side_edge() -> Result<(), Strin
 
 #[test]
 fn the_box_is_one_label_row_one_value_cell_and_the_outer_padding_tall() -> Result<(), String> {
-    let layout = OperatorLayout::new(100.0, 100.0);
+    let layout = OperatorLayout::new(100.0, 100.0, false);
     check_eq(layout.value_cell_origin.y, LABEL_ROW_HEIGHT)?;
     check_eq(
         layout.size.height,
@@ -50,8 +50,38 @@ fn the_box_is_one_label_row_one_value_cell_and_the_outer_padding_tall() -> Resul
 }
 
 #[test]
+fn port_markers_widen_the_box_by_a_gutter_each_side_and_make_it_a_row_taller() -> Result<(), String> {
+    for (label, value) in [(200.0, 50.0), (10.0, 200.0), (80.0, 80.0)] {
+        let plain = OperatorLayout::new(label, value, false);
+        let marked = OperatorLayout::new(label, value, true);
+        check_eq(marked.size.width, plain.size.width + 2.0 * PORT_GUTTER)?;
+        check_eq(marked.size.height, plain.size.height + PORT_ROW)?;
+        // The name and the value cell stay centred, and clear of the room kept for the markers on either side.
+        check_eq(marked.centre_x(), marked.size.width / 2.0)?;
+        check(
+            marked.value_cell_origin.x >= PORT_GUTTER + OUTER_PADDING,
+            "the value cell reaches into the room for a marker",
+        )?;
+    }
+    Ok(())
+}
+
+#[test]
+fn only_the_non_commutative_arithmetic_operators_have_port_markers() -> Result<(), String> {
+    for label in ["SUB", "DIV", "MOD"] {
+        check(has_port_markers(label), &format!("{label} should have port markers"))?;
+    }
+    for label in [
+        "ADD", "MUL", "AND", "OR", "XOR", "NAND", "NOR", "XNOR", "NOT", "ROTR", "ROTL", "",
+    ] {
+        check(!has_port_markers(label), &format!("{label} should not have port markers"))?;
+    }
+    Ok(())
+}
+
+#[test]
 fn the_texts_are_centred_on_the_box() -> Result<(), String> {
-    let layout = OperatorLayout::new(100.0, 100.0);
+    let layout = OperatorLayout::new(100.0, 100.0, false);
     check_eq(layout.centre_x(), layout.size.width / 2.0)
 }
 

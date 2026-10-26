@@ -243,6 +243,12 @@ pub enum Error {
     /// "other side" to route a connector to. Rejected before drawing anything or touching the graph's model, so a
     /// rejected call leaves the scene unchanged.
     DuplicateOperands(NodeId),
+    /// `Scene::add_butterfly_node` was given an operand or a result that does not hold complex numbers.
+    ///
+    /// Operands and results of a butterfly must all be single `Complex32` or all single `Complex64` values, because the
+    /// butterfly is the building block of a Fourier transform. `NodeId` names the first operand that is not complex, and
+    /// is `None` if it was a result. Rejected before drawing anything or touching the graph's model.
+    ButterflyNotComplex(Option<NodeId>),
     /// `Scene::set_selection` was given a [`crate::scene::Selection`] that cannot be applied to node `id`.
     ///
     /// Either `id` names a plain label node, which has no cells to select. Or `selection` names a cell/row/column index
@@ -333,6 +339,9 @@ pub enum Error {
     },
     /// `EllipseOptions::inner_margin` is not a finite value `>= 0.0`. Rejected before any SVG is created.
     InvalidEllipseMargin(f64),
+    /// An ellipse or circle was given a label font size that is not finite and greater than zero. Rejected before
+    /// anything is drawn.
+    InvalidEllipseFontSize(f64),
     /// The options for one end of an edge cannot be used with the node at that end. See [`EndpointProblem`].
     ///
     /// Rejected before the edge is drawn or recorded, so a rejected call leaves the scene exactly as it was.
@@ -366,6 +375,12 @@ impl fmt::Display for Error {
                 "ellipse centre {centre:?} with radii {rx} and {ry} is invalid: the centre and the radii, as the label \
                  makes them, must be finite, and the radii must be > 0.0"
             ),
+            Error::InvalidEllipseFontSize(size) => {
+                write!(
+                    f,
+                    "an ellipse's label font size must be finite and greater than zero, got {size}"
+                )
+            },
             Error::InvalidEllipseMargin(margin) => {
                 write!(f, "ellipse inner margin {margin} is not a finite value >= 0.0")
             },
@@ -489,6 +504,10 @@ impl fmt::Display for Error {
             Error::DuplicateOperands(id) => {
                 write!(f, "node {id:?} cannot be used as both operands of a two-input operator node")
             },
+            Error::ButterflyNotComplex(Some(id)) => {
+                write!(f, "butterfly operand {id:?} must hold one complex number")
+            },
+            Error::ButterflyNotComplex(None) => write!(f, "butterfly results must each hold one complex number"),
             Error::IncompatibleNodeValues(id) => write!(
                 f,
                 "node {id:?} cannot show those values: it must be a data node or an operator node, and they must be the same type and count"

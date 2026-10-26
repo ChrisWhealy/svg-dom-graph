@@ -12,7 +12,7 @@ fn binary_operator_anchors_on_different_sides_each_keep_edge_anchors_own_midpoin
     };
     let south = Point::new(20.0, 1000.0);
     let east = Point::new(1000.0, 10.0);
-    let [south_anchor, east_anchor] = binary_operator_anchors(rect, south, east, None);
+    let [south_anchor, east_anchor] = binary_operator_anchors(rect, south, east, None, None);
     check_eq(south_anchor, edge_anchor(rect, south))?;
     check_eq(east_anchor, edge_anchor(rect, east))
 }
@@ -31,14 +31,14 @@ fn binary_operator_anchors_on_the_same_side_split_to_the_outer_two_of_three_cand
     let left = Point::new(10.0, 1000.0);
     let right = Point::new(30.0, 1000.0);
 
-    let [(left_point, left_side), (right_point, right_side)] = binary_operator_anchors(rect, left, right, None);
+    let [(left_point, left_side), (right_point, right_side)] = binary_operator_anchors(rect, left, right, None, None);
     check_eq(left_point, Point::new(10.0, 20.0))?;
     check_eq(left_side, Side::South)?;
     check_eq(right_point, Point::new(30.0, 20.0))?;
     check_eq(right_side, Side::South)?;
 
     // Swapping which operand is `first` swaps which anchor comes back first, not where either one lands.
-    let [(right_point_again, _), (left_point_again, _)] = binary_operator_anchors(rect, right, left, None);
+    let [(right_point_again, _), (left_point_again, _)] = binary_operator_anchors(rect, right, left, None, None);
     check_eq(right_point_again, right_point)?;
     check_eq(left_point_again, left_point)
 }
@@ -57,7 +57,8 @@ fn binary_operator_anchors_on_the_same_side_honour_a_configured_fixing_point_cou
     let left = Point::new(20.0, 1000.0);
     let right = Point::new(40.0, 1000.0);
 
-    let [(left_point, left_side), (right_point, right_side)] = binary_operator_anchors(rect, left, right, Some(5));
+    let [(left_point, left_side), (right_point, right_side)] =
+        binary_operator_anchors(rect, left, right, Some(5), None);
     check_eq(left_point, Point::new(10.0, 20.0))?;
     check_eq(left_side, Side::South)?;
     check_eq(right_point, Point::new(50.0, 20.0))?;
@@ -79,7 +80,8 @@ fn binary_operator_anchors_on_the_same_side_with_one_configured_fixing_point_col
     let left = Point::new(20.0, 1000.0);
     let right = Point::new(40.0, 1000.0);
 
-    let [(left_point, left_side), (right_point, right_side)] = binary_operator_anchors(rect, left, right, Some(1));
+    let [(left_point, left_side), (right_point, right_side)] =
+        binary_operator_anchors(rect, left, right, Some(1), None);
     check_eq(left_point, Point::new(30.0, 20.0))?;
     check_eq(left_side, Side::South)?;
     check_eq(right_point, Point::new(30.0, 20.0))?;
@@ -98,7 +100,8 @@ fn binary_operator_anchors_on_the_same_side_with_two_configured_fixing_points_us
     let left = Point::new(20.0, 1000.0);
     let right = Point::new(40.0, 1000.0);
 
-    let [(left_point, left_side), (right_point, right_side)] = binary_operator_anchors(rect, left, right, Some(2));
+    let [(left_point, left_side), (right_point, right_side)] =
+        binary_operator_anchors(rect, left, right, Some(2), None);
     check_eq(left_point, Point::new(20.0, 20.0))?;
     check_eq(left_side, Side::South)?;
     check_eq(right_point, Point::new(40.0, 20.0))?;
@@ -117,81 +120,116 @@ fn binary_operator_anchors_on_different_sides_snap_to_a_configured_fixing_point(
     };
     let south = Point::new(25.0, 1000.0);
     let east = Point::new(1000.0, 4.0);
-    let [south_anchor, east_anchor] = binary_operator_anchors(rect, south, east, Some(3));
+    let [south_anchor, east_anchor] = binary_operator_anchors(rect, south, east, Some(3), None);
     check_eq(south_anchor, snapped_anchor(rect, south, 3))?;
     check_eq(east_anchor, snapped_anchor(rect, east, 3))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-#[test]
-fn binary_operator_anchors_break_an_exact_crossing_tie_in_favour_of_first() -> Result<(), String> {
-    // Two distinct operands on the exact same ray from the rect's own centre (direction (1, 100), at different
-    // distances) resolve to the same side with an *identical* crossing position. Comparing the crossings alone cannot
-    // order them. So which point is passed as `first` is the only thing that can.
-    let rect = Rect {
-        origin: Point::new(0.0, 0.0),
-        size: Size::new(40.0, 20.0),
-    };
-    let near = Point::new(25.0, 510.0); // t = 5 along the ray
-    let far = Point::new(30.0, 1010.0); // t = 10 along the same ray
-
-    let [(near_point, near_side), (far_point, far_side)] = binary_operator_anchors(rect, near, far, None);
-    check_eq(near_point, Point::new(10.0, 20.0))?;
-    check_eq(near_side, Side::South)?;
-    check_eq(far_point, Point::new(30.0, 20.0))?;
-    check_eq(far_side, Side::South)?;
-
-    // Swapping the argument order flips which point plays `first`, so it now wins the near slot instead. It does not
-    // matter which point is geometrically nearer or farther, since the two crossings are exactly equal.
-    let [(far_as_first_point, _), _] = binary_operator_anchors(rect, far, near, None);
-    check_eq(far_as_first_point, Point::new(10.0, 20.0))
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// offset_from_side
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#[test]
-fn offset_from_side_moves_away_from_the_box_on_every_side() -> Result<(), String> {
-    let anchor = Point::new(10.0, 20.0);
-    check_eq(offset_from_side(anchor, Side::North, 5.0), Point::new(10.0, 15.0))?;
-    check_eq(offset_from_side(anchor, Side::South, 5.0), Point::new(10.0, 25.0))?;
-    check_eq(offset_from_side(anchor, Side::East, 5.0), Point::new(15.0, 20.0))?;
-    check_eq(offset_from_side(anchor, Side::West, 5.0), Point::new(5.0, 20.0))
-}
-
-#[test]
-fn offset_from_side_of_zero_distance_is_the_anchor_itself() -> Result<(), String> {
-    let anchor = Point::new(3.0, 7.0);
-    check_eq(offset_from_side(anchor, Side::East, 0.0), anchor)
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // port_marker_position
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
-fn port_marker_position_on_an_east_or_west_side_moves_up_clear_of_the_horizontal_connector() -> Result<(), String> {
+fn a_port_marker_on_an_east_or_west_side_is_half_a_gutter_inside_the_box_and_level_with_the_connector()
+-> Result<(), String> {
     let anchor = Point::new(10.0, 20.0);
-    let east = port_marker_position(anchor, Side::East);
-    let west = port_marker_position(anchor, Side::West);
-    // Still offset outward from the box, same as `offset_from_side` alone.
-    check_eq(east.x, anchor.x + PORT_MARKER_OFFSET)?;
-    check_eq(west.x, anchor.x - PORT_MARKER_OFFSET)?;
-    // And now also lifted clear above the connector's own horizontal approach line.
-    check_eq(east.y, anchor.y - PORT_MARKER_CLEARANCE)?;
-    check_eq(west.y, anchor.y - PORT_MARKER_CLEARANCE)
+    check_eq(
+        port_marker_position(anchor, Side::West),
+        Point::new(10.0 + PORT_GUTTER / 2.0, 20.0),
+    )?;
+    check_eq(
+        port_marker_position(anchor, Side::East),
+        Point::new(10.0 - PORT_GUTTER / 2.0, 20.0),
+    )
 }
 
 #[test]
-fn port_marker_position_on_a_north_or_south_side_moves_right_clear_of_the_vertical_connector() -> Result<(), String> {
+fn a_port_marker_on_a_south_side_is_in_the_row_under_the_value_cell() -> Result<(), String> {
     let anchor = Point::new(10.0, 20.0);
-    let north = port_marker_position(anchor, Side::North);
-    let south = port_marker_position(anchor, Side::South);
-    // Still offset outward from the box, same as `offset_from_side` alone.
-    check_eq(north.y, anchor.y - PORT_MARKER_OFFSET)?;
-    check_eq(south.y, anchor.y + PORT_MARKER_OFFSET)?;
-    // And now also shifted clear to the right of the connector's own vertical approach line.
-    check_eq(north.x, anchor.x + PORT_MARKER_CLEARANCE)?;
-    check_eq(south.x, anchor.x + PORT_MARKER_CLEARANCE)
+    check_eq(
+        port_marker_position(anchor, Side::South),
+        Point::new(10.0, 20.0 - PORT_ROW / 2.0),
+    )
+}
+
+#[test]
+fn a_port_marker_on_a_north_side_is_inside_the_top_edge_and_clear_of_the_connector_and_the_operators_name()
+-> Result<(), String> {
+    let anchor = Point::new(10.0, 20.0);
+    let marker = port_marker_position(anchor, Side::North);
+    check(marker.y > anchor.y, "the marker is not inside the box")?;
+    check_eq(marker.x, anchor.x + PORT_NORTH_SHIFT)
+}
+
+#[test]
+fn every_port_marker_lies_inside_the_box_on_whichever_side_its_connector_lands() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(100.0, 100.0),
+        size: Size::new(150.0, 90.0),
+    };
+    for side in [Side::North, Side::South, Side::East, Side::West] {
+        let anchor = match side {
+            Side::West => Point::new(rect.origin.x, 130.0),
+            Side::East => Point::new(rect.origin.x + rect.size.width, 130.0),
+            Side::North => Point::new(125.0, rect.origin.y),
+            Side::South => Point::new(125.0, rect.origin.y + rect.size.height),
+        };
+        let marker = port_marker_position(anchor, side);
+        check(
+            marker.x > rect.origin.x
+                && marker.x < rect.origin.x + rect.size.width
+                && marker.y > rect.origin.y
+                && marker.y < rect.origin.y + rect.size.height,
+            &format!("the marker for {side:?} is outside the box at {marker:?}"),
+        )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// A forced input side
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn a_forced_side_takes_both_operands_whichever_way_they_lie() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(100.0, 100.0),
+        size: Size::new(60.0, 60.0),
+    };
+    // One operand is above the node and one is below it, and neither is to the west.
+    let above = Point::new(130.0, 0.0);
+    let below = Point::new(130.0, 300.0);
+    let [(upper_point, upper_side), (lower_point, lower_side)] =
+        binary_operator_anchors(rect, above, below, Some(2), Some(Side::West));
+    check_eq(upper_side, Side::West)?;
+    check_eq(lower_side, Side::West)?;
+    // Both are on the west edge, at a third and two thirds of its height.
+    check_eq(upper_point, Point::new(100.0, 120.0))?;
+    check_eq(lower_point, Point::new(100.0, 140.0))
+}
+
+#[test]
+fn a_forced_side_gives_the_operand_that_lies_higher_the_higher_slot() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(300.0, 100.0),
+        size: Size::new(60.0, 60.0),
+    };
+    let high = Point::new(0.0, 20.0);
+    let level = Point::new(150.0, 130.0);
+    let [(first, _), (second, _)] = binary_operator_anchors(rect, level, high, Some(2), Some(Side::West));
+    check(second.y < first.y, "the higher operand did not take the higher slot")?;
+    let [(first, _), (second, _)] = binary_operator_anchors(rect, high, level, Some(2), Some(Side::West));
+    check(first.y < second.y, "the order of the arguments changed which slot is higher")
+}
+
+#[test]
+fn no_forced_side_is_the_automatic_choice_as_before() -> Result<(), String> {
+    let rect = Rect {
+        origin: Point::new(100.0, 100.0),
+        size: Size::new(60.0, 60.0),
+    };
+    let (south, east) = (Point::new(130.0, 400.0), Point::new(500.0, 130.0));
+    let [(_, south_side), (_, east_side)] = binary_operator_anchors(rect, south, east, Some(2), None);
+    check_eq(south_side, Side::South)?;
+    check_eq(east_side, Side::East)
 }

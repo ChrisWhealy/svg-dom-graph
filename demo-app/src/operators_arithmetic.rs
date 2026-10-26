@@ -32,15 +32,17 @@ struct Row {
     result: NodeValues,
 }
 
-/// The distance between the left-hand edge of one column and the next. It is wide enough for the longest operator node
-/// of any column, which is the one that shows `0.30000000000000004`.
-const COLUMN_PITCH: f64 = 380.0;
-/// The distance between one row and the next. A row is two operands stacked, and an operator node beside them.
+/// The distance between the right-hand edge of an operator node and the left-hand edge of the next column's operands.
+const COLUMN_GAP: f64 = 60.0;
+/// The distance between one row and the next. A row is two operands stacked, and an operator node
+/// beside them.
 const ROW_PITCH: f64 = 170.0;
-/// Every row's operand(s) share their column's left-hand x; every row's operator node is a fixed distance to its right.
+/// The room left of the first column and above the first row.
 const X_MARGIN: f64 = 20.0;
-const OPERATOR_OFFSET: f64 = 240.0;
 const Y_MARGIN: f64 = 20.0;
+/// The clear space between a row's operands and the operator node they feed. Every row's operator node is this far east
+/// of the wider of its two operands, so the connectors are all the same short length, however wide the operands are.
+const INPUT_GAP: f64 = 50.0;
 /// The vertical distance between the two operands of a row, and from the first operand down to the operator node.
 const OPERAND_PITCH: f64 = 90.0;
 /// The room east of the last column for the zoom toolbar.
@@ -204,43 +206,68 @@ fn row(operator: ArithmeticOperator, a: NodeValues, b: NodeValues, result: NodeV
 pub(crate) fn build_arithmetic_operator_demo() -> Result<(), String> {
     let columns = columns();
     let rows = columns.iter().map(Vec::len).max().unwrap_or(0);
-    let size = Size::new(
-        X_MARGIN + COLUMN_PITCH * columns.len() as f64 + TOOLBAR_ROOM,
+    let document = demo_common::util::document()?;
+    // The stage is made at a size that the nodes are sure to fit in, and is cut to what they really take once they are
+    // placed. Every column starts where the one before it ended, so its width is not known until then.
+    let provisional = Size::new(
+        X_MARGIN + 700.0 * columns.len() as f64 + TOOLBAR_ROOM,
         Y_MARGIN + ROW_PITCH * rows as f64,
     );
     demo_common::util::ensure_svg_in(
-        &demo_common::util::document()?,
+        &document,
         "operators-arithmetic-diagram-stage",
         "operators-arithmetic-diagram",
-        size,
+        provisional,
     )?;
-    let svg = SvgRoot::attach("operators-arithmetic-diagram").map_err(stringify)?;
-    let bounds = view_box_rect(&svg)?;
-    let scene = Scene::new(svg).map_err(stringify)?;
-    let drag_options = DragOptions::default().with_bounds(Some(bounds));
+    let scene = Scene::new(SvgRoot::attach("operators-arithmetic-diagram").map_err(stringify)?).map_err(stringify)?;
 
     let place = |content: DataNodeContent, name: &str, x: f64, y: f64| -> Result<NodeId, String> {
-        let node = scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)?;
-        scene.make_draggable_with(node, drag_options).map_err(stringify)?;
-        Ok(node)
+        scene.add_named_data_node(Point::new(x, y), name, content).map_err(stringify)
+    };
+    let right_edge = |id: NodeId| -> Result<f64, String> {
+        let rect = scene.node_rect(id).map_err(stringify)?;
+        Ok(rect.origin.x + rect.size.width)
     };
 
-    for (column, column_rows) in columns.into_iter().enumerate() {
-        let x = X_MARGIN + COLUMN_PITCH * column as f64;
+    let mut draggable = Vec::new();
+    let mut x = X_MARGIN;
+    let mut reach = X_MARGIN;
+    for column_rows in columns {
+        let mut column_right = x;
         for (index, row) in column_rows.into_iter().enumerate() {
             let y = Y_MARGIN + ROW_PITCH * index as f64;
             let a = place(DataNodeContent::new(row.a, DataFormat::Decimal), "A", x, y)?;
             let b = place(DataNodeContent::new(row.b, DataFormat::Decimal), "B", x, y + OPERAND_PITCH)?;
+            // The operator node is a fixed gap east of whichever operand is wider.
+            let operator_x = right_edge(a)?.max(right_edge(b)?) + INPUT_GAP;
             let operator = scene
                 .add_arithmetic_operator_node(
-                    Point::new(x + OPERATOR_OFFSET, y + OPERAND_PITCH / 2.0),
+                    Point::new(operator_x, y + OPERAND_PITCH / 2.0),
                     row.operator,
                     (a, b),
                     DataNodeContent::new(row.result, DataFormat::Decimal),
                 )
                 .map_err(stringify)?;
-            scene.make_draggable_with(operator, drag_options).map_err(stringify)?;
+            column_right = column_right.max(right_edge(operator)?);
+            draggable.extend([a, b, operator]);
         }
+        reach = column_right;
+        x = column_right + COLUMN_GAP;
+    }
+
+    demo_common::util::resize_svg(
+        &document,
+        "operators-arithmetic-diagram",
+        Size::new(reach + TOOLBAR_ROOM, Y_MARGIN + ROW_PITCH * rows as f64),
+    )?;
+    scene.refresh_layout().map_err(stringify)?;
+
+    // Dragging is bounded by the stage, which has its final size now.
+    let drag_options = DragOptions::default().with_bounds(Some(view_box_rect(
+        &SvgRoot::attach("operators-arithmetic-diagram").map_err(stringify)?,
+    )?));
+    for node in draggable {
+        scene.make_draggable_with(node, drag_options).map_err(stringify)?;
     }
 
     scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;

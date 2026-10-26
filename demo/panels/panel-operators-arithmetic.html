@@ -1,14 +1,16 @@
-<section class="section" id="panel-operators-arithmetic" data-group="Operators" data-label="Arithmetic operators" data-order="30">
+<section class="section" id="panel-operators-arithmetic" data-group="Operators" data-label="Arithmetic operators"
+    data-order="30">
     <h2>Arithmetic operators</h2>
     <p>An operator node names the operation that produced its own single value — one of the five plain arithmetic
-        operators <code>ADD</code>/<code>SUB</code>/<code>MUL</code>/<code>DIV</code>/<code>MOD</code> — without
+        operators <code>ADD</code>, <code>SUB</code>, <code>MUL</code>, <code>DIV</code>, <code>MOD</code> — without
         this crate ever computing that value itself. Each result shown here is computed by the demo, in plain Rust,
         exactly the way a real caller would; see <code>DataNodeContent</code>.
     </p>
     <p>A binary operator node has two incoming edges, drawn automatically when the node is created, so the
         rendered graph can never drift from the operand relationship the node claims to represent.</p>
-    <p>Unlike a Boolean operator, an arithmetic one is only commutative for `add` and `multiply`: the first operand
-        feeding the node is always the left-hand side and the second is always the right-hand side.
+    <p>Unlike a Boolean operator, an arithmetic one is only commutative for <code>add</code> and <code>multiply</code>:
+        the first operand feeding the node is always the left-hand side and the second is always the right-hand side.
+        Subtraction, division and modulus mark the two with <code>L</code> and <code>R</code>.
     </p>
     <p>The first column holds unsigned integers (<code>u8</code>, <code>u16</code>, <code>u32</code>, <code>u64</code>),
         the second signed integers (<code>i8</code>, <code>i16</code>, <code>i32</code>, <code>i64</code>), and the

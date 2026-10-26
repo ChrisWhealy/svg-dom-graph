@@ -25,6 +25,7 @@
 | [128-bit Values and UUIDs](uuids-and-128-bit-values.md) | `U128`, `I128`, `Uuid`, `UuidFormat`, the byte layouts of a UUID and why no operator accepts one |
 | [Booleans and Pointer-sized Integers](bools-and-sizes.md) | `Bool`, `BoolFormat`, `Usize`, `Isize`, which operators accept a Boolean, and the width of the target |
 | [Complex Numbers](complex-numbers.md) | `Complex32`, `Complex64`, `ComplexNumberFormat`, `ComplexStyle`, `AngleUnit`, the matrix form, and which operators accept a complex number |
+| [Butterfly](butterfly.md) | `add_butterfly_node`: a multiplication, an addition and a subtraction drawn and dragged as one unit |
 | [Observing a Drag](drag-observation.md) | `make_draggable_with_observer`, `DragPhase`, `DragObserverHandle`, what each event carries, who owns the callback, and the commit order of `move_node` |
 | [Ellipse Nodes](ellipse-nodes.md) | `add_ellipse_node`, circles and ellipses, how a label grows the shape, the centre convention, clock positions on connectors, and what is refused |
 | [Text Cells](text-cells.md) | `Text`, `DataFormat::Text`, what a cell may hold, how its width is found, and the cell-width hint |

@@ -59,6 +59,10 @@ pub(crate) struct BoxHandles {
     /// `SceneInner::binary_operator_to_override` reads this on every redraw, so the two connectors split apart whenever
     /// they land on the same side, live — not just once, at creation.
     pub(crate) binary_operator_inputs: Option<(NodeId, NodeId)>,
+    /// The side of a two-input operator node that both its input connectors are forced onto, if its
+    /// [`NodeOptions::input_side`](crate::scene::NodeOptions::input_side) was set. `None` lets each connector choose its
+    /// own side. Always `None` for every other node.
+    pub(crate) operator_input_side: Option<crate::scene::Side>,
     /// `Some((edge for inputs.0, edge for inputs.1))` for a two-input operator node — the ids of the two edges its own
     /// constructor auto-wired from `binary_operator_inputs.0`/`.1`, in the same order. `None` for every other node,
     /// exactly matching `binary_operator_inputs`.

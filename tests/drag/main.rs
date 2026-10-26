@@ -67,6 +67,7 @@
 mod common;
 
 mod bounds;
+mod butterfly;
 mod cell_style_writes;
 mod collision_resolution;
 mod connectors;

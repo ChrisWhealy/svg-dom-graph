@@ -16,7 +16,7 @@ use super::{
 use crate::{
     colours::{BOX_STROKE, CONNECTOR_STROKE, PLAIN_BOX_FILL, TEXT_FILL},
     error::Error,
-    geometry::{binary_operator_anchors, centre, port_marker_position, side::Side},
+    geometry::{PORT_GUTTER, PORT_ROW, binary_operator_anchors, centre, port_marker_position, side::Side},
     model::{
         edge::EdgeId,
         graph::Graph,
@@ -37,7 +37,7 @@ use svg_dom::{
 ///
 /// Returns [`Error::UnknownNode`] if `id` does not name a node in `graph`, or [`Error::OperandNotData`] if it names a
 /// plain label node instead.
-fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error> {
+pub(super) fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error> {
     match &graph.node(id).ok_or(Error::UnknownNode(id))?.content {
         NodeContent::Data(content) => Ok(content),
         NodeContent::Label(_) | NodeContent::Container(_) | NodeContent::Markdown(_) | NodeContent::TextInput(_) => {
@@ -86,7 +86,7 @@ fn validate_new_operator(top_left: Point, result: &DataNodeContent, options: Nod
 /// Returns [`Error::OperatorTypeMismatch`] unless every operand and the `result` share one type, whichever integer or float type that is. Each is
 /// compared against the first operand, in order, so the error names the first one that disagrees. Also returns
 /// [`Error::UnknownNode`]/[`Error::OperandNotData`] for an operand that is not a data node.
-fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeContent) -> Result<(), Error> {
+pub(super) fn check_operand_types(graph: &Graph, operands: &[NodeId], result: &DataNodeContent) -> Result<(), Error> {
     let mut expected = None;
     for &operand in operands {
         let found = operand_content(graph, operand)?.type_name();
@@ -199,6 +199,21 @@ fn check_complex_operands(graph: &Graph, operands: &[NodeId], operator: &str, al
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Whether an operator box labelled `label` has "L" and "R" port markers inside it, and so is drawn wider.
+///
+/// Those are the non-commutative two-input operators, whose operands cannot be swapped: `SUB`, `DIV` and `MOD`. The label
+/// is what [`Scene::measure_operator_box`] is given, so the label decides, and measuring and drawing cannot disagree.
+fn has_port_markers(label: &str) -> bool {
+    [
+        ArithmeticOperator::Subtract,
+        ArithmeticOperator::Divide,
+        ArithmeticOperator::Modulus,
+    ]
+    .iter()
+    .any(|operator| operator.label() == label)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws an operator box, attaches it, and adds it to the graph, returning its id and rectangle. `inputs` is the two
 /// operands of a two-input operator, recorded on the box's own handles, or `None` for a unary operator.
 ///
@@ -213,11 +228,21 @@ fn insert_operator_node(
     inputs: Option<(NodeId, NodeId)>,
 ) -> Result<(NodeId, Rect), Error> {
     let mut scratch = std::mem::take(&mut inner.scratch);
-    let draw_result = draw_operator_box(&inner.svg, &mut scratch, top_left, label, &result, options.edge_anchors);
+    let port_markers = inputs.is_some() && has_port_markers(label);
+    let draw_result = draw_operator_box(
+        &inner.svg,
+        &mut scratch,
+        top_left,
+        label,
+        &result,
+        options.edge_anchors,
+        port_markers,
+    );
     inner.scratch = scratch;
     let (mut handles, rect) = draw_result?;
     inner.attach(&handles.group)?;
     handles.binary_operator_inputs = inputs;
+    handles.operator_input_side = inputs.and(options.input_side);
     let id = inner.graph.add_node(rect, result);
     inner.insert_node_handle(id, handles);
     Ok((id, rect))
@@ -248,6 +273,7 @@ fn draw_operator_box(
     label: &str,
     result: &DataNodeContent,
     edge_anchors: Option<EdgeAnchors>,
+    port_markers: bool,
 ) -> Result<(BoxHandles, Rect), Error> {
     let group = svg.group()?;
     // Always exactly 4: the label, the value text, and the outer/value-cell rects.
@@ -255,7 +281,7 @@ fn draw_operator_box(
 
     let (label_el, label_width) = measure_label(svg, &mut guard, label)?;
     let (value_el, value_text, value_width) = measure_value(svg, &mut guard, scratch, result)?;
-    let layout = OperatorLayout::new(label_width, value_width);
+    let layout = OperatorLayout::new(label_width, value_width, port_markers);
 
     let (outer_el, value_cell_el) = draw_boxes(svg, &group, &mut guard, &layout, result.type_colour())?;
     place_texts(scratch, &group, &layout, &label_el, &value_el)?;
@@ -280,6 +306,7 @@ fn draw_operator_box(
             enterable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            operator_input_side: None,
             binary_operator_input_edges: None,
             outer_rect: outer_el,
             cell_rects: vec![value_cell_el],
@@ -321,13 +348,14 @@ fn measure_operator_layout(
     scratch: &mut String,
     label: &str,
     result: &DataNodeContent,
+    port_markers: bool,
 ) -> Result<Size, Error> {
     // Every temporary element is removed by hand as soon as it has been measured. The guard only removes one that a
     // failure left behind, so no group is needed.
     let mut guard = RenderGuard::for_measurement();
     let (label_el, label_width) = measure_label(svg, &mut guard, label)?;
     let (value_el, _, value_width) = measure_value(svg, &mut guard, scratch, result)?;
-    let size = OperatorLayout::new(label_width, value_width).size;
+    let size = OperatorLayout::new(label_width, value_width, port_markers).size;
     // Both texts attach to the document as soon as they are created, so they are removed by hand.
     value_el.remove();
     guard.release();
@@ -400,13 +428,19 @@ impl OperatorLayout {
     ///
     /// [`OUTER_PADDING`] again below the value cell keeps it clear of the box's own bottom edge too. Above it, the label
     /// row's own height already keeps it clear of the top edge.
-    fn new(label_width: f64, value_width: f64) -> Self {
+    ///
+    /// With `port_markers`, the box is [`PORT_GUTTER`] wider on each side, and [`PORT_ROW`] taller under the value cell. The
+    /// "L" and "R" markers of a non-commutative operator are drawn in that room, inside the box. The name and the value
+    /// cell stay centred in the width the box would have had without it.
+    fn new(label_width: f64, value_width: f64, port_markers: bool) -> Self {
+        let (gutter, row) = if port_markers { (PORT_GUTTER, PORT_ROW) } else { (0.0, 0.0) };
         let value_cell_size = Size::new(value_width + 2.0 * CELL_PADDING, CELL_HEIGHT + 2.0 * CELL_PADDING);
-        let box_width = (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING);
+        let box_width =
+            (label_width + 2.0 * CELL_PADDING).max(value_cell_size.width + 2.0 * OUTER_PADDING) + 2.0 * gutter;
         Self {
             value_cell_size,
             value_cell_origin: Point::new((box_width - value_cell_size.width) / 2.0, LABEL_ROW_HEIGHT),
-            size: Size::new(box_width, LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING),
+            size: Size::new(box_width, LABEL_ROW_HEIGHT + value_cell_size.height + OUTER_PADDING + row),
         }
     }
 
@@ -522,7 +556,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         // See `add_unary_operator_node_with`'s own matching comment for why `scratch` is taken out for the call.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let size = measure_operator_layout(&inner.svg, &mut scratch, label, result);
+        let size = measure_operator_layout(&inner.svg, &mut scratch, label, result, has_port_markers(label));
         inner.scratch = scratch;
         size
     }
@@ -684,7 +718,7 @@ impl Scene {
             bitwise: true,
             complex_ok: false,
         };
-        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
+        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options, true)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -763,7 +797,31 @@ impl Scene {
             bitwise: false,
             complex_ok: operator != ArithmeticOperator::Modulus,
         };
-        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options)
+        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options, true)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Adds an arithmetic operator node whose two operands are *not* checked, and so need not be data nodes.
+    ///
+    /// For a caller inside this crate that has already checked the values the operands stand for. The butterfly wires its
+    /// operator nodes to its own input ports, which are circle nodes and hold no values. Everything else is as
+    /// [`add_arithmetic_operator_node_with`](Self::add_arithmetic_operator_node_with): the operands must still be two
+    /// distinct nodes, and the node is wired, and rolled back, in the same way.
+    pub(super) fn add_arithmetic_operator_between_ports(
+        &self,
+        top_left: Point,
+        operator: ArithmeticOperator,
+        inputs: (NodeId, NodeId),
+        result: DataNodeContent,
+        options: NodeOptions,
+    ) -> Result<NodeId, Error> {
+        let kind = TwoInputKind {
+            label: operator.label(),
+            commutes: operator.commutes(),
+            bitwise: false,
+            complex_ok: operator != ArithmeticOperator::Modulus,
+        };
+        self.add_two_input_operator_node_with(top_left, kind, inputs, result, options, false)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -780,6 +838,7 @@ impl Scene {
         inputs: (NodeId, NodeId),
         result: DataNodeContent,
         options: NodeOptions,
+        check_operands: bool,
     ) -> Result<NodeId, Error> {
         let TwoInputKind {
             label,
@@ -794,13 +853,15 @@ impl Scene {
 
         let (id, rect) = {
             let mut inner = self.inner.borrow_mut();
-            check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
-            check_not_uuid_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
-            check_not_text_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
-            check_bool_operands(&inner.graph, &[inputs.0, inputs.1], label, bitwise)?;
-            check_complex_operands(&inner.graph, &[inputs.0, inputs.1], label, complex_ok)?;
-            if bitwise {
-                check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+            if check_operands {
+                check_operand_types(&inner.graph, &[inputs.0, inputs.1], &result)?;
+                check_not_uuid_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+                check_not_text_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+                check_bool_operands(&inner.graph, &[inputs.0, inputs.1], label, bitwise)?;
+                check_complex_operands(&inner.graph, &[inputs.0, inputs.1], label, complex_ok)?;
+                if bitwise {
+                    check_integer_operands(&inner.graph, &[inputs.0, inputs.1], label)?;
+                }
             }
             insert_operator_node(&mut inner, top_left, label, result, options, Some(inputs))?
         };
@@ -812,7 +873,7 @@ impl Scene {
         // See `draw_port_marker`'s own doc comment for why this stable indicator is needed and what it shows. Skipped
         // for a commutative operator, where operand order carries no meaning to mark.
         if !commutes {
-            self.add_port_markers(rect, inputs, edges, options.edge_anchors)?;
+            self.add_port_markers(rect, inputs, edges, options.edge_anchors, options.input_side)?;
         }
 
         guard.disarm();
@@ -854,12 +915,14 @@ impl Scene {
         inputs: (NodeId, NodeId),
         (edge_a, edge_b): (EdgeId, EdgeId),
         edge_anchors: Option<EdgeAnchors>,
+        input_side: Option<Side>,
     ) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
         let fixing_points = edge_anchors.map(|EdgeAnchors(n)| n);
         let a_centre = centre(inner.node_rect(inputs.0)?);
         let b_centre = centre(inner.node_rect(inputs.1)?);
-        let [(anchor_a, side_a), (anchor_b, side_b)] = binary_operator_anchors(rect, a_centre, b_centre, fixing_points);
+        let [(anchor_a, side_a), (anchor_b, side_b)] =
+            binary_operator_anchors(rect, a_centre, b_centre, fixing_points, input_side);
 
         let marker_a = draw_port_marker(&inner.svg, anchor_a, side_a, "L", "left operand")?;
         inner.attach(&marker_a)?;

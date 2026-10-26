@@ -23,6 +23,9 @@ A circle therefore stays a circle, and the ratio of the radii is kept.
 The radii given are the smallest the ellipse will be.
 
 The margin is 6 user units unless `EllipseOptions::with_inner_margin` says otherwise, and it must be finite and not negative.
+The label is drawn at the usual size unless `EllipseOptions::with_font_size` says otherwise.
+A size that is not finite and greater than zero is `Error::InvalidEllipseFontSize`.
+A smaller label needs a smaller ellipse, so this is how a small circle holds one letter.
 A single letter fits a circle of radius 20 with the default margin.
 A margin of 8 would grow it to about 20.6.
 

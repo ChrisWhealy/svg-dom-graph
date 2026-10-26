@@ -89,3 +89,72 @@ impl Drop for OperatorConstructionGuard {
         inner.graph.remove_node(self.node_id);
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Rolls a scene back to how it was when the guard was made, for a construction that adds several nodes and edges.
+///
+/// A scene can only remove the node and the edge added last. So the guard removes edges newest first, and then nodes
+/// newest first, until the scene holds as many of each as it did. That undoes every operator node, frame and wire that
+/// the construction added, whichever step failed. [`disarm`](Self::disarm) it once the construction has succeeded.
+pub(super) struct SceneRollback {
+    scene: Scene,
+    nodes: usize,
+    edges: usize,
+    armed: bool,
+}
+
+impl SceneRollback {
+    pub(super) fn new(scene: Scene) -> Self {
+        let (nodes, edges) = {
+            let inner = scene.inner.borrow();
+            (inner.node_handles.len(), inner.edge_handles.len())
+        };
+        Self {
+            scene,
+            nodes,
+            edges,
+            armed: true,
+        }
+    }
+
+    /// The construction succeeded, so nothing is rolled back on drop.
+    pub(super) fn disarm(mut self) {
+        self.armed = false;
+    }
+}
+
+impl Drop for SceneRollback {
+    fn drop(&mut self) {
+        if !self.armed {
+            return;
+        }
+        let mut inner = self.scene.inner.borrow_mut();
+        let graph = inner.graph.id;
+        while inner.edge_handles.len() > self.edges {
+            let id = EdgeId {
+                graph,
+                index: inner.edge_handles.len() - 1,
+            };
+            if let Some(handle) = inner.remove_edge_handle(id) {
+                handle.path.remove();
+                if let Some(marker) = handle.port_marker {
+                    marker.remove();
+                }
+                if let Some(label) = handle.label {
+                    label.remove();
+                }
+            }
+            inner.graph.remove_edge(id);
+        }
+        while inner.node_handles.len() > self.nodes {
+            let id = NodeId {
+                graph,
+                index: inner.node_handles.len() - 1,
+            };
+            if let Some(handles) = inner.remove_node_handle(id) {
+                handles.group.remove();
+            }
+            inner.graph.remove_node(id);
+        }
+    }
+}

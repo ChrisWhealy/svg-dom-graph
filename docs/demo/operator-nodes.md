@@ -65,6 +65,11 @@ Irrespective of whether the operator commutes or not, `inputs.0` is always treat
 
 For non-commutative operators, the two operand connectors carry small "L" and "R" port markers.
 This keeps each operand's identity visible, even after dragging swaps which side the connector renders on.
+The markers are drawn inside the operator's own box, beside the point where each connector arrives.
+So the box is wider, and a little taller, than a commutative operator's that shows the same value, and no arrowhead overlaps a marker.
+In the Arithmetic Operators panel, every operator node stands 50 units east of the wider of its two operands.
+Each column starts a fixed gap after the widest operator node of the one before it.
+So the connectors are all the same short length, and the panel is only as wide as its nodes need.
 
 For commutative operators such as `ADD`, `MUL`, `AND` and `OR` etc, no such markers are drawn.
 

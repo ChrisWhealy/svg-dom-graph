@@ -41,6 +41,7 @@ pub(crate) const DEFAULT_INNER_MARGIN: f64 = 6.0;
 pub struct EllipseOptions {
     fill: Option<&'static str>,
     inner_margin: f64,
+    font_size: Option<f64>,
 }
 
 impl Default for EllipseOptions {
@@ -48,6 +49,7 @@ impl Default for EllipseOptions {
         Self {
             fill: None,
             inner_margin: DEFAULT_INNER_MARGIN,
+            font_size: None,
         }
     }
 }
@@ -81,6 +83,21 @@ impl EllipseOptions {
         self
     }
 
+    /// Returns `self` with the size of the label's text set to `font_size` user units. `None`, the default, draws it at the
+    /// size every node's label has. A smaller label needs a smaller ellipse, so this is how a small circle holds a
+    /// single letter. It must be finite and `> 0.0`, which [`Scene::add_ellipse_node_with`] checks.
+    ///
+    /// ```
+    /// use svg_dom_graph::scene::EllipseOptions;
+    /// let options = EllipseOptions::default().with_font_size(Some(9.0));
+    /// assert_eq!(options.font_size(), Some(9.0));
+    /// ```
+    #[must_use]
+    pub fn with_font_size(mut self, font_size: Option<f64>) -> Self {
+        self.font_size = font_size;
+        self
+    }
+
     /// The fill, if one was chosen.
     pub fn fill(&self) -> Option<&'static str> {
         self.fill
@@ -89,6 +106,11 @@ impl EllipseOptions {
     /// The clear space kept round the label, in user units.
     pub fn inner_margin(&self) -> f64 {
         self.inner_margin
+    }
+
+    /// The size of the label's text, if one was chosen.
+    pub fn font_size(&self) -> Option<f64> {
+        self.font_size
     }
 }
 
@@ -116,9 +138,10 @@ fn draw_ellipse(
     centre: Point,
     radii: EllipseRadii,
     label: &str,
-    fill: Option<&str>,
-    margin: f64,
+    options: EllipseOptions,
 ) -> Result<DrawnEllipse, Error> {
+    let (fill, margin) = (options.fill, options.inner_margin);
+    let font_size = options.font_size.unwrap_or(LABEL_FONT_SIZE);
     let invalid = || Error::InvalidEllipseGeometry {
         centre,
         rx: radii.rx(),
@@ -132,7 +155,7 @@ fn draw_ellipse(
     guard.track(label_el.clone());
     label_el.set_text_anchor(TextAnchor::Middle)?;
     label_el.set_dominant_baseline(DominantBaseline::Middle)?;
-    label_el.set_font_size(LABEL_FONT_SIZE)?;
+    label_el.set_font_size(font_size)?;
     label_el.set_fill(TEXT_FILL)?;
 
     // Where the visual box of the text is, relative to the point it was placed at, and how big it is.
@@ -259,6 +282,8 @@ impl Scene {
     ///
     /// Returns [`Error::InvalidEllipseMargin`] if the inner margin is not a finite value `>= 0.0`.
     ///
+    /// Returns [`Error::InvalidEllipseFontSize`] if the font size is not finite and greater than zero.
+    ///
     /// Returns [`Error::InvalidEllipseGeometry`] if the centre is not finite, if either radius is not finite and greater
     /// than zero, or if the radii the label needs, or the rectangle that encloses them, are not finite.
     ///
@@ -275,6 +300,10 @@ impl Scene {
         if !margin.is_finite() || margin < 0.0 {
             return Err(Error::InvalidEllipseMargin(margin));
         }
+        let font_size = options.font_size.unwrap_or(LABEL_FONT_SIZE);
+        if !font_size.is_finite() || font_size <= 0.0 {
+            return Err(Error::InvalidEllipseFontSize(font_size));
+        }
         if !centre.x.is_finite() || !centre.y.is_finite() || !radii.is_valid() {
             return Err(Error::InvalidEllipseGeometry {
                 centre,
@@ -287,7 +316,7 @@ impl Scene {
         let mut inner = self.inner.borrow_mut();
         // Taken out for the call, as `add_node_with` does. See `SceneInner::scratch`.
         let mut scratch = std::mem::take(&mut inner.scratch);
-        let result = draw_ellipse(&inner.svg, &mut scratch, centre, radii, &label, options.fill, margin);
+        let result = draw_ellipse(&inner.svg, &mut scratch, centre, radii, &label, options);
         inner.scratch = scratch;
         let drawn = result?;
         inner.attach(&drawn.handles.group)?;

@@ -151,6 +151,7 @@ fn draw_text_input_box(
             enterable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            operator_input_side: None,
             binary_operator_input_edges: None,
             outer_rect: rect_el,
             cell_rects: Vec::new(),

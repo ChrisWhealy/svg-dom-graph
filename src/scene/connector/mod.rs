@@ -243,6 +243,9 @@ pub(crate) struct BinaryOperatorRoute {
     ///
     /// [`binary_operator_anchors`]: crate::geometry::binary_operator_anchors
     pub(crate) sibling_end: Option<Point>,
+    /// `true` when the operator's inputs are forced onto one side, so that an elbow turns on a channel just in front of
+    /// the operator and not half way between the two ends. See [`elbow_route_with_channel_before`].
+    pub(crate) channel_before: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -289,7 +292,10 @@ pub(crate) fn route(
 
     match connector_type {
         ConnectorType::Straight => {
-            let start = straight_end(from, from_centre, to_centre, from_anchors, from_side, from_end);
+            // A line into an operator's own split anchor leaves aimed at that anchor, not at the operator's centre. So
+            // two lines into one side run straight into their own slots, and a line level with its slot is level.
+            let aim = to_override.as_ref().map_or(to_centre, |o| o.anchor);
+            let start = straight_end(from, from_centre, aim, from_anchors, from_side, from_end);
             let end = to_override.map_or_else(
                 || straight_end(to, to_centre, from_centre, to_anchors, to_side, to_end),
                 |o| o.anchor,
@@ -303,11 +309,13 @@ pub(crate) fn route(
                     anchor,
                     side,
                     sibling_end: Some(sibling_end),
-                }) => binary_operator_elbow_route(start, start_side, anchor, side, sibling_end),
+                    channel_before,
+                }) => binary_operator_elbow_route(start, start_side, anchor, side, sibling_end, channel_before),
                 Some(BinaryOperatorRoute {
                     anchor,
                     side,
                     sibling_end: None,
+                    ..
                 }) => elbow_route(start, start_side, anchor, side),
                 None => {
                     let (end, end_side) = elbow_end(to, to_centre, from_centre, to_anchors, to_side, to_end);

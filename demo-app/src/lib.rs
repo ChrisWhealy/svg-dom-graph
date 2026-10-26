@@ -117,6 +117,7 @@ mod base64;
 mod bits;
 mod bools_and_sizes;
 mod bubble_sort;
+mod butterfly;
 mod chacha20;
 mod complex_numbers;
 mod crc32;
@@ -228,6 +229,7 @@ demo_gallery! {
     "panel-operators-binary" => operators_binary::build_binary_operator_demo,
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
+    "panel-butterfly" => butterfly::build_butterfly_demo,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,
     "panel-selection-hexdump" => selection::build_selection_hexdump_demo,

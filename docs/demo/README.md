@@ -12,6 +12,7 @@
 - [Booleans and Pointer-sized Integers](bools-and-sizes.md)
 - [Complex Numbers](complex-numbers.md)
 - [Operator Nodes](operator-nodes.md)
+- [Butterfly](butterfly.md)
 - [Cell Selection](cell-selection.md)
 - [Text Nodes](text-nodes.md)
 - [Nested Scenes](nested-scenes.md)

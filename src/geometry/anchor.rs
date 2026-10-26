@@ -199,7 +199,7 @@ pub(super) fn anchor_from_crossing(
 /// East/West side with `towards` at exactly `centre`'s own y. It also happens for a North/South side with `towards` at
 /// exactly `centre`'s own x. Direction along that axis is undefined at zero distance, the same degenerate case
 /// [`side_and_crossing`] and [`snapped_anchor`] both already fall back for.
-fn forced_crossing(centre: Point, towards: Point, rect: Rect, side: Side) -> f64 {
+pub(super) fn forced_crossing(centre: Point, towards: Point, rect: Rect, side: Side) -> f64 {
     let dx = towards.x - centre.x;
     let dy = towards.y - centre.y;
 

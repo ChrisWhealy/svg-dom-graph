@@ -191,6 +191,7 @@ pub(super) fn draw_content_box(
             enterable: false,
             edge_anchors,
             binary_operator_inputs: None,
+            operator_input_side: None,
             binary_operator_input_edges: None,
             // The named wrapper when there is one, the content box itself otherwise.
             outer_rect: frame.outer_el.unwrap_or(content_rect_el),

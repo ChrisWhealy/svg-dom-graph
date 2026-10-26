@@ -99,6 +99,9 @@ pub(super) struct SceneInner {
     /// buffer instead. It is reused for the lifetime of one drag rather than the whole scene. That is already the right
     /// shape for a handler that fires far more often, for as long as a single gesture lasts.
     pub scratch: String,
+    /// The drag observer of each butterfly's frame. It carries the frame's operator nodes along when the frame is
+    /// dragged, and stops when the scene, which owns it here, is dropped. See [`node::butterfly`](super::node).
+    pub butterflies: Vec<super::DragObserverHandle>,
 }
 
 impl Drop for SceneInner {
@@ -336,11 +339,12 @@ impl SceneInner {
 
         let to_rect = self.node_rect(to).ok()?;
         let to_fixing_points = self.node_edge_anchors(to).ok()?.map(|EdgeAnchors(n)| n);
+        let input_side = self.node_handle(to)?.operator_input_side;
         let a_centre = box_centre(self.node_rect(input_a).ok()?);
         let b_centre = box_centre(self.node_rect(input_b).ok()?);
 
         let [(anchor_a, side_a), (anchor_b, side_b)] =
-            binary_operator_anchors(to_rect, a_centre, b_centre, to_fixing_points);
+            binary_operator_anchors(to_rect, a_centre, b_centre, to_fixing_points, input_side);
         // `Some` only on the same-side branch — see `BinaryOperatorRoute::sibling_end`'s own doc comment for why a
         // different-side pair must not carry the other operand's own, unrelated-side anchor here.
         let same_side = side_a == side_b;
@@ -354,6 +358,7 @@ impl SceneInner {
             anchor,
             side,
             sibling_end: same_side.then_some(sibling_anchor),
+            channel_before: input_side.is_some(),
         })
     }
 
@@ -604,10 +609,11 @@ impl SceneInner {
         let to_rect = self.node_rect(operator)?;
         let to_edge_anchors = self.node_edge_anchors(operator)?;
         let to_fixing_points = to_edge_anchors.map(|EdgeAnchors(n)| n);
+        let input_side = handles.operator_input_side;
         let a_rect = self.node_rect(input_a)?;
         let b_rect = self.node_rect(input_b)?;
         let [(anchor_a, side_a), (anchor_b, side_b)] =
-            binary_operator_anchors(to_rect, box_centre(a_rect), box_centre(b_rect), to_fixing_points);
+            binary_operator_anchors(to_rect, box_centre(a_rect), box_centre(b_rect), to_fixing_points, input_side);
         // `Some` only on the same-side branch — see `BinaryOperatorRoute::sibling_end`'s own doc comment.
         let same_side = side_a == side_b;
 
@@ -629,6 +635,7 @@ impl SceneInner {
                 anchor: anchor_a,
                 side: side_a,
                 sibling_end: same_side.then_some(anchor_b),
+                channel_before: input_side.is_some(),
             }),
         );
         self.write_edge_path(edge_a, &vertices_a, radius_a, scratch)?;
@@ -650,6 +657,7 @@ impl SceneInner {
                 anchor: anchor_b,
                 side: side_b,
                 sibling_end: same_side.then_some(anchor_a),
+                channel_before: input_side.is_some(),
             }),
         );
         self.write_edge_path(edge_b, &vertices_b, radius_b, scratch)?;

@@ -65,6 +65,11 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
   This is what lets a stepping demo update a diagram in place instead of drawing it again.
 
 - `add_unary_operator_node`/`_with`, `add_binary_operator_node`/`_with`, and `add_arithmetic_operator_node`/`_with` each draw a node labelled with the operation name that produced the value it displays.
+  `NodeOptions::with_input_side` forces both input connectors of a two-input operator node onto one side of it.
+  The two arrive a quarter and three quarters of the way down that side, the higher operand at the higher point.
+  Give the node `EdgeAnchors(n)` to use that side's fixing points instead.
+  An elbow into such a node turns on a channel 20 units in front of it, and not half way from its operand.
+  So an elbow stays in the gap before the node, clear of any node that stands between.
 
    ***IMPORTANT***<br>
    The displayed value is **never** computed by this crate — it must be calculated and supplied by the caller!
@@ -73,3 +78,5 @@ Labels beside the rows of a grid are described in [Row Labels and Text Measureme
    See `UnaryOperator`, `BinaryOperator`, and `ArithmeticOperator`.
 
    For binary or arithmetic operators whose operands are non-commutative, the two operand connectors are labelled with "L" and "R".
+   The labels are drawn inside the operator's box, so such a box is wider and a little taller than a commutative operator's.
+   `measure_operator_box` reports that size when it is given `"SUB"`, `"DIV"` or `"MOD"`.

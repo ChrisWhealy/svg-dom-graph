@@ -52,10 +52,10 @@ fn binary_operator_elbow_route_with_neither_operand_drifted_matches_plain_elbow_
     let far_start = Point::new(-60.0, 180.0);
     let far_end = Point::new(0.0, 150.0);
 
-    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end);
+    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end, false);
     check_eq(near_route, elbow_route(near_start, Side::East, near_end, Side::West))?;
 
-    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end);
+    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end, false);
     check_eq(far_route, elbow_route(far_start, Side::East, far_end, Side::West))?;
 
     check_routes_do_not_cross(&near_route, &far_route)
@@ -74,10 +74,10 @@ fn binary_operator_elbow_route_with_the_near_operand_dragged_past_the_far_target
     let far_start = Point::new(-300.0, 280.0);
     let far_end = Point::new(0.0, 150.0);
 
-    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end);
+    let near_route = binary_operator_elbow_route(near_start, Side::East, near_end, Side::West, far_end, false);
     check_eq(near_route[..].to_vec(), vec![near_start, Point::new(-160.0, 50.0), near_end])?;
 
-    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end);
+    let far_route = binary_operator_elbow_route(far_start, Side::East, far_end, Side::West, near_end, false);
     check_eq(far_route, elbow_route(far_start, Side::East, far_end, Side::West))?;
 
     check_routes_do_not_cross(&near_route, &far_route)
@@ -95,7 +95,7 @@ fn binary_operator_elbow_route_never_revisits_its_own_source_box() -> Result<(),
     let a_start = Point::new(212.015_625, 1045.1);
     let a_end = Point::new(500.0, 1016.35); // XOR's own far candidate.
 
-    let ror_route = binary_operator_elbow_route(ror_start, Side::East, ror_end, Side::West, a_end);
+    let ror_route = binary_operator_elbow_route(ror_start, Side::East, ror_end, Side::West, a_end, false);
     check_eq(
         ror_route[..].to_vec(),
         vec![
@@ -106,7 +106,7 @@ fn binary_operator_elbow_route_never_revisits_its_own_source_box() -> Result<(),
         ],
     )?;
 
-    let a_route = binary_operator_elbow_route(a_start, Side::East, a_end, Side::West, ror_end);
+    let a_route = binary_operator_elbow_route(a_start, Side::East, a_end, Side::West, ror_end, false);
     check_eq(
         a_route[..].to_vec(),
         vec![
@@ -488,4 +488,54 @@ fn two_sides_facing_away_from_each_other_get_a_channel_between_them_with_a_stub_
     let level = elbow_route(Point::new(100.0, 0.0), side::Side::East, Point::new(0.0, 0.0), side::Side::West);
     check_eq(level.len(), 6)?;
     check_eq(level[2].y, 40.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_route_into_an_operator_turns_on_a_channel_a_clearance_in_front_of_it() -> Result<(), String> {
+    let (start, end) = (Point::new(0.0, 0.0), Point::new(400.0, 120.0));
+    let route = elbow_route_with_channel_before(start, Side::East, end, Side::West);
+    let channel = 400.0 - SAME_SIDE_CLEARANCE;
+    check_eq(
+        &route[..],
+        &[start, Point::new(channel, 0.0), Point::new(channel, 120.0), end][..],
+    )
+}
+
+#[test]
+fn the_channel_in_front_leaves_the_gap_before_the_operator_clear_of_a_node_half_way() -> Result<(), String> {
+    // A node sits half way between the two ends. The plain route turns in the middle of it, and this one does not.
+    let (start, end) = (Point::new(0.0, 0.0), Point::new(400.0, 120.0));
+    let between = Rect {
+        origin: Point::new(150.0, 40.0),
+        size: svg_dom::root::utils::Size::new(100.0, 80.0),
+    };
+    let plain = elbow_route(start, Side::East, end, Side::West);
+    let channel = elbow_route_with_channel_before(start, Side::East, end, Side::West);
+    check(
+        passes_through(&plain[..], between),
+        "the plain route was meant to cross the node",
+    )?;
+    check(!passes_through(&channel[..], between), "the channel route crosses the node")
+}
+
+#[test]
+fn a_route_with_nothing_to_turn_on_is_the_plain_route() -> Result<(), String> {
+    let level = (Point::new(0.0, 50.0), Point::new(400.0, 50.0));
+    check_eq(
+        elbow_route_with_channel_before(level.0, Side::East, level.1, Side::West),
+        elbow_route(level.0, Side::East, level.1, Side::West),
+    )?;
+    // The channel would be behind the start, so there is no gap to turn in.
+    let close = (Point::new(0.0, 0.0), Point::new(10.0, 80.0));
+    check_eq(
+        elbow_route_with_channel_before(close.0, Side::East, close.1, Side::West),
+        elbow_route(close.0, Side::East, close.1, Side::West),
+    )?;
+    // And a route that does not leave east and arrive from the west is left alone.
+    let other = (Point::new(0.0, 0.0), Point::new(300.0, 90.0));
+    check_eq(
+        elbow_route_with_channel_before(other.0, Side::South, other.1, Side::West),
+        elbow_route(other.0, Side::South, other.1, Side::West),
+    )
 }
