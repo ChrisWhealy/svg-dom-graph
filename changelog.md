@@ -10,7 +10,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Create a Radix-2 Butterfly operation group node (``)
+- Create a Radix-2 Butterfly operation group node (`f2ffa19`)
+
+## Changed
+
+- Give FFT direction an explicit contract (Docs and tests only) (``)
 
 # [Released]
 

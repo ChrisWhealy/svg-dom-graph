@@ -47,6 +47,12 @@ macro_rules! define_buffer {
 
             /// The first `count` of the `n` roots of unity, split, for a transform stage to read in step with its data.
             ///
+            /// # Direction
+            ///
+            /// The roots follow the mathematical positive-angle convention: the `k`-th is `e^(+2πik/n)`. The conventional
+            /// forward transform uses the conjugates, `W_n^k = e^(-2πik/n)`. So a forward transform conjugates this buffer
+            /// before it gives it to [`butterfly`](Self::butterfly): see "Direction" there.
+            ///
             /// # Errors
             ///
             /// Returns [`RootOfUnityError::ZeroOrder`](svg_dom_graph::complex::RootOfUnityError::ZeroOrder) if `n` is
@@ -197,6 +203,25 @@ macro_rules! define_buffer {
             ///
             /// This is the inner loop of a transform. Every operand is read from a contiguous run, so it needs no
             /// gather, and its loads and stores are aligned to whatever the element size gives.
+            ///
+            /// # Direction
+            ///
+            /// The butterfly has no direction of its own. It applies whichever twiddle factors it is given, and the factors
+            /// decide whether a transform is forward or inverse. [`unit_roots`](Self::unit_roots) gives the positive-angle
+            /// roots `e^(+2πik/n)`, which make an inverse transform. A conventional forward transform needs
+            /// `W^k = e^(-2πik/n)`, so it conjugates them first:
+            ///
+            /// ```text
+            /// let mut twiddles = Buf::unit_roots(2 * half, half)?;
+            /// twiddles.conj();                       // forward: e^(-2πik/n)
+            /// data.butterfly(start, half, &twiddles);
+            /// ```
+            ///
+            /// For the four-point input `[0, 1, 0, 0]` the forward transform is `[1, -i, -1, +i]`. Positive-angle
+            /// twiddles throughout give `[1, +i, -1, -i]` instead.
+            ///
+            /// Scaling an inverse transform by `1/n` is not done here. It is the caller's, once, after the last stage, with
+            /// [`scale`](Self::scale).
             ///
             /// # Panics
             ///

@@ -30,6 +30,78 @@ macro_rules! buffer_tests {
                 }
             }
 
+            /// A four-point decimation-in-time transform built from the butterfly alone: the input in bit-reversed
+            /// order, then a stage of two butterflies with half 1 and a stage of one block with half 2. `conjugate` says
+            /// whether the twiddles are conjugated first, which is what makes it the conventional forward transform.
+            fn transform_of_four(input: [$name; 4], conjugate: bool) -> Vec<$name> {
+                // Bit-reversed order of four: 0, 2, 1, 3.
+                let mut data = $buf::from_complex(&[input[0], input[2], input[1], input[3]]);
+                let mut stage = |half: usize, data: &mut $buf| {
+                    let mut twiddles = $buf::unit_roots(2 * half, half).expect("a nonzero order");
+                    if conjugate {
+                        twiddles.conj();
+                    }
+                    for start in (0..4).step_by(2 * half) {
+                        data.butterfly(start, half, &twiddles);
+                    }
+                };
+                stage(1, &mut data);
+                stage(2, &mut data);
+                data.to_complex()
+            }
+
+            #[test]
+            fn conjugated_roots_make_the_conventional_forward_transform() {
+                let (zero, one) = ($name::new(0.0, 0.0), $name::new(1.0, 0.0));
+                let forward = transform_of_four([zero, one, zero, zero], true);
+                let want = [
+                    $name::new(1.0, 0.0),
+                    $name::new(0.0, -1.0),
+                    $name::new(-1.0, 0.0),
+                    $name::new(0.0, 1.0),
+                ];
+                for (i, w) in want.iter().enumerate() {
+                    assert!((forward[i] - *w).norm() <= $tol, "forward {i}: {}, expected {w}", forward[i]);
+                }
+            }
+
+            #[test]
+            fn the_roots_as_they_are_make_the_positive_exponent_transform() {
+                let (zero, one) = ($name::new(0.0, 0.0), $name::new(1.0, 0.0));
+                let positive = transform_of_four([zero, one, zero, zero], false);
+                let want = [
+                    $name::new(1.0, 0.0),
+                    $name::new(0.0, 1.0),
+                    $name::new(-1.0, 0.0),
+                    $name::new(0.0, -1.0),
+                ];
+                for (i, w) in want.iter().enumerate() {
+                    assert!((positive[i] - *w).norm() <= $tol, "positive {i}: {}, expected {w}", positive[i]);
+                }
+            }
+
+            #[test]
+            fn a_forward_then_an_inverse_transform_scaled_once_by_one_over_n_returns_the_input() {
+                let input = [
+                    $name::new(1.0, 2.0),
+                    $name::new(-3.0, 0.5),
+                    $name::new(0.25, -4.0),
+                    $name::new(2.0, 1.0),
+                ];
+                let forward = transform_of_four(input, true);
+                // The inverse is the positive-exponent transform, and the `1/n` is applied once, outside the butterfly.
+                let mut inverse =
+                    $buf::from_complex(&transform_of_four([forward[0], forward[1], forward[2], forward[3]], false));
+                inverse.scale(0.25);
+                for (i, want) in input.iter().enumerate() {
+                    assert!(
+                        (inverse.get(i) - *want).norm() <= $tol * 4.0,
+                        "number {i}: {}, expected {want}",
+                        inverse.get(i)
+                    );
+                }
+            }
+
             #[test]
             fn splitting_and_joining_round_trips() {
                 for len in LENGTHS {
