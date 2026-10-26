@@ -90,6 +90,7 @@ A number that is not finite has a picture that draws nothing.
 The picture is decoration.
 It is hidden from assistive technology and takes no pointer events, because the cell's text already says the number.
 `Scene::set_data_values` rewrites the picture of every cell whose number changed, and of every cell if the replacement changed the largest modulus.
+The pictures are written after the new numbers are committed, so a write that fails would leave a picture that disagrees with its number, and a retry would see nothing changed. So each picture that is about to be written is marked stale first, and cleared only once it is written. The next `set_data_values` writes every stale picture, even when it is given the numbers the node already holds, and a retry therefore repairs the node as it does for a cell's text.
 The cell is wider by the picture and the gap after it, and the text is centred in the rest.
 No other form has a picture, and an operator node's result, which is drawn as one line of text, has none.
 

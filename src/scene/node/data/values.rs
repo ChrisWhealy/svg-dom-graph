@@ -2,7 +2,7 @@
 
 use super::{
     super::CELL_HEIGHT,
-    draw::{cell_name_into, update_picture, write_cell_text},
+    draw::{cell_name_into, pictures_to_write, update_picture, write_cell_text},
 };
 use crate::{
     error::Error,
@@ -76,6 +76,10 @@ impl Scene {
     /// Also returns a wrapped [`Error::Svg`] if rewriting a cell fails partway through, which can leave some cells
     /// already rewritten. The node's own values stay as they were then, so calling this again with the same `values`
     /// rewrites every cell that differs from them, including those already written, and repairs the node.
+    ///
+    /// The small picture at the front of a polar or rectangular complex number is written after the values are
+    /// committed, so a failure there leaves the new values in the node. A picture that was not written is remembered, and
+    /// the next call writes it, whatever `values` it is given, even the values the node holds now.
     pub fn set_data_values(&self, id: NodeId, values: NodeValues) -> Result<(), Error> {
         let mut inner = self.inner.borrow_mut();
 
@@ -159,20 +163,22 @@ impl Scene {
         if !accepted {
             return Err(Error::IncompatibleNodeValues(id));
         }
-        // The pictures are rewritten once the numbers are committed, from the numbers the node holds now.
+        // The pictures are rewritten once the numbers are committed, from the numbers the node holds now. The model has
+        // committed them by now, so a picture that fails to be written would look up to date to a retry, which sees
+        // nothing changed. So every picture that is to be written is marked stale first, and is marked clean only when it
+        // has been written. A stale picture is written by the next call, even one that changes nothing.
         if let Some(kind) = picture_kind {
             let max_modulus = content.max_modulus();
             let rewrite_all = max_modulus.to_bits() != old_max_modulus.to_bits();
-            let every_cell = 0..handles.decor.pictures.len();
-            let cells: &mut dyn Iterator<Item = usize> = if rewrite_all {
-                &mut every_cell.into_iter()
-            } else {
-                &mut changed_cells.into_iter()
-            };
-            for i in cells {
-                if let Some(picture) = handles.decor.pictures.get(i) {
-                    update_picture(picture, kind, content.complex_at(i), max_modulus)?;
-                }
+            let stale: Vec<bool> = handles.decor.pictures.iter().map(|picture| picture.stale).collect();
+            let to_write = pictures_to_write(handles.decor.pictures.len(), &changed_cells, &stale, rewrite_all);
+            for &i in &to_write {
+                handles.decor.pictures[i].stale = true;
+            }
+            for &i in &to_write {
+                let picture = &mut handles.decor.pictures[i];
+                update_picture(picture, kind, content.complex_at(i), max_modulus)?;
+                picture.stale = false;
             }
         }
         // The marks over a selected byte of a hex dump show what the byte was, so they are written again.

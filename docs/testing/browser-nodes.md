@@ -31,6 +31,7 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a polar picture being one arrow in the number's own direction and a rectangular one a horizontal adjacent leg and a vertical opposite leg that meet at the number
   - a picture being redrawn when its number is replaced, every picture being redrawn when the largest modulus changes, and a number that cannot be drawn having a picture that draws nothing
   - the icon scale setting the size of the picture, as a multiple of a line of text, a cell growing taller to hold a large one and staying as tall for a small one, the text staying clear, the lines being as thin on a large picture as on a small one, and a scale out of range or not a number being rejected before anything is drawn
+  - a picture whose write fails after the new numbers are committed (the write of its `d` is made to fail) being written by a retry given the same numbers, so that it matches a node drawn from them, and the same for a replacement that rescales every picture and fails part way, and for the second leg of a rectangular picture, and a clean node writing no path for a replacement that changes nothing
   - an exponent being a smaller, raised `<tspan>` that starts with an `i`, rebuilt in place on a replacement, with the cell still named as one line
   - a matrix being two `<tspan>` rows between a pair of hidden brackets, in a cell taller than a rectangular one that holds both rows
   - a matrix being rewritten in place, with two rows after every replacement and the node keeping its size

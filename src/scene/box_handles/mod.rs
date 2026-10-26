@@ -361,4 +361,8 @@ pub(crate) struct DataDecor {
 pub(crate) struct CellPicture {
     pub(crate) primary: SvgNode,
     pub(crate) secondary: SvgNode,
+    /// `true` if the picture's paths are not known to match its number: a rewrite was begun and did not finish. The model
+    /// has committed the number by then, so a retry sees nothing changed, and this is what makes the next
+    /// `Scene::set_data_values` write the picture anyway.
+    pub(crate) stale: bool,
 }

@@ -3,7 +3,7 @@
 //! operators that accept a complex number, and what is refused.
 
 use super::support::{check_fits, elements_matching, rect_children, text_children, texts_of};
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{FailingWrites, check, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::{
     Error, NodeId,
@@ -751,4 +751,147 @@ fn an_icon_scale_out_of_range_is_rejected_before_anything_is_drawn() -> Result<(
         )?;
     }
     check(nth_group("cx-scale-invalid", 0).is_err(), "a rejected call should draw nothing")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The `d` of every path of every picture of node `id`, in order.
+fn picture_paths(id: &str) -> Result<Vec<Vec<web_sys::Element>>, String> {
+    let group = nth_group(id, 0)?;
+    elements_matching(&group, "g[aria-hidden='true']")?
+        .iter()
+        .map(|picture| elements_matching(picture, "path"))
+        .collect()
+}
+
+fn data_of(paths: &[Vec<web_sys::Element>]) -> Vec<Vec<String>> {
+    paths
+        .iter()
+        .map(|picture| picture.iter().map(|path| path.get_attribute("d").unwrap_or_default()).collect())
+        .collect()
+}
+
+/// A picture whose write fails after the new numbers are committed is written by the next call, even one that is given
+/// the numbers the node already holds. Without that, the model and the picture would disagree for good, since a retry
+/// would see nothing changed.
+#[wasm_bindgen_test]
+fn a_picture_that_failed_to_be_written_is_written_by_a_retry_with_the_same_values() -> Result<(), String> {
+    let (scene, node) = complex_node(
+        "cx-fail-picture",
+        vec![Complex::new(1.0, 0.0), Complex::new(0.0, 1.0)],
+        ComplexNumberFormat::Polar,
+    )?;
+    // The node a replacement should leave behind, drawn straight from the new numbers, to compare with.
+    let wanted = vec![Complex::new(1.0, 0.0), Complex::new(0.0, -1.0)];
+    let _expected = complex_node("cx-fail-picture-expected", wanted.clone(), ComplexNumberFormat::Polar)?;
+    let expected = data_of(&picture_paths("cx-fail-picture-expected")?);
+
+    let before = data_of(&picture_paths("cx-fail-picture")?);
+    let target = picture_paths("cx-fail-picture")?[1][1].clone();
+    {
+        let _failing = FailingWrites::on_element(&target, &["d"], false)?;
+        let outcome = scene.set_data_values(node, NodeValues::Complex64(wanted.clone()));
+        check(
+            outcome.is_err(),
+            &format!("the write was made to fail, so the call should too: {outcome:?}"),
+        )?;
+    }
+    // The text was written before the numbers were committed, and the picture was not written.
+    check(
+        texts_of("cx-fail-picture")? == ["1.000 \u{2220} 0.000\u{b0}", "1.000 \u{2220} -90.000\u{b0}"],
+        &format!("the text should be the new one: {:?}", texts_of("cx-fail-picture")?),
+    )?;
+    check(
+        data_of(&picture_paths("cx-fail-picture")?)[1] == before[1],
+        "the failed picture is still the old one",
+    )?;
+
+    // The same numbers again. Nothing looks changed to the model, and the picture is written all the same.
+    scene
+        .set_data_values(node, NodeValues::Complex64(wanted))
+        .map_err(|e| e.to_string())?;
+    check(
+        data_of(&picture_paths("cx-fail-picture")?) == expected,
+        &format!(
+            "the retry should leave the pictures as a node drawn from the new numbers has them: {:?} against {expected:?}",
+            data_of(&picture_paths("cx-fail-picture")?)
+        ),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// When a replacement changes the scale of every picture and fails part of the way, the pictures it reached are right and
+/// the ones it did not are written by the retry.
+#[wasm_bindgen_test]
+fn a_replacement_that_rescales_every_picture_and_fails_part_way_is_finished_by_a_retry() -> Result<(), String> {
+    let (scene, node) = complex_node(
+        "cx-fail-rescale",
+        vec![Complex::new(1.0, 0.0), Complex::new(0.0, 1.0)],
+        ComplexNumberFormat::Polar,
+    )?;
+    // Both numbers change direction or length, and the largest becomes four times what it was, so every arrow changes.
+    let wanted = vec![Complex::new(2.0, 0.0), Complex::new(0.0, -4.0)];
+    let _expected = complex_node("cx-fail-rescale-expected", wanted.clone(), ComplexNumberFormat::Polar)?;
+    let expected = data_of(&picture_paths("cx-fail-rescale-expected")?);
+
+    // The second picture's arrow cannot be written. The first is written first, and is already right.
+    let target = picture_paths("cx-fail-rescale")?[1][1].clone();
+    {
+        let _failing = FailingWrites::on_element(&target, &["d"], false)?;
+        check(
+            scene.set_data_values(node, NodeValues::Complex64(wanted.clone())).is_err(),
+            "the write was made to fail, so the call should too",
+        )?;
+    }
+    let halfway = data_of(&picture_paths("cx-fail-rescale")?);
+    check(
+        halfway[0] == expected[0],
+        "the picture before the failure was written, to the new scale",
+    )?;
+    check(halfway[1] != expected[1], "the picture that failed was not")?;
+
+    scene
+        .set_data_values(node, NodeValues::Complex64(wanted))
+        .map_err(|e| e.to_string())?;
+    check(
+        data_of(&picture_paths("cx-fail-rescale")?) == expected,
+        "the retry finishes the job, so every picture matches the numbers",
+    )?;
+    check_fits("cx-fail-rescale")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A rectangular picture has two paths, and the second failing is repaired as the first is. And a node with nothing
+/// stale writes nothing for a replacement that changes nothing.
+#[wasm_bindgen_test]
+fn a_failed_second_leg_is_repaired_and_a_clean_node_is_left_alone() -> Result<(), String> {
+    let values = vec![Complex::new(3.0, 4.0)];
+    let (scene, node) = complex_node("cx-fail-leg", values.clone(), ComplexNumberFormat::Rectangular)?;
+    let wanted = vec![Complex::new(3.0, -4.0)];
+    let _expected = complex_node("cx-fail-leg-expected", wanted.clone(), ComplexNumberFormat::Rectangular)?;
+    let expected = data_of(&picture_paths("cx-fail-leg-expected")?);
+
+    // A replacement that changes nothing, on a node that is clean, writes no path at all: every write of `d` is made to
+    // fail, and the call still succeeds.
+    {
+        let _failing = FailingWrites::start(&["d"])?;
+        scene
+            .set_data_values(node, NodeValues::Complex64(values))
+            .map_err(|e| format!("a replacement that changes nothing wrote a path: {e}"))?;
+    }
+
+    let opposite = picture_paths("cx-fail-leg")?[0][2].clone();
+    {
+        let _failing = FailingWrites::on_element(&opposite, &["d"], false)?;
+        check(
+            scene.set_data_values(node, NodeValues::Complex64(wanted.clone())).is_err(),
+            "the second leg could not be written",
+        )?;
+    }
+    scene
+        .set_data_values(node, NodeValues::Complex64(wanted))
+        .map_err(|e| e.to_string())?;
+    check(
+        data_of(&picture_paths("cx-fail-leg")?) == expected,
+        "both legs match the numbers after the retry",
+    )
 }

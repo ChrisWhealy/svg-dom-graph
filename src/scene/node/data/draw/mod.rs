@@ -1009,7 +1009,38 @@ fn draw_picture(
 
     group.append(&picture)?;
     guard.release();
-    Ok(CellPicture { primary, secondary })
+    Ok(CellPicture {
+        primary,
+        secondary,
+        stale: false,
+    })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Which pictures of a node of `count` pictures a replacement has to write, in order.
+///
+/// * Every picture, if `rewrite_all`, because the scale they are all drawn to has changed.
+/// * Otherwise the pictures of the `changed` cells, and every picture that is `stale`: one that an earlier replacement
+///   began to write and did not finish. Its number is already in the model, so nothing about it looks changed, and only
+///   its stale mark says that it is wrong.
+///
+/// An index past `count` is dropped, and none is listed twice.
+pub(crate) fn pictures_to_write(count: usize, changed: &[usize], stale: &[bool], rewrite_all: bool) -> Vec<usize> {
+    if rewrite_all {
+        return (0..count).collect();
+    }
+    let mut wanted: Vec<usize> = changed.iter().copied().filter(|&i| i < count).collect();
+    wanted.extend(
+        stale
+            .iter()
+            .take(count)
+            .enumerate()
+            .filter(|&(_, &is_stale)| is_stale)
+            .map(|(i, _)| i),
+    );
+    wanted.sort_unstable();
+    wanted.dedup();
+    wanted
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

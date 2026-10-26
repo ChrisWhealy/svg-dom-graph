@@ -163,3 +163,42 @@ fn a_hex_dump_is_described_by_its_bytes_and_data_lines_and_not_by_its_cells() ->
         "D: hex dump, 1 byte across 1 data line".to_owned(),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Which pictures a replacement writes
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn a_replacement_writes_the_pictures_of_the_cells_that_changed() {
+    assert_eq!(pictures_to_write(4, &[1, 3], &[false; 4], false), vec![1, 3]);
+    assert_eq!(pictures_to_write(4, &[], &[false; 4], false), Vec::<usize>::new());
+}
+
+#[test]
+fn a_stale_picture_is_written_even_when_nothing_changed() {
+    // The values are the ones the node holds, so no cell changed, and the picture that failed to be written is still due.
+    assert_eq!(pictures_to_write(3, &[], &[false, true, false], false), vec![1]);
+    assert_eq!(pictures_to_write(3, &[], &[true, true, true], false), vec![0, 1, 2]);
+}
+
+#[test]
+fn a_changed_and_stale_picture_is_written_once_and_the_list_is_in_order() {
+    assert_eq!(
+        pictures_to_write(5, &[3, 1], &[false, true, false, true, true], false),
+        vec![1, 3, 4]
+    );
+    assert_eq!(pictures_to_write(3, &[2, 2], &[false; 3], false), vec![2]);
+}
+
+#[test]
+fn a_new_scale_writes_every_picture() {
+    assert_eq!(pictures_to_write(3, &[], &[false; 3], true), vec![0, 1, 2]);
+    assert_eq!(pictures_to_write(0, &[], &[], true), Vec::<usize>::new());
+}
+
+#[test]
+fn an_index_past_the_pictures_is_dropped_and_a_short_stale_list_is_not_an_error() {
+    assert_eq!(pictures_to_write(2, &[1, 5], &[false, false], false), vec![1]);
+    assert_eq!(pictures_to_write(3, &[], &[true], false), vec![0]);
+    assert_eq!(pictures_to_write(2, &[], &[true, true, true, true], false), vec![0, 1]);
+}
