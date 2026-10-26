@@ -30,30 +30,10 @@ macro_rules! buffer_tests {
                 }
             }
 
-            /// A four-point decimation-in-time transform built from the butterfly alone: the input in bit-reversed
-            /// order, then a stage of two butterflies with half 1 and a stage of one block with half 2. `conjugate` says
-            /// whether the twiddles are conjugated first, which is what makes it the conventional forward transform.
-            fn transform_of_four(input: [$name; 4], conjugate: bool) -> Vec<$name> {
-                // Bit-reversed order of four: 0, 2, 1, 3.
-                let mut data = $buf::from_complex(&[input[0], input[2], input[1], input[3]]);
-                let mut stage = |half: usize, data: &mut $buf| {
-                    let mut twiddles = $buf::unit_roots(2 * half, half).expect("a nonzero order");
-                    if conjugate {
-                        twiddles.conj();
-                    }
-                    for start in (0..4).step_by(2 * half) {
-                        data.butterfly(start, half, &twiddles);
-                    }
-                };
-                stage(1, &mut data);
-                stage(2, &mut data);
-                data.to_complex()
-            }
-
             #[test]
             fn conjugated_roots_make_the_conventional_forward_transform() {
                 let (zero, one) = ($name::new(0.0, 0.0), $name::new(1.0, 0.0));
-                let forward = transform_of_four([zero, one, zero, zero], true);
+                let forward = transform(&[zero, one, zero, zero], true);
                 let want = [
                     $name::new(1.0, 0.0),
                     $name::new(0.0, -1.0),
@@ -68,7 +48,7 @@ macro_rules! buffer_tests {
             #[test]
             fn the_roots_as_they_are_make_the_positive_exponent_transform() {
                 let (zero, one) = ($name::new(0.0, 0.0), $name::new(1.0, 0.0));
-                let positive = transform_of_four([zero, one, zero, zero], false);
+                let positive = transform(&[zero, one, zero, zero], false);
                 let want = [
                     $name::new(1.0, 0.0),
                     $name::new(0.0, 1.0),
@@ -88,10 +68,9 @@ macro_rules! buffer_tests {
                     $name::new(0.25, -4.0),
                     $name::new(2.0, 1.0),
                 ];
-                let forward = transform_of_four(input, true);
+                let forward = transform(&input, true);
                 // The inverse is the positive-exponent transform, and the `1/n` is applied once, outside the butterfly.
-                let mut inverse =
-                    $buf::from_complex(&transform_of_four([forward[0], forward[1], forward[2], forward[3]], false));
+                let mut inverse = $buf::from_complex(&transform(&forward, false));
                 inverse.scale(0.25);
                 for (i, want) in input.iter().enumerate() {
                     assert!(
@@ -99,6 +78,121 @@ macro_rules! buffer_tests {
                         "number {i}: {}, expected {want}",
                         inverse.get(i)
                     );
+                }
+            }
+
+            /// A decimation-in-time transform of any power-of-two length, built from the butterfly alone: the input in
+            /// bit-reversed order, then one stage for each doubling of the block. Forward if `conjugate`.
+            fn transform(input: &[$name], conjugate: bool) -> Vec<$name> {
+                let n = input.len();
+                let bits = n.trailing_zeros();
+                let mut data = $buf::from_complex(
+                    &(0..n)
+                        .map(|i| input[i.reverse_bits() >> (usize::BITS - bits)])
+                        .collect::<Vec<_>>(),
+                );
+                let mut half = 1;
+                while half < n {
+                    let mut twiddles = $buf::unit_roots(2 * half, half).expect("a nonzero order");
+                    if conjugate {
+                        twiddles.conj();
+                    }
+                    for start in (0..n).step_by(2 * half) {
+                        data.butterfly(start, half, &twiddles);
+                    }
+                    half *= 2;
+                }
+                data.to_complex()
+            }
+
+            /// The discrete Fourier transform from its definition, `X[k] = sum x[j] e^(sign 2 pi i jk / n)`, with `sign`
+            /// `-1` for the forward transform. It shares nothing with the code under test: not the roots of unity, not the
+            /// conjugate, not the butterfly. Each factor comes straight from `cos` and `sin`.
+            fn definition(input: &[$name], sign: f64) -> Vec<$name> {
+                let n = input.len();
+                (0..n)
+                    .map(|k| {
+                        let (mut re, mut im) = (0.0_f64, 0.0_f64);
+                        for (j, x) in input.iter().enumerate() {
+                            let angle = sign * 2.0 * std::f64::consts::PI * ((j * k) % n) as f64 / n as f64;
+                            let (s, c) = angle.sin_cos();
+                            let (xr, xi) = (f64::from(x.re), f64::from(x.im));
+                            re += xr * c - xi * s;
+                            im += xr * s + xi * c;
+                        }
+                        $name::new(re as $float, im as $float)
+                    })
+                    .collect()
+            }
+
+            /// Several inputs of length `n`, including the single impulse, a constant, and numbers that differ in both
+            /// parts and in sign.
+            fn inputs(n: usize) -> Vec<Vec<$name>> {
+                let impulse = (0..n).map(|i| $name::new(f64::from(u8::from(i == 1)) as $float, 0.0)).collect();
+                let constant = vec![$name::new(1.0, 0.0); n];
+                let mixed = (0..n)
+                    .map(|i| $name::new((i as $float) * 0.5 - 1.0, 2.0 - (i as $float) * 0.75))
+                    .collect();
+                vec![impulse, constant, mixed]
+            }
+
+            #[test]
+            fn the_butterfly_transform_matches_the_definition_of_the_forward_transform() {
+                for n in [2, 4, 8, 16, 32] {
+                    for input in inputs(n) {
+                        let got = transform(&input, true);
+                        let want = definition(&input, -1.0);
+                        for k in 0..n {
+                            assert!(
+                                (got[k] - want[k]).norm() <= $tol * n as $float,
+                                "n = {n}, X[{k}] = {}, the definition gives {}",
+                                got[k],
+                                want[k]
+                            );
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn the_roots_as_they_are_match_the_definition_of_the_positive_exponent_transform() {
+                for n in [4, 8, 16] {
+                    for input in inputs(n) {
+                        let got = transform(&input, false);
+                        let want = definition(&input, 1.0);
+                        for k in 0..n {
+                            assert!((got[k] - want[k]).norm() <= $tol * n as $float, "n = {n}, X[{k}]");
+                        }
+                    }
+                }
+            }
+
+            #[test]
+            fn the_two_conventions_differ_and_the_difference_is_visible() {
+                // The impulse at index 1 has a spectrum `e^(-2 pi i k / 4)` forward, so `+i` and `-i` swap places.
+                let impulse = &inputs(4)[0];
+                let forward = transform(impulse, true);
+                let positive = transform(impulse, false);
+                assert!((forward[1] - $name::new(0.0, -1.0)).norm() <= $tol);
+                assert!((positive[1] - $name::new(0.0, 1.0)).norm() <= $tol);
+                assert!((forward[3] - $name::new(0.0, 1.0)).norm() <= $tol);
+                assert!((positive[3] - $name::new(0.0, -1.0)).norm() <= $tol);
+            }
+
+            #[test]
+            fn a_forward_transform_then_an_inverse_one_divided_by_n_returns_the_input_at_every_length() {
+                for n in [2, 4, 8, 16, 32] {
+                    for input in inputs(n) {
+                        let mut inverse = $buf::from_complex(&transform(&transform(&input, true), false));
+                        inverse.scale(1.0 / n as $float);
+                        for (i, want) in input.iter().enumerate() {
+                            assert!(
+                                (inverse.get(i) - *want).norm() <= $tol * n as $float,
+                                "n = {n}, number {i}: {}, expected {want}",
+                                inverse.get(i)
+                            );
+                        }
+                    }
                 }
             }
 
