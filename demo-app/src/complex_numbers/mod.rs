@@ -101,7 +101,8 @@ fn add_node(
 /// Builds the complex number demo: an Argand diagram that two sliders change, and the roots of unity.
 ///
 /// - **One number, seven ways.** A diagram of `3 + 4i`, whose modulus is exactly 5, with its real part and imaginary part
-///   dashed to the axes, and its modulus and angle. A slider runs along the bottom of the diagram, as long as the real
+///   drawn as the two legs of the right triangle it makes with the real axis (the adjacent leg along the real axis in
+///   green, and the opposite leg in purple), and its modulus and angle. A slider runs along the bottom of the diagram, as long as the real
 ///   axis, and sets the real part. A second runs up the left side, as long as the imaginary axis, and sets the imaginary
 ///   part. As either moves, the diagram is drawn again, and each of seven nodes is given the new number: rectangular,
 ///   polar in degrees and in radians, trigonometric, exponential, log-polar and as the real 2×2 matrix that multiplies in

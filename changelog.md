@@ -16,7 +16,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Correct failing `wasm-pack` tests (`a81631a`)
-- Correct complex division for large finite values (``)
+- Correct complex division for large finite values (`f29f418`)
+- Correct stroke colour assignment in Argand diagrams (``)
 
 ## Changed
 

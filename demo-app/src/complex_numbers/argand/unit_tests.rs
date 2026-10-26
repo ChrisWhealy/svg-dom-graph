@@ -153,3 +153,61 @@ fn a_line_label_is_never_upside_down() {
         assert!(turn.abs() <= 90.0 + 1e-9, "{degrees} degrees turns the text {turn}");
     }
 }
+
+#[test]
+fn the_legs_of_the_triangle_meet_at_the_point_on_the_real_axis_below_the_number() {
+    let plane = plane();
+    let z = Complex::new(1.5, 1.0);
+    let corner = plane.to_screen(Complex::new(z.re, 0.0));
+    let at = plane.to_screen(z);
+
+    // The adjacent leg runs along the axis, so its end is on the axis, and the opposite leg is straight up from it.
+    assert!(near(corner.y, plane.centre.y));
+    assert!(near(corner.x, at.x), "the opposite leg is vertical");
+    assert!(at.y < corner.y, "and up the page for a positive imaginary part");
+}
+
+#[test]
+fn the_adjacent_label_is_in_the_middle_of_its_leg_and_on_the_side_the_opposite_leg_is_not() {
+    let plane = plane();
+
+    let above = adjacent_label(plane, Complex::new(2.0, 1.0));
+    assert!(
+        near(above.x, plane.to_screen(Complex::new(1.0, 0.0)).x),
+        "half way along the leg"
+    );
+    assert!(above.y > plane.centre.y, "below the axis for a number above it");
+
+    let below = adjacent_label(plane, Complex::new(2.0, -1.0));
+    assert!(below.y < plane.centre.y, "above the axis for a number below it");
+
+    let left = adjacent_label(plane, Complex::new(-2.0, 1.0));
+    assert!(
+        near(left.x, plane.to_screen(Complex::new(-1.0, 0.0)).x),
+        "and half way along to the left"
+    );
+}
+
+#[test]
+fn the_opposite_label_is_beside_the_middle_of_its_leg_and_outside_the_triangle() {
+    let plane = plane();
+
+    let (right, anchor) = opposite_label(plane, Complex::new(2.0, 1.0));
+    let leg_x = plane.to_screen(Complex::new(2.0, 0.0)).x;
+    assert!(
+        right.x > leg_x && anchor == TextAnchor::Start,
+        "right of the leg, away from the origin"
+    );
+    assert!(near(right.y, plane.to_screen(Complex::new(2.0, 0.5)).y), "half way up the leg");
+
+    let (left, anchor) = opposite_label(plane, Complex::new(-2.0, -1.0));
+    let leg_x = plane.to_screen(Complex::new(-2.0, 0.0)).x;
+    assert!(
+        left.x < leg_x && anchor == TextAnchor::End,
+        "left of the leg, away from the origin"
+    );
+    assert!(
+        near(left.y, plane.to_screen(Complex::new(-2.0, -0.5)).y),
+        "half way down the leg"
+    );
+}

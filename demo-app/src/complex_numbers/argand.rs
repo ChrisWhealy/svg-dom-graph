@@ -141,6 +141,27 @@ pub(super) fn outward_label(point: Point, angle: f64, gap: f64) -> (Point, TextA
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where the label of the adjacent leg of `z` goes: the middle of the leg, which runs along the real axis from the origin to
+/// `re`, and then far enough below the axis to clear the numbers written along it. It is above the axis, where the
+/// opposite leg is not, if the number is below the axis, so that the label is never on the side the opposite leg is.
+pub(super) fn adjacent_label(plane: Plane, z: Complex) -> Point {
+    let middle = plane.to_screen(Complex::new(z.re / 2.0, 0.0));
+    Point::new(middle.x, middle.y + if z.im >= 0.0 { 23.0 } else { -13.0 })
+}
+
+/// Where the label of the opposite leg of `z` goes, and how it is anchored: beside the middle of the leg, which runs up
+/// or down from the real axis to the number, on the side away from the origin, so that it is outside the triangle and
+/// clear of the modulus and the angle that are inside it.
+pub(super) fn opposite_label(plane: Plane, z: Complex) -> (Point, TextAnchor) {
+    let middle = plane.to_screen(Complex::new(z.re, z.im / 2.0));
+    if z.re >= 0.0 {
+        (Point::new(middle.x + 10.0, middle.y), TextAnchor::Start)
+    } else {
+        (Point::new(middle.x - 10.0, middle.y), TextAnchor::End)
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where a label for the line from `centre` at `angle` goes, and how far to turn it. The label is `along` user units
 /// from `centre` on the line, and `offset` to one side of it: the anticlockwise side if `side` is `1.0`, and the
 /// clockwise side if it is `-1.0`. It is turned to run parallel to the line, and never upside down.
@@ -166,7 +187,8 @@ pub(super) enum Guides {
     /// Only the dot, and its label.
     None,
     /// The modulus, from the origin to the dot, and the angle, as an arc from the real axis, and the real part and the
-    /// imaginary part too: two dashed lines from the dot to the axes.
+    /// imaginary part too, as the two legs of the right triangle that the number makes with the real axis: the adjacent
+    /// one along the real axis, in green, and the opposite one up or down to the dot, in purple.
     Both,
 }
 
@@ -466,25 +488,25 @@ fn draw_mark(canvas: &Canvas<'_>, diagram: &Argand, plane: Plane, mark: &Mark) -
         canvas.line(plane.centre, at, PLANE_STROKE, 1.0, None)?;
     }
     if mark.guides.rectangular() {
-        let (on_real, on_imaginary) = (
-            plane.to_screen(Complex::new(z.re, 0.0)),
-            plane.to_screen(Complex::new(0.0, z.im)),
-        );
-        canvas.line(at, on_real, REAL_STROKE, 1.5, Some("5 4"))?;
-        canvas.line(at, on_imaginary, IMAGINARY_STROKE, 1.5, Some("5 4"))?;
+        // The right triangle that the number makes with the real axis, as a rectangular cell's picture draws it: the
+        // adjacent leg along the real axis from the origin, in green, and then the opposite leg up or down to the number,
+        // in purple. Each leg is the colour of the part it stands for, and carries that part's label.
+        let corner = plane.to_screen(Complex::new(z.re, 0.0));
+        canvas.line(plane.centre, corner, REAL_STROKE, 3.0, None)?;
+        canvas.line(corner, at, IMAGINARY_STROKE, 2.5, None)?;
         canvas.text(
-            Point::new(on_real.x, on_real.y + if z.im >= 0.0 { 23.0 } else { -13.0 }),
+            adjacent_label(plane, z),
             &format!("a = {}", trimmed(z.re, 2)),
             TextAnchor::Middle,
             LABEL_SIZE,
             REAL_STROKE,
             true,
         )?;
-        let imaginary_anchor = if z.re >= 0.0 { TextAnchor::End } else { TextAnchor::Start };
+        let (opposite_at, opposite_anchor) = opposite_label(plane, z);
         canvas.text(
-            Point::new(on_imaginary.x + if z.re >= 0.0 { -8.0 } else { 8.0 }, on_imaginary.y - 14.0),
+            opposite_at,
             &format!("b = {}", trimmed(z.im, 2)),
-            imaginary_anchor,
+            opposite_anchor,
             LABEL_SIZE,
             IMAGINARY_STROKE,
             true,
