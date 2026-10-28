@@ -10,11 +10,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Create a new `Plot` node types and start a radix-2 decimation-in-time FFT demo (``)
+- Create a new `Plot` node types and start a radix-2 decimation-in-time FFT demo (`8c39dfd`)
 
 ## Changed
 
-- Make FFT scene fully transactional (``)
+- Make FFT scene fully transactional (`ea914ed`)
+
+## Fixed
+
+- Prevent plot ccordinates from overflowing after validation (``)
 
 # [Released]
 

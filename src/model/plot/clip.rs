@@ -19,6 +19,10 @@ impl Bounds {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The part of the segment `from`–`to` that is inside `bounds`, by the method of Liang and Barsky. `None` if none is.
 pub(crate) fn clip_segment(from: (f64, f64), to: (f64, f64), bounds: Bounds) -> Option<((f64, f64), (f64, f64))> {
+    // A position that is not finite has no segment to cut. Callers place everything with a finite limit, so this is a guard.
+    if ![from.0, from.1, to.0, to.1].iter().all(|v| v.is_finite()) {
+        return None;
+    }
     let (dx, dy) = (to.0 - from.0, to.1 - from.1);
     let (mut enter, mut leave) = (0.0_f64, 1.0_f64);
     for (p, q) in [

@@ -461,7 +461,9 @@ impl PlotConfig {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Checks one axis.
 pub(super) fn validate_axis(axis: &PlotAxis, name: AxisName) -> Result<(), PlotConfigError> {
-    let finite_range = axis.min.is_finite() && axis.max.is_finite() && axis.min < axis.max;
+    // The span must be finite too: an axis from -1e308 to 1e308 has a span that overflows, and no value could be placed on it.
+    let finite_range =
+        axis.min.is_finite() && axis.max.is_finite() && axis.min < axis.max && (axis.max - axis.min).is_finite();
     if !finite_range {
         return Err(PlotConfigError::Range(name));
     }

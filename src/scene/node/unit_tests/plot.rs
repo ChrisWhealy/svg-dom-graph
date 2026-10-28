@@ -630,3 +630,30 @@ fn a_plot_takes_the_focus_ring_like_any_other_node() -> Result<(), String> {
     scene.set_focus(id, false).map_err(|e| e.to_string())?;
     check(attribute(&all(&scene, id, "rect")[0], "stroke") == "#2a5db0", "and unringed")
 }
+
+#[wasm_bindgen_test]
+fn an_extremely_distant_point_never_puts_a_non_finite_number_in_the_drawing() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-extreme")).map_err(|e| e.to_string())?;
+    let id = scene.add_plot_node(Point::origin(), config()).map_err(|e| e.to_string())?;
+    scene
+        .set_plot_items(
+            id,
+            &[
+                PlotLine::new([(0.5, 0.0), (1e308, 1e308)], "#000").into(),
+                PlotLine::new([(0.5, 0.0), (f64::MAX, 0.0)], "#000").into(),
+                PlotPoints::new([(1e308, 0.0)], "#000").into(),
+                PlotLabel::new((f64::MIN, 0.0), "far").into(),
+            ],
+        )
+        .map_err(|e| e.to_string())?;
+    let lines = all(&scene, id, "polyline");
+    check(lines.len() == 2, "each line is cut at the edge of the plot and drawn")?;
+    for line in lines {
+        let points = attribute(&line, "points");
+        check(
+            !points.contains("NaN") && !points.contains("inf") && !points.contains("Infinity"),
+            &points,
+        )?;
+    }
+    check(all(&scene, id, "circle").is_empty(), "a dot that far outside is not drawn")
+}

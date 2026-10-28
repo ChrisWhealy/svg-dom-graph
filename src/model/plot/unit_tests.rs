@@ -659,3 +659,66 @@ fn a_label_defaults_to_a_halo_and_to_the_start_of_its_text() {
     assert_eq!(label.anchor, LabelAnchor::Start);
     assert_eq!(label.offset, (0.0, 0.0));
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   Extreme values
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_position_is_always_finite_however_far_off_the_axis_the_value_is() {
+    let map = AxisMap::new(&PlotAxis::linear(0.0, 1.0), 0.0, 400.0);
+    for value in [1e308, -1e308, f64::MAX, f64::MIN, 1e30] {
+        let page = map.page_of(value).expect("a finite value can be placed");
+        assert!(page.is_finite(), "{value} gave {page}");
+        assert!(page.abs() <= map::PAGE_LIMIT);
+    }
+    assert_eq!(map.page_of(1e308), Some(map::PAGE_LIMIT));
+    assert_eq!(map.page_of(-1e308), Some(-map::PAGE_LIMIT));
+    let log = AxisMap::new(&PlotAxis::logarithmic(1.0, 10.0), 0.0, 400.0);
+    assert!(log.page_of(f64::MAX).expect("placed").is_finite());
+}
+
+#[test]
+fn a_segment_from_inside_the_plot_to_an_extremely_distant_point_is_cut_at_the_edge_with_finite_coordinates() {
+    let layout = PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(0.0, 1.0))).expect("valid");
+    let inside = layout.point(0.5, 0.5);
+    for far in [
+        (1e308, 0.5),
+        (1e308, 1e308),
+        (-1e308, -1e308),
+        (0.5, f64::MAX),
+        (f64::MAX, f64::MIN),
+    ] {
+        let points = [inside, layout.point(far.0, far.1)];
+        let runs = clip_polyline(&points, layout.area);
+        assert_eq!(runs.len(), 1, "{far:?}");
+        for (x, y) in &runs[0] {
+            assert!(x.is_finite() && y.is_finite(), "{far:?} gave ({x}, {y})");
+            assert!(
+                layout.area.contains((*x, *y)) || near(x.clamp(layout.area.left, layout.area.right), *x),
+                "{far:?}"
+            );
+        }
+    }
+    // Straight to the right, the cut is at the right edge and keeps the height.
+    let runs = clip_polyline(&[inside, layout.point(1e308, 0.5)], layout.area);
+    let end = runs[0][1];
+    assert!(near(end.0, layout.area.right) && near(end.1, inside.expect("placed").1));
+}
+
+#[test]
+fn a_segment_with_a_position_that_is_not_finite_is_dropped_and_not_turned_into_nan() {
+    let bounds = Bounds {
+        left: 0.0,
+        top: 0.0,
+        right: 10.0,
+        bottom: 10.0,
+    };
+    assert_eq!(clip_segment((1.0, 1.0), (f64::INFINITY, 5.0), bounds), None);
+    assert_eq!(clip_segment((f64::NAN, 1.0), (5.0, 5.0), bounds), None);
+}
+
+#[test]
+fn an_axis_whose_span_overflows_is_refused() {
+    let config = real(PlotAxis::linear(-1e308, 1e308), PlotAxis::linear(0.0, 1.0));
+    assert_eq!(config.validate(), Err(PlotConfigError::Range(AxisName::X)));
+}

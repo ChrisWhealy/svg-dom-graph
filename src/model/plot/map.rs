@@ -3,6 +3,11 @@
 use super::{axis::AxisScale, config::PlotAxis};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The furthest a position on the page is taken, in user units. It is far past any plot, and small enough that the sums
+/// of clipping a segment to a plot cannot overflow.
+pub(crate) const PAGE_LIMIT: f64 = 1e9;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where an axis's values land: `min` at `from` and `max` at `to`, both in user units along the page. For a vertical
 /// axis `from` is the bottom, which is the greater of the two coordinates, so the greater values are higher up.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -43,8 +48,14 @@ impl AxisMap {
     }
 
     /// Where `value` is on the page, or `None` if it cannot be placed.
+    ///
+    /// The position is always finite. A value so far off the axis that its position would overflow, or be beyond
+    /// [`PAGE_LIMIT`], is placed at that limit on the side it is on. It is then far outside any plotted area, so the
+    /// clipping that follows cuts it exactly as it would a position that was never limited, bar a negligible change of
+    /// slope.
     pub(crate) fn page_of(&self, value: f64) -> Option<f64> {
-        self.fraction(value).map(|f| self.from + f * (self.to - self.from))
+        let position = self.from + self.fraction(value)? * (self.to - self.from);
+        (!position.is_nan()).then(|| position.clamp(-PAGE_LIMIT, PAGE_LIMIT))
     }
 
     /// The value at `position` on the page. The inverse of [`page_of`](Self::page_of).
