@@ -8,12 +8,14 @@
 //! - [`nested_scenes`] — `Scene::add_container_node`, `enter`/`exit`, and the navigation invariants around them.
 //! - [`replace_container_child`] — `Scene::replace_container_child`: swapping a nested `Scene`, its rejections, its
 //!   fresh `NavigationState` for the detached child, and its transactional rollback on a failed DOM write.
+//! - [`plot`] — plot nodes: what is drawn, what is refused, what is plotted on one, and the clicks it reports.
 //! - [`make_enterable`] — `Scene::make_enterable`: a container node made clickable/keyboard-activatable, and its
 //!   rollback on a failed DOM write.
 
 mod guards;
 mod make_enterable;
 mod nested_scenes;
+mod plot;
 mod ref_name;
 mod replace_container_child;
 mod support;

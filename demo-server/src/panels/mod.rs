@@ -42,6 +42,7 @@ const GROUP_ORDER: &[&str] = &[
     "Error Detection & Correction",
     "Sorting",
     "Graph algorithms",
+    "Signal processing",
 ];
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

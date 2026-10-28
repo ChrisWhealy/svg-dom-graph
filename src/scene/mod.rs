@@ -30,6 +30,11 @@ pub use crate::model::content::{
     MAX_BIT_WIDTH, MAX_FLOAT_DIGITS, NodeValues, Selection, UnaryOperator, Uuid, UuidCase, UuidFormat, UuidLayout,
     UuidStyle,
 };
+pub use crate::model::plot::{
+    AxisName, AxisPosition, AxisScale, Insets, LabelAnchor, LegendEntry, LegendMark, MAX_MINOR_DIVISIONS, MAX_TICKS,
+    MinorTicks, PlotAxis, PlotClick, PlotConfig, PlotConfigError, PlotGrid, PlotItem, PlotLabel, PlotLine, PlotPlane,
+    PlotPoint, PlotPoints, TickLabelPlacement, TickLabels,
+};
 pub(crate) use box_handles::{BoxHandles, CellGrid, CellPicture, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};
 pub use drag::{DragObserverHandle, DragOptions, DragPhase, collision_policy::CollisionPolicy};

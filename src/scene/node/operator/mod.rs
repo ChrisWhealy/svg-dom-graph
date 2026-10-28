@@ -40,9 +40,11 @@ use svg_dom::{
 pub(super) fn operand_content(graph: &Graph, id: NodeId) -> Result<&DataNodeContent, Error> {
     match &graph.node(id).ok_or(Error::UnknownNode(id))?.content {
         NodeContent::Data(content) => Ok(content),
-        NodeContent::Label(_) | NodeContent::Container(_) | NodeContent::Markdown(_) | NodeContent::TextInput(_) => {
-            Err(Error::OperandNotData(id))
-        },
+        NodeContent::Label(_)
+        | NodeContent::Container(_)
+        | NodeContent::Markdown(_)
+        | NodeContent::TextInput(_)
+        | NodeContent::Plot(_) => Err(Error::OperandNotData(id)),
     }
 }
 
@@ -324,6 +326,7 @@ fn draw_operator_box(
             edge_anchors_stale: false,
             ref_name: label.to_owned(),
             child: None,
+            plot: None,
         },
         Rect {
             origin: top_left,

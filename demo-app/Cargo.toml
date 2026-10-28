@@ -30,6 +30,7 @@ features = [
     "Event",
     "EventTarget",
     "HtmlInputElement",
+    "HtmlSelectElement",
     "KeyboardEvent",
     "Location",
     "MediaQueryList",

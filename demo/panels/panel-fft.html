@@ -1,0 +1,175 @@
+<section class="section" id="panel-fft" data-group="Signal processing" data-label="Fast Fourier transform"
+    data-order="10">
+    <h2>Fast Fourier Transform</h2>
+
+    <h3>What problem does it solve?</h3>
+    <p>When a signal such as a sound wave, a radio wave or vibration in a building is recorded, what you end up with is
+        a list of amplitude measurements taken at regular (usually very small) time intervals. Whilst this list shows
+        how the signal changes <em>over time</em>, it hides the individual frequencies from which that signal is
+        <em>composed</em>. Consider a chord played on the piano. The waveform captured by the microphone is a complex
+        signal, with very little visible structure; yet, that chord is composed of only three or four individual notes.
+    </p>
+    <p>The <em>Fourier transform</em> answers the question &ldquo;What are the individual frequencies that make up this
+        signal?&rdquo; It takes <code>N</code> measurements and gives back <code>N</code> numbers, one for each
+        frequency. Each number says how strong that particular frequency is and where in its cycle it starts. That
+        second part is why an FFT works with <a href="/#panel-complex">complex</a> numbers: a complex number encodes
+        both a magnitude and a direction.</p>
+    <p>Worked out straight from its definition, every one of the <code>N</code> answers needs a sum over all
+        <code>N</code> measurements, so the amount of work grows in proportion to <code>N &times; N</code>. One second
+        of
+        CD-quality audio contains 44,100 individual measurements which, when squared, would require us to perform about
+        1.94 billion multiplications!
+    </p>
+    <p>However, the <em>fast</em> in Fast Fourier transform (FFT) allows us to reduce the number of multiplications down
+        to <code>N &times; log<sub>2</sub> N</code>. So for one second of CD-quality audio signal, the number of
+        calculations drops from 1.94 billion to around 700,000. That speed increase now makes realtime analysis a
+        practical reality.</p>
+
+    <h3>Try it: find the waves inside a sum</h3>
+    <p>Three sine waves are drawn below. Wave A completes one cycle in the window, wave B two, and wave C three. Each
+        has an <em>amplitude</em>, which is how tall it is, and a <em>phase</em>, which is how far along its cycle it
+        is at the left edge. The thick line is the three added together. Where the waves rise together they reinforce
+        one another, and where one rises as another falls they cancel.</p>
+    <p>The orange dots are the <em>samples</em>: the sum measured at evenly spaced moments. The FFT sees only those
+        dots. It is never told that the signal is made of three waves, how tall they are or where they start. Move the
+        sliders, and the table under the graph shows the amplitude and phase that the FFT recovered from the dots alone,
+        beside the values you set.</p>
+
+    <p class="demo-error" id="fft-error" hidden></p>
+    <button id="fft-retry" class="open-window" type="button" hidden>Retry display</button>
+    <div class="fft-waves">
+        <table>
+            <tr>
+                <td>
+                    <table>
+                        <thead>
+                            <th colspan="3"><span class="fft-wave-name">Wave A</span></th>
+                        </thead>
+                        <tr>
+                            <td><label for="fft-a-amplitude">Amplitude</label>&nbsp;</td>
+                            <td><input type="range" id="fft-a-amplitude" min="0" max="1" step="0.05"
+                                    value="1">&nbsp;&nbsp;</td>
+                            <td><output for="fft-a-amplitude" id="fft-a-amplitude-out"></output>&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td><label for="fft-a-phase">Phase</label></td>
+                            <td><input type="range" id="fft-a-phase" min="0" max="345" step="15" value="0"></td>
+                            <td><output for="fft-a-phase" id="fft-a-phase-out"></output></td>
+                        </tr>
+                    </table>
+                </td>
+                <td rowspan="3">
+                    <div class="canvas" id="fft-wave-plot"></div>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table>
+                        <thead>
+                            <th colspan="3"><span class="fft-wave-name">Wave B</span></th>
+                        </thead>
+                        <tr>
+                            <td><label for="fft-b-amplitude">Amplitude</label>&nbsp;&nbsp;</td>
+                            <td><input type="range" id="fft-b-amplitude" min="0" max="1" step="0.05"
+                                    value="0.6">&nbsp;&nbsp;</td>
+                            <td><output for="fft-b-amplitude" id="fft-b-amplitude-out"></output>&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td><label for="fft-b-phase">Phase</label></td>
+                            <td><input type="range" id="fft-b-phase" min="0" max="345" step="15" value="90"></td>
+                            <td><output for="fft-b-phase" id="fft-b-phase-out"></output></td>
+                        </tr>
+                    </table>
+                </td>
+            </tr>
+            <tr>
+                <td>
+                    <table>
+                        <thead>
+                            <th colspan="3"><span class="fft-wave-name">Wave C</span></th>
+                        </thead>
+                        <tr>
+                            <td><label for="fft-c-amplitude">Amplitude</label>&nbsp;&nbsp;</td>
+                            <td><input type="range" id="fft-c-amplitude" min="0" max="1" step="0.05"
+                                    value="0.4">&nbsp;&nbsp;</td>
+                            <td><output for="fft-c-amplitude" id="fft-c-amplitude-out"></output>&nbsp;&nbsp;</td>
+                        </tr>
+                        <tr>
+                            <td><label for="fft-c-phase">Phase</label></td>
+                            <td><input type="range" id="fft-c-phase" min="0" max="345" step="15" value="210"></td>
+                            <td><output for="fft-c-phase" id="fft-c-phase-out"></output></td>
+                        </tr>
+                    </table>
+
+                </td>
+            </tr>
+        </table>
+    </div>
+    <div class="controls">
+        <label for="fft-length">Samples taken
+            <select id="fft-length">
+                <option value="8" selected>8</option>
+                <option value="16">16</option>
+            </select></label>
+    </div>
+
+    <div class="fft-findings-wrap" id="fft-findings"></div>
+    <p>The transform gives one complex number for each frequency. Its length divided by half the number of samples is
+        the amplitude, and its angle, turned a quarter of a cycle because these are sine waves and not cosines, is the
+        phase. A frequency that none of the waves uses comes out as zero. Eight samples can only tell apart frequencies
+        below four cycles, so all three waves are within reach.</p>
+
+    <h3>How is it fast?</h3>
+    <p>The saving comes from one observation: the transform of <code>N</code> measurements can be built from two
+        transforms of <code>N/2</code> measurements, one of the even-numbered measurements and one of the odd-numbered,
+        joined by a small calculation. Split again and again until each piece is a single measurement, and there is
+        nothing left to transform. All of the work is in the joining.</p>
+    <p>The <em>"Radix-2"</em> part of the name means that every measurement is split in two, and the <em>"decimation in
+            time"</em> part means that the split is made on the measurements in time order.</p>
+    <p>The small calculation is the <a href="/#panel-butterfly">butterfly</a> operation. It reads two numbers
+        <code>a</code> and <code>b</code> and a <em>twiddle factor</em> <code>w</code>.
+    </p>
+    <p><code>b</code> is multipled by the twiddle factor to give <code>a + w&middot;b</code>. This has the effect of
+        rotating <code>b</code> in the complex plane by some fixed part of a turn.</p>
+    <p>The Butterfly operation then returns the sum <code>a + w&middot;b</code> and the difference <code>a &minus;
+            w&middot;b</code>.
+    </p>
+
+    <h3>Watching the FFT work</h3>
+    <p>The diagram below is the transform of the samples in the graph. It is drawn again when you let go of a
+        slider.</p>
+    <ul>
+        <li>The first column, <code>S0</code>, holds the measurements in <em>bit-reversed</em> order. This is the order
+            that repeated even and odd splitting leaves them in, and it puts each pair that must be joined side by
+            side.</li>
+        <li>Each press of <em>Next</em> completes one stage. A stage joins blocks that are twice as wide as the stage
+            before, so the transform is finished after <code>log<sub>2</sub> N</code> stages. A faint zero is a number
+            that has not been worked out yet.</li>
+        <li>The last column holds the transform <code>X[0]</code>, <code>X[1]</code> and so on, already in order.</li>
+        <li>The four connectors between two columns are one butterfly. The butterfly you choose from the list is
+            emphasised, and the second scene below opens it up: its two inputs, its twiddle factor, and the product,
+            sum and difference. You can drag the frame.</li>
+        <li>Set two of the waves to zero. The last column then has just two nonzero results for the remaining wave,
+            <code>X[k]</code> and <code>X[N&minus;k]</code>, which are mirror images of one another. That is why the
+            table reads only the lower of the two.
+        </li>
+    </ul>
+    <p>The numbers are the forward transform, <code>X[k]</code> = the sum of <code>x[n]</code> &times;
+        e<sup>&minus;2&pi;ikn/N</sup> over all <code>n</code>, with no scaling. As everywhere else in this gallery, the
+        library does no arithmetic. Every number is worked out in plain Rust, one whole block at a time, and the nodes
+        only show it.</p>
+
+    <!-- Said by a screen reader at each step. It is here, not in a scene, because a scene is replaced when the number of
+         samples or the signal changes, and a screen reader may not announce a live region that is new. -->
+    <p id="fft-status" role="status" aria-live="polite"></p>
+    <div class="canvas" id="fft-overview-stage">
+    </div>
+
+    <h3 id="fft-inspector-title">Preview: stage 1, pair 1</h3>
+    <div class="controls">
+        <label for="fft-pair">Butterfly
+            <select id="fft-pair"></select></label>
+    </div>
+    <div class="canvas" id="fft-inspector-stage">
+    </div>
+</section>

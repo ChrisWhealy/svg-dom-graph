@@ -47,7 +47,7 @@ impl Method for PartialAxTree {
 /// Chrome's accessibility node for `element` as raw JSON, or `None` if its tree holds no node for it at all.
 ///
 /// `fetch_relatives` stays `false`: an ancestor can carry an ignore reason the typed bindings do not know.
-fn ax_node(tab: &Tab, element: &Element<'_>) -> Result<Option<Value>, String> {
+pub(crate) fn ax_node(tab: &Tab, element: &Element<'_>) -> Result<Option<Value>, String> {
     let reply = tab
         .call_method(PartialAxTree {
             backend_node_id: element.backend_node_id,
@@ -58,7 +58,7 @@ fn ax_node(tab: &Tab, element: &Element<'_>) -> Result<Option<Value>, String> {
 }
 
 /// A string at `node[field]["value"]`, such as an accessibility node's `role` or `name`.
-fn ax_string<'a>(node: &'a Value, field: &str) -> Option<&'a str> {
+pub(crate) fn ax_string<'a>(node: &'a Value, field: &str) -> Option<&'a str> {
     node.get(field)?.get("value")?.as_str()
 }
 

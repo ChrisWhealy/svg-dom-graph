@@ -221,6 +221,7 @@ pub(super) fn draw_content_box(
             // `BoxHandles::ref_name`'s own doc comment.
             ref_name: name.unwrap_or(content.type_name()).to_owned(),
             child: None,
+            plot: None,
         },
         Rect {
             origin: top_left,

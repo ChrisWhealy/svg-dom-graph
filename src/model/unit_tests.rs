@@ -300,9 +300,10 @@ fn add_node_accepts_a_borrowed_non_static_label() -> Result<(), String> {
         graph.node(id).map(|n| match &n.content {
             NodeContent::Label(label) => label.as_str(),
             NodeContent::Data(_) => "<data>",
-            NodeContent::Container(label) | NodeContent::Markdown(label) | NodeContent::TextInput(label) => {
-                label.as_str()
-            },
+            NodeContent::Container(label)
+            | NodeContent::Markdown(label)
+            | NodeContent::TextInput(label)
+            | NodeContent::Plot(label) => label.as_str(),
         }),
         Some("node-42"),
     )

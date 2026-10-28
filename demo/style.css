@@ -828,6 +828,61 @@ label.demo-slider-container {
     margin-right: 1.5rem;
 }
 
+/* The FFT panel's wave sliders and graph: a table with the sliders of each wave in a column on the left, and the graph
+   in a cell beside them that spans every row. The graph is a scene with its own fixed size, so the table does not shrink it. A
+   narrow screen scrolls the table, not the page. The number beside a slider has a fixed width so that the slider does
+   not move as it changes. */
+.fft-waves {
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.fft-waves td {
+    vertical-align: middle;
+}
+
+.fft-waves .fft-wave-name {
+    font-weight: 600;
+}
+
+.fft-waves input[type="range"] {
+    width: 11rem;
+}
+
+.fft-waves output {
+    display: inline-block;
+    min-width: 3.5rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The table of what the transform found. A narrow screen scrolls it, not the page. */
+.fft-findings-wrap {
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.fft-findings {
+    border-collapse: collapse;
+    font-variant-numeric: tabular-nums;
+}
+
+.fft-findings caption {
+    text-align: left;
+    font-weight: 600;
+    padding-bottom: 0.4rem;
+}
+
+.fft-findings th,
+.fft-findings td {
+    padding: 0.35rem 0.75rem;
+    border: 1px solid var(--border-strong);
+    text-align: left;
+}
+
+.fft-findings thead th {
+    background: var(--border);
+}
+
 /* The SHA3 Sponge scene's own window (`sha3-sponge-window.html`). It has no menu or title band, so the one section
    carries the same padding the gallery's `#stage` gives a panel. The window is resized to fit this box. */
 .scene-window {

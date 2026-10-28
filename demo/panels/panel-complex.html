@@ -1,67 +1,88 @@
 <section class="section" id="panel-complex" data-group="Data Nodes" data-label="Complex numbers" data-order="100">
     <h2>Complex numbers</h2>
-    <p>A data node can hold complex numbers, in single or double precision, and write each one in whichever form suits
-        the job. The Argand diagrams below draw the complex plane: the real part runs along the horizontal axis and the
-        imaginary part up the vertical one, so every number is a point, and every form is a different way of saying where
-        it is.</p>
+    <p>A data node can hold one or more complex numbers, either as single or double precision floating point values.
+        Each number can be written in whichever format suits the task at hand. Integer types are not supported for use
+        in complex numbers.</p>
+    <p>The Argand diagrams below draw the complex plane: real are plotted along the horizontal axis and imaginary values
+        along the vertical axis. Every complex is then displayed as a point on the plain. Each of the different ways of
+        formatting a complex number provide you with a different way to describe that point's position on the complex
+        plane.</p>
     <dl>
         <dt>Rectangular</dt>
         <dd>
-            <p>The two steps along the axes: <code>a</code> across and <code>b</code> up, written <code>a + bi</code>.
-                On the diagram they are the two legs of a right triangle: the adjacent leg along the real axis, in green, and the opposite leg up or down to the dot, in purple. Adding two numbers adds their
-                parts. In a node, a small picture of the two legs begins each cell: the adjacent leg along the real
-                axis, in green, and the opposite leg up or down to the number, in purple.</p>
+            <p>Rectangular coordinates identify a point on the complex plane by tracing the sides of a rectangle
+                anchored to the origin.</p>
+            <p>So for the complex number <code>3 - 4i</code>, you travel <code>3</code> units in the positive direction
+                along the horizontal axis, then <code>4</code> units in the negative direction along the vertical axis.
+            </p>
+            <p>When displayed in a <code>DataNode</code>, a small, scale drawing of this rectangle appears to the left
+                of the numeric value.</p>
         </dd>
         <dt>Polar</dt>
         <dd>
-            <p>The distance from the origin, the <em>modulus</em> <code>r</code>, and the angle <code>&theta;</code>
-                from the positive real axis, written <code>r &ang; &theta;</code>. On the diagram they are the solid
-                line and the arc. The angle is measured anticlockwise, so a number below the real axis has a negative
-                angle. Multiplying two numbers multiplies their moduli and adds their angles. The angle can be written
-                in degrees, the default, or in radians. In a node, a small arrow begins each cell, from the origin to the number, so it
-                shows the general direction, and how long each number is against the longest in the node. It is a
-                sparkline and not a plot, so read the value from the text.</p>
+            <p>Polar coordinates describe the position of a point on the complex plane by telling you first how far that
+                point lies away from the origin, and second, in what direction you should travel. The convention is that
+                rotation is always the number of degrees anticlockwise from the positive X axis. So a of rotation
+                <code>90&deg;</code> means travelling due north up the positive Y axis.
+            </p>
+            <p>In polar coordinates, the same complex number used above (<code>3 - 4i</code>) would be represented as
+                <code>5</code> units away from the origin, at an of angle <code>306.87&deg;</code>. The <code>5</code>
+                is calculated by knowing that we have a right-angled triangle whose orthogonal sides are of length
+                <code>3</code> and <code>4</code>. So according to the Pythagorean formula, this give a hypotenuse
+                length of <code>5</code>.
+            </p>
+            <p>When displayed in a <code>DataNode</code>, a small, scale drawing of an arrow pointing the correct
+                direction appears to the left of the numeric value.</p>
         </dd>
         <dt>Trigonometric and exponential</dt>
         <dd>
-            <p><code>r (cos &theta; + i sin &theta;)</code> is the polar form with the point spelled out as its two
-                legs. Euler's formula says the same thing as <code>r e<sup>i&theta;</sup></code>, which a node draws with the
-                exponent raised and smaller: an <code>i</code> and then the angle. An exponent is always in radians, so
-                the exponential form is, whatever unit the polar form uses.</p>
+            <p><code>r (cos &theta; + i sin &theta;)</code> is much like the polar form, but with the position of the
+                point calculated as the cosine and sine of the angle of rotation (both scaled by the factor
+                <code>r</code>)
+            </p>
+            <p>Euler's formula describes the same thing but calculates the angle of rotation using the formula
+                <code>e<sup>i&theta;</sup></code>, and the length as <code>r</code>.
+            </p>
+            <p>The value of <code>&theta;</code> is always in radians.</p>
         </dd>
         <dt>Log-polar</dt>
         <dd>
             <p>The pair <code>(ln r, &theta;)</code>. It is the real and imaginary parts of the complex logarithm
                 <code>ln z = ln r + i&theta;</code>, so a product, which multiplies the moduli, adds the first number
-                of each pair as well as the second. The log of the modulus of zero is <code>-inf</code>.</p>
+                of each pair as well as the second. The log of the modulus of zero is <code>-inf</code>.
+            </p>
         </dd>
         <dt>Matrix</dt>
         <dd>
-            <p>A complex number <code>a + bi</code> turns and stretches the plane, and the real 2&times;2 matrix with
-                <code>a</code> on the diagonal and <code>-b</code> and <code>b</code> off it does exactly the same.
-                Multiplying two such matrices is multiplying the two numbers. It is drawn as two rows between brackets
-                in a cell that is two rows high.</p>
+            <p>The matrix representation describes how complex number <code>a + bi</code> turns and stretches a unit
+                length on the plane. It is shown as a 2&times;2 matrix with <code>a</code> on one diagonal and
+                <code>-b</code>/<code>b</code> on the other diagonal.
+            </p>
         </dd>
     </dl>
-    <p>Hover over a node to see its type: <code>complex64</code> has <code>f64</code> parts, and
-        <code>complex32</code> has <code>f32</code> parts. Under the hexadecimal and binary formats a complex number
-        shows the bits of its real part and then of its imaginary part.</p>
+    <p>Hover over a node to see its type: <code>complex64</code> has two <code>f64</code> parts, and
+        <code>complex32</code> has two <code>f32</code> parts. Under the hexadecimal and binary formats, a complex
+        number shows the bits first of its real part, then of its imaginary part.
+    </p>
 
     <h3>One number, seven ways</h3>
     <p>Drag the slider under the diagram to change the real part <code>a</code>, and the one beside it to change the
         imaginary part <code>b</code>. Each is exactly as long as the axis it lies along, so its thumb is directly under
-        or beside the point of the axis whose value it stands for. The diagram is drawn again, and each of the seven nodes
+        or beside the point of the axis whose value it stands for. The diagram is drawn again, and each of the seven
+        nodes
         shows the new number in its own form. A slider has the keyboard too: Tab to it, and use the arrow keys, Home and
-        End.</p>
+        End. You can also click the diagram itself to put the number where you clicked, rounded to the nearest tenth.
+        A click is the plot node's own click handler, and it moves both sliders too.</p>
     <p class="demo-error" id="complex-error" hidden></p>
     <div class="canvas" id="complex-diagram-stage" style="margin-top: 1rem;">
     </div>
 
     <h3>The roots of unity</h3>
-    <p>The numbers that, raised to the power <code>n</code>, give <code>1</code>. They are evenly spaced round the unit
-        circle, <code>360&deg;/n</code> apart, and are the twiddle factors of an <code>n</code>-point Fourier transform.
-        In the polar node every modulus is exactly <code>1</code> and the angles go up in steps of
-        <code>360&deg;/n</code>. The slider sets <code>n</code>.</p>
+    <p>A root of unity is a complex number that, when raised to an integer power <code>n</code>, gives <code>1</code>.
+        These roots are evenly spaced round the complex unit circle, <code>360&deg;/n</code> apart.</p>
+    <p>These roots are used as the twiddle factors of an <code>n</code>-point Fourier transform. In the polar node,
+        every modulus is exactly <code>1</code> and the angles go up in steps of <code>360&deg;/n</code>.</p>
+    <p>Move the slider to set the value of <code>n</code>.</p>
     <div class="controls">
         <label for="complex-roots-count">The number of roots, <code>n</code> = <output id="complex-roots-readout"
                 for="complex-roots-count">8</output></label>

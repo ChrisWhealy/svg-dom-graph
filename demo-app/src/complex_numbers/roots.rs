@@ -1,5 +1,5 @@
-//! "The roots of unity": the `n` complex numbers that give 1 when raised to the power `n`, drawn on the unit circle with a
-//! node of them in rectangular form and another in polar form.
+//! "The roots of unity": the `n` complex numbers that give 1 when raised to the power `n`, drawn on the unit circle
+//! with a node of them in rectangular form and another in polar form.
 //!
 //! A slider above the diagram sets `n` from 1 to [`MOST`]. The slider is an ordinary HTML control that is not in the
 //! scene, so that it is not drawn again as the scene is. A node cannot be given more or fewer numbers than it was drawn
@@ -7,7 +7,7 @@
 
 use super::{
     FEATURE_SIDE, GAP, MARGIN, NODE_GAP, TOOLBAR_ROOM,
-    argand::{Argand, Guides, Mark, draw},
+    argand::{Argand, Guides, Mark, PAD},
     sliders::Listener,
 };
 use demo_common::util::{clear_error, document, ensure_svg_in, report_error, required_element, resize_svg, stringify};
@@ -27,8 +27,8 @@ use wasm_bindgen::{JsCast, closure::Closure};
 use web_sys::HtmlInputElement;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The most roots the slider reaches. The number is arbitrary: it is as many as the diagram can label without the labels
-/// running together.
+/// The most roots the slider reaches. The number is arbitrary: it is as many as the diagram can label without the
+/// labels running together.
 pub(super) const MOST: usize = 20;
 
 /// How many roots the demo starts with, an eight-point transform's.
@@ -46,9 +46,8 @@ const COLUMNS: usize = 4;
 /// How many lines of text high the pictures are.
 const PICTURE_SCALE: f64 = 1.5;
 
-/// The plane shows this far either way, and the axes run a little less.
+/// The plane shows this far either way.
 const EXTENT: f64 = 1.45;
-const AXIS_HALF: f64 = 1.3;
 
 /// The size the stage is first made at, before the first scene is drawn and measured. Every scene after sets its own.
 const FIRST_STAGE: (f64, f64) = (1400.0, 700.0);
@@ -72,10 +71,12 @@ pub(super) fn describe_roots(n: usize) -> String {
     format!("Argand diagram of the {n} {roots} of unity of order {n}, evenly spaced round the unit circle")
 }
 
-/// The size the stage needs for a scene whose nodes reach as far as `right` and `bottom`: room for them, the margin, and
-/// the zoom toolbar east of them. It is never shorter than the diagram, which is as tall as the nodes of a few numbers.
+/// The size the stage needs for a scene whose nodes reach as far as `right` and `bottom`: room for them, the margin,
+/// and the zoom toolbar east of them. It is never shorter than the diagram, which is as tall as the nodes of a few
+/// numbers.
 ///
-/// More numbers make a node taller, since it holds four in a row, so the stage grows with `n` and a node is never cut off.
+/// More numbers make a node taller, since it holds four in a row, so the stage grows with `n` and a node is never cut
+/// off.
 pub(super) fn stage_size(right: f64, bottom: f64) -> Size {
     Size::new(right + MARGIN + TOOLBAR_ROOM, bottom.max(MARGIN + FEATURE_SIDE) + MARGIN)
 }
@@ -90,19 +91,12 @@ fn rebuild(n: usize) -> Result<(), String> {
     let document = document()?;
     let view = SCENE.with_borrow(|slot| slot.as_ref().map(Scene::view));
     required_element(&document, DIAGRAM_ID)?.set_inner_html("");
-    let drawing = SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?;
     let scene = Scene::new(SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?).map_err(stringify)?;
-    let content_group = document
-        .query_selector(&format!("#{DIAGRAM_ID} .svg-dom-graph-content"))
-        .map_err(|e| format!("{e:?}"))?
-        .ok_or_else(|| format!("#{DIAGRAM_ID} has no scene content group"))?;
 
     let numbers = roots(n)?;
     let diagram = Argand {
-        top_left: Point::new(MARGIN, MARGIN),
         side: FEATURE_SIDE,
         extent: EXTENT,
-        axis_half: AXIS_HALF,
         unit_circle: true,
         marks: numbers
             .iter()
@@ -115,8 +109,11 @@ fn rebuild(n: usize) -> Result<(), String> {
             .collect(),
         description: describe_roots(n),
     };
-    let group = draw(&drawing, &diagram)?;
-    content_group.append_child(group.as_element()).map_err(|e| format!("{e:?}"))?;
+    // The plotted area is at the margin, and the node is its own margin larger all round.
+    let plot = scene
+        .add_plot_node(Point::new(MARGIN - PAD, MARGIN - PAD), diagram.config())
+        .map_err(stringify)?;
+    scene.set_plot_items(plot, &diagram.items()).map_err(stringify)?;
 
     let nodes_x = MARGIN + FEATURE_SIDE + GAP;
     let (mut node_y, mut right) = (MARGIN, nodes_x);

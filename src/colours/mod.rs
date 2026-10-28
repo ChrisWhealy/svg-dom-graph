@@ -181,6 +181,54 @@ pub(crate) const EDGE_FOCUS_STROKE: &str = "#0b57d0";
 /// from prose without relying on the font alone.
 pub(crate) const MARKDOWN_CODE_INK: &str = "#a4380b";
 
+/// The default background of a plot node: the same pale blue as [`PLAIN_BOX_FILL`], so that a plot sits among the other
+/// nodes of a diagram as one of them.
+pub(crate) const PLOT_BACKGROUND: &str = PLAIN_BOX_FILL;
+
+/// The ink of a plot's axis lines and arrowheads, a dark slate that reads on every pale background.
+pub(crate) const PLOT_AXIS: &str = "#4a5568";
+
+/// The ink of a plot's tick labels and axis titles.
+pub(crate) const PLOT_TICK_INK: &str = "#2d3748";
+
+/// How much darker than the background of a plot its major grid lines are, and its minor ones. A fraction of each
+/// channel taken away: a slight darkening, so that a grid is seen without competing with what is plotted on it.
+pub(crate) const MAJOR_GRID_DARKENING: f64 = 0.14;
+pub(crate) const MINOR_GRID_DARKENING: f64 = 0.07;
+
+/// How much darker than the background the outline of the plotted area is.
+pub(crate) const PLOT_OUTLINE_DARKENING: f64 = 0.28;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The red, green and blue channels of `colour`, if it is `#rgb` or `#rrggbb`.
+pub(crate) fn parse_hex(colour: &str) -> Option<[u8; 3]> {
+    let hex = colour.strip_prefix('#')?;
+    if !hex.is_ascii() {
+        return None;
+    }
+    let digit = |text: &str| u8::from_str_radix(text, 16).ok();
+    match hex.len() {
+        3 => {
+            let each = |at: usize| digit(&hex[at..=at]).map(|d| d * 17);
+            Some([each(0)?, each(1)?, each(2)?])
+        },
+        6 => Some([digit(&hex[0..2])?, digit(&hex[2..4])?, digit(&hex[4..6])?]),
+        _ => None,
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// `colour` with `amount` of each channel taken away, as `#rrggbb`: `0.0` is the same colour and `1.0` is black. `None`
+/// if `colour` is not `#rgb` or `#rrggbb`, or `amount` is not within `0.0..=1.0`.
+pub(crate) fn darken(colour: &str, amount: f64) -> Option<String> {
+    if !(0.0..=1.0).contains(&amount) {
+        return None;
+    }
+    let [r, g, b] = parse_hex(colour)?;
+    let shade = |channel: u8| (f64::from(channel) * (1.0 - amount)).round() as u8;
+    Some(format!("#{:02x}{:02x}{:02x}", shade(r), shade(g), shade(b)))
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

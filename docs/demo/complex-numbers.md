@@ -3,8 +3,11 @@
 Demonstrates `NodeValues::Complex64` and every `ComplexNumberFormat`, with the complex plane drawn as Argand diagrams.
 The real part of a number runs along the horizontal axis, and the imaginary part runs up the vertical one.
 So every number is a point, and every form is a different way of saying where it is.
-The demo draws the diagrams as SVG in the scene's own group, so they zoom and pan with the nodes.
-Each diagram has one description for assistive technology.
+Each diagram is a plot node of the library, with `PlotPlane::Complex`.
+See [Plot Nodes](../library/plot-nodes.md).
+The library draws the plane, its grid, its axes with arrowheads, and the tick labels with an `i` on the imaginary axis.
+The demo says only what is drawn on it: lines, dots and labels, placed by the value of the number.
+A plot node is a node, so it zooms and pans with the others, and has one description for assistive technology.
 
 * **One number, seven ways.**<br>
   A diagram of `3 + 4i`, whose modulus is exactly 5, with its modulus and angle written on it.
@@ -12,8 +15,14 @@ Each diagram has one description for assistive technology.
   The **adjacent** leg runs along the real axis from the origin, in green.
   The **opposite** leg runs up or down from there to the number, in purple.
   They are the colours and the legs of the picture in a rectangular cell, and each leg carries its own label, `a` or `b`.
+* **Clicking the diagram.**<br>
+  The diagram has the plot node's click handler.
+  A click inside the plane puts the number there, rounded to a tenth and no further out than a slider reaches.
+  Both sliders move to match, and the diagram and the seven nodes follow.
+  A click cannot be made from the keyboard, so the sliders remain the way to do the same by keyboard.
 * **The sliders.**<br>
   A slider runs along the bottom of the diagram and sets the real part.
+  It is outside the plot node, clear of its edge.
   A second runs up its left side and sets the imaginary part.
   Each is **exactly as long as the axis it lies along**, from -5 to 5.
   So its thumb sits directly under, or beside, the point of the axis whose value it stands for.
@@ -31,7 +40,7 @@ Each diagram has one description for assistive technology.
   Both sliders are range inputs inside the scene, an HTML `<input>` in a `<foreignObject>`, so they zoom and pan with the diagram.
   They work from the keyboard, and each has a name and a value read as a number to one place.
 * **The seven nodes.**<br>
-  As either slider moves, the demo draws the diagram again.
+  As either slider moves, the demo draws what is on the diagram again with `Scene::set_plot_items`.
   It also gives each of the seven nodes the new number with `Scene::set_data_values`.
   That call rewrites a node's cell, its picture and its exponent, and nothing else.
   The forms are rectangular, polar in degrees, trigonometric, polar in radians, exponential, log-polar and matrix.
@@ -55,7 +64,8 @@ Each diagram has one description for assistive technology.
   Its arrows are all the same length and turn round in `n`ths.
 
 The arithmetic of a diagram is pure and runs natively under test.
-That covers where a number lands on the page, which way an arc runs, and how a label is placed.
+That covers how the plot node is configured and what is drawn on it for a number.
+It also covers which way an arc runs, and how a label is placed.
 The arithmetic of a slider is tested the same way, namely its length against its axis and which end is the minimum.
 The drawing is not tested natively.
 

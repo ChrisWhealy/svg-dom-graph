@@ -28,6 +28,16 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a single float replaced by a negative zero, and by `NaN`, with its text, tooltip and accessible name following
   - an `f32` and an `f64` being different types for replacement and for an operator
   - a unary or binary operator refusing floating point operands, and drawing nothing, while an arithmetic operator accepts them
+- plot nodes (`Scene::add_plot_node`, see `src/scene/node/unit_tests/plot.rs`):
+  - the size, the accessible name and the default name from the axes
+  - the pale blue background, a grid a little darker than it, and the colours when they are given
+  - ticks where the axes say, custom labels, a logarithmic axis, a complex plane, axis lines at their positions, and a legend
+  - a configuration that cannot be drawn being refused with nothing left behind
+  - items drawn in order and replaced whole, a line cut at the edge of the plot, a gap in the data, and a refusal for a node of another kind
+  - a value found in the scene's own space, also after a move
+  - a click reported as values inside the plot and not in the margin, also in a zoomed scene and on a logarithmic axis
+  - a second click handler being refused, and a handler that draws on its own plot
+  - a new description keeping what the connectors added, and the focus ring
 - complex values (`NodeValues::Complex32`/`Complex64`, `DataFormat::ComplexNumber`):
   - every one-line form being written as asked, and every cell being wide enough
     - the cells of a grid of numbers all being the width of the widest

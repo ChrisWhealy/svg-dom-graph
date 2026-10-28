@@ -97,3 +97,41 @@ fn the_strokes_of_a_complex_picture_can_be_told_from_the_cell_behind_them() {
         }
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_hex_colour_is_read_in_both_lengths_and_nothing_else_is() {
+    assert_eq!(parse_hex("#eef4ff"), Some([0xee, 0xf4, 0xff]));
+    assert_eq!(parse_hex("#fa0"), Some([0xff, 0xaa, 0x00]));
+    for bad in ["eef4ff", "#eef4f", "#eef4ffaa", "#gggggg", "lightsteelblue", "", "#", "#ééé"] {
+        assert_eq!(parse_hex(bad), None, "{bad:?}");
+    }
+}
+
+#[test]
+fn darkening_takes_a_fraction_off_every_channel() {
+    assert_eq!(darken("#ffffff", 0.0).as_deref(), Some("#ffffff"));
+    assert_eq!(darken("#ffffff", 1.0).as_deref(), Some("#000000"));
+    assert_eq!(darken("#ffffff", 0.5).as_deref(), Some("#808080"));
+    assert_eq!(darken("#fff", 0.5).as_deref(), Some("#808080"));
+    assert_eq!(darken("red", 0.5), None);
+    assert_eq!(darken("#ffffff", -0.1), None);
+    assert_eq!(darken("#ffffff", 1.1), None);
+    assert_eq!(darken("#ffffff", f64::NAN), None);
+}
+
+#[test]
+fn the_grid_of_the_default_plot_is_a_little_darker_than_its_background_and_the_major_is_the_darker() {
+    let background = luminance(PLOT_BACKGROUND);
+    let major = luminance(&darken(PLOT_BACKGROUND, MAJOR_GRID_DARKENING).expect("a hex background"));
+    let minor = luminance(&darken(PLOT_BACKGROUND, MINOR_GRID_DARKENING).expect("a hex background"));
+    assert!(major < minor && minor < background);
+    // Slightly: a grid line is seen, but is far from the ink of the plotted data.
+    assert!(contrast(PLOT_BACKGROUND, &darken(PLOT_BACKGROUND, MAJOR_GRID_DARKENING).expect("hex")) < 1.5);
+}
+
+#[test]
+fn the_axis_and_tick_ink_read_on_the_default_background() {
+    assert!(contrast(PLOT_AXIS, PLOT_BACKGROUND) >= 4.5);
+    assert!(contrast(PLOT_TICK_INK, PLOT_BACKGROUND) >= 4.5);
+}

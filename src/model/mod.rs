@@ -3,6 +3,7 @@ pub(crate) mod edge;
 pub(crate) mod graph;
 pub(crate) mod markdown;
 pub(crate) mod node;
+pub(crate) mod plot;
 
 use std::sync::atomic::AtomicUsize;
 

@@ -13,9 +13,9 @@ Each hash demo's own panel also has a test that it shows the calculation and the
 
 `complex_numbers/argand/unit_tests.rs` checks the arithmetic of the Argand diagram, which needs no browser:
 
-* where a number lands on the page, and that the imaginary axis points up it
-* which way an arc sweeps, and when it is the large one
-* the tick step
+* how the plot node is configured: a complex plane, a square plotted area, arrowheads, and the tick step
+* what is drawn for a number: the legs, the modulus, the arc, the dot and each label, in order
+* the arc, which is a line through points that stays on its circle and runs the right way
 * how a number is written, without trailing zeros or a negative zero
 * where a label goes beside a point or along a line, and that it is never upside down
 

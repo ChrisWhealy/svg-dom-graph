@@ -133,6 +133,7 @@ pub(super) fn plain_box_handles(
         edge_anchors_stale: false,
         ref_name: label.to_owned(),
         child: None,
+        plot: None,
     }
 }
 

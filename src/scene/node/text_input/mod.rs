@@ -169,6 +169,7 @@ fn draw_text_input_box(
             edge_anchors_stale: false,
             ref_name: label.to_owned(),
             child: None,
+            plot: None,
         },
         Rect { origin: top_left, size },
     ))

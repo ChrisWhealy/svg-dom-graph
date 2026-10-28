@@ -186,6 +186,18 @@ pub enum Error {
     EmptyMarkdown,
     /// `Scene::text_input_value` or `Scene::set_text_input_value` was given a node that is not a text input node.
     NotATextInput(NodeId),
+    /// `Scene::add_plot_node` was given a [`crate::scene::PlotConfig`] that cannot be drawn, or
+    /// `Scene::set_plot_description` was given an empty description. The reason is the
+    /// [`crate::scene::PlotConfigError`]. Rejected before drawing anything or touching the graph's model, so a rejected
+    /// call leaves the scene unchanged.
+    InvalidPlotConfig(crate::scene::PlotConfigError),
+    /// A plot method was given a node that is not a plot node.
+    NotAPlot(NodeId),
+    /// `Scene::on_plot_click` was called more than once for the same node.
+    ///
+    /// Same reasoning as [`Error::AlreadyDraggable`]: `svg-dom`'s listener registration is append-only, so a second
+    /// call would add a second, independent click listener rather than replacing the first.
+    AlreadyHasClickHandler(NodeId),
     /// An operator node's operand names a node whose content is a plain label, not a [`crate::scene::DataNodeContent`].
     ///
     /// Only typed data has a value an operator could plausibly act on. Rejected before drawing anything or touching the
@@ -467,6 +479,9 @@ impl fmt::Display for Error {
             },
             Error::EmptyMarkdown => write!(f, "markdown must hold at least one heading, paragraph or list item"),
             Error::NotATextInput(id) => write!(f, "node {id:?} is not a text input node"),
+            Error::InvalidPlotConfig(reason) => write!(f, "this plot cannot be drawn: {reason}"),
+            Error::NotAPlot(id) => write!(f, "node {id:?} is not a plot node"),
+            Error::AlreadyHasClickHandler(id) => write!(f, "plot node {id:?} already has a click handler"),
             Error::OperandNotData(id) => write!(f, "node {id:?} is a plain label, not a DataNodeContent"),
             Error::OperatorTypeMismatch { expected, found } => {
                 write!(f, "operator type mismatch: expected {expected}, found {found}")

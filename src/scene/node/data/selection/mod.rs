@@ -65,7 +65,8 @@ impl Scene {
             NodeContent::Label(_)
             | NodeContent::Container(_)
             | NodeContent::Markdown(_)
-            | NodeContent::TextInput(_) => return Err(Error::InvalidSelection(id, selection)),
+            | NodeContent::TextInput(_)
+            | NodeContent::Plot(_) => return Err(Error::InvalidSelection(id, selection)),
         };
         let new = Highlight::resolve(content, selection).ok_or(Error::InvalidSelection(id, selection))?;
         let base_colour = content.type_colour();
@@ -186,7 +187,8 @@ impl Scene {
             NodeContent::Label(_)
             | NodeContent::Container(_)
             | NodeContent::Markdown(_)
-            | NodeContent::TextInput(_) => {
+            | NodeContent::TextInput(_)
+            | NodeContent::Plot(_) => {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };

@@ -105,6 +105,11 @@
 //!   weighted directed graph of six vertices, one step at a time. The edges carry their weights on labels, the distance,
 //!   the predecessor and whether each vertex is settled are three arrays of text and Boolean cells, and the queue has a
 //!   fixed size. The examined edge, and finally the whole route, is emphasised. Every value is worked out in plain Rust.
+//! - `panel-fft` / `#fft-overview-diagram`, `#fft-inspector-diagram` — [`fft::build_fft_demo`]: a forward radix-2
+//!   decimation-in-time fast Fourier transform of eight or sixteen samples, one stage at a time. The overview has a node
+//!   for every lane at every stage, joined by real connectors, and the stepping toolbar completes one stage at a time. A
+//!   stage not yet computed is marked as such. The inspector is one butterfly node that shows the chosen butterfly. Every
+//!   value is worked out in plain Rust, one whole block at a time.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
 //! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
@@ -126,6 +131,7 @@ mod dijkstra;
 mod edge_anchors;
 mod elbow;
 mod ellipse;
+mod fft;
 mod floats;
 mod hamming;
 mod highlight;
@@ -230,6 +236,7 @@ demo_gallery! {
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-butterfly" => butterfly::build_butterfly_demo,
+    "panel-fft" => fft::build_fft_demo + fft::FILES,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,
     "panel-selection-hexdump" => selection::build_selection_hexdump_demo,

@@ -56,6 +56,9 @@
 //!   kept beside their connectors and apart while a vertex is dragged with a real mouse, the examined edge and then the
 //!   whole route emphasised, what a redraw keeps, and the arrays and queue never moving. Also runs against the built demo
 //!   gallery.
+//! - [`complex`] — the complex numbers panel in the built demo gallery: both Argand diagrams are plot nodes, and a real
+//!   click on the one beside the sliders puts the number where it was clicked, moves both sliders, and ignores a click in
+//!   the margin. Also runs against the built demo gallery.
 //! - [`springs`] — the weighted springs panel: a real drag moves the neighbours, the graph settles and no frame is left
 //!   pending at rest, Reset is disabled while a circle is held, a held circle goes quiet without sleeping, and a hidden
 //!   or left page stops cleanly.
@@ -91,6 +94,7 @@ mod bounds;
 mod bubble_sort;
 mod chacha20_walk;
 mod common;
+mod complex;
 mod connectors;
 mod crc32;
 mod dijkstra;

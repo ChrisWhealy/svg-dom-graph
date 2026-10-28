@@ -6,7 +6,8 @@ use crate::model::content::DataNodeContent;
 ///  - the typed numeric values of a data node,
 ///  - the label of a container node that owns a nested `Scene`,
 ///  - the Markdown source of a text node, or
-///  - the label of a text input node, whose current text lives in the DOM and not here.
+///  - the label of a text input node, whose current text lives in the DOM and not here, or
+///  - the description of a plot node, whose axes and drawn items live in its own handles.
 ///
 /// The graph model retains this regardless of how a node was rendered. So a reader need not parse the generated SVG to
 /// recover the node's actual content.
@@ -21,6 +22,7 @@ pub(crate) enum NodeContent {
     Container(String),
     Markdown(String),
     TextInput(String),
+    Plot(String),
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

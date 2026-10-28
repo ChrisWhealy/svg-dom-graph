@@ -57,6 +57,22 @@ The test asserts that the bounding box of every visible label lies inside the no
 It checks that observable contract, and does not repeat the width algorithm.
 It assumes nothing about which label is widest, because that depends on the fonts the machine has.
 
+Its own `fft.rs` scenario runs against the built demo gallery.
+It checks what the native tests of the arithmetic and of the failure cursor cannot reach.
+The overview has 32 nodes and 48 connectors at eight samples, and 80 and 128 at sixteen, each with one hidden step driver more.
+A stage that has not run is marked as not computed.
+The last column is the transform of the three waves, worked out in the test from the definition.
+The graph follows a moving slider while the scenes wait until it is let go.
+The table finds the amplitude and phase that were set, for phases either side of the turn, a silent wave, and both sizes.
+Choosing a butterfly changes the inspector and the emphasis and no node of the overview.
+A rebuild keeps the zoom and the place a butterfly was dragged to.
+Chrome's own accessibility tree must show none of the 128 connectors as named or focusable.
+
+Its own `complex.rs` scenario runs against the built demo gallery.
+Both Argand diagrams are plot nodes with a name and the marks of what they show.
+A real mouse click on the diagram puts the number there, rounded to a tenth, and moves both sliders.
+A click in the margin of the node changes nothing.
+
 Its own `dijkstra.rs` scenario runs against the built demo gallery.
 It asks what the native tests of the algorithm and of the label placer cannot: what reaches the page.
 Every edge has a label with its weight, named for its edge.

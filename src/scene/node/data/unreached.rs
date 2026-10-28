@@ -82,7 +82,8 @@ impl Scene {
             NodeContent::Label(_)
             | NodeContent::Container(_)
             | NodeContent::Markdown(_)
-            | NodeContent::TextInput(_) => {
+            | NodeContent::TextInput(_)
+            | NodeContent::Plot(_) => {
                 return Err(Error::InvalidSelection(id, Selection::None));
             },
         };

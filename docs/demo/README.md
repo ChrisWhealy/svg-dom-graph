@@ -20,6 +20,7 @@
 - [ChaCha20](chacha20.md)
 - [Huffman Encoding](huffman.md)
 - [Dijkstra's Shortest Paths](dijkstra.md)
+- [Fast Fourier Transform](fft.md)
 - [Force-directed Graphs (Weighted springs)](springs.md)
 - [Internal Workings of the Demo Server](demo-internals.md)
 

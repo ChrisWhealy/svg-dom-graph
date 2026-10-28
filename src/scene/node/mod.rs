@@ -1,7 +1,8 @@
 //! Node configuration and the `Scene` methods that add or reconfigure a node.
 //!
 //! Each node kind's own drawing and construction lives in its own child module. [`plain`] draws a plain label box,
-//! [`data`] a [`DataNodeContent`] grid, and [`operator`] a unary/binary/arithmetic operator node.
+//! [`data`] a [`DataNodeContent`] grid, [`operator`] a unary/binary/arithmetic operator node, and [`plot`] a graph of
+//! values.
 //!
 //! This file keeps only what more than one of them shares: [`EdgeAnchors`] validation, shared style constants, and
 //! [`Scene::set_edge_anchors`]/[`Scene::set_focus`], each of which applies to any node kind.
@@ -16,6 +17,7 @@ mod markdown;
 mod node_options;
 mod operator;
 mod plain;
+mod plot;
 mod render_guard;
 mod text_input;
 
@@ -31,6 +33,7 @@ pub use butterfly::{Butterfly, ButterflyOperands, ButterflyResults};
 pub use edge_anchors::EdgeAnchors;
 pub use ellipse::EllipseOptions;
 pub use node_options::NodeOptions;
+pub(in crate::scene) use plot::PlotHandles;
 use svg_dom::root::utils::{Point, Rect};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

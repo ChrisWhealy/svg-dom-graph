@@ -6,8 +6,9 @@
         result is the sum and difference of <code>a + w&middot;b</code> and <code>a &minus; w&middot;b</code>.</p>
     <p>In this example, <code>a</code> is <code>2 + i</code> and <code>b</code> is <code>1 + 2i</code>. The slider
         sets the value of <code>k</code> that appears in the calculation of the twiddle factor <code>w =
-            e<sup>&minus;2&pi;ik/8</sup></code> of an eight-point transform, so the multiplication turns <code>b</code>
-        by one more eighth of a turn for each step.</p>
+            e<sup>&minus;2&pi;ik/8</sup></code>. This is hard-coded to be an eight-point transform, so the
+        multiplication rotates <code>b</code> by an eighth of a turn for each successive step.</p>
+    <p>See the <em>Roots of unity</em> section in the demo panel for <a href="/#panel-complex">complex numbers</a>.</p>
     <p>As with all other operator nodes, the Butterfly does not perform any calculations. It simply displays the values
         calculated in plain Rust.</p>
     <p class="demo-error" id="butterfly-error" hidden></p>

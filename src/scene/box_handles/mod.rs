@@ -166,6 +166,9 @@ pub(crate) struct BoxHandles {
     /// `Scene::enter` reads this to find which `Scene` to show. `Scene::add_container_node`/ `add_container_node_with`
     /// are the only place this is ever set.
     pub(super) child: Option<Rc<RefCell<SceneInner>>>,
+    /// What a plot node keeps so that it can be drawn on and clicked: `Some` only for a node whose
+    /// [`NodeContent`](crate::model::node::NodeContent) is `Plot`. `None` for every other node kind.
+    pub(in crate::scene) plot: Option<crate::scene::node::PlotHandles>,
 }
 
 impl BoxHandles {

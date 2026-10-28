@@ -26,7 +26,7 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 /// The files behind this demo: the Argand diagram, the sliders, the explorer that they drive, and the roots of unity.
 pub(crate) const FILES: &[crate::SourceFile] = &[
-    crate::source_file!("complex_numbers/argand.rs", "argand.rs"),
+    crate::source_file!("complex_numbers/argand/mod.rs", "argand/mod.rs"),
     crate::source_file!("complex_numbers/sliders/mod.rs", "sliders/mod.rs"),
     crate::source_file!("complex_numbers/explorer.rs", "explorer.rs"),
     crate::source_file!("complex_numbers/roots.rs", "roots.rs"),

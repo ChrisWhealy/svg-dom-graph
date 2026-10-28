@@ -12,7 +12,8 @@
 | `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li><li>zoom and pan arithmetic (`ViewTransform`)</li></ul> | public: `Side` and `ViewTransform` are re-exported from `scene`, and `geometry` itself is public. | `cargo test`
 | `src/model/`  | DOM-free graph topology and node content<ul><li>`Graph`, `Node` and `Edge`</li><li>`DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout`, `ByteOrder` and `LabellingStyle`</li><li>`Selection` and the three operator enums</li></ul> | crate-private: exposes opaque `NodeId`/`EdgeId` handles, and re-exports the content types through `scene` | `cargo test`
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants | public: `Error` only | `cargo test`
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>nested scenes</li></ul> | public | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md))
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>plot nodes</li>
+<li>nested scenes</li></ul> | public | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md))
 
 ## `Scene`'s Public API
 
@@ -29,6 +30,7 @@
 | [Observing a Drag](drag-observation.md) | `make_draggable_with_observer`, `DragPhase`, `DragObserverHandle`, what each event carries, who owns the callback, and the commit order of `move_node` |
 | [Ellipse Nodes](ellipse-nodes.md) | `add_ellipse_node`, circles and ellipses, how a label grows the shape, the centre convention, clock positions on connectors, and what is refused |
 | [Text Cells](text-cells.md) | `Text`, `DataFormat::Text`, what a cell may hold, how its width is found, and the cell-width hint |
+| [Plot Nodes](plot-nodes.md) | `add_plot_node`: a graph of the real or the complex plane, linear or logarithmic axes, ticks, a grid, what is plotted on it, and a click handler |
 | [Text Nodes](text-nodes.md) | Markdown nodes, the Markdown they understand, and text input nodes |
 | [Row Labels and Text Measurement](labels-and-text.md) | `LabellingStyle`, and how this crate sizes anything that contains text |
 | [Selection and Marking Cells](selection.md) | `Selection`, secondary cells, unreached cells, a ring around a whole node, and the selection toolbar |

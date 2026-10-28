@@ -206,6 +206,7 @@ fn draw_markdown_box(
             edge_anchors_stale: false,
             ref_name: name.to_owned(),
             child: None,
+            plot: None,
         },
         Rect {
             origin: top_left,

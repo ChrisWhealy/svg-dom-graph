@@ -6,13 +6,15 @@ members = ["demo-app", "demo-common", "demo-server", "cdp-test-fixture", "cdp-in
 # the cdp-test-fixture wasm crate plus its headless_chrome-driven CDP tests are built only on demand via
 # `cargo test -p cdp-integration-test` — mirroring svg-dom's own workspace shape.
 default-members = ["."]
+
 # The butterfly benchmark is a workspace of its own: it is built twice, with different `RUSTFLAGS`, by its own `run.sh`.
+# Use to benchmark any benefits that might come from using WASM SIMD instructions in large FFTs
 exclude = ["bench-butterfly"]
 
 [package]
 authors = ["Chris Whealy <chris@whealy.com>"]
 name = "svg-dom-graph"
-version = "0.2.44"
+version = "0.2.45"
 edition = "2024"
 rust-version = "1.85"
 description = "Plot SVG graphs using svg-dom"
