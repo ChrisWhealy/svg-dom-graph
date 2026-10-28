@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Make FFT scene fully transactional (`ea914ed`)
-- Keep plot descriptions consistent netween model and DOM (``)
+- Keep plot descriptions consistent between model and DOM (`b0b2a66`)
 
 ## Fixed
 
@@ -23,6 +23,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent small numerical ranges from collapsing automatic ticks (`5dee097`)
 - Prevent FFT cursor from disagreeing with initial butterfly choice after redraw (`36b0a2c`)
 - Prevent a failed restart from discarding remembered selections (`4b16e53`)
+- Prevent logarithmic tick estimates from overflowing unnecessarily (``)
 
 # [Released]
 

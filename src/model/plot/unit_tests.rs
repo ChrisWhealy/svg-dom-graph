@@ -176,6 +176,15 @@ fn a_logarithmic_interval_is_in_decades_and_minor_ticks_can_be_turned_off() {
 }
 
 #[test]
+fn a_very_wide_logarithmic_range_does_not_overflow_the_estimate() {
+    let axis = PlotAxis::logarithmic(1e-250, 1e250)
+        .with_major_interval(100.0)
+        .with_minor(MinorTicks::None);
+    assert!(count_estimate(&axis) < 100);
+    assert!(count_estimate(&axis) >= ticks(&axis).len());
+}
+
+#[test]
 fn an_estimate_of_the_ticks_never_under_counts() {
     for axis in [
         PlotAxis::linear(0.0, 1.0),

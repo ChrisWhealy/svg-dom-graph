@@ -63,7 +63,7 @@ pub(crate) fn count_estimate(axis: &PlotAxis) -> usize {
     let step = interval(axis);
     let (span, per_step) = match axis.scale {
         AxisScale::Linear => (axis.max - axis.min, step),
-        AxisScale::Logarithmic => ((axis.max / axis.min).log10(), step),
+        AxisScale::Logarithmic => (axis.max.log10() - axis.min.log10(), step),
     };
     let majors = (span / per_step).ceil() + 1.0;
     let minors = match axis.minor {
