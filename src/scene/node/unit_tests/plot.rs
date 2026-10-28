@@ -1,6 +1,6 @@
 //! Plot nodes: what is drawn, what is refused, what is plotted on one, and the clicks it reports.
 
-use super::support::make_svg;
+use super::support::{FailingWrites, make_svg};
 use crate::{
     error::Error,
     geometry::apply_matrix,
@@ -656,4 +656,109 @@ fn an_extremely_distant_point_never_puts_a_non_finite_number_in_the_drawing() ->
         )?;
     }
     check(all(&scene, id, "circle").is_empty(), "a dot that far outside is not drawn")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The description that the graph holds for plot node `id`: the one authority the label on the page is written from.
+fn model_description(scene: &Scene, id: crate::NodeId) -> Option<String> {
+    match scene.inner.borrow().graph.node(id).map(|node| node.content.clone()) {
+        Some(crate::model::node::NodeContent::Plot(text)) => Some(text),
+        _ => None,
+    }
+}
+
+fn label_of(scene: &Scene, id: crate::NodeId) -> String {
+    let inner = scene.inner.borrow();
+    attribute(inner.node_handle(id).expect("a node").group.as_element(), "aria-label")
+}
+
+#[wasm_bindgen_test]
+fn a_new_description_is_in_the_graph_and_on_the_page() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-describe-model")).map_err(|e| e.to_string())?;
+    let id = scene
+        .add_plot_node(Point::origin(), config().with_description("First"))
+        .map_err(|e| e.to_string())?;
+    check(
+        model_description(&scene, id).as_deref() == Some("First"),
+        "the graph holds the first description",
+    )?;
+    scene.set_plot_description(id, "Second").map_err(|e| e.to_string())?;
+    check(
+        model_description(&scene, id).as_deref() == Some("Second"),
+        "the graph holds the second",
+    )?;
+    check(label_of(&scene, id) == "Second", "and so does the page")?;
+    let inner = scene.inner.borrow();
+    let handles = inner.node_handle(id).ok_or("no handles")?;
+    check(
+        !handles.label_stale && handles.base_label_len == "Second".len(),
+        "nothing is owed",
+    )
+}
+
+#[wasm_bindgen_test]
+fn a_description_that_cannot_be_written_changes_nothing_and_a_repeat_repairs_it() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-describe-failure")).map_err(|e| e.to_string())?;
+    let id = scene
+        .add_plot_node(Point::origin(), config().with_description("First"))
+        .map_err(|e| e.to_string())?;
+    {
+        let _failing = FailingWrites::start(&["aria-label"])?;
+        check(scene.set_plot_description(id, "Second").is_err(), "the write fails")?;
+    }
+    check(
+        model_description(&scene, id).as_deref() == Some("First"),
+        "the graph still holds the first description",
+    )?;
+    check(label_of(&scene, id) == "First", "and so does the page")?;
+    {
+        let inner = scene.inner.borrow();
+        let handles = inner.node_handle(id).ok_or("no handles")?;
+        check(
+            handles.aria_label == "First" && handles.base_label_len == "First".len(),
+            "the node's own label is as it was",
+        )?;
+        check(
+            handles.label_stale,
+            "the page could not be put back, so the label is owed a write",
+        )?;
+    }
+
+    scene.set_plot_description(id, "Third").map_err(|e| e.to_string())?;
+    check(
+        model_description(&scene, id).as_deref() == Some("Third"),
+        "the repeat reaches the graph",
+    )?;
+    check(label_of(&scene, id) == "Third", "and the page")?;
+    check(
+        !scene.inner.borrow().node_handle(id).ok_or("no handles")?.label_stale,
+        "nothing is owed any more",
+    )
+}
+
+#[wasm_bindgen_test]
+fn a_description_that_cannot_be_written_keeps_what_the_connectors_added() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-describe-failure-edges")).map_err(|e| e.to_string())?;
+    let plot = scene
+        .add_plot_node(Point::new(200.0, 0.0), config().with_description("First"))
+        .map_err(|e| e.to_string())?;
+    let source = scene
+        .add_node(Point::origin(), Size::new(60.0, 30.0), "source")
+        .map_err(|e| e.to_string())?;
+    scene.add_edge(source, plot).map_err(|e| e.to_string())?;
+    let before = label_of(&scene, plot);
+    {
+        let _failing = FailingWrites::start(&["aria-label"])?;
+        check(scene.set_plot_description(plot, "Second").is_err(), "the write fails")?;
+    }
+    scene.set_plot_description(plot, "Second").map_err(|e| e.to_string())?;
+    let after = label_of(&scene, plot);
+    check(
+        before.contains("Input from source") && after.contains("Input from source"),
+        &after,
+    )?;
+    check(
+        after.starts_with("Second.") && model_description(&scene, plot).as_deref() == Some("Second"),
+        &after,
+    )
 }

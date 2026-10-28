@@ -41,8 +41,6 @@ pub(in crate::scene) struct PlotHandles {
     area_rect: SvgNode,
     /// The background, which is the colour of every halo.
     background: String,
-    /// The description at the front of the node's accessible name. Connectors append what they connect after it.
-    description: String,
     /// Whether `on_plot_click` has been called for this node.
     has_click: bool,
 }
@@ -109,7 +107,6 @@ fn draw_plot_box(
         layer,
         area_rect,
         background: config.background.clone(),
-        description: description.to_owned(),
         has_click: false,
     };
     Ok((
@@ -259,19 +256,45 @@ impl Scene {
         }
         let mut inner = self.inner.borrow_mut();
         plot_of(&inner, id)?;
-        let handles = inner.node_handle_mut(id).ok_or(Error::NotAPlot(id))?;
-        let old = handles.plot.as_ref().map(|plot| plot.description.clone()).unwrap_or_default();
+        // The description in the graph is the one authority. The label on the page is written from it, and is what the
+        // call changes last, once the page has taken the new one.
+        let old = match inner.graph.node(id).map(|node| &node.content) {
+            Some(NodeContent::Plot(text)) => text.clone(),
+            _ => return Err(Error::NotAPlot(id)),
+        };
+        let handles = inner.node_handle(id).ok_or(Error::NotAPlot(id))?;
         // What connectors appended follows the old description, and is kept after the new one.
-        let relationships = handles.aria_label.strip_prefix(&old).unwrap_or_default().to_owned();
+        let relationships = handles.aria_label.strip_prefix(&old).unwrap_or_default();
         let appended = handles.base_label_len.saturating_sub(old.len());
-        handles.aria_label.clear();
-        handles.aria_label.push_str(description);
-        handles.aria_label.push_str(&relationships);
-        handles.base_label_len = description.len() + appended;
-        handles.group.set_attr("aria-label", &handles.aria_label)?;
-        handles.group.set_title(&handles.aria_label)?;
-        if let Some(plot) = handles.plot.as_mut() {
-            plot.description = description.to_owned();
+        let label = format!("{description}{relationships}");
+
+        // Written first, with nothing else changed. If a write fails, the label on the page is put back as far as that can
+        // be, and the call returns with the graph and the node's own label as they were.
+        let written = handles
+            .group
+            .set_attr("aria-label", &label)
+            .and_then(|()| handles.group.set_title(&label));
+        if let Err(error) = written {
+            let restored = handles
+                .group
+                .set_attr("aria-label", &handles.aria_label)
+                .and_then(|()| handles.group.set_title(&handles.aria_label));
+            if restored.is_err() {
+                // The page may show a mixture, so the label is owed a write. Repeating this call pays it.
+                if let Some(handles) = inner.node_handle_mut(id) {
+                    handles.label_stale = true;
+                }
+            }
+            return Err(error.into());
+        }
+
+        if let Some(node) = inner.graph.node_mut(id) {
+            node.content = NodeContent::Plot(description.to_owned());
+        }
+        if let Some(handles) = inner.node_handle_mut(id) {
+            handles.base_label_len = description.len() + appended;
+            handles.aria_label = label;
+            handles.label_stale = false;
         }
         Ok(())
     }
