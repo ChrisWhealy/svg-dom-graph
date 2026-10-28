@@ -15,12 +15,20 @@ pub(crate) struct Tick {
 /// How many major intervals an automatic interval aims for.
 const TARGET_INTERVALS: f64 = 6.0;
 
+/// What a very small span is multiplied by to be worked on: two to the 600th power.
+const SMALL_SPAN_SCALE: f64 = 4.149_515_568_880_993e180;
+
 /// A tolerance, as a fraction of an interval, for deciding that a tick is at the end of an axis and not just past it.
 const EDGE_TOLERANCE: f64 = 1e-9;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A round interval, 1, 2 or 5 times a power of ten, that makes about six of `span`.
 pub(crate) fn nice_interval(span: f64) -> f64 {
+    // A span so small that a sixth of it is subnormal has too few digits left to round. It is worked out as a bigger
+    // one, by a power of two, which is both exact and scaled back.
+    if span > 0.0 && span / TARGET_INTERVALS < f64::MIN_POSITIVE {
+        return nice_interval(span * SMALL_SPAN_SCALE) / SMALL_SPAN_SCALE;
+    }
     let raw = span / TARGET_INTERVALS;
     let power = 10f64.powf(raw.log10().floor());
     let fraction = raw / power;
@@ -132,13 +140,25 @@ pub(crate) fn ticks(axis: &PlotAxis) -> Vec<Tick> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// A multiple of `step` with the rounding error of the multiplication taken out: `0.1 * 3.0` is `0.3`.
+/// `multiple` times `step`, with the rounding error of the multiplication taken out: `0.1 * 3.0` is `0.3`.
+///
+/// The product is kept to 15 significant digits of its own, which is the most a double has to give. So the artefacts of
+/// the multiplication in the 16th and 17th digits go, and no two values that a double can tell apart are made the same,
+/// however small they are. A cleanup to a fixed number of decimal places would do that, and would make the ticks of a very
+/// small axis collapse onto one another.
 fn clean(multiple: f64, step: f64) -> f64 {
     let value = multiple * step;
-    let digits = 12 - step.abs().log10().floor().max(-12.0) as i32;
-    let scale = 10f64.powi(digits.clamp(0, 15));
-    let rounded = (value * scale).round() / scale;
-    if rounded.is_finite() { rounded + 0.0 } else { value }
+    if value == 0.0 || !value.is_finite() {
+        return value + 0.0;
+    }
+    // Writing a number to 15 digits and reading it back never overflows, however large or small the number is.
+    format!("{value:.14e}").parse::<f64>().map_or(value, |rounded| rounded + 0.0)
+}
+
+/// [`clean`], for the tests of this module's neighbours.
+#[cfg(test)]
+pub(crate) fn clean_for_test(multiple: f64, step: f64) -> f64 {
+    clean(multiple, step)
 }
 
 fn linear_ticks(axis: &PlotAxis) -> Vec<Tick> {
