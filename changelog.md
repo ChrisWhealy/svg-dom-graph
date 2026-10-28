@@ -16,7 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Make FFT scene fully transactional (`ea914ed`)
 - Keep plot descriptions consistent between model and DOM (`b0b2a66`)
-- Validate HTML and prepare initial selector state before committing scene replacement (``)
+- Validate HTML and prepare initial selector state before committing scene replacement (`e556a33`)
 
 ## Fixed
 
