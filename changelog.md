@@ -20,7 +20,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Prevent plot ccordinates from overflowing after validation (`916aedb`)
 - Prevent small numerical ranges from collapsing automatic ticks (`5dee097`)
-- Prevent FFT cursor from disagreeing with initial butterfly choice after redraw (``)
+- Prevent FFT cursor from disagreeing with initial butterfly choice after redraw (`36b0a2c`)
+- Prevent a failed restart from discarding remembered selections (``)
 
 # [Released]
 

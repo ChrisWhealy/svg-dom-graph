@@ -338,11 +338,8 @@ fn settle(outcome: &Outcome, said: String) {
 fn on_step(generation: u64, transition: SelectionTransition) {
     let Some(live) = current(generation) else { return };
     let Some(mut cursor) = take_cursor() else { return };
-    // "Restart" and "Previous" from the first stage both arrive as a move to unstarted. Either way the visited pairs
-    // are forgotten, and the display returns to the default pair.
-    if transition.to.is_none() {
-        cursor.forget_choices();
-    }
+    // "Restart" and "Previous" from the first stage both arrive as a move to unstarted. The cursor draws the default pair
+    // then, and forgets the visited pairs once that has been drawn, and not before.
     let outcome = apply_transition(
         &mut cursor,
         &live.trace,

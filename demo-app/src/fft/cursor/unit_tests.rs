@@ -385,3 +385,97 @@ fn forgetting_the_choices_returns_to_the_default_pair() {
     cursor.forget_choices();
     assert_eq!(cursor.pair_for(&trace, 0), 2, "the default is found again, and is the same");
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   A restart forgets the chosen pairs only once it is drawn
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A cursor at stage 2 whose stage 1 has a chosen pair that is not the default one, and the display it drew on.
+fn at_stage_two_with_a_choice_at_stage_one(trace: &FftTrace) -> (Cursor, Display) {
+    let mut cursor = Cursor::unstarted(trace);
+    let mut display = Display::default();
+    step(&mut cursor, trace, &mut display, None, Some(0));
+    let shown = std::cell::RefCell::new(&mut display);
+    // The default pair at stage 1 is 2, so choosing 0 is a choice.
+    apply_pair(&mut cursor, 0, &mut |c, p| shown.borrow_mut().render(c, p));
+    step(&mut cursor, trace, &mut display, Some(0), Some(1));
+    assert_eq!((cursor.completed(), cursor.pair_for(trace, 1)), (2, 0), "set up");
+    (cursor, display)
+}
+
+#[test]
+fn a_restart_that_fails_leaves_the_pair_chosen_at_stage_one() {
+    let trace = run(Preset::Impulse);
+    let (mut cursor, mut display) = at_stage_two_with_a_choice_at_stage_one(&trace);
+    display.fail_renders = 1;
+
+    let outcome = step(&mut cursor, &trace, &mut display, Some(1), None);
+
+    assert!(matches!(outcome, Outcome::RolledBack(_)), "{outcome:?}");
+    assert_eq!(cursor.completed(), 2, "the display is where it was");
+    assert_eq!(cursor.pair_for(&trace, 1), 0, "and the choice at stage 1 was not forgotten");
+    // Stepping back to stage 1 afterwards finds it.
+    step(&mut cursor, &trace, &mut display, Some(1), Some(0));
+    assert_eq!(display.drawn.last(), Some(&(1, 0)));
+}
+
+#[test]
+fn a_restart_that_fails_and_cannot_be_undone_still_keeps_the_choice_for_the_retry() {
+    let trace = run(Preset::Impulse);
+    let (mut cursor, mut display) = at_stage_two_with_a_choice_at_stage_one(&trace);
+    display.fail_renders = 2;
+
+    let outcome = step(&mut cursor, &trace, &mut display, Some(1), None);
+
+    assert!(matches!(outcome, Outcome::NeedsRepair(_)), "{outcome:?}");
+    assert_eq!(cursor.pair_for(&trace, 1), 0);
+}
+
+#[test]
+fn a_move_to_unstarted_that_is_out_of_step_is_only_resynchronised_and_forgets_nothing() {
+    let trace = run(Preset::Impulse);
+    let (mut cursor, mut display) = at_stage_two_with_a_choice_at_stage_one(&trace);
+
+    // The toolbar says it was at stage 3, but the display is at stage 2.
+    let outcome = step(&mut cursor, &trace, &mut display, Some(2), None);
+
+    assert_eq!(outcome, Outcome::Resynchronised);
+    assert_eq!(cursor.pair_for(&trace, 1), 0);
+}
+
+#[test]
+fn a_restart_that_succeeds_draws_the_default_pair_and_forgets_every_choice() {
+    let trace = run(Preset::Impulse);
+    let (mut cursor, mut display) = at_stage_two_with_a_choice_at_stage_one(&trace);
+
+    let outcome = step(&mut cursor, &trace, &mut display, Some(1), None);
+
+    assert_eq!(outcome, Outcome::Committed);
+    assert_eq!(display.drawn.last(), Some(&(0, 2)), "the default pair, whatever was chosen");
+    assert_eq!((cursor.completed(), cursor.pair()), (0, 2));
+    assert_eq!(cursor.pair_for(&trace, 1), 2, "the choice at stage 1 is forgotten");
+}
+
+#[test]
+fn a_step_back_from_the_first_stage_is_a_restart_and_forgets_the_choices_when_it_is_drawn() {
+    let trace = run(Preset::Impulse);
+    let mut cursor = Cursor::unstarted(&trace);
+    let mut display = Display::default();
+    step(&mut cursor, &trace, &mut display, None, Some(0));
+    {
+        let shown = std::cell::RefCell::new(&mut display);
+        apply_pair(&mut cursor, 1, &mut |c, p| shown.borrow_mut().render(c, p));
+    }
+    display.fail_renders = 1;
+
+    let failed = step(&mut cursor, &trace, &mut display, Some(0), None);
+    assert!(matches!(failed, Outcome::RolledBack(_)));
+    assert_eq!(
+        (cursor.completed(), cursor.pair()),
+        (1, 1),
+        "still on stage 1, and the pair chosen"
+    );
+
+    let drawn = step(&mut cursor, &trace, &mut display, Some(0), None);
+    assert_eq!(drawn, Outcome::Committed);
+    assert_eq!((cursor.completed(), cursor.pair()), (0, 2));
+}

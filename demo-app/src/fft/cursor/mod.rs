@@ -116,9 +116,9 @@ impl Cursor {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Forgets every pair that was chosen, but stays where it is. Used when the display is about to return to
-    /// "unstarted", so that the pair shown is the default again.
-    pub(super) fn forget_choices(&mut self) {
+    /// Forgets every pair that was chosen, but stays where it is. Used once the display has returned to "unstarted", so
+    /// that the pair shown at each stage is the default again.
+    fn forget_choices(&mut self) {
         self.cache.iter_mut().for_each(|slot| *slot = None);
     }
 
@@ -158,9 +158,20 @@ pub(super) fn apply_transition(
         };
     }
     let wanted = stage_of(to).min(cursor.stages);
-    let pair = cursor.pair_for(trace, wanted);
+    // A move to unstarted is a restart, or a step back from the first stage. Either way the display returns to the default
+    // pair, so that is what is drawn, whatever was chosen before. What was chosen is forgotten only once that is drawn,
+    // so a restart that fails, or one that was out of step, leaves the choices for the steps that follow.
+    let restarting = to.is_none();
+    let pair = if restarting {
+        first_informative_pair(trace.stage_pairs(shown_stage(wanted)))
+    } else {
+        cursor.pair_for(trace, wanted)
+    };
     match render(wanted, pair) {
         Ok(()) => {
+            if restarting {
+                cursor.forget_choices();
+            }
             cursor.remember(wanted, pair);
             Outcome::Committed
         },
