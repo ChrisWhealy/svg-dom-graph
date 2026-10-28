@@ -894,3 +894,87 @@ fn at_sixteen_samples_the_browser_exposes_no_connector_as_a_named_or_focusable_i
     )?;
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes the `n`th attempt, from now, to show a replacement scene throw. A replacement is shown by taking the `style` that
+/// hides it off its staging `<svg>`, which is the one write of a rebuild that a browser can refuse. The overview's is the
+/// first attempt and the inspector's is the second.
+fn fail_showing_replacement(tab: &Tab, n: u32) -> Result<(), String> {
+    tab.evaluate(
+        &format!(
+            "(() => {{ const proto = Element.prototype; const original = proto.removeAttribute; let calls = 0; \
+             proto.removeAttribute = function (name) {{ \
+                 if (name === 'style' && this.id && this.id.endsWith('-staging')) {{ \
+                     calls += 1; if (calls === {n}) {{ throw new Error('injected failure showing ' + this.id); }} }} \
+                 return original.apply(this, arguments); }}; \
+             window.__restoreRemoveAttribute = () => {{ proto.removeAttribute = original; }}; }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not inject the failure: {e}"))?;
+    Ok(())
+}
+
+fn stop_failing(tab: &Tab) -> Result<(), String> {
+    tab.evaluate("window.__restoreRemoveAttribute()", false)
+        .map_err(|e| format!("could not remove the injected failure: {e}"))?;
+    Ok(())
+}
+
+/// A rebuild that cannot show its overview, or cannot show its inspector, leaves the old diagrams exactly as they were: the
+/// same elements, still on the page and still working. No half-shown replacement or staging copy is left, the controls go
+/// back to what the diagrams show, and the error is on the page. A later rebuild, with nothing failing, then succeeds.
+#[test]
+fn a_rebuild_that_cannot_be_shown_leaves_the_old_diagrams_in_place_and_working() -> Result<(), String> {
+    for failing in [1, 2] {
+        let tab = open()?;
+        next(&tab)?;
+        let lanes = all_lanes(&tab)?;
+        tab.evaluate(
+            "window.__old = [document.getElementById('fft-overview-diagram'), \
+             document.getElementById('fft-inspector-diagram')]",
+            false,
+        )
+        .map_err(|e| format!("could not mark the old diagrams: {e}"))?;
+        let same = |tab: &Tab| {
+            text(
+                tab,
+                "String(window.__old[0] === document.getElementById('fft-overview-diagram') \
+                 && window.__old[1] === document.getElementById('fft-inspector-diagram') \
+                 && window.__old[0].isConnected && window.__old[1].isConnected)",
+            )
+        };
+
+        fail_showing_replacement(&tab, failing)?;
+        slide(&tab, "fft-b-amplitude", 0.2, true)?;
+        wait_for("the error to be shown", || {
+            Ok(text(&tab, "String(!document.getElementById('fft-error').hidden)")? == "true")
+        })?;
+        stop_failing(&tab)?;
+
+        check_eq(same(&tab)?.as_str(), "true")?;
+        check(
+            text(&tab, "document.getElementById('fft-error').textContent")?.contains("old one is kept"),
+            "the error says that the old diagram is kept",
+        )?;
+        check_eq(
+            number(
+                &tab,
+                "document.querySelectorAll('#fft-overview-staging, #fft-inspector-staging').length",
+            )?,
+            0,
+        )?;
+        check_eq(text(&tab, "document.getElementById('fft-b-amplitude').value")?.as_str(), "0.6")?;
+        check_eq(all_lanes(&tab)?, lanes)?;
+        check_eq(position(&tab)?, Some(0))?;
+
+        // The old diagram still steps, and a rebuild with nothing failing is made.
+        next(&tab)?;
+        check_eq(position(&tab)?, Some(1))?;
+        slide(&tab, "fft-b-amplitude", 0.2, true)?;
+        wait_for("the diagrams to be replaced", || Ok(same(&tab)? == "false"))?;
+        check_eq(position(&tab)?, None)?;
+        check_eq(number(&tab, &format!("{LANES}.length"))?, 32)?;
+    }
+    Ok(())
+}

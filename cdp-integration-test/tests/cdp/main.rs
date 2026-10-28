@@ -59,6 +59,10 @@
 //! - [`complex`] — the complex numbers panel in the built demo gallery: both Argand diagrams are plot nodes, and a real
 //!   click on the one beside the sliders puts the number where it was clicked, moves both sliders, and ignores a click in
 //!   the margin. Also runs against the built demo gallery.
+//! - [`fft`] — the FFT panel in the built demo gallery: the graph of three waves and the sliders that set them, the
+//!   table of what the transform found, the overview's lane nodes and connectors at eight and sixteen samples, the
+//!   stepping toolbar, the butterfly inspector, the zoom and the dragged frame across a rebuild, and a rebuild that
+//!   cannot be shown leaving the old diagrams in place. Also runs against the built demo gallery.
 //! - [`springs`] — the weighted springs panel: a real drag moves the neighbours, the graph settles and no frame is left
 //!   pending at rest, Reset is disabled while a circle is held, a held circle goes quiet without sleeping, and a hidden
 //!   or left page stops cleanly.
@@ -99,6 +103,7 @@ mod connectors;
 mod crc32;
 mod dijkstra;
 mod edge_anchors;
+mod fft;
 mod hamming;
 mod hex_dump_geometry;
 mod hex_dump_paint_order;

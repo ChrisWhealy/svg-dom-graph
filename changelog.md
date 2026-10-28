@@ -6,11 +6,15 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
-## [0.2.45] - 2026-10-27
+## [0.2.45] - 2026-10-29
 
 ## Added
 
 - Create a new `Plot` node types and start a radix-2 decimation-in-time FFT demo (``)
+
+## Changed
+
+- Make FFT scene fully transactional (``)
 
 # [Released]
 

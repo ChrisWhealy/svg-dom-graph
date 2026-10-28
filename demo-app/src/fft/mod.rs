@@ -84,6 +84,8 @@ const WAVE_CONTROLS: [[&str; 4]; 3] = [
 /// replacement has been drawn.
 const STAGING_OVERVIEW_ID: &str = "fft-overview-staging";
 const STAGING_INSPECTOR_ID: &str = "fft-inspector-staging";
+/// Each replacement scene's staging id, with the id it takes once it is on the page.
+const PROMOTIONS: [(&str, &str); 2] = [(STAGING_OVERVIEW_ID, OVERVIEW_ID), (STAGING_INSPECTOR_ID, INSPECTOR_ID)];
 /// Keeps a scene that is being drawn out of sight, but still laid out, so that text can be measured.
 const STAGING_STYLE: &str = "position: fixed; left: -30000px; top: 0; visibility: hidden; pointer-events: none;";
 
@@ -455,16 +457,40 @@ fn discard_staging() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Moves a scene's `<svg>` from its staging id to its real one, in place of the old one.
-fn promote(staging: &str, id: &str) -> Result<(), String> {
+/// Puts both replacement scenes on the page, in place of the old ones, or changes nothing.
+///
+/// Every step that can fail comes first, and touches only the replacements: each is made visible, which is the one write
+/// that a browser can refuse. If one fails, the replacements already shown are hidden again, and the old scenes were never
+/// touched. Only when both are shown does the swap begin, and the swap is made of steps that cannot fail: the old scene
+/// gives up its id and is removed, and the replacement takes the id. So the page never holds a mixture of generations.
+///
+/// # Errors
+///
+/// Returns `Err` if a replacement is missing or cannot be shown. The page is then as it was, with the replacements still
+/// hidden, for the caller to discard.
+fn promote_all() -> Result<(), String> {
     let document = document()?;
-    if let Some(old) = document.get_element_by_id(id) {
-        old.remove();
+    let mut shown: Vec<Element> = Vec::new();
+    for (staging, _) in PROMOTIONS {
+        let outcome = required_element(&document, staging).and_then(|svg: Element| {
+            svg.remove_attribute("style")
+                .map_err(|e| format!("could not show #{staging}: {e:?}"))?;
+            shown.push(svg);
+            Ok(())
+        });
+        if let Err(error) = outcome {
+            for svg in &shown {
+                let _ = svg.set_attribute("style", STAGING_STYLE);
+            }
+            return Err(error);
+        }
     }
-    let svg: Element = required_element(&document, staging)?;
-    svg.remove_attribute("style")
-        .map_err(|e| format!("could not show #{staging}: {e:?}"))?;
-    svg.set_id(id);
+    for (svg, (_, id)) in shown.iter().zip(PROMOTIONS) {
+        if let Some(old) = document.get_element_by_id(id) {
+            old.remove();
+        }
+        svg.set_id(id);
+    }
     Ok(())
 }
 
@@ -504,8 +530,10 @@ fn rebuild(n: usize, waves: [Wave; 3]) -> Result<String, String> {
     };
 
     // The pair for the preview, and the first state, were written while the scenes were out of sight.
-    promote(STAGING_OVERVIEW_ID, OVERVIEW_ID)?;
-    promote(STAGING_INSPECTOR_ID, INSPECTOR_ID)?;
+    if let Err(error) = promote_all() {
+        discard_staging();
+        return Err(error);
+    }
     let cursor = Cursor::new(live.trace.stages());
     let pair = cursor.pair_for(&live.trace, 0);
     let live = Rc::new(live);
