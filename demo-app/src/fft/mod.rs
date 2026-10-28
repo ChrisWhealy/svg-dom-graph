@@ -275,6 +275,15 @@ fn render_html(live: &Live, completed: usize, pair: usize) -> Result<(), String>
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Checks, without writing anything, that [`render_html`] has the elements it needs and can place the choice in `pair`.
+fn check_html(pair: usize) -> Result<(), String> {
+    required_element(&document()?, TITLE_ID)?;
+    select(PAIR_ID)?;
+    i32::try_from(pair).map_err(stringify)?;
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws both scenes for the state. Fails if a write fails, and writing it again repairs that.
 fn render_scenes(live: &Live, completed: usize, pair: usize) -> Result<(), String> {
     live.overview.render(&live.trace, completed, pair)?;
@@ -526,8 +535,9 @@ fn rebuild(n: usize, waves: [Wave; 3]) -> Result<String, String> {
         },
     };
 
+    // The page's own elements are checked before the scenes are replaced, so that writing them afterwards cannot fail.
     // The pair for the preview, and the first state, were written while the scenes were out of sight.
-    if let Err(error) = promote_all() {
+    if let Err(error) = check_html(cursor.pair()).and_then(|()| promote_all()) {
         discard_staging();
         return Err(error);
     }

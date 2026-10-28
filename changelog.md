@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Make FFT scene fully transactional (`ea914ed`)
 - Keep plot descriptions consistent between model and DOM (`b0b2a66`)
+- Validate HTML and prepare initial selector state before committing scene replacement (``)
 
 ## Fixed
 
@@ -25,7 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent a failed restart from discarding remembered selections (`4b16e53`)
 - Prevent logarithmic tick estimates from overflowing unnecessarily (`d070311`)
 - Prevent tick cleanup from merging distinct values at large offsets (`0e21664`)
-- Avoid line geometry distortion by clipping segments in transformed data coordinates before converting to SVG coordinates (``)
+- Avoid line geometry distortion by clipping segments in transformed data coordinates before converting to SVG coordinates (`8f84f32`)
 
 # [Released]
 
