@@ -314,3 +314,74 @@ fn forgetting_the_choices_keeps_the_position() {
     assert_eq!(cursor.pair_for(&trace, 0), 2);
     assert_eq!((cursor.completed(), cursor.pair()), (0, 0));
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+//   The first butterfly is not the first pair
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The impulse at `x[1]` sits in lane 4 once the input is in bit-reversed order, so the first butterfly with a nonzero
+/// input is pair 2, lanes 4 and 5, and not pair 0.
+#[test]
+fn an_unstarted_cursor_starts_on_the_pair_that_is_drawn_first_and_remembers_it_for_stage_one() {
+    let trace = run(Preset::Impulse);
+    assert_ne!(
+        Cursor::new(trace.stages()).pair_for(&trace, 0),
+        0,
+        "the default is not pair 0 for this signal"
+    );
+
+    let cursor = Cursor::unstarted(&trace);
+    assert_eq!((cursor.completed(), cursor.pair(), cursor.needs_repair()), (0, 2, false));
+    assert_eq!(cursor.pair_for(&trace, 0), 2);
+    assert_eq!(
+        cursor.pair_for(&trace, 1),
+        2,
+        "stage 1 is the stage that is previewed, and its pair is remembered"
+    );
+}
+
+#[test]
+fn a_failed_first_step_puts_back_the_pair_that_was_drawn_and_not_pair_zero() {
+    let trace = run(Preset::Impulse);
+    let mut cursor = Cursor::unstarted(&trace);
+    let mut display = Display {
+        fail_renders: 2,
+        ..Display::default()
+    };
+
+    // The step fails, and so does drawing the unstarted state again, so a repair is outstanding.
+    let outcome = step(&mut cursor, &trace, &mut display, None, Some(0));
+    assert!(matches!(outcome, Outcome::NeedsRepair(_)), "{outcome:?}");
+    assert!(cursor.needs_repair());
+    assert_eq!((cursor.completed(), cursor.pair()), (0, 2));
+
+    // A retry draws the last good state, which is the pair that was on show.
+    let mut display = Display::default();
+    let display = std::cell::RefCell::new(&mut display);
+    retry(&mut cursor, &mut |c, p| display.borrow_mut().render(c, p), &mut |c| {
+        display.borrow_mut().set_driver(c)
+    })
+    .expect("the retry is drawn");
+    assert_eq!(display.borrow().drawn, vec![(0, 2)]);
+}
+
+#[test]
+fn a_rolled_back_step_draws_the_pair_that_was_shown_first() {
+    let trace = run(Preset::Impulse);
+    let mut cursor = Cursor::unstarted(&trace);
+    let mut display = Display {
+        fail_renders: 1,
+        ..Display::default()
+    };
+
+    let outcome = step(&mut cursor, &trace, &mut display, None, Some(0));
+    assert!(matches!(outcome, Outcome::RolledBack(_)), "{outcome:?}");
+    assert_eq!(display.drawn, vec![(0, 2)], "the old display is drawn again with its own pair");
+}
+
+#[test]
+fn forgetting_the_choices_returns_to_the_default_pair() {
+    let trace = run(Preset::Impulse);
+    let mut cursor = Cursor::unstarted(&trace);
+    cursor.forget_choices();
+    assert_eq!(cursor.pair_for(&trace, 0), 2, "the default is found again, and is the same");
+}

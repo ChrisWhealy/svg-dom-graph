@@ -61,7 +61,8 @@ pub(super) struct Cursor {
 }
 
 impl Cursor {
-    /// A cursor at "unstarted" for a transform of `stages` stages.
+    /// A cursor at "unstarted" for a transform of `stages` stages, on pair 0 with nothing chosen. The display starts on
+    /// [`unstarted`](Self::unstarted), which knows which pair that is.
     pub(super) fn new(stages: usize) -> Self {
         Self {
             stages,
@@ -70,6 +71,17 @@ impl Cursor {
             cache: vec![None; stages],
             repair: false,
         }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// A cursor at "unstarted" for `trace`, whose pair is the one the display starts on, and which is remembered for the
+    /// preview of stage 1. That is the pair to draw first, so a failed repaint, or a retry, goes back to it and not to the
+    /// first pair, which is only the same when the first butterfly is the first one with a nonzero input.
+    pub(super) fn unstarted(trace: &FftTrace) -> Self {
+        let mut cursor = Self::new(trace.stages());
+        let pair = cursor.pair_for(trace, 0);
+        cursor.remember(0, pair);
+        cursor
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -521,7 +521,7 @@ fn rebuild(n: usize, waves: [Wave; 3]) -> Result<String, String> {
     let focused = focus::focused_selector(OVERVIEW_ID);
 
     let drawn = draw(generation, n, waves, fft, overview_view, inspector_view, origin);
-    let (live, moved) = match drawn {
+    let (live, cursor, moved) = match drawn {
         Ok(drawn) => drawn,
         Err(error) => {
             discard_staging();
@@ -534,8 +534,8 @@ fn rebuild(n: usize, waves: [Wave; 3]) -> Result<String, String> {
         discard_staging();
         return Err(error);
     }
-    let cursor = Cursor::new(live.trace.stages());
-    let pair = cursor.pair_for(&live.trace, 0);
+    // The cursor was made with the pair that was drawn, so a repaint that fails, and a retry, go back to that pair.
+    let pair = cursor.pair();
     let live = Rc::new(live);
     RUNTIME.with_borrow_mut(|runtime| {
         runtime.generation = generation;
@@ -563,7 +563,7 @@ fn draw(
     overview_view: Option<svg_dom_graph::scene::ViewTransform>,
     inspector_view: Option<svg_dom_graph::scene::ViewTransform>,
     origin: Option<svg_dom::root::utils::Point>,
-) -> Result<(Live, bool), String> {
+) -> Result<(Live, Cursor, bool), String> {
     staging_svg(OVERVIEW_STAGE, STAGING_OVERVIEW_ID)?;
     staging_svg(INSPECTOR_STAGE, STAGING_INSPECTOR_ID)?;
     let overview = Overview::build(STAGING_OVERVIEW_ID, &fft, overview_view, move |_scene, _node, transition| {
@@ -578,9 +578,9 @@ fn draw(
         overview,
         inspector,
     };
-    let pair = Cursor::new(live.trace.stages()).pair_for(&live.trace, 0);
-    render_scenes(&live, 0, pair)?;
-    Ok((live, moved))
+    let cursor = Cursor::unstarted(&live.trace);
+    render_scenes(&live, 0, cursor.pair())?;
+    Ok((live, cursor, moved))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
