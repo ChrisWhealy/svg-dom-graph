@@ -1,6 +1,6 @@
 use super::{
     axis::AxisName,
-    clip::{Bounds, clip_segment},
+    clip::{Bounds, clip_polyline, clip_segment},
     config::MAX_TICKS,
     layout::{self, Side},
     map::AxisMap,
@@ -690,18 +690,23 @@ fn a_position_is_always_finite_however_far_off_the_axis_the_value_is() {
     for value in [1e308, -1e308, f64::MAX, f64::MIN, 1e30] {
         let page = map.page_of(value).expect("a finite value can be placed");
         assert!(page.is_finite(), "{value} gave {page}");
-        assert!(page.abs() <= map::PAGE_LIMIT);
+        let fraction = map.finite_fraction(value).expect("placed");
+        assert!(fraction.is_finite() && fraction.abs() <= map::FRACTION_LIMIT);
     }
-    assert_eq!(map.page_of(1e308), Some(map::PAGE_LIMIT));
-    assert_eq!(map.page_of(-1e308), Some(-map::PAGE_LIMIT));
     let log = AxisMap::new(&PlotAxis::logarithmic(1.0, 10.0), 0.0, 400.0);
     assert!(log.page_of(f64::MAX).expect("placed").is_finite());
 }
 
 #[test]
+fn a_point_inside_a_plot_wider_than_a_billion_units_is_not_moved() {
+    let map = AxisMap::new(&PlotAxis::linear(0.0, 1.0), 0.0, 4e9);
+    assert_eq!(map.page_of(0.5), Some(2e9));
+}
+
+#[test]
 fn a_segment_from_inside_the_plot_to_an_extremely_distant_point_is_cut_at_the_edge_with_finite_coordinates() {
     let layout = PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(0.0, 1.0))).expect("valid");
-    let inside = layout.point(0.5, 0.5);
+    let inside = layout.point(0.5, 0.5).expect("placed");
     for far in [
         (1e308, 0.5),
         (1e308, 1e308),
@@ -709,21 +714,36 @@ fn a_segment_from_inside_the_plot_to_an_extremely_distant_point_is_cut_at_the_ed
         (0.5, f64::MAX),
         (f64::MAX, f64::MIN),
     ] {
-        let points = [inside, layout.point(far.0, far.1)];
-        let runs = clip_polyline(&points, layout.area);
+        let runs = layout.clip_line(&[(0.5, 0.5), far]);
         assert_eq!(runs.len(), 1, "{far:?}");
         for (x, y) in &runs[0] {
             assert!(x.is_finite() && y.is_finite(), "{far:?} gave ({x}, {y})");
             assert!(
-                layout.area.contains((*x, *y)) || near(x.clamp(layout.area.left, layout.area.right), *x),
+                near(x.clamp(layout.area.left, layout.area.right), *x)
+                    && near(y.clamp(layout.area.top, layout.area.bottom), *y),
                 "{far:?}"
             );
         }
+        assert_eq!(runs[0][0], inside);
     }
     // Straight to the right, the cut is at the right edge and keeps the height.
-    let runs = clip_polyline(&[inside, layout.point(1e308, 0.5)], layout.area);
+    let runs = layout.clip_line(&[(0.5, 0.5), (1e308, 0.5)]);
     let end = runs[0][1];
-    assert!(near(end.0, layout.area.right) && near(end.1, inside.expect("placed").1));
+    assert!(near(end.0, layout.area.right) && near(end.1, inside.1));
+}
+
+#[test]
+fn a_line_to_a_point_far_off_in_one_direction_and_less_far_in_the_other_keeps_its_direction() {
+    let layout = PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(0.0, 1.0))).expect("valid");
+    let runs = layout.clip_line(&[(0.5, 0.5), (1e308, 1e100)]);
+    let end = runs[0][1];
+    let middle = layout.point(0.5, 0.5).expect("placed").1;
+    assert!(near(end.0, layout.area.right));
+    assert!(
+        (end.1 - middle).abs() < 1e-6,
+        "left the right edge at {} instead of near {middle}",
+        end.1
+    );
 }
 
 #[test]

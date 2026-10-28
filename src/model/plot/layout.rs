@@ -6,7 +6,7 @@
 
 use super::{
     axis::{AxisName, AxisPosition, AxisScale, TickLabelPlacement, TickLabels},
-    clip::Bounds,
+    clip::{Bounds, clip_polyline},
     config::{PlotAxis, PlotConfig, PlotConfigError, PlotPlane},
     map::AxisMap,
     ticks::format_number,
@@ -162,6 +162,31 @@ impl PlotLayout {
     /// Where the point `(x, y)` is on the node, or `None` if either value cannot be placed.
     pub(crate) fn point(&self, x: f64, y: f64) -> Option<(f64, f64)> {
         Some((self.x.page_of(x)?, self.y.page_of(y)?))
+    }
+
+    /// The runs of the polyline through `points` that are inside the plotted area, on the node.
+    ///
+    /// The cutting is done on how far along each axis the points are, so that however far off a point is, the line keeps
+    /// its direction. A point that cannot be placed breaks the line.
+    pub(crate) fn clip_line(&self, points: &[(f64, f64)]) -> Vec<Vec<(f64, f64)>> {
+        self.clip_placed(&points.iter().map(|p| self.fractions(p.0, p.1)).collect::<Vec<_>>())
+    }
+
+    fn fractions(&self, x: f64, y: f64) -> Option<(f64, f64)> {
+        Some((self.x.finite_fraction(x)?, self.y.finite_fraction(y)?))
+    }
+
+    fn clip_placed(&self, fractions: &[Option<(f64, f64)>]) -> Vec<Vec<(f64, f64)>> {
+        const UNIT: Bounds = Bounds {
+            left: 0.0,
+            top: 0.0,
+            right: 1.0,
+            bottom: 1.0,
+        };
+        clip_polyline(fractions, UNIT)
+            .into_iter()
+            .map(|run| run.into_iter().map(|(u, v)| (self.x.page_at(u), self.y.page_at(v))).collect())
+            .collect()
     }
 
     /// The values at the position `local` on the node, or `None` if it is not inside the plotted area.

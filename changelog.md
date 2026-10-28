@@ -24,7 +24,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent FFT cursor from disagreeing with initial butterfly choice after redraw (`36b0a2c`)
 - Prevent a failed restart from discarding remembered selections (`4b16e53`)
 - Prevent logarithmic tick estimates from overflowing unnecessarily (`d070311`)
-- Prevent tick cleanup from merging distinct values at large offsets (``)
+- Prevent tick cleanup from merging distinct values at large offsets (`0e21664`)
+- Avoid line geometry distortion by clipping segments in transformed data coordinates before converting to SVG coordinates (``)
 
 # [Released]
 

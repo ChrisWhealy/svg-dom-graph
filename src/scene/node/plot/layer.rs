@@ -3,10 +3,7 @@
 use super::paint::{Painter, TextStyle};
 use crate::{
     error::Error,
-    model::plot::{
-        Bounds, LabelAnchor, PlotItem, PlotLabel, PlotLayout, PlotLine, PlotPoint, PlotPoints, Side, Spot,
-        clip_polyline,
-    },
+    model::plot::{Bounds, LabelAnchor, PlotItem, PlotLabel, PlotLayout, PlotLine, PlotPoint, PlotPoints, Side, Spot},
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -34,7 +31,8 @@ fn placed(layout: &PlotLayout, points: &[PlotPoint]) -> Vec<Option<(f64, f64)>> 
 }
 
 fn draw_line(painter: &mut Painter<'_>, layout: &PlotLayout, line: &PlotLine) -> Result<(), Error> {
-    for run in clip_polyline(&placed(layout, &line.points), layout.area) {
+    let values: Vec<(f64, f64)> = line.points.iter().map(|p| (p.x, p.y)).collect();
+    for run in layout.clip_line(&values) {
         painter.polyline(&run, &line.colour, line.width, line.dash.as_deref())?;
     }
     Ok(())

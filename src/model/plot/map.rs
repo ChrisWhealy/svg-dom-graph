@@ -2,10 +2,10 @@
 
 use super::{axis::AxisScale, config::PlotAxis};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The furthest a position on the page is taken, in user units. It is far past any plot, and small enough that the sums
-/// of clipping a segment to a plot cannot overflow.
-pub(crate) const PAGE_LIMIT: f64 = 1e9;
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The furthest a fraction along an axis is taken. It is far past any plot, and small enough that clipping a segment
+/// between two such fractions cannot overflow.
+pub(crate) const FRACTION_LIMIT: f64 = 1e300;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where an axis's values land: `min` at `from` and `max` at `to`, both in user units along the page. For a vertical
@@ -47,15 +47,23 @@ impl AxisMap {
         }
     }
 
-    /// Where `value` is on the page, or `None` if it cannot be placed.
-    ///
-    /// The position is always finite. A value so far off the axis that its position would overflow, or be beyond
-    /// [`PAGE_LIMIT`], is placed at that limit on the side it is on. It is then far outside any plotted area, so the
-    /// clipping that follows cuts it exactly as it would a position that was never limited, bar a negligible change of
-    /// slope.
+    /// How far along the axis `value` is, as [`fraction`](Self::fraction) but always finite: a value so far off the axis
+    /// that its fraction would overflow is placed at [`FRACTION_LIMIT`] on the side it is on. `None` if it cannot be
+    /// placed.
+    pub(crate) fn finite_fraction(&self, value: f64) -> Option<f64> {
+        let fraction = self.fraction(value)?;
+        (!fraction.is_nan()).then(|| fraction.clamp(-FRACTION_LIMIT, FRACTION_LIMIT))
+    }
+
+    /// Where a fraction along the axis is on the page.
+    pub(crate) fn page_at(&self, fraction: f64) -> f64 {
+        self.from + fraction * (self.to - self.from)
+    }
+
+    /// Where `value` is on the page, or `None` if it cannot be placed. The position is always finite.
     pub(crate) fn page_of(&self, value: f64) -> Option<f64> {
-        let position = self.from + self.fraction(value)? * (self.to - self.from);
-        (!position.is_nan()).then(|| position.clamp(-PAGE_LIMIT, PAGE_LIMIT))
+        let position = self.page_at(self.fraction(value)?);
+        (!position.is_nan()).then(|| position.clamp(-f64::MAX, f64::MAX))
     }
 
     /// The value at `position` on the page. The inverse of [`page_of`](Self::page_of).
