@@ -23,7 +23,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent small numerical ranges from collapsing automatic ticks (`5dee097`)
 - Prevent FFT cursor from disagreeing with initial butterfly choice after redraw (`36b0a2c`)
 - Prevent a failed restart from discarding remembered selections (`4b16e53`)
-- Prevent logarithmic tick estimates from overflowing unnecessarily (``)
+- Prevent logarithmic tick estimates from overflowing unnecessarily (`d070311`)
+- Prevent tick cleanup from merging distinct values at large offsets (``)
 
 # [Released]
 

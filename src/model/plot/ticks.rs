@@ -146,13 +146,22 @@ pub(crate) fn ticks(axis: &PlotAxis) -> Vec<Tick> {
 /// the multiplication in the 16th and 17th digits go, and no two values that a double can tell apart are made the same,
 /// however small they are. A cleanup to a fixed number of decimal places would do that, and would make the ticks of a very
 /// small axis collapse onto one another.
+///
+/// A product that is exact is left alone, and so is any cleanup that moves the value by more than one step of the double
+/// grid, because that is not an artefact. Far from zero this keeps the ticks of `1e15` to `1e15 + 1` distinct.
 fn clean(multiple: f64, step: f64) -> f64 {
     let value = multiple * step;
     if value == 0.0 || !value.is_finite() {
         return value + 0.0;
     }
+    if multiple.mul_add(step, -value) == 0.0 {
+        return value;
+    }
     // Writing a number to 15 digits and reading it back never overflows, however large or small the number is.
-    format!("{value:.14e}").parse::<f64>().map_or(value, |rounded| rounded + 0.0)
+    match format!("{value:.14e}").parse::<f64>() {
+        Ok(rounded) if rounded.to_bits().abs_diff(value.to_bits()) <= 1 => rounded + 0.0,
+        _ => value,
+    }
 }
 
 /// [`clean`], for the tests of this module's neighbours.

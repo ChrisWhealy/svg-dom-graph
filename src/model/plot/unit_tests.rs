@@ -185,6 +185,14 @@ fn a_very_wide_logarithmic_range_does_not_overflow_the_estimate() {
 }
 
 #[test]
+fn the_ticks_of_a_range_far_from_zero_stay_distinct() {
+    let axis = PlotAxis::linear(1e15, 1e15 + 1.0).with_major_interval(0.25);
+    let found = values(&axis);
+    assert_eq!(found.len(), 5);
+    assert!(found.windows(2).all(|pair| pair[0] < pair[1]));
+}
+
+#[test]
 fn an_estimate_of_the_ticks_never_under_counts() {
     for axis in [
         PlotAxis::linear(0.0, 1.0),
