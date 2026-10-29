@@ -4,11 +4,12 @@ use super::{
     },
     grid::{BitGrid, CellState, DataRole, FunctionRole, GridError, QrModuleKind, SIZE},
     paths::{base_paths, highlight_path, matrix_text, role_path},
-    spike::{self, CODEWORDS, spike_steps},
+    snapshots::{COUNT, JUMPS, Region, Stage},
     text::wrap,
     {
-        CAPTION_LINES, EXPLANATION_LINES, KEY, KEY_LINES, LEFT_COLUMN_CHARS, NO_ROLE, NO_ROLE_EXPLANATION,
-        RIGHT_COLUMN_CHARS, STATS_LINES, caption_text, role_action, stats_text,
+        CAPTION_LINES, COLUMN_CHARS, EXPLANATION_LINES, INITIAL_TEXT, JUMP_ACTION, KEY, KEY_LINES, NO_ROLE,
+        NO_ROLE_EXPLANATION, NOTE_CHARS, NOTE_TEXT_LINES, NOTE_TITLE_LINES, STAGE_LINES, STATS_LINES,
+        UNSTARTED_EXPLANATION, caption_text, make_set, role_action, stats_text,
     },
 };
 use std::collections::HashSet;
@@ -386,8 +387,8 @@ fn a_run_of_neighbours_is_one_rectangle_and_a_gap_starts_another() {
 
 #[test]
 fn every_module_is_in_exactly_one_base_path() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    for step in &steps {
+    let set = make_set("Hello, World!").expect("the text fits");
+    for step in set.snapshots.iter().chain([&set.unstarted]) {
         let paths = base_paths(&step.grid);
         let area = |d: &str| {
             d.split('z')
@@ -435,121 +436,6 @@ fn the_matrix_text_shows_the_three_states() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// The scripted steps
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#[test]
-fn the_spike_has_five_steps_and_every_grid_keeps_its_rules() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    assert_eq!(steps.len(), 5);
-    for step in &steps {
-        assert_eq!(step.grid.check_invariants(), Ok(()), "{}", step.label);
-    }
-}
-
-#[test]
-fn the_format_modules_stay_uncoloured_until_the_last_step() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    let coloured = |step: &spike::SpikeStep| {
-        step.grid
-            .cells()
-            .filter(|&(row, col)| step.grid.role(row, col) == Some(FORMAT))
-            .filter(|&(row, col)| step.grid.get(row, col) != Some(CellState::Unassigned))
-            .count()
-    };
-    assert!(steps[..4].iter().all(|step| coloured(step) == 0));
-    assert_eq!(coloured(&steps[4]), 30);
-}
-
-#[test]
-fn the_codewords_are_placed_with_the_right_roles_and_leave_nothing_empty() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    let one = &steps[1].grid;
-    let all = &steps[2].grid;
-    let payload = |grid: &BitGrid, role| {
-        grid.cells()
-            .filter(|&(row, col)| grid.role(row, col) == Some(QrModuleKind::Payload(role)))
-            .count()
-    };
-    assert_eq!(payload(one, DataRole::Data), 8);
-    assert_eq!(payload(one, DataRole::ErrorCorrection), 0);
-    assert_eq!(payload(all, DataRole::Data), 19 * 8);
-    assert_eq!(payload(all, DataRole::ErrorCorrection), 7 * 8);
-    assert_eq!(CODEWORDS, 26);
-    assert_eq!(all.count_state(CellState::Unassigned), 30);
-}
-
-#[test]
-fn the_mask_step_changes_only_payload_modules() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    let (before, after) = (&steps[2].grid, &steps[3].grid);
-    let mut flipped = 0;
-    for (row, col) in before.cells() {
-        let changed = before.get(row, col) != after.get(row, col);
-        let is_payload = matches!(before.role(row, col), Some(QrModuleKind::Payload(_)));
-        assert_eq!(changed, is_payload && (row + col) % 2 == 0, "({row}, {col})");
-        flipped += usize::from(changed);
-    }
-    assert_eq!(flipped, 104);
-}
-
-#[test]
-fn the_last_step_writes_the_sample_format_into_both_copies() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    let grid = &steps[4].grid;
-    for bit in 0..FORMAT_BITS {
-        let expected = Some(if (0b111_0111_1100_0100_u16 >> bit) & 1 == 1 {
-            CellState::Dark
-        } else {
-            CellState::Light
-        });
-        assert_eq!(
-            grid.get(format_copy_a(bit).0, format_copy_a(bit).1),
-            expected,
-            "copy A bit {bit}"
-        );
-        assert_eq!(
-            grid.get(format_copy_b(bit).0, format_copy_b(bit).1),
-            expected,
-            "copy B bit {bit}"
-        );
-    }
-}
-
-#[test]
-fn the_steps_are_the_same_every_time() {
-    let first = spike_steps().expect("the spike's steps are valid");
-    let second = spike_steps().expect("the spike's steps are valid");
-    assert!(
-        first
-            .iter()
-            .zip(&second)
-            .all(|(a, b)| a.grid == b.grid && a.highlights == b.highlights)
-    );
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-// Walking the steps
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-
-#[test]
-fn next_walks_forward_from_unstarted_and_stops_at_the_last_step() {
-    assert_eq!(spike::next(None, 5), Some(0));
-    assert_eq!(spike::next(Some(0), 5), Some(1));
-    assert_eq!(spike::next(Some(3), 5), Some(4));
-    assert_eq!(spike::next(Some(4), 5), Some(4));
-    assert_eq!(spike::next(None, 0), None);
-}
-
-#[test]
-fn prev_walks_back_to_unstarted_and_stops_there() {
-    assert_eq!(spike::prev(Some(4)), Some(3));
-    assert_eq!(spike::prev(Some(1)), Some(0));
-    assert_eq!(spike::prev(Some(0)), None);
-    assert_eq!(spike::prev(None), None);
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // The text
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
@@ -570,9 +456,9 @@ fn a_word_longer_than_the_width_is_kept_whole() {
 fn no_wrapped_line_is_wider_than_the_width() {
     for role in QrModuleKind::ALL {
         assert!(
-            wrap(role.explanation(), RIGHT_COLUMN_CHARS)
+            wrap(role.explanation(), COLUMN_CHARS)
                 .iter()
-                .all(|line| line.chars().count() <= RIGHT_COLUMN_CHARS)
+                .all(|line| line.chars().count() <= COLUMN_CHARS)
         );
     }
 }
@@ -580,11 +466,11 @@ fn no_wrapped_line_is_wider_than_the_width() {
 #[test]
 fn every_explanation_fits_the_room_for_it() {
     for role in QrModuleKind::ALL {
-        let lines = wrap(role.explanation(), RIGHT_COLUMN_CHARS).len();
+        let lines = wrap(role.explanation(), COLUMN_CHARS).len();
         assert!(lines <= EXPLANATION_LINES, "{} needs {lines} lines", role.label());
     }
-    assert!(wrap(NO_ROLE_EXPLANATION, RIGHT_COLUMN_CHARS).len() <= EXPLANATION_LINES);
-    assert!(wrap(KEY, RIGHT_COLUMN_CHARS).len() <= KEY_LINES);
+    assert!(wrap(NO_ROLE_EXPLANATION, COLUMN_CHARS).len() <= EXPLANATION_LINES);
+    assert!(wrap(KEY, COLUMN_CHARS).len() <= KEY_LINES);
 }
 
 #[test]
@@ -609,17 +495,57 @@ fn every_role_has_its_own_explanation_that_names_no_undefined_term() {
     );
 }
 
+/// An input whose label is as long as a label gets: 17 control characters, each of which is written as four.
+const WORST_TEXT: &str = "\u{1}\u{2}\u{3}\u{4}\u{5}\u{6}\u{7}\u{8}\u{b}\u{c}\u{e}\u{f}\u{10}\u{11}\u{12}\u{13}\u{14}";
+
 #[test]
-fn every_step_caption_and_stats_line_fits_the_room_for_it() {
-    let steps = spike_steps().expect("the spike's steps are valid");
-    for step in &steps {
-        let lines = wrap(&caption_text(step.label, &step.grid), LEFT_COLUMN_CHARS).len();
-        assert!(lines <= CAPTION_LINES, "{} needs {lines} lines", step.label);
+fn every_step_caption_fits_the_room_for_it_for_the_longest_inputs_too() {
+    for text in ["", "Hello, World!", "abcdefghijklmnopq", WORST_TEXT] {
+        let set = make_set(text).expect("the text fits");
+        for (index, snapshot) in set.snapshots.iter().enumerate() {
+            let lines = wrap(&caption_text(&snapshot.label, &snapshot.grid), COLUMN_CHARS).len();
+            assert!(lines <= CAPTION_LINES, "snapshot {index} of {text:?} needs {lines} lines");
+        }
+        let lines = wrap(&caption_text(&set.unstarted.label, &set.unstarted.grid), COLUMN_CHARS).len();
+        assert!(lines <= CAPTION_LINES, "the unstarted caption needs {lines} lines");
     }
-    let unstarted = caption_text("Not started. Every module is empty.", &grid());
-    assert!(wrap(&unstarted, LEFT_COLUMN_CHARS).len() <= CAPTION_LINES);
-    let stats = stats_text("Step 5 of 5", 6, 12);
-    assert!(wrap(&stats, LEFT_COLUMN_CHARS).len() <= STATS_LINES);
+}
+
+#[test]
+fn every_stage_explanation_fits_the_room_for_it() {
+    for index in 0..COUNT {
+        let stage = Stage::of(index);
+        let lines = wrap(stage.explanation(), COLUMN_CHARS).len();
+        assert!(lines <= STAGE_LINES, "{} needs {lines} lines", stage.name());
+        assert!(wrap(stage.name(), COLUMN_CHARS).len() == 1, "{} is not one line", stage.name());
+    }
+    assert!(wrap(UNSTARTED_EXPLANATION, COLUMN_CHARS).len() <= STAGE_LINES);
+}
+
+#[test]
+fn the_stats_line_fits_the_room_for_it_at_its_longest() {
+    let stats = stats_text("Step 62 of 62", 6, 1_000);
+    assert!(wrap(&stats, COLUMN_CHARS).len() <= STATS_LINES, "{stats}");
+    assert!(wrap(&stats_text("Not started", 6, 12), COLUMN_CHARS).len() <= STATS_LINES);
+}
+
+#[test]
+fn text_that_cannot_be_encoded_is_refused_with_the_reason() {
+    let not_ascii = make_set("Hello £").expect_err("a pound sign is not ASCII");
+    assert!(not_ascii.contains("not ASCII"), "{not_ascii}");
+    let too_long = make_set("abcdefghijklmnopqr").expect_err("18 characters are too many");
+    assert!(too_long.contains("18") && too_long.contains("17"), "{too_long}");
+}
+
+#[test]
+fn every_jump_has_its_own_action_and_a_label_that_fits_a_button() {
+    let actions: HashSet<String> = JUMPS.iter().map(|&(_, index)| format!("{JUMP_ACTION}{index}")).collect();
+    assert_eq!(actions.len(), JUMPS.len());
+    // A button is 140 pixels wide, and a label of this many characters fits at the size it is drawn.
+    assert!(
+        JUMPS.iter().all(|&(label, _)| label.chars().count() <= 16),
+        "a jump label is too long"
+    );
 }
 
 #[test]
@@ -648,4 +574,33 @@ fn a_module_can_be_checked_for_assigning_without_changing_anything() {
     grid.assign(20, 20, true, DataRole::Data)
         .expect("an empty module can be assigned");
     assert_eq!(grid.check_assignable(20, 20), Err(GridError::Occupied { row: 20, col: 20 }));
+}
+
+#[test]
+fn every_note_fits_the_room_for_it_whatever_the_length_of_the_text() {
+    for used in 0..=17 {
+        for region in Region::ALL {
+            let (title, text) = region.describe(used, 4);
+            let title_lines = wrap(&title, NOTE_CHARS).len();
+            let text_lines = wrap(&text, NOTE_CHARS).len();
+            assert!(title_lines <= NOTE_TITLE_LINES, "{title} needs {title_lines} lines");
+            assert!(
+                text_lines <= NOTE_TEXT_LINES,
+                "the note of {title} for {used} bytes needs {text_lines} lines"
+            );
+        }
+    }
+}
+
+#[test]
+fn the_text_the_window_opens_with_is_as_long_as_a_text_can_be_and_can_be_encoded() {
+    assert_eq!(INITIAL_TEXT, "This is a QR code");
+    assert_eq!(INITIAL_TEXT.chars().count(), 17);
+    assert!(INITIAL_TEXT.is_ascii());
+    let set = make_set(INITIAL_TEXT).expect("the text fits");
+    assert_eq!(set.content.bytes.len(), 17);
+    // 4 bits of mode, 8 of count, 136 of data and 4 of terminator fill the 152 bits of the data codewords.
+    assert!(set.content.bitstream.iter().all(|&bit| bit <= 1));
+    assert_eq!(Region::Data.cells(17, 4).len(), 136);
+    assert_eq!(Region::Terminator.cells(17, 4).end, 152);
 }

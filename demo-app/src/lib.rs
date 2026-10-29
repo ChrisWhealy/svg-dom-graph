@@ -83,9 +83,13 @@
 //! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three
 //!   parity bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The
 //!   boxes are one path through the calculation, laid out as a block that runs along one row and back along the next.
-//! - `panel-qr-code` / `#qr-code-diagram` — [`qr_code::build_qr_code_demo`]: the matrix of a QR code, so far with nothing
-//!   encoded. A 21 x 21 grid is drawn with a fixed set of SVG elements, where a module can have a colour, a role, both or
-//!   neither, and a scripted sequence of states steps through it. This is Phase 0 of `design-specs/qr-code-generator.pdf`.
+//! - `panel-qr-code` / `#qr-code-diagram` — [`qr_code::build_qr_code_demo`]: a QR code of Version 1 and level L, made
+//!   from up to 17 ASCII characters. A graph follows the text through its bytes, the bitstream, the data codewords, the
+//!   Reed-Solomon division and all 26 codewords to the scores of eight masks. A matrix of 21 by 21 modules beside it
+//!   shows the function modules, the codewords placed one at a time, and each candidate. 62 steps, with buttons that
+//!   jump to a stage, and a list of roles that outlines and explains the modules of one. The encoder is plain Rust and
+//!   is checked against two independent ones. The scene is large, so it opens in a window of its own, as the hash
+//!   demos' do.
 //! - `panel-bubble-sort` / `#bubble-sort-diagram` — [`bubble_sort::build_bubble_sort_demo`]: Bubble sort of ten values,
 //!   drawn as bars in the same way as Quicksort. A pass compares neighbours, green and blue, and the swap slides the
 //!   two bars past each other. After each pass the largest element left is in place at the end.
@@ -314,6 +318,14 @@ pub fn init_hamming_window() -> Result<(), JsValue> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the QR code scene in `qr-code-window.html`, the window the gallery's own QR code panel opens. Call it once,
+/// from that page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_qr_code_window() -> Result<(), JsValue> {
+    qr_code::build_qr_code_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA-1 scene in `sha1-window.html`, the window the gallery's own SHA1 panel opens. Call it once, from that
 /// page's own script, after the wasm module has loaded.
 #[wasm_bindgen]

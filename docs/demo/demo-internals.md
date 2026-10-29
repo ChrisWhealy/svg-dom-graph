@@ -22,7 +22,7 @@ Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is
   Adding a file needs no code change.
   The server picks the media type from the file extension, so a file must be named for its real format.
   A WebP file called `.svg` will not display.
-* `sha1-window.html`, `sha2-256-window.html`, `sha3-sponge-window.html`, `chacha20-window.html`, `huffman-window.html`, `crc32-window.html` and `hamming-window.html` the pages that the large demos open in a window of their own
+* `sha1-window.html`, `sha2-256-window.html`, `sha3-sponge-window.html`, `chacha20-window.html`, `huffman-window.html`, `crc32-window.html`, `hamming-window.html` and `qr-code-window.html` the pages that the large demos open in a window of their own
 
 `demo-app/` is a separate workspace member — a small worked example, consuming `svg-dom-graph` only through its public API:
 

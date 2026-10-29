@@ -1,62 +1,82 @@
-//! The QR code panel, so far the Phase 0 spike of the design in `design-specs/qr-code-generator.pdf`:
+//! The QR code panel: how a Version 1-L symbol is made from up to 17 ASCII characters, one step at a time.
 //!
-//! - `panel-qr-code` / `#qr-code-diagram` — [`build_qr_code_demo`]: a 21 x 21 matrix drawn with a fixed handful of SVG
-//!   elements, stepped through a scripted sequence of states.
+//! - `panel-qr-code` / `#qr-code-diagram` — [`build_qr_code_demo`]: the description of the demo, and a button that
+//!   opens the scene in a window of its own, which runs [`build_qr_code_window`].
 //!
-//! The spike answers one question: can a symbol of 441 modules be shown with a fixed number of elements, where a module
-//! may have a colour, a role, both or neither? It does not encode anything. The bits it places are a fixed sample.
+//! The scene is a graph of the stages of the encoding, with a 21 by 21 matrix beside it. Stepping through the 62
+//! snapshots changes what the nodes hold and which of their cells are dimmed, and draws the matrix as it is at that
+//! position. The scene is built once and never drawn again.
 //!
-//! The buttons, the list of roles and the text are all elements of the scene, so they zoom and pan with the matrix.
-//!
-//! [`grid`] is the matrix and its rules, [`function`] is the fixed layout of a Version 1 symbol, [`paths`] turns a grid
-//! into path data, [`text`] wraps text into lines, and [`viewport`] writes the matrix to the scene. [`slot`] is what
-//! they write through, and [`state`] holds the position that all of them are drawn from. Everything but the DOM writes
-//! has tests.
+//! [`qr_core`] makes the symbol and has no DOM. [`snapshots`] works out the whole state of the scene at each position
+//! from it, also with no DOM. [`graph`] draws the nodes and edges, [`viewport`] the matrix, and [`text`] the text.
+//! [`state`] holds the position and draws all of them from it, and [`slot`] is what they write through. [`grid`],
+//! [`function`] and [`paths`] are the matrix and its layout.
 
 mod function;
+mod graph;
 mod grid;
 mod paths;
-// Phase 3 draws the encoder's stages as snapshots, and until then only its tests use it.
-#[allow(dead_code, reason = "nothing draws the encoder's stages until Phase 3")]
+// Only some of the encoder is drawn, and the rest is used by its own tests.
+#[allow(
+    dead_code,
+    reason = "the encoder has more than the scene draws, and its tests use all of it"
+)]
 mod qr_core;
 mod slot;
-mod spike;
+mod snapshots;
 mod state;
 mod text;
 mod viewport;
 
 use demo_common::{
     svg_buttons::{self, Button},
-    util::{MARGIN, clear_error, document, ensure_svg_in, report_error, stringify},
+    util::{
+        CONTENT_TOP, MARGIN, add_step_driver, clear_error, document, ensure_svg_in, fit_window_to_stage, report_error,
+        resize_svg, step_toolbar_options, stringify, wire_open_window,
+    },
 };
+use graph::Graph;
 use grid::{BitGrid, CellState, QrModuleKind, SIZE};
-use spike::spike_steps;
+use qr_core::{encode_text, input::MAX_BYTES, symbol::build_symbol};
+use snapshots::{COUNT, JUMPS, NodeKey, SnapshotSet};
 use state::State;
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
-use svg_dom_graph::scene::{Scene, Side, ToolbarOptions};
+use svg_dom_graph::{
+    NodeId,
+    scene::{Scene, SceneTitleOptions, Selection, Side, ToolbarOptions},
+};
 use text::{BlockLayout, TextBlock};
 use viewport::{MODULE_PIXELS, Viewport};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
-/// The files behind this demo's one function: the grid, the layout, the path data, the steps and the scene's parts.
+/// The files behind this demo's one function: the snapshots, the scene's parts and the matrix with its layout. The
+/// encoder in `qr_core` is shown by its own tests, which are longer than any of these.
 pub(crate) const FILES: &[crate::SourceFile] = &[
-    crate::source_file!("qr_code/grid.rs", "grid.rs"),
-    crate::source_file!("qr_code/function.rs", "function.rs"),
-    crate::source_file!("qr_code/paths.rs", "paths.rs"),
-    crate::source_file!("qr_code/spike.rs", "spike.rs"),
-    crate::source_file!("qr_code/slot.rs", "slot.rs"),
+    crate::source_file!("qr_code/snapshots.rs", "snapshots.rs"),
+    crate::source_file!("qr_code/graph.rs", "graph.rs"),
     crate::source_file!("qr_code/state.rs", "state.rs"),
-    crate::source_file!("qr_code/text.rs", "text.rs"),
     crate::source_file!("qr_code/viewport.rs", "viewport.rs"),
+    crate::source_file!("qr_code/text.rs", "text.rs"),
+    crate::source_file!("qr_code/slot.rs", "slot.rs"),
+    crate::source_file!("qr_code/paths.rs", "paths.rs"),
+    crate::source_file!("qr_code/function.rs", "function.rs"),
+    crate::source_file!("qr_code/grid/mod.rs", "grid/mod.rs"),
+    crate::source_file!("qr_code/grid/bit_grid.rs", "grid/bit_grid.rs"),
+    crate::source_file!("qr_code/grid/qr_module_kind.rs", "grid/qr_module_kind.rs"),
+    crate::source_file!("qr_code/grid/grid_error.rs", "grid/grid_error.rs"),
     crate::source_file!("qr_code/mod.rs", "mod.rs"),
 ];
+
+/// The window page the gallery panel opens, and the name of that window.
+const WINDOW_PAGE: &str = "qr-code-window.html";
+const WINDOW_NAME: &str = "qr-code-window";
 
 const STAGE_ID: &str = "qr-code-diagram-stage";
 const DIAGRAM_ID: &str = "qr-code-diagram";
@@ -64,38 +84,46 @@ const MATRIX_TEXT_ID: &str = "qr-code-matrix-text";
 const ANNOUNCEMENT_ID: &str = "qr-code-announcement";
 const ERROR_ID: &str = "qr-code-error";
 
-/// The actions of the buttons that move through the steps.
-const PREV: &str = "prev";
-const NEXT: &str = "next";
-const RESTART: &str = "restart";
+/// The text the scene opens with.
+const INITIAL_TEXT: &str = "This is a QR code";
 
-/// The action of the button that outlines no role. The other role buttons are `role-` and the role's own key.
+/// The action of the button that outlines no role. The other role buttons are `role-` and the role's own key. A button
+/// that jumps to a snapshot has the action `jump-` and the number of the snapshot.
 const NO_ROLE: &str = "role-none";
+const JUMP_ACTION: &str = "jump-";
 
 /// The room east of the scene's content for the zoom toolbar.
 const TOOLBAR_ROOM: f64 = 80.0;
 
-/// The left column holds the buttons, the matrix and what the step did.
-const MATRIX_TOP: f64 = 76.0;
-const BUTTON_HEIGHT: f64 = 36.0;
-const BUTTON_GAP: f64 = 12.0;
-const CAPTION_TOP: f64 = MATRIX_TOP + (SIZE * MODULE_PIXELS) as f64 + 28.0;
-const LINE_HEIGHT: f64 = 20.0;
-const CAPTION_LINES: usize = 4;
-const STATS_TOP: f64 = CAPTION_TOP + CAPTION_LINES as f64 * LINE_HEIGHT + 8.0;
-const STATS_LINES: usize = 2;
-/// Wide enough for the matrix, which is 420 pixels, at the size the text is drawn.
-const LEFT_COLUMN_CHARS: usize = 54;
+/// The space between the graph and the column of the matrix.
+const COLUMN_GAP: f64 = 60.0;
 
-/// The right column holds the list of roles, then the key, then the explanation of the chosen role.
-const RIGHT_LEFT: f64 = MARGIN + (SIZE * MODULE_PIXELS) as f64 + 40.0;
+/// The note that says what the marked part of the bitstream is stands to the right of the bitstream, which is narrower
+/// than the rest of the graph. This is the gap between them, how wide a note of the longest line is on the page, and
+/// how wide and tall the note may be.
+const NOTE_GAP: f64 = 40.0;
+const NOTE_PIXELS: f64 = 220.0;
+const NOTE_CHARS: usize = 30;
+const NOTE_TITLE_LINES: usize = 2;
+const NOTE_TEXT_LINES: usize = 6;
+
+/// The right column holds the buttons that jump to a stage, the matrix and what the step did, what the stage is for,
+/// and the list of roles with what the chosen role is for.
+const COLUMN_WIDTH: f64 = 460.0;
+const COLUMN_CHARS: usize = 54;
+const LINE_HEIGHT: f64 = 20.0;
+const JUMP_WIDTH: f64 = 140.0;
+const JUMP_HEIGHT: f64 = 32.0;
+const JUMP_GAP: f64 = 10.0;
+const JUMPS_PER_ROW: usize = 3;
 const ROLE_BUTTON_WIDTH: f64 = 220.0;
 const ROLE_BUTTON_HEIGHT: f64 = 30.0;
 const ROLE_BUTTON_GAP: f64 = 6.0;
+const CAPTION_LINES: usize = 4;
+const STATS_LINES: usize = 2;
+const STAGE_LINES: usize = 7;
 const KEY_LINES: usize = 3;
 const EXPLANATION_LINES: usize = 9;
-const RIGHT_COLUMN_WIDTH: f64 = 460.0;
-const RIGHT_COLUMN_CHARS: usize = 56;
 
 /// The fill and the outline of a button, chosen or not.
 const CHOSEN: (&str, &str) = ("#bcd9f7", "#2b5d9b");
@@ -109,20 +137,24 @@ const KEY: &str = "A pale blue module has no colour yet. A blue outline marks th
 const NO_ROLE_EXPLANATION: &str = "No role is chosen. Choose one from the list to outline its modules in the matrix, \
                                    and to read what it is for.";
 
+/// Said before the walk starts.
+const UNSTARTED_EXPLANATION: &str = "Press Next, or choose a stage, to begin. First you may type other text, of up to \
+                                     17 ASCII characters, in the box. The matrix is empty until the symbol is built.";
+
 thread_local! {
-    // Keeps the spike alive for the page's lifetime. The listeners reach it from here.
+    // Keeps the position alive for the page's lifetime. The listeners reach it from here.
     static STATE: RefCell<Option<State>> = const { RefCell::new(None) };
-    // Keeps the scene alive. Nothing here draws it again, so nothing else holds it.
+    // Keeps the scene alive. It is built once, and the listeners get a handle to it from here.
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The action of the button that outlines `role`, or [`NO_ROLE`] for `None`.
 fn role_action(role: Option<QrModuleKind>) -> String {
     role.map_or_else(|| NO_ROLE.to_owned(), |kind| format!("role-{}", kind.key()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the step did, and how many modules there are of each colour afterwards.
 fn caption_text(label: &str, grid: &BitGrid) -> String {
     format!(
@@ -134,32 +166,41 @@ fn caption_text(label: &str, grid: &BitGrid) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Where the walk is, and how much the viewport had to write to get there.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where the walk is, and how much the matrix had to write to get there.
 fn stats_text(position: &str, elements: u32, writes: usize) -> String {
     format!("{position}. The matrix is {elements} elements, and this change wrote {writes} of their values.")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The scene's own parts that show the state, which [`State::apply`] writes.
-struct Display {
-    viewport: Viewport,
-    layer: web_sys::Element,
-    caption: TextBlock,
-    stats: TextBlock,
-    role_name: TextBlock,
-    role_text: TextBlock,
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every snapshot of `text`.
+///
+/// # Errors
+///
+/// Returns `Err` with the reason if the text is not ASCII or is more than 17 bytes, or if the symbol cannot be made.
+fn make_set(text: &str) -> Result<SnapshotSet, String> {
+    let encoded = encode_text(text).map_err(|e| e.to_string())?;
+    let symbol = build_symbol(&encoded).map_err(|e| e.to_string())?;
+    let set = snapshots::build(text, &encoded, &symbol).map_err(|e| e.to_string())?;
+    if set.snapshots.len() == COUNT {
+        Ok(set)
+    } else {
+        Err(format!("{} snapshots were made, not {COUNT}", set.snapshots.len()))
+    }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Changes the spike's state with `change`, then draws it. A failure is shown on the page and leaves the state as
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The scene, which the listeners cannot be given directly.
+fn scene() -> Option<Scene> {
+    SCENE.with_borrow(Clone::clone)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Changes the position with `change`, then draws it. A failure is shown on the page and leaves the position as
 /// `change` made it, so that the next change draws the whole of it again.
-fn update(change: impl FnOnce(&mut State)) {
+fn update(scene: &Scene, change: impl FnOnce(&mut State) -> Result<(), String>) {
     let result = STATE.with_borrow_mut(|slot| match slot.as_mut() {
-        Some(state) => {
-            change(state);
-            state.apply()
-        },
+        Some(state) => change(state).and_then(|()| state.apply(scene)),
         None => Ok(()),
     });
     match result {
@@ -168,23 +209,79 @@ fn update(change: impl FnOnce(&mut State)) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Does what the button `action` says. A button that is disabled has nothing to do, so it changes nothing.
-fn press(action: &str) {
-    match action {
-        PREV => update(|state| state.at = spike::prev(state.at)),
-        NEXT => update(|state| state.at = spike::next(state.at, state.steps.len())),
-        RESTART => update(|state| state.at = None),
-        NO_ROLE => update(|state| state.role = None),
-        other => {
-            if let Some(role) = other.strip_prefix("role-").and_then(QrModuleKind::from_key) {
-                update(|state| state.role = Some(role));
-            }
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Stops the browser taking more than 17 characters into the text node, whether they are typed or pasted.
+///
+/// The library has no limit of its own on a text node, so this is set on the `<input>` the node holds. Every character
+/// that can be encoded is one byte, so 17 characters is the 17 bytes that a symbol holds. Text set by a script is not
+/// limited by the browser, so [`take_text`] still refuses what is too long, and says why.
+///
+/// # Errors
+///
+/// Returns `Err` if the text node's `<input>` cannot be found or set.
+fn limit_text_input(document: &web_sys::Document) -> Result<(), String> {
+    document
+        .query_selector(&format!("#{DIAGRAM_ID} input"))
+        .map_err(|e| format!("could not look for the text input: {e:?}"))?
+        .ok_or_else(|| "the text node has no input".to_owned())?
+        .set_attribute("maxlength", &MAX_BYTES.to_string())
+        .map_err(|e| format!("could not limit the text input: {e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Takes in new text from the text node.
+///
+/// The new snapshots are made first, and if they cannot be, the text is refused with the reason and nothing else
+/// changes: the symbol on show stays. Otherwise the nodes are given the new values, the walk goes back to the start
+/// through the anchor's own selection, and the start is drawn once. Nothing is built again.
+fn take_text(scene: &Scene, text: &str) {
+    let set = match make_set(text) {
+        Ok(set) => set,
+        Err(message) => {
+            report_error(ERROR_ID, &message);
+            return;
         },
+    };
+    update(scene, |state| {
+        state.display.graph.write_content(scene, &set.content)?;
+        state.set = set;
+        state.at = None;
+        scene.set_selection(state.display.step, Selection::None).map_err(stringify)
+    });
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Does what the button `action` says. A role button outlines or stops outlining a role. A jump button goes to a
+/// snapshot by setting the anchor's selection, which does not call the toolbar's own callback, so the position is drawn
+/// here.
+fn press(action: &str) {
+    let Some(scene) = scene() else { return };
+    if let Some(index) = action.strip_prefix(JUMP_ACTION).and_then(|n| n.parse::<usize>().ok()) {
+        if index < COUNT {
+            update(&scene, |state| {
+                scene
+                    .set_selection(state.display.step, Selection::Cell(index))
+                    .map_err(stringify)?;
+                state.at = Some(index);
+                Ok(())
+            });
+        }
+        return;
+    }
+    let role = if action == NO_ROLE {
+        None
+    } else {
+        action.strip_prefix("role-").and_then(QrModuleKind::from_key)
+    };
+    if action == NO_ROLE || role.is_some() {
+        update(&scene, |state| {
+            state.role = role;
+            Ok(())
+        });
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds a button of `size` with its top left corner at `origin`.
 fn add_button(
     document: &web_sys::Document,
@@ -193,7 +290,6 @@ fn add_button(
     size: Size,
     label: &str,
     action: &str,
-    pressed: Option<bool>,
 ) -> Result<(), String> {
     svg_buttons::add_button(
         document,
@@ -203,132 +299,219 @@ fn add_button(
             label,
             action,
             colours: NOT_CHOSEN,
-            pressed,
+            pressed: Some(false),
         },
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Builds the Phase 0 spike of the QR code demo: a 21 x 21 matrix, drawn with six SVG elements however many of its
-/// modules have a colour, and stepped through five scripted states by Prev, Next and Restart.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the QR code scene in `qr-code-window.html`, the window the gallery's own QR code panel opens. Call it once,
+/// from that page's own script, after the wasm module has loaded.
 ///
-/// Everything is in the scene: the three step buttons, the list of roles, the matrix and the text. So they all zoom and
-/// pan together, and a button works from the keyboard. The scene is built once and never drawn again. A change writes
-/// only the values that differ.
+/// The scene is a graph of the stages that make a symbol, from the text to the scores of the masks, with a matrix of 21
+/// by 21 modules beside it. Each node holds as many cells for one text as for another, so it is built once. Typing in
+/// the text node only gives the nodes new values, and goes back to the start. The toolbar steps through 62 snapshots,
+/// and six buttons jump to the first of a stage. The role buttons outline the modules of one role and explain it.
 ///
-/// A module has a colour and a role, and either can come first. The format modules are reserved with the function
-/// patterns, but only coloured in the last step. The data modules have neither until their codeword is placed. A module
-/// without a colour is drawn pale blue, so it cannot be taken for a light one. Choosing a role outlines its modules and
-/// explains what the role is for. The highlight outlines the modules a step changed. Both are paths of their own, so
-/// changing them leaves the three base paths alone.
-///
-/// The bits placed are a fixed sample, and nothing is encoded. The matrix is plain SVG in the scene's layer, because
-/// the spike must not need a new public API.
+/// Every position is drawn from a snapshot that was made whole, so going back shows exactly what going forward did. The
+/// library draws the nodes and edges, and the matrix is plain SVG in the scene's layer, so that nothing new is asked of
+/// its public interface.
 ///
 /// # Errors
 ///
-/// Returns `Err` if `index.html` is missing a part of the panel, or if any library call fails.
-pub(crate) fn build_qr_code_demo() -> Result<(), String> {
+/// Returns `Err` if the page is missing a part of the window, or if any library call fails.
+pub(crate) fn build_qr_code_window() -> Result<(), String> {
     let document = document()?;
-    let steps = spike_steps().map_err(|e| e.to_string())?;
+    let set = make_set(INITIAL_TEXT)?;
 
-    let height = (CAPTION_TOP + (CAPTION_LINES + STATS_LINES) as f64 * LINE_HEIGHT + 2.0 * MARGIN).max(660.0);
-    let size = Size::new(RIGHT_LEFT + RIGHT_COLUMN_WIDTH + MARGIN + TOOLBAR_ROOM, height);
-    ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, size)?;
+    // The size is only known once everything is placed, so the canvas starts large and is cut down at the end.
+    ensure_svg_in(&document, STAGE_ID, DIAGRAM_ID, Size::new(2400.0, 1800.0))?;
     let scene = Scene::new(SvgRoot::attach(DIAGRAM_ID).map_err(stringify)?).map_err(stringify)?;
-    scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
+    scene
+        .show_scene_title("QR code generator", SceneTitleOptions::default())
+        .map_err(stringify)?;
+
+    let graph = Graph::build(&scene, &set.content, Point::new(MARGIN, CONTENT_TOP), |scene, _node, text| {
+        take_text(scene, text)
+    })?;
+    limit_text_input(&document)?;
+    // The step driver is the node the toolbar steps along. It is off the canvas and hidden from assistive technology.
+    let step = add_step_driver(&scene, DIAGRAM_ID, COUNT)?;
+    scene
+        .show_selection_toolbar(step, step_toolbar_options(), |scene, _node, transition| {
+            update(scene, |state| {
+                state.at = transition.to;
+                Ok(())
+            });
+        })
+        .map_err(stringify)?;
+
     let layer = svg_buttons::layer(&document, DIAGRAM_ID)?;
+    // The note is to the right of the bitstream. The right column starts after whichever reaches further east, so that
+    // the note cannot run into it, though in practice the graph does, since the bitstream is the narrower.
+    let bitstream = graph.rect(&scene, NodeKey::Bitstream)?;
+    let note_x = bitstream.origin.x + bitstream.size.width + NOTE_GAP;
+    let left = graph.right.max(note_x + NOTE_PIXELS) + COLUMN_GAP;
 
-    // The buttons that move through the steps are along the top of the left column.
-    let mut left = MARGIN;
-    for (label, action, width) in [("Prev", PREV, 100.0), ("Next", NEXT, 100.0), ("Restart", RESTART, 110.0)] {
+    // The buttons that jump to a stage are along the top of the right column, in rows.
+    let mut top = CONTENT_TOP;
+    for (position, &(label, index)) in JUMPS.iter().enumerate() {
+        let (row, column) = (position / JUMPS_PER_ROW, position % JUMPS_PER_ROW);
         add_button(
             &document,
             &layer,
-            Point::new(left, MARGIN),
-            Size::new(width, BUTTON_HEIGHT),
+            Point::new(
+                left + column as f64 * (JUMP_WIDTH + JUMP_GAP),
+                top + row as f64 * (JUMP_HEIGHT + JUMP_GAP),
+            ),
+            Size::new(JUMP_WIDTH, JUMP_HEIGHT),
             label,
-            action,
-            None,
+            &format!("{JUMP_ACTION}{index}"),
         )?;
-        left += width + BUTTON_GAP;
     }
+    top += JUMPS.len().div_ceil(JUMPS_PER_ROW) as f64 * (JUMP_HEIGHT + JUMP_GAP);
 
-    // The list of roles is the top of the right column. Each is a toggle button, and only one is pressed.
-    let mut top = MARGIN;
-    for role in std::iter::once(None).chain(QrModuleKind::ALL.map(Some)) {
-        let label = role.map_or("No role", QrModuleKind::label);
-        add_button(
-            &document,
-            &layer,
-            Point::new(RIGHT_LEFT, top),
-            Size::new(ROLE_BUTTON_WIDTH, ROLE_BUTTON_HEIGHT),
-            label,
-            &role_action(role),
-            Some(false),
-        )?;
-        top += ROLE_BUTTON_HEIGHT + ROLE_BUTTON_GAP;
-    }
-
-    let block = |x: f64, y: f64, max_lines: usize, width: usize, bold: bool| BlockLayout {
+    let block = |x: f64, y: f64, max_lines: usize, bold: bool| BlockLayout {
         x,
         y,
         line_height: LINE_HEIGHT,
         max_lines,
-        width,
+        width: COLUMN_CHARS,
         bold,
     };
-    let viewport = Viewport::new(&document, &layer, (MARGIN, MATRIX_TOP), MATRIX_TEXT_ID)?;
-    let caption = TextBlock::new(
+    let text_block =
+        |x: f64, y: f64, max_lines: usize, bold: bool| TextBlock::new(&document, &layer, block(x, y, max_lines, bold));
+
+    // The matrix, under its heading, then what the step did and the counts.
+    text_block(left, top + 20.0, 1, true)?.set("QR matrix, 21 by 21 modules")?;
+    top += 30.0;
+    let viewport = Viewport::new(&document, &layer, (left, top), MATRIX_TEXT_ID)?;
+    top += (SIZE * MODULE_PIXELS) as f64 + 24.0;
+    let caption = text_block(left, top, CAPTION_LINES, false)?;
+    top += CAPTION_LINES as f64 * LINE_HEIGHT + 4.0;
+    let stats = text_block(left, top, STATS_LINES, false)?;
+    top += STATS_LINES as f64 * LINE_HEIGHT + 16.0;
+
+    // What the stage is for.
+    let stage_name = text_block(left, top, 1, true)?;
+    top += LINE_HEIGHT + 4.0;
+    let stage_text = text_block(left, top, STAGE_LINES, false)?;
+    top += STAGE_LINES as f64 * LINE_HEIGHT + 16.0;
+
+    // The list of roles is two columns of toggle buttons. Only one is pressed.
+    let roles: Vec<Option<QrModuleKind>> = std::iter::once(None).chain(QrModuleKind::ALL.map(Some)).collect();
+    for (position, role) in roles.iter().enumerate() {
+        let (row, column) = (position / 2, position % 2);
+        add_button(
+            &document,
+            &layer,
+            Point::new(
+                left + column as f64 * (ROLE_BUTTON_WIDTH + JUMP_GAP),
+                top + row as f64 * (ROLE_BUTTON_HEIGHT + ROLE_BUTTON_GAP),
+            ),
+            Size::new(ROLE_BUTTON_WIDTH, ROLE_BUTTON_HEIGHT),
+            role.map_or("No role", QrModuleKind::label),
+            &role_action(*role),
+        )?;
+    }
+    top += roles.len().div_ceil(2) as f64 * (ROLE_BUTTON_HEIGHT + ROLE_BUTTON_GAP) + 16.0;
+    text_block(left, top, KEY_LINES, false)?.set(KEY)?;
+    top += KEY_LINES as f64 * LINE_HEIGHT + 20.0;
+    let role_name = text_block(left, top, 1, true)?;
+    top += LINE_HEIGHT + 4.0;
+    let role_text = text_block(left, top, EXPLANATION_LINES, false)?;
+    top += EXPLANATION_LINES as f64 * LINE_HEIGHT;
+
+    let size = Size::new(left + COLUMN_WIDTH + MARGIN + TOOLBAR_ROOM, top.max(graph.bottom) + MARGIN);
+    resize_svg(&document, DIAGRAM_ID, size)?;
+    scene.refresh_layout().map_err(stringify)?;
+    scene.show_toolbar(ToolbarOptions::new(Side::East)).map_err(stringify)?;
+
+    // The note to the right of the bitstream says what the part that is marked in it holds, a part at a time.
+    let note_name = TextBlock::new(
         &document,
         &layer,
-        block(MARGIN, CAPTION_TOP, CAPTION_LINES, LEFT_COLUMN_CHARS, false),
+        BlockLayout {
+            x: note_x,
+            y: bitstream.origin.y + LINE_HEIGHT,
+            line_height: LINE_HEIGHT,
+            max_lines: NOTE_TITLE_LINES,
+            width: NOTE_CHARS,
+            bold: true,
+        },
     )?;
-    let stats = TextBlock::new(
+    let note_text = TextBlock::new(
         &document,
         &layer,
-        block(MARGIN, STATS_TOP, STATS_LINES, LEFT_COLUMN_CHARS, false),
-    )?;
-    let key = TextBlock::new(
-        &document,
-        &layer,
-        block(RIGHT_LEFT, top + 16.0, KEY_LINES, RIGHT_COLUMN_CHARS, false),
-    )?;
-    key.set(KEY)?;
-    let name_top = top + 16.0 + KEY_LINES as f64 * LINE_HEIGHT + 20.0;
-    let role_name = TextBlock::new(&document, &layer, block(RIGHT_LEFT, name_top, 1, RIGHT_COLUMN_CHARS, true))?;
-    let role_text = TextBlock::new(
-        &document,
-        &layer,
-        block(
-            RIGHT_LEFT,
-            name_top + LINE_HEIGHT + 4.0,
-            EXPLANATION_LINES,
-            RIGHT_COLUMN_CHARS,
-            false,
-        ),
+        BlockLayout {
+            x: note_x,
+            y: bitstream.origin.y + LINE_HEIGHT * (NOTE_TITLE_LINES as f64 + 1.0),
+            line_height: LINE_HEIGHT,
+            max_lines: NOTE_TEXT_LINES,
+            width: NOTE_CHARS,
+            bold: false,
+        },
     )?;
 
     let state = State {
-        steps,
+        set,
         at: None,
         role: None,
-        empty: BitGrid::new(SIZE, SIZE),
         display: Display {
             viewport,
             layer,
+            graph,
+            step,
             caption,
             stats,
+            stage_name,
+            stage_text,
             role_name,
             role_text,
+            note_name,
+            note_text,
         },
     };
-    state.apply()?;
+    state.apply(&scene)?;
     STATE.with_borrow_mut(|slot| *slot = Some(state));
     SCENE.with_borrow_mut(|slot| *slot = Some(scene));
-    svg_buttons::watch(&document, STAGE_ID, press)
+    svg_buttons::watch(&document, STAGE_ID, press)?;
+    fit_window_to_stage(DIAGRAM_ID)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The scene's own parts that show the state, which [`State::apply`] writes.
+struct Display {
+    viewport: Viewport,
+    layer: web_sys::Element,
+    graph: Graph,
+    /// The node the toolbar steps along.
+    step: NodeId,
+    caption: TextBlock,
+    stats: TextBlock,
+    stage_name: TextBlock,
+    stage_text: TextBlock,
+    role_name: TextBlock,
+    role_text: TextBlock,
+    /// The heading and the text of the note to the right of the bitstream.
+    note_name: TextBlock,
+    note_text: TextBlock,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The QR code scene is large. So the gallery panel keeps only the description, plus a button that opens the scene in a
+/// window of its own: `qr-code-window.html`, which runs [`build_qr_code_window`] there. A named window is reused.
+/// Pressing the button again focuses the one already open.
+///
+/// # Errors
+///
+/// Returns `Err` if `index.html` is missing `#qr-code-open`, or if a listener could not be attached to it.
+pub(crate) fn build_qr_code_demo() -> Result<(), String> {
+    wire_open_window(&document()?, "qr-code-open", WINDOW_PAGE, WINDOW_NAME)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[cfg(test)]
+mod snapshot_tests;
 #[cfg(test)]
 mod unit_tests;

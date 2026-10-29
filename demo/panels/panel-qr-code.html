@@ -2,42 +2,39 @@
     class="section"
     id="panel-qr-code"
     data-group="Error Detection &amp; Correction"
-    data-label="QR code (matrix spike)"
+    data-label="QR code"
     data-order="30"
 >
-    <h2>QR Code: the Matrix</h2>
+    <h2>QR Code Generator</h2>
     <p>
-        A QR code is a square grid of dark and small light squares known as "modules". A Version 1 symbol is 21 by 21,
-        which is 441 modules.
+        A QR code is a square grid of dark and light modules that can be read by an optical scanner or the camera in a
+        phone.
     </p>
     <p>
-        This demo shows the first part of a QR code demo: the grid, and nothing else. It shows how the matrix will be
-        drawn, and it encodes no text. The bits it places are a fixed sample.
+        This demo show how the smallest kind is constructed: Version 1, which is 21 by 21 modules, with error correction
+        level L, for text of up to 17 ASCII characters. Every number is worked out in plain Rust by an encoder written
+        for this demo, and checked against two independent encoders. The library draws the nodes and edges, and it
+        encodes nothing.
     </p>
-    <p>
-        Each module has a colour and functions in a particular role, and either can be known first. The finder,
-        separator, timing and dark modules are all known from the start. The format modules are reserved with them, so
-        their role is known, but their colour will not be allocated until the last step. A data module has neither until
-        a codeword is placed in it. A module without a colour is drawn pale blue, so it cannot be taken for a light one.
-    </p>
-    <p>The Prev, Next and Restart buttons step through five states.</p>
-    <p>
-        Choose a role from the list to highlight every module that performs this role, and to read what the role is for.
-        The blue outline marks the modules the step changed, and the orange outline marks the role.
-    </p>
-    <p>The diagram is drawn with the same few SVG elements at every step, however many modules have a colour.</p>
-    <div class="canvas" id="qr-code-diagram-stage"></div>
-    <details>
-        <summary>The matrix as text</summary>
-        <p><code>.</code> is a module without a colour, <code>0</code> is light and <code>1</code> is dark.</p>
-        <pre id="qr-code-matrix-text"></pre>
-    </details>
-    <p id="qr-code-error" class="demo-error" hidden></p>
-    <!-- Said by a screen reader at each step. It is here, not in the viewport, because the viewport is not a live region. -->
-    <p
-        id="qr-code-announcement"
-        role="status"
-        aria-live="polite"
-        style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap"
-    ></p>
+    <p>The diagram follows the text through the stages needed to create the symbol:</p>
+    <ol>
+        <li><strong>Bytes.</strong> Each character is one byte.</li>
+        <li><strong>Bitstream.</strong> The mode, the count and the bytes become bits, ended by a terminator.</li>
+        <li><strong>Data codewords.</strong> The bits are cut into 19 codewords of 8 bits, with padding.</li>
+        <li>
+            <strong>Reed-Solomon.</strong> Each data codeword takes the remainder of a division one step further. The
+            remainder is the 7 error correction codewords, which let a scanner repair a damaged symbol.
+        </li>
+        <li>
+            <strong>Function modules.</strong> The finder, separator and timing patterns and the dark module are drawn
+            first. The format modules are reserved, but have no colour yet.
+        </li>
+        <li><strong>Placement.</strong> The 26 codewords fill the other modules, two columns at a time.</li>
+        <li>
+            <strong>Masks.</strong> Each of eight masks flips a pattern of the data modules. Each candidate gets its own
+            format information and is scored, and the lowest score wins.
+        </li>
+    </ol>
+    <p>The scene is large, so it opens in a window of its own.</p>
+    <button id="qr-code-open" class="open-window" type="button">Open the demo in its own window</button>
 </section>

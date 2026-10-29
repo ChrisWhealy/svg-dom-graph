@@ -15,12 +15,13 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: State dimension assumptions (`5a2e9cf`)
 - Implement phase 1 of QR Code generator demo: pure Rust QR encoder (`f6429c1`)
 - Doc only: State reference-encoder differences (`169c2d8`)
-- Implement phase 2 of QR Code generator demo: QR symbol (``)
+- Implement phase 2 of QR Code generator demo: QR symbol (`1553f9b`)
+- Implement phase 3 of QR Code generator demo: Integration (``)
 
 ## Fixed
 
 - Prevent `BitWriter::check_room()` from overflowing for extreme arguments (`0ade4a2`)
-- Prevent invalid mask indices from being silently accepted (``)
+- Prevent invalid mask indices from being silently accepted (`6a29fc3`)
 
 ## Changed
 

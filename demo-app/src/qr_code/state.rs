@@ -1,57 +1,60 @@
-//! The spike's position, and what drawing it takes.
+//! The position in the walk, and what drawing it takes.
 //!
-//! [`State`] is the one place the position is kept, so that the matrix, the buttons and the text are all drawn from it.
+//! [`State`] is the one place the position is kept, so that the graph, the matrix, the buttons and the text are all
+//! drawn from it. Every draw is of the whole state, and the parts skip what is already so, so a draw does not depend on
+//! the one before it.
 
 use super::{
-    ANNOUNCEMENT_ID, CHOSEN, Display, NEXT, NO_ROLE_EXPLANATION, NOT_CHOSEN, PREV, RESTART, caption_text,
-    grid::{BitGrid, QrModuleKind},
+    ANNOUNCEMENT_ID, CHOSEN, Display, JUMP_ACTION, NO_ROLE_EXPLANATION, NOT_CHOSEN, UNSTARTED_EXPLANATION,
+    caption_text,
+    grid::QrModuleKind,
     role_action,
-    spike::SpikeStep,
+    snapshots::{COUNT, JUMPS, SnapshotSet, Stage},
     stats_text,
     viewport::Frame,
 };
 use demo_common::{svg_buttons, util::announce};
+use svg_dom_graph::scene::Scene;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The one place the spike keeps its position, so that every display is drawn from it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Everything that decides what is drawn.
 pub(super) struct State {
-    pub(super) steps: Vec<SpikeStep>,
-    /// `None` is the unstarted state, which shows an empty grid.
+    /// Every snapshot of the current input.
+    pub(super) set: SnapshotSet,
+    /// `None` is the unstarted state, which shows an empty matrix and nothing but the input.
     pub(super) at: Option<usize>,
+    /// The role whose modules are outlined.
     pub(super) role: Option<QrModuleKind>,
-    pub(super) empty: BitGrid,
     pub(super) display: Display,
 }
 
 impl State {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Draws the whole of the current state, and brings the buttons and the text into line with it.
+    /// Draws the whole of the current state in `scene`.
     ///
     /// # Errors
     ///
-    /// Returns `Err` if the DOM refuses a write, or a text does not fit its block. The next call writes whatever is
-    /// still out of date.
-    pub(super) fn apply(&self) -> Result<(), String> {
+    /// Returns `Err` if the DOM or the library refuses a write, or a text does not fit its block. The next call writes
+    /// whatever is still out of date.
+    pub(super) fn apply(&self, scene: &Scene) -> Result<(), String> {
         let display = &self.display;
-        let (label, grid, highlights): (&str, &BitGrid, &[(usize, usize)]) = match self.at {
-            None => ("Not started. Every module is empty.", &self.empty, &[]),
-            Some(index) => {
-                let step = &self.steps[index];
-                (step.label, &step.grid, &step.highlights)
-            },
-        };
-        let caption = caption_text(label, grid);
+        let snapshot = self.set.at(self.at);
+        let caption = caption_text(&snapshot.label, &snapshot.grid);
         let writes = display.viewport.render(&Frame {
-            grid,
-            highlights,
+            grid: &snapshot.grid,
+            highlights: &snapshot.highlights,
             role: self.role,
             summary: &caption,
         })?;
+        display.graph.show(scene, snapshot)?;
 
-        let last = self.steps.len() - 1;
-        svg_buttons::set_disabled(&display.layer, PREV, self.at.is_none())?;
-        svg_buttons::set_disabled(&display.layer, RESTART, self.at.is_none())?;
-        svg_buttons::set_disabled(&display.layer, NEXT, self.at == Some(last))?;
+        // The button of the stage that the position is in is pressed, and none is before the walk starts.
+        for &(label, index) in &JUMPS {
+            let current = self.at.is_some() && Stage::of(index) == snapshot.stage;
+            let action = format!("{JUMP_ACTION}{index}");
+            svg_buttons::set_pressed(&display.layer, &action, current, if current { CHOSEN } else { NOT_CHOSEN })?;
+            debug_assert!(!label.is_empty());
+        }
         for role in std::iter::once(None).chain(QrModuleKind::ALL.map(Some)) {
             let chosen = role == self.role;
             svg_buttons::set_pressed(
@@ -64,25 +67,39 @@ impl State {
 
         let position = self
             .at
-            .map_or("Not started".to_owned(), |index| format!("Step {} of {}", index + 1, last + 1));
+            .map_or("Not started".to_owned(), |index| format!("Step {} of {COUNT}", index + 1));
         display.caption.set(&caption)?;
         display
             .stats
             .set(&stats_text(&position, display.viewport.element_count()?, writes))?;
+        let (stage_name, stage_text) = if self.at.is_some() {
+            (snapshot.stage.name(), snapshot.stage.explanation())
+        } else {
+            ("Not started", UNSTARTED_EXPLANATION)
+        };
+        display.stage_name.set(stage_name)?;
+        display.stage_text.set(stage_text)?;
+        let (note_name, note_text) = snapshot.note.as_ref().map_or(("", ""), |(name, text)| (name, text));
+        display.note_name.set(note_name)?;
+        display.note_text.set(note_text)?;
         display.role_name.set(self.role.map_or("No role chosen", QrModuleKind::label))?;
         display
             .role_text
             .set(self.role.map_or(NO_ROLE_EXPLANATION, QrModuleKind::explanation))?;
 
         let outlined = self.role.map_or(String::new(), |role| {
-            let count = grid.cells().filter(|&(row, col)| grid.role(row, col) == Some(role)).count();
+            let count = snapshot
+                .grid
+                .cells()
+                .filter(|&(row, col)| snapshot.grid.role(row, col) == Some(role))
+                .count();
             format!(" Outlining {count} {} modules.", role.label().to_lowercase())
         });
         // The unstarted label already says so, and saying it twice reads badly aloud.
         let spoken = if self.at.is_some() {
-            format!("{position}. {label}")
+            format!("{position}. {}", snapshot.label)
         } else {
-            label.to_owned()
+            snapshot.label.clone()
         };
         announce(ANNOUNCEMENT_ID, &format!("{spoken}{outlined}"));
         Ok(())

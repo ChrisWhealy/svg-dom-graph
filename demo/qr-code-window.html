@@ -1,0 +1,44 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>QR code generator — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- The QR code scene in a window of its own. The gallery's own panel keeps the description and opens this page
+     (see `build_qr_code_demo`). `init_qr_code_window` builds the scene here, then resizes this window to fit it. -->
+
+<body>
+    <section class="section active scene-window" id="qr-code-window">
+        <div class="canvas" id="qr-code-diagram-stage">
+        </div>
+        <details>
+            <summary>The matrix as text</summary>
+            <p><code>.</code> is a module without a colour, <code>0</code> is light and <code>1</code> is dark.</p>
+            <pre id="qr-code-matrix-text"></pre>
+        </details>
+        <p id="qr-code-error" class="demo-error" hidden></p>
+        <!-- Said by a screen reader at each step. It is here, not in the scene, because the scene is not a live region. -->
+        <p id="qr-code-announcement" role="status" aria-live="polite"
+            style="position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap;">
+        </p>
+    </section>
+
+    <script type="module">
+        import init, { init_qr_code_window } from "./pkg/svg_dom_graph_demo.js"
+
+        try {
+            await init()
+            init_qr_code_window()
+        } catch (err) {
+            const banner = document.getElementById('qr-code-error')
+            banner.textContent = `This demo failed to build: ${err}`
+            banner.hidden = false
+        }
+    </script>
+</body>
+
+</html>
