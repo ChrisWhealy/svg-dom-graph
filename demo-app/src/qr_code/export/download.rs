@@ -8,10 +8,14 @@ use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 const KEEP_MILLISECONDS: i32 = 10_000;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Asks the browser to save `svg` as a file called `file_name`.
+/// Asks the browser to save `svg` as a file called `file_name`, and says whether the request was made.
 ///
 /// The file is a `Blob` with an address of its own, which a link is pointed at and clicked, and the link is then taken
 /// away. Nothing is sent anywhere, and nothing is written to the page. The address is released after a while.
+///
+/// This only asks. Clicking the link requests a download, and the browser decides what happens next: it may save the
+/// file, ask where to save it, block it, or cancel it, and the page is told none of that. So `Ok` means the request was
+/// made, and not that a file exists.
 ///
 /// # Errors
 ///

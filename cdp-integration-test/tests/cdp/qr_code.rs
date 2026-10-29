@@ -940,8 +940,8 @@ fn catch_exports(tab: &Tab) -> Result<(), String> {
     Ok(())
 }
 
-/// What the page kept of the last export: how many were saved, the name and the type of the file, and what the
-/// browser's own XML reader makes of it.
+/// What the page kept of the last export: how many downloads were requested, the name and the type of the file, and
+/// what the browser's own XML reader makes of it.
 ///
 /// The picture is read as a scanner would see it: each rectangle of the path makes some modules dark. It is returned as
 /// `modules` rows of `0` and `1`, with the number of dark modules in the quiet zone, and the title and description.
@@ -1050,7 +1050,11 @@ fn the_export_is_the_finished_symbol_with_a_quiet_zone_of_four_light_modules() -
     press(&tab, "export")?;
     let saved = check_export_is_the_symbol(&tab)?;
     check_eq(saved["description"].as_str(), Some(DEFAULT_TEXT))?;
-    check(said(&tab)?.starts_with("Saved qr-code.svg as 29 by 29 modules"), &said(&tab)?)?;
+    check(
+        said(&tab)?.starts_with("Download of qr-code.svg requested: 29 by 29 modules"),
+        &said(&tab)?,
+    )?;
+    check(!said(&tab)?.contains("Saved"), "a request is not announced as a saved file")?;
     check(banner(&tab)?.is_empty(), "a good export is not an error")
 }
 
@@ -1065,7 +1069,7 @@ fn an_export_changes_nothing_on_show_and_can_be_done_again() -> Result<(), Strin
     press(&tab, "export")?;
     press(&tab, "export")?;
     check_eq(exported(&tab)?["saved"].as_u64(), Some(2))?;
-    // What is announced changes, to say that the file is saved, and nothing else does.
+    // What is announced changes, to say that a download was requested, and nothing else does.
     let after = shown(&tab)?;
     check_eq(&after[..after.len() - 1], &before[..before.len() - 1])
 }

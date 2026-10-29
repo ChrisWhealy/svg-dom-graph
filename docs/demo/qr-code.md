@@ -89,7 +89,7 @@ Any of the eight masks gives a symbol that scans, so the choice only decides whi
 
 ## Exporting the symbol
 
-"Export SVG" saves the finished symbol as `qr-code.svg`.
+"Export SVG" asks the browser to save the finished symbol as `qr-code.svg`.
 The button is dimmed until the walk reaches the last step.
 The matrix on screen is exactly 21 by 21 modules and has no quiet zone.
 The file adds one, of four light modules on every side, so the picture is 29 by 29 modules.
@@ -100,8 +100,10 @@ A run of dark modules in a row is one rectangle.
 The text is only written as escaped character data in the file's description, never as markup.
 A control character is written as a visible escape, since XML cannot hold one.
 
-Saving the file does not change the walk or what is drawn.
-If it fails, the reason is shown and the symbol on show stays as it was.
+Asking for the download does not change the walk or what is drawn.
+If the request cannot be made, the reason is shown and the symbol on show stays as it was.
+A page can only request a download, so what is announced is that the download was requested.
+The browser may still block it, ask where to save it, or cancel it, and the page is not told.
 
 ## How it is checked
 

@@ -17,7 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: State reference-encoder differences (`169c2d8`)
 - Implement phase 2 of QR Code generator demo: QR symbol (`1553f9b`)
 - Implement phase 3 of QR Code generator demo: Integration (`3ee09cf`)
-- Implement phase 4 of QR Code generator demo: Export SVG (``)
+- Implement phase 4 of QR Code generator demo: Export SVG (`36c88aa`)
 
 ## Fixed
 
@@ -30,6 +30,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Explicitly handle Reed-Solomon degree zero (`eceb2d5`)
+- Only announce downlaod success after file has been successfully saved (``)
 
 # [Released]
 

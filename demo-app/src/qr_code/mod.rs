@@ -98,7 +98,7 @@ const INITIAL_TEXT: &str = "This is a QR code";
 const NO_ROLE: &str = "role-none";
 const JUMP_ACTION: &str = "jump-";
 
-/// The action of the button that saves the finished symbol as an SVG file.
+/// The action of the button that asks the browser to save the finished symbol as an SVG file.
 const EXPORT_ACTION: &str = "export";
 
 /// The room east of the scene's content for the zoom toolbar.
@@ -307,11 +307,15 @@ fn take_text(scene: &Scene, node: NodeId, text: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Saves the finished symbol as an SVG file, if the walk is at its last step, and does nothing otherwise, since the
-/// button is dimmed but still gets the click.
+/// Asks the browser to save the finished symbol as an SVG file, if the walk is at its last step, and does nothing
+/// otherwise, since the button is dimmed but still gets the click.
 ///
 /// The symbol is the one the last snapshot shows, with the quiet zone added. Nothing here changes the position or what
 /// is drawn, so a failure is reported on its own and leaves the symbol on show as it was.
+///
+/// A click on a link only asks for a download. The browser may block it, cancel it, or wait for the person to allow it,
+/// and the page is told none of that. So what is announced is that the download was requested, never that a file was
+/// saved.
 fn export_symbol() {
     let finished = STATE.with_borrow(|slot| {
         slot.as_ref()
@@ -319,14 +323,14 @@ fn export_symbol() {
             .map(|state| (state.set.snapshots[COUNT - 1].grid.clone(), state.set.content.text.clone()))
     });
     let Some((grid, text)) = finished else { return };
-    let saved = export::svg(&grid, &text)
+    let requested = export::svg(&grid, &text)
         .map_err(|problem| problem.to_string())
         .and_then(|file| export::download(&document()?, export::FILE_NAME, &file));
-    match saved {
+    match requested {
         Ok(()) => announce(
             ANNOUNCEMENT_ID,
             &format!(
-                "Saved {} as {} by {} modules, with a quiet zone of {}.",
+                "Download of {} requested: {} by {} modules, with a quiet zone of {}.",
                 export::FILE_NAME,
                 export::MODULES,
                 export::MODULES,
@@ -467,8 +471,8 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
     }
     top += JUMPS.len().div_ceil(JUMPS_PER_ROW) as f64 * (JUMP_HEIGHT + JUMP_GAP);
 
-    // The button that saves the finished symbol is under them. It is not a toggle, and it is dimmed until the last
-    // step.
+    // The button that asks for the finished symbol to be saved is under them. It is not a toggle, and it is dimmed
+    // until the last step.
     add_button(
         &document,
         &layer,
