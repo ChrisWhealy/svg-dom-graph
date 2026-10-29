@@ -229,16 +229,53 @@ fn limit_text_input(document: &web_sys::Document) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Takes in new text from the text node.
+/// Where the caret goes when the text node has had `rejected` put back to `accepted`.
 ///
-/// The new snapshots are made first, and if they cannot be, the text is refused with the reason and nothing else
-/// changes: the symbol on show stays. Otherwise the nodes are given the new values, the walk goes back to the start
-/// through the anchor's own selection, and the start is drawn once. Nothing is built again.
-fn take_text(scene: &Scene, text: &str) {
+/// The browser has put the caret after whatever was entered. The characters that were refused are no longer there, so
+/// the caret moves back by as many as `rejected` has more than `accepted`, and not past the start. Both ends of a
+/// selection move the same. The counts are UTF-16 code units, which is how the browser counts.
+fn caret_after_refusal(caret: (u32, u32), rejected: &str, accepted: &str) -> (u32, u32) {
+    let extra = rejected.encode_utf16().count().saturating_sub(accepted.encode_utf16().count());
+    let extra = u32::try_from(extra).unwrap_or(u32::MAX);
+    (caret.0.saturating_sub(extra), caret.1.saturating_sub(extra))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Refuses `rejected`, which the text node `node` now holds: the reason `message` is shown, and the text node is put
+/// back to the last text that was accepted, with the caret where it was, so that it always agrees with the symbol on
+/// show.
+///
+/// A character that cannot be encoded is therefore not taken, as a character past the limit of 17 is not. The reason
+/// stays until the next change that works.
+fn refuse_text(scene: &Scene, node: NodeId, rejected: &str, message: &str) {
+    report_error(ERROR_ID, message);
+    let Some(accepted) = STATE.with_borrow(|slot| slot.as_ref().map(|state| state.set.content.text.clone())) else {
+        return;
+    };
+    let restore = || -> Result<(), String> {
+        let caret = scene.text_input_caret(node).map_err(stringify)?;
+        scene.set_text_input_value(node, &accepted).map_err(stringify)?;
+        scene
+            .focus_text_input(node, Some(caret_after_refusal(caret, rejected, &accepted)))
+            .map_err(stringify)
+    };
+    if let Err(problem) = restore() {
+        report_error(ERROR_ID, &format!("{message} The text box could not be put back: {problem}"));
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Takes in new text from the text node `node`.
+///
+/// The new snapshots are made first, and if they cannot be, the text is refused: the reason is shown, the symbol on
+/// show stays, and the text node goes back to the text that made it, see [`refuse_text`]. Otherwise the nodes are given
+/// the new values, the walk goes back to the start through the anchor's own selection, and the start is drawn once.
+/// Nothing is built again.
+fn take_text(scene: &Scene, node: NodeId, text: &str) {
     let set = match make_set(text) {
         Ok(set) => set,
         Err(message) => {
-            report_error(ERROR_ID, &message);
+            refuse_text(scene, node, text, &message);
             return;
         },
     };
@@ -331,8 +368,8 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
         .show_scene_title("QR code generator", SceneTitleOptions::default())
         .map_err(stringify)?;
 
-    let graph = Graph::build(&scene, &set.content, Point::new(MARGIN, CONTENT_TOP), |scene, _node, text| {
-        take_text(scene, text)
+    let graph = Graph::build(&scene, &set.content, Point::new(MARGIN, CONTENT_TOP), |scene, node, text| {
+        take_text(scene, node, text)
     })?;
     limit_text_input(&document)?;
     // The step driver is the node the toolbar steps along. It is off the canvas and hidden from assistive technology.

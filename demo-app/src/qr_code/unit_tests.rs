@@ -9,7 +9,7 @@ use super::{
     {
         CAPTION_LINES, COLUMN_CHARS, EXPLANATION_LINES, INITIAL_TEXT, JUMP_ACTION, KEY, KEY_LINES, NO_ROLE,
         NO_ROLE_EXPLANATION, NOTE_CHARS, NOTE_TEXT_LINES, NOTE_TITLE_LINES, STAGE_LINES, STATS_LINES,
-        UNSTARTED_EXPLANATION, caption_text, make_set, role_action, stats_text,
+        UNSTARTED_EXPLANATION, caption_text, caret_after_refusal, make_set, role_action, stats_text,
     },
 };
 use std::collections::HashSet;
@@ -603,4 +603,35 @@ fn the_text_the_window_opens_with_is_as_long_as_a_text_can_be_and_can_be_encoded
     assert!(set.content.bitstream.iter().all(|&bit| bit <= 1));
     assert_eq!(Region::Data.cells(17, 4).len(), 136);
     assert_eq!(Region::Terminator.cells(17, 4).end, 152);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Putting refused text back
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn the_caret_goes_back_by_the_characters_that_were_refused() {
+    // "abc" with a pound sign typed after the b is "ab£c", and the caret is after the pound sign.
+    assert_eq!(caret_after_refusal((3, 3), "ab£c", "abc"), (2, 2));
+    // At the end, and at the start.
+    assert_eq!(caret_after_refusal((4, 4), "abc£", "abc"), (3, 3));
+    assert_eq!(caret_after_refusal((1, 1), "£abc", "abc"), (0, 0));
+    // Several characters pasted at once, with a selection that both ends move back from.
+    assert_eq!(caret_after_refusal((9, 9), "abc££££££", "abc"), (3, 3));
+    assert_eq!(caret_after_refusal((5, 8), "ab£££c", "abc"), (2, 5));
+}
+
+#[test]
+fn the_caret_does_not_move_past_the_start_or_when_nothing_was_added() {
+    assert_eq!(caret_after_refusal((1, 1), "abcdef", "a"), (0, 0));
+    // The same length, such as one character replaced by a refused one, takes nothing back.
+    assert_eq!(caret_after_refusal((2, 2), "a£c", "abc"), (2, 2));
+    // Shorter than what was accepted, such as a deletion that was refused, takes nothing back either.
+    assert_eq!(caret_after_refusal((1, 1), "ac", "abc"), (1, 1));
+}
+
+#[test]
+fn the_caret_counts_in_utf16_code_units_as_the_browser_does() {
+    // An emoji is two code units, though it is one character.
+    assert_eq!(caret_after_refusal((5, 5), "abc\u{1F600}", "abc"), (3, 3));
 }

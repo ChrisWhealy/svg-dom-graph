@@ -189,6 +189,27 @@ fn type_text(tab: &Tab, value: &str) -> Result<(), String> {
     Ok(())
 }
 
+/// What the text node holds now.
+fn input_value(tab: &Tab) -> Result<String, String> {
+    text(tab, &format!("document.querySelector('{DIAGRAM} input').value"))
+}
+
+/// Where the caret is in the text node, as the start and the end of the selection.
+fn input_caret(tab: &Tab) -> Result<(u32, u32), String> {
+    let found = text(
+        tab,
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); \
+             return i.selectionStart + ',' + i.selectionEnd; }})()"
+        ),
+    )?;
+    let (start, end) = found.split_once(',').ok_or_else(|| format!("no caret in {found:?}"))?;
+    Ok((
+        start.parse().map_err(|e| format!("{e}"))?,
+        end.parse().map_err(|e| format!("{e}"))?,
+    ))
+}
+
 /// The error banner: its text, or an empty string while it is hidden.
 fn banner(tab: &Tab) -> Result<String, String> {
     text(
@@ -493,8 +514,9 @@ fn typing_new_text_goes_back_to_the_start_and_the_walk_follows_it() -> Result<()
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Text that cannot be encoded is refused with the reason, and what was on show stays. Text that can be encoded again
-/// clears the reason and starts the walk.
+/// Text that cannot be encoded is refused with the reason, and what was on show stays, and the text node goes back to
+/// the text that made it, so that it always agrees with the symbol. Text that can be encoded again clears the reason
+/// and starts the walk.
 #[test]
 fn text_that_cannot_be_encoded_leaves_the_symbol_on_show_alone() -> Result<(), String> {
     let tab = open()?;
@@ -506,16 +528,52 @@ fn text_that_cannot_be_encoded_leaves_the_symbol_on_show_alone() -> Result<(), S
     type_text(&tab, "abcdefghijklmnopqr")?;
     check(banner(&tab)?.contains("18") && banner(&tab)?.contains("17"), &banner(&tab)?)?;
     check(shown(&tab)? == on_show, "a text that is too long changed what is on show")?;
+    check_eq(input_value(&tab)?.as_str(), DEFAULT_TEXT)?;
 
     type_text(&tab, "Hello £")?;
     check(banner(&tab)?.contains("not ASCII"), &banner(&tab)?)?;
     check(shown(&tab)? == on_show, "a text that is not ASCII changed what is on show")?;
+    check_eq(input_value(&tab)?.as_str(), DEFAULT_TEXT)?;
     // The walk goes on where it was.
     next(&tab, 1)?;
     check(said(&tab)?.starts_with("Step 34 of 62."), &said(&tab)?)?;
 
     type_text(&tab, "Fine")?;
     check(banner(&tab)?.is_empty(), "the reason should go once the text can be encoded")?;
+    check_eq(input_value(&tab)?.as_str(), "Fine")?;
+    check_eq(said(&tab)?.as_str(), "Not started. Every module is empty.")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Typing a character that cannot be encoded does not take it. The reason is shown, the text node holds what it held,
+/// the caret stays where it was so that typing can go on, and the next character that can be encoded is taken.
+#[test]
+fn a_character_that_cannot_be_encoded_is_not_taken_and_typing_goes_on() -> Result<(), String> {
+    let tab = open()?;
+    type_text(&tab, "Hi")?;
+    next(&tab, 1)?;
+    let on_show = shown(&tab)?;
+    // The caret is at the end of the text, and a pound sign is typed.
+    tab.evaluate(
+        &format!(
+            "(() => {{ const i = document.querySelector('{DIAGRAM} input'); i.focus(); i.setSelectionRange(2, 2); }})()"
+        ),
+        false,
+    )
+    .map_err(|e| format!("could not place the caret: {e}"))?;
+    tab.type_str("£").map_err(|e| format!("could not type: {e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    check(banner(&tab)?.contains("not ASCII"), &banner(&tab)?)?;
+    check_eq(input_value(&tab)?.as_str(), "Hi")?;
+    check_eq(input_caret(&tab)?, (2, 2))?;
+    check(shown(&tab)? == on_show, "a refused character changed what is on show")?;
+    check_eq(text(&tab, "document.activeElement?.tagName ?? 'none'")?.as_str(), "INPUT")?;
+
+    // Typing goes on from the same place, and a character that can be encoded is taken, which clears the reason.
+    tab.type_str("!").map_err(|e| format!("could not type: {e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    check_eq(input_value(&tab)?.as_str(), "Hi!")?;
+    check(banner(&tab)?.is_empty(), "the reason should go")?;
     check_eq(said(&tab)?.as_str(), "Not started. Every module is empty.")
 }
 
