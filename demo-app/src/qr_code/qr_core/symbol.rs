@@ -26,6 +26,8 @@ const CODEWORD_MODULES: usize = TOTAL_CODEWORDS * 8;
 pub(crate) enum SymbolError {
     /// The grid refused a change, which means the layout and the grid's rules disagree.
     Grid(GridError),
+    /// A mask number that is not 0 to 7.
+    InvalidMask { mask: u8 },
     /// A module had no colour when it was needed.
     Uncoloured { row: usize, col: usize },
     /// A stage found a count or a state that its own arithmetic rules out.
@@ -42,6 +44,7 @@ impl fmt::Display for SymbolError {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         match self {
             Self::Grid(error) => write!(f, "internal error in the grid: {error}"),
+            Self::InvalidMask { mask } => write!(f, "{mask} is not a mask: they are numbered 0 to 7"),
             Self::Uncoloured { row, col } => write!(f, "module ({row}, {col}) has no colour and cannot be scored"),
             Self::Internal { stage, detail } => write!(f, "internal error in the {stage} stage: {detail}"),
         }
@@ -109,9 +112,13 @@ pub(crate) fn rows_of(grid: &BitGrid) -> Vec<String> {
 /// Places the bits of `word`, most significant first, in the modules of codeword `index` of `order`. A data codeword
 /// gives its modules the role of data, and one of the last seven gives them the role of error correction.
 ///
+/// All eight modules are checked before any is written, so a codeword is placed whole or not at all, and a refusal
+/// leaves `grid` as it was. Nothing is copied to do that.
+///
 /// # Errors
 ///
-/// Returns `Err` if `index` is past the end of `order`, or if a module is already placed or is a function module.
+/// Returns `Err` if `index` is past the end of `order`, if a module is outside the grid, already placed or a function
+/// module, or if `order` lists a module twice within the codeword.
 pub(crate) fn place_codeword(
     grid: &mut BitGrid,
     order: &[(usize, usize)],
@@ -122,6 +129,13 @@ pub(crate) fn place_codeword(
         stage: "placement",
         detail: format!("there is no codeword {index} in {} modules", order.len()),
     })?;
+    for (position, &(row, col)) in modules.iter().enumerate() {
+        grid.check_assignable(row, col)?;
+        // Each is free now, but a module listed twice would not be free for the second of its two bits.
+        if modules[..position].contains(&(row, col)) {
+            return Err(GridError::Occupied { row, col }.into());
+        }
+    }
     let role = if index < DATA_CODEWORDS { DataRole::Data } else { DataRole::ErrorCorrection };
     for (position, &(row, col)) in modules.iter().enumerate() {
         grid.assign(row, col, word >> (7 - position) & 1 == 1, role)?;
@@ -135,15 +149,16 @@ pub(crate) fn place_codeword(
 ///
 /// # Errors
 ///
-/// Returns `Err` if the grid refuses a change, or if a module is still without a colour.
+/// Returns `Err` if `mask` is not 0 to 7, which is checked before anything is done, if the grid refuses a change, or if
+/// a module is still without a colour.
 pub(crate) fn make_candidate(placed: &BitGrid, order: &[(usize, usize)], mask: u8) -> Result<Candidate, SymbolError> {
+    let format_bits = format_word(mask).ok_or(SymbolError::InvalidMask { mask })?;
     let mut grid = placed.clone();
     for &(row, col) in order {
         if inverts(mask, row, col) {
             grid.flip_data(row, col)?;
         }
     }
-    let format_bits = format_word(mask);
     for bit in 0..FORMAT_BITS {
         let value = format_bits >> bit & 1 == 1;
         for (row, col) in [format_copy_a(bit), format_copy_b(bit)] {

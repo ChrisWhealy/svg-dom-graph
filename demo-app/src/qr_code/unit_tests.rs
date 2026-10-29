@@ -632,3 +632,20 @@ fn each_role_has_a_button_action_and_none_has_its_own() {
     assert_eq!(role_action(None), NO_ROLE);
     assert_eq!(role_action(Some(FINDER)), "role-finder");
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Checking before assigning
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn a_module_can_be_checked_for_assigning_without_changing_anything() {
+    let mut grid = reserved();
+    let before = grid.clone();
+    assert_eq!(grid.check_assignable(20, 20), Ok(20 * 21 + 20));
+    assert_eq!(grid.check_assignable(0, 0), Err(GridError::Occupied { row: 0, col: 0 }));
+    assert_eq!(grid.check_assignable(21, 0), Err(GridError::OutOfBounds { row: 21, col: 0 }));
+    assert_eq!(grid, before);
+    grid.assign(20, 20, true, DataRole::Data)
+        .expect("an empty module can be assigned");
+    assert_eq!(grid.check_assignable(20, 20), Err(GridError::Occupied { row: 20, col: 20 }));
+}

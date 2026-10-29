@@ -45,14 +45,14 @@ const FORMAT_TABLE: [u16; 8] = [
 #[test]
 fn the_format_word_of_each_mask_is_the_one_in_the_standard() {
     for mask in 0..8 {
-        assert_eq!(format_word(mask), FORMAT_TABLE[usize::from(mask)], "mask {mask}");
+        assert_eq!(format_word(mask), Some(FORMAT_TABLE[usize::from(mask)]), "mask {mask}");
     }
 }
 
 #[test]
 fn a_format_word_is_15_bits_and_a_codeword_of_the_bch_code() {
     for mask in 0..8 {
-        let word = u32::from(format_word(mask));
+        let word = u32::from(format_word(mask).expect("the mask is 0 to 7"));
         assert!(word < 1 << 15);
         // Without the XOR mask the word is a multiple of the generator, so dividing it by 0x537 leaves nothing.
         let mut remainder = word ^ 0x5412;
@@ -69,7 +69,8 @@ fn a_format_word_is_15_bits_and_a_codeword_of_the_bch_code() {
 fn the_format_words_differ_in_at_least_seven_bits() {
     for a in 0..8_u8 {
         for b in a + 1..8 {
-            assert!((format_word(a) ^ format_word(b)).count_ones() >= 7, "{a} and {b}");
+            let (a_word, b_word) = (format_word(a).expect("0 to 7"), format_word(b).expect("0 to 7"));
+            assert!((a_word ^ b_word).count_ones() >= 7, "{a} and {b}");
         }
     }
 }
@@ -418,8 +419,13 @@ fn both_copies_of_the_format_information_are_the_masks_own_word() {
                     u16::from(candidate.grid.get(row, col) == Some(CellState::Dark)) << bit
                 })
                 .sum();
-            assert_eq!(word, format_word(candidate.mask), "copy {copy} of mask {}", candidate.mask);
-            assert_eq!(candidate.format_bits, format_word(candidate.mask));
+            assert_eq!(
+                Some(word),
+                format_word(candidate.mask),
+                "copy {copy} of mask {}",
+                candidate.mask
+            );
+            assert_eq!(Some(candidate.format_bits), format_word(candidate.mask));
         }
     }
 }
@@ -623,4 +629,80 @@ fn the_conventions_differ_and_the_difference_is_on_record() {
             .iter()
             .all(|g| g.mask_qrcode < 8 && g.mask_qrcode_chosen < 8 && g.mask_segno < 8)
     );
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Mistakes by a caller
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn only_masks_0_to_7_have_a_format_word() {
+    assert!((0..8).all(|mask| format_word(mask).is_some()));
+    assert_eq!(format_word(8), None);
+    assert_eq!(format_word(15), None);
+    assert_eq!(format_word(255), None);
+}
+
+#[test]
+fn a_mask_that_does_not_exist_is_refused_before_anything_is_done() {
+    let symbol = symbol_of(b"Hello");
+    let (placed, order) = (symbol.placed.clone(), symbol.placement.clone());
+    for mask in [8, 9, 16, 255] {
+        assert_eq!(make_candidate(&placed, &order, mask), Err(SymbolError::InvalidMask { mask }));
+    }
+    // The grid it was given is as it was, and a valid mask still works on it.
+    assert_eq!(placed, symbol.placed);
+    assert_eq!(make_candidate(&placed, &order, 3), Ok(symbol.candidates[3].clone()));
+    assert!(SymbolError::InvalidMask { mask: 8 }.to_string().contains("0 to 7"));
+}
+
+#[test]
+fn a_refused_codeword_leaves_no_bit_of_it_placed() {
+    let mut grid = reserved();
+    let mut order = placement_order(&grid);
+    // Put a function module, which cannot be assigned, as the sixth of the eight modules of codeword 2.
+    order[2 * 8 + 5] = (0, 0);
+    let before = grid.clone();
+    let error = place_codeword(&mut grid, &order, 2, 0xFF).expect_err("a function module cannot be assigned");
+    assert_eq!(error, SymbolError::Grid(GridError::Occupied { row: 0, col: 0 }));
+    assert_eq!(grid, before, "the five modules before the bad one were left written");
+}
+
+#[test]
+fn a_codeword_with_a_module_outside_the_grid_or_listed_twice_is_refused_whole() {
+    let mut grid = reserved();
+    let order = placement_order(&grid);
+    let before = grid.clone();
+
+    let mut outside = order.clone();
+    outside[8 + 3] = (SIZE, 0);
+    assert_eq!(
+        place_codeword(&mut grid, &outside, 1, 0xAA),
+        Err(SymbolError::Grid(GridError::OutOfBounds { row: SIZE, col: 0 }))
+    );
+    assert_eq!(grid, before);
+
+    let mut twice = order.clone();
+    twice[8 + 6] = twice[8 + 1];
+    let repeated = twice[8 + 1];
+    assert_eq!(
+        place_codeword(&mut grid, &twice, 1, 0xAA),
+        Err(SymbolError::Grid(GridError::Occupied {
+            row: repeated.0,
+            col: repeated.1
+        }))
+    );
+    assert_eq!(grid, before);
+}
+
+#[test]
+fn a_codeword_that_is_accepted_is_placed_whole() {
+    let mut grid = reserved();
+    let order = placement_order(&grid);
+    place_codeword(&mut grid, &order, 5, 0b0110_1001).expect("it fits");
+    let placed = order[40..48]
+        .iter()
+        .filter(|&&(row, col)| grid.get(row, col) != Some(CellState::Unassigned))
+        .count();
+    assert_eq!(placed, 8);
 }

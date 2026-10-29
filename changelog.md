@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Fixed
 
 - Prevent `BitWriter::check_room()` from overflowing for extreme arguments (`0ade4a2`)
+- Prevent invalid mask indices from being silently accepted (``)
 
 ## Changed
 

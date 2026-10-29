@@ -1,5 +1,7 @@
 //! The 15 bits of format information: the error correction level and the mask, with a BCH code to protect them.
 
+use super::mask::MASKS;
+
 /// The two bits that say level L.
 const LEVEL_L: u32 = 0b01;
 
@@ -13,12 +15,16 @@ const XOR_MASK: u32 = 0x5412;
 const CHECK_BITS: u32 = 10;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The 15 format bits for level L and `mask`, which is 0 to 7. Bit 0 is the least significant.
+/// The 15 format bits for level L and `mask`, which is 0 to 7, or `None` for any other number. Bit 0 is the least
+/// significant.
 ///
 /// The five data bits are the level and then the mask. The remainder of those bits, shifted up ten places, divided by
 /// the generator in GF(2) is the check, written after them. The whole word is then XORed with 0x5412.
-pub(crate) fn format_word(mask: u8) -> u16 {
-    let data = LEVEL_L << 3 | u32::from(mask & 0b111);
+pub(crate) fn format_word(mask: u8) -> Option<u16> {
+    if usize::from(mask) >= MASKS {
+        return None;
+    }
+    let data = LEVEL_L << 3 | u32::from(mask);
     let mut remainder = data << CHECK_BITS;
     for shift in (CHECK_BITS..CHECK_BITS + 5).rev() {
         if remainder >> shift & 1 == 1 {
@@ -26,5 +32,5 @@ pub(crate) fn format_word(mask: u8) -> u16 {
         }
     }
     // The word is 15 bits, so it fits in 16.
-    u16::try_from((data << CHECK_BITS | remainder) ^ XOR_MASK).unwrap_or(0)
+    u16::try_from((data << CHECK_BITS | remainder) ^ XOR_MASK).ok()
 }

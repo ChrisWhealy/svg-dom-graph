@@ -250,6 +250,21 @@ impl BitGrid {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Checks that [`assign`](Self::assign) would accept the module at `row`, `col`, and changes nothing. It lets a
+    /// caller check several modules first, so that it writes all of them or none.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the module is outside the grid, or already has a role or a colour.
+    pub(crate) fn check_assignable(&self, row: usize, col: usize) -> Result<usize, GridError> {
+        let index = self.index(row, col).ok_or(GridError::OutOfBounds { row, col })?;
+        if self.roles[index].is_some() || self.bit(&self.assigned, index) {
+            return Err(GridError::Occupied { row, col });
+        }
+        Ok(index)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Places one codeword bit: colours the module at `row`, `col` and gives it `role`, which is `dark` when `value`.
     ///
     /// # Errors
@@ -257,10 +272,7 @@ impl BitGrid {
     /// Returns `Err` if the module is outside the grid, or already has a role or a colour. A reserved module has a
     /// role, so it can only be coloured by [`fill_reserved`](Self::fill_reserved).
     pub(crate) fn assign(&mut self, row: usize, col: usize, value: bool, role: DataRole) -> Result<(), GridError> {
-        let index = self.index(row, col).ok_or(GridError::OutOfBounds { row, col })?;
-        if self.roles[index].is_some() || self.bit(&self.assigned, index) {
-            return Err(GridError::Occupied { row, col });
-        }
+        let index = self.check_assignable(row, col)?;
         self.roles[index] = Some(QrModuleKind::Payload(role));
         self.write(index, value);
         Ok(())
