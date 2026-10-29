@@ -272,6 +272,18 @@ fn there_is_one_step_for_each_data_byte_and_the_last_is_the_remainder() {
 }
 
 #[test]
+fn a_degree_of_zero_divides_by_one_and_leaves_no_remainder() {
+    assert_eq!(generator_polynomial(0), vec![Gf256::ONE]);
+    let steps = divide(&[5, 0, 255], 0);
+    assert_eq!(steps.len(), 3);
+    assert!(steps.iter().all(|step| step.register.is_empty()));
+    assert_eq!(steps.iter().map(|step| step.factor).collect::<Vec<_>>(), [5, 0, 255]);
+    assert!(remainder(&steps, 0).is_empty());
+    assert!(remainder(&divide(&[], 0), 0).is_empty());
+    assert_eq!(slow_remainder(&[5, 0, 255], 0), Vec::<u8>::new());
+}
+
+#[test]
 fn no_data_has_a_remainder_of_zeros() {
     assert!(divide(&[], 7).is_empty());
     assert_eq!(remainder(&divide(&[], 7), 7), vec![0; 7]);

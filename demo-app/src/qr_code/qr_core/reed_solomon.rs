@@ -9,6 +9,8 @@ use super::gf256::Gf256;
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The generator polynomial of degree `degree`, highest power first. It has `degree + 1` coefficients, and the first is
 /// 1.
+///
+/// Degree 0 is the constant polynomial 1, which has no factors. The encoder itself always uses degree 7.
 pub(crate) fn generator_polynomial(degree: usize) -> Vec<Gf256> {
     let mut generator = vec![Gf256::ONE];
     for exponent in 0..degree {
@@ -43,13 +45,20 @@ pub(crate) struct DivisionStep {
 /// Dividing the data and then the zeros is the same as dividing the data in a register of `degree` bytes: each byte
 /// shifts the register up, and the byte that falls out, added to the data byte, says how much of the generator to
 /// subtract from what is left. So there is one step for each data byte, and none for the zeros.
+///
+/// Degree 0 divides by 1, which leaves no remainder. Each step then has an empty register, and its factor is the data
+/// byte itself. That is the same arithmetic as any other degree, and the encoder never asks for it. It is kept as it is
+/// because a restriction would only add a way to fail.
 pub(crate) fn divide(data: &[u8], degree: usize) -> Vec<DivisionStep> {
     let generator = generator_polynomial(degree);
     let mut register = vec![Gf256::ZERO; degree];
     let mut steps = Vec::with_capacity(data.len());
     for &data_byte in data {
         let factor = Gf256::new(data_byte) + register.first().copied().unwrap_or(Gf256::ZERO);
-        register.rotate_left(1);
+        // Shifting up one place moves the first byte to the end, where it is cleared. An empty register has no byte.
+        if !register.is_empty() {
+            register.rotate_left(1);
+        }
         if let Some(last) = register.last_mut() {
             *last = Gf256::ZERO;
         }
