@@ -22,6 +22,7 @@ mod paths;
     reason = "the encoder has more than the scene draws, and its tests use all of it"
 )]
 mod qr_core;
+mod retry;
 mod slot;
 mod snapshots;
 mod state;
@@ -38,6 +39,7 @@ use demo_common::{
 use graph::Graph;
 use grid::{BitGrid, CellState, QrModuleKind, SIZE};
 use qr_core::{encode_text, input::MAX_BYTES, symbol::build_symbol};
+use retry::Retry;
 use snapshots::{COUNT, JUMPS, NodeKey, SnapshotSet};
 use state::State;
 use std::cell::RefCell;
@@ -62,6 +64,7 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("qr_code/snapshots.rs", "snapshots.rs"),
     crate::source_file!("qr_code/graph.rs", "graph.rs"),
     crate::source_file!("qr_code/state.rs", "state.rs"),
+    crate::source_file!("qr_code/retry.rs", "retry.rs"),
     crate::source_file!("qr_code/viewport.rs", "viewport.rs"),
     crate::source_file!("qr_code/text.rs", "text.rs"),
     crate::source_file!("qr_code/slot.rs", "slot.rs"),
@@ -268,9 +271,19 @@ fn refuse_text(scene: &Scene, node: NodeId, rejected: &str, message: &str) {
 /// Takes in new text from the text node `node`.
 ///
 /// The new snapshots are made first, and if they cannot be, the text is refused: the reason is shown, the symbol on
-/// show stays, and the text node goes back to the text that made it, see [`refuse_text`]. Otherwise the nodes are given
-/// the new values, the walk goes back to the start through the anchor's own selection, and the start is drawn once.
-/// Nothing is built again.
+/// show stays, and the text node goes back to the text that made it, see [`refuse_text`]. Nothing has changed at that
+/// point.
+///
+/// Otherwise the new snapshots are committed, which cannot fail, and the walk is put back to the start. The nodes and
+/// the anchor's selection are then brought into line with them by [`State::apply`], and the start is drawn. Nothing is
+/// built again.
+///
+/// Bringing the nodes into line writes to several of them, and the browser can refuse any of those writes. They cannot
+/// be undone, so a failure can leave some nodes holding the new text while others hold the old, for a moment. The
+/// snapshots, and so the matrix, the captions and the toolbar, are always whole and agree with the text. The error is
+/// shown, and the work is marked as not done. Every later draw does all of it again before anything else, which is
+/// safe, since writing what a node already holds changes nothing. So the next step, jump, role or text puts the nodes
+/// right.
 fn take_text(scene: &Scene, node: NodeId, text: &str) {
     let set = match make_set(text) {
         Ok(set) => set,
@@ -280,10 +293,10 @@ fn take_text(scene: &Scene, node: NodeId, text: &str) {
         },
     };
     update(scene, |state| {
-        state.display.graph.write_content(scene, &set.content)?;
         state.set = set;
         state.at = None;
-        scene.set_selection(state.display.step, Selection::None).map_err(stringify)
+        state.stale.require();
+        Ok(())
     });
 }
 
@@ -494,6 +507,7 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
         set,
         at: None,
         role: None,
+        stale: Retry::default(),
         display: Display {
             viewport,
             layer,

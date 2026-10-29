@@ -22,7 +22,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Prevent `BitWriter::check_room()` from overflowing for extreme arguments (`0ade4a2`)
 - Prevent invalid mask indices from being silently accepted (`6a29fc3`)
-- Prevent rejected input from leaving text inconsistent with displayed QR code (``) 
+- Prevent rejected input from leaving text inconsistent with displayed QR code (`27a51bc`)
+- Make input replacement transactional across all graph updates (``)
 
 ## Changed
 

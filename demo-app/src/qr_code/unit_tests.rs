@@ -4,6 +4,7 @@ use super::{
     },
     grid::{BitGrid, CellState, DataRole, FunctionRole, GridError, QrModuleKind, SIZE},
     paths::{base_paths, highlight_path, matrix_text, role_path},
+    retry::Retry,
     snapshots::{COUNT, JUMPS, Region, Stage},
     text::wrap,
     {
@@ -634,4 +635,86 @@ fn the_caret_does_not_move_past_the_start_or_when_nothing_was_added() {
 fn the_caret_counts_in_utf16_code_units_as_the_browser_does() {
     // An emoji is two code units, though it is one character.
     assert_eq!(caret_after_refusal((5, 5), "abc\u{1F600}", "abc"), (3, 3));
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Work that is done again until it works
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+#[test]
+fn work_that_is_not_pending_is_not_done() {
+    let retry = Retry::default();
+    let mut calls = 0;
+    assert_eq!(
+        retry.run(|| {
+            calls += 1;
+            Ok(())
+        }),
+        Ok(())
+    );
+    assert_eq!(calls, 0);
+    assert!(!retry.is_pending());
+}
+
+#[test]
+fn pending_work_is_done_once_and_then_it_is_not_pending() {
+    let retry = Retry::default();
+    retry.require();
+    assert!(retry.is_pending());
+    let mut calls = 0;
+    for _ in 0..3 {
+        retry
+            .run(|| {
+                calls += 1;
+                Ok(())
+            })
+            .expect("the work works");
+    }
+    assert_eq!(calls, 1);
+    assert!(!retry.is_pending());
+}
+
+#[test]
+fn work_that_fails_stays_pending_and_is_done_again_until_it_works() {
+    let retry = Retry::default();
+    retry.require();
+    let mut attempts = 0;
+    let mut flaky = || -> Result<(), String> {
+        attempts += 1;
+        if attempts < 3 {
+            Err(format!("refused on attempt {attempts}"))
+        } else {
+            Ok(())
+        }
+    };
+    assert_eq!(retry.run(&mut flaky), Err("refused on attempt 1".to_owned()));
+    assert!(retry.is_pending());
+    assert_eq!(retry.run(&mut flaky), Err("refused on attempt 2".to_owned()));
+    assert!(retry.is_pending());
+    assert_eq!(retry.run(&mut flaky), Ok(()));
+    assert!(!retry.is_pending());
+    assert_eq!(attempts, 3);
+}
+
+#[test]
+fn work_that_is_required_twice_is_done_once_and_new_work_after_that_is_done_too() {
+    let retry = Retry::default();
+    retry.require();
+    retry.require();
+    let mut calls = 0;
+    retry
+        .run(|| {
+            calls += 1;
+            Ok(())
+        })
+        .expect("the work works");
+    assert_eq!(calls, 1);
+    retry.require();
+    retry
+        .run(|| {
+            calls += 1;
+            Ok(())
+        })
+        .expect("the work works");
+    assert_eq!(calls, 2);
 }

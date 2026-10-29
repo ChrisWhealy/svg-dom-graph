@@ -8,13 +8,17 @@ use super::{
     ANNOUNCEMENT_ID, CHOSEN, Display, JUMP_ACTION, NO_ROLE_EXPLANATION, NOT_CHOSEN, UNSTARTED_EXPLANATION,
     caption_text,
     grid::QrModuleKind,
+    retry::Retry,
     role_action,
     snapshots::{COUNT, JUMPS, SnapshotSet, Stage},
     stats_text,
     viewport::Frame,
 };
-use demo_common::{svg_buttons, util::announce};
-use svg_dom_graph::scene::Scene;
+use demo_common::{
+    svg_buttons,
+    util::{announce, stringify},
+};
+use svg_dom_graph::scene::{Scene, Selection};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything that decides what is drawn.
@@ -25,6 +29,9 @@ pub(super) struct State {
     pub(super) at: Option<usize>,
     /// The role whose modules are outlined.
     pub(super) role: Option<QrModuleKind>,
+    /// Whether the nodes and the anchor's selection still have to be brought into line with `set` and `at`, which is so
+    /// from new text until that has worked, see [`State::apply`].
+    pub(super) stale: Retry,
     pub(super) display: Display,
 }
 
@@ -32,12 +39,21 @@ impl State {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the whole of the current state in `scene`.
     ///
+    /// If new text has been taken in, the nodes are first given its values, and the anchor's selection is put where the
+    /// position is. That is several writes, and it is done again at every draw until all of it has worked, since the
+    /// writes cannot be undone and doing them twice is harmless. See [`Retry`].
+    ///
     /// # Errors
     ///
     /// Returns `Err` if the DOM or the library refuses a write, or a text does not fit its block. The next call writes
     /// whatever is still out of date.
     pub(super) fn apply(&self, scene: &Scene) -> Result<(), String> {
         let display = &self.display;
+        self.stale.run(|| {
+            display.graph.write_content(scene, &self.set.content)?;
+            let selection = self.at.map_or(Selection::None, Selection::Cell);
+            scene.set_selection(display.step, selection).map_err(stringify)
+        })?;
         let snapshot = self.set.at(self.at);
         let caption = caption_text(&snapshot.label, &snapshot.grid);
         let writes = display.viewport.render(&Frame {
