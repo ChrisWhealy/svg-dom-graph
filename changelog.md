@@ -6,6 +6,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.46] - 2026-10-29
 
 ## Added
@@ -18,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Implement phase 2 of QR Code generator demo: QR symbol (`1553f9b`)
 - Implement phase 3 of QR Code generator demo: Integration (`3ee09cf`)
 - Implement phase 4 of QR Code generator demo: Export SVG (`36c88aa`)
-- Run QR export and decoder check in CI using `ZXing-C++` and `python-qrcode` (``)
+- Run QR export and decoder check in CI using `ZXing-C++` and `python-qrcode` (`97bcbdb`)
 
 ## Fixed
 
@@ -33,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Explicitly handle Reed-Solomon degree zero (`eceb2d5`)
 - Only announce downlaod success after file has been successfully saved (`ba65fbc`)
 - Release object URL on every failure path (`a3bb508`)
-
-# [Released]
 
 ## [0.2.45] - 2026-10-29
 

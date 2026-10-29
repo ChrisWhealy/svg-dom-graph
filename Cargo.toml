@@ -14,7 +14,7 @@ exclude = ["bench-butterfly"]
 [package]
 authors = ["Chris Whealy <chris@whealy.com>"]
 name = "svg-dom-graph"
-version = "0.2.45"
+version = "0.2.46"
 edition = "2024"
 rust-version = "1.85"
 description = "Plot SVG graphs using svg-dom"
