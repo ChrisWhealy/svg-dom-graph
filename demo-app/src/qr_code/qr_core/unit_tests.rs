@@ -115,6 +115,39 @@ fn passing_the_limit_is_refused_and_changes_nothing() {
 }
 
 #[test]
+fn a_width_too_large_to_add_is_refused_and_does_not_overflow() {
+    let mut writer = BitWriter::new(10);
+    writer.push(0b1, 1).expect("it fits");
+    let before = writer.clone();
+    let overflow = BitError::Overflow {
+        len: 1,
+        width: usize::MAX,
+        limit: 10,
+    };
+    assert_eq!(writer.push_zeros(usize::MAX), Err(overflow));
+    assert_eq!(
+        writer.push_zeros(usize::MAX - 1),
+        Err(BitError::Overflow {
+            len: 1,
+            width: usize::MAX - 1,
+            limit: 10
+        })
+    );
+    assert_eq!(writer, before);
+    // A limit that is itself the largest there is cannot be passed by the same sum either.
+    let mut huge = BitWriter::new(usize::MAX);
+    huge.push(0b1, 1).expect("it fits");
+    assert_eq!(
+        huge.push_zeros(usize::MAX),
+        Err(BitError::Overflow {
+            len: 1,
+            width: usize::MAX,
+            limit: usize::MAX
+        })
+    );
+}
+
+#[test]
 fn padding_to_a_byte_says_how_many_zeros_it_wrote() {
     let mut writer = BitWriter::new(32);
     writer.push(0b1, 1).expect("it fits");

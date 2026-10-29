@@ -7,6 +7,9 @@
 
 use std::fmt;
 
+/// The most bits whose room is made before any are written. It is more than a Version 1 symbol holds.
+const PREALLOCATED_BITS: usize = 256;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a [`BitWriter`] refused to write. The writer is unchanged whenever one of these is returned.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
@@ -46,10 +49,11 @@ pub(crate) struct BitWriter {
 
 impl BitWriter {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// An empty bit string that can hold `limit` bits.
+    /// An empty bit string that can hold `limit` bits. Room is made as the bits are written, apart from a modest amount
+    /// at the start, so that a very large limit costs nothing until it is used.
     pub(crate) fn new(limit: usize) -> Self {
         Self {
-            bits: Vec::with_capacity(limit),
+            bits: Vec::with_capacity(limit.min(PREALLOCATED_BITS)),
             limit,
         }
     }
@@ -126,9 +130,10 @@ impl BitWriter {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Checks that `width` more bits stay within the limit.
+    /// Checks that `width` more bits stay within the limit. The room left is worked out first, so that no `width`,
+    /// however large, can overflow the sum.
     fn check_room(&self, width: usize) -> Result<(), BitError> {
-        if self.bits.len() + width > self.limit {
+        if width > self.limit.saturating_sub(self.bits.len()) {
             return Err(BitError::Overflow {
                 len: self.bits.len(),
                 width,
