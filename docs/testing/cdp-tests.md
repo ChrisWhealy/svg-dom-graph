@@ -112,6 +112,8 @@ The text node holds at most 17 characters, and shares one midline with the hex d
 The two connectors into the codewords end over the data and over the error correction, measured against where the cells are.
 Text that cannot be encoded is not taken, and the text node and the caret go back to what they were.
 The export is caught before the browser can save it, so no file is written, then read with the browser's own XML parser and compared with the matrix on screen.
+Each way the download can fail after the file's address was made is forced in turn, and the address is let go of each time.
+An export that works keeps its address.
 
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 

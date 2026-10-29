@@ -104,6 +104,8 @@ Asking for the download does not change the walk or what is drawn.
 If the request cannot be made, the reason is shown and the symbol on show stays as it was.
 A page can only request a download, so what is announced is that the download was requested.
 The browser may still block it, ask where to save it, or cancel it, and the page is not told.
+The file is held in memory under an address of its own.
+The address is let go of after ten seconds if the request was made, and at once if anything fails after it was made.
 
 ## How it is checked
 

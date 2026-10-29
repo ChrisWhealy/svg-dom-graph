@@ -1,6 +1,5 @@
 //! Asking the browser to save the file, which is the one part of an export that needs the DOM.
 
-use demo_common::util::stringify;
 use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 
 /// How long the address of the file is kept, in milliseconds, before the browser may forget it. The save has started
@@ -11,7 +10,11 @@ const KEEP_MILLISECONDS: i32 = 10_000;
 /// Asks the browser to save `svg` as a file called `file_name`, and says whether the request was made.
 ///
 /// The file is a `Blob` with an address of its own, which a link is pointed at and clicked, and the link is then taken
-/// away. Nothing is sent anywhere, and nothing is written to the page. The address is released after a while.
+/// away. Nothing is sent anywhere, and nothing is written to the page.
+///
+/// The address holds the file in memory until it is released. It is released after a while if the request was made, so
+/// that the browser has long since started the save. It is released at once if anything fails after it was made, so
+/// that no failure leaves a file behind that nothing can reach.
 ///
 /// This only asks. Clicking the link requests a download, and the browser decides what happens next: it may save the
 /// file, ask where to save it, block it, or cancel it, and the page is told none of that. So `Ok` means the request was
@@ -29,40 +32,62 @@ pub(crate) fn download(document: &web_sys::Document, file_name: &str, svg: &str)
     let address = web_sys::Url::create_object_url_with_blob(&blob)
         .map_err(|e| format!("could not make an address for the file: {e:?}"))?;
 
+    match request(document, &address, file_name) {
+        Ok(()) => {
+            release_later(address);
+            Ok(())
+        },
+        Err(problem) => {
+            release(&address);
+            Err(problem)
+        },
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Points a link at `address`, which holds the file, clicks it, and takes it away again. The address is the caller's to
+/// release, whether this works or not.
+///
+/// # Errors
+///
+/// Returns `Err` if the link cannot be made or added to the page.
+fn request(document: &web_sys::Document, address: &str, file_name: &str) -> Result<(), String> {
     let link = document
         .create_element("a")
         .map_err(|e| format!("could not make a link: {e:?}"))?
         .dyn_into::<web_sys::HtmlAnchorElement>()
         .map_err(|_| "the link is not an anchor".to_owned())?;
-    link.set_href(&address);
+    link.set_href(address);
     link.set_download(file_name);
     let body = document.body().ok_or_else(|| "the page has no body".to_owned())?;
     body.append_child(&link).map_err(|e| format!("could not add the link: {e:?}"))?;
     link.click();
     link.remove();
+    Ok(())
+}
 
-    release_later(address)
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Lets go of the file's address now. The browser may already have forgotten it, and there is nothing to do if it has.
+fn release(address: &str) {
+    let _ = web_sys::Url::revoke_object_url(address);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Lets go of the file's address after [`KEEP_MILLISECONDS`].
 ///
-/// # Errors
-///
-/// Returns `Err` if there is no window to set the timer on.
-fn release_later(address: String) -> Result<(), String> {
-    let window = web_sys::window().ok_or_else(|| "no global window".to_owned())?;
-    let release = Closure::once_into_js(move || {
-        // The browser may already have forgotten the address, and there is nothing to do if it has.
-        let _ = web_sys::Url::revoke_object_url(&address);
+/// If the timer cannot be set, which needs a window that is there, the address is let go of at once instead. The
+/// request was made, so that is not an error, and keeping the file in memory for ever would be worse than a download
+/// that the browser has not finished starting.
+fn release_later(address: String) {
+    let later = address.clone();
+    let release_it = Closure::once_into_js(move || release(&later));
+    let set = web_sys::window().ok_or(()).and_then(|window| {
+        window
+            .set_timeout_with_callback_and_timeout_and_arguments_0(release_it.unchecked_ref(), KEEP_MILLISECONDS)
+            .map(|_| ())
+            .map_err(|_| ())
     });
-    window
-        .set_timeout_with_callback_and_timeout_and_arguments_0(release.unchecked_ref(), KEEP_MILLISECONDS)
-        .map(|_| ())
-        .map_err(stringify_js)
-}
-
-/// A JavaScript error as text.
-fn stringify_js(error: JsValue) -> String {
-    stringify(format!("{error:?}"))
+    if set.is_err() {
+        release(&address);
+    }
 }

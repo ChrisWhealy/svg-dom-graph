@@ -930,10 +930,10 @@ fn the_note_is_to_the_right_of_the_bitstream_and_within_the_width_of_the_graph()
 /// would put a file in the folder of whoever runs the tests.
 fn catch_exports(tab: &Tab) -> Result<(), String> {
     tab.evaluate(
-        "window.__saved = []; window.__blob = null; \
+        "(() => { window.__saved = []; window.__blob = null; \
          const make = URL.createObjectURL.bind(URL); \
          URL.createObjectURL = (blob) => { window.__blob = blob; return make(blob); }; \
-         HTMLAnchorElement.prototype.click = function () { window.__saved.push({ name: this.download }); };",
+         HTMLAnchorElement.prototype.click = function () { window.__saved.push({ name: this.download }); }; })()",
         false,
     )
     .map_err(|e| format!("could not catch the exports: {e}"))?;
@@ -1122,4 +1122,115 @@ fn the_export_button_works_from_the_keyboard() -> Result<(), String> {
         text(&tab, "document.activeElement?.getAttribute('data-action') ?? 'none'")?.as_str(),
         "export",
     )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes the page keep the address of every file that is made, and every address that is released, as well as catching
+/// the downloads as [`catch_exports`] does.
+fn watch_addresses(tab: &Tab) -> Result<(), String> {
+    catch_exports(tab)?;
+    tab.evaluate(
+        "(() => { window.__made = []; window.__released = []; \
+         const make = URL.createObjectURL.bind(URL); \
+         const release = URL.revokeObjectURL.bind(URL); \
+         URL.createObjectURL = (blob) => { const url = make(blob); window.__made.push(url); return url; }; \
+         URL.revokeObjectURL = (url) => { window.__released.push(url); return release(url); }; })()",
+        false,
+    )
+    .map_err(|e| format!("could not watch the addresses: {e}"))?;
+    Ok(())
+}
+
+/// How many addresses were made and how many were released, and whether every one released was one that was made.
+fn addresses(tab: &Tab) -> Result<(u64, u64, bool), String> {
+    let found = text(
+        tab,
+        "JSON.stringify([window.__made.length, window.__released.length, \
+         window.__released.every(url => window.__made.includes(url))])",
+    )?;
+    let values: serde_json::Value = serde_json::from_str(&found).map_err(|e| format!("{e}: {found}"))?;
+    Ok((
+        values[0].as_u64().ok_or("no count of addresses made")?,
+        values[1].as_u64().ok_or("no count of addresses released")?,
+        values[2].as_bool().ok_or("no answer about the addresses")?,
+    ))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An export that works keeps the address of its file for a while, so that the browser has started the save, and does
+/// not let go of it at once.
+#[test]
+fn a_request_that_is_made_keeps_the_address_of_the_file_for_a_while() -> Result<(), String> {
+    let tab = open()?;
+    watch_addresses(&tab)?;
+    jump(&tab, FINAL)?;
+    press(&tab, "export")?;
+    check_eq(addresses(&tab)?, (1, 0, true))?;
+    check_eq(exported(&tab)?["saved"].as_u64(), Some(1))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// If anything fails after the address of the file was made, the address is let go of at once, and the failure is
+/// reported on its own, with the symbol on show as it was. Once what failed works again, so does the export.
+#[test]
+fn a_failure_after_the_address_was_made_lets_go_of_it_at_once() -> Result<(), String> {
+    let tab = open()?;
+    watch_addresses(&tab)?;
+    jump(&tab, FINAL)?;
+    let on_show = shown(&tab)?;
+
+    // Each of these fails after the address exists: the link cannot be made, it is not an anchor, the page has no body,
+    // and the link cannot be added.
+    let failures = [
+        (
+            "a link cannot be made",
+            "document.createElement = () => { throw new Error('no link'); };",
+        ),
+        (
+            "it is not an anchor",
+            "document.createElement = () => document.createElementNS('http://www.w3.org/2000/svg', 'g');",
+        ),
+        (
+            "the page has no body",
+            "Object.defineProperty(document, 'body', { configurable: true, get: () => null });",
+        ),
+        (
+            "the link cannot be added",
+            "Object.defineProperty(document, 'body', { configurable: true, get: () => ({ \
+             appendChild: () => { throw new Error('no room'); } }) });",
+        ),
+    ];
+    for (round, (what, breakage)) in failures.iter().enumerate() {
+        tab.evaluate(breakage, false)
+            .map_err(|e| format!("could not break {what}: {e}"))?;
+        press(&tab, "export")?;
+        let (made, released, only_made) = addresses(&tab)?;
+        check_eq((made, released, only_made), (round as u64 + 1, round as u64 + 1, true))?;
+        check(
+            banner(&tab)?.contains("The export failed"),
+            &format!("{what}: {}", banner(&tab)?),
+        )?;
+        check(
+            !said(&tab)?.contains("requested"),
+            &format!("{what}: a failure was announced as a request"),
+        )?;
+        check(
+            shown(&tab)? == on_show,
+            &format!("{what}: a failed export changed what is on show"),
+        )?;
+        check_eq(exported(&tab)?["saved"].as_u64(), Some(0))?;
+        // Put back what was broken.
+        tab.evaluate(
+            "delete document.createElement; delete document.body; \
+             if (document.body === null) { throw new Error('the body did not come back'); }",
+            false,
+        )
+        .map_err(|e| format!("could not mend {what}: {e}"))?;
+    }
+
+    // With everything as it was, the export works, and keeps its address.
+    press(&tab, "export")?;
+    check_eq(addresses(&tab)?, (5, 4, true))?;
+    check_eq(exported(&tab)?["saved"].as_u64(), Some(1))?;
+    check(said(&tab)?.starts_with("Download of qr-code.svg requested"), &said(&tab)?)
 }

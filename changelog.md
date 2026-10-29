@@ -30,7 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Explicitly handle Reed-Solomon degree zero (`eceb2d5`)
-- Only announce downlaod success after file has been successfully saved (``)
+- Only announce downlaod success after file has been successfully saved (`ba65fbc`)
+- Release object URL on every failure path (``)
 
 # [Released]
 
