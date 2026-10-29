@@ -16,6 +16,9 @@
 mod function;
 mod grid;
 mod paths;
+// Phase 3 draws the encoder's stages as snapshots, and until then only its tests use it.
+#[allow(dead_code, reason = "nothing draws the encoder's stages until Phase 3")]
+mod qr_core;
 mod slot;
 mod spike;
 mod state;

@@ -79,7 +79,11 @@ impl State {
             format!(" Outlining {count} {} modules.", role.label().to_lowercase())
         });
         // The unstarted label already says so, and saying it twice reads badly aloud.
-        let spoken = if self.at.is_some() { format!("{position}. {label}") } else { label.to_owned() };
+        let spoken = if self.at.is_some() {
+            format!("{position}. {label}")
+        } else {
+            label.to_owned()
+        };
         announce(ANNOUNCEMENT_ID, &format!("{spoken}{outlined}"));
         Ok(())
     }

@@ -12,7 +12,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Implemenmt phase 0 of QR Code generator demo (`3b3ac67`)
 - Add QR Code phase 0 CDP tests (`2b82b79`)
-- Doc only: State dimension assumptions (``)
+- Doc only: State dimension assumptions (`5a2e9cf`)
+- Implement phase 1 of QR Code generator demo: pure Rust QR encoder (``)
 
 # [Released]
 
