@@ -921,3 +921,201 @@ fn the_note_is_to_the_right_of_the_bitstream_and_within_the_width_of_the_graph()
         &format!("not level with the top: {found}"),
     )
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Exporting the finished symbol
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+
+/// Makes the page keep the file an export would save, and the name it would save it as, and not save it. A real save
+/// would put a file in the folder of whoever runs the tests.
+fn catch_exports(tab: &Tab) -> Result<(), String> {
+    tab.evaluate(
+        "window.__saved = []; window.__blob = null; \
+         const make = URL.createObjectURL.bind(URL); \
+         URL.createObjectURL = (blob) => { window.__blob = blob; return make(blob); }; \
+         HTMLAnchorElement.prototype.click = function () { window.__saved.push({ name: this.download }); };",
+        false,
+    )
+    .map_err(|e| format!("could not catch the exports: {e}"))?;
+    Ok(())
+}
+
+/// What the page kept of the last export: how many were saved, the name and the type of the file, and what the
+/// browser's own XML reader makes of it.
+///
+/// The picture is read as a scanner would see it: each rectangle of the path makes some modules dark. It is returned as
+/// `modules` rows of `0` and `1`, with the number of dark modules in the quiet zone, and the title and description.
+fn exported(tab: &Tab) -> Result<serde_json::Value, String> {
+    let json = tab
+        .evaluate(
+            "(async () => { \
+               const first = window.__saved[0]; \
+               const out = { saved: window.__saved.length, name: first ? first.name : null }; \
+               if (!window.__blob) return JSON.stringify(out); \
+               out.type = window.__blob.type; \
+               const svg = await window.__blob.text(); \
+               const doc = new DOMParser().parseFromString(svg, 'image/svg+xml'); \
+               out.wellFormed = !doc.querySelector('parsererror'); \
+               if (!out.wellFormed) return JSON.stringify(out); \
+               const root = doc.documentElement; \
+               const [, , width, height] = root.getAttribute('viewBox').split(' ').map(Number); \
+               out.viewBox = root.getAttribute('viewBox'); \
+               out.pixels = [root.getAttribute('width'), root.getAttribute('height')]; \
+               out.description = doc.querySelector('desc').textContent; \
+               out.markup = doc.querySelectorAll('b, script, a, image, use, foreignObject').length; \
+               const modules = Array.from({ length: height }, () => Array(width).fill(0)); \
+               for (const part of doc.querySelector('path').getAttribute('d').split('z')) { \
+                 const m = part.trim().match(/^M(\\d+) (\\d+)h(\\d+)v1h-(\\d+)$/); \
+                 if (!m) continue; \
+                 for (let c = 0; c < Number(m[3]); c++) modules[Number(m[2])][Number(m[1]) + c] = 1; \
+               } \
+               out.rows = modules.map(row => row.join('')); \
+               const edge = (r, c) => r < 4 || r >= height - 4 || c < 4 || c >= width - 4; \
+               out.border = modules.flatMap((row, r) => row.filter((v, c) => v && edge(r, c))).length; \
+               return JSON.stringify(out); \
+             })()",
+            true,
+        )
+        .map_err(|e| format!("could not read the export: {e}"))?
+        .value
+        .and_then(|v| v.as_str().map(str::to_owned))
+        .ok_or_else(|| "the export gave no text".to_owned())?;
+    serde_json::from_str(&json).map_err(|e| format!("the export is not JSON: {e}: {json}"))
+}
+
+/// The 21 rows of the matrix as text on the page, `1` for dark and `0` for light.
+fn matrix_rows(tab: &Tab) -> Result<Vec<String>, String> {
+    Ok(text(tab, "document.getElementById('qr-code-matrix-text').textContent")?
+        .split('\n')
+        .map(str::to_owned)
+        .collect())
+}
+
+/// Checks that the export the page kept is the symbol on show, in a quiet zone of four light modules.
+fn check_export_is_the_symbol(tab: &Tab) -> Result<serde_json::Value, String> {
+    let saved = exported(tab)?;
+    check_eq(saved["saved"].as_u64(), Some(1))?;
+    check_eq(saved["name"].as_str(), Some("qr-code.svg"))?;
+    check_eq(saved["type"].as_str(), Some("image/svg+xml"))?;
+    check_eq(saved["wellFormed"].as_bool(), Some(true))?;
+    check_eq(saved["viewBox"].as_str(), Some("0 0 29 29"))?;
+    check_eq(
+        (saved["pixels"][0].as_str(), saved["pixels"][1].as_str()),
+        (Some("290"), Some("290")),
+    )?;
+    check_eq(saved["border"].as_u64(), Some(0))?;
+    let rows: Vec<String> = saved["rows"]
+        .as_array()
+        .ok_or("the export has no rows")?
+        .iter()
+        .map(|row| row.as_str().unwrap_or_default().to_owned())
+        .collect();
+    check_eq(rows.len(), 29)?;
+    let inner: Vec<String> = rows[4..25].iter().map(|row| row[4..25].to_owned()).collect();
+    check_eq(inner, matrix_rows(tab)?)?;
+    Ok(saved)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The export button is dimmed until the walk reaches the finished symbol, and a click on it before then saves nothing.
+#[test]
+fn the_export_button_is_dimmed_until_the_last_step_and_a_click_before_then_saves_nothing() -> Result<(), String> {
+    let tab = open()?;
+    catch_exports(&tab)?;
+    let export = format!("{DIAGRAM} g[data-action=\"export\"]");
+    check_eq(disabled(&tab, &export)?, true)?;
+    press(&tab, "export")?;
+    for stage in [FUNCTIONS, PLACEMENT, MASKS] {
+        jump(&tab, stage)?;
+        check_eq(disabled(&tab, &export)?, true)?;
+        press(&tab, "export")?;
+    }
+    check_eq(exported(&tab)?["saved"].as_u64(), Some(0))?;
+    jump(&tab, FINAL)?;
+    check_eq(disabled(&tab, &export)?, false)?;
+    // Going back one step dims it again.
+    toolbar(&tab, "Previous selection")?;
+    check_eq(disabled(&tab, &export)?, true)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// At the last step, the export is the finished symbol: a file called `qr-code.svg` of the right type that the
+/// browser's XML reader accepts, 29 by 29 modules in whole pixels, with the symbol inside a quiet zone that has no dark
+/// module in it.
+#[test]
+fn the_export_is_the_finished_symbol_with_a_quiet_zone_of_four_light_modules() -> Result<(), String> {
+    let tab = open()?;
+    catch_exports(&tab)?;
+    jump(&tab, FINAL)?;
+    press(&tab, "export")?;
+    let saved = check_export_is_the_symbol(&tab)?;
+    check_eq(saved["description"].as_str(), Some(DEFAULT_TEXT))?;
+    check(said(&tab)?.starts_with("Saved qr-code.svg as 29 by 29 modules"), &said(&tab)?)?;
+    check(banner(&tab)?.is_empty(), "a good export is not an error")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An export leaves what is on show exactly as it was, and can be done again.
+#[test]
+fn an_export_changes_nothing_on_show_and_can_be_done_again() -> Result<(), String> {
+    let tab = open()?;
+    jump(&tab, FINAL)?;
+    let before = shown(&tab)?;
+    catch_exports(&tab)?;
+    press(&tab, "export")?;
+    press(&tab, "export")?;
+    check_eq(exported(&tab)?["saved"].as_u64(), Some(2))?;
+    // What is announced changes, to say that the file is saved, and nothing else does.
+    let after = shown(&tab)?;
+    check_eq(&after[..after.len() - 1], &before[..before.len() - 1])
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The export is of the text that was typed, and typing sends the walk back to the start, which dims the button again.
+#[test]
+fn the_export_follows_the_text_and_typing_dims_it_again() -> Result<(), String> {
+    let tab = open()?;
+    type_text(&tab, "Hi")?;
+    check_eq(disabled(&tab, &format!("{DIAGRAM} g[data-action=\"export\"]"))?, true)?;
+    catch_exports(&tab)?;
+    jump(&tab, FINAL)?;
+    press(&tab, "export")?;
+    let saved = check_export_is_the_symbol(&tab)?;
+    check_eq(saved["description"].as_str(), Some("Hi"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Text that looks like markup is only text in the file: it stays character data, and the file is still well formed.
+#[test]
+fn text_that_looks_like_markup_is_only_text_in_the_export() -> Result<(), String> {
+    let tab = open()?;
+    type_text(&tab, "<b onclick=\"x\">")?;
+    check(banner(&tab)?.is_empty(), &banner(&tab)?)?;
+    catch_exports(&tab)?;
+    jump(&tab, FINAL)?;
+    press(&tab, "export")?;
+    let saved = check_export_is_the_symbol(&tab)?;
+    check_eq(saved["description"].as_str(), Some("<b onclick=\"x\">"))?;
+    check_eq(saved["markup"].as_u64(), Some(0))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The export button works from the keyboard, like the others.
+#[test]
+fn the_export_button_works_from_the_keyboard() -> Result<(), String> {
+    let tab = open()?;
+    jump(&tab, FINAL)?;
+    catch_exports(&tab)?;
+    tab.evaluate(
+        &format!("document.querySelector('{DIAGRAM} g[data-action=\"export\"]').focus()"),
+        false,
+    )
+    .map_err(|e| format!("could not focus the export button: {e}"))?;
+    tab.press_key("Enter").map_err(|e| format!("could not press Enter: {e}"))?;
+    std::thread::sleep(Duration::from_millis(300));
+    check_eq(exported(&tab)?["saved"].as_u64(), Some(1))?;
+    check_eq(
+        text(&tab, "document.activeElement?.getAttribute('data-action') ?? 'none'")?.as_str(),
+        "export",
+    )
+}

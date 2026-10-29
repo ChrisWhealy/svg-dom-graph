@@ -25,10 +25,14 @@ features = [
     "Document",
     "SvgElement",
     "console",
+    "Blob",
+    "BlobPropertyBag",
     "DomRect",
     "Element",
     "Event",
     "EventTarget",
+    "HtmlAnchorElement",
+    "HtmlElement",
     "HtmlInputElement",
     "HtmlSelectElement",
     "KeyboardEvent",
@@ -36,6 +40,7 @@ features = [
     "MediaQueryList",
     "NodeList",
     "PageTransitionEvent",
+    "Url",
     "Window",
 ]
 

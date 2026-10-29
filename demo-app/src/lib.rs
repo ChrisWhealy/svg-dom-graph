@@ -87,9 +87,9 @@
 //!   from up to 17 ASCII characters. A graph follows the text through its bytes, the bitstream, the data codewords, the
 //!   Reed-Solomon division and all 26 codewords to the scores of eight masks. A matrix of 21 by 21 modules beside it
 //!   shows the function modules, the codewords placed one at a time, and each candidate. 62 steps, with buttons that
-//!   jump to a stage, and a list of roles that outlines and explains the modules of one. The encoder is plain Rust and
-//!   is checked against two independent ones. The scene is large, so it opens in a window of its own, as the hash
-//!   demos' do.
+//!   jump to a stage, a list of roles that outlines and explains the modules of one, and an export of the finished
+//!   symbol as an SVG file. The encoder is plain Rust and is checked against two independent ones. The scene is large,
+//!   so it opens in a window of its own, as the hash demos' do.
 //! - `panel-bubble-sort` / `#bubble-sort-diagram` — [`bubble_sort::build_bubble_sort_demo`]: Bubble sort of ten values,
 //!   drawn as bars in the same way as Quicksort. A pass compares neighbours, green and blue, and the swap slides the
 //!   two bars past each other. After each pass the largest element left is in place at the end.

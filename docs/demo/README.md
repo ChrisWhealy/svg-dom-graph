@@ -19,6 +19,7 @@
 - [Hash Algorithms](hash-algorithms.md)
 - [ChaCha20](chacha20.md)
 - [Huffman Encoding](huffman.md)
+- [QR Code Generator](qr-code.md)
 - [Dijkstra's Shortest Paths](dijkstra.md)
 - [Fast Fourier Transform](fft.md)
 - [Force-directed Graphs (Weighted springs)](springs.md)

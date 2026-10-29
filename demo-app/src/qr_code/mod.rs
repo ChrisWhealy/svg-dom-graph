@@ -12,6 +12,7 @@
 //! [`state`] holds the position and draws all of them from it, and [`slot`] is what they write through. [`grid`],
 //! [`function`] and [`paths`] are the matrix and its layout.
 
+mod export;
 mod function;
 mod graph;
 mod grid;
@@ -32,8 +33,8 @@ mod viewport;
 use demo_common::{
     svg_buttons::{self, Button},
     util::{
-        CONTENT_TOP, MARGIN, add_step_driver, clear_error, document, ensure_svg_in, fit_window_to_stage, report_error,
-        resize_svg, step_toolbar_options, stringify, wire_open_window,
+        CONTENT_TOP, MARGIN, add_step_driver, announce, clear_error, document, ensure_svg_in, fit_window_to_stage,
+        report_error, resize_svg, step_toolbar_options, stringify, wire_open_window,
     },
 };
 use graph::Graph;
@@ -65,6 +66,8 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("qr_code/graph.rs", "graph.rs"),
     crate::source_file!("qr_code/state.rs", "state.rs"),
     crate::source_file!("qr_code/retry.rs", "retry.rs"),
+    crate::source_file!("qr_code/export/mod.rs", "export/mod.rs"),
+    crate::source_file!("qr_code/export/download.rs", "export/download.rs"),
     crate::source_file!("qr_code/viewport.rs", "viewport.rs"),
     crate::source_file!("qr_code/text.rs", "text.rs"),
     crate::source_file!("qr_code/slot.rs", "slot.rs"),
@@ -94,6 +97,9 @@ const INITIAL_TEXT: &str = "This is a QR code";
 /// that jumps to a snapshot has the action `jump-` and the number of the snapshot.
 const NO_ROLE: &str = "role-none";
 const JUMP_ACTION: &str = "jump-";
+
+/// The action of the button that saves the finished symbol as an SVG file.
+const EXPORT_ACTION: &str = "export";
 
 /// The room east of the scene's content for the zoom toolbar.
 const TOOLBAR_ROOM: f64 = 80.0;
@@ -301,10 +307,48 @@ fn take_text(scene: &Scene, node: NodeId, text: &str) {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Saves the finished symbol as an SVG file, if the walk is at its last step, and does nothing otherwise, since the
+/// button is dimmed but still gets the click.
+///
+/// The symbol is the one the last snapshot shows, with the quiet zone added. Nothing here changes the position or what
+/// is drawn, so a failure is reported on its own and leaves the symbol on show as it was.
+fn export_symbol() {
+    let finished = STATE.with_borrow(|slot| {
+        slot.as_ref()
+            .filter(|state| state.at == Some(COUNT - 1))
+            .map(|state| (state.set.snapshots[COUNT - 1].grid.clone(), state.set.content.text.clone()))
+    });
+    let Some((grid, text)) = finished else { return };
+    let saved = export::svg(&grid, &text)
+        .map_err(|problem| problem.to_string())
+        .and_then(|file| export::download(&document()?, export::FILE_NAME, &file));
+    match saved {
+        Ok(()) => announce(
+            ANNOUNCEMENT_ID,
+            &format!(
+                "Saved {} as {} by {} modules, with a quiet zone of {}.",
+                export::FILE_NAME,
+                export::MODULES,
+                export::MODULES,
+                export::QUIET_ZONE
+            ),
+        ),
+        Err(problem) => report_error(
+            ERROR_ID,
+            &format!("The export failed, and the symbol on show is as it was. {problem}"),
+        ),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Does what the button `action` says. A role button outlines or stops outlining a role. A jump button goes to a
 /// snapshot by setting the anchor's selection, which does not call the toolbar's own callback, so the position is drawn
-/// here.
+/// here. The export button saves the symbol, see [`export_symbol`].
 fn press(action: &str) {
+    if action == EXPORT_ACTION {
+        export_symbol();
+        return;
+    }
     let Some(scene) = scene() else { return };
     if let Some(index) = action.strip_prefix(JUMP_ACTION).and_then(|n| n.parse::<usize>().ok()) {
         if index < COUNT {
@@ -340,6 +384,7 @@ fn add_button(
     size: Size,
     label: &str,
     action: &str,
+    pressed: Option<bool>,
 ) -> Result<(), String> {
     svg_buttons::add_button(
         document,
@@ -349,7 +394,7 @@ fn add_button(
             label,
             action,
             colours: NOT_CHOSEN,
-            pressed: Some(false),
+            pressed,
         },
     )
 }
@@ -417,9 +462,23 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
             Size::new(JUMP_WIDTH, JUMP_HEIGHT),
             label,
             &format!("{JUMP_ACTION}{index}"),
+            Some(false),
         )?;
     }
     top += JUMPS.len().div_ceil(JUMPS_PER_ROW) as f64 * (JUMP_HEIGHT + JUMP_GAP);
+
+    // The button that saves the finished symbol is under them. It is not a toggle, and it is dimmed until the last
+    // step.
+    add_button(
+        &document,
+        &layer,
+        Point::new(left, top),
+        Size::new(JUMP_WIDTH, JUMP_HEIGHT),
+        "Export SVG",
+        EXPORT_ACTION,
+        None,
+    )?;
+    top += JUMP_HEIGHT + JUMP_GAP;
 
     let block = |x: f64, y: f64, max_lines: usize, bold: bool| BlockLayout {
         x,
@@ -462,6 +521,7 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
             Size::new(ROLE_BUTTON_WIDTH, ROLE_BUTTON_HEIGHT),
             role.map_or("No role", QrModuleKind::label),
             &role_action(*role),
+            Some(false),
         )?;
     }
     top += roles.len().div_ceil(2) as f64 * (ROLE_BUTTON_HEIGHT + ROLE_BUTTON_GAP) + 16.0;

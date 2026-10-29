@@ -43,8 +43,21 @@ pub(crate) fn highlight_path(cells: &[(usize, usize)]) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The path of the dark modules of `grid`, moved right and down by `offset` modules, which is how an export leaves room
+/// for the quiet zone.
+pub(crate) fn dark_path_offset(grid: &BitGrid, offset: usize) -> String {
+    filled_path_offset(grid, |row, col| grid.get(row, col) == Some(CellState::Dark), offset)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One rectangle for each horizontal run of modules that `wanted` accepts.
 fn filled_path(grid: &BitGrid, wanted: impl Fn(usize, usize) -> bool) -> String {
+    filled_path_offset(grid, wanted, 0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// [`filled_path`], with every rectangle moved right and down by `offset`.
+fn filled_path_offset(grid: &BitGrid, wanted: impl Fn(usize, usize) -> bool, offset: usize) -> String {
     let mut d = String::new();
     for row in 0..grid.height() {
         let mut col = 0;
@@ -61,7 +74,7 @@ fn filled_path(grid: &BitGrid, wanted: impl Fn(usize, usize) -> bool) -> String 
             if !d.is_empty() {
                 d.push(' ');
             }
-            d.push_str(&format!("M{start} {row}h{run}v1h-{run}z"));
+            d.push_str(&format!("M{} {}h{run}v1h-{run}z", start + offset, row + offset));
         }
     }
     d

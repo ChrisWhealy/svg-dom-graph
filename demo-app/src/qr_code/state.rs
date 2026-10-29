@@ -5,8 +5,8 @@
 //! the one before it.
 
 use super::{
-    ANNOUNCEMENT_ID, CHOSEN, Display, JUMP_ACTION, NO_ROLE_EXPLANATION, NOT_CHOSEN, UNSTARTED_EXPLANATION,
-    caption_text,
+    ANNOUNCEMENT_ID, CHOSEN, Display, EXPORT_ACTION, JUMP_ACTION, NO_ROLE_EXPLANATION, NOT_CHOSEN,
+    UNSTARTED_EXPLANATION, caption_text,
     grid::QrModuleKind,
     retry::Retry,
     role_action,
@@ -63,6 +63,9 @@ impl State {
             summary: &caption,
         })?;
         display.graph.show(scene, snapshot)?;
+
+        // The finished symbol can be saved only once the walk has reached it.
+        svg_buttons::set_disabled(&display.layer, EXPORT_ACTION, self.at != Some(COUNT - 1))?;
 
         // The button of the stage that the position is in is pressed, and none is before the walk starts.
         for &(label, index) in &JUMPS {

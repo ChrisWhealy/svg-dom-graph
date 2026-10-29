@@ -17,6 +17,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Doc only: State reference-encoder differences (`169c2d8`)
 - Implement phase 2 of QR Code generator demo: QR symbol (`1553f9b`)
 - Implement phase 3 of QR Code generator demo: Integration (`3ee09cf`)
+- Implement phase 4 of QR Code generator demo: Export SVG (``)
 
 ## Fixed
 
@@ -24,7 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent invalid mask indices from being silently accepted (`6a29fc3`)
 - Prevent rejected input from leaving text inconsistent with displayed QR code (`27a51bc`)
 - Make input replacement transactional across all graph updates (`b3df385`)
-- Doc only: Bring snapshot count in line with specification (``)
+- Doc only: Bring snapshot count in line with specification (`0c9bdee`)
 
 ## Changed
 

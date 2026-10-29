@@ -105,6 +105,14 @@ The suite's helper cannot hold a real mouse button.
 So the tests that need a circle held dispatch pointer events in the page, as the library's own listeners receive them.
 The Dijkstra panel is checked to be unchanged.
 
+The QR code window is checked in `qr_code.rs`.
+Going back shows exactly what going forward showed, at each of the 62 steps, down to every attribute and what was announced.
+An element marked at the start is still the same element after a whole walk and new text, so nothing is drawn again.
+The text node holds at most 17 characters, and shares one midline with the hex dump.
+The two connectors into the codewords end over the data and over the error correction, measured against where the cells are.
+Text that cannot be encoded is not taken, and the text node and the caret go back to what they were.
+The export is caught before the browser can save it, so no file is written, then read with the browser's own XML parser and compared with the matrix on screen.
+
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 
 Needs the latest version of the Chrome/Chromium binary to be locally installed.
