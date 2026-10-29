@@ -19,6 +19,11 @@ pad codewords, and its error correction bytes follow from it. Such a symbol stil
 terminator. The standard says to pad only a stream that is not on a boundary, which is what python-qrcode and the
 encoder under test do.
 
+For whole-matrix fixtures, this means the two encoders do not start from the same codewords. Their symbols differ in
+every module that carries data or error correction, whichever mask each chooses. So a matrix, a candidate for a mask, a
+penalty score or a chosen mask from segno cannot be compared with the Rust encoder's. Use python-qrcode for those, which
+takes the mask as an argument. Keep segno only as a cross-check, with this difference stated and asserted, as it is here.
+
 segno does not hand out its codewords, so each is decoded from its finished matrix by code that shares nothing with the
 Rust encoder. Two checks guard that decoding: the format information read from the matrix must be the one worked out
 here for level L and the mask segno says it chose, and the error correction bytes must be what the plain Reed-Solomon
@@ -213,6 +218,7 @@ print(f"//! Oracle: qrcode {importlib.metadata.version('qrcode')} (python-qrcode
 print(f"//! Cross-check: segno {segno.__version__}, `version=1, error=\"L\", mode=\"byte\", micro=False, boost_error=False`.")
 print("//! segno pads a stream already on a codeword boundary with a whole extra zero codeword, which the standard does")
 print("//! not. The script asserts that, and so these vectors are not segno's. Its doc comment gives the reason.")
+print("//! A matrix, mask candidate or penalty score from segno therefore cannot be compared with the encoder's.")
 print()
 print("/// One input, and the codewords python-qrcode made of it.")
 print("pub(super) struct Golden {")

@@ -14,6 +14,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Add QR Code phase 0 CDP tests (`2b82b79`)
 - Doc only: State dimension assumptions (`5a2e9cf`)
 - Implement phase 1 of QR Code generator demo: pure Rust QR encoder (`f6429c1`)
+- Doc only: State reference-encoder differences (``)
 
 ## Fixed
 
@@ -21,7 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Changed
 
-- Explicitly handle Reed-Solomon degree zero (``)
+- Explicitly handle Reed-Solomon degree zero (`eceb2d5`)
 
 # [Released]
 

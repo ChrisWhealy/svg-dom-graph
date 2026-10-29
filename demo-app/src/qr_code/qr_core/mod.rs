@@ -10,6 +10,11 @@
 //!    correction codewords.
 //!
 //! Placing the codewords in a matrix, masking and scoring come later.
+//!
+//! The golden vectors in `golden.rs` come from python-qrcode, and segno is only a cross-check. segno adds a whole extra
+//! zero codeword where the standard adds none, so its symbols hold other codewords than this encoder's. Any later
+//! comparison of a whole matrix, a mask candidate or a score must use python-qrcode, never segno. See
+//! `generate_golden.py` for the details.
 
 pub(crate) mod bits;
 pub(crate) mod data;

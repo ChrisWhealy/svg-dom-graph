@@ -5,6 +5,7 @@
 //! Cross-check: segno 1.6.6, `version=1, error="L", mode="byte", micro=False, boost_error=False`.
 //! segno pads a stream already on a codeword boundary with a whole extra zero codeword, which the standard does
 //! not. The script asserts that, and so these vectors are not segno's. Its doc comment gives the reason.
+//! A matrix, mask candidate or penalty score from segno therefore cannot be compared with the encoder's.
 
 /// One input, and the codewords python-qrcode made of it.
 pub(super) struct Golden {
