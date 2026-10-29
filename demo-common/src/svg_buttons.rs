@@ -114,6 +114,64 @@ pub fn add_button(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The button in `layer` whose action is `action`.
+fn find(layer: &web_sys::Element, action: &str) -> Result<web_sys::Element, String> {
+    layer
+        .query_selector(&format!("[data-action=\"{action}\"]"))
+        .map_err(|e| format!("could not look for the button {action:?}: {e:?}"))?
+        .ok_or_else(|| format!("there is no button {action:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shows a toggle button as pressed or not: its `aria-pressed`, and the fill and outline `colours` it is now drawn in.
+///
+/// # Errors
+///
+/// Returns `Err` if `layer` has no button with that action, or an attribute could not be set.
+pub fn set_pressed(layer: &web_sys::Element, action: &str, pressed: bool, colours: (&str, &str)) -> Result<(), String> {
+    let button = find(layer, action)?;
+    button
+        .set_attribute("aria-pressed", &pressed.to_string())
+        .map_err(|e| format!("could not set aria-pressed on {action:?}: {e:?}"))?;
+    if let Some(rect) = button
+        .query_selector("rect")
+        .map_err(|e| format!("could not find the rectangle of {action:?}: {e:?}"))?
+    {
+        for (name, value) in [("fill", colours.0), ("stroke", colours.1)] {
+            rect.set_attribute(name, value)
+                .map_err(|e| format!("could not set {name} on {action:?}: {e:?}"))?;
+        }
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dims a button and takes it out of the keyboard's tab order, or restores it. A disabled button still receives
+/// clicks, so the handler given to [`watch`] must ignore its action while the button is disabled.
+///
+/// # Errors
+///
+/// Returns `Err` if `layer` has no button with that action, or an attribute could not be set.
+pub fn set_disabled(layer: &web_sys::Element, action: &str, disabled: bool) -> Result<(), String> {
+    let button = find(layer, action)?;
+    let (tab_index, style) = if disabled {
+        ("-1", "cursor: default; opacity: 0.45;")
+    } else {
+        ("0", "cursor: pointer;")
+    };
+    for (name, value) in [
+        ("aria-disabled", if disabled { "true" } else { "false" }),
+        ("tabindex", tab_index),
+        ("style", style),
+    ] {
+        button
+            .set_attribute(name, value)
+            .map_err(|e| format!("could not set {name} on {action:?}: {e:?}"))?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the buttons drawn by [`add_button`] work. One listener for clicks and one for the Enter and Space keys are on
 /// the stage `stage_id`, which outlives every scene that is drawn in it, and find the button by its `data-action`. So a
 /// scene drawn again needs no listeners of its own. `on_press` is called with the action of the button.

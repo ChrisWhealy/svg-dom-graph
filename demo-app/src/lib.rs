@@ -83,6 +83,9 @@
 //! - `panel-hamming` / `#hamming-diagram` — [`hamming::build_hamming_demo`]: Hamming(7,4). Four data bits get three
 //!   parity bits, one bit is flipped on the way, and the receiver finds it from the syndrome and puts it right. The
 //!   boxes are one path through the calculation, laid out as a block that runs along one row and back along the next.
+//! - `panel-qr-code` / `#qr-code-diagram` — [`qr_code::build_qr_code_demo`]: the matrix of a QR code, so far with nothing
+//!   encoded. A 21 x 21 grid is drawn with a fixed set of SVG elements, where a module can have a colour, a role, both or
+//!   neither, and a scripted sequence of states steps through it. This is Phase 0 of `design-specs/qr-code-generator.pdf`.
 //! - `panel-bubble-sort` / `#bubble-sort-diagram` — [`bubble_sort::build_bubble_sort_demo`]: Bubble sort of ten values,
 //!   drawn as bars in the same way as Quicksort. A pass compares neighbours, green and blue, and the swap slides the
 //!   two bars past each other. After each pass the largest element left is in place at the end.
@@ -140,6 +143,7 @@ mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
 mod operators_unary;
+mod qr_code;
 mod quicksort;
 mod selection;
 mod sha1;
@@ -253,6 +257,7 @@ demo_gallery! {
     "panel-huffman" => huffman::build_huffman_demo + huffman::FILES,
     "panel-crc32" => crc32::build_crc32_demo + crc32::FILES,
     "panel-hamming" => hamming::build_hamming_demo + hamming::FILES,
+    "panel-qr-code" => qr_code::build_qr_code_demo + qr_code::FILES,
     "panel-bubble-sort" => bubble_sort::build_bubble_sort_demo + bubble_sort::FILES,
     "panel-shell-sort" => shell_sort::build_shell_sort_demo + shell_sort::FILES,
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,

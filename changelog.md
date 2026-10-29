@@ -6,6 +6,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 # [Unreleased]
 
+## [0.2.46] - 2026-10-29
+
+## Added
+
+- Implemenmt phase 0 of QR Code generator demo (``)
+
+# [Released]
+
 ## [0.2.45] - 2026-10-29
 
 ## Added
@@ -27,8 +35,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Prevent logarithmic tick estimates from overflowing unnecessarily (`d070311`)
 - Prevent tick cleanup from merging distinct values at large offsets (`0e21664`)
 - Avoid line geometry distortion by clipping segments in transformed data coordinates before converting to SVG coordinates (`8f84f32`)
-
-# [Released]
 
 ## [0.2.44] - 2026-10-26
 
