@@ -271,10 +271,7 @@ fn a_chosen_role_and_the_step_are_independent() -> Result<(), String> {
     press(&tab, "role-finder")?;
     let outline = path(&tab, "role")?;
     check_eq(parts(&outline), 147)?;
-    check_eq(
-        (path(&tab, "dark")?, path(&tab, "highlight")?),
-        (base.clone(), highlight.clone()),
-    )?;
+    check_eq((colours(&tab)?, path(&tab, "highlight")?), (base.clone(), highlight.clone()))?;
 
     press(&tab, "next")?;
     check_eq(path(&tab, "role")?, outline.clone())?;

@@ -1,29 +1,40 @@
-//! The encoder of a Version 1-L symbol, in byte mode: from up to 17 bytes to the 26 codewords of the symbol.
+//! The encoder of a Version 1-L symbol, in byte mode: from up to 17 bytes to the finished 21 by 21 symbol.
 //!
 //! It is plain Rust. It has no DOM, no scene and no timing, so each stage can be tested, and each is kept so that it
-//! can be shown. [`encode`] runs them all:
+//! can be shown. [`encode`] runs the first three stages, and [`symbol::build_symbol`] the rest:
 //!
 //! 1. [`input`] checks the bytes, or turns ASCII text into them.
 //! 2. [`data`] writes the mode, the count and the bytes with a [`bits::BitWriter`], ends them, and pads them to 19
 //!    codewords.
 //! 3. [`reed_solomon`] divides those by a generator, in [`gf256`], one byte at a time. The remainder is the 7 error
 //!    correction codewords.
+//! 4. [`symbol`] reserves the function modules, places the 26 codewords, and makes eight candidates. Each candidate has
+//!    one of the [`mod@mask`] patterns applied and its own [`mod@format`] information written. [`score`] scores each,
+//!    and the least total wins.
 //!
-//! Placing the codewords in a matrix, masking and scoring come later.
+//! The quiet zone is not part of the symbol. An export adds it.
 //!
-//! The golden vectors in `golden.rs` come from python-qrcode, and segno is only a cross-check. segno adds a whole extra
-//! zero codeword where the standard adds none, so its symbols hold other codewords than this encoder's. Any later
-//! comparison of a whole matrix, a mask candidate or a score must use python-qrcode, never segno. See
-//! `generate_golden.py` for the details.
+//! The golden vectors come from python-qrcode, and segno is only a cross-check. `golden.rs` has the codewords, and
+//! `symbol_golden.rs` has the eight candidate matrices, format bits and scores of each input. segno adds a whole extra
+//! zero codeword where the standard adds none, so its symbols hold other codewords than this encoder's, and a matrix or
+//! a mask candidate from it cannot be compared. Its scores of python-qrcode's matrices can, and are. python-qrcode
+//! counts N3 without a border and scores before the format information is written, so it too can choose another mask
+//! than the design's. `generate_golden.py` and `generate_symbol_golden.py` give the details.
 
 pub(crate) mod bits;
 pub(crate) mod data;
+pub(crate) mod format;
 pub(crate) mod gf256;
 pub(crate) mod input;
+pub(crate) mod mask;
 pub(crate) mod reed_solomon;
+pub(crate) mod score;
+pub(crate) mod symbol;
 
 #[cfg(test)]
 mod golden;
+#[cfg(test)]
+mod symbol_golden;
 
 use data::{DATA_CODEWORDS, DataCodewords, encode_data};
 use input::text_to_bytes;
@@ -122,5 +133,7 @@ pub(crate) fn encode_text(text: &str) -> Result<Encoded, EncodeError> {
     encode(&text_to_bytes(text)?)
 }
 
+#[cfg(test)]
+mod symbol_tests;
 #[cfg(test)]
 mod unit_tests;
