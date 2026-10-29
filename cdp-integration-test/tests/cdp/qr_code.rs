@@ -1,5 +1,7 @@
 //! The QR code demo in the window the gallery's panel opens: the graph of the stages, the matrix of 21 by 21 modules,
-//! the 59 steps, the buttons that jump to a stage, the list of roles, and the text node.
+//! the 62 steps, the buttons that jump to a stage, the list of roles, and the text node. The steps are the input, its
+//! bytes, the four parts of the bitstream, the data codewords, 19 of Reed-Solomon, the function modules, 26 of
+//! placement, 8 masks and the final symbol.
 //!
 //! The encoder, the snapshots and the path data are covered by native unit tests, and the encoder is compared with two
 //! independent ones. What they cannot reach is the browser: that the scene is built once and only written to after

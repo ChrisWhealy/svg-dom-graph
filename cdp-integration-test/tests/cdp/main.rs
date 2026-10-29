@@ -46,10 +46,12 @@
 //! - [`hamming`] — the Hamming(7,4) demo in the window the gallery's panel opens: the path of boxes laid out as a
 //!   block, the buttons that choose the data and flip a bit, and the stepping toolbar. Also runs against the built demo
 //!   gallery.
-//! - [`qr_code`] — the QR code panel in the built demo gallery: the matrix drawn with six elements, the buttons and the
-//!   list of roles drawn in the scene, going back restoring every earlier state exactly, a chosen role and the step
-//!   staying independent, the buttons from the keyboard and while disabled, the zoom, the live region and the matrix
-//!   as text. Also runs against the built demo gallery.
+//! - [`qr_code`] — the QR code demo in the window the gallery's panel opens: the 62 steps and the jumps to a stage, the
+//!   matrix drawn with six elements, going back restoring every earlier state exactly, nothing drawn again, a chosen
+//!   role and the step staying independent, the roles and stages explained, the text node holding at most 17
+//!   characters, its midline shared with the hex dump, the note beside the bitstream, the data codeword marked at each
+//!   division step, the two fixing points on the codewords, typing and refused text, the toolbar and the buttons from
+//!   the keyboard, the zoom, the live region and the matrix as text. Also runs against the built demo gallery.
 //! - [`quicksort`] — the Quicksort panel in the built demo gallery: the array and the rows under it, the buttons that
 //!   choose another array, the stepping toolbar, what each step announces, and the zoom across redraws. Also runs
 //!   against the built demo gallery.
