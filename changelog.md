@@ -11,7 +11,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Added
 
 - Implemenmt phase 0 of QR Code generator demo (`3b3ac67`)
-- Add QR Code phase 0 CDP tests (``)
+- Add QR Code phase 0 CDP tests (`2b82b79`)
+- Doc only: State dimension assumptions (``)
 
 # [Released]
 

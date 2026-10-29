@@ -3,6 +3,9 @@
 //!
 //! Phase 0 uses this to exercise [`BitGrid`] with the real counts, which are 233 function modules and 208 data
 //! modules. Everything here is plain arithmetic on coordinates, with no DOM.
+//!
+//! Everything here is specific to Version 1, which is a 21 by 21 symbol with no alignment pattern. [`BitGrid`] itself
+//! is not, so nothing in this file may move into a generic matrix.
 
 use super::grid::{BitGrid, FunctionRole, GridError, QrModuleKind, SIZE};
 
@@ -46,6 +49,9 @@ pub(crate) const fn format_copy_b(bit: usize) -> (usize, usize) {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every function module of a Version 1 symbol, with no module listed twice: 233 in all.
+///
+/// The positions are fixed numbers for a 21 by 21 grid. A larger version has alignment patterns and version information
+/// as well, so this is not a general layout.
 pub(crate) fn function_modules() -> Vec<FunctionModule> {
     let mut modules = Vec::with_capacity(233);
     let mut add = |row: usize, col: usize, role: FunctionRole, dark: Option<bool>| {
@@ -114,6 +120,9 @@ pub(crate) fn reserve_function_modules(grid: &mut BitGrid) -> Result<(), GridErr
 ///
 /// The symbol is read in pairs of columns from the right, and the first pair is read upwards. Each later pair runs the
 /// other way, and the vertical timing pattern in column 6 is skipped. Function modules are left out.
+///
+/// `grid` must be 21 by 21 and have had [`reserve_function_modules`] called on it. A module is left out only when it
+/// has a function role, so on any other grid the order is wrong, and no error says so.
 pub(crate) fn placement_order(grid: &BitGrid) -> Vec<(usize, usize)> {
     let mut order = Vec::with_capacity(208);
     let mut right = SIZE - 1;

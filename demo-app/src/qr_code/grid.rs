@@ -8,7 +8,8 @@
 use std::fmt;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The width and height of a Version 1 symbol, in modules.
+/// The width and height of a Version 1 symbol, in modules. [`BitGrid`] does not use it, and only callers that build a
+/// symbol do.
 pub(crate) const SIZE: usize = 21;
 
 /// The number of bits in one word of a bitset.
@@ -179,7 +180,11 @@ impl std::error::Error for GridError {}
 ///
 /// A module is unassigned when its `assigned` bit is `0`, light when that is `1` and its `dark` bit is `0`, and dark
 /// when both are `1`. The `dark` bit is never set on an unassigned module, and the unused high bits of each bitset's
-/// last word stay `0`. [`check_invariants`](Self::check_invariants) tests all of that.
+/// last word stay `0`. `check_invariants`, which only the tests use, checks all of that.
+///
+/// The grid is a general rectangular matrix and knows nothing about Version 1. It takes any width and height. The role
+/// types are QR terms, but no rule here depends on a size or a position. Only [`SIZE`] and the code in `function.rs`
+/// assume a 21 by 21 symbol. If a generic matrix is ever extracted for the library, it must not take those with it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct BitGrid {
     width: usize,
