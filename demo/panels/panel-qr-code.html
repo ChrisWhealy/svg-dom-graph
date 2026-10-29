@@ -8,7 +8,7 @@
     <h2>QR Code Generator</h2>
     <p>
         A QR code is a square grid of dark and light modules that can be read by an optical scanner or the camera in a
-        phone.
+        phone. This grid is known as a "symbol".
     </p>
     <p>
         This demo shows how a Version 1 QR Code (the smallest kind) is constructed. It is 21 by 21 modules, with error
@@ -29,13 +29,13 @@
             remainder is the 7 error correction codewords, which let a scanner repair a damaged symbol.
         </li>
         <li>
-            <strong>Function modules.</strong> Different regions of the symbol (the QR Code) perform specific functions.
+            <strong>Function modules.</strong> Different regions of the symbol perform specific functions.
             These are specific patterns known as the finder, separator and timing, and a dark module. These modules are
             drawn first. The format modules are reserved, but are not yet assigned a colour.
         </li>
         <li>
-            <strong>Placement.</strong> The other modules are populated with the 26 codewords - 17 codewords for the
-            data, plus 9 codewords for error correction, two columns at a time.
+            <strong>Placement.</strong> The other modules are populated with the 26 codewords - 19 codewords for the
+            data, plus 7 codewords for error correction, two columns at a time.
         </li>
         <li>
             <strong>Masks.</strong> Each of eight masks flips a pattern of the data modules. Each candidate gets its own
