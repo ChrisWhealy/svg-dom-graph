@@ -263,7 +263,9 @@ fn json_string(text: &str) -> String {
 /// Writes an export of each of [`DECODER_INPUTS`] to the directory `QR_EXPORT_DIR`, with a `manifest.json` that says
 /// what each file holds, for `decode_exports.py` to read. It is ignored, so that an ordinary test run writes nothing.
 ///
-/// Run it with `QR_EXPORT_DIR=some/dir cargo test -p svg-dom-graph-demo write_exports -- --ignored`.
+/// Run it with `QR_EXPORT_DIR=some/dir cargo test -p svg-dom-graph-demo write_exports -- --ignored`, or run the whole
+/// check, which decodes the files too, with `.github/scripts/check-qr-exports.sh`. The CI job `qr-export-decoders` does
+/// that on every push, since an ordinary `cargo test` cannot decode anything.
 #[test]
 #[ignore = "writes files, for decode_exports.py to read, when QR_EXPORT_DIR names a directory"]
 fn write_exports_for_the_decoder_check() {

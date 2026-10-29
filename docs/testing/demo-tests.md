@@ -57,6 +57,8 @@ The QR code demo keeps its encoder, its symbol, its walk and its export in plain
 * `qr_code/export/` checks the file: 29 by 29 modules in whole pixels, a quiet zone with no dark module, pure black on white, and the symbol read back from the path.
   Text that looks like markup stays character data, and a control character is written as a visible escape.
   An ignored test writes exports for `decode_exports.py`, which decodes them with ZXing-C++ and compares them with python-qrcode.
+  `.github/scripts/check-qr-exports.sh` runs both together with `--strict`, and the `qr-export-decoders` job of the CI workflow runs that on every push.
+  A plain `cargo test` does not establish that the exports scan, since that needs Python and the decoders.
 * `qr_code/unit_tests.rs` checks that every text fits the room for it, for the longest inputs too, and the grid and the layout.
 
 The second runs `demo-server`'s own `panels`/`validate`/`build` unit tests.

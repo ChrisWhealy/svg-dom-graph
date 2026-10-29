@@ -27,6 +27,12 @@ geometry. The reader of it shares nothing with the encoder that made the symbol.
 
 pyzbar needs the libzbar system library, and is skipped, with a message, where that is missing. The exit status is 1 if
 any check fails, and 0 if all that ran passed.
+
+With `--strict`, which the CI job passes, a check that cannot run is a failure instead of a skip, so that the result is
+the same wherever it is run: python-qrcode must be installed, so that every picture is compared, and the manifest must
+cover the cases the acceptance gate names, which are the empty text, one byte under the longest, and the longest. pyzbar
+stays optional as a second decoder, whether or not the option is given. `.github/scripts/check-qr-exports.sh` makes the
+exports and runs this with `--strict` in one command.
 """
 import importlib.metadata
 import json
@@ -151,9 +157,27 @@ def oracle_modules(text, mask):
     return modules
 
 
-def main(directory):
+def check_coverage(manifest):
+    """Why the manifest does not cover what the acceptance gate needs, or an empty list if it does."""
+    lengths = {len(entry["text"].encode("ascii")) for entry in manifest}
+    needed = {0: "the empty text", 16: "one byte under the longest text", 17: "the longest text"}
+    missing = [what for length, what in needed.items() if length not in lengths]
+    problems = [f"the manifest has no case for {what}" for what in missing]
+    if len(manifest) < 10:
+        problems.append(f"the manifest has {len(manifest)} cases, and at least 10 are expected")
+    return problems
+
+
+def main(directory, strict=False):
     directory = Path(directory)
     manifest = json.loads((directory / "manifest.json").read_text())
+    if strict:
+        problems = check_coverage(manifest)
+        if qrcode is None:
+            problems.append("python-qrcode is not installed, so the pictures cannot be compared")
+        if problems:
+            print("\n".join(f"STRICT: {problem}" for problem in problems))
+            return 1
     print(f"zxing-cpp {importlib.metadata.version('zxing-cpp')}", end="")
     print(f", pyzbar {importlib.metadata.version('pyzbar')}" if pyzbar else f", pyzbar skipped ({PYZBAR_SKIPPED})", end="")
     print(", python-qrcode compared" if qrcode else ", python-qrcode missing, so the pictures are not compared")
@@ -191,6 +215,7 @@ def main(directory):
 
 
 if __name__ == "__main__":
-    if len(sys.argv) != 2:
+    arguments = [argument for argument in sys.argv[1:] if argument != "--strict"]
+    if len(arguments) != 1 or len(sys.argv) - 1 - len(arguments) > 1:
         sys.exit(__doc__)
-    sys.exit(main(sys.argv[1]))
+    sys.exit(main(arguments[0], strict="--strict" in sys.argv[1:]))

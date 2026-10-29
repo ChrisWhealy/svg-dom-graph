@@ -231,6 +231,32 @@ jobs:
   # other in a single Chrome. Run in one, they took over 25 minutes. See .github/scripts/cdp-shard.sh for how the tests
   # are dealt out. A test added to any module lands in some shard on its own, so adding a shard here is the only change
   # that making the run faster or slower ever needs.
+  # The acceptance gate for the QR code demo's export: that what it saves can be scanned. The exports are made by an
+  # ignored test of demo-app, and decoded by code that shares nothing with the encoder, so an ordinary `cargo test` cannot
+  # show it. The versions are pinned, so that a result is the same on every run. pyzbar is a second decoder, and is
+  # optional: a failure to install it does not fail the job, and the check runs without it. ZXing-C++ and python-qrcode
+  # are not optional, and `--strict` fails the check if python-qrcode is missing. See .github/scripts/check-qr-exports.sh.
+  qr-export-decoders:
+    name: QR code export · ZXing-C++ · python-qrcode
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - name: Install the decoder and the oracle
+        run: python -m pip install pillow==11.3.0 zxing-cpp==2.3.0 qrcode==8.2
+      - name: Install pyzbar, the second decoder (optional)
+        continue-on-error: true
+        run: |
+          sudo apt-get update
+          sudo apt-get install --yes libzbar0
+          python -m pip install pyzbar==0.1.9
+      - name: Export the symbols and decode them
+        run: .github/scripts/check-qr-exports.sh
+
   cdp-integration-test:
     name: CDP browser integration tests (Chrome, shard ${{ matrix.shard }} of 8)
     needs: cdp-build

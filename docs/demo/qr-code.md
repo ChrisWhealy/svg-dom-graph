@@ -119,14 +119,28 @@ The generated golden vectors in `qr_core/golden.rs` and `qr_core/symbol_golden.r
 It draws each file from its own rectangles, at a whole number of pixels for each module with the quiet zone, and reads the drawing with ZXing-C++.
 It also reads the mask from the format information in the picture, and checks that the modules are those of python-qrcode's symbol for the same text and mask.
 
-```sh
-QR_EXPORT_DIR=/some/dir cargo test -p svg-dom-graph-demo write_exports -- --ignored
-python3 demo-app/src/qr_code/export/decode_exports.py /some/dir
-```
-
 ZXing-C++ reports no symbol at all for a QR code whose content is empty, even python-qrcode's own at every mask.
 So for the empty text, it is the comparison with python-qrcode that shows the symbol is right.
-pyzbar is used too, where the system has the libzbar library.
+pyzbar is used too, as a second decoder, where the system has the libzbar library.
+
+An ordinary `cargo test` cannot show that the exports scan, since that needs Python and the decoders.
+So the check is a gate of its own, and one command runs all of it:
+
+```sh
+.github/scripts/check-qr-exports.sh
+```
+
+The command needs Pillow, zxing-cpp and python-qrcode installed for the Python it uses, which is `python3`, or the one named by `PYTHON`.
+It runs an ignored test that writes the exports and a manifest, and then runs `decode_exports.py --strict` on them.
+`--strict` makes a check that cannot run into a failure and not a skip.
+python-qrcode must be installed, so that every picture is compared.
+The manifest must have the empty text, one byte under the longest, and the longest, and at least ten cases in all.
+Only pyzbar stays optional.
+
+The `qr-export-decoders` job of the CI workflow runs this command on every push and pull request.
+It installs pinned versions of Pillow, zxing-cpp and python-qrcode, so that the result is the same on every run.
+It also tries to install libzbar and pyzbar for the second decoder, and carries on without them if that fails.
+Run by hand, the two halves can still be run apart, as the doc comment of `decode_exports.py` describes.
 
 ## Accessibility
 
