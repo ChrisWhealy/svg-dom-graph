@@ -131,6 +131,7 @@ mod bools_and_sizes;
 mod bubble_sort;
 mod butterfly;
 mod chacha20;
+mod circle_control;
 mod complex_numbers;
 mod crc32;
 mod data;
@@ -147,6 +148,7 @@ mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
 mod operators_unary;
+mod phase_shift;
 mod qr_code;
 mod quicksort;
 mod selection;
@@ -246,6 +248,7 @@ demo_gallery! {
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-butterfly" => butterfly::build_butterfly_demo,
     "panel-sine-cosine" => sine_cosine::build_sine_cosine_demo + sine_cosine::FILES,
+    "panel-phase-shift" => phase_shift::build_phase_shift_demo + phase_shift::FILES,
     "panel-fft" => fft::build_fft_demo + fft::FILES,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,

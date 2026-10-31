@@ -859,6 +859,9 @@ label.demo-slider-container {
         "circle sine"
         "cosine .";
     overflow-x: auto;
+    /* The scenes overlap by a pixel, with a margin of -1px, so that a border is shared. That would run a pixel past the
+       edge of the grid, and give it a scroll bar for that pixel. So the grid has a pixel of room for it. */
+    padding: 0 1px 1px 0;
     margin: 0.75rem 0;
 }
 
@@ -879,13 +882,41 @@ label.demo-slider-container {
     grid-area: cosine;
 }
 
+/* The phase shift panel's two scenes: the circle on the left and the sine to its right, .
+   The scenes have fixed sizes, so a narrow screen scrolls the grid, not the page. The scenes touch, so a border is
+   shared by the two that meet at it. */
+.phase-shift-grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    grid-template-areas:
+        "circle sine";
+    overflow-x: auto;
+    /* The scenes overlap by a pixel, with a margin of -1px, so that a border is shared. That would run a pixel past the
+       edge of the grid, and give it a scroll bar for that pixel. So the grid has a pixel of room for it. */
+    padding: 0 1px 1px 0;
+    margin: 0.75rem 0;
+}
+
+.phase-shift-grid .canvas {
+    border-radius: 0;
+    margin: 0 -1px -1px 0;
+}
+
+#phase-shift-circle-stage {
+    grid-area: circle;
+}
+
+#phase-shift-sine-stage {
+    grid-area: sine;
+}
+
 /* The handle that stands for point C in the keyboard's tab order. It is not drawn, except for a ring round C while it has
    the focus, which is the browser's own outline moved onto the circle, since an outline round a group is a box. */
-.sine-cosine-handle {
+.circle-handle {
     outline: none;
 }
 
-.sine-cosine-handle:focus-visible circle {
+.circle-handle:focus-visible circle {
     stroke: #2563eb;
     stroke-width: 3;
 }

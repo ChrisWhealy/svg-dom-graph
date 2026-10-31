@@ -10,7 +10,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Added
 
-- Sine/Cosine demo panel (``)
+- Sine/Cosine demo panel (`534bc5c`)
+- Phase shift demo panel (``)
 
 # [Released]
 

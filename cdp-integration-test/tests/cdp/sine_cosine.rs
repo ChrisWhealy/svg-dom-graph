@@ -12,6 +12,7 @@
 //! - The readout is three lines, which the page shows as three lines.
 //! - The angle is never written as a negative zero, however C is taken across 0°.
 //! - The point starts at 0° and goes round from there.
+//! - The grid that holds the scenes has no scroll bar when the window is wide enough for it.
 //! - The sine and the cosine each have a title in the plot.
 //! - Each plot has its dotted line to an axis.
 //! - The point goes round by itself, and the button in the circle stops it and starts it again.
@@ -255,7 +256,7 @@ fn the_point_goes_round_by_itself_and_the_button_stops_it_and_starts_it_again() 
     check(changes(&tab, &stopped, readout)?, "the point moves again")
 }
 
-const HANDLE: &str = "#sine-cosine-circle-stage .sine-cosine-handle";
+const HANDLE: &str = "#sine-cosine-circle-stage .circle-handle";
 
 fn focus_handle(tab: &Tab) -> Result<(), String> {
     text(tab, &format!("document.querySelector('{HANDLE}').focus(), 'ok'")).map(|_| ())
@@ -399,4 +400,20 @@ fn the_readout_is_shown_as_three_lines() -> Result<(), String> {
     let drawn = text(&tab, "document.getElementById('sine-cosine-readout').innerText")?;
     check_eq(drawn.lines().count(), 3)?;
     check(!drawn.contains("<br>"), &format!("no markup is shown: {drawn:?}"))
+}
+
+#[test]
+fn the_grid_of_scenes_needs_no_scroll_bar_in_a_window_that_is_wide_enough() -> Result<(), String> {
+    let tab = open()?;
+    let sizes = text(
+        &tab,
+        "(() => { const g = document.querySelector('.sine-cosine-grid'); \
+         return [g.scrollWidth, g.clientWidth, g.scrollHeight, g.clientHeight].join(','); })()",
+    )?;
+    let n: Vec<i64> = sizes
+        .split(',')
+        .map(|n| n.parse().map_err(|e| format!("{e}")))
+        .collect::<Result<_, _>>()?;
+    check_eq(n[0], n[1])?;
+    check_eq(n[2], n[3])
 }

@@ -53,6 +53,7 @@ While C is held it follows the direction of the pointer from the middle of the c
 Holding C stops it going round by itself, and the button then says "Play".
 
 C can also be reached with the Tab key, and moved with the keyboard.
+The dragging and the keys are shared with [Phase Shift](phase-shift.md), and live in `circle_control/`.
 A handle that is not drawn stands over C, with the role of a slider from 0 to 359, and moves with it.
 The handle has the label "Point C", and says its angle as its value.
 While it has the focus, a blue ring is drawn round C.

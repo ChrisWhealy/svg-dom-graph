@@ -65,6 +65,9 @@
 //! - [`complex`] — the complex numbers panel in the built demo gallery: both Argand diagrams are plot nodes, and a real
 //!   click on the one beside the sliders puts the number where it was clicked, moves both sliders, and ignores a click in
 //!   the margin. Also runs against the built demo gallery.
+//! - [`phase_shift`] — the phase shift panel in the built demo gallery: the circle and the sine plot with two waves in
+//!   it, the point that starts at 45° and is dragged or moved with the keys, the second wave that follows it and the
+//!   first that never moves, and the dotted line that marks the shift. Also runs against the built demo gallery.
 //! - [`sine_cosine`] — the sine and cosine panel in the built demo gallery: the three scenes and their sizes, the slider
 //!   and the numbers that follow it, the dotted line of each plot, and the button that stops the point and starts it
 //!   again. Also runs against the built demo gallery.
@@ -120,6 +123,7 @@ mod hex_dump_selection;
 mod huffman_walk;
 mod overlap_resolution;
 mod pan;
+mod phase_shift;
 mod qr_code;
 mod quicksort;
 mod row_labels;
