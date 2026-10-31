@@ -1,0 +1,46 @@
+<section
+    class="section"
+    id="panel-sine-cosine"
+    data-group="Signal processing"
+    data-label="Sine and cosine"
+    data-order="5"
+>
+    <h2>Sine and Cosine</h2>
+    <p>
+        You may have been taught in school that "sine" or "cosine" have something to do with calculating the angles
+        inside a right-angled triangle — or you may simply have been in the room when mathematics was being
+        taught&hellip;
+    </p>
+    <p>
+        However, the heart of the matter is that the sine and cosine are deeply related to how a point rotates around
+        the circumference of a circle. The right-angled triangle is simply a graphical tool for understanding that
+        rotation.
+    </p>
+    <p>
+        Let's draw a circle with a radius of one whose centre is located at the origin <code>(0,0)</code>. Next, we mark
+        a point <code>C</code> on the circumference of the circle.
+    </p>
+    <p>
+        As the point <code>C</code> rotates anti-clockwise around the circle, it forms the apex of a right-angled
+        triangle, where the height is marked by the point <code>H</code> and the width is marked by the point
+        <code>W</code>. The point <code>W</code> swings left and right along the Y axis, and the point
+        <code>H</code> swings up and down along the Y axis.
+    </p>
+    <p>
+        This left/right swinging motion is plotted on the graph below the circle, and the up/down swinging motion is
+        plotted on the graph to the right of the circle.
+    </p>
+    <p>
+        Also notice that a sine wave and a cosine wave have exactly the same shape; the only difference being that when
+        the angle crosses zero degrees. When the sine wave first has a value of zero, the cosine wave has a value of
+        one; then, when the sine wave first reaches a value of one, the cosine wave has a value of zero. As a results of
+        this difference, the sine and cosine waves are said to be 90º out of phase with each other.
+    </p>
+    <p class="demo-error" id="sine-cosine-error" hidden></p>
+    <div class="sine-cosine-grid">
+        <div class="canvas" id="sine-cosine-circle-stage"></div>
+        <div class="canvas" id="sine-cosine-sine-stage"></div>
+        <div class="canvas" id="sine-cosine-cosine-stage"></div>
+        <p id="sine-cosine-readout"></p>
+    </div>
+</section>

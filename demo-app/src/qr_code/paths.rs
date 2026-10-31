@@ -49,13 +49,13 @@ pub(crate) fn dark_path_offset(grid: &BitGrid, offset: usize) -> String {
     filled_path_offset(grid, |row, col| grid.get(row, col) == Some(CellState::Dark), offset)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One rectangle for each horizontal run of modules that `wanted` accepts.
 fn filled_path(grid: &BitGrid, wanted: impl Fn(usize, usize) -> bool) -> String {
     filled_path_offset(grid, wanted, 0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// [`filled_path`], with every rectangle moved right and down by `offset`.
 fn filled_path_offset(grid: &BitGrid, wanted: impl Fn(usize, usize) -> bool, offset: usize) -> String {
     let mut d = String::new();

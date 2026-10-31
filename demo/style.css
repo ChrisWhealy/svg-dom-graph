@@ -84,7 +84,7 @@ a:hover {
     margin: 1.25rem 0 0.4rem;
 }
 
-.menu-group>summary {
+.menu-group > summary {
     display: flex;
     align-items: center;
     gap: 0.35rem;
@@ -97,14 +97,14 @@ a:hover {
     user-select: none;
 }
 
-.menu-group>summary::-webkit-details-marker {
+.menu-group > summary::-webkit-details-marker {
     display: none;
 }
 
 /* This is a custom disclosure triangle. The default marker is hidden above.
    This custom triangle can share the group label's muted colour.
    It also rotates on open and close, instead of the browser's own triangle or pointer glyphs. */
-.menu-group>summary::before {
+.menu-group > summary::before {
     content: "▸";
     display: inline-block;
     font-size: 0.95rem;
@@ -112,11 +112,11 @@ a:hover {
     transition: transform 0.15s ease;
 }
 
-.menu-group[open]>summary::before {
+.menu-group[open] > summary::before {
     transform: rotate(90deg);
 }
 
-.menu-group>summary:hover {
+.menu-group > summary:hover {
     color: var(--text-muted);
 }
 
@@ -125,7 +125,7 @@ a:hover {
     width: 100%;
     text-align: left;
     font: inherit;
-    font-size:0.85rem;
+    font-size: 0.85rem;
     color: var(--text);
     background: none;
     border: none;
@@ -138,7 +138,7 @@ a:hover {
     background: var(--surface);
 }
 
-.menu-group>.menu-item {
+.menu-group > .menu-item {
     margin-top: 0.15rem;
 }
 
@@ -237,7 +237,7 @@ h4 {
    own margin-bottom below), but svg-dom-graph's own panels write plain <p> tags directly under .section instead.
    The global box-sizing reset at the top of this file zeroes every element's own margin, so without this those
    paragraphs would render with no gap between them at all. */
-.section>p {
+.section > p {
     margin-bottom: 0.5rem;
 }
 
@@ -291,11 +291,11 @@ h4 {
     border-left: 2px solid var(--border-strong);
 }
 
-.section dd>p {
+.section dd > p {
     margin-bottom: 0.5rem;
 }
 
-.section dd>p:last-child {
+.section dd > p:last-child {
     margin-bottom: 0;
 }
 
@@ -400,7 +400,7 @@ figure {
     visibility: hidden;
 }
 
-svg[visibility="hidden"]+.nested-scene-backdrop {
+svg[visibility="hidden"] + .nested-scene-backdrop {
     visibility: visible;
 }
 
@@ -502,8 +502,28 @@ svg[visibility="hidden"]+.nested-scene-backdrop {
     position: absolute;
     /* The frame is centred in the stage, so its corner sits half of whatever the stage has left over — beyond the
        frame's own size, already fitted to the stage by `util::frame_nested_scene` — from each edge. */
-    top: calc((100% - var(--nested-scene-frame-h, 100% - 2 * var(--nested-scene-min-margin))) / 2 - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289);
-    right: calc((100% - var(--nested-scene-frame-w, 100% - 2 * var(--nested-scene-min-margin))) / 2 - var(--nested-scene-close-size) / 2 + var(--nested-scene-radius) * 0.29289);
+    top: calc(
+        (
+                100% -
+                    var(
+                        --nested-scene-frame-h,
+                        100% - 2 * var(--nested-scene-min-margin)
+                    )
+            ) /
+            2 - var(--nested-scene-close-size) / 2 +
+            var(--nested-scene-radius) * 0.29289
+    );
+    right: calc(
+        (
+                100% -
+                    var(
+                        --nested-scene-frame-w,
+                        100% - 2 * var(--nested-scene-min-margin)
+                    )
+            ) /
+            2 - var(--nested-scene-close-size) / 2 +
+            var(--nested-scene-radius) * 0.29289
+    );
     visibility: hidden;
     width: var(--nested-scene-close-size);
     height: var(--nested-scene-close-size);
@@ -524,7 +544,8 @@ svg[visibility="hidden"]+.nested-scene-backdrop {
     background: var(--border-strong);
 }
 
-.nested-scene-stage:has(.nested-scene[visibility="visible"]) .nested-scene-close {
+.nested-scene-stage:has(.nested-scene[visibility="visible"])
+    .nested-scene-close {
     visibility: visible;
 }
 
@@ -619,7 +640,7 @@ figcaption ol {
     background: var(--surface);
 }
 
-.source>summary {
+.source > summary {
     cursor: pointer;
     padding: 0.5rem 0.8rem;
     color: var(--text-muted);
@@ -627,11 +648,11 @@ figcaption ol {
     user-select: none;
 }
 
-.source>summary:hover {
+.source > summary:hover {
     color: var(--text);
 }
 
-.source[open]>summary {
+.source[open] > summary {
     border-bottom: 1px solid var(--border);
 }
 
@@ -665,7 +686,7 @@ figcaption ol {
 }
 
 .source code .str {
-    color: #B3D862;
+    color: #b3d862;
 }
 
 .source code .num {
@@ -700,7 +721,7 @@ figcaption ol {
     padding: 0;
 }
 
-.demo-control-group>legend {
+.demo-control-group > legend {
     font-size: 11px;
     color: var(--text-muted);
     padding: 0;
@@ -826,6 +847,55 @@ label.demo-slider-container {
 
 .controls label {
     margin-right: 1.5rem;
+}
+
+/* The sine and cosine panel's three scenes: the circle at the top left, the sine to its right and the cosine below
+   it. The scenes have fixed sizes, so a narrow screen scrolls the grid, not the page. The scenes touch, so a border is
+   shared by the two that meet at it. */
+.sine-cosine-grid {
+    display: grid;
+    grid-template-columns: max-content max-content;
+    grid-template-areas:
+        "circle sine"
+        "cosine .";
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+.sine-cosine-grid .canvas {
+    border-radius: 0;
+    margin: 0 -1px -1px 0;
+}
+
+#sine-cosine-circle-stage {
+    grid-area: circle;
+}
+
+#sine-cosine-sine-stage {
+    grid-area: sine;
+}
+
+#sine-cosine-cosine-stage {
+    grid-area: cosine;
+}
+
+/* The handle that stands for point C in the keyboard's tab order. It is not drawn, except for a ring round C while it has
+   the focus, which is the browser's own outline moved onto the circle, since an outline round a group is a box. */
+.sine-cosine-handle {
+    outline: none;
+}
+
+.sine-cosine-handle:focus-visible circle {
+    stroke: #2563eb;
+    stroke-width: 3;
+}
+
+#sine-cosine-readout {
+    /* The readout is plain text with a line break between its lines, which this shows as line breaks. */
+    white-space: pre-wrap;
+    font-variant-numeric: tabular-nums;
+    /* Space below it, before the scenes that it describes. It is the larger of this and the scenes' own margin above. */
+    margin: 1rem;
 }
 
 /* The FFT panel's wave sliders and graph: a table with the sliders of each wave in a column on the left, and the graph

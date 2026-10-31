@@ -560,9 +560,9 @@ fn each_role_has_a_button_action_and_none_has_its_own() {
     assert_eq!(role_action(Some(FINDER)), "role-finder");
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Checking before assigning
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn a_module_can_be_checked_for_assigning_without_changing_anything() {
@@ -606,9 +606,9 @@ fn the_text_the_window_opens_with_is_as_long_as_a_text_can_be_and_can_be_encoded
     assert_eq!(Region::Terminator.cells(17, 4).end, 152);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Putting refused text back
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn the_caret_goes_back_by_the_characters_that_were_refused() {
@@ -637,9 +637,9 @@ fn the_caret_counts_in_utf16_code_units_as_the_browser_does() {
     assert_eq!(caret_after_refusal((5, 5), "abc\u{1F600}", "abc"), (3, 3));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Work that is done again until it works
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 #[test]
 fn work_that_is_not_pending_is_not_done() {

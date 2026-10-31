@@ -55,7 +55,7 @@ use svg_dom_graph::{
 use text::{BlockLayout, TextBlock};
 use viewport::{MODULE_PIXELS, Viewport};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
@@ -157,13 +157,13 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The action of the button that outlines `role`, or [`NO_ROLE`] for `None`.
 fn role_action(role: Option<QrModuleKind>) -> String {
     role.map_or_else(|| NO_ROLE.to_owned(), |kind| format!("role-{}", kind.key()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the step did, and how many modules there are of each colour afterwards.
 fn caption_text(label: &str, grid: &BitGrid) -> String {
     format!(
@@ -175,13 +175,13 @@ fn caption_text(label: &str, grid: &BitGrid) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the walk is, and how much the matrix had to write to get there.
 fn stats_text(position: &str, elements: u32, writes: usize) -> String {
     format!("{position}. The matrix is {elements} elements, and this change wrote {writes} of their values.")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every snapshot of `text`.
 ///
 /// # Errors
@@ -198,13 +198,13 @@ fn make_set(text: &str) -> Result<SnapshotSet, String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene, which the listeners cannot be given directly.
 fn scene() -> Option<Scene> {
     SCENE.with_borrow(Clone::clone)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Changes the position with `change`, then draws it. A failure is shown on the page and leaves the position as
 /// `change` made it, so that the next change draws the whole of it again.
 fn update(scene: &Scene, change: impl FnOnce(&mut State) -> Result<(), String>) {
@@ -218,7 +218,7 @@ fn update(scene: &Scene, change: impl FnOnce(&mut State) -> Result<(), String>) 
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Stops the browser taking more than 17 characters into the text node, whether they are typed or pasted.
 ///
 /// The library has no limit of its own on a text node, so this is set on the `<input>` the node holds. Every character
@@ -237,7 +237,7 @@ fn limit_text_input(document: &web_sys::Document) -> Result<(), String> {
         .map_err(|e| format!("could not limit the text input: {e:?}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the caret goes when the text node has had `rejected` put back to `accepted`.
 ///
 /// The browser has put the caret after whatever was entered. The characters that were refused are no longer there, so
@@ -249,7 +249,7 @@ fn caret_after_refusal(caret: (u32, u32), rejected: &str, accepted: &str) -> (u3
     (caret.0.saturating_sub(extra), caret.1.saturating_sub(extra))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Refuses `rejected`, which the text node `node` now holds: the reason `message` is shown, and the text node is put
 /// back to the last text that was accepted, with the caret where it was, so that it always agrees with the symbol on
 /// show.
@@ -273,7 +273,7 @@ fn refuse_text(scene: &Scene, node: NodeId, rejected: &str, message: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Takes in new text from the text node `node`.
 ///
 /// The new snapshots are made first, and if they cannot be, the text is refused: the reason is shown, the symbol on
@@ -306,7 +306,7 @@ fn take_text(scene: &Scene, node: NodeId, text: &str) {
     });
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Asks the browser to save the finished symbol as an SVG file, if the walk is at its last step, and does nothing
 /// otherwise, since the button is dimmed but still gets the click.
 ///
@@ -344,7 +344,7 @@ fn export_symbol() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Does what the button `action` says. A role button outlines or stops outlining a role. A jump button goes to a
 /// snapshot by setting the anchor's selection, which does not call the toolbar's own callback, so the position is drawn
 /// here. The export button saves the symbol, see [`export_symbol`].
@@ -379,7 +379,7 @@ fn press(action: &str) {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Adds a button of `size` with its top left corner at `origin`.
 fn add_button(
     document: &web_sys::Document,
@@ -403,7 +403,7 @@ fn add_button(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the QR code scene in `qr-code-window.html`, the window the gallery's own QR code panel opens. Call it once,
 /// from that page's own script, after the wasm module has loaded.
 ///
@@ -594,7 +594,7 @@ pub(crate) fn build_qr_code_window() -> Result<(), String> {
     fit_window_to_stage(DIAGRAM_ID)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene's own parts that show the state, which [`State::apply`] writes.
 struct Display {
     viewport: Viewport,
@@ -613,7 +613,7 @@ struct Display {
     note_text: TextBlock,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The QR code scene is large. So the gallery panel keeps only the description, plus a button that opens the scene in a
 /// window of its own: `qr-code-window.html`, which runs [`build_qr_code_window`] there. A named window is reused.
 /// Pressing the button again focuses the one already open.
@@ -625,7 +625,7 @@ pub(crate) fn build_qr_code_demo() -> Result<(), String> {
     wire_open_window(&document()?, "qr-code-open", WINDOW_PAGE, WINDOW_NAME)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod snapshot_tests;
 #[cfg(test)]

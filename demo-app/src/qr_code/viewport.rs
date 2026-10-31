@@ -41,7 +41,7 @@ pub(crate) struct Viewport {
 }
 
 impl Viewport {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the empty viewport in the scene's `layer`, with its top left corner at `origin`, and finds
     /// `#matrix_text_id`, the element that holds the grid as text.
     ///
@@ -114,7 +114,7 @@ impl Viewport {
         })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws `frame`, and returns how many attributes and texts it had to write.
     ///
     /// Every write is of the whole state, so a failed render is put right by the next one, whatever it changed.
@@ -136,7 +136,7 @@ impl Viewport {
         Ok(writes.into_iter().filter(|&wrote| wrote).count())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The number of elements inside the viewport, which does not depend on the grid.
     ///
     /// # Errors

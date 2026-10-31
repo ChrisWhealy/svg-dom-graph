@@ -14,7 +14,7 @@ const XOR_MASK: u32 = 0x5412;
 /// The number of bits in the BCH remainder, and so the shift of the five data bits above it.
 const CHECK_BITS: u32 = 10;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The 15 format bits for level L and `mask`, which is 0 to 7, or `None` for any other number. Bit 0 is the least
 /// significant.
 ///

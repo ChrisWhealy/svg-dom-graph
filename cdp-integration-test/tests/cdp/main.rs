@@ -65,6 +65,9 @@
 //! - [`complex`] — the complex numbers panel in the built demo gallery: both Argand diagrams are plot nodes, and a real
 //!   click on the one beside the sliders puts the number where it was clicked, moves both sliders, and ignores a click in
 //!   the margin. Also runs against the built demo gallery.
+//! - [`sine_cosine`] — the sine and cosine panel in the built demo gallery: the three scenes and their sizes, the slider
+//!   and the numbers that follow it, the dotted line of each plot, and the button that stops the point and starts it
+//!   again. Also runs against the built demo gallery.
 //! - [`fft`] — the FFT panel in the built demo gallery: the graph of three waves and the sliders that set them, the
 //!   table of what the transform found, the overview's lane nodes and connectors at eight and sixteen samples, the
 //!   stepping toolbar, the butterfly inspector, the zoom and the dragged frame across a rebuild, and a rebuild that
@@ -121,6 +124,7 @@ mod qr_code;
 mod quicksort;
 mod row_labels;
 mod shell_sort;
+mod sine_cosine;
 mod small_drag;
 mod sorting;
 mod springs;

@@ -7,7 +7,7 @@
 
 use std::cell::Cell;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether some work is still to be done, and a way to do it only while it is.
 #[derive(Debug, Default)]
 pub(super) struct Retry {
@@ -15,20 +15,20 @@ pub(super) struct Retry {
 }
 
 impl Retry {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Records that the work has to be done, and is not yet.
     pub(super) fn require(&self) {
         self.pending.set(true);
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether the work is still to be done.
     #[cfg(test)]
     pub(super) fn is_pending(&self) -> bool {
         self.pending.get()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Does `work` if it is still to be done, and says it is done only if `work` succeeds. If nothing is pending,
     /// `work` is not called, and so costs nothing.
     ///

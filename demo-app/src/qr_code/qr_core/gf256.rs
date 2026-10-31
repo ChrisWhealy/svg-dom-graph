@@ -52,7 +52,7 @@ impl Gf256 {
         self.0
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Alpha to the power `exponent`. The powers repeat every 255.
     pub(crate) const fn alpha_pow(exponent: usize) -> Self {
         Self(TABLES.0[exponent % ORDER])

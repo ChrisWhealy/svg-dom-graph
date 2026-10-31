@@ -3,7 +3,7 @@
 /// How many mask patterns there are.
 pub(crate) const MASKS: usize = 8;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether the 0 to 7 mask pattern `mask` inverts the module at `row` and `col`, counted from zero at the top left.
 ///
 /// Any other `mask` inverts nothing. It is a wrong index, which no caller passes, and no module is touched.

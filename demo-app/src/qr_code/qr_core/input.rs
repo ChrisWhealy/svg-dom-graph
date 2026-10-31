@@ -8,7 +8,7 @@ use super::EncodeError;
 /// The most bytes a Version 1 symbol holds at level L in byte mode.
 pub(crate) const MAX_BYTES: usize = 17;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The bytes of `text`, one for each character.
 ///
 /// # Errors
@@ -24,7 +24,7 @@ pub(crate) fn text_to_bytes(text: &str) -> Result<Vec<u8>, EncodeError> {
     Ok(text.as_bytes().to_vec())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Checks that `len` bytes fit.
 ///
 /// # Errors
@@ -37,7 +37,7 @@ pub(crate) fn check_length(len: usize) -> Result<(), EncodeError> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `bytes` as text that can be read: a printable ASCII character as itself, a backslash doubled, tab, line feed and
 /// carriage return by name, and any other byte as `\xNN`.
 pub(crate) fn escaped(bytes: &[u8]) -> String {

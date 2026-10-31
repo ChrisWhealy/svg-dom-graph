@@ -220,7 +220,7 @@ fn banner(tab: &Tab) -> Result<String, String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The window opens before the first step. The matrix is empty, so every one of its 441 modules is uncoloured, and it
 /// is six elements. Prev and Restart are disabled, and the nodes after the input are dimmed.
 #[test]
@@ -255,7 +255,7 @@ fn the_window_opens_unstarted_with_an_empty_matrix_in_six_elements() -> Result<(
     check_eq(DEFAULT_TEXT.len(), 17)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The first seven steps are the input, its bytes, the four parts of the bitstream and the data codewords, and the data
 /// codewords are dimmed until the last of them.
 #[test]
@@ -279,7 +279,7 @@ fn the_first_seven_steps_are_the_input_the_bytes_the_bitstream_in_four_parts_and
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A jump button goes to the first step of its stage and draws it, though the toolbar's own callback is not called by
 /// the selection being set. The toolbar follows, and the button of the stage is the one pressed.
 #[test]
@@ -303,7 +303,7 @@ fn a_jump_goes_to_the_first_step_of_a_stage_and_the_toolbar_follows() -> Result<
     check_eq(toolbar_disabled(&tab, "Previous selection")?, false)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each stage draws the matrix it should: empty to the function modules, then the codewords one at a time, then a whole
 /// candidate for each mask, with every module coloured.
 #[test]
@@ -326,7 +326,7 @@ fn each_stage_draws_the_matrix_it_should() -> Result<(), String> {
     check_eq(counts(&tab)?.2, 0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scores of the masks are reached a row at a time, and the format information from the first mask.
 #[test]
 fn the_scores_and_the_format_information_are_reached_with_the_masks() -> Result<(), String> {
@@ -356,7 +356,7 @@ fn the_scores_and_the_format_information_are_reached_with_the_masks() -> Result<
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Going back shows exactly what going forward showed at each step, down to every attribute and what was announced, and
 /// Restart shows exactly what the window opened with.
 #[test]
@@ -383,7 +383,7 @@ fn going_back_restores_every_earlier_state_exactly() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene is built once. An element marked at the start is still the same element after the whole walk, going back
 /// and new text, so nothing was drawn again.
 #[test]
@@ -412,7 +412,7 @@ fn nothing_is_drawn_again_by_a_step_a_jump_or_new_text() -> Result<(), String> {
     check_eq(kept.as_str(), "true")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Choosing a role outlines its modules without changing the colours or the highlight. Stepping then changes the
 /// colours and the highlight without changing the outline. Choosing "No role" removes it.
 #[test]
@@ -437,7 +437,7 @@ fn a_chosen_role_and_the_step_are_independent() -> Result<(), String> {
     check_eq(parts(&path(&tab, "highlight")?), 8)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Exactly one role button is pressed, and the outline has as many squares as the role has modules.
 #[test]
 fn one_role_button_is_pressed_and_each_outline_has_the_modules_of_its_role() -> Result<(), String> {
@@ -464,7 +464,7 @@ fn one_role_button_is_pressed_and_each_outline_has_the_modules_of_its_role() -> 
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Choosing a role names it and explains it in the scene, and "No role" says nothing is chosen. The stage is explained
 /// too, and the explanation changes with the stage.
 #[test]
@@ -493,7 +493,7 @@ fn a_chosen_role_and_the_stage_are_named_and_explained_in_the_scene() -> Result<
     check(scene_text(&tab)?.contains("No role is chosen"), "choosing no role says so")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Typing new text goes back to the start, with an empty matrix, and the walk then follows the new text.
 #[test]
 fn typing_new_text_goes_back_to_the_start_and_the_walk_follows_it() -> Result<(), String> {
@@ -515,7 +515,7 @@ fn typing_new_text_goes_back_to_the_start_and_the_walk_follows_it() -> Result<()
     check(banner(&tab)?.is_empty(), "no error is shown for text that fits")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Text that cannot be encoded is refused with the reason, and what was on show stays, and the text node goes back to
 /// the text that made it, so that it always agrees with the symbol. Text that can be encoded again clears the reason
 /// and starts the walk.
@@ -546,7 +546,7 @@ fn text_that_cannot_be_encoded_leaves_the_symbol_on_show_alone() -> Result<(), S
     check_eq(said(&tab)?.as_str(), "Not started. Every module is empty.")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Typing a character that cannot be encoded does not take it. The reason is shown, the text node holds what it held,
 /// the caret stays where it was so that typing can go on, and the next character that can be encoded is taken.
 #[test]
@@ -579,7 +579,7 @@ fn a_character_that_cannot_be_encoded_is_not_taken_and_typing_goes_on() -> Resul
     check_eq(said(&tab)?.as_str(), "Not started. Every module is empty.")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar and the buttons work from the keyboard: Enter and Space on a focused Next each take one step, Enter on a
 /// jump button goes to its stage, and focus stays where it was.
 #[test]
@@ -614,7 +614,7 @@ fn the_toolbar_and_the_buttons_work_from_the_keyboard() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Zooming moves the scene's layer and leaves the matrix, and every path in it, as it was. A step still works.
 #[test]
 fn zooming_leaves_the_matrix_alone_and_the_buttons_working() -> Result<(), String> {
@@ -636,7 +636,7 @@ fn zooming_leaves_the_matrix_alone_and_the_buttons_working() -> Result<(), Strin
     check(attribute(&tab, LAYER, "transform")? != layer, "a step should keep the zoom")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The live region says where the walk is and what the step did, briefly, and a chosen role adds how many modules it
 /// has.
 #[test]
@@ -655,7 +655,7 @@ fn the_live_region_follows_the_steps_and_the_role() -> Result<(), String> {
     check(said(&tab)?.starts_with("Not started."), &said(&tab)?)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The matrix as text has 21 rows of 21 characters. It is all `.` at first, shows the finders and the uncoloured format
 /// modules at the function step, and has no `.` at the last.
 #[test]
@@ -681,7 +681,7 @@ fn the_matrix_as_text_follows_the_steps() -> Result<(), String> {
     check_eq(last[13].chars().nth(8), Some('1'))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text node holds at most 17 characters. Typing more than that is not taken, and the text on show is the first 17.
 #[test]
 fn the_text_node_takes_no_more_than_17_characters() -> Result<(), String> {
@@ -710,7 +710,7 @@ fn the_text_node_takes_no_more_than_17_characters() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text node and the hex dump of its bytes share one horizontal midline, so the edge between them is straight.
 #[test]
 fn the_text_node_and_the_hex_dump_share_one_midline() -> Result<(), String> {
@@ -742,7 +742,7 @@ fn the_text_node_and_the_hex_dump_share_one_midline() -> Result<(), String> {
     check_eq(edge.as_str(), "0.0")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The hex dump is a node of its own kind, with a line for each 16 bytes and the unused places dimmed.
 #[test]
 fn the_bytes_are_a_hex_dump_and_the_unused_places_are_dimmed() -> Result<(), String> {
@@ -761,7 +761,7 @@ fn the_bytes_are_a_hex_dump_and_the_unused_places_are_dimmed() -> Result<(), Str
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Each part of the bitstream is marked in turn, with a note to the right that says what it holds, and the bits after
 /// it are not on show yet. The default text gives 4 bits of mode, 8 of count, 136 of data and 4 of terminator.
 #[test]
@@ -797,7 +797,7 @@ fn the_bitstream_is_marked_a_part_at_a_time_with_a_note_to_say_what_it_holds() -
     check(!scene_text(&tab)?.contains("Terminator, 4 bits"), "the note should go")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// At each Reed-Solomon step the data codeword that is taken in is marked in the data codewords, and it is the next one
 /// at the next step.
 #[test]
@@ -829,7 +829,7 @@ fn the_data_codeword_that_the_division_takes_in_is_marked() -> Result<(), String
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Two connectors arrive on the north edge of the codewords. The one from the data codewords lands over the middle of
 /// the 19 data codewords, and the one from the error correction lands over the middle of the last 7 places, which it
 /// fills.
@@ -887,7 +887,7 @@ fn the_connectors_into_the_codewords_land_over_the_data_and_over_the_error_corre
     check(error_end > data_end, &format!("the two are the wrong way round: {found}"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The note that says what the marked part of the bitstream holds is to the right of the bitstream node, level with its
 /// top, and within the width of the graph, which the error correction node is the widest part of, so that the note
 /// makes the scene no wider.
@@ -922,9 +922,9 @@ fn the_note_is_to_the_right_of_the_bitstream_and_within_the_width_of_the_graph()
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Exporting the finished symbol
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 
 /// Makes the page keep the file an export would save, and the name it would save it as, and not save it. A real save
 /// would put a file in the folder of whoever runs the tests.
@@ -1016,7 +1016,7 @@ fn check_export_is_the_symbol(tab: &Tab) -> Result<serde_json::Value, String> {
     Ok(saved)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The export button is dimmed until the walk reaches the finished symbol, and a click on it before then saves nothing.
 #[test]
 fn the_export_button_is_dimmed_until_the_last_step_and_a_click_before_then_saves_nothing() -> Result<(), String> {
@@ -1038,7 +1038,7 @@ fn the_export_button_is_dimmed_until_the_last_step_and_a_click_before_then_saves
     check_eq(disabled(&tab, &export)?, true)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// At the last step, the export is the finished symbol: a file called `qr-code.svg` of the right type that the
 /// browser's XML reader accepts, 29 by 29 modules in whole pixels, with the symbol inside a quiet zone that has no dark
 /// module in it.
@@ -1058,7 +1058,7 @@ fn the_export_is_the_finished_symbol_with_a_quiet_zone_of_four_light_modules() -
     check(banner(&tab)?.is_empty(), "a good export is not an error")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An export leaves what is on show exactly as it was, and can be done again.
 #[test]
 fn an_export_changes_nothing_on_show_and_can_be_done_again() -> Result<(), String> {
@@ -1074,7 +1074,7 @@ fn an_export_changes_nothing_on_show_and_can_be_done_again() -> Result<(), Strin
     check_eq(&after[..after.len() - 1], &before[..before.len() - 1])
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The export is of the text that was typed, and typing sends the walk back to the start, which dims the button again.
 #[test]
 fn the_export_follows_the_text_and_typing_dims_it_again() -> Result<(), String> {
@@ -1088,7 +1088,7 @@ fn the_export_follows_the_text_and_typing_dims_it_again() -> Result<(), String> 
     check_eq(saved["description"].as_str(), Some("Hi"))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Text that looks like markup is only text in the file: it stays character data, and the file is still well formed.
 #[test]
 fn text_that_looks_like_markup_is_only_text_in_the_export() -> Result<(), String> {
@@ -1103,7 +1103,7 @@ fn text_that_looks_like_markup_is_only_text_in_the_export() -> Result<(), String
     check_eq(saved["markup"].as_u64(), Some(0))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The export button works from the keyboard, like the others.
 #[test]
 fn the_export_button_works_from_the_keyboard() -> Result<(), String> {
@@ -1124,7 +1124,7 @@ fn the_export_button_works_from_the_keyboard() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the page keep the address of every file that is made, and every address that is released, as well as catching
 /// the downloads as [`catch_exports`] does.
 fn watch_addresses(tab: &Tab) -> Result<(), String> {
@@ -1156,7 +1156,7 @@ fn addresses(tab: &Tab) -> Result<(u64, u64, bool), String> {
     ))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An export that works keeps the address of its file for a while, so that the browser has started the save, and does
 /// not let go of it at once.
 #[test]
@@ -1169,7 +1169,7 @@ fn a_request_that_is_made_keeps_the_address_of_the_file_for_a_while() -> Result<
     check_eq(exported(&tab)?["saved"].as_u64(), Some(1))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// If anything fails after the address of the file was made, the address is let go of at once, and the failure is
 /// reported on its own, with the symbol on show as it was. Once what failed works again, so does the export.
 #[test]

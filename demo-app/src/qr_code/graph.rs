@@ -53,7 +53,7 @@ const SIDES: [(Side, Side); 9] = [
     (Side::East, Side::West),
 ];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The nodes and edges of the scene, and where they end.
 pub(super) struct Graph {
     nodes: Vec<(NodeKey, NodeId)>,
@@ -63,7 +63,7 @@ pub(super) struct Graph {
     pub(super) bottom: f64,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How far along the width of the node `name` the middle of its cells `first` to `last` is, from 0 to 1, of the `cells`
 /// cells that it has as two hexadecimal digits each. It is read from where the digits are on the page, since the width
 /// of a cell and the gaps between groups are the library's own. `None` if the node cannot be found, has not as many

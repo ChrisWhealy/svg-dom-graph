@@ -6,7 +6,7 @@ use wasm_bindgen::{JsCast, JsValue, closure::Closure};
 /// long before.
 const KEEP_MILLISECONDS: i32 = 10_000;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Asks the browser to save `svg` as a file called `file_name`, and says whether the request was made.
 ///
 /// The file is a `Blob` with an address of its own, which a link is pointed at and clicked, and the link is then taken
@@ -44,7 +44,7 @@ pub(crate) fn download(document: &web_sys::Document, file_name: &str, svg: &str)
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Points a link at `address`, which holds the file, clicks it, and takes it away again. The address is the caller's to
 /// release, whether this works or not.
 ///
@@ -66,13 +66,13 @@ fn request(document: &web_sys::Document, address: &str, file_name: &str) -> Resu
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Lets go of the file's address now. The browser may already have forgotten it, and there is nothing to do if it has.
 fn release(address: &str) {
     let _ = web_sys::Url::revoke_object_url(address);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Lets go of the file's address after [`KEEP_MILLISECONDS`].
 ///
 /// If the timer cannot be set, which needs a window that is there, the address is let go of at once instead. The

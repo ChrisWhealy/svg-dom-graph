@@ -40,6 +40,7 @@ features = [
     "MediaQueryList",
     "NodeList",
     "PageTransitionEvent",
+    "PointerEvent",
     "Url",
     "Window",
 ]

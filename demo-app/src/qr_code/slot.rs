@@ -27,7 +27,7 @@ impl Slot {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes `value` unless it is what the slot already holds, and says whether it wrote.
     ///
     /// # Errors

@@ -34,7 +34,7 @@ pub(crate) const FILE_NAME: &str = "qr-code.svg";
 pub(crate) const DARK: &str = "#000000";
 pub(crate) const LIGHT: &str = "#ffffff";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a symbol cannot be exported. Nothing is made then.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum ExportError {
@@ -62,7 +62,7 @@ impl std::fmt::Display for ExportError {
 
 impl std::error::Error for ExportError {}
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `text` as character data of XML: the four characters that could start markup or end an attribute are written as
 /// entities. `text` has no control characters, since [`svg`] writes those as visible escapes first.
 pub(crate) fn xml_escape(text: &str) -> String {
@@ -80,7 +80,7 @@ pub(crate) fn xml_escape(text: &str) -> String {
     out
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The SVG file of the finished symbol `grid`, which was made from `text`.
 ///
 /// The picture is [`MODULES`] modules wide and tall, each [`MODULE_PIXELS`] pixels, with a white background and one
@@ -120,6 +120,6 @@ pub(crate) fn svg(grid: &BitGrid, text: &str) -> Result<String, ExportError> {
     ))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

@@ -42,7 +42,7 @@ pub(crate) struct TextBlock {
 }
 
 impl TextBlock {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Adds the block to `layer`, empty.
     ///
     /// # Errors
@@ -78,7 +78,7 @@ impl TextBlock {
         Ok(Self { lines, width: layout.width })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes `text` into the block, and returns how many lines changed. Lines the text does not reach are emptied.
     ///
     /// # Errors

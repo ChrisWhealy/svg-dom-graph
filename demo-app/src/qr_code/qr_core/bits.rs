@@ -48,7 +48,7 @@ pub(crate) struct BitWriter {
 }
 
 impl BitWriter {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// An empty bit string that can hold `limit` bits. Room is made as the bits are written, apart from a modest amount
     /// at the start, so that a very large limit costs nothing until it is used.
     pub(crate) fn new(limit: usize) -> Self {
@@ -58,7 +58,7 @@ impl BitWriter {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many bits have been written. It is also the offset the next bit goes to.
     pub(crate) fn len(&self) -> usize {
         self.bits.len()
@@ -69,7 +69,7 @@ impl BitWriter {
         &self.bits
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the low `width` bits of `value`, the highest of them first.
     ///
     /// # Errors
@@ -88,7 +88,7 @@ impl BitWriter {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes `count` zero bits.
     ///
     /// # Errors
@@ -100,7 +100,7 @@ impl BitWriter {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the zero bits that bring the length to a multiple of 8, and says how many there were.
     ///
     /// # Errors
@@ -112,7 +112,7 @@ impl BitWriter {
         Ok(count)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The bits as bytes, the first bit being the highest bit of the first byte.
     ///
     /// # Errors
@@ -129,7 +129,7 @@ impl BitWriter {
             .collect())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Checks that `width` more bits stay within the limit. The room left is worked out first, so that no `width`,
     /// however large, can overflow the sum.
     fn check_room(&self, width: usize) -> Result<(), BitError> {

@@ -146,6 +146,27 @@ pub fn set_pressed(layer: &web_sys::Element, action: &str, pressed: bool, colour
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Writes `label` on a button as its text and its accessible name, for a button whose meaning changes, such as one that
+/// says "Pause" and then "Play".
+///
+/// # Errors
+///
+/// Returns `Err` if `layer` has no button with that action, or an attribute could not be set.
+pub fn set_label(layer: &web_sys::Element, action: &str, label: &str) -> Result<(), String> {
+    let button = find(layer, action)?;
+    button
+        .set_attribute("aria-label", label)
+        .map_err(|e| format!("could not set aria-label on {action:?}: {e:?}"))?;
+    if let Some(text) = button
+        .query_selector("text")
+        .map_err(|e| format!("could not find the text of {action:?}: {e:?}"))?
+    {
+        text.set_text_content(Some(label));
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Dims a button and takes it out of the keyboard's tab order, or restores it. A disabled button still receives
 /// clicks, so the handler given to [`watch`] must ignore its action while the button is disabled.
 ///

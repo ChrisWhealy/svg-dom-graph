@@ -154,6 +154,7 @@ mod sha1;
 mod sha2_256;
 mod sha3_sponge;
 mod shell_sort;
+mod sine_cosine;
 mod source_frame;
 mod springs;
 mod text_nodes;
@@ -244,6 +245,7 @@ demo_gallery! {
     "panel-operators-arithmetic" => operators_arithmetic::build_arithmetic_operator_demo,
     "panel-operators-chained" => operators_chained::build_chained_operator_demo,
     "panel-butterfly" => butterfly::build_butterfly_demo,
+    "panel-sine-cosine" => sine_cosine::build_sine_cosine_demo + sine_cosine::FILES,
     "panel-fft" => fft::build_fft_demo + fft::FILES,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,

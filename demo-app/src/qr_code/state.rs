@@ -20,7 +20,7 @@ use demo_common::{
 };
 use svg_dom_graph::scene::{Scene, Selection};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything that decides what is drawn.
 pub(super) struct State {
     /// Every snapshot of the current input.
@@ -36,7 +36,7 @@ pub(super) struct State {
 }
 
 impl State {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the whole of the current state in `scene`.
     ///
     /// If new text has been taken in, the nodes are first given its values, and the anchor's selection is put where the

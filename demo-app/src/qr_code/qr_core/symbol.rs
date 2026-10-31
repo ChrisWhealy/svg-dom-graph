@@ -20,7 +20,7 @@ use std::fmt;
 /// How many modules hold the bits of codewords, in a Version 1 symbol.
 const CODEWORD_MODULES: usize = TOTAL_CODEWORDS * 8;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a symbol could not be made. No symbol is made if one of these is returned.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum SymbolError {
@@ -53,7 +53,7 @@ impl fmt::Display for SymbolError {
 
 impl std::error::Error for SymbolError {}
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One of the eight candidates: the placed symbol with one mask applied and that mask's format information, scored.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Candidate {
@@ -63,7 +63,7 @@ pub(crate) struct Candidate {
     pub(crate) penalty: Penalty,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every stage of the symbol.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Symbol {
@@ -91,7 +91,7 @@ impl Symbol {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `grid` as rows of text: `1` for a dark module, `0` for a light one and `.` for one with no colour.
 pub(crate) fn rows_of(grid: &BitGrid) -> Vec<String> {
     use super::super::grid::CellState;
@@ -108,7 +108,7 @@ pub(crate) fn rows_of(grid: &BitGrid) -> Vec<String> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Places the bits of `word`, most significant first, in the modules of codeword `index` of `order`. A data codeword
 /// gives its modules the role of data, and one of the last seven gives them the role of error correction.
 ///
@@ -143,7 +143,7 @@ pub(crate) fn place_codeword(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One candidate: `placed` with mask `mask` applied to the data and error correction modules, that mask's own format
 /// information written, and the result scored.
 ///
@@ -174,7 +174,7 @@ pub(crate) fn make_candidate(placed: &BitGrid, order: &[(usize, usize)], mask: u
     })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the symbol of `encoded`.
 ///
 /// # Errors

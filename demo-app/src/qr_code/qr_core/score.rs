@@ -27,7 +27,7 @@ const N3_PATTERNS: [[bool; 11]; 2] = [
 /// How many light modules every row and column has beyond each end for N3.
 const N3_BORDER: usize = 4;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A square of modules that are dark or light, which is what the scores read.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DarkMatrix {
@@ -36,7 +36,7 @@ pub(crate) struct DarkMatrix {
 }
 
 impl DarkMatrix {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The matrix of `grid`.
     ///
     /// # Errors
@@ -60,7 +60,7 @@ impl DarkMatrix {
         Ok(Self { size: grid.width(), dark })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Builds a matrix of `size` by `size` from `rows`, where `1` is dark. For tests that need a particular pattern.
     #[cfg(test)]
     pub(crate) fn from_rows(rows: &[&str]) -> Self {
@@ -70,7 +70,7 @@ impl DarkMatrix {
         Self { size, dark }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn at(&self, row: usize, col: usize) -> bool {
         self.dark[row * self.size + col]
     }
@@ -83,7 +83,7 @@ impl DarkMatrix {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The four scores of one candidate.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Penalty {
@@ -99,7 +99,7 @@ impl Penalty {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// All four scores of `matrix`.
 pub(crate) fn penalty(matrix: &DarkMatrix) -> Penalty {
     Penalty {
@@ -110,7 +110,7 @@ pub(crate) fn penalty(matrix: &DarkMatrix) -> Penalty {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// N1: each run of five or more modules of one colour in a row or column scores 3, and 1 more for each module past
 /// five.
 pub(crate) fn n1(matrix: &DarkMatrix) -> u32 {
@@ -133,7 +133,7 @@ pub(crate) fn n1(matrix: &DarkMatrix) -> u32 {
     score
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// N2: each 2 by 2 block of one colour scores 3. Blocks that overlap each score.
 pub(crate) fn n2(matrix: &DarkMatrix) -> u32 {
     let mut score = 0;
@@ -151,7 +151,7 @@ pub(crate) fn n2(matrix: &DarkMatrix) -> u32 {
     score
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// N3: each place in a row or column where one of the two 11 module patterns starts scores 40.
 ///
 /// Every row and column has four light modules added at each end first, so that a pattern at the edge of the symbol has
@@ -175,7 +175,7 @@ pub(crate) fn n3(matrix: &DarkMatrix) -> u32 {
     score
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// N4: 10 for every whole 5% that the share of dark modules is away from half.
 ///
 /// With `d` dark modules of `t`, the share away from half, in percent, is `|2d - t| * 50 / t`. Whole steps of 5 are
@@ -187,7 +187,7 @@ pub(crate) fn n4(matrix: &DarkMatrix) -> u32 {
     N4_STEP * u32::try_from(steps).unwrap_or(0)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The mask with the least total, and the lowest of them if several tie. `totals` is indexed by mask.
 ///
 /// Returns `None` if there are no totals.

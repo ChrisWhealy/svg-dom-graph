@@ -57,7 +57,7 @@ pub(crate) const JUMPS: [(&str, usize); 6] = [
     ("Final", FINAL),
 ];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The part of the walk a snapshot is in.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Stage {
@@ -149,7 +149,7 @@ impl Stage {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One of the four parts of the bitstream, which the walk shows one at a time.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Region {
@@ -209,7 +209,7 @@ impl Region {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The nodes of the graph.
 #[derive(Debug, Clone, Copy, PartialEq, Eq, Hash)]
 pub(crate) enum NodeKey {
@@ -240,7 +240,7 @@ pub(crate) const EDGES: [EdgeKey; 9] = [
     (NodeKey::MaskScores, NodeKey::Format),
 ];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the nodes hold for the whole of one input. These are the same at every snapshot. The snapshots only say how
 /// much of them has been reached.
 #[derive(Debug, Clone, PartialEq, Eq)]
@@ -256,7 +256,7 @@ pub(crate) struct Content {
     pub(crate) scores: [u16; SCORE_CELLS],
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The cells of each node that have not been reached yet.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct Unreached {
@@ -270,7 +270,7 @@ pub(crate) struct Unreached {
     pub(crate) format: Vec<usize>,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The whole state of the scene at one position.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct DemoSnapshot {
@@ -302,7 +302,7 @@ pub(crate) struct DemoSnapshot {
     pub(crate) unreached: Unreached,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The content and every snapshot of one input.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct SnapshotSet {
@@ -320,7 +320,7 @@ impl SnapshotSet {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `cells` of 0 to `count`, except for the first `reached`.
 fn after(reached: usize, count: usize) -> Vec<usize> {
     (reached..count).collect()
@@ -342,7 +342,7 @@ fn hex(bytes: &[u8]) -> String {
     bytes.iter().map(|byte| format!("{byte:02X}")).collect::<Vec<_>>().join(" ")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every snapshot of `encoded`, whose symbol is `symbol`.
 ///
 /// # Errors
@@ -590,7 +590,7 @@ pub(crate) fn build(text: &str, encoded: &Encoded, symbol: &Symbol) -> Result<Sn
     Ok(SnapshotSet { content, unstarted, snapshots })
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The format word of mask `mask`, as cells.
 #[cfg(test)]
 pub(crate) fn format_cells_of(mask: u8) -> Option<[u8; FORMAT_CELLS]> {
