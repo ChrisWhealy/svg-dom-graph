@@ -46,7 +46,7 @@ impl Demo {
     ///
     /// Returns `Err` if a plot could not be drawn.
     fn show(&self, degrees: f64) -> Result<(), String> {
-        self.circle.plot.draw(&phase_circle_items(degrees))?;
+        self.circle.draw(&phase_circle_items(degrees))?;
         self.sine.draw(&phase_items(degrees))?;
         self.circle.place(degrees)
     }

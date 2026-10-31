@@ -916,6 +916,17 @@ label.demo-slider-container {
     margin: 0.75rem 0;
 }
 
+/* The Pythagoras panel's one scene. It has a fixed size, so a narrow screen scrolls it, not the page. It has no plot, so it
+   is given the pale background that the plots of the other circle panels have. */
+.pythagoras-wrap {
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+#pythagoras-stage-svg {
+    background: #eef4ff;
+}
+
 /* The handle that stands for point C in the keyboard's tab order. It is not drawn, except for a ring round C while it has
    the focus, which is the browser's own outline moved onto the circle, since an outline round a group is a box. */
 .circle-handle {

@@ -74,6 +74,10 @@ Each has the role of a slider and its range, and the slider of the page is gone.
 The keys and the pointer move it, and a drag and the keyboard focus carry on across the scenes that the fixing points and ellipse panels draw again for each move, since the slider is not drawn again with them.
 The corner radius slider is dimmed for a straight connector and answers nothing, and its greatest value is the room that the boxes leave.
 
+Its own `pythagoras.rs` scenario runs against the built demo gallery.
+It checks that the scene has no plot, axes or grid, that the square on the hypotenuse is blue and the other two are green, each semi-transparent, and that C starts at 45 degrees.
+Dragging C and the keys draw the squares again, and the two green ones always add up to the blue one, which the test works out from the corners that the page drew.
+
 Its own `complex.rs` scenario runs against the built demo gallery.
 Both Argand diagrams are plot nodes with a name and the marks of what they show.
 A real mouse click on the diagram puts the number there, rounded to a tenth, and moves both sliders.

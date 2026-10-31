@@ -24,6 +24,7 @@
 - [Sine and Cosine](sine-cosine.md)
 - [Phase Shift](phase-shift.md)
 - [Amplitude, Frequency and Phase](amplitude-frequency.md)
+- [The Theorem of Pythagoras](pythagoras.md)
 - [Fast Fourier Transform](fft.md)
 - [Force-directed Graphs (Weighted springs)](springs.md)
 - [Internal Workings of the Demo Server](demo-internals.md)

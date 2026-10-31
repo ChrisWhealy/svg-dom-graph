@@ -19,6 +19,13 @@ Each hash demo's own panel also has a test that it shows the calculation and the
 * the rounding of a value to a step, never to a negative zero
 * the style gives the thumb the width that the frame allows for, in both browsers, takes its colour from the slider, shows the focus, and dims a slider that is disabled
 
+`pythagoras/figure/unit_tests.rs` checks the triangle and the squares of the Pythagoras demo, which needs no browser:
+
+* each of the three is a square, on its own side of the triangle, for every whole angle
+* the square on the hypotenuse is 1, and the other two are the cosine squared and the sine squared, so they add up
+* no square covers the triangle, and a flat triangle puts the squares where they go just before it
+* how the areas and their sum are written, without a negative zero
+
 `complex_numbers/argand/unit_tests.rs` checks the arithmetic of the Argand diagram, which needs no browser:
 
 * how the plot node is configured: a complex plane, a square plotted area, arrowheads, and the tick step

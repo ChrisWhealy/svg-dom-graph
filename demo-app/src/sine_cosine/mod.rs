@@ -75,7 +75,7 @@ impl Demo {
     ///
     /// Returns `Err` if a plot could not be drawn.
     fn show(&self, degrees: f64) -> Result<(), String> {
-        self.circle.plot.draw(&circle_items(degrees))?;
+        self.circle.draw(&circle_items(degrees))?;
         self.sine.draw(&sine_items(degrees))?;
         self.cosine.draw(&cosine_items(degrees))?;
         self.readout.set_text_content(Some(&readout(degrees)));

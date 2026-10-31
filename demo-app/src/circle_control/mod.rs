@@ -1,5 +1,6 @@
-//! The circle that the sine, cosine and phase shift demos share: a plot with point C on it, which the pointer can drag
-//! round and the keyboard can move. See [`CircleControl`], and [`angles`] for the numbers behind it.
+//! The circle that the sine, cosine, phase shift and Pythagoras demos share: a unit circle with point C on it, which
+//! the pointer can drag round and the keyboard can move. See [`CircleControl`], and [`angles`] for the numbers behind
+//! it.
 //!
 //! The control only works out where C should be. What a demo draws for that angle is up to the demo, which is told by
 //! the function that it gives to [`CircleControl::wire`].
@@ -14,12 +15,21 @@ use demo_common::{
 };
 use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::Point;
-use svg_dom_graph::scene::PlotConfig;
+use svg_dom_graph::scene::{PlotConfig, PlotItem};
 
 /// How near to C, in pixels, a pointer has to be to take hold of it, and the radius of the ring that shows C has the
 /// keyboard focus.
 const GRAB_RADIUS: f64 = 18.0;
 const FOCUS_RADIUS: f64 = 13.0;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where the unit circle is in the scene, which is what turns the width and the height of C into a place.
+enum Placing {
+    /// A plot node, which knows where each of its values is.
+    Plot(Plot),
+    /// A circle drawn by the demo itself, with no plot: its middle, and its radius, in the units of the scene.
+    Circle { centre: Point, radius: f64 },
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The circle scene, and what lets a person move C round it.
@@ -28,7 +38,7 @@ const FOCUS_RADIUS: f64 = 13.0;
 /// arrow, page, Home and End keys. A handle that is not drawn stands over C for the keyboard and for assistive
 /// technology. It is a slider from 0 to 359, and moves with C.
 pub(crate) struct CircleControl {
-    pub(crate) plot: Plot,
+    placing: Placing,
     /// The `<svg>` of the scene, and the layer of it that a demo can add its own controls to.
     pub(crate) svg: web_sys::Element,
     pub(crate) layer: web_sys::Element,
@@ -55,7 +65,7 @@ impl CircleControl {
         let svg_id = format!("{stage}-svg");
         let layer = svg_buttons::layer(&document, &svg_id)?;
         let control = Rc::new(Self {
-            plot,
+            placing: Placing::Plot(plot),
             svg: required_element(&document, &svg_id)?,
             handle: add_handle(&document, &layer)?,
             layer,
@@ -65,6 +75,43 @@ impl CircleControl {
         });
         control.show_hand("default");
         Ok(control)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes the circle control for a scene that the demo has drawn itself, with no plot in it: the `<svg>`
+    /// `#{svg_id}`, which is `side` units square, with a circle of radius `radius` round the point `centre`. The handle
+    /// is put in the `<svg>` after whatever is there, so it is over it.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the page has no `#{svg_id}`, or if the handle could not be made.
+    pub(crate) fn bare(svg_id: &str, side: f64, centre: Point, radius: f64, first: f64) -> Result<Rc<Self>, String> {
+        let document = document()?;
+        let svg = required_element(&document, svg_id)?;
+        let control = Rc::new(Self {
+            placing: Placing::Circle { centre, radius },
+            handle: add_handle(&document, &svg)?,
+            layer: svg.clone(),
+            svg,
+            side,
+            angle: Cell::new(first),
+            dragging: Cell::new(false),
+        });
+        control.show_hand("default");
+        Ok(control)
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Draws `items` on the plot of a circle that has one, in place of what was drawn there before.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the circle has no plot, or if the plot could not be drawn.
+    pub(crate) fn draw(&self, items: &[PlotItem]) -> Result<(), String> {
+        match &self.placing {
+            Placing::Plot(plot) => plot.draw(items),
+            Placing::Circle { .. } => Err("this circle has no plot to draw on".to_owned()),
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -141,7 +188,11 @@ impl CircleControl {
     /// Where the point `(x, y)` of the plot is in the circle scene, in the scene's own units, or `None` if it cannot
     /// be placed.
     fn on_scene(&self, x: f64, y: f64) -> Option<Point> {
-        self.plot.scene.plot_point_to_scene(self.plot.node, x, y).ok().flatten()
+        match &self.placing {
+            Placing::Plot(plot) => plot.scene.plot_point_to_scene(plot.node, x, y).ok().flatten(),
+            // The scene counts down, and a height counts up.
+            Placing::Circle { centre, radius } => Some(Point::new(centre.x + radius * x, centre.y - radius * y)),
+        }
     }
 
     /// Whether `point` is near enough to C to take hold of it.

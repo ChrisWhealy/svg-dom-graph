@@ -18,7 +18,7 @@
 pub mod complex;
 pub mod focus;
 pub mod force;
+pub mod sliders;
 pub mod sorting;
 pub mod svg_buttons;
-pub mod sliders;
 pub mod util;

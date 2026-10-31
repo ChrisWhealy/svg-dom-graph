@@ -72,6 +72,9 @@
 //! - [`amplitude_frequency`] — the amplitude, frequency and phase panel in the built demo gallery: the scene, the three
 //!   sliders drawn in it and the ranges they take, the keys and the pointer that move them, the wave that follows, the
 //!   time axis that does not change, and the formula. Also runs against the built demo gallery.
+//! - [`pythagoras`] — the Pythagoras panel in the built demo gallery: the scene with no plot, the right triangle in the
+//!   unit circle and the blue and green squares on its sides, the squares that are drawn again as C is dragged or moved
+//!   with the keys, and the areas that are written in them. Also runs against the built demo gallery.
 //! - [`phase_shift`] — the phase shift panel in the built demo gallery: the circle and the sine plot with two waves in
 //!   it, the point that starts at 45° and is dragged or moved with the keys, the second wave that follows it and the
 //!   first that never moves, and the dotted line that marks the shift. Also runs against the built demo gallery.
@@ -132,6 +135,7 @@ mod huffman_walk;
 mod overlap_resolution;
 mod pan;
 mod phase_shift;
+mod pythagoras;
 mod qr_code;
 mod quicksort;
 mod row_labels;

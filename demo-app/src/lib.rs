@@ -151,6 +151,7 @@ mod operators_chained;
 mod operators_unary;
 mod phase_shift;
 mod plot_scene;
+mod pythagoras;
 mod qr_code;
 mod quicksort;
 mod selection;
@@ -252,6 +253,7 @@ demo_gallery! {
     "panel-sine-cosine" => sine_cosine::build_sine_cosine_demo + sine_cosine::FILES,
     "panel-phase-shift" => phase_shift::build_phase_shift_demo + phase_shift::FILES,
     "panel-amplitude-frequency" => amplitude_frequency::build_amplitude_frequency_demo + amplitude_frequency::FILES,
+    "panel-pythagoras" => pythagoras::build_pythagoras_demo + pythagoras::FILES,
     "panel-fft" => fft::build_fft_demo + fft::FILES,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,
