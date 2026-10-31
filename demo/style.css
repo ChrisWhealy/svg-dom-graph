@@ -916,17 +916,6 @@ label.demo-slider-container {
     margin: 0.75rem 0;
 }
 
-/* A slider drawn in a scene (demo-common's `svg_sliders`). The browser's own outline round a group is a box, so the thumb
-   is what shows that a slider has the keyboard focus. */
-.svg-slider {
-    outline: none;
-}
-
-.svg-slider:focus-visible .svg-slider-thumb {
-    stroke-width: 4;
-    r: 11;
-}
-
 /* The handle that stands for point C in the keyboard's tab order. It is not drawn, except for a ring round C while it has
    the focus, which is the browser's own outline moved onto the circle, since an outline round a group is a box. */
 .circle-handle {

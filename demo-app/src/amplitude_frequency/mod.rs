@@ -5,7 +5,7 @@ mod plots;
 
 use crate::plot_scene::Plot;
 use demo_common::{
-    svg_sliders::{self, Slider},
+    sliders::{self, Slider},
     util::{document, required_element},
 };
 use plots::{
@@ -21,7 +21,7 @@ use std::{
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 /// The files behind this demo's one function: the configuration of the plot and what is drawn on it. The sliders are in
-/// `demo-common/src/svg_sliders`, which the other demos with sliders in the scene share.
+/// `demo-common/src/sliders`, which the other demos with sliders in the scene share.
 pub(crate) const FILES: &[crate::SourceFile] =
     &[crate::source_file!("amplitude_frequency/plots/mod.rs", "plots/mod.rs")];
 
@@ -29,7 +29,7 @@ pub(crate) const FILES: &[crate::SourceFile] =
 const STAGE: &str = "amplitude-frequency-stage";
 const ERROR: &str = "amplitude-frequency-error";
 
-/// The ids of the three sliders. They are also what [`svg_sliders::watch`] says moved.
+/// The ids of the three sliders. They are also what [`sliders::watch`] says moved.
 const AMPLITUDE: &str = "amplitude";
 const FREQUENCY: &str = "frequency";
 const PHASE: &str = "phase";
@@ -44,7 +44,7 @@ const LENGTH: f64 = 220.0;
 /// Everything the page needs after it is built: the plot, the wave that is on it, and where to say an error.
 struct Demo {
     plot: Plot,
-    layer: web_sys::Element,
+    scene: web_sys::Element,
     wave: Cell<Wave>,
     error: web_sys::Element,
 }
@@ -91,7 +91,7 @@ impl Demo {
             other => return Err(format!("there is no slider {other:?}")),
         };
         self.wave.set(wave);
-        svg_sliders::set_value(&self.layer, id, value, &shown)?;
+        sliders::set_value(&self.scene, id, value, &shown)?;
         self.show()
     }
 
@@ -128,7 +128,7 @@ pub(crate) fn build_amplitude_frequency_demo() -> Result<(), String> {
     let document = document()?;
     let wave = Wave::first();
     let plot = Plot::new(STAGE, config(&wave))?;
-    let layer = svg_sliders::layer(&document, &format!("{STAGE}-svg"))?;
+    let scene = sliders::scene(&document, &format!("{STAGE}-svg"))?;
     for (left, (id, label, range, step, value, shown)) in LEFTS.into_iter().zip([
         (
             AMPLITUDE,
@@ -157,19 +157,19 @@ pub(crate) fn build_amplitude_frequency_demo() -> Result<(), String> {
             range,
             step,
         };
-        svg_sliders::add_slider(&document, &layer, &slider, value, &shown)?;
+        sliders::add_slider(&document, &scene, &slider, value, &shown)?;
     }
 
     let demo = Rc::new(Demo {
         plot,
-        layer,
+        scene,
         wave: Cell::new(wave),
         error: required_element(&document, ERROR)?,
     });
     demo.show()?;
 
     let moved = Rc::clone(&demo);
-    svg_sliders::watch(&document, STAGE, move |id, value| moved.moved_by_person(id, value))?;
+    sliders::watch(&document, STAGE, move |id, value| moved.moved_by_person(id, value))?;
     DEMO.with_borrow_mut(|slot| *slot = Some(demo));
     Ok(())
 }

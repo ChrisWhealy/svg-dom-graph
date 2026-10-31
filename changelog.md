@@ -12,7 +12,11 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 - Sine/Cosine demo panel (`534bc5c`)
 - Phase shift demo panel (`fdb996a`)
-- Amplitude/Frequency demo panel (``)
+- Amplitude/Frequency demo panel (`eeb30d0`)
+
+## Changed
+
+- Make consistent use of `<input type="range">` as `foreignObject` across all demos (``)
 
 # [Released]
 

@@ -38,6 +38,7 @@ A plot node is a node, so it zooms and pans with the others, and has one descrip
 * **The vertical slider.**<br>
   It is the same element turned a quarter turn anticlockwise, so its minimum is at the bottom.
   Both sliders are range inputs inside the scene, an HTML `<input>` in a `<foreignObject>`, so they zoom and pan with the diagram.
+  They come from `demo-common/src/sliders`, which the other demos with sliders in the scene use too.
   They work from the keyboard, and each has a name and a value read as a number to one place.
 * **The seven nodes.**<br>
   As either slider moves, the demo draws what is on the diagram again with `Scene::set_plot_items`.

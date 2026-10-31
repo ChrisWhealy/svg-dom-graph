@@ -2,7 +2,7 @@
     <h2>Connector routing</h2>
     <p>As you drag either box, the connector reroutes automatically. The connector will reroute using the selected
         routing style.</p>
-    <p>Switch to "Elbow", then drag the slider to round its corners.</p>
+    <p>Switch to "Elbow", then drag the slider in the diagram to round its corners.</p>
     <p>Increase the radius, then drag the boxes close together and the slider's max maximum is pulled down to
         accommodate whatever radius will fit in the available space.</p>
     <p>Drag the boxes apart again, and the slider's own ceiling dynamically rises, but its value stays where it was
@@ -15,10 +15,6 @@
             Straight</label>
         <label><input type="radio" name="connector-type" id="connector-type-elbow" value="elbow" checked />
             Elbow</label>
-    </p>
-    <p class="controls">
-        <label for="corner-radius">Corner radius: <output id="corner-radius-value">0</output></label><br />
-        <input type="range" id="corner-radius" min="0" max="80" step="1" value="0" />
     </p>
     <div class="canvas" id="elbow-diagram-stage">
     </div>

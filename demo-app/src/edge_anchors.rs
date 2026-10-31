@@ -2,11 +2,14 @@
 //! fixing-point slider, and a straight/elbow toggle. See [`build_edge_anchors_demo`]'s own doc comment for what it
 //! demonstrates.
 
-use demo_common::util::{document, required_element, required_input, stringify, view_box_rect};
+use demo_common::{
+    sliders::{self, Slider},
+    util::{document, required_element, required_input, stringify},
+};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
-    root::utils::{Point, Size},
+    root::utils::{Point, Rect, Size},
 };
 use svg_dom_graph::{
     EdgeId,
@@ -22,9 +25,19 @@ thread_local! {
     static SCENE: RefCell<Option<Scene>> = const { RefCell::new(None) };
 }
 
-/// The most children this demo can show at once. Matches `index.html`'s `#edge-anchors-fixing-points` slider's own
-/// `max` attribute.
+/// The most children this demo can show at once, which is the greatest value of the slider.
 const MAX_FIXING_POINTS: u8 = 5;
+
+/// The size of the part of the scene that the nodes are in, and of the whole scene, which has a strip under that for
+/// the slider. The nodes cannot be dragged into the strip.
+const DIAGRAM: Size = Size { width: 400.0, height: 260.0 };
+const SCENE_SIZE: Size = Size { width: 400.0, height: 320.0 };
+
+/// The slider in the strip: its id, where it is, and how long it is.
+const SLIDER: &str = "fixing-points";
+const SLIDER_LEFT: f64 = 20.0;
+const SLIDER_MIDDLE: f64 = 292.0;
+const SLIDER_LENGTH: f64 = 260.0;
 
 /// `Parent`'s own fixed position and size, and every child's fixed size and row.
 const PARENT_X: f64 = 155.0;
@@ -47,8 +60,9 @@ struct EdgeAnchorsDemo {
 ///
 /// Demonstrates [`EdgeAnchors`]:
 ///
-/// 1. The `#edge-anchors-fixing-points` slider, `0` to [`MAX_FIXING_POINTS`], controls two things at once: how many
-///    children are visible, and every visible node's own [`EdgeAnchors`].
+/// 1. The slider in the scene, `0` to [`MAX_FIXING_POINTS`], controls two things at once: how many children are
+///    visible, and every visible node's own [`EdgeAnchors`]. It is drawn in the strip under the nodes by
+///    [`sliders`], and stays when the scene is drawn again.
 /// 2. The visible child count is always `max(1, slider value)`, so at least `Child 1` stays on screen.
 /// 3. `0` maps to `None`. `Parent` and `Child 1` then aim their straight connector at each other's own centre, stopping
 ///    at whichever boundary point that ray crosses first.
@@ -117,23 +131,22 @@ fn rebuild_edge_anchors_scene(
     fixing_points: u8,
     connector_type: ConnectorType,
 ) -> Result<EdgeAnchorsDemo, String> {
-    demo_common::util::ensure_svg_in(
-        document,
-        "edge-anchors-diagram-stage",
-        "edge-anchors-diagram",
-        svg_dom::root::utils::Size::new(400.0, 260.0),
-    )?;
+    demo_common::util::ensure_svg_in(document, "edge-anchors-diagram-stage", "edge-anchors-diagram", SCENE_SIZE)?;
     let container = required_element(document, "edge-anchors-diagram")?;
-    container.set_inner_html("");
+    // Everything but the slider, which a person may be holding, since the scene is drawn again for every move of it.
+    sliders::clear_scene(&container)?;
 
     let svg = SvgRoot::attach("edge-anchors-diagram").map_err(stringify)?;
-    let bounds = view_box_rect(&svg)?;
+    // Bounded to the part of the scene that the nodes are in, and not the strip of the slider.
+    let bounds = Rect {
+        origin: Point::new(0.0, 0.0),
+        size: DIAGRAM,
+    };
     let scene = Scene::new(svg).map_err(stringify)?;
 
     let edge_anchors = if fixing_points == 0 { None } else { Some(EdgeAnchors(fixing_points)) };
     let node_options = NodeOptions::default().with_edge_anchors(edge_anchors);
     let connector_options = ConnectorOptions::default().with_connector_type(connector_type);
-    // Bounded to the diagram's own viewBox — see build_demo_tree's own comment for why.
     let drag_options = DragOptions::default().with_bounds(Some(bounds));
 
     let parent_origin = Point::new(PARENT_X, PARENT_Y);
@@ -154,39 +167,59 @@ fn rebuild_edge_anchors_scene(
         edges.push(scene.add_edge_with(parent, child, connector_options).map_err(stringify)?);
     }
 
+    let svg_element = sliders::scene(document, "edge-anchors-diagram")?;
+    let slider = Slider {
+        label: "Fixing points",
+        id: SLIDER,
+        left: SLIDER_LEFT,
+        middle: SLIDER_MIDDLE,
+        width: SLIDER_LENGTH,
+        range: (0.0, f64::from(MAX_FIXING_POINTS)),
+        step: 1.0,
+    };
+    sliders::add_slider(
+        document,
+        &svg_element,
+        &slider,
+        f64::from(fixing_points),
+        &fixing_points.to_string(),
+    )?;
+    // The slider is the one that was there before, if there was one, so the writing beside it is brought up to date.
+    sliders::set_value(&svg_element, SLIDER, f64::from(fixing_points), &fixing_points.to_string())?;
+
     Ok(EdgeAnchorsDemo { scene, edges })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires `#edge-anchors-fixing-points`, `#edge-anchors-type-straight`, and `#edge-anchors-type-elbow` to `state`.
+/// Wires the slider in the scene, `#edge-anchors-type-straight`, and `#edge-anchors-type-elbow` to `state`.
 ///
 /// The slider's own handler rebuilds the whole scene via [`rebuild_edge_anchors_scene`] on every move, replacing
-/// `state`'s contents. The radio buttons' shared handler applies the current connector type to every edge `state`
-/// currently knows about, without rebuilding. Both installed closures capture `state` and are never dropped —
-/// `Closure::forget` leaks them deliberately, for the page's whole lifetime, the same span `SCENE` itself covers.
+/// `state`'s contents, and the slider with it. The radio buttons' shared handler applies the current connector type to
+/// every edge `state` currently knows about, without rebuilding. Both installed closures capture `state` and are never
+/// dropped — `Closure::forget` leaks them deliberately, for the page's whole lifetime, the same span `SCENE` itself
+/// covers.
+///
+/// The slider is drawn again with every scene, so [`sliders::watch`] listens on `#edge-anchors-diagram-stage`,
+/// which stays, and a drag carries on across the scenes. A person who is using the keys keeps the focus, which is given
+/// to the slider that is drawn again.
 ///
 /// # Errors
 ///
 /// Returns `Err` if:
 ///
-/// - `index.html` is missing `#edge-anchors-fixing-points`, `#edge-anchors-fixing-points-value`,
-///   `#edge-anchors-type-straight`, or `#edge-anchors-type-elbow`.
-/// - Any of the first, third, or fourth is not an `<input>` element.
+/// - `index.html` is missing `#edge-anchors-diagram-stage`, `#edge-anchors-type-straight`, or
+///   `#edge-anchors-type-elbow`.
+/// - Either radio button is not an `<input>` element.
 /// - A listener could not be attached to any control.
 fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<EdgeAnchorsDemo>>) -> Result<(), String> {
-    let fixing_points_slider = required_input(&document, "edge-anchors-fixing-points")?;
-    let fixing_points_output = required_element(&document, "edge-anchors-fixing-points-value")?;
     let straight_radio = required_input(&document, "edge-anchors-type-straight")?;
     let elbow_radio = required_input(&document, "edge-anchors-type-elbow")?;
 
     let slider_state = state.clone();
     let slider_document = document.clone();
-    let slider = fixing_points_slider.clone();
     let slider_straight_radio = straight_radio.clone();
-    let slider_closure = Closure::<dyn FnMut()>::new(move || {
-        let value = slider.value();
-        fixing_points_output.set_text_content(Some(&value));
-        let fixing_points: u8 = value.parse().unwrap_or(0).min(MAX_FIXING_POINTS);
+    sliders::watch(&document, "edge-anchors-diagram-stage", move |_, value| {
+        let fixing_points = (value.round() as u8).min(MAX_FIXING_POINTS);
 
         let connector_type = if slider_straight_radio.checked() {
             ConnectorType::Straight
@@ -203,11 +236,7 @@ fn wire_edge_anchors_controls(document: web_sys::Document, state: Rc<RefCell<Edg
             SCENE.with_borrow_mut(|slot| *slot = Some(demo.scene.clone()));
             *slider_state.borrow_mut() = demo;
         }
-    });
-    fixing_points_slider
-        .add_event_listener_with_callback("input", slider_closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the fixing-points slider listener: {e:?}"))?;
-    slider_closure.forget();
+    })?;
 
     let type_state = state;
     let type_listeners = [straight_radio.clone(), elbow_radio.clone()];

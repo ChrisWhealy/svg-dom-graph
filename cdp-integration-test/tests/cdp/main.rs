@@ -65,6 +65,10 @@
 //! - [`complex`] — the complex numbers panel in the built demo gallery: both Argand diagrams are plot nodes, and a real
 //!   click on the one beside the sliders puts the number where it was clicked, moves both sliders, and ignores a click in
 //!   the margin. Also runs against the built demo gallery.
+//! - [`scene_sliders`] — the sliders drawn in the scenes of the connector routing, fixing points and ellipses panels,
+//!   which draw their scene again for every move: that they are in the scene, that the keys and the pointer move them, that
+//!   a drag and the focus carry on across the scenes drawn again, and that the corner radius is dimmed for a straight
+//!   connector. Also runs against the built demo gallery.
 //! - [`amplitude_frequency`] — the amplitude, frequency and phase panel in the built demo gallery: the scene, the three
 //!   sliders drawn in it and the ranges they take, the keys and the pointer that move them, the wave that follows, the
 //!   time axis that does not change, and the formula. Also runs against the built demo gallery.
@@ -131,6 +135,7 @@ mod phase_shift;
 mod qr_code;
 mod quicksort;
 mod row_labels;
+mod scene_sliders;
 mod shell_sort;
 mod sine_cosine;
 mod small_drag;

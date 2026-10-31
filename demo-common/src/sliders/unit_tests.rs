@@ -10,15 +10,17 @@ fn near_point(a: Point, b: Point) -> bool {
     near(a.x, b.x) && near(a.y, b.y)
 }
 
-/// Where `point` goes when it is turned `degrees` clockwise about `about`, as SVG's `rotate` does, with `y` pointing down.
+/// Where `point` goes when it is turned `degrees` clockwise about `about`, as SVG's `rotate` does, with `y` pointing
+/// down.
 fn turned(point: Point, about: Point, degrees: f64) -> Point {
     let (sin, cos) = degrees.to_radians().sin_cos();
     let (dx, dy) = (point.x - about.x, point.y - about.y);
     Point::new(about.x + dx * cos - dy * sin, about.y + dx * sin + dy * cos)
 }
 
-/// Where the centre of the thumb is, along the axis that runs from `start` to `end`, for a slider whose value is `value`,
-/// between `min` and `max`: a native slider puts it that share of the way along. An empty range puts it at the start.
+/// Where the centre of the thumb is, along the axis that runs from `start` to `end`, for a slider whose value is
+/// `value`, between `min` and `max`: a native slider puts it that share of the way along. An empty range puts it at the
+/// start.
 fn thumb_centre(start: Point, end: Point, min: f64, max: f64, value: f64) -> Point {
     let fraction = if max > min { ((value - min) / (max - min)).clamp(0.0, 1.0) } else { 0.0 };
     Point::new(start.x + (end.x - start.x) * fraction, start.y + (end.y - start.y) * fraction)
@@ -128,17 +130,32 @@ fn the_style_gives_the_thumb_the_width_the_frame_allows_for() {
 }
 
 #[test]
-fn the_style_colours_the_thumbs_and_marks_focus_for_both_browsers() {
+fn the_style_colours_the_thumbs_from_the_slider_and_marks_focus_for_both_browsers() {
     let css = style_sheet();
 
     for selector in [
-        ".argand-slider-real::-webkit-slider-thumb",
-        ".argand-slider-real::-moz-range-thumb",
-        ".argand-slider-imaginary::-webkit-slider-thumb",
-        ".argand-slider-imaginary::-moz-range-thumb",
-        ".argand-slider:focus-visible::-webkit-slider-thumb",
-        ".argand-slider:focus-visible::-moz-range-thumb",
+        ".scene-slider::-webkit-slider-thumb",
+        ".scene-slider::-moz-range-thumb",
+        ".scene-slider:focus-visible::-webkit-slider-thumb",
+        ".scene-slider:focus-visible::-moz-range-thumb",
     ] {
         assert!(css.contains(selector), "no rule for {selector}");
     }
+}
+
+#[test]
+fn a_thumb_is_the_colour_that_its_slider_names_and_the_usual_blue_if_it_names_none() {
+    let css = style_sheet();
+
+    assert_eq!(css.matches("var(--thumb, #2b6cb0)").count(), 2, "one for each browser: {css}");
+}
+
+#[test]
+fn a_slider_that_is_dimmed_looks_it_and_does_not_show_the_hand() {
+    let css = style_sheet();
+
+    assert!(
+        css.contains(".scene-slider:disabled { cursor: default; opacity: 0.45; }"),
+        "{css}"
+    );
 }
