@@ -13,10 +13,12 @@
 use super::{
     FEATURE_SIDE, GAP, MARGIN, NODE_GAP, PICTURE_SCALE, V_GAP,
     argand::{Argand, Guides, Mark, PAD, rectangular_text},
-    describe, sliders,
-    sliders::{Orientation, Spec},
+    describe,
 };
-use demo_common::util::{clear_error, report_error, stringify};
+use demo_common::{
+    sliders::{self, Orientation, Spec},
+    util::{clear_error, document, report_error, stringify},
+};
 use std::cell::RefCell;
 use svg_dom::{
     DominantBaseline, SvgRoot, TextAnchor,
@@ -34,6 +36,10 @@ pub(super) const REACH: f64 = 5.0;
 
 /// How the plane is shown: a little past the axes, for their arrowheads and names.
 const EXTENT: f64 = 5.5;
+
+/// The colours of the thumbs of the two sliders: green for the real part, and purple for the imaginary part.
+const REAL_COLOUR: &str = "#2f855a";
+const IMAGINARY_COLOUR: &str = "#805ad5";
 
 /// How finely a slider moves, and what a value is rounded to.
 const STEP: f64 = 0.1;
@@ -244,13 +250,15 @@ pub(super) fn build(scene: Scene, drawing: SvgRoot, content_group: web_sys::Elem
 
     // The slider under the diagram sets the real part. It is as long as the real axis, which it is centred under.
     let below = Point::new(centre.x, area.origin.y + FEATURE_SIDE + SLIDER_OFFSET);
-    let real = sliders::add(
-        &drawing,
+    let page = document()?;
+    let real = sliders::add_range(
+        &page,
         &content_group,
         sliders::frame(below, axis_length, Orientation::Horizontal),
         &Spec {
             label: "Real part",
             class: "argand-slider-real",
+            colour: Some(REAL_COLOUR),
             min: -REACH,
             max: REACH,
             step: STEP,
@@ -268,13 +276,14 @@ pub(super) fn build(scene: Scene, drawing: SvgRoot, content_group: web_sys::Elem
 
     // The slider beside the diagram sets the imaginary part, and is as long as the imaginary axis.
     let beside = Point::new(area.origin.x - SLIDER_OFFSET, centre.y);
-    let imaginary = sliders::add(
-        &drawing,
+    let imaginary = sliders::add_range(
+        &page,
         &content_group,
         sliders::frame(beside, axis_length, Orientation::Vertical),
         &Spec {
             label: "Imaginary part",
             class: "argand-slider-imaginary",
+            colour: Some(IMAGINARY_COLOUR),
             min: -REACH,
             max: REACH,
             step: STEP,
