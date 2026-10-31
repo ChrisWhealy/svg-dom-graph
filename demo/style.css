@@ -910,6 +910,23 @@ label.demo-slider-container {
     grid-area: sine;
 }
 
+/* The amplitude, frequency and phase panel's one scene. It has a fixed size, so a narrow screen scrolls it, not the page. */
+.amplitude-frequency-wrap {
+    overflow-x: auto;
+    margin: 0.75rem 0;
+}
+
+/* A slider drawn in a scene (demo-common's `svg_sliders`). The browser's own outline round a group is a box, so the thumb
+   is what shows that a slider has the keyboard focus. */
+.svg-slider {
+    outline: none;
+}
+
+.svg-slider:focus-visible .svg-slider-thumb {
+    stroke-width: 4;
+    r: 11;
+}
+
 /* The handle that stands for point C in the keyboard's tab order. It is not drawn, except for a ring round C while it has
    the focus, which is the browser's own outline moved onto the circle, since an outline round a group is a box. */
 .circle-handle {
@@ -1017,22 +1034,28 @@ label.demo-slider-container {
     height: auto;
 }
 
-/* The table of UTF-8 templates in the UTF-8 panel: a light grey border of one pixel, room above and below, and a header row
-   in dark grey on light grey. The border is collapsed so that the lines between cells are one pixel too. */
-.utf8-table {
+/* The tables that explain something in a panel, which are the table of UTF-8 templates in the UTF-8 panel and the table of
+   the properties of a wave in the amplitude, frequency and phase panel: a light grey border of one pixel, room above and
+   below, and a header row in dark grey on light grey. The border is collapsed so that the lines between cells are one
+   pixel too. */
+.utf8-table,
+.wave-table {
     margin: 1.25rem 0;
     border-collapse: collapse;
     border: 1px solid #d0d4d9;
 }
 
 .utf8-table th,
-.utf8-table td {
+.utf8-table td,
+.wave-table th,
+.wave-table td {
     padding: 0.4rem 0.75rem;
     border: 1px solid #d0d4d9;
     text-align: left;
 }
 
-.utf8-table th {
+.utf8-table th,
+.wave-table th {
     background: #d9dde1;
     color: #3a3f45;
 }

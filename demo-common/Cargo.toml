@@ -29,5 +29,6 @@ features = [
     "KeyboardEvent",
     "Location",
     "NodeList",
+    "PointerEvent",
     "Window",
 ]

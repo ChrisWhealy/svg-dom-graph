@@ -125,6 +125,7 @@
 //! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
 //! [`report_panel_error`]) instead of trapping.
 
+mod amplitude_frequency;
 mod base64;
 mod bits;
 mod bools_and_sizes;
@@ -149,6 +150,7 @@ mod operators_binary;
 mod operators_chained;
 mod operators_unary;
 mod phase_shift;
+mod plot_scene;
 mod qr_code;
 mod quicksort;
 mod selection;
@@ -249,6 +251,7 @@ demo_gallery! {
     "panel-butterfly" => butterfly::build_butterfly_demo,
     "panel-sine-cosine" => sine_cosine::build_sine_cosine_demo + sine_cosine::FILES,
     "panel-phase-shift" => phase_shift::build_phase_shift_demo + phase_shift::FILES,
+    "panel-amplitude-frequency" => amplitude_frequency::build_amplitude_frequency_demo + amplitude_frequency::FILES,
     "panel-fft" => fft::build_fft_demo + fft::FILES,
     "panel-selection-1d" => selection::build_selection_1d_demo,
     "panel-selection-2d" => selection::build_selection_2d_demo,

@@ -3,7 +3,7 @@
 
 mod plots;
 
-use crate::circle_control::{CircleControl, Plot};
+use crate::{circle_control::CircleControl, plot_scene::Plot};
 use demo_common::util::{document, required_element};
 use plots::{phase_circle_config, phase_circle_items, phase_items, phase_sine_config};
 use std::{cell::RefCell, rc::Rc};

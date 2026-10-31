@@ -102,7 +102,7 @@ fn size_ticks() -> TickLabels {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The axis that shows a size from -[`SPAN`] to [`SPAN`]. It is the vertical axis of the circle and the sine plot, and
 /// the horizontal axis of the circle and the cosine plot.
-fn size_axis() -> PlotAxis {
+pub(crate) fn size_axis() -> PlotAxis {
     PlotAxis::linear(-SPAN, SPAN).with_tick_labels(size_ticks())
 }
 

@@ -6,71 +6,20 @@
 
 pub(crate) mod angles;
 
+use crate::plot_scene::{Plot, listen};
 use angles::{angle_of, height, key_angle, whole, width};
 use demo_common::{
     svg_buttons,
-    util::{document, ensure_svg_in, required_element, stringify},
+    util::{document, required_element},
 };
 use std::{cell::Cell, rc::Rc};
-use svg_dom::{SvgRoot, root::utils::Point};
-use svg_dom_graph::{
-    NodeId,
-    scene::{PlotConfig, PlotItem, Scene},
-};
-use wasm_bindgen::{JsCast, closure::Closure, convert::FromWasmAbi};
+use svg_dom::root::utils::Point;
+use svg_dom_graph::scene::PlotConfig;
 
 /// How near to C, in pixels, a pointer has to be to take hold of it, and the radius of the ring that shows C has the
 /// keyboard focus.
 const GRAB_RADIUS: f64 = 18.0;
 const FOCUS_RADIUS: f64 = 13.0;
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One plot: the scene that holds it and its node, which a new frame draws on.
-pub(crate) struct Plot {
-    pub(crate) scene: Scene,
-    pub(crate) node: NodeId,
-}
-
-impl Plot {
-    /// Makes a scene in the empty `#{stage}`, and puts a plot node in it that fills the scene.
-    ///
-    /// # Errors
-    ///
-    /// Returns `Err` if the page has no `#{stage}`, or if the scene or the node could not be made.
-    pub(crate) fn new(stage: &str, config: PlotConfig) -> Result<Self, String> {
-        let svg_id = format!("{stage}-svg");
-        ensure_svg_in(&document()?, stage, &svg_id, config.size)?;
-        let scene = Scene::new(SvgRoot::attach(&svg_id).map_err(stringify)?).map_err(stringify)?;
-        let node = scene.add_plot_node(Point::new(0.0, 0.0), config).map_err(stringify)?;
-        Ok(Self { scene, node })
-    }
-
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Draws `items` in place of what the plot held.
-    pub(crate) fn draw(&self, items: &[PlotItem]) -> Result<(), String> {
-        self.scene.set_plot_items(self.node, items).map_err(stringify)
-    }
-}
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Calls `handler` each time `target` gets `event`, which is an event of type `E`. The listener is never dropped:
-/// `Closure::forget` leaks it deliberately, for the whole life of the page.
-///
-/// # Errors
-///
-/// Returns `Err` if the listener could not be attached.
-pub(crate) fn listen<E: FromWasmAbi + 'static>(
-    target: &web_sys::EventTarget,
-    event: &str,
-    handler: impl FnMut(E) + 'static,
-) -> Result<(), String> {
-    let closure = Closure::<dyn FnMut(E)>::new(handler);
-    target
-        .add_event_listener_with_callback(event, closure.as_ref().unchecked_ref())
-        .map_err(|e| format!("could not attach the {event} listener: {e:?}"))?;
-    closure.forget();
-    Ok(())
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The circle scene, and what lets a person move C round it.

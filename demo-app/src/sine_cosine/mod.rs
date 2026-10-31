@@ -3,7 +3,7 @@
 
 pub(crate) mod plots;
 
-use crate::circle_control::{CircleControl, Plot};
+use crate::{circle_control::CircleControl, plot_scene::Plot};
 use demo_common::{
     force::animation::AnimationLoop,
     svg_buttons::{self, Button},
