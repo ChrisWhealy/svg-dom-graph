@@ -1,36 +1,21 @@
 //! `panel-elbow` / `#elbow-diagram`: two boxes, a straight/elbow toggle, and a corner-radius slider. See
 //! [`build_elbow_demo`]'s own doc comment for what it demonstrates.
 
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, required_input, required_query, stringify},
-};
-use std::{cell::RefCell, rc::Rc};
+use demo_common::util::{document, required_input, required_query, stringify, view_box_rect};
+use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
-    root::utils::{Point, Rect, Size},
+    root::utils::{Point, Size},
 };
 use svg_dom_graph::{
     EdgeId,
     scene::{ConnectorType, DragOptions, Scene},
 };
 use wasm_bindgen::{JsCast, prelude::*};
-use web_sys::Element;
+use web_sys::{Element, HtmlInputElement};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("elbow.rs");
-
-/// The size of the part of the scene that the boxes are in, and of the whole scene, which has a strip under that for
-/// the slider. The boxes cannot be dragged into the strip.
-const DIAGRAM: Size = Size { width: 420.0, height: 300.0 };
-const SCENE_SIZE: Size = Size { width: 420.0, height: 360.0 };
-
-/// The slider in the strip: its id, where it is, how long it is, and the greatest value that it has before there is a
-/// route to read the room from.
-const SLIDER: &str = "corner-radius";
-const SLIDER_LEFT: f64 = 20.0;
-const SLIDER_MIDDLE: f64 = 332.0;
-const SLIDER_LENGTH: f64 = 300.0;
 
 thread_local! {
     // Same reasoning as `tree::SCENE`'s own doc comment, for this demo's own, separate `Scene`.
@@ -45,7 +30,7 @@ thread_local! {
 /// 1. Dragging either box reroutes the connector. This works for whichever type is currently selected.
 /// 2. The `#connector-type-straight`/`#connector-type-elbow` radio buttons switch live between
 ///    [`ConnectorType::Straight`] and [`ConnectorType::Elbow`].
-/// 3. The corner-radius slider, drawn in the scene by [`sliders`], adjusts an elbow's corner radius live.
+/// 3. The `#corner-radius` slider adjusts an elbow's corner radius live.
 /// 4. `P` and `Q` start close enough that a radius past about `22` already exceeds the available room. That room is
 ///    half the shorter of the two segments meeting at the connector's one bend — the same limit that
 ///    `elbow_path_into`'s own doc comment describes.
@@ -65,14 +50,10 @@ pub(crate) fn build_elbow_demo() -> Result<(), String> {
         &demo_common::util::document()?,
         "elbow-diagram-stage",
         "elbow-diagram",
-        SCENE_SIZE,
+        svg_dom::root::utils::Size::new(420.0, 300.0),
     )?;
     let svg = SvgRoot::attach("elbow-diagram").map_err(stringify)?;
-    // Bounded to the part of the scene that the boxes are in, and not the strip of the slider.
-    let bounds = Rect {
-        origin: Point::new(0.0, 0.0),
-        size: DIAGRAM,
-    };
+    let bounds = view_box_rect(&svg)?;
     let scene = Scene::new(svg).map_err(stringify)?;
 
     let box_size = Size::new(90.0, 50.0);
@@ -85,19 +66,6 @@ pub(crate) fn build_elbow_demo() -> Result<(), String> {
     scene.make_draggable_with(q, drag_options).map_err(stringify)?;
 
     let edge = scene.add_edge(p, q).map_err(stringify)?;
-
-    let document = demo_common::util::document()?;
-    let svg_element = sliders::scene(&document, "elbow-diagram")?;
-    let slider = Slider {
-        label: "Corner radius",
-        id: SLIDER,
-        left: SLIDER_LEFT,
-        middle: SLIDER_MIDDLE,
-        width: SLIDER_LENGTH,
-        range: (0.0, FALLBACK_MAX_RADIUS),
-        step: 1.0,
-    };
-    sliders::add_slider(&document, &svg_element, &slider, 0.0, "0")?;
 
     wire_connector_controls(scene.clone(), edge)?;
 
@@ -118,7 +86,7 @@ const RADIUS_PROBE: f64 = 1_000_000.0;
 /// route. [`max_renderable_radius`] cannot read a limit there, since `elbow_path_into` never writes an `A` command for
 /// one.
 ///
-/// Also the greatest value that the slider starts with, until the first read of the room.
+/// Matches `index.html`'s own `#corner-radius` `max` attribute: the slider's pre-wasm-load fallback.
 const FALLBACK_MAX_RADIUS: f64 = 80.0;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -169,7 +137,7 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Keeps the slider's own greatest value, and its value if that value no longer fits, in step with the room `P`/`Q`'s
+/// Keeps `radius_slider`'s own `max`, and its value if that value no longer fits, in step with the room `P`/`Q`'s
 /// current positions actually offer.
 ///
 /// The library already clamps a too-large `corner_radius` at render time (see `elbow_path_into`). That clamp is
@@ -182,7 +150,7 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 ///
 /// # The slider has no memory of a larger request
 ///
-/// Reading the slider's own current value as `desired` (below), rather than some separately tracked "last value
+/// Reading `radius_slider`'s own current value as `desired` (below), rather than some separately tracked "last value
 /// requested by the user" is deliberate. If room shrinks and this function pulls the slider down from, say, `60` to
 /// `25`, the slider *becomes* `25`. The previous value of `60` is not hidden away in some cache. If room later returns,
 /// only the slider's own `max` rises back up; its value stays at `25` until the user moves it again.
@@ -211,8 +179,14 @@ fn max_renderable_radius(connector_path: &Element) -> Option<f64> {
 /// This approach removes the possibility of flickering. `set_connector_type` writes `d` synchronously, and this whole
 /// function runs to completion before control returns to the browser's own event loop. `d` is already restored to its
 /// real, intended value by the time anything gets painted.
-fn refresh_radius_limit(scene: &Scene, edge: EdgeId, connector_path: &Element, layer: &Element) {
-    let desired = sliders::value(layer, SLIDER).unwrap_or(0.0);
+fn refresh_radius_limit(
+    scene: &Scene,
+    edge: EdgeId,
+    connector_path: &Element,
+    radius_slider: &HtmlInputElement,
+    radius_output: &Element,
+) {
+    let desired: f64 = radius_slider.value().parse().unwrap_or(0.0);
 
     // Both calls below only ever request a value this crate already accepts (a large-but-finite radius, or a radius
     // this same function just clamped itself), so neither fails in practice. Errors are still ignored, not unwrapped,
@@ -220,103 +194,111 @@ fn refresh_radius_limit(scene: &Scene, edge: EdgeId, connector_path: &Element, l
     // failed update should not crash a page the user is actively dragging.
     let _ = scene.set_connector_type(edge, ConnectorType::Elbow { corner_radius: RADIUS_PROBE });
 
-    // Floored once, then reused for both the slider's own greatest value and the clamp below — not two separate
-    // computations of "the limit". The slider has a step of 1, so a fractional greatest value (say `22.7`) would let
-    // `applied` land on a value (`22.7`) the slider itself could never actually represent. The displayed value, the
-    // slider's greatest value, and the connector's own request would then each tell a different story about the same
-    // drag.
+    // Floored once, then reused for both the slider's own `max` attribute and the clamp below — not two separate
+    // computations of "the limit". `#corner-radius` declares `step="1"`, an integer slider. A fractional `max` (say
+    // `22.7`) would let `applied` land on a value (`22.7`) the slider itself could never actually represent. The
+    // displayed value, the slider's declared maximum, and the connector's own request would then each tell a different
+    // story about the same drag.
     let available = max_renderable_radius(connector_path).unwrap_or(FALLBACK_MAX_RADIUS).floor();
-    let _ = sliders::set_range(layer, SLIDER, (0.0, available));
+
+    let max_str = available.to_string();
+    if radius_slider.get_attribute("max").as_deref() != Some(max_str.as_str()) {
+        let _ = radius_slider.set_attribute("max", &max_str);
+    }
 
     let applied = desired.min(available);
     if (applied - desired).abs() > f64::EPSILON {
-        let _ = sliders::set_value(layer, SLIDER, applied, &applied.to_string());
+        let value = applied.to_string();
+        radius_slider.set_value(&value);
+        radius_output.set_text_content(Some(&value));
     }
 
     let _ = scene.set_connector_type(edge, ConnectorType::Elbow { corner_radius: applied });
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires `#connector-type-straight`, `#connector-type-elbow`, and the corner-radius slider in the scene together. Any
-/// change to any of them recomputes `edge`'s [`ConnectorType`] from the state of the radio buttons and the slider, and
-/// applies it.
+/// Wires `#connector-type-straight`, `#connector-type-elbow`, and `#corner-radius` together. Any change to any of them
+/// recomputes `edge`'s [`ConnectorType`] from all three controls' current state, and applies it.
 ///
-/// Dims the slider while "Straight" is selected, since it has nothing to affect there.
+/// Also mirrors the slider's value into `#corner-radius-value`. Disables the slider while "Straight" is selected, since
+/// it has nothing to affect there.
 ///
-/// While "Elbow" is selected, keeps the slider's own greatest value and its value honest via
-/// [`refresh_radius_limit`]. Calls it both here and from a `pointermove` listener, so a drag in progress stays honest
-/// too, not just a finished one.
+/// While "Elbow" is selected, keeps the slider's own `max` and value honest via [`refresh_radius_limit`]. Calls it both
+/// here and from a `pointermove` listener, so a drag in progress stays honest too, not just a finished one.
 ///
 /// The installed closures capture `scene` and are never dropped — `Closure::forget` leaks them deliberately, for the
-/// page's whole lifetime, the same span `SCENE` itself covers. The same shared function is called by both radio buttons
-/// and by the slider. Each one only ever reads the other controls' live state, instead of relying on which control
-/// fired the event.
+/// page's whole lifetime, the same span `SCENE` itself covers. The same shared closure is registered on all three
+/// connector-type/radius controls. Each one only ever reads the other two elements' live values, instead of relying on
+/// which control fired the event.
 ///
-/// One shared function is enough for those three. The `pointermove` listener is a second, separate closure: it fires
-/// for pointer movement anywhere on the page, not just a change to one of these controls.
+/// One shared handler is enough for those three. The `pointermove` listener is a second, separate closure: it fires for
+/// pointer movement anywhere on the page, not just a change to one of these three controls.
 ///
 /// # Errors
 ///
 /// Returns `Err` if:
 ///
-/// - `index.html` is missing `#connector-type-straight` or `#connector-type-elbow`, or either is not an `<input>`.
+/// - `index.html` is missing `#connector-type-straight`, `#connector-type-elbow`, `#corner-radius`, or
+///   `#corner-radius-value`.
+/// - Any of the first three is not an `<input>` element.
 /// - `edge`'s connector was not rendered as a `<path>` under `#elbow-diagram`.
-/// - The scene has no layer for the slider.
 /// - A listener could not be attached to any control.
 fn wire_connector_controls(scene: Scene, edge: EdgeId) -> Result<(), String> {
     let document = document()?;
     let straight_radio = required_input(&document, "connector-type-straight")?;
     let elbow_radio = required_input(&document, "connector-type-elbow")?;
+    let radius_slider = required_input(&document, "corner-radius")?;
+    let radius_output = demo_common::util::required_element(&document, "corner-radius-value")?;
     let connector_path = required_query(&document, "#elbow-diagram > g.svg-dom-graph-content > path")?;
-    let layer = sliders::scene(&document, "elbow-diagram")?;
 
-    // Establishes the slider's real initial ceiling from P/Q's actual starting positions, rather than leaving it at the
-    // fallback until the first control change or drag.
-    refresh_radius_limit(&scene, edge, &connector_path, &layer);
+    // Establishes the slider's real initial ceiling from P/Q's actual starting positions, rather than leaving it at
+    // index.html's own hard-coded fallback until the first control change or drag.
+    refresh_radius_limit(&scene, edge, &connector_path, &radius_slider, &radius_output);
 
-    // What to do when any control changes. Both radio buttons and the slider share it.
-    let apply: Rc<dyn Fn()> = {
-        let (scene, layer, path, straight) =
-            (scene.clone(), layer.clone(), connector_path.clone(), straight_radio.clone());
-        Rc::new(move || {
-            let _ = sliders::set_disabled(&layer, SLIDER, straight.checked());
+    let listeners = [straight_radio.clone(), elbow_radio.clone(), radius_slider.clone()];
 
-            if straight.checked() {
-                // Both radio buttons only ever request a value this crate already accepts, so in practice this can
-                // never fail. See refresh_radius_limit's own doc comment for the identical reasoning behind its own
-                // ignored results.
-                let _ = scene.set_connector_type(edge, ConnectorType::Straight);
-            } else {
-                refresh_radius_limit(&scene, edge, &path, &layer);
-            }
-        })
-    };
+    // Cloned before `closure` below moves its own copies of `straight_radio`/`radius_slider`/`radius_output`, so the
+    // `pointermove` listener installed further down still has its own handles to the same live elements.
+    let pointer_scene = scene.clone();
+    let pointer_straight_radio = straight_radio.clone();
+    let pointer_slider = radius_slider.clone();
+    let pointer_output = radius_output.clone();
+    let pointer_path = connector_path.clone();
 
-    for target in [&straight_radio, &elbow_radio] {
-        let apply = Rc::clone(&apply);
-        let closure = Closure::<dyn FnMut()>::new(move || apply());
+    let closure_scene = scene;
+    let closure_path = connector_path;
+    let closure = Closure::<dyn FnMut()>::new(move || {
+        radius_output.set_text_content(Some(&radius_slider.value()));
+        radius_slider.set_disabled(straight_radio.checked());
+
+        if straight_radio.checked() {
+            // Both radio buttons only ever request a value this crate already accepts, so in practice this can never
+            // fail. See refresh_radius_limit's own doc comment for the identical reasoning behind its own ignored
+            // results.
+            let _ = closure_scene.set_connector_type(edge, ConnectorType::Straight);
+        } else {
+            refresh_radius_limit(&closure_scene, edge, &closure_path, &radius_slider, &radius_output);
+        }
+    });
+
+    for target in &listeners {
+        let event = if target.type_() == "range" { "input" } else { "change" };
         target
-            .add_event_listener_with_callback("change", closure.as_ref().unchecked_ref())
+            .add_event_listener_with_callback(event, closure.as_ref().unchecked_ref())
             .map_err(|e| format!("could not attach a connector-control listener: {e:?}"))?;
-        closure.forget();
     }
+    closure.forget();
 
-    let (slider_layer, slider_apply) = (layer.clone(), Rc::clone(&apply));
-    sliders::watch(&document, "elbow-diagram-stage", move |_, value| {
-        let _ = sliders::set_value(&slider_layer, SLIDER, value, &value.to_string());
-        slider_apply();
-    })?;
-
-    // A dedicated listener, rather than folding this into `apply` above. Dragging P or Q fires no event on any of the
-    // controls above at all. make_draggable's own pointer listeners live entirely inside the library, invisible to this
-    // demo. Listening for `pointermove` on the whole document, rather than attaching to P and Q's own rendered
+    // A dedicated listener, rather than folding this into `closure` above. Dragging P or Q fires no event on any of the
+    // three controls above at all. make_draggable's own pointer listeners live entirely inside the library, invisible
+    // to this demo. Listening for `pointermove` on the whole document, rather than attaching to P and Q's own rendered
     // elements, avoids needing to know which element a drag is attached to. It also avoids knowing whether a drag is in
     // progress. This works because refresh_radius_limit is cheap: one parsed attribute string and two attribute writes.
     // So it is simply called on every pointer movement anywhere on the page, instead of filtering down to the movements
     // that actually moved P or Q.
     let pointer_closure = Closure::<dyn FnMut()>::new(move || {
-        if !straight_radio.checked() {
-            refresh_radius_limit(&scene, edge, &connector_path, &layer);
+        if !pointer_straight_radio.checked() {
+            refresh_radius_limit(&pointer_scene, edge, &pointer_path, &pointer_slider, &pointer_output);
         }
     });
     document

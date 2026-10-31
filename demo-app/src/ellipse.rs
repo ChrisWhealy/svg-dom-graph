@@ -2,14 +2,11 @@
 //! rectangle, and a clock ellipse whose connector leaves at the minute a slider chooses. See [`build_ellipse_demo`]'s own
 //! doc comment for what it demonstrates.
 
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, ensure_svg_in, required_element, resize_svg, stringify},
-};
+use demo_common::util::{document, ensure_svg_in, required_element, required_input, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
-    root::utils::{Point, Rect, Size},
+    root::utils::{Point, Size},
 };
 use svg_dom_graph::{
     NodeId,
@@ -18,16 +15,13 @@ use svg_dom_graph::{
         ViewTransform,
     },
 };
+use wasm_bindgen::{JsCast, prelude::*};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("ellipse.rs");
 
 /// The size of the scene, and the minute the slider starts at.
-const SCENE_SIZE: Size = Size { width: 800.0, height: 520.0 };
-
-/// The part of the scene that the nodes are in, which has a strip under it for the slider. The nodes cannot be dragged
-/// into the strip.
-const DIAGRAM: Size = Size { width: 800.0, height: 460.0 };
+const SCENE_SIZE: Size = Size { width: 800.0, height: 460.0 };
 const FIRST_MINUTE: u8 = 10;
 
 /// Where the clock ellipse is, and how far from its centre the circle it points at sits.
@@ -35,13 +29,6 @@ const CLOCK_CENTRE: Point = Point { x: 600.0, y: 230.0 };
 const CLOCK_RADII: (f64, f64) = (110.0, 55.0);
 const SATELLITE_DISTANCE: f64 = 185.0;
 const SATELLITE_RADIUS: f64 = 17.0;
-
-/// The slider in the strip at the bottom of the scene: its id, where it is, and how long it is. It is long enough for
-/// the name of the minute to be written beside the name of the slider.
-const SLIDER: &str = "clock-position";
-const SLIDER_LEFT: f64 = 20.0;
-const SLIDER_MIDDLE: f64 = 492.0;
-const SLIDER_LENGTH: f64 = 440.0;
 
 /// The fill of the clock ellipse, which is the one the slider is about, and of the circle at the end of its connector.
 const CLOCK_FILL: &str = "#fff3d6";
@@ -102,11 +89,11 @@ thread_local! {
 /// 3. A straight connector lands on the curved outline, on the line between the two centres. An elbow leaves an
 ///    ellipse by the nearest of north, east, south and west.
 /// 4. An ellipse and a rectangle can be joined in either direction, as the elbows to and from `Rectangle` show.
-/// 5. The slider in the scene puts the clock ellipse's end of its connector at a minute from 0 to 59, which is a
-///    direction from the centre and not a point on the curve's own parameter.
+/// 5. `#ellipse-minute` puts the clock ellipse's end of its connector at a minute from 0 to 59, which is a direction
+///    from the centre and not a point on the curve's own parameter.
 ///
-/// Every node can be dragged. The slider draws the scene again, which keeps where each node was dragged to, and the
-/// zoom and pan.
+/// Every node can be dragged. The slider draws the scene again, which keeps where each node was dragged to, and the zoom
+/// and pan.
 ///
 /// # Errors
 ///
@@ -149,15 +136,11 @@ fn current(previous: &Demo, index: usize) -> Option<(Point, Size)> {
 fn draw(document: &web_sys::Document, minute: u8, previous: Option<&Demo>) -> Result<Demo, String> {
     ensure_svg_in(document, "ellipse-diagram-stage", "ellipse-diagram", SCENE_SIZE)?;
     let view: Option<ViewTransform> = previous.map(|demo| demo.scene.view());
-    // Everything but the slider, which a person may be holding, since the scene is drawn again for every move of it.
-    sliders::clear_scene(&required_element(document, "ellipse-diagram")?)?;
+    required_element(document, "ellipse-diagram")?.set_inner_html("");
     resize_svg(document, "ellipse-diagram", SCENE_SIZE)?;
     let svg = SvgRoot::attach("ellipse-diagram").map_err(stringify)?;
     let scene = Scene::new(svg).map_err(stringify)?;
-    let drag = DragOptions::default().with_bounds(Some(Rect {
-        origin: Point::new(0.0, 0.0),
-        size: DIAGRAM,
-    }));
+    let drag = DragOptions::default();
 
     let mut nodes = Vec::with_capacity(NODES.len() + 2);
     for (index, &(label, shape, start)) in NODES.iter().enumerate() {
@@ -254,20 +237,6 @@ fn draw(document: &web_sys::Document, minute: u8, previous: Option<&Demo>) -> Re
         )
         .map_err(stringify)?;
 
-    let svg_element = sliders::scene(document, "ellipse-diagram")?;
-    let slider = Slider {
-        label: "Clock position",
-        id: SLIDER,
-        left: SLIDER_LEFT,
-        middle: SLIDER_MIDDLE,
-        width: SLIDER_LENGTH,
-        range: (0.0, 59.0),
-        step: 1.0,
-    };
-    sliders::add_slider(document, &svg_element, &slider, f64::from(minute), &minute_text(minute))?;
-    // The slider is the one that was there before, if there was one, so the writing beside it is brought up to date.
-    sliders::set_value(&svg_element, SLIDER, f64::from(minute), &minute_text(minute))?;
-
     if let Some(view) = view {
         scene.set_view(view).map_err(stringify)?;
     }
@@ -275,11 +244,6 @@ fn draw(document: &web_sys::Document, minute: u8, previous: Option<&Demo>) -> Re
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What is written beside the slider for minute `minute`: the minute, and the angle that it is round from north.
-fn minute_text(minute: u8) -> String {
-    format!("{minute} \u{b7} {}", bearing_text(minute))
-}
-
 /// What the control says about minute `minute`: the angle it is round from north.
 fn bearing_text(minute: u8) -> String {
     let degrees = u32::from(minute) * 6;
@@ -294,28 +258,35 @@ fn bearing_text(minute: u8) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Wires the slider in the scene to draw the scene again at the chosen minute.
+/// Wires `#ellipse-minute` to draw the scene again at the chosen minute, and keeps the two outputs beside it in step.
 ///
-/// The slider is drawn again with every scene, so [`sliders::watch`] listens on `#ellipse-diagram-stage`, which
-/// stays, and a drag carries on across the scenes. A person who is using the keys keeps the focus, which is given to
-/// the slider that is drawn again.
-///
-/// The listener captures the page's `document`, and is never dropped, for the whole life of the page, the same span
-/// [`DEMO`] covers.
+/// The listener captures the page's `document`, and is never dropped: `Closure::forget` leaks it deliberately, for the
+/// whole life of the page, the same span [`DEMO`] covers.
 ///
 /// # Errors
 ///
-/// Returns `Err` if the page is missing `#ellipse-diagram-stage`, or if the listener cannot be attached.
+/// Returns `Err` if the page is missing `#ellipse-minute`, `#ellipse-minute-value` or `#ellipse-minute-bearing`, if the
+/// first is not an `<input>`, or if the listener cannot be attached.
 fn wire_minute_slider(document: web_sys::Document) -> Result<(), String> {
-    let page = document.clone();
-    sliders::watch(&document, "ellipse-diagram-stage", move |_, value| {
-        let minute = (value.round() as u8).min(59);
+    let slider = required_input(&document, "ellipse-minute")?;
+    let value_output = required_element(&document, "ellipse-minute-value")?;
+    let bearing_output = required_element(&document, "ellipse-minute-bearing")?;
+    let input = slider.clone();
+    let closure = Closure::<dyn FnMut()>::new(move || {
+        let minute: u8 = input.value().parse().unwrap_or(FIRST_MINUTE).min(59);
+        value_output.set_text_content(Some(&minute.to_string()));
+        bearing_output.set_text_content(Some(&bearing_text(minute)));
         let previous = DEMO.with_borrow_mut(Option::take);
         // On a failure the previous scene's handle is put back, so the page keeps working. Nothing in this demo's
         // geometry is invalid, so a failure here is not expected.
-        match draw(&page, minute, previous.as_ref()) {
+        match draw(&document, minute, previous.as_ref()) {
             Ok(demo) => DEMO.with_borrow_mut(|slot| *slot = Some(demo)),
             Err(_) => DEMO.with_borrow_mut(|slot| *slot = previous),
         }
-    })
+    });
+    slider
+        .add_event_listener_with_callback("input", closure.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the clock slider listener: {e:?}"))?;
+    closure.forget();
+    Ok(())
 }

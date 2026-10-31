@@ -68,12 +68,6 @@ Choosing a butterfly changes the inspector and the emphasis and no node of the o
 A rebuild keeps the zoom and the place a butterfly was dragged to.
 Chrome's own accessibility tree must show none of the 128 connectors as named or focusable.
 
-Its own `scene_sliders.rs` scenario runs against the built demo gallery.
-It checks the sliders that the connector routing, fixing points and ellipses panels draw in their scenes.
-Each has the role of a slider and its range, and the slider of the page is gone.
-The keys and the pointer move it, and a drag and the keyboard focus carry on across the scenes that the fixing points and ellipse panels draw again for each move, since the slider is not drawn again with them.
-The corner radius slider is dimmed for a straight connector and answers nothing, and its greatest value is the room that the boxes leave.
-
 Its own `complex.rs` scenario runs against the built demo gallery.
 Both Argand diagrams are plot nodes with a name and the marks of what they show.
 A real mouse click on the diagram puts the number there, rounded to a tenth, and moves both sliders.

@@ -8,8 +8,7 @@
 //! - [`force`] — what a force-directed demo shares: the pure spring solver, the frame clock, the lossless command bridge
 //!   and a timestamped animation frame.
 //! - [`svg_buttons`] — buttons drawn in SVG, for demos that need a row of choices inside the scene.
-//! - [`sliders`] — range sliders in a scene, for demos that need a value that a person sets inside it: the browser's own
-//!   `<input type="range">` in a `<foreignObject>`, so that the browser does the dragging, the keys and the accessibility.
+//! - [`svg_sliders`] — sliders drawn in SVG, for demos that need a value that a person sets inside the scene.
 //! - [`sorting`] — everything the sorting demos have in common: the bars, the buttons and the stepping. An algorithm
 //!   supplies only the frames of its walk.
 //!
@@ -20,5 +19,5 @@ pub mod focus;
 pub mod force;
 pub mod sorting;
 pub mod svg_buttons;
-pub mod sliders;
+pub mod svg_sliders;
 pub mod util;

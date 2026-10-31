@@ -29,7 +29,7 @@ Where the direct route would cross one, it goes round it with a clear gap.
 ## On the right
 
 The **Clock** ellipse is wide, with radii 110 and 55.
-The slider at the bottom of the scene chooses a minute from 0 to 59, and the connector leaves the ellipse at that minute.
+The slider chooses a minute from 0 to 59, and the connector leaves the ellipse at that minute.
 The circle it points to is placed in that direction, labelled with the minute.
 
 * 0 is north, 15 is east, 30 is south and 45 is west.
@@ -38,12 +38,11 @@ The circle it points to is placed in that direction, labelled with the minute.
   On a wide ellipse that is **not** where 60° of the ellipse's own parameter would be.
 * Minute 59 is just west of north.
 
-Beside the name of the slider, the scene says how many degrees the minute is clockwise from north.
+Next to the slider, the panel says how many degrees the minute is clockwise from north.
 
 ## Dragging
 
 Every node can be dragged, and the connectors follow.
-The slider draws the scene again, but not itself, so a drag of the slider carries on and the keyboard focus is kept.
+The slider draws the scene again.
 It keeps the zoom and pan, and where each node was dragged to.
-The slider is a range input in the strip at the bottom of the scene, which the nodes cannot be dragged into, and it stays where it is when the scene is zoomed or panned.
 The circle that the clock connector points at is not kept, since the minute decides where it goes.

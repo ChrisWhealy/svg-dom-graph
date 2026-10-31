@@ -2,7 +2,7 @@
 
 ![Fixing Points Straight](../../img/demo-fixing-points%201.png)
 
-Demonstrates the idea of `EdgeAnchors`: a slider in the scene, from `0` to `5`, sets how many evenly spaced connector fixing points exist along a node's edges.
+Demonstrates the idea of `EdgeAnchors`: a slider from `0` to `5` sets how many evenly spaced connector fixing points exist along a node's edges.
 This is applicable for both straight and elbow connectors.
 
 ![Fixing Points Elbow](../../img/demo-fixing-points%202.png)
@@ -18,5 +18,3 @@ So whatever the angle between the two nodes, the connector always anchors to the
 In this demo, the number of visible children always matches the slider value, down to a minimum of one.
 Raising it reveals more children, each settling on its own fixing point in the parent node's edge.
 Lowering it hides them again.
-The slider is in a strip under the nodes, which they cannot be dragged into.
-The scene is drawn again for every move of the slider, but the slider is not, so a drag of it and the keyboard focus carry on across the scenes.

@@ -13,7 +13,11 @@
     <p>On the right, the connector leaves the clock ellipse in the direction you choose. The direction corresponds to
         the minutes on a clock face with 0 being north, 15 east, 30 south and 45 west. The position at which the
         connector is anchored is calculated as the crossing point of a line drawn between the centres of the two nodes.
-        Use the slider at the bottom of the diagram to choose the minute.
+    </p>
+    <p class="controls">
+        <label for="ellipse-minute">Clock position: <output id="ellipse-minute-value">10</output>
+            (<output id="ellipse-minute-bearing">60&deg; clockwise from north</output>)</label><br />
+        <input type="range" id="ellipse-minute" min="0" max="59" step="1" value="10" />
     </p>
     <div class="canvas" id="ellipse-diagram-stage">
     </div>

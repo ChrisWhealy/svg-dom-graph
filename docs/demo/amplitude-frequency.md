@@ -2,7 +2,7 @@
 
 Shows that one sine wave is described by three numbers, which the page lets a person set.
 The panel is in the "Signal processing" group, after Phase Shift and before the Fast Fourier Transform.
-It adds no library API: the scene holds one plot node, `Scene::set_plot_items` draws what changes, and the sliders are the browser's own range inputs, put in the scene by `demo-common`.
+It adds no library API: the scene holds one plot node, `Scene::set_plot_items` draws what changes, and the sliders are drawn in SVG by `demo-common`.
 
 ## The wave
 
@@ -36,35 +36,24 @@ The wave is 512 straight segments, which is 64 for each cycle at 8 Hz.
 
 ## The sliders
 
-A slider is the browser's own `<input type="range">`, in a `<foreignObject>` of the scene's `<svg>`, with its name and its value written above it as SVG text.
-The browser does the dragging with a pointer or a finger, the keys, and the accessibility, so assistive technology says its name, its range and its value, such as "2.0 Hz".
-The page's own code only says where a slider goes and how it looks.
+A slider is a label, a track, a thumb and the value written at the right of the label, drawn in the scene's own layer.
+The pointer takes hold of any part of it, and the thumb follows the pointer.
+A slider can also be reached with the Tab key and moved with the keys, which is what makes it a control for someone who does not use a pointer.
+It has the role of a slider, so assistive technology says its name, its range and its value, such as "2.0 Hz".
 
 * Right and Up move it a step, and Left and Down move it back a step.
-* Page Up and Page Down move it on further than a step, by as much as the browser chooses.
+* Page Up and Page Down move it ten steps, which is 1 Hz, 0.1 and 10 degrees.
 * Home and End take it to the least and the greatest value.
 * It stops at the ends and does not wrap.
 
 A value is always a whole number of steps from the least, so that it can be written exactly.
 
-## The sliders of `demo-common`
-
-The sliders are `demo-common/src/sliders`, and do not know what they are for.
-The function given to `sliders::watch` is told, from the `input` event, which slider moved and to what, draws that, and tells the slider what to write with `sliders::set_value`.
-The connector routing, fixing points, ellipses and complex number panels have sliders too, and all use the same module.
-
-What makes a slider as long as an axis is the arithmetic in `sliders::frame`, which touches no DOM.
-A native slider's thumb travels from half its own width inside one end of the element to half its own width inside the other, so the element is made one thumb wider than the track.
-The thumb is given a fixed width by a style that the module puts in the page, since the browsers' own differ.
-A vertical slider is the same element turned a quarter turn.
-
-A demo that draws its scene again for every move of a slider is also served.
-`sliders::add_slider` puts the slider in a group of its own, directly in the `<svg>`, and `sliders::clear_scene` takes everything out of the `<svg>` but those groups.
-So the slider is the same element before the scene is drawn again and after, a drag carries on across the scenes, and the keyboard focus is kept.
-`set_range` changes the greatest value of a slider whose room changes, `set_disabled` dims one, and `value` reads where one is.
+The sliders are `demo-common/src/svg_sliders`, and do not know what they are for.
+The function given to `svg_sliders::watch` is told which slider moved and to what, draws that, and tells the slider what to write.
+`svg_sliders::snap`, `value_at`, `fraction_of` and `key_value` are plain functions with unit tests.
 
 ## How it is checked
 
 `amplitude_frequency/plots/unit_tests.rs` checks the configuration, the wave, that it never goes beyond its amplitude, that a wave of n cycles has the right number of turns, the dotted lines, and the formula, and that it is below where the wave goes.
-`demo-common/src/sliders/unit_tests.rs` checks where a slider goes, how a value is rounded, and the style that the thumbs are given.
+`demo-common/src/svg_sliders/unit_tests.rs` checks the values, the keys and the ends.
 `amplitude_frequency.rs` in the CDP tests checks the size of the scene, the three sliders, the pointer and the keys, and that the wave changes.

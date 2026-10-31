@@ -5,6 +5,7 @@
 mod argand;
 mod explorer;
 mod roots;
+mod sliders;
 
 use argand::{rectangular_text, trimmed};
 use demo_common::util::{ensure_svg_in, resize_svg, stringify};
@@ -23,10 +24,10 @@ use svg_dom_graph::{
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
-/// The files behind this demo: the Argand diagram, the sliders of `demo-common`, the explorer that they drive, and the roots of unity.
+/// The files behind this demo: the Argand diagram, the sliders, the explorer that they drive, and the roots of unity.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("complex_numbers/argand/mod.rs", "argand/mod.rs"),
-    crate::source_file!("demo-common/src/sliders/mod.rs", "../../../demo-common/src/sliders/mod.rs"),
+    crate::source_file!("complex_numbers/sliders/mod.rs", "sliders/mod.rs"),
     crate::source_file!("complex_numbers/explorer.rs", "explorer.rs"),
     crate::source_file!("complex_numbers/roots.rs", "roots.rs"),
 ];
