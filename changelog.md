@@ -27,7 +27,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Make consistent use of `<input type="range">` as `foreignObject` across all demos (`52f50ab`)
 - Adjust demo panel order plus some refactoring (`38993aa`)
 - Simplify demo panel structure and correct failing CI test (`b126213`)
-- Provide a mathematical qualification for a probe frequency of zero (``)
+- Provide a mathematical qualification for a probe frequency of zero (`eb5b79a`)
 
 ## Fixed
 
