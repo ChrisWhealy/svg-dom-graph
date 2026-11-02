@@ -70,6 +70,21 @@ That is a live region of its own, which is only there for assistive technology.
 The generation and the population are a live region too.
 It is announced when the generations are stopped and is not while they go, since it would be read out every time it changes.
 
+## When a write to the page fails
+
+The board in the code is the truth, and what is on the page is drawn from the whole of it every time.
+A step, a click, a pattern or a key changes the board first and then draws it.
+If a write to the page fails, the board is right and the page is out of date.
+The demo does not undo the change.
+It remembers that the page is out of date, and the next button, key, drag, frame or move of the slider draws the board again before it does anything else.
+Since every draw is of the whole board, that is enough to put the page right, and the error is then hidden.
+
+* A failed write stops the generations, and the Play button says `Play` again and the readout is announced again, as when a person pauses them.
+* The error says that what is shown may be out of date, and that the next button, key or drawing draws it again.
+* The error is above the board, so showing or hiding it moves the board on the page.
+  While a drag goes on, the browser would report the pointer over cells that it had not crossed, and they would be painted.
+  So a change to the error waits until the drag ends.
+
 ## Speed
 
 The generations are timed by `requestAnimationFrame`, and not by a timer, so they stop when the page is in the background.
@@ -116,5 +131,6 @@ It checks that each spaceship goes 2 cells to the right every 4 generations with
 It checks that each spaceship goes 2 cells to the right every 4 generations without changing shape, that it goes round a board with wrapping edges, and where one is put.
 It also checks the edges, the patterns, the random board and the pace.
 `game_of_life/view/unit_tests.rs` checks which cell a point is in, the line of cells between two cells (both ends, no gap, the same length either way, and one cell in each column or row), the paths that are drawn, the cursor, the buttons and the writing.
-`game_of_life.rs` in the CDP tests checks drags that the browser cancels or whose capture is lost, a pointer that is not making the drag, a second pointer that goes down during one, and a drag whose end was never reported.
+`game_of_life.rs` in the CDP tests checks writes that fail, by making the browser throw for them: a cell, a step, a frame and a key that cannot be drawn, and that the next interaction draws the board and hides the error.
+It checks drags that the browser cancels or whose capture is lost, a pointer that is not making the drag, a second pointer that goes down during one, and a drag whose end was never reported.
 It also checks the scene, Pause, Play and Step, a blinker that turns on a step and back on the next, drawing by click and drag, the keys and what assistive technology is told, each pattern, the edges that wrap and stop, and the speed.

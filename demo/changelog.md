@@ -25,8 +25,10 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Game of Life demo: a write to the page that fails leaves the board right and the page out of date, which is remembered and drawn again by the next button, key, drag, frame or slider move; the failure puts the Play button back to Play; and a change to the error waits until a drag ends, so the board does not move under the pointer
 - Convolution demo: zero frequency is a special case, in which the amplitude is the mean of the signal and not twice it, the factor written is 1, and there is no phase
 - Convolution demo: a scene that cannot be drawn is reported as an error that says the four scenes may disagree, the remembered frequency changes only when all four are drawn, and a later success hides the error
 - Pythagoras drag test rounds the mouse position to whole pixels, so that CI reads back the angle that was dragged to
 - Don't skip cells during rapid pointer drag movements (`468e1ee`)
-- Drag ends when the pointer is let go or at `pointercancel` (``)
+- Drag ends when the pointer is let go or at `pointercancel` (`68755cb`)
+- Prevent model and presentation from diverging after a DOM write failure (``)

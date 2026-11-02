@@ -17,6 +17,8 @@
 //!   flies to the right.
 //! - The edges wrap or stop, as the button says.
 //! - The slider sets the speed.
+//! - A write to the page that fails leaves the board right and the page out of date, which is reported, and the next
+//!   button, key, drag or frame draws the board again.
 //!
 //! Like [`crate::convolution`], these run against the built demo gallery.
 
@@ -783,4 +785,146 @@ fn a_pointer_that_is_let_go_paints_nothing_when_it_moves_again() -> Result<(), S
     check_eq(population(&tab)?, 1)?;
     drag(&tab, &[centre(&tab, 10, 2)?, centre(&tab, 11, 2)?])?;
     check_eq(population(&tab)?, 3)
+}
+
+/// Makes every write of the attribute `name` fail with an exception, as the browser can when a page is under pressure,
+/// or puts the browser's own write back.
+fn fail_writes_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__written) {{ p.__written = p.setAttribute; }} \
+             p.setAttribute = function (n, v) {{ if (n === '{name}') {{ throw new Error('injected'); }} \
+             return p.__written.apply(this, arguments); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__written) { p.setAttribute = p.__written; } return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
+fn banner_hidden(tab: &Tab) -> Result<bool, String> {
+    Ok(text(tab, "String(document.querySelector('#game-of-life-error').hidden)")? == "true")
+}
+
+fn banner(tab: &Tab) -> Result<String, String> {
+    text(tab, "document.querySelector('#game-of-life-error').textContent")
+}
+
+#[test]
+fn a_cell_that_cannot_be_drawn_is_reported_and_the_next_cell_draws_both() -> Result<(), String> {
+    let tab = emptied()?;
+    check(banner_hidden(&tab)?, "there is no error to begin with")?;
+    // The cells of the live path are written as its `d`, and nothing else on the page is written as one.
+    fail_writes_of(&tab, "d", true)?;
+    click_cell(&tab, 5, 5)?;
+    fail_writes_of(&tab, "d", false)?;
+    check(!banner_hidden(&tab)?, "the page says that it went wrong")?;
+    let said = banner(&tab)?;
+    check(said.contains("may be out of date") && said.contains("draws it again"), &said)?;
+    // The board has the cell, and the page does not show it yet.
+    check_eq(live_path(&tab)?, String::new())?;
+    check_eq(population(&tab)?, 0)?;
+
+    click_cell(&tab, 9, 5)?;
+    check_eq(population(&tab)?, 2)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 2)?;
+    check(banner_hidden(&tab)?, "a draw that works hides the error")
+}
+
+#[test]
+fn a_generation_that_cannot_be_drawn_is_drawn_by_a_control_that_draws_nothing_itself() -> Result<(), String> {
+    let tab = emptied()?;
+    for col in 10..=12 {
+        click_cell(&tab, col, 5)?;
+    }
+    let across = live_path(&tab)?;
+    fail_writes_of(&tab, "d", true)?;
+    press_button(&tab, "step")?;
+    fail_writes_of(&tab, "d", false)?;
+    check(!banner_hidden(&tab)?, "the page says that it went wrong")?;
+    // The board has gone on a generation, and the page still shows the one before.
+    check_eq(live_path(&tab)?, across)?;
+    check_eq(generation(&tab)?, 0)?;
+    // Moving the slider does not draw the board, but it draws it again first.
+    text(
+        &tab,
+        &format!("document.querySelector('{SVG} input[data-slider=\"speed\"]').focus(), 'ok'"),
+    )?;
+    press(&tab, "ArrowRight")?;
+    check_eq(generation(&tab)?, 1)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 3)?;
+    check(banner_hidden(&tab)?, "and what the failure said is hidden")
+}
+
+#[test]
+fn a_frame_that_cannot_be_drawn_stops_the_generations_says_so_on_the_button_and_play_draws_it_again()
+-> Result<(), String> {
+    let tab = open()?;
+    check_eq(label_of(&tab, "play")?, "Pause".to_owned())?;
+    fail_writes_of(&tab, "d", true)?;
+    wait_until(&tab, 10, |tab| Ok(!banner_hidden(tab)?))?;
+    fail_writes_of(&tab, "d", false)?;
+    // It has stopped, and the button says what it will do, which is not what it said before.
+    check_eq(label_of(&tab, "play")?, "Play".to_owned())?;
+    check_eq(attribute(&tab, READOUT, "aria-live")?, "polite".to_owned())?;
+    let stopped = generation(&tab)?;
+    std::thread::sleep(Duration::from_millis(500));
+    check_eq(generation(&tab)?, stopped)?;
+    press_button(&tab, "play")?;
+    check(banner_hidden(&tab)?, "Play draws the board again first, and the error goes")?;
+    check_eq(label_of(&tab, "play")?, "Pause".to_owned())?;
+    wait_until(&tab, 10, |tab| Ok(generation(tab)? > stopped + 1))
+}
+
+#[test]
+fn a_cell_changed_by_a_key_that_cannot_be_drawn_is_drawn_by_the_next_key() -> Result<(), String> {
+    let tab = emptied()?;
+    focus_board(&tab)?;
+    fail_writes_of(&tab, "d", true)?;
+    press(&tab, " ")?;
+    fail_writes_of(&tab, "d", false)?;
+    check(!banner_hidden(&tab)?, "the page says that it went wrong")?;
+    check_eq(live_path(&tab)?, String::new())?;
+    press(&tab, "ArrowRight")?;
+    check_eq(population(&tab)?, 1)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 1)?;
+    check(banner_hidden(&tab)?, "the error goes")
+}
+
+#[test]
+fn an_error_that_goes_away_during_a_click_does_not_move_the_board_under_the_pointer_and_paint_other_cells()
+-> Result<(), String> {
+    let tab = emptied()?;
+    fail_writes_of(&tab, "d", true)?;
+    click_cell(&tab, 5, 5)?;
+    fail_writes_of(&tab, "d", false)?;
+    check(
+        !banner_hidden(&tab)?,
+        "the error is shown above the board, which moves the board down",
+    )?;
+    // This click draws, which hides the error and would move the board up under the pointer, if that was not left until
+    // the click is over. Cells that the pointer was then over are not to be painted.
+    click_cell(&tab, 9, 5)?;
+    check_eq(population(&tab)?, 2)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 2)?;
+    check(banner_hidden(&tab)?, "and the error does go, when the click is over")
+}
+
+#[test]
+fn an_error_that_appears_during_a_drag_does_not_move_the_board_under_the_pointer_and_paint_other_cells()
+-> Result<(), String> {
+    let tab = emptied()?;
+    fail_writes_of(&tab, "d", true)?;
+    drag(&tab, &[centre(&tab, 5, 5)?, centre(&tab, 9, 5)?])?;
+    fail_writes_of(&tab, "d", false)?;
+    check(!banner_hidden(&tab)?, "the error is shown when the drag is over")?;
+    // The board has the 5 cells that the pointer crossed, and the page shows them when it is next drawn.
+    text(
+        &tab,
+        &format!("document.querySelector('{SVG} input[data-slider=\"speed\"]').focus(), 'ok'"),
+    )?;
+    press(&tab, "ArrowRight")?;
+    check_eq(population(&tab)?, 5)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 1)
 }

@@ -100,6 +100,13 @@ struct Demo {
     cursor: Cell<(usize, usize)>,
     /// The drag across the board that is going on, if there is one.
     drag: Cell<Option<Drag>>,
+    /// Whether what is drawn is out of date, since a write to the page failed after the board had changed. The board is
+    /// the truth, and every draw is of the whole of it, so the next draw makes the page right.
+    stale: Cell<bool>,
+    /// A change to the error message that is waiting for a drag to end: `Some(Some(text))` is to show `text`, and
+    /// `Some(None)` is to hide it. The message is above the board, so showing or hiding it moves the board on the page.
+    /// A pointer that is held down would then be over other cells, and the browser reports that as the pointer moving.
+    pending_error: RefCell<Option<Option<String>>>,
     /// The cell that a drag last painted, which the next cell is joined to by a line, or `None` if the pointer is not
     /// on the board, and the next cell it comes to starts a new line.
     last_cell: Cell<Option<(usize, usize)>>,
@@ -125,12 +132,12 @@ struct Demo {
 }
 
 impl Demo {
-    /// Draws the live cells, the cursor and the readout for the board as it is now.
+    /// Writes the live cells, the cursor and the readout for the board as it is now, all from the board.
     ///
     /// # Errors
     ///
     /// Returns `Err` if an attribute could not be written.
-    fn draw(&self) -> Result<(), String> {
+    fn render(&self) -> Result<(), String> {
         let board = self.board.borrow();
         set(&self.live, "d", &live_path(&board))?;
         let at = cell_origin(self.cursor.get().0, self.cursor.get().1);
@@ -139,6 +146,62 @@ impl Demo {
         self.readout
             .set_text_content(Some(&readout(self.generation.get(), board.population())));
         Ok(())
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Draws the board as it is now. If a write fails, what is on the page is out of date, which is remembered, and
+    /// [`Demo::repair`] draws it again at the next chance. A draw that works after a failure hides what the failure
+    /// said.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if an attribute could not be written.
+    fn draw(&self) -> Result<(), String> {
+        match self.render() {
+            Ok(()) => {
+                if self.stale.replace(false) {
+                    self.show_error(None);
+                }
+                Ok(())
+            },
+            Err(problem) => {
+                self.stale.set(true);
+                Err(problem)
+            },
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Draws the board again if a write failed and left the page out of date. It is the first thing that every button,
+    /// key, drag and frame does, so a failure that was only of the page is put right by the next thing a person does.
+    fn repair(&self) {
+        if self.stale.get() {
+            let _ = self.draw();
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Shows `message` in the error line above the board, or hides it if it is `None`. While a drag goes on, that waits
+    /// until it ends, since the board would move under the pointer and the cells it was then over would be painted.
+    fn show_error(&self, message: Option<String>) {
+        if self.drag.get().is_some() {
+            *self.pending_error.borrow_mut() = Some(message);
+        } else {
+            self.put_error(message);
+        }
+    }
+
+    /// Writes the error line, and shows or hides it.
+    fn put_error(&self, message: Option<String>) {
+        match message {
+            Some(text) => {
+                self.error.set_text_content(Some(&text));
+                let _ = self.error.remove_attribute("hidden");
+            },
+            None => {
+                let _ = self.error.set_attribute("hidden", "");
+            },
+        }
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -167,6 +230,7 @@ impl Demo {
         if !self.playing.get() {
             return;
         }
+        self.repair();
         let elapsed = self
             .last_frame
             .get()
@@ -217,6 +281,7 @@ impl Demo {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Does what the button with `action` is for, and says on the page if that went wrong.
     fn pressed(&self, action: &str) {
+        self.repair();
         let result = match action {
             PLAY => self.set_playing(!self.playing.get()),
             STEP => self.set_playing(false).and_then(|()| self.step()),
@@ -280,6 +345,7 @@ impl Demo {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Sets the speed for a person who has moved the slider.
     fn set_speed(&self, speed: f64) {
+        self.repair();
         self.speed.set(speed);
         if let Err(problem) = sliders::set_value(&self.svg, SPEED, speed, &speed_text(speed)) {
             self.fail(&problem);
@@ -310,6 +376,7 @@ impl Demo {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Moves the cursor, or changes the cell that is under it, for a person who has pressed a key.
     fn pressed_key(&self, key: &str) -> bool {
+        self.repair();
         if let Some(to) = move_cursor(self.cursor.get(), key) {
             self.cursor.set(to);
             self.announce_cursor();
@@ -356,6 +423,7 @@ impl Demo {
         if event.button() != 0 {
             return;
         }
+        self.repair();
         if let Some(active) = self.drag.get() {
             if self.svg.has_pointer_capture(active.pointer) {
                 return;
@@ -419,20 +487,23 @@ impl Demo {
             return;
         };
         self.last_cell.set(None);
+        if let Some(message) = self.pending_error.take() {
+            self.put_error(message);
+        }
         let _ = self.svg.release_pointer_capture(drag.pointer);
         self.announce_cursor();
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Stops the generations and says why on the page.
+    /// Stops the generations and says why on the page. The board is right, and what is drawn may not be, so the message
+    /// says that, and that the next button, key or drawing on the board draws it again.
     fn fail(&self, problem: &str) {
-        self.playing.set(false);
-        if let Some(animation) = self.animation.get() {
-            animation.cancel();
-        }
-        self.error
-            .set_text_content(Some(&format!("The board could not be drawn: {problem}")));
-        let _ = self.error.remove_attribute("hidden");
+        // The button is put back to Play and the readout to being announced, which can fail as the draw did.
+        let _ = self.set_playing(false);
+        self.show_error(Some(format!(
+            "The board could not be drawn: {problem}. What is shown may be out of date. The next button, key or \
+             drawing on the board draws it again."
+        )));
     }
 }
 
@@ -627,6 +698,8 @@ pub(crate) fn build_game_of_life_demo() -> Result<(), String> {
         generation: Cell::new(0),
         cursor: Cell::new((COLS / 2, ROWS / 2)),
         drag: Cell::new(None),
+        stale: Cell::new(false),
+        pending_error: RefCell::new(None),
         last_cell: Cell::new(None),
         playing: Cell::new(false),
         speed: Cell::new(FIRST_SPEED),
