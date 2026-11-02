@@ -797,6 +797,79 @@ fn two_finite_heights_too_far_apart_for_their_difference_to_be_a_number_are_stil
     assert!(found[0].above && !found[1].above);
 }
 
+/// Whether a piece is wholly on the side it says, which is what keeps the pieces apart.
+fn on_its_side(piece: &Piece, baseline: f64) -> bool {
+    piece
+        .corners
+        .iter()
+        .all(|&(_, y)| if piece.above { y >= baseline } else { y <= baseline })
+}
+
+#[test]
+fn a_crossing_between_heights_whose_product_is_less_than_the_least_number_is_still_found() {
+    // 1e-200 times -2e-200 is -0.0, and -0.0 is not less than 0.0, but the segment does cross the baseline.
+    let found = pieces(&run(&[(0.0, 1e-200), (1.0, -2e-200)]), 0.0);
+    assert_eq!(found.len(), 2, "{found:?}");
+    assert!(found[0].above && !found[1].above);
+    let at = found[0].corners.last().map(|c| c.0).unwrap_or(f64::NAN);
+    assert!((at - 1.0 / 3.0).abs() < 1e-12, "{at}");
+    assert!(found.iter().all(|p| on_its_side(p, 0.0)));
+}
+
+#[test]
+fn a_crossing_is_found_at_every_magnitude_down_to_the_subnormal_numbers_and_in_both_directions() {
+    let least = 5e-324;
+    // Pairs of heights on either side of the baseline, and where between 0 and 1 the line meets it.
+    let cases = [
+        (1e-200, -2e-200, 1.0 / 3.0),
+        (1e-300, -1e-300, 0.5),
+        (1e-300, -3e-300, 0.25),
+        (least, -3.0 * least, 0.25),
+        (3.0 * least, -least, 0.75),
+        (least, -least, 0.5),
+        (1e-310, -2e-310, 1.0 / 3.0),
+        (1e300, -1e300, 0.5),
+        (1e300, -3e300, 0.25),
+    ];
+    for (above, below, meets) in cases {
+        // The two directions are the line and its mirror, so the baseline is met in the same place and the pieces swap.
+        let down = pieces(&run(&[(0.0, above), (1.0, below)]), 0.0);
+        assert_eq!(down.len(), 2, "{above} to {below}: {down:?}");
+        assert!(down[0].above && !down[1].above, "{above} to {below}");
+        let at = down[0].corners.last().map(|c| c.0).unwrap_or(f64::NAN);
+        assert!((at - meets).abs() < 1e-9, "{above} to {below}: crosses at {at}, not {meets}");
+        assert!(down.iter().all(|p| on_its_side(p, 0.0)), "{above} to {below}: {down:?}");
+
+        let up = pieces(&run(&[(0.0, below), (1.0, above)]), 0.0);
+        assert_eq!(up.len(), 2, "{below} to {above}: {up:?}");
+        assert!(!up[0].above && up[1].above, "{below} to {above}");
+        let at = up[0].corners.last().map(|c| c.0).unwrap_or(f64::NAN);
+        assert!((at - (1.0 - meets)).abs() < 1e-9, "{below} to {above}: crosses at {at}");
+        assert!(up.iter().all(|p| on_its_side(p, 0.0)), "{below} to {above}: {up:?}");
+    }
+}
+
+#[test]
+fn a_crossing_is_between_its_two_points_however_far_apart_they_are_in_x() {
+    let found = pieces(&run(&[(-1e308, 1.0), (1e308, -1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    let at = found[0].corners.last().map(|c| c.0).unwrap_or(f64::NAN);
+    assert!(at.is_finite() && at.abs() < 1e295, "{at}");
+    let near_the_end = pieces(&run(&[(0.0, 1e300), (1.0, -5e-324)]), 0.0);
+    let at = near_the_end[0].corners.last().map(|c| c.0).unwrap_or(f64::NAN);
+    assert!((0.0..=1.0).contains(&at) && (at - 1.0).abs() < 1e-12, "{at}");
+}
+
+#[test]
+fn a_baseline_that_is_not_zero_is_crossed_by_small_differences_too() {
+    // Heights of 1 and 1 + 3e-200 are the same number, so they are on the baseline and do not cross it.
+    assert!(pieces(&run(&[(0.0, 1.0), (1.0, 1.0 + 3e-200)]), 1.0).is_empty());
+    // Round a baseline of 1e-200, a line from 2e-200 to 0 is above it and one from 0 to -1e-200 is below it.
+    let found = pieces(&run(&[(0.0, 2e-200), (1.0, -1e-200)]), 1e-200);
+    assert_eq!(found.len(), 2);
+    assert!(found.iter().all(|p| on_its_side(p, 1e-200)));
+}
+
 fn log_and_linear() -> PlotLayout {
     PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::logarithmic(1.0, 100.0))).expect("a valid plot")
 }

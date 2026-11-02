@@ -6,7 +6,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 This file only records changes to the `svg-dom--graph` library.
 Changes to the demo gallery, the demo server and the tests are recorded separately in [`demo/changelog.md`](demo/changelog.md), as they do not affect the library version.
-CI fails a change to `src/` that leaves the version in `Cargo.toml` as it was.
+CI fails a change to `src/` only if the version in `Cargo.toml` is already published on crates.io, so changes can go into one version until it is published, and need a new one after.
 Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
@@ -31,7 +31,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 ## Fixed
 
 - Correct failing CI test (`dcd7162`)
-- Adjust Signal Processing demos in light of review findings (``)
+- Adjust Signal Processing demos in light of review findings (`7535932`)
+- Prevent `Plot` baseline detection from failing for small values (``)
 
 # [Released]
 

@@ -40,10 +40,14 @@ pub(crate) fn pieces(points: &[PlotPoint], baseline: f64) -> Vec<Piece> {
         }
         // The segment as one or two parts, each with the side it is on.
         let mut parts: Vec<Part> = Vec::new();
-        if da * db < 0.0 {
-            // Worked out as a ratio, since the difference of two heights can be more than a number can say.
+        // The signs are compared, and the heights are not multiplied, since the product of two small heights is zero.
+        if (da > 0.0 && db < 0.0) || (da < 0.0 && db > 0.0) {
+            // Worked out as a ratio, since the difference of two heights can be more than a number can say. The ratio
+            // is below zero, so `t` is from 0 up to 1. It is mixed in as `a.x * (1 - t) + b.x * t`, since the distance
+            // between the two places can be more than a number can say too, and the mix is kept between them.
             let t = 1.0 / (1.0 - db / da);
-            let cross = (a.x + t * (b.x - a.x), baseline);
+            let x = (a.x * (1.0 - t) + b.x * t).clamp(a.x.min(b.x), a.x.max(b.x));
+            let cross = (x, baseline);
             parts.push((da > 0.0, (a.x, a.y), cross));
             parts.push((db > 0.0, cross, (b.x, b.y)));
         } else if da + db != 0.0 {

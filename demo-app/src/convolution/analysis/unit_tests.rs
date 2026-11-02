@@ -35,6 +35,15 @@ fn a_segment_that_crosses_the_axis_counts_for_each_side_as_far_as_it_goes() {
 }
 
 #[test]
+fn a_segment_between_very_small_heights_on_either_side_of_the_axis_still_counts_for_each_side() {
+    // The product of these heights is less than the least number, but the segment crosses the axis a third of the way.
+    let found = areas(&[1e-200, -2e-200]);
+    assert!(found.above > 0.0 && found.below < 0.0, "{found:?}");
+    assert!(near(found.above / 1e-200, 1.0 / 6.0, 1e-9), "{found:?}");
+    assert!(near(found.below / 1e-200, -2.0 / 3.0, 1e-9), "{found:?}");
+}
+
+#[test]
 fn a_whole_cycle_of_a_sine_is_as_much_below_the_axis_as_above() {
     let wave: Vec<f64> = (0..=SEGMENTS).map(|i| (TAU * seconds(i)).sin()).collect();
     let found = areas(&wave);

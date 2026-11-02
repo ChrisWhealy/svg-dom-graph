@@ -129,7 +129,8 @@ pub(crate) fn areas(heights: &[f64]) -> Areas {
     };
     for pair in heights.windows(2) {
         let (a, b) = (pair[0], pair[1]);
-        if a * b < 0.0 {
+        // The signs are compared, since the product of two small heights is zero.
+        if (a > 0.0 && b < 0.0) || (a < 0.0 && b > 0.0) {
             // The segment crosses at this fraction of the way along it, and is a triangle on each side.
             let crossing = a / (a - b);
             add(a * crossing * width / 2.0);
