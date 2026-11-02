@@ -377,3 +377,56 @@ fn the_plots_describe_themselves_and_the_description_follows_the_slider() -> Res
         "the description is written again for 2 Hz",
     )
 }
+
+/// Makes every write of the attribute `name` fail with an exception, as the browser can when a page is under pressure,
+/// or puts the browser's own write back.
+fn fail_writes_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__written) {{ p.__written = p.setAttribute; }} \
+             p.setAttribute = function (n, v) {{ if (n === '{name}') {{ throw new Error('injected'); }} \
+             return p.__written.apply(this, arguments); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__written) { p.setAttribute = p.__written; } return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
+/// Whether the error banner of the page is hidden.
+fn banner_hidden(tab: &Tab) -> Result<bool, String> {
+    Ok(text(tab, "String(document.querySelector('#convolution-error').hidden)")? == "true")
+}
+
+#[test]
+fn a_scene_that_cannot_be_drawn_is_reported_and_the_next_move_draws_all_four_again() -> Result<(), String> {
+    let tab = open()?;
+    check(banner_hidden(&tab)?, "there is no error to begin with")?;
+    // Only the products shade an area, which writes the opacity of a fill, so the signal is drawn and they are not.
+    fail_writes_of(&tab, "fill-opacity", true)?;
+    step(&tab, 1)?;
+    fail_writes_of(&tab, "fill-opacity", false)?;
+    check(!banner_hidden(&tab)?, "the page says that it went wrong")?;
+    let said = text(&tab, "document.querySelector('#convolution-error').textContent")?;
+    check(
+        said.contains("3.1 Hz") && said.contains("may now disagree") && said.contains("Move the slider again"),
+        &said,
+    )?;
+    // The accepted partial update: the scenes before the one that failed show the new frequency, and the ones after it
+    // and the one that failed still show the old one, and nothing of the failed drawing is left in them.
+    check(written(&tab, SIGNAL)?.contains("3.1"), "the signal was drawn")?;
+    check(written(&tab, COSINE)?.contains("3.0"), &written(&tab, COSINE)?)?;
+    check(
+        !polygons(&tab, COSINE, ABOVE)?.is_empty(),
+        "the product still has the shading it had",
+    )?;
+
+    step(&tab, 1)?;
+    check_eq(slider(&tab, "value")?, "3.2".to_owned())?;
+    check(banner_hidden(&tab)?, "a success hides the error")?;
+    for scene in [SIGNAL, COSINE, SINE, SPECTRUM] {
+        check(written(&tab, scene)?.contains("3.2"), &format!("{scene} says 3.2 again"))?;
+    }
+    Ok(())
+}

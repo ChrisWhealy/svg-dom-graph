@@ -33,7 +33,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Correct failing CI test (`dcd7162`)
 - Adjust Signal Processing demos in light of review findings (`7535932`)
 - Prevent `Plot` baseline detection from failing for small values (`5db6247`)
-- CI library version check only fails if `crates.io` version is the same a `Cargo.toml` (``)
+- CI library version check only fails if `crates.io` version is the same a `Cargo.toml` (`323e078`)
+- Prevent convolution demo from becoming inconsistent after failed plot updates (``)
 
 # [Released]
 

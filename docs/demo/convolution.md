@@ -80,6 +80,15 @@ It cuts the line where it crosses the baseline, so that each shaded piece is who
 A point that is not finite breaks the area in two, as it breaks a line.
 It is drawn in the order that it is given, so the demo gives it before the product's line.
 
+## When a scene cannot be drawn
+
+Each scene is drawn on its own, and the library makes each one all or nothing, so a scene that fails keeps what it showed before.
+The four together are not all or nothing.
+If the second fails, the signal shows the new frequency, and the products and the spectrum still show the old one.
+The demo accepts that as an error and does not roll back, since a failed write has not been seen in practice.
+It writes in the error banner, above the scenes, that they may disagree with each other and with the slider, and that moving the slider again draws them all again.
+The frequency that the demo remembers is only changed once all four are drawn, and a successful move hides the banner.
+
 ## How it is checked
 
 `convolution/analysis/unit_tests.rs` checks the areas, including a segment that crosses the axis, that a whole cycle of a sine is as much below as above, that the probe of each wave's own frequency finds its amplitude and phase, that a whole frequency that is not there finds nothing, and the peaks of the spectrum.

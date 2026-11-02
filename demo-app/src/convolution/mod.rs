@@ -65,12 +65,16 @@ thread_local! {
 impl Demo {
     /// Probes the signal with the cosine and the sine of `frequency`, and draws everything that depends on it.
     ///
+    /// Each plot is drawn on its own, and a plot that fails leaves what it showed before. So a failure part way leaves
+    /// the plots before it at `frequency` and the plots after it at the frequency before. The demo accepts that as an
+    /// error, which [`Demo::moved_by_person`] reports, and the next successful call draws all four again. The frequency
+    /// that is remembered is only changed once all four are drawn.
+    ///
     /// # Errors
     ///
     /// Returns `Err` if a plot could not be drawn.
     fn show(&self, frequency: f64) -> Result<(), String> {
         let finding = Finding::new(&self.samples, frequency);
-        self.frequency.set(frequency);
         let describe =
             |plot: &Plot, text: String| plot.scene.set_plot_description(plot.node, &text).map_err(|e| e.to_string());
 
@@ -81,17 +85,28 @@ impl Demo {
             plot.draw(&product_items(probe, &finding))?;
         }
         describe(&self.spectrum, spectrum_description(&finding))?;
-        self.spectrum.draw(&spectrum_items(&self.amplitudes, &finding))
+        self.spectrum.draw(&spectrum_items(&self.amplitudes, &finding))?;
+        self.frequency.set(frequency);
+        Ok(())
     }
 
-    /// Does what a person has asked of the slider, and says on the page if that went wrong.
+    /// Does what a person has asked of the slider, and says on the page if that went wrong. A success hides what an
+    /// earlier failure said.
     fn moved_by_person(&self, frequency: f64) {
         let result = sliders::set_value(&self.scene, PROBE, frequency, &frequency_text(frequency))
             .and_then(|()| self.show(frequency));
-        if let Err(problem) = result {
-            self.error
-                .set_text_content(Some(&format!("The signal could not be probed: {problem}")));
-            let _ = self.error.remove_attribute("hidden");
+        match result {
+            Ok(()) => {
+                let _ = self.error.set_attribute("hidden", "");
+            },
+            Err(problem) => {
+                self.error.set_text_content(Some(&format!(
+                    "The signal could not be probed at {}: {problem}. The four scenes may now disagree with each \
+                     other and with the slider. Move the slider again to draw them all again.",
+                    frequency_text(frequency)
+                )));
+                let _ = self.error.remove_attribute("hidden");
+            },
         }
     }
 }
