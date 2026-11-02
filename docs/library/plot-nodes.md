@@ -25,7 +25,7 @@ scene.on_plot_click(plot, |scene, plot, click| { /* click.x, click.y */ })?;
 | Method | What it does |
 |---|---|
 | `add_plot_node` and `add_plot_node_with` | Draw the box, the plotted area, the grid, the axes, the ticks, the titles and the legend |
-| `set_plot_items` | Draws lines, dots and labels, in place of whatever was drawn before |
+| `set_plot_items` | Draws lines, shaded areas, dots and labels, in place of whatever was drawn before |
 | `set_plot_description` | Changes what assistive technology reads |
 | `plot_area` | The plotted area in the scene's own space, for laying out something against it |
 | `plot_point_to_scene` | Where a value is in the scene's own space |
@@ -111,6 +111,7 @@ It does not say what is plotted, so a caller that changes that should say so wit
 | Item | What it is |
 |---|---|
 | `PlotLine` | Straight segments through points, with a colour, a width and a dash pattern |
+| `PlotArea` | The area between a line and a baseline, shaded in one colour above the baseline and another below it, at an opacity |
 | `PlotPoints` | Dots, with a fill, a radius and an outline |
 | `PlotLabel` | A line of text at a point, moved by an offset in user units, turned, and on a halo of the background |
 
@@ -118,7 +119,8 @@ Items are placed by the value they stand for.
 A label's offset is in user units and not in values.
 So a label stays the same distance from its point however the axes are scaled.
 
-* A line is cut where it leaves the plotted area.
+* A line is cut where it leaves the plotted area, and so is a shaded area.
+* A shaded area is cut where its line crosses the baseline, so each piece is on one side, and it is drawn in the order given. Give it before the line that it is under.
 * A dot or a label whose point is outside it is not drawn.
 * A point that cannot be placed is skipped, and breaks a line there.
   So a gap in the data is a gap in the line.

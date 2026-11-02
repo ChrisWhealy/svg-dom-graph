@@ -72,6 +72,9 @@
 //! - [`amplitude_frequency`] — the amplitude, frequency and phase panel in the built demo gallery: the scene, the three
 //!   sliders drawn in it and the ranges they take, the keys and the pointer that move them, the wave that follows, the
 //!   time axis that does not change, and the formula. Also runs against the built demo gallery.
+//! - [`convolution`] — the convolution panel in the built demo gallery: the four scenes, the slider that sets the probe
+//!   frequency, the two products that are shaded above and below the axis, the areas that are written, and the spectrum
+//!   with its dot. Also runs against the built demo gallery.
 //! - [`pythagoras`] — the Pythagoras panel in the built demo gallery: the scene with no plot, the right triangle in the
 //!   unit circle and the blue and green squares on its sides, the squares that are drawn again as C is dragged or moved
 //!   with the keys, and the areas that are written in them. Also runs against the built demo gallery.
@@ -123,6 +126,7 @@ mod chacha20_walk;
 mod common;
 mod complex;
 mod connectors;
+mod convolution;
 mod crc32;
 mod dijkstra;
 mod edge_anchors;

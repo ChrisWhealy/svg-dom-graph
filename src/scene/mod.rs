@@ -32,8 +32,8 @@ pub use crate::model::content::{
 };
 pub use crate::model::plot::{
     AxisName, AxisPosition, AxisScale, Insets, LabelAnchor, LegendEntry, LegendMark, MAX_MINOR_DIVISIONS, MAX_TICKS,
-    MinorTicks, PlotAxis, PlotClick, PlotConfig, PlotConfigError, PlotGrid, PlotItem, PlotLabel, PlotLine, PlotPlane,
-    PlotPoint, PlotPoints, TickLabelPlacement, TickLabels,
+    MinorTicks, PlotArea, PlotAxis, PlotClick, PlotConfig, PlotConfigError, PlotGrid, PlotItem, PlotLabel, PlotLine,
+    PlotPlane, PlotPoint, PlotPoints, TickLabelPlacement, TickLabels,
 };
 pub(crate) use box_handles::{BoxHandles, CellGrid, CellPicture, DataDecor, HexMarks, Pool, group_gaps};
 pub use connector::{ConnectorOptions, ConnectorType};

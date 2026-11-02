@@ -115,6 +115,17 @@ impl<'a> Painter<'a> {
         })
     }
 
+    /// A filled polygon with no outline, `opacity` opaque.
+    pub(super) fn polygon(&mut self, points: &[(f64, f64)], fill: &str, opacity: f64) -> Result<(), Error> {
+        let points: Vec<Point> = points.iter().map(|&(x, y)| Point::new(x, y)).collect();
+        let node = self.svg.polygon(&points)?;
+        self.place(&node, |n| {
+            n.set_fill(fill)?;
+            n.set_attr("fill-opacity", &opacity.to_string())?;
+            n.set_stroke("none")
+        })
+    }
+
     pub(super) fn path(&mut self, d: &str, stroke: &str, width: f64) -> Result<(), Error> {
         let node = self.svg.path(d)?;
         self.place(&node, |n| {

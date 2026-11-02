@@ -1,4 +1,5 @@
-//! What is drawn on a plot: lines, points and labels, placed by the values they stand for and not by page positions.
+//! What is drawn on a plot: lines, shaded areas, points and labels, placed by the values they stand for and not by
+//! page positions.
 
 use crate::complex::Complex;
 
@@ -68,6 +69,63 @@ impl PlotLine {
     #[must_use]
     pub fn with_dash(mut self, dash: impl Into<String>) -> Self {
         self.dash = Some(dash.into());
+        self
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The area between a line through points and a horizontal baseline, shaded, with a colour for where the line is above
+/// the baseline and another for where it is below.
+///
+/// The line is cut where it crosses the baseline, so each shaded piece is on one side of it. The crossing is found by
+/// straight interpolation of the values, which is where the line crosses on a linear axis. The area is cut to the
+/// plotted area, and a point that cannot be placed breaks the area in two.
+///
+/// Draw it before the line, so that the line is over the shading.
+#[derive(Debug, Clone, PartialEq)]
+#[non_exhaustive]
+pub struct PlotArea {
+    pub points: Vec<PlotPoint>,
+    /// The value of the vertical axis that the area is shaded to. It must be above zero on a logarithmic axis.
+    pub baseline: f64,
+    /// The fill where the line is above the baseline, as any SVG paint.
+    pub above: String,
+    /// The fill where the line is below the baseline, as any SVG paint.
+    pub below: String,
+    /// How much of the fill shows through, from 0 to 1.
+    pub opacity: f64,
+}
+
+impl PlotArea {
+    /// An area down to `0.0`, with the same `colour` on both sides, `0.35` opaque.
+    #[must_use]
+    pub fn new(points: impl IntoIterator<Item = impl Into<PlotPoint>>, colour: impl Into<String>) -> Self {
+        let colour = colour.into();
+        Self {
+            points: points.into_iter().map(Into::into).collect(),
+            baseline: 0.0,
+            above: colour.clone(),
+            below: colour,
+            opacity: 0.35,
+        }
+    }
+
+    #[must_use]
+    pub fn with_baseline(mut self, baseline: f64) -> Self {
+        self.baseline = baseline;
+        self
+    }
+
+    /// Gives the part below the baseline a colour of its own.
+    #[must_use]
+    pub fn with_below(mut self, colour: impl Into<String>) -> Self {
+        self.below = colour.into();
+        self
+    }
+
+    #[must_use]
+    pub fn with_opacity(mut self, opacity: f64) -> Self {
+        self.opacity = opacity;
         self
     }
 }
@@ -206,6 +264,7 @@ impl PlotLabel {
 #[non_exhaustive]
 pub enum PlotItem {
     Line(PlotLine),
+    Area(PlotArea),
     Points(PlotPoints),
     Label(PlotLabel),
 }
@@ -213,6 +272,12 @@ pub enum PlotItem {
 impl From<PlotLine> for PlotItem {
     fn from(line: PlotLine) -> Self {
         Self::Line(line)
+    }
+}
+
+impl From<PlotArea> for PlotItem {
+    fn from(area: PlotArea) -> Self {
+        Self::Area(area)
     }
 }
 

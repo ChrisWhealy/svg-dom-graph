@@ -134,6 +134,7 @@ mod butterfly;
 mod chacha20;
 mod circle_control;
 mod complex_numbers;
+mod convolution;
 mod crc32;
 mod data;
 mod dijkstra;
@@ -252,6 +253,7 @@ demo_gallery! {
     "panel-butterfly" => butterfly::build_butterfly_demo,
     "panel-sine-cosine" => sine_cosine::build_sine_cosine_demo + sine_cosine::FILES,
     "panel-phase-shift" => phase_shift::build_phase_shift_demo + phase_shift::FILES,
+    "panel-convolution" => convolution::build_convolution_demo + convolution::FILES,
     "panel-amplitude-frequency" => amplitude_frequency::build_amplitude_frequency_demo + amplitude_frequency::FILES,
     "panel-pythagoras" => pythagoras::build_pythagoras_demo + pythagoras::FILES,
     "panel-fft" => fft::build_fft_demo + fft::FILES,

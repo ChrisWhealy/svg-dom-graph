@@ -3,7 +3,10 @@
 use super::paint::{Painter, TextStyle};
 use crate::{
     error::Error,
-    model::plot::{Bounds, LabelAnchor, PlotItem, PlotLabel, PlotLayout, PlotLine, PlotPoint, PlotPoints, Side, Spot},
+    model::plot::{
+        Bounds, LabelAnchor, PlotArea, PlotItem, PlotLabel, PlotLayout, PlotLine, PlotPoint, PlotPoints, Side, Spot,
+        pieces,
+    },
 };
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -17,6 +20,7 @@ pub(super) fn draw_items(
     for item in items {
         match item {
             PlotItem::Line(line) => draw_line(painter, layout, line)?,
+            PlotItem::Area(area) => draw_area(painter, layout, area)?,
             PlotItem::Points(points) => draw_points(painter, layout, points)?,
             PlotItem::Label(label) => draw_label(painter, layout, background, label)?,
         }
@@ -34,6 +38,21 @@ fn draw_line(painter: &mut Painter<'_>, layout: &PlotLayout, line: &PlotLine) ->
     let values: Vec<(f64, f64)> = line.points.iter().map(|p| (p.x, p.y)).collect();
     for run in layout.clip_line(&values) {
         painter.polyline(&run, &line.colour, line.width, line.dash.as_deref())?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The shading between a line and its baseline: each piece on one side of the baseline, cut to the plotted area. An
+/// opacity that is not a number from 0 to 1 is taken as the nearest end.
+fn draw_area(painter: &mut Painter<'_>, layout: &PlotLayout, area: &PlotArea) -> Result<(), Error> {
+    let opacity = if area.opacity.is_nan() { 0.0 } else { area.opacity.clamp(0.0, 1.0) };
+    for piece in pieces(&area.points, area.baseline) {
+        let polygon = layout.clip_polygon(&piece.corners);
+        if polygon.len() >= 3 {
+            let fill = if piece.above { &area.above } else { &area.below };
+            painter.polygon(&polygon, fill, opacity)?;
+        }
     }
     Ok(())
 }

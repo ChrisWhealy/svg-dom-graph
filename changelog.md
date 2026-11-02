@@ -19,7 +19,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Phase shift demo panel (`fdb996a`)
 - Amplitude/Frequency demo panel (`eeb30d0`)
 - Pythagorean theory demo panel (`223280f`)
-- Move widely used features from `demo-common` into the libarary module `svg_dom_graph::controls` (``)
+- Move widely used features from `demo-common` into the libarary module `svg_dom_graph::controls` (`307c8b4`)
+- `PlotArea` shades the integral of a curve. Add Convolution demo (``)
 
 ## Changed
 

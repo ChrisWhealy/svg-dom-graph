@@ -6,7 +6,7 @@
 
 use super::{
     axis::{AxisName, AxisPosition, AxisScale, TickLabelPlacement, TickLabels},
-    clip::{Bounds, clip_polyline},
+    clip::{Bounds, clip_polygon, clip_polyline},
     config::{PlotAxis, PlotConfig, PlotConfigError, PlotPlane},
     map::AxisMap,
     ticks::format_number,
@@ -170,6 +170,24 @@ impl PlotLayout {
     /// its direction. A point that cannot be placed breaks the line.
     pub(crate) fn clip_line(&self, points: &[(f64, f64)]) -> Vec<Vec<(f64, f64)>> {
         self.clip_placed(&points.iter().map(|p| self.fractions(p.0, p.1)).collect::<Vec<_>>())
+    }
+
+    /// The part of the polygon through `corners`, which are values, that is inside the plotted area, on the node. Empty if
+    /// none is, or if a corner cannot be placed.
+    pub(crate) fn clip_polygon(&self, corners: &[(f64, f64)]) -> Vec<(f64, f64)> {
+        const UNIT: Bounds = Bounds {
+            left: 0.0,
+            top: 0.0,
+            right: 1.0,
+            bottom: 1.0,
+        };
+        let placed: Option<Vec<(f64, f64)>> = corners.iter().map(|c| self.fractions(c.0, c.1)).collect();
+        placed.map_or_else(Vec::new, |placed| {
+            clip_polygon(&placed, UNIT)
+                .into_iter()
+                .map(|(u, v)| (self.x.page_at(u), self.y.page_at(v)))
+                .collect()
+        })
     }
 
     fn fractions(&self, x: f64, y: f64) -> Option<(f64, f64)> {

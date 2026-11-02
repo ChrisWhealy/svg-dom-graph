@@ -909,6 +909,54 @@ label.demo-slider-container {
     grid-area: sine;
 }
 
+/* The convolution panel's four scenes: the signal across the top, the two products side by side below it, and the
+   spectrum across the bottom, with the instructions in a column of their own to the right of all four. The scenes have
+   fixed sizes, so a narrow screen scrolls the grid, not the page. The scenes touch, so a border is shared by the two
+   that meet at it. */
+.convolution-grid {
+    display: grid;
+    grid-template-columns: max-content max-content minmax(16rem, 1fr);
+    grid-template-areas:
+        "signal signal text"
+        "cosine sine text"
+        "spectrum spectrum text";
+    justify-content: start;
+    overflow-x: auto;
+    /* The scenes overlap by a pixel, with a margin of -1px, so that a border is shared. That would run a pixel past the
+       edge of the grid, and give it a scroll bar for that pixel. So the grid has a pixel of room for it. */
+    padding: 0 1px 1px 0;
+    margin: 0.75rem 0;
+}
+
+.convolution-grid .canvas {
+    border-radius: 0;
+    margin: 0 -1px -1px 0;
+}
+
+#convolution-stage {
+    grid-area: signal;
+}
+
+#convolution-cosine-stage {
+    grid-area: cosine;
+}
+
+#convolution-sine-stage {
+    grid-area: sine;
+}
+
+#convolution-spectrum-stage {
+    grid-area: spectrum;
+}
+
+/* The instructions are beside the scenes, which are a fixed size, so they take the rest of the row. The scenes' own
+   margin of -1px does not apply to them, so they have a gap of their own. */
+.convolution-grid .instruction-text {
+    grid-area: text;
+    min-width: 0;
+    padding-left: 1.5rem;
+}
+
 /* The amplitude, frequency and phase panel's one scene. It has a fixed size, so a narrow screen scrolls it, not the page. */
 .amplitude-frequency-wrap {
     overflow-x: auto;
@@ -931,16 +979,16 @@ label.demo-slider-container {
     overflow-x: auto;
 }
 
-.pythagoras-text {
+.instruction-text {
     flex: 1 1 18rem;
     min-width: 0;
 }
 
-.pythagoras-text > p:first-child {
+.instruction-text > p:first-child {
     margin-top: 0;
 }
 
-.pythagoras-text > p {
+.instruction-text > p {
     margin-top: 0.75rem;
 }
 

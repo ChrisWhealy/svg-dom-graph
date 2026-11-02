@@ -5,8 +5,8 @@ use crate::{
     error::Error,
     geometry::apply_matrix,
     scene::{
-        AxisPosition, LabelAnchor, LegendEntry, MinorTicks, PlotAxis, PlotConfig, PlotConfigError, PlotItem, PlotLabel,
-        PlotLine, PlotPlane, PlotPoints, Scene, TickLabels,
+        AxisPosition, LabelAnchor, LegendEntry, MinorTicks, PlotArea, PlotAxis, PlotConfig, PlotConfigError, PlotItem,
+        PlotLabel, PlotLine, PlotPlane, PlotPoints, Scene, TickLabels,
     },
     test_support::check,
 };
@@ -338,6 +338,61 @@ fn items_are_drawn_in_order_and_replaced_as_a_whole() -> Result<(), String> {
     check(all(&scene, id, "circle").len() == 1, "only the new dot")?;
     scene.set_plot_items(id, &[]).map_err(|e| e.to_string())?;
     check(all(&scene, id, "circle").is_empty(), "no items")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[wasm_bindgen_test]
+fn an_area_is_shaded_in_a_colour_for_each_side_of_its_baseline_and_cut_to_the_plot() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-area")).map_err(|e| e.to_string())?;
+    let id = scene.add_plot_node(Point::origin(), config()).map_err(|e| e.to_string())?;
+    // One cycle of a sine that is 1 high, so it crosses the axis once, half way.
+    let wave: Vec<(f64, f64)> = (0..=100)
+        .map(|i| (f64::from(i) / 100.0, (std::f64::consts::TAU * f64::from(i) / 100.0).sin()))
+        .collect();
+    let items: Vec<PlotItem> = vec![
+        PlotArea::new(wave.clone(), "#2563eb")
+            .with_below("#d97706")
+            .with_opacity(0.4)
+            .into(),
+        PlotLine::new(wave, "#000").into(),
+    ];
+    scene.set_plot_items(id, &items).map_err(|e| e.to_string())?;
+    check(all(&scene, id, "polygon").len() == 2, "one piece above the axis and one below")?;
+    check(all(&scene, id, "polygon[fill=\"#2563eb\"]").len() == 1, "the colour above")?;
+    check(all(&scene, id, "polygon[fill=\"#d97706\"]").len() == 1, "the colour below")?;
+    check(
+        all(&scene, id, "polygon")
+            .iter()
+            .all(|p| p.get_attribute("fill-opacity").as_deref() == Some("0.4")),
+        "the opacity",
+    )?;
+    let polygons = all(&scene, id, "polygon");
+    let shading = polygons.first().ok_or("a polygon")?;
+    let line = all(&scene, id, "polyline");
+    check(
+        shading.compare_document_position(line.first().ok_or("the line")?) & 4 != 0,
+        "the line is drawn after the shading, so it is over it",
+    )?;
+
+    // A wave that is taller than the plot is cut at the top of it, and does not spill out.
+    let area = scene.plot_area(id).map_err(|e| e.to_string())?;
+    let tall: Vec<(f64, f64)> = vec![(0.2, 0.0), (0.3, 50.0), (0.7, 50.0), (0.8, 0.0)];
+    scene
+        .set_plot_items(id, &[PlotArea::new(tall, "#2563eb").into()])
+        .map_err(|e| e.to_string())?;
+    let points = all(&scene, id, "polygon")
+        .first()
+        .and_then(|p| p.get_attribute("points"))
+        .ok_or("the cut polygon")?;
+    // The points are on the node, so the top of the plot is taken from the node's own origin.
+    let top = area.origin.y - scene.node_rect(id).map_err(|e| e.to_string())?.origin.y;
+    for pair in points.split_whitespace() {
+        let (_, y) = pair.split_once(',').ok_or("a point is x,y")?;
+        let y: f64 = y.parse().map_err(|e| format!("{e}"))?;
+        check(y >= top - 1e-6, &format!("{y} is above the top of the plot at {top}"))?;
+    }
+    scene.set_plot_items(id, &[]).map_err(|e| e.to_string())?;
+    check(all(&scene, id, "polygon").is_empty(), "no items, no shading")
 }
 
 #[wasm_bindgen_test]

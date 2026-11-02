@@ -1,0 +1,84 @@
+<section class="section" id="panel-convolution" data-label="Convolution">
+    <h2>Convolution: Finding a Frequency in a Signal</h2>
+    <p>
+        Suppose we have a wave that is composed of signals whose frequencies we would like to discover. How could we
+        dicover this?
+    </p>
+    <p>
+        The wave show in black is a <em>signal</em> composed of only two sine waves added together: one of 2 Hz and one
+        of 5 Hz.
+    </p>
+    <p>
+        But to start with, we do not know this, so let's say we want to discover whether the signal contains a sine wave
+        at a frequency of 3 Hz. To do this, we set the <em>probe</em> frequency to 3 Hz, then sweep a cosine and a sine
+        wave at the probe frequency over the signal.
+    </p>
+    <p>
+        "Sweeping" a probe freqeuency over the signal means that for all possible phase angles, we will multiply the
+        signal by both probe waves, then add up the result over a whole second. You can think of this as calculating a
+        "<em>score</em>" for how well the probe frequency matches the signal. This is done by calculating the area
+        between the curve and the X axis. In mathematical term, this is called taking the <em>integral</em> of the curve
+        between two arbitrary positions.
+    </p>
+    <p>
+        There is a slight catch however. The true "<em>score</em>" for a particular probe frequency is calculated by
+        treating the area <em>above</em> the X axis as positive (shaded blue), and the area <em>below</em> the X axis
+        (shaded orange) as negative. So it quite possible that the score might add up to zero &mdash; and this is
+        exactly what we want if there is no component in the signal at the probe frequency.
+    </p>
+    <ul>
+        <li>If the signal contains the probe frequency, the integral (or "score") will be large.</li>
+        <li>
+            If the signal does not contain the probe freqency, the integral (or "score") will either be close to zero.
+        </li>
+    </ul>
+    <p class="demo-error" id="convolution-error" hidden></p>
+    <div class="convolution-grid">
+        <div class="canvas" id="convolution-stage"></div>
+        <div class="instruction-text">
+            <p>Drag the slider, or Tab to it and use the arrow keys, to change the frequency of the probe.</p>
+            <p>The probe frequency starts at 3 Hz. Note that the two integrals give a score of zero.</p>
+            <p>
+                Try sliding the probe frequency around and see how the integral rises and falls it either does, or does
+                not match a freqency present in the signal.
+            </p>
+        </div>
+        <div class="canvas" id="convolution-cosine-stage"></div>
+        <div class="canvas" id="convolution-sine-stage"></div>
+        <div class="canvas" id="convolution-spectrum-stage"></div>
+    </div>
+    <h3>Why both a cosine and a sine?</h3>
+    <p>
+        A single probe is not enough. A wave of the same frequency as the probe, but a quarter of a cycle behind it,
+        would be exactly as far above the axis as below, and the integral would be zero even though the frequency is
+        present. The cosine and the sine are a quarter of a cycle apart, so whatever the phase of the wave in the
+        signal, at least one of the two integrals will find it.
+    </p>
+    <p>
+        For a wave <code>A &middot; sin(2&pi; &middot; f &middot; t + &phi;)</code> in the signal, and a probe of
+        frequency <code>f</code>, twice the two integrals are:
+    </p>
+    <p align="center">
+        <code>a = 2 &int; s(t) &middot; cos(2&pi; f t) dt = A &middot; sin &phi;</code><br />
+        <code>b = 2 &int; s(t) &middot; sin(2&pi; f t) dt = A &middot; cos &phi;</code>
+    </p>
+    <p>
+        So the <em>amplitude</em> of that wave is <code>&radic;(a<sup>2</sup> + b<sup>2</sup>)</code>, and its
+        <em>phase</em> is the angle whose sine is proportional to <code>a</code> and whose cosine is proportional to
+        <code>b</code>. This is exactly the right-angled triangle of the Pythagoras demo.
+    </p>
+    <p>
+        The plot at the bottom repeats this for every frequency the slider can take. It has a peak at 2 Hz of height
+        <code>1.0</code>, and a peak at 5 Hz of height <code>0.6</code>, which are the amplitudes of the two waves that
+        made the signal. The signal has been analysed into its frequencies.
+    </p>
+    <p>
+        Between the peaks, the amplitude is not quite zero for a frequency that does not make a whole number of cycles
+        in the second that is looked at. Part of the probe's last cycle is missing, so the blue and orange areas no
+        longer cancel completely. This is called <em>spectral leakage</em>.
+    </p>
+    <p>
+        Calculating the integral of a signal multiplied by a probe over a whole range of frequencies is what the
+        <a href="/#panel-fft">Fast Fourier Transform</a> in the next demo does efficiently.
+    </p>
+</section>

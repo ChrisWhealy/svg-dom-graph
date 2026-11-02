@@ -23,6 +23,7 @@
 - [Dijkstra's Shortest Paths](dijkstra.md)
 - [Sine and Cosine](sine-cosine.md)
 - [Phase Shift](phase-shift.md)
+- [Convolution](convolution.md)
 - [Amplitude, Frequency and Phase](amplitude-frequency.md)
 - [The Theorem of Pythagoras](pythagoras.md)
 - [Fast Fourier Transform](fft.md)

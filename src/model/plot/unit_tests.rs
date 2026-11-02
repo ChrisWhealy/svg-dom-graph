@@ -1,6 +1,7 @@
 use super::{
+    area::{Piece, pieces},
     axis::AxisName,
-    clip::{Bounds, clip_polyline, clip_segment},
+    clip::{Bounds, clip_polygon, clip_polyline, clip_segment},
     config::MAX_TICKS,
     layout::{self, Side},
     map::AxisMap,
@@ -644,6 +645,157 @@ fn margins_must_be_finite_and_not_negative() {
     for insets in [Insets::new(-1.0, 0.0, 0.0, 0.0), Insets::new(0.0, f64::NAN, 0.0, 0.0)] {
         assert_eq!(refusal(&unit().with_insets(insets)), Some(PlotConfigError::Insets));
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// Shaded areas
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn run(points: &[(f64, f64)]) -> Vec<PlotPoint> {
+    points.iter().map(|&p| p.into()).collect()
+}
+
+/// The area of the polygon through `corners`, by the shoelace formula.
+fn polygon_area(corners: &[(f64, f64)]) -> f64 {
+    let n = corners.len();
+    (0..n)
+        .map(|i| {
+            let (a, b) = (corners[i], corners[(i + 1) % n]);
+            a.0 * b.1 - b.0 * a.1
+        })
+        .sum::<f64>()
+        .abs()
+        / 2.0
+}
+
+#[test]
+fn a_line_that_stays_above_the_baseline_is_one_piece_closed_along_it() {
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 2.0)]), 0.0);
+    assert_eq!(
+        found,
+        vec![Piece {
+            above: true,
+            corners: vec![(0.0, 0.0), (0.0, 1.0), (1.0, 2.0), (1.0, 0.0)],
+        }]
+    );
+}
+
+#[test]
+fn a_line_that_stays_below_the_baseline_is_one_piece_that_says_so() {
+    let found = pieces(&run(&[(0.0, -1.0), (1.0, -1.0)]), 0.0);
+    assert_eq!(found.len(), 1);
+    assert!(!found[0].above);
+}
+
+#[test]
+fn a_line_is_cut_where_it_crosses_the_baseline() {
+    let found = pieces(&run(&[(0.0, 1.0), (2.0, -1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert!(found[0].above && !found[1].above);
+    assert_eq!(found[0].corners, vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (1.0, 0.0)]);
+    assert_eq!(found[1].corners, vec![(1.0, 0.0), (1.0, 0.0), (2.0, -1.0), (2.0, 0.0)]);
+}
+
+#[test]
+fn a_run_that_goes_on_over_several_points_is_one_piece() {
+    let found = pieces(&run(&[(0.0, 0.0), (1.0, 1.0), (2.0, 1.0), (3.0, 0.0), (4.0, -1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert_eq!(found[0].corners.len(), 6, "the run of four points, and its two feet");
+    assert!(found[0].above && !found[1].above);
+}
+
+#[test]
+fn the_areas_of_the_pieces_are_the_integral_of_a_sine_above_and_below() {
+    // One cycle of sin(2πt), in many segments: the area above is 1/π, and so is the area below.
+    let n = 2000;
+    let wave: Vec<PlotPoint> = (0..=n)
+        .map(|i| {
+            let t = f64::from(i) / f64::from(n);
+            PlotPoint::new(t, (std::f64::consts::TAU * t).sin())
+        })
+        .collect();
+    let found = pieces(&wave, 0.0);
+    assert_eq!(found.len(), 2);
+    for piece in &found {
+        assert!((polygon_area(&piece.corners) - 1.0 / std::f64::consts::PI).abs() < 1e-4);
+    }
+}
+
+#[test]
+fn a_baseline_that_is_not_zero_is_the_line_the_pieces_are_cut_on() {
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 3.0)]), 2.0);
+    assert_eq!(found.len(), 2);
+    assert!(!found[0].above && found[1].above);
+    assert_eq!(found[0].corners[0], (0.0, 2.0));
+    assert_eq!(found[1].corners.last(), Some(&(1.0, 2.0)));
+}
+
+#[test]
+fn a_stretch_on_the_baseline_has_no_area_and_breaks_the_run() {
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 0.0), (2.0, 0.0), (3.0, 1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert!(pieces(&run(&[(0.0, 0.0), (1.0, 0.0)]), 0.0).is_empty());
+}
+
+#[test]
+fn a_point_that_is_not_finite_breaks_the_area_in_two() {
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 1.0), (2.0, f64::NAN), (3.0, 1.0), (4.0, 1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert!(pieces(&run(&[(0.0, 1.0)]), 0.0).is_empty(), "one point has no area");
+}
+
+const UNIT_BOX: Bounds = Bounds {
+    left: 0.0,
+    top: 0.0,
+    right: 1.0,
+    bottom: 1.0,
+};
+
+#[test]
+fn a_polygon_inside_the_bounds_is_not_changed() {
+    let square = [(0.25, 0.25), (0.75, 0.25), (0.75, 0.75), (0.25, 0.75)];
+    assert_eq!(clip_polygon(&square, UNIT_BOX), square.to_vec());
+}
+
+#[test]
+fn a_polygon_that_leaves_the_bounds_is_cut_at_the_edge() {
+    let square = [(0.5, 0.5), (1.5, 0.5), (1.5, 1.5), (0.5, 1.5)];
+    let cut = clip_polygon(&square, UNIT_BOX);
+    assert!((polygon_area(&cut) - 0.25).abs() < 1e-12, "{cut:?}");
+    assert!(cut.iter().all(|&p| UNIT_BOX.contains(p)));
+}
+
+#[test]
+fn a_polygon_wholly_outside_the_bounds_is_nothing() {
+    assert!(clip_polygon(&[(2.0, 2.0), (3.0, 2.0), (3.0, 3.0)], UNIT_BOX).is_empty());
+}
+
+#[test]
+fn a_polygon_that_covers_the_bounds_is_the_bounds() {
+    let cut = clip_polygon(&[(-1.0, -1.0), (2.0, -1.0), (2.0, 2.0), (-1.0, 2.0)], UNIT_BOX);
+    assert!((polygon_area(&cut) - 1.0).abs() < 1e-12, "{cut:?}");
+}
+
+#[test]
+fn a_polygon_with_a_point_that_is_not_finite_is_nothing() {
+    assert!(clip_polygon(&[(0.0, 0.0), (f64::NAN, 0.5), (1.0, 1.0)], UNIT_BOX).is_empty());
+    assert!(
+        clip_polygon(&[(0.0, 0.0), (1.0, 1.0)], UNIT_BOX).is_empty(),
+        "two points have no area"
+    );
+}
+
+#[test]
+fn the_layout_cuts_a_shaded_area_to_the_plotted_area() {
+    let config = real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(-1.0, 1.0));
+    let layout = PlotLayout::new(&config).expect("a valid plot");
+    // A tall rectangle that goes far above and below the plot, between x of 0.25 and 0.75.
+    let cut = layout.clip_polygon(&[(0.25, -9.0), (0.75, -9.0), (0.75, 9.0), (0.25, 9.0)]);
+    assert!(!cut.is_empty());
+    let (top, bottom) = (layout.area.top, layout.area.bottom);
+    assert!(cut.iter().all(|&(_, y)| y >= top - 1e-9 && y <= bottom + 1e-9), "{cut:?}");
+    let width = layout.area.right - layout.area.left;
+    assert!((polygon_area(&cut) - 0.5 * width * (bottom - top)).abs() < 1e-6);
+    assert!(layout.clip_polygon(&[(0.0, 0.0), (f64::NAN, 0.0), (1.0, 1.0)]).is_empty());
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
