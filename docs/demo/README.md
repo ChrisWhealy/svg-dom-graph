@@ -28,6 +28,7 @@
 - [The Theorem of Pythagoras](pythagoras.md)
 - [Fast Fourier Transform](fft.md)
 - [Force-directed Graphs (Weighted springs)](springs.md)
+- [Conway's Game of Life](game-of-life.md)
 - [Internal Workings of the Demo Server](demo-internals.md)
 
 ## Running the Demo

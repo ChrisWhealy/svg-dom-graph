@@ -13,12 +13,15 @@
 //! - `panel-edge-anchors` / `#edge-anchors-diagram` — [`edge_anchors::build_edge_anchors_demo`]: a parent with a
 //!   growing and shrinking set of children, a fixing-point slider, and a straight/elbow toggle. See that function's own
 //!   doc comment for what it demonstrates.
-//! - `panel-ellipse` / `#ellipse-diagram` — [`ellipse::build_ellipse_demo`]: circles and ellipses that grow to hold their
-//!   labels, joined to each other and to a rectangle, and a clock ellipse whose connector leaves at the minute a slider
-//!   chooses. See that function's own doc comment for what it demonstrates.
+//! - `panel-ellipse` / `#ellipse-diagram` — [`ellipse::build_ellipse_demo`]: circles and ellipses that grow to hold
+//!   their labels, joined to each other and to a rectangle, and a clock ellipse whose connector leaves at the minute a
+//!   slider chooses. See that function's own doc comment for what it demonstrates.
 //! - `panel-springs` / `#springs-diagram` — [`springs::build_springs_demo`]: the Dijkstra graph as damped springs whose
 //!   stiffness is the edge weight. Drag a circle and its neighbours are pulled and pushed, then settle and stop asking
 //!   for frames. The physics is in `demo-common`, and the library only reports the drag.
+//! - `panel-game-of-life` / `#game-of-life-stage` — [`game_of_life::build_game_of_life_demo`]: Conway's rules on a
+//!   board of 40 by 30 cells that a person draws on by click, drag or keys, with buttons for the generations, the edges
+//!   and some patterns, and a slider for the speed.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -108,18 +111,20 @@
 //!   at a time, then pads the last byte and shows the result in hexadecimal with its compression ratio. Each step is
 //!   explained in a Markdown node. Every step draws the scene again, and every value is a real result, worked out in
 //!   plain Rust. The scene is large, so it opens in a window of its own, as the hash demos' do.
-//! - `panel-dijkstra` / `#dijkstra-diagram` — [`dijkstra::build_dijkstra_demo`]: Dijkstra's shortest-path algorithm on a
-//!   weighted directed graph of six vertices, one step at a time. The edges carry their weights on labels, the distance,
-//!   the predecessor and whether each vertex is settled are three arrays of text and Boolean cells, and the queue has a
-//!   fixed size. The examined edge, and finally the whole route, is emphasised. Every value is worked out in plain Rust.
+//! - `panel-dijkstra` / `#dijkstra-diagram` — [`dijkstra::build_dijkstra_demo`]: Dijkstra's shortest-path algorithm on
+//!   a weighted directed graph of six vertices, one step at a time. The edges carry their weights on labels, the
+//!   distance, the predecessor and whether each vertex is settled are three arrays of text and Boolean cells, and the
+//!   queue has a fixed size. The examined edge, and finally the whole route, is emphasised. Every value is worked out
+//!   in plain Rust.
 //! - `panel-fft` / `#fft-overview-diagram`, `#fft-inspector-diagram` — [`fft::build_fft_demo`]: a forward radix-2
-//!   decimation-in-time fast Fourier transform of eight or sixteen samples, one stage at a time. The overview has a node
-//!   for every lane at every stage, joined by real connectors, and the stepping toolbar completes one stage at a time. A
-//!   stage not yet computed is marked as such. The inspector is one butterfly node that shows the chosen butterfly. Every
-//!   value is worked out in plain Rust, one whole block at a time.
+//!   decimation-in-time fast Fourier transform of eight or sixteen samples, one stage at a time. The overview has a
+//!   node for every lane at every stage, joined by real connectors, and the stepping toolbar completes one stage at a
+//!   time. A stage not yet computed is marked as such. The inspector is one butterfly node that shows the chosen
+//!   butterfly. Every value is worked out in plain Rust, one whole block at a time.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
-//! `demo/panels/NN-group-name/NN-demo-name.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
+//! `demo/panels/NN-group-name/NN-demo-name.html` fragment and a `demo_gallery!` entry. A line in the changelog is not
+//! enough.
 //!
 //! No function in this crate panics. Every failure — a missing DOM element, a failed listener attach, or a library
 //! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
@@ -143,6 +148,7 @@ mod elbow;
 mod ellipse;
 mod fft;
 mod floats;
+mod game_of_life;
 mod hamming;
 mod highlight;
 mod huffman;
@@ -278,6 +284,7 @@ demo_gallery! {
     "panel-shell-sort" => shell_sort::build_shell_sort_demo + shell_sort::FILES,
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
     "panel-dijkstra" => dijkstra::build_dijkstra_demo + dijkstra::FILES,
+    "panel-game-of-life" => game_of_life::build_game_of_life_demo + game_of_life::FILES,
     "panel-springs" => springs::build_springs_demo + springs::FILES,
 }
 

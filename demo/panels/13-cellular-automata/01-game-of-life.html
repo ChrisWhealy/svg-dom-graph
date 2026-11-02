@@ -1,0 +1,106 @@
+<section class="section" id="panel-game-of-life" data-label="Game of Life">
+    <h2>Conway's Game of Life</h2>
+    <p>
+        The Game of Life was invented by the mathematician John Conway in 1970. It is a very unusual game in that it is
+        designed for zero players. You set up a starting pattern of live cells on a grid, then watch what happens.
+    </p>
+    <p>
+        Every cell has eight neighbours: the four cells above, below, left and right of it, and the four diagonals. All
+        the cells are updated at once from the current generation to the next according to some very simple rules.
+    </p>
+    <p>Does the live cell survive to the next generation? Well, that depends on the number of neighbours it currently has:</p>
+    <ul>
+        <li>Zero or one, then it dies of loneliness</li>
+        <li>Two or three, then it stays alive.</li>
+        <li>More than three, then it dies of overcrowding.</li>
+    </ul>
+    <p>A dead cell with exactly three live neighbours comes back to life.</p>
+    <p>
+        From these rules come patterns that sit still, patterns that repeat, patterns that travel across the board, and
+        patterns that grow for hundreds of generations before they settle down.
+    </p>
+    <p class="demo-error" id="game-of-life-error" hidden></p>
+    <p class="life-readout" id="game-of-life-readout" aria-live="polite"></p>
+    <p class="visually-hidden" id="game-of-life-cursor" aria-live="polite"></p>
+    <div class="game-of-life-wrap">
+        <div class="canvas" id="game-of-life-stage"></div>
+        <div class="instruction-text">
+            <h3>Using the board</h3>
+            <ul>
+                <li>
+                    Click a cell to bring it to life or kill it. Drag across the board to give every cell you pass over
+                    the same state as the first.
+                </li>
+                <li>
+                    Tab to the board, then use the arrow keys to move the red cursor, and the Space or Enter key to
+                    change the cell under it.
+                </li>
+                <li>
+                    <b>Play</b> or <b>Pause</b> starts and stops the generations, and <b>Step</b> works out just one.
+                    The slider sets how many there are in each second.
+                </li>
+                <li><b>Random</b> fills the board with scattered cells, and <b>Clear</b> empties it.</li>
+                <li>
+                    <b>Wrap edges</b> decides what happens at the edge of the board. When it is on, the left edge is
+                    next to the right edge and the top is next to the bottom, so a pattern that leaves one side comes
+                    back in at the other. When it is off, everything beyond the edge is dead.
+                </li>
+                <li>
+                    The first row of buttons under the board <b>replaces</b> what is on it with a pattern. The second
+                    row <b>adds</b> a spaceship to what is already there, at the left edge and level with the red
+                    cursor, and it flies to the right. Move the cursor first with the arrow keys to choose the height.
+                </li>
+            </ul>
+        </div>
+    </div>
+    <h3>Some patterns to try</h3>
+    <p>The buttons under the board replace what is on it with one of these.</p>
+    <dl>
+        <dt>Glider</dt>
+        <dd>
+            Five cells that crawl diagonally across the board, one cell every four generations. With the edges wrapped
+            it goes round for ever. Without, it ends as a still block when it hits the corner.
+        </dd>
+        <dt>Blinker</dt>
+        <dd>Three cells in a row, which turn into a column and back again. It is the simplest oscillator.</dd>
+        <dt>R-pentomino</dt>
+        <dd>
+            Just five cells, but it does not settle down for 1103 generations on an unlimited board, and sends out
+            gliders on the way. On this small board with the edges wrapped, the gliders soon meet it again, so what you
+            see is different.
+        </dd>
+        <dt>Acorn</dt>
+        <dd>Seven cells that take 5206 generations to settle down on an unlimited board.</dd>
+        <dt>Glider gun</dt>
+        <dd>
+            Bill Gosper's gun, discovered in 1970, which sends out a new glider every 30 generations. It was the first
+            pattern found that grows without limit. Turn off <b>Wrap edges</b> to see the gliders leave the board
+            without running into the gun again.
+        </dd>
+    </dl>
+    <h3>Spaceships</h3>
+    <p>
+        A spaceship is a pattern that repeats itself every few generations in a different place, so it flies across the
+        board. The glider is the smallest. Conway also found three that fly along a row, which differ in size:
+    </p>
+    <dl>
+        <dt>Light spaceship</dt>
+        <dd>Nine cells.</dd>
+        <dt>Medium spaceship</dt>
+        <dd>Eleven cells.</dd>
+        <dt>Heavy spaceship</dt>
+        <dd>Thirteen cells.</dd>
+    </dl>
+    <p>
+        Each one repeats every four generations, two cells to the right, so it flies at half a cell a generation. Where
+        the edges wrap, it goes round the board and comes back. Where they stop, it runs into the edge and is broken up.
+        Add one from the second row of buttons while a glider or the gun is going, and watch what happens when they
+        meet.
+    </p>
+    <h3>Why it matters</h3>
+    <p>
+        The Game of Life is a <em>cellular automaton</em>: a grid of cells, each with a state, that all change together
+        by a simple rule that only looks at the neighbours. Despite this, it is <em>Turing complete</em>. With enough
+        cells, a pattern can be built that does any calculation that a computer can do.
+    </p>
+</section>

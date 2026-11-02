@@ -909,6 +909,63 @@ label.demo-slider-container {
     grid-area: sine;
 }
 
+/* The Game of Life panel: the scene with the instructions to the right of it, which wrap below it on a window too
+   narrow for both, the line above the board that says the generation and how many cells are alive, the cursor that
+   shows which cell the keys act on while the board has the focus, and the text that is only for assistive technology. */
+.game-of-life-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.game-of-life-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.game-of-life-wrap .instruction-text > h3:first-child {
+    margin-top: 0;
+}
+
+.game-of-life-wrap .instruction-text li {
+    margin-bottom: 0.33rem;
+}
+
+.life-readout {
+    margin: 0.75rem 0 0.4rem;
+    font-variant-numeric: tabular-nums;
+}
+
+.life-board {
+    outline: none;
+}
+
+.life-cursor {
+    display: none;
+    fill: none;
+    stroke-width: 2.5;
+    pointer-events: none;
+}
+
+.life-board:focus .life-cursor {
+    display: inline;
+}
+
+.visually-hidden {
+    position: absolute;
+    width: 1px;
+    height: 1px;
+    margin: -1px;
+    padding: 0;
+    overflow: hidden;
+    clip: rect(0 0 0 0);
+    white-space: nowrap;
+    border: 0;
+}
+
 /* The convolution panel's four scenes: the signal across the top, the two products side by side below it, and the
    spectrum across the bottom, with the instructions in a column of their own to the right of all four. The scenes have
    fixed sizes, so a narrow screen scrolls the grid, not the page. The scenes touch, so a border is shared by the two

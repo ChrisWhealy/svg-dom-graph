@@ -75,6 +75,9 @@
 //! - [`convolution`] — the convolution panel in the built demo gallery: the four scenes, the slider that sets the probe
 //!   frequency, the two products that are shaded above and below the axis, the areas that are written, and the spectrum
 //!   with its dot. Also runs against the built demo gallery.
+//! - [`game_of_life`] — the Game of Life panel in the built demo gallery: the board, the ten buttons and the slider, the
+//!   rules that Step works out, drawing by click and by drag, the cursor and the keys, the patterns, the edges that wrap
+//!   or stop, and the speed. Also runs against the built demo gallery.
 //! - [`pythagoras`] — the Pythagoras panel in the built demo gallery: the scene with no plot, the right triangle in the
 //!   unit circle and the blue and green squares on its sides, the squares that are drawn again as C is dragged or moved
 //!   with the keys, and the areas that are written in them. Also runs against the built demo gallery.
@@ -131,6 +134,7 @@ mod crc32;
 mod dijkstra;
 mod edge_anchors;
 mod fft;
+mod game_of_life;
 mod hamming;
 mod hex_dump_geometry;
 mod hex_dump_paint_order;
