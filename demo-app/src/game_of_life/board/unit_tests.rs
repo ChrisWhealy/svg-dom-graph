@@ -381,20 +381,70 @@ fn no_more_than_the_most_are_due_at_once_and_the_rest_is_let_go() {
 fn time_that_is_not_a_number_or_goes_backwards_gives_nothing() {
     assert_eq!(steps_due(0.0, f64::NAN, 100.0, 5), (0, 0.0));
     assert_eq!(steps_due(f64::INFINITY, 10.0, 100.0, 5), (0, 0.0));
-    assert_eq!(steps_due(0.0, 10.0, 0.0, 5), (0, 0.0));
-    assert_eq!(steps_due(0.0, 10.0, f64::NAN, 5), (0, 0.0));
+    assert_eq!(steps_due(f64::NEG_INFINITY, 10.0, 100.0, 5), (0, 0.0));
+    assert_eq!(steps_due(0.0, f64::INFINITY, 100.0, 5), (0, 0.0));
     assert_eq!(steps_due(0.0, -40.0, 100.0, 5), (0, 0.0));
+    assert_eq!(
+        steps_due(-30.0, 10.0, 100.0, 5),
+        (0, 10.0 - 0.0),
+        "a carried time below 0 counts as none"
+    );
+}
+
+#[test]
+fn a_period_that_is_not_finite_or_not_above_nothing_gives_nothing_and_carries_nothing() {
+    for period in [0.0, -1.0, -0.0, f64::NAN, f64::INFINITY, f64::NEG_INFINITY] {
+        assert_eq!(steps_due(0.0, 500.0, period, 5), (0, 0.0), "{period}");
+        assert_eq!(
+            steps_due(40.0, 500.0, period, 5),
+            (0, 0.0),
+            "{period}: nothing builds up for a later frame"
+        );
+    }
+    assert_eq!(
+        steps_due(0.0, 500.0, f64::MIN_POSITIVE, 5),
+        (5, 0.0),
+        "a very short period is as many as are allowed"
+    );
+    assert_eq!(steps_due(0.0, 500.0, 100.0, 0), (0, 0.0), "none are allowed");
 }
 
 #[test]
 fn the_period_is_a_thousand_milliseconds_over_the_speed() {
-    assert!((period_ms(8.0) - 125.0).abs() < 1e-9);
-    assert!((period_ms(1.0) - 1000.0).abs() < 1e-9);
-    assert!(period_ms(0.0).is_finite() || period_ms(0.0).is_infinite());
+    assert!((period_ms(8.0).unwrap_or(f64::NAN) - 125.0).abs() < 1e-9);
+    assert!((period_ms(1.0).unwrap_or(f64::NAN) - 1000.0).abs() < 1e-9);
+    assert!((period_ms(30.0).unwrap_or(f64::NAN) - 1000.0 / 30.0).abs() < 1e-9);
+}
+
+#[test]
+fn a_speed_that_is_not_finite_and_above_nothing_has_no_period() {
+    for speed in [
+        0.0,
+        -0.0,
+        -1.0,
+        f64::NAN,
+        f64::INFINITY,
+        f64::NEG_INFINITY,
+        f64::MIN_POSITIVE,
+        1e-310,
+    ] {
+        assert_eq!(period_ms(speed), None, "{speed}");
+    }
     assert!(
-        period_ms(0.0) > 1e300,
-        "a speed of nothing is a very long wait and not a division by zero"
+        period_ms(1e-300).is_some() || period_ms(1e-300).is_none(),
+        "it does not fail either way"
     );
+    assert!(
+        period_ms(f64::MAX).is_some_and(|p| p > 0.0),
+        "a speed that is very fast has a period, which is very short"
+    );
+}
+
+#[test]
+fn every_speed_of_the_slider_has_a_period_and_it_gets_shorter_as_the_speed_goes_up() {
+    let periods: Vec<f64> = (1..=30).map(|speed| period_ms(f64::from(speed)).unwrap_or(f64::NAN)).collect();
+    assert!(periods.iter().all(|p| p.is_finite() && *p > 0.0));
+    assert!(periods.windows(2).all(|pair| pair[1] < pair[0]));
 }
 
 // The spaceships.

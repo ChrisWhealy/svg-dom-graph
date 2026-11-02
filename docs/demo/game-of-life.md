@@ -92,6 +92,8 @@ Since every draw is of the whole board, that is enough to put the page right, an
 
 The generations are timed by `requestAnimationFrame`, and not by a timer, so they stop when the page is in the background.
 Each frame adds the time that has passed to what was carried over, and a generation is worked out for every period, which is a thousand milliseconds over the speed.
+The times and the period must be finite, and the period above 0, or nothing is due and nothing is carried, so that time that cannot be made sense of does not build up for a later frame.
+A speed that is not finite and above 0 has no period, which the page treats as nothing being due.
 No more than four are worked out in one frame, and a gap longer than a quarter of a second counts as a quarter.
 So a page that has been in the background goes on from where it was, and does not race to catch up.
 Someone who has asked their system for less motion starts with the generations stopped.

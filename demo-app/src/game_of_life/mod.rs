@@ -236,7 +236,9 @@ impl Demo {
             .get()
             .map_or(0.0, |before| (now - before).clamp(0.0, LONGEST_FRAME));
         self.last_frame.set(Some(now));
-        let (due, carried) = steps_due(self.carried.get(), elapsed, period_ms(self.speed.get()), MOST_STEPS);
+        // The speed is from a slider, so it has a period. If it ever has none, nothing is due.
+        let (due, carried) = period_ms(self.speed.get())
+            .map_or((0, 0.0), |period| steps_due(self.carried.get(), elapsed, period, MOST_STEPS));
         self.carried.set(carried);
         let mut result = Ok(());
         for _ in 0..due {

@@ -32,4 +32,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Don't skip cells during rapid pointer drag movements (`468e1ee`)
 - Drag ends when the pointer is let go or at `pointercancel` (`68755cb`)
 - Prevent model and presentation from diverging after a DOM write failure (`1090132`)
-- Prevent `Board::new` from panicing for certain board sizes (``)
+- Prevent `Board::new` from panicing for certain board sizes (`a6fcb7c`)
+- Prevent simulation timing from behaving unexpectedly at invalid inputs (``)

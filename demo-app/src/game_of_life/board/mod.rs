@@ -314,11 +314,15 @@ impl Board {
 /// How many generations are due after `elapsed_ms` has passed, and how much of the time that was not used is carried to
 /// the next frame. A generation is due every `period_ms`. No more than `most` are due at once, so that a page that has
 /// been in the background for a while does not spend a long time catching up, and then the time that is left is let go.
+///
+/// The times and the period must be finite, and the period must be above 0. A time that is below 0 counts as none. If
+/// any of them is not, nothing is due and nothing is carried, so that time that cannot be made sense of does not build
+/// up for a later frame.
 pub(crate) fn steps_due(carried_ms: f64, elapsed_ms: f64, period_ms: f64, most: u32) -> (u32, f64) {
-    if period_ms.is_nan() || period_ms <= 0.0 || !carried_ms.is_finite() || !elapsed_ms.is_finite() {
+    if !period_ms.is_finite() || period_ms <= 0.0 || !carried_ms.is_finite() || !elapsed_ms.is_finite() {
         return (0, 0.0);
     }
-    let total = (carried_ms + elapsed_ms.max(0.0)).max(0.0);
+    let total = carried_ms.max(0.0) + elapsed_ms.max(0.0);
     let due = (total / period_ms).floor();
     if due >= f64::from(most) {
         (most, 0.0)
@@ -327,9 +331,12 @@ pub(crate) fn steps_due(carried_ms: f64, elapsed_ms: f64, period_ms: f64, most: 
     }
 }
 
-/// How long there is between two generations, in milliseconds, at `speed` generations in each second.
-pub(crate) fn period_ms(speed: f64) -> f64 {
-    1000.0 / speed.max(f64::MIN_POSITIVE)
+/// How long there is between two generations, in milliseconds, at `speed` generations in each second. A speed has to be
+/// finite and above 0, and so small a speed that the time between two generations is more than a number can say has no
+/// period. For any other speed there is none, which is `None`, and no generation is then due.
+pub(crate) fn period_ms(speed: f64) -> Option<f64> {
+    let period = 1000.0 / speed;
+    (speed.is_finite() && speed > 0.0 && period.is_finite()).then_some(period)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
