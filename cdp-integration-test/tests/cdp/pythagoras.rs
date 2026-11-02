@@ -105,7 +105,12 @@ fn press(tab: &Tab, key: &str) -> Result<(), String> {
     Ok(())
 }
 
-/// Where C is on the page at `degrees`.
+/// Where C is on the page at `degrees`, to the nearest whole pixel.
+///
+/// The scene is now beside a column of text, so its corner is at a fractional position that depends on the fonts of the
+/// machine. A mouse position that is then cut down to whole pixels, rather than rounded, always moves C a little the
+/// same way round the circle, which can be the whole degree that these tests read back. Rounding here makes the error
+/// at most half a pixel each way, which is under a third of a degree.
 fn point_at(tab: &Tab, degrees: f64) -> Result<(f64, f64), String> {
     let corner = text(
         tab,
@@ -120,7 +125,10 @@ fn point_at(tab: &Tab, degrees: f64) -> Result<(f64, f64), String> {
         top.parse().map_err(|e| format!("{e}"))?,
     );
     let angle = degrees.to_radians();
-    Ok((left + MIDDLE.0 + RADIUS * angle.cos(), top + MIDDLE.1 - RADIUS * angle.sin()))
+    Ok((
+        (left + MIDDLE.0 + RADIUS * angle.cos()).round(),
+        (top + MIDDLE.1 - RADIUS * angle.sin()).round(),
+    ))
 }
 
 /// Drags C from where it is to `degrees`, by way of the angles between.
