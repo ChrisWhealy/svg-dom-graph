@@ -18,6 +18,9 @@ The edges either wrap round or stop.
 Where they wrap, the board is the surface of a doughnut, and a cell on one edge is next to the cells on the opposite edge.
 Where they stop, a place beyond the edge is dead.
 The page starts with the edges wrapped.
+A board is at least one cell across and one down, and a size of 0 is made 1, since where the edges wrap a cell is counted by its place modulo the size, which a size of nothing has no answer for.
+So no method of a board can fail, whatever size it was asked to be.
+The page uses 40 by 30.
 
 ## The scene
 

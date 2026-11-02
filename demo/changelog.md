@@ -31,4 +31,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Pythagoras drag test rounds the mouse position to whole pixels, so that CI reads back the angle that was dragged to
 - Don't skip cells during rapid pointer drag movements (`468e1ee`)
 - Drag ends when the pointer is let go or at `pointercancel` (`68755cb`)
-- Prevent model and presentation from diverging after a DOM write failure (``)
+- Prevent model and presentation from diverging after a DOM write failure (`1090132`)
+- Prevent `Board::new` from panicing for certain board sizes (``)

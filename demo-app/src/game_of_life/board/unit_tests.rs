@@ -521,3 +521,60 @@ fn a_spaceship_too_big_for_the_board_is_cut_off_and_does_not_fail() {
     board.place_level_with(&SPACESHIPS[2], 1);
     assert!(board.population() <= 6);
 }
+
+// The size of a board.
+
+#[test]
+fn a_board_with_no_cells_across_or_down_is_made_one_cell_across_or_down() {
+    for (cols, rows, wanted) in [(0, 0, (1, 1)), (0, 5, (1, 5)), (7, 0, (7, 1)), (3, 2, (3, 2))] {
+        let board = Board::new(cols, rows, true);
+        assert_eq!((board.cols(), board.rows()), wanted, "{cols} by {rows}");
+    }
+}
+
+#[test]
+fn no_method_fails_on_a_board_that_was_asked_to_be_nothing_across_or_down() {
+    for wrap in [true, false] {
+        let mut board = Board::new(0, 0, wrap);
+        board.place(&PATTERNS[4], 3, 3);
+        board.place_centred(&PATTERNS[0]);
+        board.place_level_with(&SPACESHIPS[2], 9);
+        board.randomise(5, 0.5);
+        assert_eq!(
+            board.live_neighbours(0, 0),
+            if wrap { u8::from(board.get(0, 0)) * 8 } else { 0 }
+        );
+        board.step();
+        board.set(0, 0, true);
+        assert!(board.toggle(5, 5) || !board.get(5, 5));
+        assert!(board.population() <= 1);
+        board.clear();
+        assert_eq!(board.population(), 0);
+        assert_eq!(board.live_cells().count(), 0);
+    }
+}
+
+#[test]
+fn a_pattern_put_on_a_board_of_one_cell_wraps_onto_it_and_is_cut_off_where_the_edges_stop() {
+    let mut wrapped = Board::new(0, 0, true);
+    wrapped.place(&PATTERNS[1], 0, 0);
+    assert_eq!(wrapped.population(), 1, "every cell of the blinker is on the one place");
+    let mut stopped = Board::new(0, 0, false);
+    stopped.place(&PATTERNS[1], 0, 0);
+    assert_eq!(stopped.population(), 1, "only the first cell is on the board");
+}
+
+#[test]
+fn the_one_cell_that_a_board_of_nothing_has_obeys_the_rules() {
+    let mut wrapped = Board::new(0, 0, true);
+    wrapped.set(0, 0, true);
+    wrapped.step();
+    assert!(
+        !wrapped.get(0, 0),
+        "where the edges wrap it is its own eight neighbours, which are too many"
+    );
+    let mut stopped = Board::new(0, 0, false);
+    stopped.set(0, 0, true);
+    stopped.step();
+    assert!(!stopped.get(0, 0), "where they stop it has none, which is too few");
+}

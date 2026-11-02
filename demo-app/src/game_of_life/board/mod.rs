@@ -157,7 +157,12 @@ pub(crate) struct Board {
 
 impl Board {
     /// An empty board of `cols` by `rows`, whose edges wrap round if `wrap` is true.
+    ///
+    /// A board is at least one cell across and one down, since where the edges wrap a cell is counted by its place
+    /// modulo the size, which a size of nothing has no answer for. A size of 0 is made 1, so that no method can fail on
+    /// a board, and [`Board::cols`] and [`Board::rows`] say what the size is. The page uses a board of 40 by 30.
     pub(crate) fn new(cols: usize, rows: usize, wrap: bool) -> Self {
+        let (cols, rows) = (cols.max(1), rows.max(1));
         Self {
             cols,
             rows,
