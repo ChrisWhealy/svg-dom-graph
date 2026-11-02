@@ -154,6 +154,35 @@ pub(crate) fn grid_path() -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every cell on the straight line from the cell `from` to the cell `to`, with both of them, in order from `from`. It
+/// is the line algorithm of Bresenham, which moves one cell at a time along the longer of the two directions and so
+/// never skips a cell. A drag uses it to give every cell the pointer crossed the state that is being drawn, when the
+/// browser reports the pointer only now and then and it has moved over several cells in between.
+pub(crate) fn cells_between(from: (usize, usize), to: (usize, usize)) -> Vec<(usize, usize)> {
+    let (mut x, mut y) = (from.0 as isize, from.1 as isize);
+    let (end_x, end_y) = (to.0 as isize, to.1 as isize);
+    let (dx, dy) = ((end_x - x).abs(), -(end_y - y).abs());
+    let (step_x, step_y) = ((end_x - x).signum(), (end_y - y).signum());
+    let mut error = dx + dy;
+    let mut cells = Vec::with_capacity(dx.max(-dy) as usize + 1);
+    loop {
+        cells.push((x as usize, y as usize));
+        if (x, y) == (end_x, end_y) {
+            return cells;
+        }
+        let doubled = 2 * error;
+        if doubled >= dy {
+            error += dy;
+            x += step_x;
+        }
+        if doubled <= dx {
+            error += dx;
+            y += step_y;
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the cursor goes when `key` is pressed with it at `from`, or `None` if the key does not move it. The cursor
 /// goes round to the other side at an edge, whether or not the edges of the board wrap.
 pub(crate) fn move_cursor(from: (usize, usize), key: &str) -> Option<(usize, usize)> {

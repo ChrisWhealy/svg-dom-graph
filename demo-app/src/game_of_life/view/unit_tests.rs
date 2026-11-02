@@ -249,3 +249,89 @@ fn the_labels_of_the_spaceships_fit_in_their_buttons() {
     }
     assert!(scene_label(true).contains("spaceship"));
 }
+
+/// Whether `cells` is a path with no gaps: each cell is next to the one before it, even on a diagonal, and is not it.
+fn is_unbroken(cells: &[(usize, usize)]) -> bool {
+    cells.windows(2).all(|pair| {
+        let (dx, dy) = (pair[0].0.abs_diff(pair[1].0), pair[0].1.abs_diff(pair[1].1));
+        dx <= 1 && dy <= 1 && (dx, dy) != (0, 0)
+    })
+}
+
+#[test]
+fn a_line_from_a_cell_to_itself_is_that_cell() {
+    assert_eq!(cells_between((4, 7), (4, 7)), vec![(4, 7)]);
+}
+
+#[test]
+fn a_line_along_a_row_or_a_column_has_every_cell_between_the_ends_in_order() {
+    assert_eq!(
+        cells_between((3, 5), (8, 5)),
+        vec![(3, 5), (4, 5), (5, 5), (6, 5), (7, 5), (8, 5)]
+    );
+    assert_eq!(cells_between((2, 1), (2, 4)), vec![(2, 1), (2, 2), (2, 3), (2, 4)]);
+}
+
+#[test]
+fn a_line_that_goes_the_other_way_is_the_same_cells_the_other_way_round() {
+    assert_eq!(
+        cells_between((8, 5), (3, 5)),
+        vec![(8, 5), (7, 5), (6, 5), (5, 5), (4, 5), (3, 5)]
+    );
+    assert_eq!(cells_between((2, 4), (2, 1)), vec![(2, 4), (2, 3), (2, 2), (2, 1)]);
+}
+
+#[test]
+fn a_line_on_a_diagonal_has_a_cell_at_each_step_of_it_both_ways() {
+    assert_eq!(cells_between((1, 1), (4, 4)), vec![(1, 1), (2, 2), (3, 3), (4, 4)]);
+    assert_eq!(cells_between((4, 1), (1, 4)), vec![(4, 1), (3, 2), (2, 3), (1, 4)]);
+    assert_eq!(cells_between((4, 4), (1, 1)), vec![(4, 4), (3, 3), (2, 2), (1, 1)]);
+}
+
+#[test]
+fn a_line_has_both_ends_and_as_many_cells_as_the_longer_distance_plus_one_and_no_gap() {
+    for from in [(0, 0), (39, 29), (20, 15), (0, 29), (39, 0), (7, 22)] {
+        for to in [(0, 0), (39, 29), (20, 15), (0, 29), (39, 0), (13, 2), (21, 16), (5, 5)] {
+            let line = cells_between(from, to);
+            assert_eq!(line.first(), Some(&from));
+            assert_eq!(line.last(), Some(&to));
+            let longer = from.0.abs_diff(to.0).max(from.1.abs_diff(to.1));
+            assert_eq!(line.len(), longer + 1, "{from:?} to {to:?}");
+            assert!(is_unbroken(&line), "{from:?} to {to:?}: {line:?}");
+        }
+    }
+}
+
+#[test]
+fn a_line_that_is_not_steep_has_one_cell_in_each_column_and_a_steep_one_has_one_in_each_row() {
+    let shallow = cells_between((0, 0), (10, 3));
+    let columns: Vec<usize> = shallow.iter().map(|c| c.0).collect();
+    assert_eq!(columns, (0..=10).collect::<Vec<_>>());
+    let steep = cells_between((0, 0), (3, 10));
+    let rows: Vec<usize> = steep.iter().map(|c| c.1).collect();
+    assert_eq!(rows, (0..=10).collect::<Vec<_>>());
+}
+
+#[test]
+fn a_line_is_the_same_cells_whichever_end_it_starts_from_to_within_a_tie() {
+    // The two lines can differ by one cell where the line is exactly between two, so they are compared by length and
+    // ends.
+    for (a, b) in [((0, 0), (9, 4)), ((3, 20), (30, 2)), ((12, 12), (13, 29))] {
+        let forward = cells_between(a, b);
+        let mut back = cells_between(b, a);
+        back.reverse();
+        assert_eq!(forward.len(), back.len());
+        let near_each_other = forward
+            .iter()
+            .zip(&back)
+            .all(|(f, r)| f.0.abs_diff(r.0) <= 1 && f.1.abs_diff(r.1) <= 1);
+        assert!(near_each_other, "{a:?} to {b:?}");
+    }
+}
+
+#[test]
+fn every_cell_of_a_line_across_the_whole_board_is_on_the_board() {
+    let line = cells_between((0, 0), (COLS - 1, ROWS - 1));
+    assert!(line.iter().all(|&(c, r)| c < COLS && r < ROWS));
+    assert_eq!(line.len(), COLS);
+}

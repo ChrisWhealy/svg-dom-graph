@@ -303,6 +303,52 @@ fn a_drag_gives_every_cell_it_crosses_the_state_of_the_first() -> Result<(), Str
 }
 
 #[test]
+fn a_drag_that_is_reported_only_at_its_ends_still_paints_every_cell_between_them() -> Result<(), String> {
+    // Two points are a press and a release, with no move in between, as when the browser coalesces a fast drag.
+    let tab = emptied()?;
+    drag(&tab, &[centre(&tab, 3, 12)?, centre(&tab, 20, 12)?])?;
+    check_eq(population(&tab)?, 18)?;
+    check_eq(live_path(&tab)?.matches('M').count(), 1)?;
+    check(
+        live_path(&tab)?.contains("h252v14h-252z"),
+        "one run of 18 cells, which is 252 wide",
+    )
+}
+
+#[test]
+fn a_fast_drag_down_a_column_or_along_a_diagonal_has_no_gaps_either() -> Result<(), String> {
+    let tab = emptied()?;
+    drag(&tab, &[centre(&tab, 5, 2)?, centre(&tab, 5, 25)?])?;
+    check_eq(population(&tab)?, 24)?;
+    press_button(&tab, "clear")?;
+    drag(&tab, &[centre(&tab, 5, 5)?, centre(&tab, 15, 15)?])?;
+    check_eq(population(&tab)?, 11)?;
+    let cells = starts(&live_path(&tab)?);
+    let expected: Vec<(f64, f64)> = (0..=10).map(|i| ((5 + i) as f64 * CELL, TOP + (5 + i) as f64 * CELL)).collect();
+    check_eq(cells, expected)
+}
+
+#[test]
+fn a_fast_drag_that_starts_on_a_live_cell_kills_every_cell_on_its_way() -> Result<(), String> {
+    let tab = emptied()?;
+    drag_along(&tab, 8, 2, 30)?;
+    check_eq(population(&tab)?, 29)?;
+    drag(&tab, &[centre(&tab, 4, 8)?, centre(&tab, 25, 8)?])?;
+    check_eq(population(&tab)?, 29 - 22)
+}
+
+#[test]
+fn a_drag_that_leaves_the_board_and_comes_back_does_not_draw_across_it() -> Result<(), String> {
+    let tab = emptied()?;
+    let start = centre(&tab, 2, 2)?;
+    let above = (start.0, start.1 - 60.0);
+    let back = centre(&tab, 30, 20)?;
+    drag(&tab, &[start, above, back])?;
+    // The two cells where it was pressed and where it came back, and not the line between them.
+    check_eq(population(&tab)?, 2)
+}
+
+#[test]
 fn a_press_in_the_strips_above_and_below_the_board_changes_no_cell() -> Result<(), String> {
     let tab = emptied()?;
     let corner = centre(&tab, 0, 0)?;

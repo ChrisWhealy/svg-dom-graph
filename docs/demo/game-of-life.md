@@ -43,7 +43,11 @@ The generation and the number of live cells are written above the scene, as `Gen
 * A click or a touch brings a cell to life or kills it.
 * A drag gives every cell that it crosses the state that the first cell was changed to.
   So a drag that starts on a dead cell brings cells to life, and one that starts on a live cell kills them.
+* The browser reports the pointer only now and then, and during a fast drag it can have crossed several cells between two reports.
+  So a line of cells, by the algorithm of Bresenham, joins the cell that was painted last to the one that the pointer is over now, and every cell on it is given the state.
+  A drag that is reported only at its two ends therefore paints every cell between them, along a row, a column or a diagonal.
 * The pointer is captured on the scene, so a drag that leaves the board goes on until it is let go, and comes back in at the same state.
+  While it is off the board nothing is painted, and the cell that it comes back to starts a new line, so a drag does not draw across the board from where it left to where it returned.
 * A press in the strips above and below the board changes nothing.
 * The scene has `touch-action: none`, so that a finger that draws does not scroll the page.
 
@@ -106,5 +110,5 @@ Where they stop, it runs into the edge and is broken up.
 It checks that each spaceship goes 2 cells to the right every 4 generations without changing shape, that it goes round a board with wrapping edges, and where one is put.
 It checks that each spaceship goes 2 cells to the right every 4 generations without changing shape, that it goes round a board with wrapping edges, and where one is put.
 It also checks the edges, the patterns, the random board and the pace.
-`game_of_life/view/unit_tests.rs` checks which cell a point is in, the paths that are drawn, the cursor, the buttons and the writing.
+`game_of_life/view/unit_tests.rs` checks which cell a point is in, the line of cells between two cells (both ends, no gap, the same length either way, and one cell in each column or row), the paths that are drawn, the cursor, the buttons and the writing.
 `game_of_life.rs` in the CDP tests checks the scene, Pause, Play and Step, a blinker that turns on a step and back on the next, drawing by click and drag, the keys and what assistive technology is told, each pattern, the edges that wrap and stop, and the speed.

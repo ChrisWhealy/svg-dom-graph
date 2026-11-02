@@ -15,7 +15,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Convolution demo panel, after Phase Shift: a signal of two sine waves probed with a cosine and a sine, with the area under each product shaded above and below the axis, and the amplitude found at every frequency
 - Angle curve, labelled &theta;, in the Pythagoras demo
 - Pythagoras demo text beside the scene
-- Conway's Game of Life demo
+- Conway's Game of Life demo (`eb3dcd8`)
 
 ### Changed
 
@@ -25,6 +25,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Game of Life demo: a fast drag that the browser reports only now and then paints every cell it crossed, by a line of cells from the last cell to the present one, and a drag that leaves the board and comes back does not draw across it
 - Convolution demo: zero frequency is a special case, in which the amplitude is the mean of the signal and not twice it, the factor written is 1, and there is no phase
 - Convolution demo: a scene that cannot be drawn is reported as an error that says the four scenes may disagree, the remembered frequency changes only when all four are drawn, and a later success hides the error
 - Pythagoras drag test rounds the mouse position to whole pixels, so that CI reads back the angle that was dragged to
+- Don't skip cells during rapid pointer drag movements (``)

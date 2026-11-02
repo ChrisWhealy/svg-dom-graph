@@ -24,8 +24,8 @@ use svg_dom_graph::{
 };
 use view::{
     BOARD, CELL, COLS, CONTROLS, FIRST_SPEED, ROWS, SCENE, SLIDER_LEFT, SLIDER_LENGTH, SLIDER_MIDDLE, SPEED_STEP,
-    SPEEDS, TOP, board_label, cell_at, cell_origin, control_area, cursor_text, grid_path, live_path, move_cursor,
-    pattern_area, readout, scene_label, spaceship_area, speed_text,
+    SPEEDS, TOP, board_label, cell_at, cell_origin, cells_between, control_area, cursor_text, grid_path, live_path,
+    move_cursor, pattern_area, readout, scene_label, spaceship_area, speed_text,
 };
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
@@ -90,6 +90,9 @@ struct Demo {
     cursor: Cell<(usize, usize)>,
     /// What a drag across the board is painting: `Some(true)` brings cells to life and `Some(false)` kills them.
     painting: Cell<Option<bool>>,
+    /// The cell that a drag last painted, which the next cell is joined to by a line, or `None` if the pointer is not
+    /// on the board, and the next cell it comes to starts a new line.
+    last_cell: Cell<Option<(usize, usize)>>,
     playing: Cell<bool>,
     /// Generations in each second.
     speed: Cell<f64>,
@@ -274,15 +277,23 @@ impl Demo {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Brings the cell at `col` and `row` to life or kills it, for a person who has drawn on it, and draws that.
-    fn paint(&self, (col, row): (usize, usize), alive: bool) {
-        if self.board.borrow().get(col, row) == alive {
-            return;
+    /// Brings every cell of `cells` to life or kills it, for a person who has drawn on them, and draws that once. The
+    /// cursor goes to the last of them.
+    fn paint(&self, cells: &[(usize, usize)], alive: bool) {
+        let mut changed = false;
+        for &(col, row) in cells {
+            if self.board.borrow().get(col, row) != alive {
+                self.board.borrow_mut().set(col, row, alive);
+                changed = true;
+            }
         }
-        self.board.borrow_mut().set(col, row, alive);
-        self.cursor.set((col, row));
-        if let Err(problem) = self.draw() {
-            self.fail(&problem);
+        if let Some(&last) = cells.last() {
+            self.cursor.set(last);
+        }
+        if changed {
+            if let Err(problem) = self.draw() {
+                self.fail(&problem);
+            }
         }
     }
 
@@ -343,23 +354,34 @@ impl Demo {
         focus(&self.board_group);
         let alive = !self.board.borrow().get(col, row);
         self.painting.set(Some(alive));
-        self.paint((col, row), alive);
+        self.last_cell.set(Some((col, row)));
+        self.paint(&[(col, row)], alive);
         self.announce_cursor();
     }
 
-    /// Gives the cell under the pointer the state that is being drawn.
+    /// Gives the cells that the pointer has crossed the state that is being drawn. The browser can report the pointer
+    /// only now and then, so it can have moved over several cells since the last report, and a line of cells joins the
+    /// cell that was painted last to the one that the pointer is over now. A pointer that is off the board paints
+    /// nothing, and the cell that it comes back to starts a new line, so that it does not draw across the board.
     fn pointer_move(&self, event: &web_sys::PointerEvent) {
         let Some(alive) = self.painting.get() else {
             return;
         };
         let (x, y) = self.scene_point(event);
-        if let Some(at) = cell_at(x, y) {
-            self.paint(at, alive);
-        }
+        let Some(at) = cell_at(x, y) else {
+            self.last_cell.set(None);
+            return;
+        };
+        let cells = match self.last_cell.replace(Some(at)) {
+            Some(before) => cells_between(before, at),
+            None => vec![at],
+        };
+        self.paint(&cells, alive);
     }
 
     /// Stops drawing.
     fn pointer_up(&self, event: &web_sys::PointerEvent) {
+        self.last_cell.set(None);
         if self.painting.replace(None).is_some() {
             let _ = self.svg.release_pointer_capture(event.pointer_id());
             self.announce_cursor();
@@ -570,6 +592,7 @@ pub(crate) fn build_game_of_life_demo() -> Result<(), String> {
         generation: Cell::new(0),
         cursor: Cell::new((COLS / 2, ROWS / 2)),
         painting: Cell::new(None),
+        last_cell: Cell::new(None),
         playing: Cell::new(false),
         speed: Cell::new(FIRST_SPEED),
         carried: Cell::new(0.0),
