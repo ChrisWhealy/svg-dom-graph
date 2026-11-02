@@ -297,5 +297,6 @@ fn read_to_string(path: &Path) -> Result<String, AssembleError> {
     })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

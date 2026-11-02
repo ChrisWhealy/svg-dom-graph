@@ -13,11 +13,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Sine/Cosine demo panel (`534bc5c`)
 - Phase shift demo panel (`fdb996a`)
 - Amplitude/Frequency demo panel (`eeb30d0`)
-- Pythagorean theory demo panel (``)
+- Pythagorean theory demo panel (`223280f`)
 
 ## Changed
 
 - Make consistent use of `<input type="range">` as `foreignObject` across all demos (`52f50ab`)
+- Adjust demo panel order plus some refactoring (``)
 
 # [Released]
 

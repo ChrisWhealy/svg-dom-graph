@@ -130,10 +130,11 @@ fn turns(tab: &Tab) -> Result<usize, String> {
         } else {
             None
         };
-        if let (Some(before), Some(after)) = (direction, now) {
-            if before != after {
-                turned += 1;
-            }
+
+        if let (Some(before), Some(after)) = (direction, now)
+            && before != after
+        {
+            turned += 1;
         }
         if now.is_some() {
             direction = now;

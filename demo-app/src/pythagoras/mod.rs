@@ -59,6 +59,12 @@ const DOT: &str = "6";
 const MARK: f64 = 12.0;
 const SHORTEST: f64 = 1.8 * MARK;
 
+/// The radius of the curve that shows the angle, and of the circle that its label is on, in pixels, and the smallest
+/// angle that the curve and its label are drawn for, in degrees.
+const ARC_RADIUS: f64 = 32.0;
+const LABEL_RADIUS: f64 = 50.0;
+const SMALLEST_ARC: f64 = 1.0;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The elements that are drawn again each time C moves.
 struct Drawing {
@@ -68,6 +74,9 @@ struct Drawing {
     height: web_sys::Element,
     triangle: web_sys::Element,
     mark: web_sys::Element,
+    /// The curve at the middle of the circle that shows the angle, and the \u{3b8} beside it.
+    arc: web_sys::Element,
+    theta: web_sys::Element,
     dot: web_sys::Element,
     /// The writing in each of the three squares, and the two lines at the top.
     hypotenuse_text: web_sys::Element,
@@ -98,6 +107,13 @@ impl Demo {
         set(&drawing.height, "points", &polygon(&figure.height))?;
         set(&drawing.triangle, "points", &polygon(&[figure.centre, figure.foot, figure.c]))?;
         set(&drawing.mark, "d", &mark_path(&figure))?;
+        set(&drawing.arc, "d", &arc_path(degrees))?;
+        let theta = angle_label_at(degrees);
+        set(&drawing.theta, "x", &theta.x.to_string())?;
+        set(&drawing.theta, "y", &theta.y.to_string())?;
+        drawing
+            .theta
+            .set_text_content(Some(if shows_arc(degrees) { "\u{3b8}" } else { "" }));
         let at = scene(figure.c);
         set(&drawing.dot, "cx", &at.x.to_string())?;
         set(&drawing.dot, "cy", &at.y.to_string())?;
@@ -254,6 +270,13 @@ fn draw_scene(document: &web_sys::Document) -> Result<Drawing, String> {
         "path",
         &[("fill", "none"), ("stroke", TRIANGLE), ("stroke-width", "1.5")],
     )?;
+    let arc = make(
+        document,
+        "path",
+        &[("fill", "none"), ("stroke", POINT), ("stroke-width", TRIANGLE_WIDTH)],
+    )?;
+    let theta = text(document, CENTRE, "middle", "18", "theta")?;
+    set(&theta, "font-style", "italic")?;
     let dot = make(document, "circle", &[("r", DOT), ("fill", POINT)])?;
     let hypotenuse_text = text(document, CENTRE, "middle", "15", "text-hypotenuse")?;
     let width_text = text(document, CENTRE, "middle", "15", "text-width")?;
@@ -261,8 +284,8 @@ fn draw_scene(document: &web_sys::Document) -> Result<Drawing, String> {
     let equation = text(document, Point::new(SIDE / 2.0, 30.0), "middle", "18", "equation")?;
     let numbers = text(document, Point::new(SIDE / 2.0, 58.0), "middle", "18", "numbers")?;
     for child in [
-        &hypotenuse, &width, &height, &circle, &triangle, &mark, &dot, &hypotenuse_text, &width_text, &height_text,
-        &equation, &numbers,
+        &hypotenuse, &width, &height, &circle, &triangle, &mark, &arc, &theta, &dot, &hypotenuse_text, &width_text,
+        &height_text, &equation, &numbers,
     ] {
         shapes
             .append_child(child)
@@ -277,6 +300,8 @@ fn draw_scene(document: &web_sys::Document) -> Result<Drawing, String> {
         height,
         triangle,
         mark,
+        arc,
+        theta,
         dot,
         hypotenuse_text,
         width_text,
@@ -311,6 +336,52 @@ fn mark_path(figure: &Figure) -> String {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The angle between the radius to C and the horizontal axis on the side that W is, which is always the angle at the
+/// middle of the triangle, in degrees from 0 to 90, together with the direction of that side of the axis: 1 for right
+/// and -1 for left.
+fn triangle_angle(degrees: f64) -> (f64, f64) {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    let side = if cos < 0.0 { -1.0 } else { 1.0 };
+    (sin.abs().atan2(cos.abs()).to_degrees(), side)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Whether the angle at the middle of the triangle at `degrees` is big enough for its curve to be seen.
+fn shows_arc(degrees: f64) -> bool {
+    triangle_angle(degrees).0 >= SMALLEST_ARC
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The path of the curve round the middle of the circle, from the horizontal axis to the radius to C by the short way,
+/// which is the angle at the middle of the triangle in every quadrant, or nothing if the angle is too small to show.
+fn arc_path(degrees: f64) -> String {
+    if !shows_arc(degrees) {
+        return String::new();
+    }
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    let (_, side) = triangle_angle(degrees);
+    // The curve runs anticlockwise on the screen in quadrants one and three, and clockwise in two and four.
+    let sweep = if side * sin < 0.0 { 1 } else { 0 };
+    format!(
+        "M {} {} A {ARC_RADIUS} {ARC_RADIUS} 0 0 {sweep} {} {}",
+        CENTRE.x + side * ARC_RADIUS,
+        CENTRE.y,
+        CENTRE.x + ARC_RADIUS * cos,
+        CENTRE.y - ARC_RADIUS * sin
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Where the \u{3b8} goes: beside the curve, half way between the axis and the radius to C.
+fn angle_label_at(degrees: f64) -> Point {
+    let (sin, cos) = degrees.to_radians().sin_cos();
+    let (_, side) = triangle_angle(degrees);
+    let (x, y) = (side + cos, sin);
+    let long = x.hypot(y);
+    Point::new(CENTRE.x + LABEL_RADIUS * x / long, CENTRE.y - LABEL_RADIUS * y / long)
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What assistive technology reads for the scene.
 fn label(degrees: f64, numbers: &str) -> String {
@@ -328,8 +399,9 @@ fn label(degrees: f64, numbers: &str) -> String {
 ///
 /// 1. The unit circle, with C on it, starting at 45 degrees. C is dragged round the circle with the pointer, or moved
 ///    with the keys when it has the focus.
-/// 2. The right triangle that the centre, C and the point W under or over C on the horizontal axis make.
-/// 3. A square on each of the three sides, away from the triangle. The square on the hypotenuse is a blue that lets
+/// 2. A curve at the middle of the circle, labelled \u{3b8}, that shows the angle whose cosine and sine are the sides.
+/// 3. The right triangle that the centre, C and the point W under or over C on the horizontal axis make.
+/// 4. A square on each of the three sides, away from the triangle. The square on the hypotenuse is a blue that lets
 ///    what is under it be seen, and the other two are green in the same way. The area of each is written in it.
 ///
 /// Each move of C draws the triangle and the squares again, so the squares grow and shrink as C goes round, and the two
