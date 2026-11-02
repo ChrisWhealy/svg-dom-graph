@@ -313,7 +313,7 @@ fn the_status_text_names_each_state_in_words() {
     assert!(core.status_text().starts_with("Finishing input"));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn randomising_applies_the_weights_and_a_tension_that_makes_the_network_settle_by_itself() {
     let mut core = core();

@@ -121,6 +121,12 @@ So a label stays the same distance from its point however the axes are scaled.
 
 * A line is cut where it leaves the plotted area, and so is a shaded area.
 * A shaded area is cut where its line crosses the baseline, so each piece is on one side, and it is drawn in the order given. Give it before the line that it is under.
+* A shaded area shows an integral and does not work it out.
+  The area is the same shape as the line through the same points, so the trapezoid rule on those points gives the area that is shaded.
+* A point that cannot be placed breaks a shaded area in two, as it breaks a line.
+  A baseline that cannot be placed, which is zero or less on a logarithmic axis, shades nothing.
+* The plot is an image to assistive technology, so the shading is not read.
+  Say in the description what the areas above and below are, as the colours are not the only way to tell them apart.
 * A dot or a label whose point is outside it is not drawn.
 * A point that cannot be placed is skipped, and breaks a line there.
   So a gap in the data is a gap in the line.

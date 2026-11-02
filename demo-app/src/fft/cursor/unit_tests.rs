@@ -51,7 +51,7 @@ fn step(
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_toolbar_selection_and_the_completed_stages_map_both_ways() {
     assert_eq!(stage_of(None), 0);
@@ -77,7 +77,7 @@ fn a_new_cursor_is_unstarted_and_does_not_need_repair() {
     assert_eq!((cursor.completed(), cursor.pair(), cursor.needs_repair()), (0, 0, false));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_default_pair_follows_the_first_nonzero_rule_at_every_stage() {
     let trace = run(Preset::Impulse);
@@ -109,7 +109,7 @@ fn a_pair_chosen_at_a_stage_is_remembered_there_and_nowhere_else() {
     assert_eq!(cursor.pair_for(&trace, 0), 3);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn stepping_forward_draws_the_next_stage_and_moves_the_cursor() {
     let trace = run(Preset::Impulse);
@@ -256,7 +256,7 @@ fn a_step_beyond_the_last_stage_is_held_at_the_last_stage() {
     assert_eq!(cursor.completed(), 3);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_failed_pair_change_draws_the_old_pair_again() {
     let trace = run(Preset::Impulse);

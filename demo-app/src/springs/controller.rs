@@ -181,7 +181,7 @@ impl Controller {
         self.animation.as_ref().is_some_and(|a| a.is_pending())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The index of node `id`, and its centre when its top-left corner is `origin`. The centre uses the size the
     /// scene reports for the node, never a radius written down here.
     fn centre_of(&self, id: NodeId, origin: Point) -> Option<(usize, Vec2)> {
@@ -190,7 +190,7 @@ impl Controller {
         Some((index, Vec2::new(origin.x + size.width / 2.0, origin.y + size.height / 2.0)))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn on_drag(&mut self, id: NodeId, phase: DragPhase) {
         match phase {
             DragPhase::Start { origin } => {
@@ -294,7 +294,7 @@ impl Controller {
         outcome
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Puts the circles back where they started, with every spring at its starting length. The weights are kept.
     fn reset(&mut self) -> ApplyOutcome {
         let (outcome, moves) = self.core.reset();
@@ -304,7 +304,7 @@ impl Controller {
         outcome
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Asks for a frame if the physics wants one, and cancels any that is pending if it does not.
     fn schedule(&self) {
         let Some(animation) = &self.animation else {
@@ -317,7 +317,7 @@ impl Controller {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Publishes the state: the two attributes the tests read, the status line, the controls, and a sparing
     /// announcement.
     fn publish(&mut self) {
@@ -348,7 +348,7 @@ impl Controller {
         self.announce(status);
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Announces a major change of state, and nothing between: one line when a drag starts, when the graph is paused,
     /// when it comes to rest and when it fails to. Never one for each frame.
     fn announce(&mut self, status: Status) {

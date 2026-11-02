@@ -33,10 +33,16 @@ pub(crate) fn pieces(points: &[PlotPoint], baseline: f64) -> Vec<Piece> {
             continue;
         }
         let (da, db) = (a.y - baseline, b.y - baseline);
+        // Two finite heights can be further apart than a number can say, and the crossing cannot be found.
+        if !da.is_finite() || !db.is_finite() {
+            open = false;
+            continue;
+        }
         // The segment as one or two parts, each with the side it is on.
         let mut parts: Vec<Part> = Vec::new();
         if da * db < 0.0 {
-            let t = da / (da - db);
+            // Worked out as a ratio, since the difference of two heights can be more than a number can say.
+            let t = 1.0 / (1.0 - db / da);
             let cross = (a.x + t * (b.x - a.x), baseline);
             parts.push((da > 0.0, (a.x, a.y), cross));
             parts.push((db > 0.0, cross, (b.x, b.y)));

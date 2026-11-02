@@ -16,6 +16,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Changed
 
+- Convolution demo: the spectrum says that `a` and `b` are twice the raw integrals, and its text and docs say that the sums are a correlation, give the normalisation, and show that the conventions are those of the FFT demo
 - Demo panels are grouped and ordered by the folders under `demo/panels/` (`NN-group-name/NN-demo-name.html`), not by `data-group` and `data-order`
 - `svg_buttons` and `sliders` moved from `demo-common` to the library, as `svg_dom_graph::controls`
 

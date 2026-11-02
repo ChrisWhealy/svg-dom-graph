@@ -743,6 +743,177 @@ fn a_point_that_is_not_finite_breaks_the_area_in_two() {
     assert!(pieces(&run(&[(0.0, 1.0)]), 0.0).is_empty(), "one point has no area");
 }
 
+#[test]
+fn a_line_that_touches_the_baseline_without_crossing_it_stays_on_its_side() {
+    // Down to the baseline and up again: one piece above, whose middle corner is on the baseline.
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 0.0), (2.0, 1.0)]), 0.0);
+    assert_eq!(found.len(), 1);
+    assert!(found[0].above);
+    assert_eq!(
+        found[0].corners,
+        vec![(0.0, 0.0), (0.0, 1.0), (1.0, 0.0), (2.0, 1.0), (2.0, 0.0)]
+    );
+}
+
+#[test]
+fn a_line_that_passes_through_the_baseline_at_a_point_changes_side_there() {
+    // The point on the baseline is the end of one piece and the start of the next, and it is not cut twice.
+    let found = pieces(&run(&[(0.0, 1.0), (1.0, 0.0), (2.0, -1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert!(found[0].above && !found[1].above);
+    assert_eq!(found[0].corners.last(), Some(&(1.0, 0.0)));
+    assert_eq!(found[1].corners.first(), Some(&(1.0, 0.0)));
+    assert_eq!(found[0].corners[..3], [(0.0, 0.0), (0.0, 1.0), (1.0, 0.0)]);
+}
+
+#[test]
+fn a_crossing_is_where_the_straight_line_between_the_points_meets_the_baseline() {
+    // From (1, 3) to (4, -3) the line meets the axis at 2.5, and from (0, 3) to (2, 1) at a baseline of 2, at 1.
+    let found = pieces(&run(&[(1.0, 3.0), (4.0, -3.0)]), 0.0);
+    assert_eq!(found[0].corners.last(), Some(&(2.5, 0.0)));
+    let found = pieces(&run(&[(0.0, 3.0), (2.0, 1.0)]), 2.0);
+    assert_eq!(found[0].corners[1..3], [(0.0, 3.0), (1.0, 2.0)]);
+    // A crossing that is almost at an end is still between the two points.
+    let found = pieces(&run(&[(0.0, 1e-12), (1.0, -1.0)]), 0.0);
+    let crossing = found[0].corners.last().map(|c| c.0);
+    assert!(crossing.is_some_and(|x| (0.0..=1.0).contains(&x)), "{found:?}");
+}
+
+#[test]
+fn two_finite_heights_too_far_apart_for_their_difference_to_be_a_number_are_still_cut_in_the_middle() {
+    let found = pieces(&run(&[(0.0, 1e308), (1.0, -1e308), (2.0, -1.0)]), 0.0);
+    assert_eq!(found.len(), 2);
+    assert!(
+        found
+            .iter()
+            .all(|p| p.corners.iter().all(|c| c.0.is_finite() && c.1.is_finite())),
+        "{found:?}"
+    );
+    assert_eq!(
+        found[0].corners.last(),
+        Some(&(0.5, 0.0)),
+        "half way, since the heights are as far either way"
+    );
+    assert!(found[0].above && !found[1].above);
+}
+
+fn log_and_linear() -> PlotLayout {
+    PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::logarithmic(1.0, 100.0))).expect("a valid plot")
+}
+
+#[test]
+fn a_shaded_area_with_both_ends_of_a_segment_outside_the_plot_is_cut_to_what_crosses_it() {
+    let layout = PlotLayout::new(&real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(-1.0, 1.0))).expect("a valid plot");
+    // One segment from far left and far above to far right and far above: it never enters the plot, and the shading
+    // under it, down to the axis, is a band that does.
+    let wide = layout.clip_area(&run(&[(-5.0, 4.0), (6.0, 4.0)]), 0.0);
+    assert_eq!(wide.len(), 1);
+    assert!(
+        (polygon_area(&wide[0].1)
+            - (layout.area.right - layout.area.left) * (layout.area.bottom - layout.area.top) / 2.0)
+            .abs()
+            < 1e-6
+    );
+    // One that is wholly outside, with the baseline too, is nothing.
+    assert!(layout.clip_area(&run(&[(2.0, 4.0), (3.0, 4.0)]), 3.0).is_empty());
+    // A steep one, from far below to far above, crosses the whole height of the plot and the shading is cut by its edges.
+    let steep = layout.clip_area(&run(&[(0.25, -9.0), (0.75, 9.0)]), 0.0);
+    assert_eq!(steep.len(), 2);
+    for (_, polygon) in &steep {
+        assert!(polygon.iter().all(|&p| layout.area.contains((
+            p.0.clamp(layout.area.left, layout.area.right),
+            p.1.clamp(layout.area.top, layout.area.bottom)
+        ))));
+        assert!(
+            polygon.iter().all(|&(x, y)| x >= layout.area.left - 1e-9
+                && x <= layout.area.right + 1e-9
+                && y >= layout.area.top - 1e-9
+                && y <= layout.area.bottom + 1e-9),
+            "{polygon:?}"
+        );
+    }
+}
+
+#[test]
+fn a_point_that_cannot_be_placed_breaks_a_shaded_area_in_two() {
+    let layout = log_and_linear();
+    // On a logarithmic axis a height of zero or less cannot be placed.
+    let found = layout.clip_area(&run(&[(0.0, 10.0), (0.2, 10.0), (0.4, 0.0), (0.6, 10.0), (0.8, 10.0)]), 1.0);
+    assert_eq!(found.len(), 2, "one stretch before the point and one after");
+    assert!(found.iter().all(|(above, _)| *above));
+    let nan = layout.clip_area(
+        &run(&[(0.0, 10.0), (0.2, 10.0), (0.4, f64::NAN), (0.6, 10.0), (0.8, 10.0)]),
+        1.0,
+    );
+    assert_eq!(nan.len(), 2);
+}
+
+#[test]
+fn a_baseline_that_cannot_be_placed_shades_nothing() {
+    let layout = log_and_linear();
+    let points = run(&[(0.0, 10.0), (1.0, 10.0)]);
+    assert!(layout.clip_area(&points, 0.0).is_empty(), "zero on a logarithmic axis");
+    assert!(layout.clip_area(&points, -5.0).is_empty(), "below zero on a logarithmic axis");
+    assert!(layout.clip_area(&points, f64::NAN).is_empty());
+    assert_eq!(layout.clip_area(&points, 1.0).len(), 1, "a baseline above zero is shaded to");
+}
+
+#[test]
+fn a_shaded_area_on_a_logarithmic_axis_is_cut_where_it_crosses_the_baseline_in_the_values() {
+    let layout = log_and_linear();
+    // From 2 to 50 across a baseline of 10: one piece below it, and one above.
+    let found = layout.clip_area(&run(&[(0.0, 2.0), (1.0, 50.0)]), 10.0);
+    assert_eq!(found.len(), 2);
+    assert!(!found[0].0 && found[1].0);
+}
+
+#[test]
+fn a_shaded_area_is_never_given_a_corner_that_is_not_a_number_however_extreme_the_values() {
+    let configs = [
+        real(PlotAxis::linear(0.0, 1.0), PlotAxis::linear(-1.0, 1.0)),
+        real(
+            PlotAxis::linear(-1e-300, 1e-300).with_major_interval(1e-300),
+            PlotAxis::linear(-1e-300, 1e-300).with_major_interval(1e-300),
+        ),
+        real(
+            PlotAxis::linear(-1e300, 1e300).with_major_interval(1e299),
+            PlotAxis::linear(-1e300, 1e300).with_major_interval(1e299),
+        ),
+        real(
+            PlotAxis::logarithmic(1e-100, 1e100).with_minor(MinorTicks::None),
+            PlotAxis::logarithmic(1e-100, 1e100).with_minor(MinorTicks::None),
+        ),
+    ];
+    let extremes = [1e308, -1e308, f64::MAX, f64::MIN, 1e300, -1e-300, 1e-320, 0.0, 1.0];
+    for config in configs {
+        let layout = PlotLayout::new(&config).expect("a valid plot");
+        for &a in &extremes {
+            for &b in &extremes {
+                for baseline in [0.0, 1.0, -1.0, 1e300, f64::MAX] {
+                    let points = run(&[(0.1, a), (0.5, b), (0.9, a)]);
+                    for (_, polygon) in layout.clip_area(&points, baseline) {
+                        assert!(polygon.len() >= 3);
+                        assert!(
+                            polygon.iter().all(|&(x, y)| x.is_finite() && y.is_finite()),
+                            "{a} {b} {baseline}: {polygon:?}"
+                        );
+                        let area = layout.area;
+                        assert!(
+                            polygon.iter().all(|&(x, y)| {
+                                x >= area.left - 1e-6
+                                    && x <= area.right + 1e-6
+                                    && y >= area.top - 1e-6
+                                    && y <= area.bottom + 1e-6
+                            }),
+                            "{a} {b} {baseline}: {polygon:?} is outside {area:?}"
+                        );
+                    }
+                }
+            }
+        }
+    }
+}
+
 const UNIT_BOX: Bounds = Bounds {
     left: 0.0,
     top: 0.0,

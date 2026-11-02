@@ -79,7 +79,16 @@ impl PlotLine {
 ///
 /// The line is cut where it crosses the baseline, so each shaded piece is on one side of it. The crossing is found by
 /// straight interpolation of the values, which is where the line crosses on a linear axis. The area is cut to the
-/// plotted area, and a point that cannot be placed breaks the area in two.
+/// plotted area. A point that cannot be placed, because it is not finite or is zero or less on a logarithmic axis,
+/// breaks the area in two, as it breaks a line. A baseline that cannot be placed leaves nothing to shade to, so nothing
+/// is shaded.
+///
+/// An area shows an integral and does not work it out. The caller integrates, and the area is the same shape as the
+/// line through the same points, so the trapezoid rule on those points gives the area that is shaded.
+///
+/// The plot is an image to assistive technology, so the shading is only seen. The colours should not be the only way
+/// to tell the two sides apart, so the caller says in the plot's description what the areas above and below are, with
+/// [`Scene::set_plot_description`](crate::scene::Scene::set_plot_description).
 ///
 /// Draw it before the line, so that the line is over the shading.
 #[derive(Debug, Clone, PartialEq)]

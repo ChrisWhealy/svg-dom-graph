@@ -12,7 +12,7 @@ It is looked at for one second, as 512 straight segments.
 Both frequencies are whole numbers, so each wave makes a whole number of cycles in that second.
 
 The probe is a cosine and a sine of one frequency, which the slider sets from 0 Hz to 10 Hz in steps of 0.1 Hz.
-It starts at 2 Hz.
+It starts at 3 Hz, where there is none of either wave and the areas cancel.
 
 ## The four scenes
 
@@ -28,21 +28,50 @@ It starts at 2 Hz.
   The product's line is drawn over the shading.
   Three numbers are written at the top: the area above, the area below, and the integral, which is the one plus the other, since the area below is written as a negative number.
 * **The spectrum.**<br>
-  800 by 240 pixels.
+  800 by 260 pixels.
   It has the amplitude that is found at every frequency of the slider, a dotted line down from the frequency of the probe, and a dot at the amplitude found there.
-  Under the axis it says what was found: `a`, `b`, the amplitude and the phase.
+  Under the axis, in two lines, it says what was found: `a` and `b` as twice the integrals that are written in the products, and then the amplitude and the phase.
 
 ## What the numbers mean
 
 For a wave `A · sin(2π · f · t + φ)` that is looked at for a whole number of cycles, twice the integral of its product with the cosine is `A · sin φ`, and twice the integral of its product with the sine is `A · cos φ`.
 Those are `a` and `b` in the writing, so the amplitude is `√(a² + b²)`, and the phase is the angle `atan2(a, b)`.
-At 2 Hz the page says `a = +0.64`, `b = +0.77`, an amplitude of 1.00 and a phase of 40°, which are the numbers of the first wave.
+At 2 Hz the page says `a = 2 × 0.32 = +0.64`, `b = 2 × 0.38 = +0.77`, an amplitude of 1.00 and a phase of 40°, which are the numbers of the first wave.
 At 5 Hz it says an amplitude of 0.60 and a phase of 110°, which are those of the second.
 At a whole frequency that is in neither, such as 3 Hz, both integrals are nothing, because the shading above the axis is as large as the shading below it.
 The page then writes no phase, since a wave that is not there has none.
 
 A frequency that does not make a whole number of cycles in the second finds a little of each wave.
-This is spectral leakage, and it is why the spectrum has small bumps between its peaks, and why a peak can be a step away from the frequency of its wave, as the leakage of each wave adds to the other.
+This is spectral leakage, which comes from looking at the signal for a window that does not hold a whole number of cycles of the probe, and it is why the spectrum has small bumps between its peaks, and why a peak can be a step away from the frequency of its wave, as the leakage of each wave adds to the other.
+
+## Correlation, normalisation and the conventions
+
+**What the sums are.**
+Multiplying the signal by a probe and adding up the result is a correlation, or a projection of the signal onto the probe, and not a convolution in the usual sense.
+A convolution flips one function in time and slides it across the other, but here nothing is slid and each frequency gives one number.
+The panel keeps the name "Convolution", and its text says so.
+
+**Raw integrals and recovered amplitudes.**
+The three numbers written in a product plot are raw: the area above, the area below, and the integral.
+For a wave `A · sin(2π · f · t + φ)` over whole cycles, the raw integral with the cosine is `A/2 · sin φ`, since the average of a sine squared is a half.
+So `a` and `b` in the spectrum are twice the raw integrals, which is `2/T` for a window of `T` = 1 second, and the spectrum says so in its first line: `a = 2 × 0.32 = +0.64`.
+Without the 2 the amplitudes found would be half as tall as the waves that made the signal.
+
+**The conventions of the FFT demo.**
+The frequency is in cycles per second and the angle is `2π · f · t`.
+A wave is `A · sin(2π · f · t + φ)`, so a positive phase moves it to the left, as in Phase Shift and Amplitude, Frequency and Phase.
+The forward transform has `e^(−2πi·f·t)` in it, with no scaling.
+So the bin of the transform for the frequency of the probe is `X = N/2 · (a − i·b)`, its size is `N/2 · A`, and its angle plus 90° is the phase.
+That is the amplitude `2|X|/N` and the phase `angle(X) + 90°` of the FFT demo.
+`convolution/analysis/unit_tests.rs` checks it against a transform worked out from its definition, for both waves.
+
+## The integral and the shading
+
+`PlotArea` shows an integral and does not work it out, so the demo works it out itself, and the two agree because they use the same shape.
+The curve is drawn as straight segments through the 513 samples, so the area between it and the axis is a run of trapezoids.
+The demo adds them up by the trapezoid rule, and counts a segment that crosses the axis as a triangle on each side, which is where the library cuts it.
+`convolution/analysis/unit_tests.rs` checks that the net of that is the signed area of the polygon that the library shades, worked out by the shoelace formula, to 1e-12.
+The CDP test checks the same against the shading that the browser draws, to within six thousandths.
 
 ## The shading
 

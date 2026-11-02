@@ -5,7 +5,6 @@ use crate::{
     error::Error,
     model::plot::{
         Bounds, LabelAnchor, PlotArea, PlotItem, PlotLabel, PlotLayout, PlotLine, PlotPoint, PlotPoints, Side, Spot,
-        pieces,
     },
 };
 
@@ -47,12 +46,9 @@ fn draw_line(painter: &mut Painter<'_>, layout: &PlotLayout, line: &PlotLine) ->
 /// opacity that is not a number from 0 to 1 is taken as the nearest end.
 fn draw_area(painter: &mut Painter<'_>, layout: &PlotLayout, area: &PlotArea) -> Result<(), Error> {
     let opacity = if area.opacity.is_nan() { 0.0 } else { area.opacity.clamp(0.0, 1.0) };
-    for piece in pieces(&area.points, area.baseline) {
-        let polygon = layout.clip_polygon(&piece.corners);
-        if polygon.len() >= 3 {
-            let fill = if piece.above { &area.above } else { &area.below };
-            painter.polygon(&polygon, fill, opacity)?;
-        }
+    for (above, polygon) in layout.clip_area(&area.points, area.baseline) {
+        let fill = if above { &area.above } else { &area.below };
+        painter.polygon(&polygon, fill, opacity)?;
     }
     Ok(())
 }

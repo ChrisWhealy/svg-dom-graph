@@ -6,7 +6,7 @@
 use super::algorithm::PairTrace;
 use demo_common::complex::Complex;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A real number to three decimals, with a true minus sign, and no minus sign on a zero.
 fn real(x: f64) -> String {
     let text = format!("{:.3}", x.abs());
@@ -44,7 +44,7 @@ pub(super) fn twiddle(pair: &PairTrace) -> String {
     format!("W{}^{} = {}", pair.block_width(), pair.j, complex(pair.w))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The title above the inspector: a preview before any stage is complete, and the stage and pair afterwards.
 pub(super) fn inspector_title(completed: usize, stages: usize, pair_number: usize, pairs: usize) -> String {
     if completed == 0 {
@@ -122,6 +122,6 @@ pub(super) fn needs_repair(error: &str) -> String {
 /// Added when the inspector's butterfly could not stay where it was dragged to.
 pub(super) const MOVED_INSIDE: &str = " The butterfly was moved to stay inside the new canvas.";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

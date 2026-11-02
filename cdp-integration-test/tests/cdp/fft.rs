@@ -518,7 +518,7 @@ fn letting_go_of_a_slider_restarts_the_walk() -> Result<(), String> {
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The graph has the three waves and the sum as four curves, and one mark for each sample, and one more in its key. The
 /// vertical axis stands at the left edge of the graph, and nothing is drawn left of it but its labels.
 #[test]

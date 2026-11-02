@@ -36,7 +36,7 @@ fn impulse(n: usize) -> Vec<Complex> {
     Preset::Impulse.samples(n)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_transform_matches_the_definition_for_every_preset_and_size() {
     for n in [2, 4, 8, 16, 32] {
@@ -121,7 +121,7 @@ fn a_preset_is_found_again_by_its_key() {
     assert_eq!(Preset::from_key("zero"), None);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_eight_point_bit_reversal_is_the_known_permutation() {
     assert_eq!(bit_reversal(8), Ok(vec![0, 4, 2, 6, 1, 5, 3, 7]));
@@ -157,7 +157,7 @@ fn a_sample_that_is_not_finite_is_refused() {
     assert_eq!(trace(&input), Err(Error::NotFinite { index: 5 }));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_first_state_is_the_input_in_bit_reversed_order() {
     let input = Preset::Mixed.samples(8);
@@ -265,7 +265,7 @@ fn stage_pairs_outside_the_run_are_empty() {
     assert!(got.stage_pairs(4).is_empty());
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Appendix A of the design: the eight-point impulse, to three decimals.
 #[test]
 fn the_eight_point_impulse_has_the_documented_state_after_every_stage() {
@@ -309,7 +309,7 @@ fn the_documented_stage_three_pair_has_the_documented_numbers() {
     assert!(near(pair.difference, -pair.w, 8));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn pair_with(a: Complex, b: Complex) -> PairTrace {
     PairTrace {
         stage: 1,

@@ -11,7 +11,7 @@ use svg_dom::{
     root::utils::{Point, Size},
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How a piece of text is drawn.
 pub(super) struct TextStyle<'a> {
     pub(super) size: f64,
@@ -25,7 +25,7 @@ pub(super) struct TextStyle<'a> {
 /// The width of the stroke of a halo, half of which is outside the letters.
 const HALO_WIDTH: f64 = 3.5;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(super) struct Painter<'a> {
     svg: &'a SvgRoot,
     group: SvgNode,
@@ -49,7 +49,7 @@ impl<'a> Painter<'a> {
         self.group
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Styles `node`, which is already in the document, and puts it in the group. It is removed if anything fails.
     fn place(
         &mut self,
@@ -63,7 +63,7 @@ impl<'a> Painter<'a> {
         Ok(())
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn rect(
         &mut self,
         origin: Point,
@@ -144,7 +144,7 @@ impl<'a> Painter<'a> {
         })
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// `text` at `spot`. A halo is painted first, so that the letters stay legible over a line.
     pub(super) fn text(&mut self, spot: Spot, text: &str, style: &TextStyle<'_>) -> Result<(), Error> {
         let (x, y) = spot.at;

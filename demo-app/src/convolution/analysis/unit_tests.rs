@@ -123,3 +123,90 @@ fn a_phase_is_never_negative_nor_a_whole_turn() {
         assert!((0.0..360.0).contains(&phase), "{phase}");
     }
 }
+
+/// The bin `k` of the discrete Fourier transform of the first `SEGMENTS` samples, which is a whole window, worked out
+/// from its definition: `X[k] = Σ x[n] · e^(−2πikn/N)`, forward and with no scaling, as in the FFT demo.
+fn dft_bin(samples: &[f64], k: usize) -> (f64, f64) {
+    let n = SEGMENTS;
+    samples.iter().take(n).enumerate().fold((0.0, 0.0), |(re, im), (i, x)| {
+        let angle = TAU * (k * i) as f64 / n as f64;
+        (re + x * angle.cos(), im - x * angle.sin())
+    })
+}
+
+#[test]
+fn the_findings_are_the_bin_of_the_transform_of_the_fft_demo_in_its_conventions() {
+    let samples = samples();
+    let n = SEGMENTS as f64;
+    for c in COMPONENTS {
+        let found = Finding::new(&samples, c.frequency);
+        let (re, im) = dft_bin(&samples, c.frequency as usize);
+        // X = N/2 · (a − i·b).
+        assert!(
+            near(re, n / 2.0 * found.a(), 1e-6),
+            "{} Hz: {re} against {}",
+            c.frequency,
+            n / 2.0 * found.a()
+        );
+        assert!(near(im, -n / 2.0 * found.b(), 1e-6), "{} Hz: {im}", c.frequency);
+        // The amplitude is 2|X|/N, and the phase is the angle of X, plus 90 degrees, as the FFT demo says.
+        assert!(near(2.0 * re.hypot(im) / n, found.amplitude(), 1e-9));
+        let phase = (im.atan2(re).to_degrees() + 90.0).rem_euclid(360.0);
+        assert!(
+            near(phase, found.phase(), 1e-6),
+            "{} Hz: {phase} against {}",
+            c.frequency,
+            found.phase()
+        );
+        assert!(near(phase, c.phase, 0.1));
+    }
+}
+
+#[test]
+fn the_integral_on_its_own_is_half_of_what_is_found_and_so_of_the_amplitude() {
+    let found = Finding::new(&samples(), 2.0);
+    assert!(near(found.cosine.areas.net() * 2.0, found.a(), 1e-12));
+    assert!(near(found.sine.areas.net() * 2.0, found.b(), 1e-12));
+    // The raw integrals make a vector of half the length of the amplitude.
+    assert!(near(
+        found.cosine.areas.net().hypot(found.sine.areas.net()),
+        found.amplitude() / 2.0,
+        1e-9
+    ));
+}
+
+/// The signed area of the closed polygon through `heights` and back along the axis, by the shoelace formula. It is the
+/// area that the library shades, above the axis less below it, worked out from the shape and not from the rule.
+fn shaded_net(heights: &[f64]) -> f64 {
+    let corners: Vec<(f64, f64)> = std::iter::once((0.0, 0.0))
+        .chain(heights.iter().enumerate().map(|(i, &h)| (seconds(i), h)))
+        .chain(std::iter::once((SECONDS, 0.0)))
+        .collect();
+    let n = corners.len();
+    -(0..n)
+        .map(|i| {
+            let (a, b) = (corners[i], corners[(i + 1) % n]);
+            a.0 * b.1 - b.0 * a.1
+        })
+        .sum::<f64>()
+        / 2.0
+}
+
+#[test]
+fn the_trapezoid_rule_gives_the_area_of_the_shape_that_is_shaded() {
+    // The curve is drawn as straight segments through the samples, so the area between it and the axis is a run of
+    // trapezoids, and what is written for each side of the axis is the area that the library shades there.
+    let samples = samples();
+    for f in [0.0, 1.7, 2.0, 3.0, 5.0, 9.9] {
+        let found = Finding::new(&samples, f);
+        for product in [&found.cosine, &found.sine] {
+            assert!(
+                near(product.areas.net(), shaded_net(&product.heights), 1e-12),
+                "{f} Hz: {} against {}",
+                product.areas.net(),
+                shaded_net(&product.heights)
+            );
+            assert!(product.areas.above >= 0.0 && product.areas.below <= 0.0);
+        }
+    }
+}

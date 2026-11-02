@@ -6,13 +6,22 @@
 //! falls with the probe, the product is mostly above the axis (or mostly below it) and the integral is large. Where it
 //! does not, the product is as much below the axis as above it, and the integral is nothing.
 //!
-//! For a wave `A · sin(2π · f · t + φ)` that is looked at for a whole number of cycles, twice the integral of its
-//! product with the cosine is `A · sin φ`, and twice the integral of its product with the sine is `A · cos φ`. So the
-//! two integrals together give the amplitude, and the phase.
+//! For a wave `A · sin(2π · f · t + φ)` that is looked at for a whole number of cycles, the integral of its product with
+//! the cosine is `A/2 · sin φ`, and the integral of its product with the sine is `A/2 · cos φ`, since the average of a
+//! sine squared is a half. Twice each integral, `a` and `b`, is therefore `A · sin φ` and `A · cos φ`, and together they
+//! give the amplitude and the phase. The factor of 2 is `2/T` for a window of `T` = 1 second.
+//!
+//! Strictly this is a correlation, or a projection of the signal onto the probe, and not a convolution: nothing is
+//! slid or flipped, and each frequency gives one number.
+//!
+//! The conventions are those of the Fast Fourier Transform demo: frequencies are in cycles for each second, so the
+//! angle is `2π · f · t`, a wave is `A · sin(2π · f · t + φ)` so that a positive phase moves it to the left, and the
+//! forward transform has `e^(−2πi·f·t)` in it. So the bin of the transform for the frequency `f` of the `N` samples of
+//! the window is `X = N/2 · (a − i·b)`, whose size is `N/2 · A` and whose angle is `φ − 90°`.
 
 use std::f64::consts::TAU;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How long the signal is looked at, in seconds.
 pub(crate) const SECONDS: f64 = 1.0;
 
@@ -26,7 +35,7 @@ pub(crate) const FREQUENCY_STEP: f64 = 0.1;
 /// The frequency of the probe that the page starts with, which is that of the first wave in the signal.
 pub(crate) const FIRST_PROBE: f64 = 3.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One sine wave of the signal: `amplitude · sin(2π · frequency · t + phase)`.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Component {
@@ -70,7 +79,7 @@ pub(crate) fn samples() -> Vec<f64> {
     (0..=SEGMENTS).map(|i| signal(seconds(i))).collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The two waves that the signal is probed with.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Probe {
@@ -89,7 +98,7 @@ impl Probe {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The area between a curve and the axis, apart for the part above the axis and the part below it.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Areas {
@@ -132,7 +141,7 @@ pub(crate) fn areas(heights: &[f64]) -> Areas {
     areas
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The signal multiplied by one probe, and the areas under that.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Product {
@@ -154,7 +163,7 @@ impl Product {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How much of one frequency is in the signal: its two products, and what they say.
 #[derive(Debug, Clone, PartialEq)]
 pub(crate) struct Finding {
@@ -173,12 +182,14 @@ impl Finding {
         }
     }
 
-    /// Twice the integral of the product with the cosine, which is `A · sin φ` for a wave of that frequency.
+    /// Twice the integral of the product with the cosine, which is `A · sin φ` for a wave of that frequency. The
+    /// integral on its own is only half of that.
     pub(crate) fn a(&self) -> f64 {
         2.0 * self.cosine.areas.net()
     }
 
-    /// Twice the integral of the product with the sine, which is `A · cos φ` for a wave of that frequency.
+    /// Twice the integral of the product with the sine, which is `A · cos φ` for a wave of that frequency. The integral
+    /// on its own is only half of that.
     pub(crate) fn b(&self) -> f64 {
         2.0 * self.sine.areas.net()
     }
@@ -194,12 +205,13 @@ impl Finding {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many frequencies the spectrum has: every [`FREQUENCY_STEP`] from the least to the greatest, inclusive.
 pub(crate) fn spectrum_len() -> usize {
     ((FREQUENCIES.1 - FREQUENCIES.0) / FREQUENCY_STEP).round() as usize + 1
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The frequency of the `n`th slider position, in Hz, without the error of adding a tenth `n` times.
 pub(crate) fn frequency(n: usize) -> f64 {
     FREQUENCIES.0 + n as f64 * FREQUENCY_STEP
@@ -215,6 +227,6 @@ pub(crate) fn spectrum(samples: &[f64]) -> Vec<(f64, f64)> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

@@ -54,7 +54,7 @@ fn origin_of(scene: &Scene, id: NodeId) -> Result<Point, String> {
     Ok(scene.node_rect(id).map_err(e)?.origin)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn a_butterfly_draws_a_frame_holding_a_multiplication_an_addition_and_a_subtraction() -> Result<(), String> {
     let (scene, butterfly) = add_butterfly("bf-draw")?;
@@ -83,7 +83,7 @@ fn a_butterfly_wires_the_multiplication_to_the_twiddle_and_b_and_the_others_to_a
     check(connector_count("bf-wires")? == 9, "expected nine connectors")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The addition is in the first row, the multiplication and the subtraction are in the second, and the multiplication is
 /// left of both.
 #[wasm_bindgen_test]
@@ -349,7 +349,7 @@ fn the_frame_has_three_input_ports_that_are_fixing_points_for_the_connectors() -
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn dragging_the_frame_carries_the_three_operator_nodes_by_the_same_amount() -> Result<(), String> {
     let (scene, butterfly) = add_butterfly("bf-drag")?;
@@ -474,7 +474,7 @@ fn replacing_the_results_changes_the_values_and_leaves_the_butterfly_in_place() 
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many groups a scene holds, which is how many nodes it has drawn.
 fn groups(id: &str) -> Result<u32, String> {
     let selector = format!("#{id} > g.svg-dom-graph-content > g");
@@ -588,7 +588,7 @@ fn an_unknown_operand_is_refused() -> Result<(), String> {
     check(matches!(result, Err(Error::UnknownNode(_))), "a node from another scene")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn a_failure_while_drawing_removes_everything_the_call_added() -> Result<(), String> {
     let (scene, operands) = scene_with_operands("bf-rollback")?;
@@ -611,7 +611,7 @@ fn a_failure_while_drawing_removes_everything_the_call_added() -> Result<(), Str
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every port and operator node is at the frame's corner plus the offset it had when the butterfly was made.
 fn check_in_place(scene: &Scene, butterfly: &Butterfly, offsets: &Offsets) -> Result<(), String> {
     let frame = origin_of(scene, butterfly.frame)?;

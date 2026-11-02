@@ -3,7 +3,7 @@
 use super::*;
 
 impl SpringSystem {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The force on each particle: the springs, and a push apart for any two circles that overlap.
     pub(in crate::force::solver) fn forces(&self) -> Vec<Vec2> {
         let mut forces = vec![Vec2::ZERO; self.particles.len()];

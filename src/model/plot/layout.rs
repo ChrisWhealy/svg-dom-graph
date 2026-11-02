@@ -5,9 +5,11 @@
 //! only as big as what they hold.
 
 use super::{
+    area::pieces,
     axis::{AxisName, AxisPosition, AxisScale, TickLabelPlacement, TickLabels},
     clip::{Bounds, clip_polygon, clip_polyline},
     config::{PlotAxis, PlotConfig, PlotConfigError, PlotPlane},
+    items::PlotPoint,
     map::AxisMap,
     ticks::format_number,
 };
@@ -37,6 +39,7 @@ pub(crate) enum Side {
     End,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A piece of text's position and anchor.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct Spot {
@@ -53,6 +56,7 @@ pub(crate) fn label_placement(config: &PlotConfig) -> TickLabelPlacement {
     })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The title of an axis: the one it was given, or the plane's own.
 pub(crate) fn title(config: &PlotConfig, name: AxisName) -> Option<&str> {
     let (axis, own) = match name {
@@ -65,6 +69,7 @@ pub(crate) fn title(config: &PlotConfig, name: AxisName) -> Option<&str> {
         .filter(|text| !text.is_empty())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What an axis puts after an automatic tick label: the one it was given, or the plane's own.
 pub(crate) fn suffix(config: &PlotConfig, name: AxisName) -> String {
     let axis = match name {
@@ -78,6 +83,7 @@ pub(crate) fn suffix(config: &PlotConfig, name: AxisName) -> String {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `axis` as it is drawn, with the plane's titles and suffixes written into it.
 pub(crate) fn resolved(config: &PlotConfig, name: AxisName) -> PlotAxis {
     let mut axis = match name {
@@ -116,6 +122,10 @@ fn insets(config: &PlotConfig) -> (f64, f64, f64, f64) {
     }
     (left, top, PLAIN_MARGIN, bottom)
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One piece of a shaded area, cut to the plotted area: its polygon, on the node, and whether it is above the baseline.
+pub(crate) type ShadedPiece = (bool, Vec<(f64, f64)>);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The layout of one plot.
@@ -164,6 +174,7 @@ impl PlotLayout {
         Some((self.x.page_of(x)?, self.y.page_of(y)?))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The runs of the polyline through `points` that are inside the plotted area, on the node.
     ///
     /// The cutting is done on how far along each axis the points are, so that however far off a point is, the line keeps
@@ -172,6 +183,7 @@ impl PlotLayout {
         self.clip_placed(&points.iter().map(|p| self.fractions(p.0, p.1)).collect::<Vec<_>>())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The part of the polygon through `corners`, which are values, that is inside the plotted area, on the node. Empty if
     /// none is, or if a corner cannot be placed.
     pub(crate) fn clip_polygon(&self, corners: &[(f64, f64)]) -> Vec<(f64, f64)> {
@@ -190,10 +202,36 @@ impl PlotLayout {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The pieces of the shaded area between the line through `points` and the horizontal line at `baseline`, each cut
+    /// to the plotted area, on the node. Each is a polygon and whether it is above the baseline.
+    ///
+    /// A point that cannot be placed breaks the line there, so each stretch on either side of it is shaded on its own,
+    /// as a gap in the data is a gap in a [`PlotLine`](super::PlotLine). A baseline that cannot be placed, which is
+    /// zero or less on a logarithmic axis, leaves nothing to shade to, so nothing is shaded.
+    pub(crate) fn clip_area(&self, points: &[PlotPoint], baseline: f64) -> Vec<ShadedPiece> {
+        if self.y.finite_fraction(baseline).is_none() {
+            return Vec::new();
+        }
+        let placeable = |p: &PlotPoint| self.fractions(p.x, p.y).is_some();
+        let mut shaded = Vec::new();
+        for stretch in points.split(|p| !placeable(p)) {
+            for piece in pieces(stretch, baseline) {
+                let polygon = self.clip_polygon(&piece.corners);
+                if polygon.len() >= 3 {
+                    shaded.push((piece.above, polygon));
+                }
+            }
+        }
+        shaded
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn fractions(&self, x: f64, y: f64) -> Option<(f64, f64)> {
         Some((self.x.finite_fraction(x)?, self.y.finite_fraction(y)?))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn clip_placed(&self, fractions: &[Option<(f64, f64)>]) -> Vec<Vec<(f64, f64)>> {
         const UNIT: Bounds = Bounds {
             left: 0.0,
@@ -207,6 +245,7 @@ impl PlotLayout {
             .collect()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The values at the position `local` on the node, or `None` if it is not inside the plotted area.
     pub(crate) fn values_at(&self, local: (f64, f64)) -> Option<(f64, f64)> {
         self.area
@@ -220,6 +259,7 @@ impl PlotLayout {
         line_position(self.y, axis.position)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The position, on the node, of the vertical axis line, given the vertical axis's own settings.
     pub(crate) fn y_axis_position(&self, axis: &PlotAxis) -> f64 {
         line_position(self.x, axis.position)
@@ -241,6 +281,7 @@ impl PlotLayout {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Where the label of a tick of the vertical axis at page position `at` goes. `line` is the position of the
     /// vertical axis line.
     pub(crate) fn y_label(&self, at: f64, line: f64) -> Spot {
@@ -275,6 +316,7 @@ impl PlotLayout {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Where the title of the vertical axis goes. In the margin it is above the plotted area, at its left edge. Beside
     /// the axes it is at the top end, to the right of the axis line.
     pub(crate) fn y_title(&self, line: f64) -> Spot {

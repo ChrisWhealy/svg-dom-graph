@@ -17,11 +17,11 @@ use svg_dom_graph::scene::{
     PlotPoints, TickLabelPlacement, TickLabels,
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The sizes of the scenes, in pixels. The two products are half as wide as the others, so they are as wide together.
 pub(crate) const SIGNAL_SIZE: (f64, f64) = (800.0, 330.0);
 pub(crate) const PRODUCT_SIZE: (f64, f64) = (400.0, 250.0);
-pub(crate) const SPECTRUM_SIZE: (f64, f64) = (800.0, 240.0);
+pub(crate) const SPECTRUM_SIZE: (f64, f64) = (800.0, 260.0);
 
 /// The height of the strip at the top of the signal scene that the slider is in.
 pub(crate) const STRIP: f64 = 70.0;
@@ -44,8 +44,10 @@ const HEIGHT_STEP: f64 = 0.5;
 const AMPLITUDE_TOP: f64 = 1.2;
 const AMPLITUDE_STEP: f64 = 0.2;
 
-/// How far below zero the amplitude axis goes, which is the room that the writing at the bottom of the spectrum is in.
-const AMPLITUDE_ROOM: f64 = 0.35;
+/// How far below zero the amplitude axis goes, which is the room that the two lines of writing at the bottom of the
+/// spectrum are in, and where each of them is.
+const AMPLITUDE_ROOM: f64 = 0.6;
+const RESULT_LINES: [f64; 2] = [-0.28, -0.405];
 
 /// The colours of the signal, of the two probes, of what is above the axis in a product, and of what is below it.
 pub(crate) const SIGNAL: &str = "#1a202c";
@@ -70,7 +72,7 @@ const MARKER_RADIUS: f64 = 6.0;
 const INSET: f64 = NAME_GAP / 2.0;
 const LINE_GAP: f64 = 18.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A number with its sign, to two places, with a proper minus. Nothing that rounds to 0 has a sign.
 pub(crate) fn signed(value: f64) -> String {
     if value.abs() < 0.005 {
@@ -96,23 +98,39 @@ fn probe_formula(probe: Probe, frequency: f64) -> String {
     format!("{name}(2\u{03C0} \u{00B7} {frequency:.1} \u{00B7} t)")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// What the writing in the spectrum says about the frequency that has been found. The phase is only said when there is
-/// some of the frequency in the signal to have one.
-pub(crate) fn result_text(finding: &Finding) -> String {
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A number to two places, with a proper minus where it is negative, and no plus sign.
+fn plain(value: f64) -> String {
+    signed(value).trim_start_matches('+').to_owned()
+}
+
+/// What the writing in the spectrum says about the frequency that has been found, in two lines. The first says that `a`
+/// and `b` are twice the integrals that are written in the products, which are only half of the wave that was found.
+/// The second says the amplitude and the phase, which is only said when there is some of the frequency in the signal
+/// to have one.
+pub(crate) fn result_lines(finding: &Finding) -> [String; 2] {
     let phase = if finding.amplitude() < 0.02 {
         "\u{2014}".to_owned()
     } else {
         format!("{:.0}\u{00B0}", finding.phase())
     };
-    format!(
-        "a = {}   b = {}   amplitude = \u{221A}(a\u{00B2} + b\u{00B2}) = {:.2}   phase = {phase}",
-        signed(finding.a()),
-        signed(finding.b()),
-        finding.amplitude()
-    )
+    [
+        format!(
+            "{}:   a = 2 \u{00D7} {} = {}   b = 2 \u{00D7} {} = {}",
+            frequency_text(finding.frequency),
+            plain(finding.cosine.areas.net()),
+            signed(finding.a()),
+            plain(finding.sine.areas.net()),
+            signed(finding.b()),
+        ),
+        format!(
+            "amplitude = \u{221A}(a\u{00B2} + b\u{00B2}) = {:.2}   phase = {phase}",
+            finding.amplitude()
+        ),
+    ]
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What assistive technology reads for the signal plot.
 pub(crate) fn signal_description(frequency: f64) -> String {
     format!(
@@ -148,7 +166,7 @@ pub(crate) fn spectrum_description(finding: &Finding) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The ticks of the time axis: one every `step` seconds, written as seconds, and none at 0, where the axes cross.
 fn time_ticks(step: f64) -> TickLabels {
     let last = (SECONDS / step).round() as u32;
@@ -232,7 +250,7 @@ pub(crate) fn spectrum_config(finding: &Finding) -> PlotConfig {
     .with_description(spectrum_description(finding))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A line of writing in a plot that starts at `x` seconds (or hertz) and is `y` high, in `colour`.
 fn writing(at: (f64, f64), text: impl Into<String>, colour: &str) -> PlotItem {
     PlotLabel::new(PlotPoint::new(at.0, at.1), text)
@@ -255,7 +273,7 @@ fn curve(heights: &[f64]) -> Vec<PlotPoint> {
 /// How far down, in the units of the height, a line of writing at the top of a plot is: the first, and the second.
 const TOP_LINES: [f64; 2] = [SPAN - 0.2, SPAN - 0.2 - LINE_GAP / 69.0];
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is drawn on the signal plot: the cosine and the sine of the probe, thin, behind the signal, and the names of the
 /// three along the bottom.
 pub(crate) fn signal_items(samples: &[f64], frequency: f64) -> Vec<PlotItem> {
@@ -277,7 +295,7 @@ pub(crate) fn signal_items(samples: &[f64], frequency: f64) -> Vec<PlotItem> {
     ]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is drawn on the plot of one product: the shading between it and the axis, one colour above and one below, the
 /// product itself over that, and the writing at the top that says which product it is and what the areas are.
 pub(crate) fn product_items(probe: Probe, finding: &Finding) -> Vec<PlotItem> {
@@ -301,7 +319,7 @@ pub(crate) fn product_items(probe: Probe, finding: &Finding) -> Vec<PlotItem> {
     ]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is drawn on the spectrum: the amplitude found at each frequency, a dotted line down from the probe's frequency
 /// to the axis, a dot at the amplitude that was found there, and the writing: a title at the top, and the result under
 /// the axis.
@@ -318,14 +336,17 @@ pub(crate) fn spectrum_items(spectrum: &[(f64, f64)], finding: &Finding) -> Vec<
             "Amplitude found at each probe frequency",
             SIGNAL,
         ),
-        writing(
-            (FREQUENCIES.0, -AMPLITUDE_ROOM / 2.0),
-            format!("{}:   {}", frequency_text(finding.frequency), result_text(finding)),
-            POINT,
-        ),
     ]
+    .into_iter()
+    .chain(
+        result_lines(finding)
+            .into_iter()
+            .zip(RESULT_LINES)
+            .map(|(line, at)| writing((FREQUENCIES.0, at), line, POINT)),
+    )
+    .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

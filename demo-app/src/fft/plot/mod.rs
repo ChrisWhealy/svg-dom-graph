@@ -14,7 +14,7 @@ use svg_dom_graph::scene::{
     AxisPosition, LegendEntry, MinorTicks, PlotAxis, PlotConfig, PlotItem, PlotLine, PlotPoint, PlotPoints, TickLabels,
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the plot node.
 pub(super) const SIZE: (f64, f64) = (660.0, 340.0);
 
@@ -38,7 +38,7 @@ const SAMPLE: &str = "#f5a623";
 const WAVE_WIDTH: f64 = 1.6;
 const SUM_WIDTH: f64 = 3.2;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The ticks of the horizontal axis: at each quarter of the window, named as fractions, since that is what they are.
 fn time_ticks() -> TickLabels {
     TickLabels::Custom(
@@ -81,7 +81,7 @@ pub(super) fn config() -> PlotConfig {
     PlotConfig::new(Size::new(SIZE.0, SIZE.1), time, value).with_legend(legend())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The points of the curve of `value` over the whole window.
 fn curve(value: impl Fn(f64) -> f64) -> Vec<PlotPoint> {
     (0..=SEGMENTS)
@@ -92,7 +92,7 @@ fn curve(value: impl Fn(f64) -> f64) -> Vec<PlotPoint> {
         .collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is drawn on the graph: the three waves, the sum over them, and a mark on the sum for each of `samples`.
 pub(super) fn items(waves: &[Wave; 3], samples: usize) -> Vec<PlotItem> {
     let mut items: Vec<PlotItem> = (0..3)
@@ -111,7 +111,7 @@ pub(super) fn items(waves: &[Wave; 3], samples: usize) -> Vec<PlotItem> {
     items
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The lowest and the highest the sum goes.
 fn extremes(waves: &[Wave; 3]) -> (f64, f64) {
     (0..=SEGMENTS)
@@ -142,6 +142,6 @@ pub(super) fn label(waves: &[Wave; 3], samples: usize) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

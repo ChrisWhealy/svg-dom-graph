@@ -166,7 +166,7 @@ fn chosen_size() -> Result<usize, String> {
     Ok(value.parse().ok().filter(|n| SIZES.contains(n)).unwrap_or(SIZES[0]))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The waves the sliders show. A slider that cannot be read counts as zero.
 fn chosen_waves() -> Result<[Wave; 3], String> {
     let document = document()?;
@@ -179,7 +179,7 @@ fn chosen_waves() -> Result<[Wave; 3], String> {
     Ok(waves)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Puts the sliders at `waves`.
 fn set_sliders(waves: &[Wave; 3]) -> Result<(), String> {
     let document = document()?;
@@ -214,7 +214,7 @@ fn draw_plot(waves: &[Wave; 3], n: usize) -> Result<(), String> {
     scene.set_plot_items(node, &plot::items(waves, n)).map_err(stringify)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Shows the waves: the graph, the numbers beside the sliders, and what a transform of `n` samples of their sum finds.
 /// Nothing in the scenes changes.
 fn show_waves(waves: &[Wave; 3], n: usize) -> Result<Findings, String> {
@@ -231,7 +231,7 @@ fn show_waves(waves: &[Wave; 3], n: usize) -> Result<Findings, String> {
     Ok(found)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Puts the length list and the sliders back to what is on the page, after a change that could not be made.
 fn restore_inputs(live: &Live) -> Result<(), String> {
     select(LENGTH_ID)?.set_value(&live.n.to_string());
@@ -400,7 +400,7 @@ fn on_retry() {
     put_cursor(cursor);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A slider is moving. The graph, the numbers and the findings follow it at once. The scenes wait until it is let go,
 /// since drawing them takes longer than a slider takes to move.
 fn on_wave_moving() {
@@ -411,7 +411,7 @@ fn on_wave_moving() {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A slider was let go, or the length changed.
 fn on_input_changed() {
     let result = chosen_size().and_then(|n| chosen_waves().map(|waves| (n, waves)));

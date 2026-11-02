@@ -10,7 +10,7 @@
 use demo_common::complex::Complex;
 use std::f64::consts::{FRAC_PI_2, TAU};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many cycles each wave completes in the window: the bins of the transform where they appear.
 pub(super) const FREQUENCIES: [usize; 3] = [1, 2, 3];
 
@@ -23,7 +23,7 @@ pub(super) const MAX_AMPLITUDE: f64 = 1.0;
 /// An amplitude below this is too small to show at two decimals, so the phase of such a wave is not worth reporting.
 const SILENT: f64 = 0.0005;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One wave: how tall it is, and where in its cycle it starts.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Wave {
@@ -47,7 +47,7 @@ pub(super) fn initial() -> [Wave; 3] {
     [Wave::new(1.0, 0.0), Wave::new(0.6, 90.0), Wave::new(0.4, 210.0)]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// An angle in degrees, turned into `[0, 360)`. Rounding first stops a value a hair below 360 from showing as 360, and
 /// adding zero stops a negative zero from showing as one.
 pub(super) fn turn(degrees: f64) -> f64 {
@@ -56,20 +56,20 @@ pub(super) fn turn(degrees: f64) -> f64 {
     if turned < 360.0 { turned + 0.0 } else { 0.0 }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The shortest angle between two phases, in degrees: 350° and 10° are 20° apart.
 pub(super) fn apart(a: f64, b: f64) -> f64 {
     let difference = (a - b).rem_euclid(360.0);
     difference.min(360.0 - difference)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The wave at time `t`, where the window runs from 0 to 1.
 pub(super) fn wave_at(wave: Wave, frequency: usize, t: f64) -> f64 {
     wave.amplitude * (TAU * frequency as f64 * t + wave.phase.to_radians()).sin()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The sum of the three waves at time `t`.
 pub(super) fn sum_at(waves: &[Wave; 3], t: f64) -> f64 {
     waves
@@ -79,13 +79,13 @@ pub(super) fn sum_at(waves: &[Wave; 3], t: f64) -> f64 {
         .sum()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The `n` samples of the sum, taken at `t = 0, 1/n, 2/n …`, as complex numbers with no imaginary part.
 pub(super) fn samples(waves: &[Wave; 3], n: usize) -> Vec<Complex> {
     (0..n).map(|i| Complex::from_real(sum_at(waves, i as f64 / n as f64))).collect()
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the transform says about one frequency.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Reading {
@@ -105,7 +105,7 @@ pub(super) fn read(spectrum: &[Complex], bin: usize) -> Reading {
     Reading { bin, value, amplitude, phase }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The readings of the three frequencies, and the strongest amplitude found anywhere else.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Findings {
@@ -130,6 +130,6 @@ pub(super) fn findings(spectrum: &[Complex]) -> Findings {
     Findings { readings, elsewhere }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

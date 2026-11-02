@@ -337,7 +337,7 @@ pub fn init_qr_code_window() -> Result<(), JsValue> {
     qr_code::build_qr_code_window().map_err(|e| JsValue::from_str(&e))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the SHA-1 scene in `sha1-window.html`, the window the gallery's own SHA1 panel opens. Call it once, from that
 /// page's own script, after the wasm module has loaded.
 #[wasm_bindgen]

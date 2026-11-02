@@ -5,7 +5,7 @@
 //! is shaded. What they cannot reach is the browser. These tests check the following:
 //!
 //! - The four scenes have the sizes that were asked for, each holds one plot, and the slider is in the first.
-//! - The slider starts at 2 Hz, takes the keys and the pointer, and the writing in every scene follows it.
+//! - The slider starts at 3 Hz, where there is none of either wave, takes the keys and the pointer, and the writing in every scene follows it.
 //! - The products are shaded in two colours, and the area of the shading in the browser is the area that is written.
 //! - The dot in the spectrum is at the amplitude found for the frequency of the slider.
 //!
@@ -180,7 +180,7 @@ fn the_four_scenes_have_their_sizes_and_one_plot_each_and_the_slider_is_in_the_f
     check_eq(size(&tab, SIGNAL)?, "800x330".to_owned())?;
     check_eq(size(&tab, COSINE)?, "400x250".to_owned())?;
     check_eq(size(&tab, SINE)?, "400x250".to_owned())?;
-    check_eq(size(&tab, SPECTRUM)?, "800x240".to_owned())?;
+    check_eq(size(&tab, SPECTRUM)?, "800x260".to_owned())?;
     for scene in [SIGNAL, COSINE, SINE, SPECTRUM] {
         check(
             count(&tab, &format!("{scene} polyline"))? > 0,
@@ -192,31 +192,64 @@ fn the_four_scenes_have_their_sizes_and_one_plot_each_and_the_slider_is_in_the_f
 }
 
 #[test]
-fn the_slider_goes_from_0_to_10_hz_in_tenths_and_starts_at_2_hz() -> Result<(), String> {
+fn the_slider_goes_from_0_to_10_hz_in_tenths_and_starts_at_3_hz() -> Result<(), String> {
     let tab = open()?;
     check_eq(slider(&tab, "min")?, "0".to_owned())?;
     check_eq(slider(&tab, "max")?, "10".to_owned())?;
     check_eq(slider(&tab, "step")?, "0.1".to_owned())?;
-    check_eq(slider(&tab, "value")?, "2".to_owned())?;
-    check_eq(slider(&tab, "aria-valuetext")?, "2.0 Hz".to_owned())
+    check_eq(slider(&tab, "value")?, "3".to_owned())?;
+    check_eq(slider(&tab, "aria-valuetext")?, "3.0 Hz".to_owned())
+}
+
+/// Moves the slider by `steps` tenths of a hertz, which is to the right if it is above 0.
+fn step(tab: &Tab, steps: i32) -> Result<(), String> {
+    focus(tab)?;
+    for _ in 0..steps.abs() {
+        press(tab, if steps > 0 { "ArrowRight" } else { "ArrowLeft" })?;
+    }
+    Ok(())
 }
 
 #[test]
-fn the_first_probe_finds_the_wave_of_2_hz_and_says_so() -> Result<(), String> {
+fn the_first_probe_is_3_hz_where_the_areas_cancel_and_there_is_no_phase() -> Result<(), String> {
     let tab = open()?;
+    for scene in [COSINE, SINE] {
+        check(written(&tab, scene)?.contains("integral 0.00"), &written(&tab, scene)?)?;
+        check(
+            figure(&tab, scene, " above")? > 0.1,
+            "there is shading, so the areas cancel and are not absent",
+        )?;
+    }
     let spectrum = written(&tab, SPECTRUM)?;
-    check(spectrum.contains("2.0 Hz:   a = +0.64   b = +0.77"), &spectrum)?;
+    check(
+        spectrum.contains("3.0 Hz:   a = 2 \u{00D7} 0.00 = 0.00   b = 2 \u{00D7} 0.00 = 0.00"),
+        &spectrum,
+    )?;
+    check(spectrum.contains("= 0.00   phase = \u{2014}"), &spectrum)?;
+    check(
+        written(&tab, SIGNAL)?.contains("cos(2\u{03C0} \u{00B7} 3.0 \u{00B7} t)"),
+        "the probe is named",
+    )
+}
+
+#[test]
+fn the_probe_of_2_hz_finds_the_first_wave_and_says_a_and_b_are_twice_the_integrals() -> Result<(), String> {
+    let tab = open()?;
+    step(&tab, -10)?;
+    check_eq(slider(&tab, "value")?, "2".to_owned())?;
+    let spectrum = written(&tab, SPECTRUM)?;
+    check(
+        spectrum.contains("2.0 Hz:   a = 2 \u{00D7} 0.32 = +0.64   b = 2 \u{00D7} 0.38 = +0.77"),
+        &spectrum,
+    )?;
     check(
         spectrum.contains("amplitude = \u{221A}(a\u{00B2} + b\u{00B2}) = 1.00"),
         &spectrum,
     )?;
     check(spectrum.contains("phase = 40\u{00B0}"), &spectrum)?;
+    // The integrals under the products are the raw ones, which are half of a and b.
     check(written(&tab, COSINE)?.contains("integral +0.32"), &written(&tab, COSINE)?)?;
-    check(written(&tab, SINE)?.contains("integral +0.38"), &written(&tab, SINE)?)?;
-    check(
-        written(&tab, SIGNAL)?.contains("cos(2\u{03C0} \u{00B7} 2.0 \u{00B7} t)"),
-        "the probe is named",
-    )
+    check(written(&tab, SINE)?.contains("integral +0.38"), &written(&tab, SINE)?)
 }
 
 #[test]
@@ -247,11 +280,11 @@ fn the_area_of_the_shading_in_the_browser_is_the_area_that_is_written() -> Resul
         let said_above = figure(&tab, scene, " above")?;
         let said_below = figure(&tab, scene, " below")?;
         check(
-            near(above, said_above, 0.01),
+            near(above, said_above, 0.006),
             &format!("{scene}: shaded {above:.3} above, written {said_above}"),
         )?;
         check(
-            near(below, -said_below, 0.01),
+            near(below, -said_below, 0.006),
             &format!("{scene}: shaded {below:.3} below, written {said_below}"),
         )?;
     }
@@ -263,10 +296,10 @@ fn the_keys_move_the_slider_and_every_scene_follows() -> Result<(), String> {
     let tab = open()?;
     focus(&tab)?;
     press(&tab, "ArrowRight")?;
-    check_eq(slider(&tab, "value")?, "2.1".to_owned())?;
-    check_eq(slider(&tab, "aria-valuetext")?, "2.1 Hz".to_owned())?;
+    check_eq(slider(&tab, "value")?, "3.1".to_owned())?;
+    check_eq(slider(&tab, "aria-valuetext")?, "3.1 Hz".to_owned())?;
     for scene in [SIGNAL, COSINE, SINE, SPECTRUM] {
-        check(written(&tab, scene)?.contains("2.1"), &format!("{scene} says 2.1"))?;
+        check(written(&tab, scene)?.contains("3.1"), &format!("{scene} says 3.1"))?;
     }
     press(&tab, "End")?;
     check_eq(slider(&tab, "value")?, "10".to_owned())?;
@@ -278,32 +311,9 @@ fn the_keys_move_the_slider_and_every_scene_follows() -> Result<(), String> {
 }
 
 #[test]
-fn a_frequency_that_is_not_in_the_signal_has_areas_that_cancel_and_no_phase() -> Result<(), String> {
-    let tab = open()?;
-    focus(&tab)?;
-    // Three steps of a tenth from 2.0 would be 2.3. To get to 3.0 from 2.0, press ten times.
-    for _ in 0..10 {
-        press(&tab, "ArrowRight")?;
-    }
-    check_eq(slider(&tab, "value")?, "3".to_owned())?;
-    for scene in [COSINE, SINE] {
-        check(written(&tab, scene)?.contains("integral 0.00"), &written(&tab, scene)?)?;
-        check(
-            figure(&tab, scene, " above")? > 0.1,
-            "there is shading, so the areas cancel and are not absent",
-        )?;
-    }
-    let spectrum = written(&tab, SPECTRUM)?;
-    check(spectrum.contains("= 0.00   phase = \u{2014}"), &spectrum)
-}
-
-#[test]
 fn the_probe_of_5_hz_finds_the_second_wave() -> Result<(), String> {
     let tab = open()?;
-    focus(&tab)?;
-    for _ in 0..30 {
-        press(&tab, "ArrowRight")?;
-    }
+    step(&tab, 20)?;
     check_eq(slider(&tab, "value")?, "5".to_owned())?;
     let spectrum = written(&tab, SPECTRUM)?;
     check(
@@ -324,15 +334,15 @@ fn the_dot_in_the_spectrum_moves_with_the_slider() -> Result<(), String> {
         .parse()
         .map_err(|e| format!("{e}"))
     };
-    let at_two = dot(&tab)?;
-    focus(&tab)?;
-    for _ in 0..30 {
-        press(&tab, "ArrowRight")?;
-    }
+    let at_three = dot(&tab)?;
+    step(&tab, 20)?;
     let at_five = dot(&tab)?;
     // The plot is 800 wide, with 40 at the left and 30 at the right, for 10 Hz.
     let per_hertz = (800.0 - 40.0 - 30.0) / 10.0;
-    check(near(at_five - at_two, 3.0 * per_hertz, 1.0), &format!("{at_two} to {at_five}"))
+    check(
+        near(at_five - at_three, 2.0 * per_hertz, 1.0),
+        &format!("{at_three} to {at_five}"),
+    )
 }
 
 #[test]
@@ -360,12 +370,10 @@ fn the_plots_describe_themselves_and_the_description_follows_the_slider() -> Res
             ),
         )
     };
-    check(label(&tab, COSINE)?.contains("integral is +0.32"), &label(&tab, COSINE)?)?;
-    focus(&tab)?;
-    press(&tab, "End")?;
-    check(label(&tab, COSINE)?.contains("integral is"), "the description is written again")?;
+    check(label(&tab, COSINE)?.contains("integral is 0.00"), &label(&tab, COSINE)?)?;
+    step(&tab, -10)?;
     check(
-        !label(&tab, COSINE)?.contains("integral is +0.32"),
-        "and it is no longer the first one",
+        label(&tab, COSINE)?.contains("integral is +0.32"),
+        "the description is written again for 2 Hz",
     )
 }

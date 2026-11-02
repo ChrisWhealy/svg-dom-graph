@@ -362,7 +362,7 @@ pub(crate) struct DataDecor {
     pub(crate) pictures: Vec<CellPicture>,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The two paths of one cell's picture, whose data is rewritten when the cell's number changes. A polar picture draws only
 /// the first, and a rectangular picture draws both, as the adjacent and the opposite leg.
 pub(crate) struct CellPicture {

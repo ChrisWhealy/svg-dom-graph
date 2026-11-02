@@ -977,7 +977,7 @@ fn the_selection_calls_refuse_an_ellipse_and_a_circle_as_they_refuse_any_plain_n
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[wasm_bindgen_test]
 fn a_smaller_label_font_lets_a_circle_be_smaller_and_a_bad_font_size_is_refused() -> Result<(), String> {
     let scene = new_scene("ellipse-font-size")?;

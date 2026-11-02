@@ -19,7 +19,6 @@ mod layout;
 mod map;
 mod ticks;
 
-pub(crate) use area::pieces;
 pub(crate) use clip::Bounds;
 pub(crate) use layout::{ARROW_OVERHANG, PlotLayout, Side, Spot, arrow_head, default_description, resolved};
 pub(crate) use ticks::{Tick, ticks};

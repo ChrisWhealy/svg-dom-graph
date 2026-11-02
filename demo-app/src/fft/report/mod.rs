@@ -9,14 +9,14 @@ use super::{
     words::complex,
 };
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How far apart an amplitude set and an amplitude found can be and still agree: half the last digit shown.
 const AMPLITUDE_TOLERANCE: f64 = 0.005;
 
 /// The same for phases, which are shown in whole degrees.
 const PHASE_TOLERANCE: f64 = 0.5;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Does what was found match what was set? A wave with no amplitude has no phase to find, and must not be given one.
 pub(super) fn agrees(set: Wave, found: &Reading) -> bool {
     let amplitude = (set.amplitude - found.amplitude).abs() < AMPLITUDE_TOLERANCE;
@@ -27,13 +27,13 @@ pub(super) fn agrees(set: Wave, found: &Reading) -> bool {
     amplitude && phase
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The phase in whole degrees, or a dash if there is none.
 pub(super) fn degrees(phase: Option<f64>) -> String {
     phase.map_or_else(|| "\u{2014}".to_owned(), |p| format!("{:.0}\u{00B0}", turn(p.round())))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The sentence below the table.
 pub(super) fn elsewhere(amplitude: f64) -> String {
     format!(
@@ -46,7 +46,7 @@ pub(super) fn elsewhere(amplitude: f64) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The table and the sentence below it, for the `waves` that were set and what was `found` in the transform of them.
 pub(super) fn markup(waves: &[Wave; 3], found: &Findings) -> String {
     let mut rows = String::new();
@@ -74,7 +74,7 @@ pub(super) fn markup(waves: &[Wave; 3], found: &Findings) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One sentence for a screen reader, said when a slider is let go: what the transform found.
 pub(super) fn announcement(waves: &[Wave; 3], found: &Findings) -> String {
     let each: Vec<String> = (0..3)
@@ -96,6 +96,6 @@ pub(super) fn announcement(waves: &[Wave; 3], found: &Findings) -> String {
     format!("The transform found {}. {}", each.join("; "), elsewhere(found.elsewhere))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

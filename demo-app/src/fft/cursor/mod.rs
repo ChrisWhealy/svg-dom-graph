@@ -11,13 +11,13 @@
 
 use super::algorithm::{FftTrace, first_informative_pair};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The toolbar selection that means `stage` stages are complete.
 pub(super) const fn selection_of(stage: usize) -> Option<usize> {
     stage.checked_sub(1)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many stages are complete when the toolbar's selection is `selection`.
 pub(super) const fn stage_of(selection: Option<usize>) -> usize {
     match selection {
@@ -26,14 +26,14 @@ pub(super) const fn stage_of(selection: Option<usize>) -> usize {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The stage whose butterflies the inspector offers when `completed` stages are complete. Before any stage is complete
 /// it previews stage 1.
 pub(super) const fn shown_stage(completed: usize) -> usize {
     if completed == 0 { 1 } else { completed }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What became of a request to change the display.
 #[derive(Clone, Debug, PartialEq, Eq)]
 pub(super) enum Outcome {
@@ -132,7 +132,7 @@ impl Cursor {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Handles the stepping toolbar's callback. `from` and `to` are the transition it reported. `render(completed, pair)`
 /// draws the whole display, and `set_driver(completed)` puts the toolbar's selection where `completed` stages means.
 pub(super) fn apply_transition(
@@ -179,7 +179,7 @@ pub(super) fn apply_transition(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Handles a change of the pair selector to `pair`.
 pub(super) fn apply_pair(
     cursor: &mut Cursor,
@@ -204,7 +204,7 @@ pub(super) fn apply_pair(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws the last good state again, puts the toolbar right, and ends the repair state if both work.
 pub(super) fn retry(
     cursor: &mut Cursor,
@@ -216,7 +216,7 @@ pub(super) fn retry(
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn undo(
     cursor: &mut Cursor,
     first: String,
@@ -233,6 +233,6 @@ fn undo(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

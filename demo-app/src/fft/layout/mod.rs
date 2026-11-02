@@ -8,7 +8,7 @@
 use demo_common::util::MARGIN;
 use svg_dom::root::utils::{Point, Size};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the top of the content is: below the stepping toolbar, which is fixed to the top edge.
 pub(super) const TOP: f64 = 64.0;
 
@@ -24,7 +24,7 @@ pub(super) const fn column_gap(lanes: usize) -> f64 {
     if lanes <= 8 { 130.0 } else { 190.0 }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The grid of the overview.
 #[derive(Clone, Copy, Debug, PartialEq)]
 pub(super) struct Grid {
@@ -82,7 +82,7 @@ impl Grid {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One connector of a butterfly: from a lane of the left column to a lane of the right. It leaves and arrives a
 /// fraction of the way down a side, so the four connectors of a butterfly use four different points.
 #[derive(Clone, Copy, Debug, PartialEq)]
@@ -129,7 +129,7 @@ pub(super) const fn dependencies(upper: usize, lower: usize) -> [Dependency; 4] 
     ]
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The name of the node in `lane` of boundary `boundary`. The input column also says which sample the lane starts with.
 pub(super) fn lane_name(boundary: usize, lane: usize, source: usize) -> String {
     if boundary == 0 {
@@ -139,7 +139,7 @@ pub(super) fn lane_name(boundary: usize, lane: usize, source: usize) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The heading of a column.
 pub(super) fn heading(boundary: usize) -> String {
     if boundary == 0 {
@@ -149,7 +149,7 @@ pub(super) fn heading(boundary: usize) -> String {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The item of `items` that is widest, or `None` if there are none. `width` measures one; the first of equals wins.
 ///
 /// # Errors
@@ -169,6 +169,6 @@ pub(super) fn widest_by<T>(
     Ok(best.map(|(_, item)| item))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

@@ -167,7 +167,7 @@ fn check_not_text_operands(graph: &Graph, operands: &[NodeId], operator: &str) -
     Ok(())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Returns [`Error::OperatorOnBool`] if `logical` is `false` and any of `operands` holds Booleans. A Boolean has a
 /// meaning under `NOT`, `AND`, `OR`, `XOR`, `NAND`, `NOR` and `XNOR`, which are `logical`. It has none under a shift,
 /// a rotation, a bit or byte reversal, or an arithmetic operator: there is no sum of two Booleans, and no `true` to

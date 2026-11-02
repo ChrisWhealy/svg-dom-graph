@@ -49,7 +49,7 @@ fn the_sixteen_point_scene_has_wider_gaps() {
     assert!(column_gap(16) > column_gap(8));
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn a_butterfly_has_the_four_connectors_a_to_sum_a_to_difference_b_to_sum_b_to_difference() {
     let d = dependencies(1, 5);
@@ -83,7 +83,7 @@ fn the_connectors_to_the_upper_target_leave_and_arrive_above_those_to_the_lower(
     assert!(d[1].to_position < d[3].to_position);
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn the_input_column_names_the_sample_each_lane_starts_with() {
     assert_eq!(lane_name(0, 1, 4), "S0[1]=x[4]");

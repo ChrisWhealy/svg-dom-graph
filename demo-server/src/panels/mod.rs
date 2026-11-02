@@ -32,7 +32,7 @@ use std::{
 const PANELS_PLACEHOLDER: &str = "{{PANELS}}";
 const MENU_PLACEHOLDER: &str = "{{MENU}}";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One panel, as its place in `demo/panels/` and its own fragment describe it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Panel {
@@ -45,7 +45,7 @@ pub struct Panel {
     pub path: PathBuf,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every panel in `panels_dir`, in menu order: by group folder name, and then by file name. The two-digit numbers that
 /// start those names put them in order.
 ///
@@ -108,7 +108,7 @@ pub fn catalogue(panels_dir: &Path) -> Result<Vec<Panel>, AssembleError> {
     Ok(panels)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Splits a folder name or a fragment's name without its extension, `NN-some-name`, into `NN` and `some-name`. `None` if
 /// it is not two digits, a hyphen, and then one or more lowercase letters, digits and hyphens that do not start or end
 /// with a hyphen.
@@ -123,7 +123,7 @@ fn split_name(name: &str) -> Option<(&str, &str)> {
     valid.then_some((number, rest))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The heading for a group folder's name without its number: the hyphens become spaces, and each word starts with a
 /// capital, except for the small words that join others, which only do at the start.
 fn heading_of(name: &str) -> String {
@@ -228,7 +228,7 @@ fn check_placeholder_count(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The names in `dir`, in alphabetical order, which is menu order: the subfolders if `folders` is true, otherwise the
 /// `.html` files. Anything else is ignored, such as `.DS_Store`.
 fn list_names(dir: &Path, folders: bool) -> Result<Vec<String>, AssembleError> {

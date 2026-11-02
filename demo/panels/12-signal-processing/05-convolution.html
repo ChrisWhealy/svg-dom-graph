@@ -68,6 +68,14 @@
         <code>b</code>. This is exactly the right-angled triangle of the Pythagoras demo.
     </p>
     <p>
+        Note that the integrals written in the two plots of the products are the <em>raw</em> integrals. A wave of
+        amplitude <code>A</code> that makes whole cycles in the second only has an integral of
+        <code>A/2 &middot; sin &phi;</code> with the cosine, because the average of a sine squared is a half. That is why
+        <code>a</code> and <code>b</code>, which are written under the plot at the bottom, are <em>twice</em> the raw
+        integrals (this is the factor <code>2/T</code> for a window of <code>T</code> = 1 second). Without the 2, the
+        amplitudes found would be half as tall as the waves that made the signal.
+    </p>
+    <p>
         The plot at the bottom repeats this for every frequency the slider can take. It has a peak at 2 Hz of height
         <code>1.0</code>, and a peak at 5 Hz of height <code>0.6</code>, which are the amplitudes of the two waves that
         made the signal. The signal has been analysed into its frequencies.
@@ -75,7 +83,28 @@
     <p>
         Between the peaks, the amplitude is not quite zero for a frequency that does not make a whole number of cycles
         in the second that is looked at. Part of the probe's last cycle is missing, so the blue and orange areas no
-        longer cancel completely. This is called <em>spectral leakage</em>.
+        longer cancel completely. This is called <em>spectral leakage</em>. The two waves in this signal make whole
+        cycles in the second, so each is found exactly at its own frequency. A wave of, say, 2.5 Hz would not be: it
+        would leak into every probe frequency, with no single exact peak.
+    </p>
+    <h3>Correlation, convolution and the Fourier transform</h3>
+    <p>
+        Strictly speaking, multiplying a signal by a probe and adding up the result is a <em>correlation</em> (or a
+        <em>projection</em> of the signal onto the probe), not a convolution. A convolution flips one of the two
+        functions in time before it multiplies, and slides it across the other. Here nothing is slid: the signal and the
+        probe line up at <code>t = 0</code>, and each frequency gives a single number. For a cosine, flipping makes no
+        difference, and for a sine it only changes the sign, so the picture is the same, but the name is not. The
+        demo keeps the word &ldquo;convolution&rdquo; because that is where most people first meet the idea of
+        multiplying and adding up.
+    </p>
+    <p>
+        These sums are exactly what the discrete Fourier transform is made of, and the conventions are those of the
+        <a href="/#panel-fft">Fast Fourier Transform</a> demo: the frequency is in cycles per second, so the angle is
+        <code>2&pi; f t</code>, a wave is <code>A &middot; sin(2&pi; f t + &phi;)</code> so that a positive phase moves it to
+        the left (as in the <a href="/#panel-phase-shift">Phase Shift</a> demo), and the forward transform has
+        <code>e<sup>&minus;2&pi;i f t</sup></code> in it. The bin of the transform for the frequency <code>f</code> of the
+        <code>N</code> samples of the window is therefore <code>X = N/2 &middot; (a &minus; i&middot;b)</code>. Its size
+        gives the amplitude, <code>2|X|/N</code>, and its angle plus 90&deg; gives the phase, as the FFT demo says.
     </p>
     <p>
         Calculating the integral of a signal multiplied by a probe over a whole range of frequencies is what the

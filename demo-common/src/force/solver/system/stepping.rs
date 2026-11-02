@@ -3,7 +3,7 @@
 use super::*;
 
 impl SpringSystem {
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Advances every pinned proxy towards its target by at most `proxy_speed_limit * dt`, and lets go of any that has
     /// arrived and was to be released. A proxy that arrives is put exactly on its target, so arrival is exact.
     ///

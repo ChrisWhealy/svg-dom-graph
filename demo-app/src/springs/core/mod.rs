@@ -94,7 +94,7 @@ impl Core {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn system(&self) -> &SpringSystem {
         &self.system
     }
@@ -136,7 +136,7 @@ impl Core {
         self.system.springs().iter().map(|s| s.weight).collect()
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A pointer pressed circle `index`, which the page has at `centre`.
     pub(super) fn drag_start(&mut self, index: usize, centre: Vec2) {
         if self.system.begin_pin(index, centre) {
@@ -167,7 +167,7 @@ impl Core {
         self.refresh_feedback();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A frame arrived at `timestamp_ms`. Runs as many fixed steps as the clock allows, and returns the circles to
     /// move.
     pub(super) fn frame(&mut self, timestamp_ms: f64) -> Vec<(usize, Vec2)> {
@@ -220,7 +220,7 @@ impl Core {
         self.refresh_feedback();
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Puts every circle back where it started, and every spring back to the length it started at, so the layout is
     /// as it was when the panel opened and stays there. The weights are kept.
     ///
@@ -372,7 +372,7 @@ impl Core {
         }
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the status line says, in words.
     pub(super) fn status_text(&self) -> String {
         if let Some(fault) = &self.fault {

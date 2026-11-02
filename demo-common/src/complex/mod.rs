@@ -30,6 +30,6 @@ buffer::define_buffer!(
     "A buffer of [`Complex32`] numbers stored as a real array and an imaginary array."
 );
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

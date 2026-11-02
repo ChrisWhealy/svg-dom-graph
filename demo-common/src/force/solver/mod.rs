@@ -51,7 +51,7 @@ pub use system::SpringSystem;
 use system::fallback_direction;
 pub use vec2::Vec2;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The fixed step, in seconds.
 pub const FIXED_DT: f64 = 1.0 / 120.0;
 /// How many quiet steps in a row make the system quiet enough to rest.
@@ -78,6 +78,6 @@ const CONSTRAINT_PASSES: usize = 6;
 /// The largest step a caller can ask for. A longer one is clamped, so a stalled frame cannot blow the system up.
 const MAX_STEP: f64 = 0.05;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

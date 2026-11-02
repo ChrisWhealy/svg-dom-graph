@@ -142,18 +142,31 @@ fn the_spectrum_has_its_curve_a_dotted_line_and_a_dot_at_the_probe() {
 }
 
 #[test]
-fn the_spectrum_says_what_was_found_and_leaves_out_the_phase_where_there_is_nothing() {
-    let at_two = result_text(&finding(2.0));
-    assert!(at_two.contains("a = +0.64") && at_two.contains("b = +0.77"), "{at_two}");
-    assert!(at_two.contains("= 1.00") && at_two.contains("phase = 40\u{00B0}"), "{at_two}");
-    let at_three = result_text(&finding(3.0));
+fn the_spectrum_says_that_a_and_b_are_twice_the_integrals_and_leaves_out_the_phase_where_there_is_nothing() {
+    let [first, second] = result_lines(&finding(2.0));
+    assert_eq!(
+        first, "2.0 Hz:   a = 2 \u{00D7} 0.32 = +0.64   b = 2 \u{00D7} 0.38 = +0.77",
+        "the integrals are the ones that are written in the products"
+    );
+    assert_eq!(
+        second,
+        "amplitude = \u{221A}(a\u{00B2} + b\u{00B2}) = 1.00   phase = 40\u{00B0}"
+    );
+    let [_, at_three] = result_lines(&finding(3.0));
     assert!(
         at_three.contains("amplitude") && at_three.ends_with("phase = \u{2014}"),
         "{at_three}"
     );
     let written = texts(&spectrum_items(&spectrum(&samples()), &finding(2.0)));
-    assert_eq!(written.len(), 2);
-    assert!(written[1].starts_with("2.0 Hz:   a = "), "{}", written[1]);
+    assert_eq!(written.len(), 3, "the title, and the two lines of the result");
+    assert!(written[1].starts_with("2.0 Hz:   a = 2"), "{}", written[1]);
+}
+
+#[test]
+fn a_negative_integral_is_written_with_a_minus_and_a_positive_one_without_a_plus() {
+    assert_eq!(plain(0.3214), "0.32");
+    assert_eq!(plain(-0.1149), "\u{2212}0.11");
+    assert_eq!(plain(0.0), "0.00");
 }
 
 #[test]

@@ -43,7 +43,7 @@ const SLIDER_LEFT: f64 = 20.0;
 const SLIDER_MIDDLE: f64 = STRIP / 2.0 + 8.0;
 const SLIDER_LENGTH: f64 = 320.0;
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything the page needs after it is built: the four plots, the signal and what was found at every frequency, which
 /// never change, and the probe, which does.
 struct Demo {
@@ -96,7 +96,7 @@ impl Demo {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the convolution demo: a signal of two sine waves, probed with a cosine and a sine of one frequency.
 ///
 /// The page shows four scenes that have one plot node each, over one second of time:

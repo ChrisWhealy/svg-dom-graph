@@ -336,7 +336,7 @@ fn mark_path(figure: &Figure) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The angle between the radius to C and the horizontal axis on the side that W is, which is always the angle at the
 /// middle of the triangle, in degrees from 0 to 90, together with the direction of that side of the axis: 1 for right
 /// and -1 for left.
@@ -346,13 +346,13 @@ fn triangle_angle(degrees: f64) -> (f64, f64) {
     (sin.abs().atan2(cos.abs()).to_degrees(), side)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether the angle at the middle of the triangle at `degrees` is big enough for its curve to be seen.
 fn shows_arc(degrees: f64) -> bool {
     triangle_angle(degrees).0 >= SMALLEST_ARC
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The path of the curve round the middle of the circle, from the horizontal axis to the radius to C by the short way,
 /// which is the angle at the middle of the triangle in every quadrant, or nothing if the angle is too small to show.
 fn arc_path(degrees: f64) -> String {
@@ -372,7 +372,7 @@ fn arc_path(degrees: f64) -> String {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the \u{3b8} goes: beside the curve, half way between the axis and the radius to C.
 fn angle_label_at(degrees: f64) -> Point {
     let (sin, cos) = degrees.to_radians().sin_cos();

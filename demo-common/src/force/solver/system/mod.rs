@@ -29,7 +29,7 @@ pub(super) fn unit_or_fallback(delta: Vec2, length: f64, i: usize, j: usize) -> 
     if length > 1e-12 { delta * (1.0 / length) } else { fallback_direction(i, j) }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A damped spring graph.
 #[derive(Clone, Debug)]
 pub struct SpringSystem {
@@ -148,7 +148,7 @@ impl SpringSystem {
         Ok(system)
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many particles there are.
     pub fn len(&self) -> usize {
         self.particles.len()
@@ -209,7 +209,7 @@ impl SpringSystem {
         self.paused
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the system is doing.
     pub fn status(&self) -> Status {
         if self.paused {
@@ -245,7 +245,7 @@ impl SpringSystem {
             .all(|p| p.pin.is_none_or(|pin| pin.committed_centre == p.centre))
     }
 
-    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Notes that something changed that the system must settle again from: the quiet run, the time budget and any
     /// sleep or unsettled verdict are all begun afresh.
     pub(super) fn disturb(&mut self) {

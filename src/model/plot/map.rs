@@ -2,7 +2,7 @@
 
 use super::{axis::AxisScale, config::PlotAxis};
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The furthest a fraction along an axis is taken. It is far past any plot, and small enough that clipping a segment
 /// between two such fractions cannot overflow.
 pub(crate) const FRACTION_LIMIT: f64 = 1e300;

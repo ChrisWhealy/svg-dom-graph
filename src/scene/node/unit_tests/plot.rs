@@ -395,6 +395,38 @@ fn an_area_is_shaded_in_a_colour_for_each_side_of_its_baseline_and_cut_to_the_pl
     check(all(&scene, id, "polygon").is_empty(), "no items, no shading")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[wasm_bindgen_test]
+fn a_failed_write_while_shading_an_area_leaves_what_was_plotted_before_exactly_as_it_was() -> Result<(), String> {
+    let scene = Scene::new(make_svg("plot-area-fails")).map_err(|e| e.to_string())?;
+    let id = scene.add_plot_node(Point::origin(), config()).map_err(|e| e.to_string())?;
+    scene
+        .set_plot_items(id, &[PlotLine::new([(0.0, 0.0), (1.0, 1.0)], "#111111").into()])
+        .map_err(|e| e.to_string())?;
+    check(all(&scene, id, "polyline[stroke=\"#111111\"]").len() == 1, "the first plot")?;
+    {
+        // Only a shaded area writes the opacity of its fill, so the line before it is drawn, and the area is not.
+        let _failing = FailingWrites::start(&["fill-opacity"])?;
+        let items: Vec<PlotItem> = vec![
+            PlotLine::new([(0.0, 1.0), (1.0, 0.0)], "#222222").into(),
+            PlotArea::new([(0.0, -1.0), (1.0, 1.0)], "#333333").into(),
+        ];
+        check(scene.set_plot_items(id, &items).is_err(), "the write fails")?;
+    }
+    check(
+        all(&scene, id, "polyline[stroke=\"#111111\"]").len() == 1,
+        "the first plot is still there",
+    )?;
+    check(
+        all(&scene, id, "polyline[stroke=\"#222222\"]").is_empty() && all(&scene, id, "polygon").is_empty(),
+        "nothing of the failed one is left",
+    )?;
+    scene
+        .set_plot_items(id, &[PlotArea::new([(0.0, -1.0), (1.0, 1.0)], "#333333").into()])
+        .map_err(|e| e.to_string())?;
+    check(all(&scene, id, "polygon").len() == 2, "a later plot is drawn as usual")
+}
+
 #[wasm_bindgen_test]
 fn a_line_that_leaves_the_plot_is_cut_at_its_edge_and_a_dot_outside_is_not_drawn() -> Result<(), String> {
     let scene = Scene::new(make_svg("plot-clipped")).map_err(|e| e.to_string())?;

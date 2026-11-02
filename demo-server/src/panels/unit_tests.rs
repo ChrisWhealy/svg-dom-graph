@@ -9,7 +9,7 @@ fn workspace_root() -> Result<PathBuf, String> {
         .to_path_buf())
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn section_attribute_reads_a_value_and_undoes_the_escapes() -> Result<(), String> {
     let fragment = "<section class=\"section\" id=\"panel-a\" data-label=\"X &amp; Y\">\n<p x=\"no\">";
@@ -24,7 +24,7 @@ fn section_attribute_reads_a_value_and_undoes_the_escapes() -> Result<(), String
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn section_attribute_reads_a_tag_that_runs_over_several_lines() -> Result<(), String> {
     let fragment = "<section\n    class=\"section\"\n    id=\"panel-a\"\n    data-label=\"A\"\n>";
@@ -32,7 +32,7 @@ fn section_attribute_reads_a_tag_that_runs_over_several_lines() -> Result<(), St
     check(section_attribute(fragment, "data-label").as_deref() == Some("A"), "data-label")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn section_attribute_does_not_mistake_a_longer_name_for_a_shorter_one() -> Result<(), String> {
     let fragment = "<section id=\"panel-a\" data-label-extra=\"wrong\" data-label=\"Right\">";
@@ -42,7 +42,7 @@ fn section_attribute_does_not_mistake_a_longer_name_for_a_shorter_one() -> Resul
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn split_name_wants_two_digits_a_hyphen_and_a_lowercase_name() -> Result<(), String> {
     check(split_name("01-basic-nodes") == Some(("01", "basic-nodes")), "plain")?;
@@ -55,7 +55,7 @@ fn split_name_wants_two_digits_a_hyphen_and_a_lowercase_name() -> Result<(), Str
     check(split_name("é1-basic").is_none(), "not ASCII")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn heading_of_removes_hyphens_and_capitalises_all_but_the_small_words() -> Result<(), String> {
     check(heading_of("basic-nodes") == "Basic Nodes", &heading_of("basic-nodes"))?;
@@ -66,7 +66,7 @@ fn heading_of_removes_hyphens_and_capitalises_all_but_the_small_words() -> Resul
     check(heading_of("sorting") == "Sorting", "one word")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn panel(id: &str, group: &str) -> Panel {
     Panel {
         id: id.to_owned(),
@@ -76,7 +76,7 @@ fn panel(id: &str, group: &str) -> Panel {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn render_menu_makes_a_disclosure_for_a_group_and_a_top_level_item_for_a_group_of_one() -> Result<(), String> {
     let panels = vec![
@@ -97,7 +97,7 @@ fn render_menu_makes_a_disclosure_for_a_group_and_a_top_level_item_for_a_group_o
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn render_menu_escapes_the_ampersand_in_a_group_heading() -> Result<(), String> {
     let panels = vec![panel("panel-a", "R & D"), panel("panel-b", "R & D")];
@@ -105,7 +105,7 @@ fn render_menu_escapes_the_ampersand_in_a_group_heading() -> Result<(), String> 
     check(menu.contains("<summary>R &amp; D</summary>"), &menu)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes a throwaway `demo/panels/` from `files`, each a path below it and its contents, and returns what [`catalogue`]
 /// makes of it.
 fn catalogue_of(files: &[(&str, &str)]) -> Result<Result<Vec<Panel>, AssembleError>, String> {
@@ -120,12 +120,12 @@ fn catalogue_of(files: &[(&str, &str)]) -> Result<Result<Vec<Panel>, AssembleErr
     Ok(catalogue(dir.path()))
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn section(id: &str) -> String {
     format!("<section class=\"section\" id=\"{id}\" data-label=\"{id} &amp; label\">")
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_reads_a_well_formed_fragment() -> Result<(), String> {
     let panels = catalogue_of(&[("01-sorting/01-x.html", &section("panel-x"))])?.map_err(|e| e.to_string())?;
@@ -141,7 +141,7 @@ fn catalogue_reads_a_well_formed_fragment() -> Result<(), String> {
     )
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_orders_by_folder_number_then_file_number_whatever_the_names() -> Result<(), String> {
     let panels = catalogue_of(&[
@@ -156,7 +156,7 @@ fn catalogue_orders_by_folder_number_then_file_number_whatever_the_names() -> Re
     check(panels[2].group == "Alpha", &panels[2].group)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_a_fragment_without_its_label() -> Result<(), String> {
     match catalogue_of(&[("01-g/01-x.html", "<section class=\"section\" id=\"panel-x\">")])? {
@@ -165,7 +165,7 @@ fn catalogue_rejects_a_fragment_without_its_label() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_a_group_folder_without_a_number() -> Result<(), String> {
     match catalogue_of(&[("sorting/01-x.html", &section("panel-x"))])? {
@@ -174,7 +174,7 @@ fn catalogue_rejects_a_group_folder_without_a_number() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_a_fragment_without_a_number() -> Result<(), String> {
     match catalogue_of(&[("01-g/panel-x.html", &section("panel-x"))])? {
@@ -183,7 +183,7 @@ fn catalogue_rejects_a_fragment_without_a_number() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_two_fragments_with_one_number() -> Result<(), String> {
     match catalogue_of(&[("01-g/01-x.html", &section("panel-x")), ("01-g/01-y.html", &section("panel-y"))])? {
@@ -192,7 +192,7 @@ fn catalogue_rejects_two_fragments_with_one_number() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_two_group_folders_with_one_number() -> Result<(), String> {
     match catalogue_of(&[("01-g/01-x.html", &section("panel-x")), ("01-h/01-y.html", &section("panel-y"))])? {
@@ -201,7 +201,7 @@ fn catalogue_rejects_two_group_folders_with_one_number() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_two_fragments_with_one_id() -> Result<(), String> {
     match catalogue_of(&[("01-g/01-x.html", &section("panel-x")), ("02-h/01-y.html", &section("panel-x"))])? {
@@ -210,7 +210,7 @@ fn catalogue_rejects_two_fragments_with_one_id() -> Result<(), String> {
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
 fn catalogue_rejects_an_id_without_the_panel_prefix() -> Result<(), String> {
     match catalogue_of(&[("01-g/01-x.html", &section("x"))])? {
