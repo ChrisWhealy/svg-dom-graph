@@ -105,7 +105,7 @@ jobs:
       # would only do the same work twice.
 
   library-version:
-    name: library version
+    name: published library version
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v7
@@ -114,9 +114,10 @@ jobs:
           fetch-depth: 0
       - name: Test the version check
         run: .github/scripts/test-check-library-version.sh
-      # A change to src/ needs a new version. A change to the demos or the tests does not, and goes in
-      # demo/CHANGELOG.md instead.
-      - name: A change to the library needs a new version
+      # A change to src/ must not go into a version that crates.io already has, so it needs a new version only after the
+      # next publish. Any number of changes can go into one that is not published yet. A change to the demos or the tests
+      # needs none, and goes in demo/CHANGELOG.md instead.
+      - name: A change to the library must go into a version higher than the one currently published
         run: .github/scripts/check-library-version.sh "${{ github.event.pull_request.base.sha || github.event.before }}"
 
   msrv:
