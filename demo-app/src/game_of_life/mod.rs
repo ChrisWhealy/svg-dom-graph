@@ -82,14 +82,24 @@ thread_local! {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A drag across the board that is going on: the pointer that is making it, and what it paints. Only that pointer can
+/// move it on or end it, so another finger or a mouse cannot join it or cut it short.
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+struct Drag {
+    pointer: i32,
+    /// Whether it brings cells to life, or kills them.
+    alive: bool,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything the page needs after it is built: the board, what is drawn of it, and whether it is going.
 struct Demo {
     board: RefCell<Board>,
     generation: Cell<u64>,
     /// The cell that the keys act on, and that is outlined while the board has the focus.
     cursor: Cell<(usize, usize)>,
-    /// What a drag across the board is painting: `Some(true)` brings cells to life and `Some(false)` kills them.
-    painting: Cell<Option<bool>>,
+    /// The drag across the board that is going on, if there is one.
+    drag: Cell<Option<Drag>>,
     /// The cell that a drag last painted, which the next cell is joined to by a line, or `None` if the pointer is not
     /// on the board, and the next cell it comes to starts a new line.
     last_cell: Cell<Option<(usize, usize)>>,
@@ -339,11 +349,18 @@ impl Demo {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Starts drawing if the pointer is on a cell. The first cell is changed, and a drag then gives the cells it goes
-    /// over the same state.
+    /// Starts a drag if the pointer is on a cell. The first cell is changed, and the cells that the drag then goes over
+    /// are given the same state. If another pointer is already dragging, this one is left alone. If one is recorded
+    /// that no longer holds the pointer capture, its end was never reported, so it is ended first.
     fn pointer_down(&self, event: &web_sys::PointerEvent) {
         if event.button() != 0 {
             return;
+        }
+        if let Some(active) = self.drag.get() {
+            if self.svg.has_pointer_capture(active.pointer) {
+                return;
+            }
+            self.end_drag();
         }
         let (x, y) = self.scene_point(event);
         let Some((col, row)) = cell_at(x, y) else {
@@ -353,7 +370,10 @@ impl Demo {
         let _ = self.svg.set_pointer_capture(event.pointer_id());
         focus(&self.board_group);
         let alive = !self.board.borrow().get(col, row);
-        self.painting.set(Some(alive));
+        self.drag.set(Some(Drag {
+            pointer: event.pointer_id(),
+            alive,
+        }));
         self.last_cell.set(Some((col, row)));
         self.paint(&[(col, row)], alive);
         self.announce_cursor();
@@ -362,11 +382,15 @@ impl Demo {
     /// Gives the cells that the pointer has crossed the state that is being drawn. The browser can report the pointer
     /// only now and then, so it can have moved over several cells since the last report, and a line of cells joins the
     /// cell that was painted last to the one that the pointer is over now. A pointer that is off the board paints
-    /// nothing, and the cell that it comes back to starts a new line, so that it does not draw across the board.
+    /// nothing, and the cell that it comes back to starts a new line, so that it does not draw across the board. A
+    /// pointer that is not the one that is dragging does nothing.
     fn pointer_move(&self, event: &web_sys::PointerEvent) {
-        let Some(alive) = self.painting.get() else {
+        let Some(drag) = self.drag.get() else {
             return;
         };
+        if event.pointer_id() != drag.pointer {
+            return;
+        }
         let (x, y) = self.scene_point(event);
         let Some(at) = cell_at(x, y) else {
             self.last_cell.set(None);
@@ -376,16 +400,27 @@ impl Demo {
             Some(before) => cells_between(before, at),
             None => vec![at],
         };
-        self.paint(&cells, alive);
+        self.paint(&cells, drag.alive);
     }
 
-    /// Stops drawing.
-    fn pointer_up(&self, event: &web_sys::PointerEvent) {
-        self.last_cell.set(None);
-        if self.painting.replace(None).is_some() {
-            let _ = self.svg.release_pointer_capture(event.pointer_id());
-            self.announce_cursor();
+    /// Ends the drag if the pointer of `event` is the one that is making it. This is what the pointer being let go, the
+    /// browser cancelling it, and the pointer capture being lost all come to, since any of them can be the only one
+    /// that is reported.
+    fn pointer_end(&self, event: &web_sys::PointerEvent) {
+        if self.drag.get().is_some_and(|drag| drag.pointer == event.pointer_id()) {
+            self.end_drag();
         }
+    }
+
+    /// Ends the drag that is going on, if there is one, and lets go of the pointer. It can be called again, and does
+    /// nothing then, since the pointer being let go is followed by the capture being lost.
+    fn end_drag(&self) {
+        let Some(drag) = self.drag.replace(None) else {
+            return;
+        };
+        self.last_cell.set(None);
+        let _ = self.svg.release_pointer_capture(drag.pointer);
+        self.announce_cursor();
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -591,7 +626,7 @@ pub(crate) fn build_game_of_life_demo() -> Result<(), String> {
         board: RefCell::new(first),
         generation: Cell::new(0),
         cursor: Cell::new((COLS / 2, ROWS / 2)),
-        painting: Cell::new(None),
+        drag: Cell::new(None),
         last_cell: Cell::new(None),
         playing: Cell::new(false),
         speed: Cell::new(FIRST_SPEED),
@@ -624,13 +659,13 @@ pub(crate) fn build_game_of_life_demo() -> Result<(), String> {
     svg_buttons::watch(&document, STAGE, move |action| pressed.pressed(action))?;
     let moved = Rc::clone(&demo);
     sliders::watch(&document, STAGE, move |_, speed| moved.set_speed(speed))?;
-    for event in ["pointerdown", "pointermove", "pointerup", "pointercancel"] {
+    for event in ["pointerdown", "pointermove", "pointerup", "pointercancel", "lostpointercapture"] {
         let demo = Rc::clone(&demo);
         listen(&demo.svg.clone(), event, move |e: web_sys::PointerEvent| {
             match e.type_().as_str() {
                 "pointerdown" => demo.pointer_down(&e),
                 "pointermove" => demo.pointer_move(&e),
-                _ => demo.pointer_up(&e),
+                _ => demo.pointer_end(&e),
             }
         })?;
     }

@@ -6,7 +6,10 @@
 //!
 //! - The scene has the board, thirteen buttons and a slider, and starts with a glider that is going.
 //! - Pause, Play and Step work, and Step works out the rules: a blinker turns, and turns back.
-//! - A click brings a cell to life or kills it, and a drag gives every cell it crosses the state of the first.
+//! - A click brings a cell to life or kills it, and a drag gives every cell it crosses the state of the first, even
+//!   when the browser reports the pointer only at the ends of the drag.
+//! - A drag ends when the pointer is let go, cancelled or loses its capture, and only the pointer that makes it can
+//!   move it on or end it.
 //! - The arrow keys move the cursor, which wraps, and Space changes the cell under it, and it is said for assistive
 //!   technology.
 //! - Each pattern replaces the board, and Random and Clear work.
@@ -17,8 +20,8 @@
 //!
 //! Like [`crate::convolution`], these run against the built demo gallery.
 
-use crate::common::{DemoTab, drag, new_demo_tab};
-use headless_chrome::Tab;
+use crate::common::{DemoTab, drag, mouse_event, new_demo_tab};
+use headless_chrome::{Tab, protocol::cdp::Input::DispatchMouseEventTypeOption as Kind};
 use std::time::{Duration, Instant};
 
 const SVG: &str = "#game-of-life-stage-svg";
@@ -649,4 +652,135 @@ fn a_spaceship_flies_two_cells_to_the_right_every_four_generations() -> Result<(
         press_button(&tab, "step")?;
     }
     check_eq(starts(&live_path(&tab)?)[0].0, before[0].0 + 4.0 * CELL)
+}
+
+/// The pointer of a mouse that the browser is driven by, which is 1 in Chrome.
+const MOUSE: u32 = 1;
+
+/// Presses the mouse button down at `at`, and leaves it down.
+fn press_down(tab: &Tab, at: (f64, f64)) -> Result<(), String> {
+    mouse_event(tab, Kind::MouseMoved, at, None)?;
+    mouse_event(tab, Kind::MousePressed, at, Some(1))
+}
+
+/// Moves the mouse to `at` with the button down.
+fn move_held(tab: &Tab, at: (f64, f64)) -> Result<(), String> {
+    mouse_event(tab, Kind::MouseMoved, at, Some(1))
+}
+
+/// Lets the mouse button go at `at`.
+fn let_go(tab: &Tab, at: (f64, f64)) -> Result<(), String> {
+    mouse_event(tab, Kind::MouseReleased, at, Some(0))
+}
+
+/// Sends the scene a pointer event of `kind` for the pointer `id` at `at`, as another pointer or the browser would.
+fn fire(tab: &Tab, kind: &str, id: u32, at: (f64, f64)) -> Result<(), String> {
+    text(
+        tab,
+        &format!(
+            "(() => {{ document.querySelector('{SVG}').dispatchEvent(new PointerEvent('{kind}', \
+             {{ pointerId: {id}, bubbles: true, cancelable: true, clientX: {}, clientY: {}, button: 0, \
+             isPrimary: true }})); return 'ok'; }})()",
+            at.0, at.1
+        ),
+    )
+    .map(|_| ())
+}
+
+#[test]
+fn a_drag_that_the_browser_cancels_ends_and_the_pointer_then_paints_nothing_until_it_is_pressed_again()
+-> Result<(), String> {
+    let tab = emptied()?;
+    press_down(&tab, centre(&tab, 3, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    fire(&tab, "pointercancel", MOUSE, centre(&tab, 3, 5)?)?;
+    move_held(&tab, centre(&tab, 8, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    let_go(&tab, centre(&tab, 8, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    // The next press starts a drag as usual, so nothing was left over.
+    drag(&tab, &[centre(&tab, 10, 5)?, centre(&tab, 12, 5)?])?;
+    check_eq(population(&tab)?, 4)
+}
+
+#[test]
+fn a_drag_whose_pointer_capture_is_lost_ends_without_a_pointer_up() -> Result<(), String> {
+    let tab = emptied()?;
+    press_down(&tab, centre(&tab, 3, 5)?)?;
+    check_eq(
+        text(
+            &tab,
+            &format!("String(document.querySelector('{SVG}').hasPointerCapture({MOUSE}))"),
+        )?,
+        "true".to_owned(),
+    )?;
+    // Giving up the capture makes the browser report that it was lost, and nothing else.
+    text(
+        &tab,
+        &format!("document.querySelector('{SVG}').releasePointerCapture({MOUSE}), 'ok'"),
+    )?;
+    move_held(&tab, centre(&tab, 8, 5)?)?;
+    move_held(&tab, centre(&tab, 9, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    let_go(&tab, centre(&tab, 9, 5)?)?;
+    drag(&tab, &[centre(&tab, 20, 9)?, centre(&tab, 22, 9)?])?;
+    check_eq(population(&tab)?, 4)
+}
+
+#[test]
+fn a_pointer_that_is_not_making_the_drag_cannot_move_it_on_or_end_it() -> Result<(), String> {
+    let tab = emptied()?;
+    press_down(&tab, centre(&tab, 3, 5)?)?;
+    fire(&tab, "pointermove", 99, centre(&tab, 6, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    fire(&tab, "pointerup", 99, centre(&tab, 6, 5)?)?;
+    fire(&tab, "pointercancel", 99, centre(&tab, 6, 5)?)?;
+    fire(&tab, "lostpointercapture", 99, centre(&tab, 6, 5)?)?;
+    // The drag of the mouse goes on, and joins the cell where it began to the one it is at now.
+    move_held(&tab, centre(&tab, 9, 5)?)?;
+    check_eq(population(&tab)?, 7)?;
+    let_go(&tab, centre(&tab, 9, 5)?)
+}
+
+#[test]
+fn a_second_pointer_that_goes_down_while_one_is_dragging_does_not_start_a_drag_of_its_own() -> Result<(), String> {
+    let tab = emptied()?;
+    press_down(&tab, centre(&tab, 3, 5)?)?;
+    fire(&tab, "pointerdown", 99, centre(&tab, 20, 10)?)?;
+    check_eq(population(&tab)?, 1)?;
+    fire(&tab, "pointermove", 99, centre(&tab, 22, 10)?)?;
+    check_eq(population(&tab)?, 1)?;
+    let_go(&tab, centre(&tab, 3, 5)?)
+}
+
+#[test]
+fn a_drag_whose_end_was_never_reported_is_ended_by_the_next_pointer_that_goes_down() -> Result<(), String> {
+    let tab = emptied()?;
+    // The browser has no pointer 7 to capture, so this drag has no capture, and nothing will report that it ends.
+    fire(&tab, "pointerdown", 7, centre(&tab, 3, 5)?)?;
+    check_eq(population(&tab)?, 1)?;
+    fire(&tab, "pointerdown", 8, centre(&tab, 6, 5)?)?;
+    check_eq(population(&tab)?, 2)?;
+    // Pointer 7 is not making the drag now, and pointer 8 is.
+    fire(&tab, "pointermove", 7, centre(&tab, 12, 5)?)?;
+    check_eq(population(&tab)?, 2)?;
+    fire(&tab, "pointermove", 8, centre(&tab, 8, 5)?)?;
+    check_eq(population(&tab)?, 4)?;
+    fire(&tab, "pointerup", 8, centre(&tab, 8, 5)?)?;
+    fire(&tab, "pointermove", 8, centre(&tab, 10, 5)?)?;
+    check_eq(population(&tab)?, 4)
+}
+
+#[test]
+fn a_pointer_that_is_let_go_paints_nothing_when_it_moves_again() -> Result<(), String> {
+    let tab = emptied()?;
+    fire(&tab, "pointerdown", 5, centre(&tab, 2, 2)?)?;
+    fire(&tab, "pointerup", 5, centre(&tab, 2, 2)?)?;
+    fire(&tab, "pointermove", 5, centre(&tab, 9, 2)?)?;
+    check_eq(population(&tab)?, 1)?;
+    // The loss of the capture that follows the pointer being let go is not a second end, and does no harm.
+    fire(&tab, "lostpointercapture", 5, centre(&tab, 9, 2)?)?;
+    check_eq(population(&tab)?, 1)?;
+    drag(&tab, &[centre(&tab, 10, 2)?, centre(&tab, 11, 2)?])?;
+    check_eq(population(&tab)?, 3)
 }
