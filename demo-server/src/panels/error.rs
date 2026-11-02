@@ -3,7 +3,7 @@ use std::{fmt, io, path::PathBuf};
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything that can go wrong assembling `index.html`. None of these checks need an HTML parser. Every one is a
 /// targeted check against a specific convention this gallery already relies on. The conventions are one placeholder per
-/// token, one `id="..."` per fragment that matches its filename, and the three `data-` attributes on its opening tag.
+/// token, an `id` and a `data-label` on each fragment's opening tag, and the `NN-name` naming of folders and fragments.
 /// None is a general claim about well-formed HTML.
 #[derive(Debug)]
 pub enum AssembleError {
@@ -18,18 +18,20 @@ pub enum AssembleError {
         placeholder: &'static str,
         count: usize,
     },
-    /// A fragment's filename does not match `panel-[a-z0-9-]+` — see [`is_valid_panel_id`] for why that pattern is
-    /// enforced up front rather than escaped at each place an id is emitted.
-    InvalidPanelId(String),
-    /// A fragment's own content does not contain `id="{id}"` for the id it is filed under — it may have been
-    /// copy-pasted from another panel's fragment and never updated.
-    FragmentIdMismatch { id: String, fragment_path: PathBuf },
-    /// A fragment has no opening `<section>` tag, or the tag lacks the `data-` attribute `attribute`.
+    /// A subfolder of `demo/panels/` is not named `NN-group-name`: two digits, a hyphen, and then lowercase letters,
+    /// digits and hyphens.
+    InvalidGroupFolder(String),
+    /// A file in a group folder is not named `NN-demo-name.html` in the same way. The path is below `demo/panels/`.
+    InvalidFragmentName(PathBuf),
+    /// Two group folders, or two fragments in one group, start with the same number, so their order is not decided.
+    DuplicateNumber { path: PathBuf, other: PathBuf },
+    /// A fragment's `<section id>` does not match `panel-[a-z0-9-]+` — see [`is_valid_panel_id`] for why that pattern
+    /// is enforced up front rather than escaped at each place an id is emitted.
+    InvalidPanelId { id: String, fragment_path: PathBuf },
+    /// Two fragments have the same `<section id>`.
+    DuplicatePanelId { id: String, fragment_path: PathBuf, other: PathBuf },
+    /// A fragment has no opening `<section>` tag, or the tag lacks the attribute `attribute`.
     MissingAttribute { fragment_path: PathBuf, attribute: &'static str },
-    /// A fragment's `data-order` is not a whole number.
-    InvalidOrder { fragment_path: PathBuf, value: String },
-    /// A fragment's `data-group` is not in [`GROUP_ORDER`], which would leave the panel out of the menu.
-    UnknownGroup { fragment_path: PathBuf, group: String },
     /// The fully assembled output still contains a `{{...}}` token after both placeholders were substituted — evidence
     /// of a typo'd or unexpected placeholder that no check above already caught.
     LeftoverPlaceholder(String),
@@ -53,30 +55,30 @@ impl fmt::Display for AssembleError {
                     template_path.display()
                 )
             },
-            Self::InvalidPanelId(id) => write!(
+            Self::InvalidGroupFolder(name) => write!(
                 f,
-                "demo/panels/ contains the fragment {id:?}, whose name does not match panel-[a-z0-9-]+"
+                "demo/panels/ contains the folder {name:?}, whose name does not match NN-group-name"
             ),
-            Self::FragmentIdMismatch { id, fragment_path } => {
-                write!(
-                    f,
-                    "{} does not contain id=\"{id}\", the id it is filed under",
-                    fragment_path.display()
-                )
+            Self::InvalidFragmentName(path) => {
+                write!(f, "demo/panels/{} is not named NN-demo-name.html", path.display())
+            },
+            Self::DuplicateNumber { path, other } => write!(
+                f,
+                "demo/panels/{} and demo/panels/{} start with the same number",
+                path.display(),
+                other.display()
+            ),
+            Self::InvalidPanelId { id, fragment_path } => write!(
+                f,
+                "{} has the id {id:?}, which does not match panel-[a-z0-9-]+",
+                fragment_path.display()
+            ),
+            Self::DuplicatePanelId { id, fragment_path, other } => {
+                write!(f, "{} and {} both have the id {id:?}", fragment_path.display(), other.display())
             },
             Self::MissingAttribute { fragment_path, attribute } => write!(
                 f,
                 "{} has no <section> tag with the attribute {attribute}",
-                fragment_path.display()
-            ),
-            Self::InvalidOrder { fragment_path, value } => write!(
-                f,
-                "{} has data-order={value:?}, which is not a whole number",
-                fragment_path.display()
-            ),
-            Self::UnknownGroup { fragment_path, group } => write!(
-                f,
-                "{} is filed under data-group={group:?}, which is not in GROUP_ORDER",
                 fragment_path.display()
             ),
             Self::LeftoverPlaceholder(context) => {

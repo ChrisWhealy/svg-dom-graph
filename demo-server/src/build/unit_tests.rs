@@ -33,8 +33,8 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo/crc32-window.html")?;
     copy("demo/hamming-window.html")?;
     copy("demo/qr-code-window.html")?;
-    for id in panels::panel_ids(&src_root.join("demo").join("panels")).map_err(|e| e.to_string())? {
-        copy(&format!("demo/panels/{id}.html"))?;
+    for panel in panels::catalogue(&src_root.join("demo").join("panels")).map_err(|e| e.to_string())? {
+        copy(&format!("demo/panels/{}", panel.path.display()))?;
     }
     Ok(())
 }
@@ -173,7 +173,12 @@ fn prepare_stage_replaces_an_existing_index_html_on_a_successful_rerun() -> Resu
         fs::read_to_string(stage.stage_dir.join("index.html")).map_err(|e| format!("read staged index.html: {e:?}"))?;
 
     const MARKER: &str = "<!-- prepare-stage-regression-test-marker -->";
-    let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
+    let fragment_path = temp_root
+        .path()
+        .join("demo")
+        .join("panels")
+        .join("01-basic-nodes")
+        .join("01-tree.html");
     let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;
     fragment.push_str(MARKER);
     fs::write(&fragment_path, &fragment).map_err(|e| format!("write edited panel-tree.html: {e:?}"))?;
@@ -214,7 +219,12 @@ fn prepare_stage_leaves_index_html_untouched_when_style_css_copy_fails() -> Resu
     // Edit the fragment too, so a bug that promotes index.html before checking style.css would actually be visible
     // below. The staged index.html would change even though the whole call is expected to fail.
     const MARKER: &str = "<!-- prepare-stage-style-failure-marker -->";
-    let fragment_path = temp_root.path().join("demo").join("panels").join("panel-tree.html");
+    let fragment_path = temp_root
+        .path()
+        .join("demo")
+        .join("panels")
+        .join("01-basic-nodes")
+        .join("01-tree.html");
     let mut fragment = fs::read_to_string(&fragment_path).map_err(|e| format!("read copied panel-tree.html: {e:?}"))?;
     fragment.push_str(MARKER);
     fs::write(&fragment_path, &fragment).map_err(|e| format!("write edited panel-tree.html: {e:?}"))?;

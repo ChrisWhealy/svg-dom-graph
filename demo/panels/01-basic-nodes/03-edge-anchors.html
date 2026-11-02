@@ -1,0 +1,21 @@
+<section class="section" id="panel-edge-anchors" data-label="Fixing points">
+    <h2>Fixing points</h2>
+    <p>
+        The parent starts with one child. The straight connector between them attaches at each node's centre, but stops
+        at whichever boundary point that ray crosses first.
+    </p>
+    <p>
+        Move the slider in the diagram to 1 and the connector snaps onto the exact midpoint of the side it crosses. Move
+        it higher and more children appear, each sharing the same parent. The connectors then settle on their own evenly
+        spaced fixing point along the parent's side. Move it back down and children disappear again.
+    </p>
+    <p class="controls">
+        <span>Connector type:</span>
+        <label
+            ><input type="radio" name="edge-anchors-type" id="edge-anchors-type-straight" value="straight" checked />
+            Straight</label
+        >
+        <label><input type="radio" name="edge-anchors-type" id="edge-anchors-type-elbow" value="elbow" /> Elbow</label>
+    </p>
+    <div class="canvas" id="edge-anchors-diagram-stage"></div>
+</section>

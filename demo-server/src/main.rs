@@ -13,7 +13,7 @@
 //!
 //! 1. the panel fragments in `demo/panels/` and `demo-app`'s `demo_gallery!` list must agree with each other (see
 //!    [`validate`])
-//! 1. Rebuilds `index.html` from `demo/index.template.html` and the various `demo/panels/*.html` files (see [`panels`])
+//! 1. Rebuilds `index.html` from `demo/index.template.html` and the various `demo/panels/*/*.html` files (see [`panels`])
 //! 1. Rebuilds the `svg-dom-graph-demo` crate's wasm package using `wasm-pack build demo-app --target web`
 //! 1. Serves the result at <http://127.0.0.1:8000/>
 //!

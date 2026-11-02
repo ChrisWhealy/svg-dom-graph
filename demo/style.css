@@ -835,7 +835,7 @@ label.demo-slider-container {
 /* svg-dom-graph's own addition, not part of svg-dom's original stylesheet above.
    svg-dom builds every interactive control inside its SVG canvas via foreignObject (see .demo-control-group and
    friends above); svg-dom-graph's demos instead use plain HTML radios and range inputs alongside the canvas
-   (see demo/panels/panel-elbow.html and panel-edge-anchors.html), so those need their own layout rule instead. */
+   (see demo/panels/01-basic-nodes/02-elbow.html and 03-edge-anchors.html), so those need their own layout rule instead. */
 .controls {
     margin: 0.75rem 0;
 }
@@ -888,8 +888,7 @@ label.demo-slider-container {
 .phase-shift-grid {
     display: grid;
     grid-template-columns: max-content max-content;
-    grid-template-areas:
-        "circle sine";
+    grid-template-areas: "circle sine";
     overflow-x: auto;
     /* The scenes overlap by a pixel, with a margin of -1px, so that a border is shared. That would run a pixel past the
        edge of the grid, and give it a scroll bar for that pixel. So the grid has a pixel of room for it. */
@@ -916,13 +915,36 @@ label.demo-slider-container {
     margin: 0.75rem 0;
 }
 
-/* The Pythagoras panel's one scene. It has a fixed size, so a narrow screen scrolls it, not the page. It has no plot, so it
-   is given the pale background that the plots of the other circle panels have. */
+/* The Pythagoras panel's one scene, with its explanation to the right of it. The scene has a fixed size and the text
+   takes the rest of the row. On a window too narrow for both, the text wraps below the scene instead. */
 .pythagoras-wrap {
-    overflow-x: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
     margin: 0.75rem 0;
 }
 
+.pythagoras-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.pythagoras-text {
+    flex: 1 1 18rem;
+    min-width: 0;
+}
+
+.pythagoras-text > p:first-child {
+    margin-top: 0;
+}
+
+.pythagoras-text > p {
+    margin-top: 0.75rem;
+}
+
+/* The scene has no plot, so it is given the pale background that the plots of the other circle panels have. */
 #pythagoras-stage-svg {
     background: #eef4ff;
 }

@@ -2,7 +2,7 @@
 
 Running `cargo demo` performs the following steps:
 - Validates the panel catalogue
-- Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and `demo/panels/*.html`
+- Assembles `index.html` from `demo/index.template.html`, a generated `<nav>` menu, and `demo/panels/*/*.html`
 - Rebuilds the wasm package
 - Stages everything under `target/demo-stage/` (see `demo-server/src/main.rs`'s own doc comment for exactly why it stages outside the source tree)
 - Serves it at <http://127.0.0.1:8000/> — override the port with `PORT=9000 cargo demo`
@@ -10,12 +10,12 @@ Running `cargo demo` performs the following steps:
 The first time you choose a demo from the menu on the left, it is built on demand.
 The URL's own `#panel-...` fragment tracks the current panel, so it is bookmarkable and shareable, and the browser's back/forward buttons move between previously visited panels.
 
-Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is picked up on the next browser refresh; however, if you edit any Rust source, you must restart `cargo demo`.
+Editing `demo/index.template.html`, `demo/panels/*/*.html`, or `demo/style.css` is picked up on the next browser refresh; however, if you edit any Rust source, you must restart `cargo demo`.
 
 `demo/` holds the demo's own HTML, assembled at staging time rather than hand-maintained as a single file:
 
 * `index.template.html` the page shell, containing `{{MENU}}` and `{{PANELS}}` placeholders
-* `panels/*.html` one fragment per demo panel
+* `panels/NN-group-name/NN-demo-name.html` one fragment per demo panel, in one folder per menu group
 * `style.css` the same stylesheet `svg-dom`'s own demo gallery uses, so both crates' demos share a common visual style
 * `img/` holds images for the panels.
   Every file directly inside it is staged as `img/<name>`, so an SVG `<image>` can refer to `img/<name>` by a relative URL.
@@ -72,14 +72,14 @@ Editing `demo/index.template.html`, `demo/panels/*.html`, or `demo/style.css` is
 
 `demo-server/` is a further on-demand workspace member, used only by `cargo demo`.
 It is a small native Actix server, mirroring the shape of `svg-dom`'s own `demo-server`.
-It assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*.html`.
+It assembles `index.html` from `demo/index.template.html`, a `<nav>` menu generated from its own panel manifest, and `demo/panels/*/*.html`.
 It validates that this panel catalogue matches `demo-app`'s own `demo_gallery!` list.
 It then rebuilds the wasm package and serves the result, with no dependency on external HTTP-server tooling.
 It also copies the window pages (`STATIC_ASSETS` in `demo-server/src/build/mod.rs`) beside the assembled `index.html`.
 
 A new demo needs three things:
 
-* a panel fragment in `demo/panels/` whose `<section>` tag carries its menu group, label and order as `data-group`, `data-label` and `data-order`
+* a panel fragment `demo/panels/NN-group-name/NN-demo-name.html`, whose `<section>` tag carries `id` and `data-label`<br>The menu group and the order come from the folder structure: the group folder's two-digit number orders the groups, its name (with hyphens as spaces) is the heading, and the fragment's two-digit number orders it within the group
 * a `demo_gallery!` entry in `demo-app/src/lib.rs`
 * for a demo that opens in a window, a page in `demo/` that is added to `STATIC_ASSETS`
 

@@ -18,7 +18,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 ## Changed
 
 - Make consistent use of `<input type="range">` as `foreignObject` across all demos (`52f50ab`)
-- Adjust demo panel order plus some refactoring (``)
+- Adjust demo panel order plus some refactoring (`38993aa`)
+- Simplify demo panel structure and correct failing CI test (``)
 
 # [Released]
 

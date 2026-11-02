@@ -119,7 +119,7 @@
 //!   value is worked out in plain Rust, one whole block at a time.
 //!
 //! Each feature this crate gains should keep this pattern. Land it in a module of its own, and add a
-//! `demo/panels/{id}.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
+//! `demo/panels/NN-group-name/NN-demo-name.html` fragment and a `demo_gallery!` entry. A line in the changelog is not enough.
 //!
 //! No function in this crate panics. Every failure — a missing DOM element, a failed listener attach, or a library
 //! `Error` — returns as a `Result`. [`init_panel`] reports a build failure directly in the gallery (see
@@ -176,7 +176,7 @@ use wasm_bindgen::{JsValue, prelude::wasm_bindgen};
 /// [`init_panel`] calls to build it, and the source shown in its collapsible source frame can never drift apart. Four
 /// independently hand-maintained lists could.
 pub(crate) struct DemoPanel {
-    /// Also the id of the `<section>` (see `demo/panels/*.html`) that [`init_panel`] builds into and
+    /// Also the id of the `<section>` (see `demo/panels/*/*.html`) that [`init_panel`] builds into and
     /// [`source_frame::append_demo_source`] appends the source frame to.
     pub(crate) id: &'static str,
     /// Builds this panel's own demo scene the first time it is selected — see [`init_panel`]/[`run_panel`].

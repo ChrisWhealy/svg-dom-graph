@@ -1,0 +1,47 @@
+<section class="section" id="panel-qr-code" data-label="QR code">
+    <h2>QR Code Generator</h2>
+    <p>
+        A QR code is a square grid of dark and light modules that can be read by an optical scanner or the camera in a
+        phone. This grid is known as a "symbol".
+    </p>
+    <p>
+        This demo shows how a Version 1 QR Code (the smallest kind) is constructed. It is 21 by 21 modules, with error
+        correction level L, and may contain up to 17 ASCII characters. Every number is worked out in plain Rust by an
+        encoder written for this demo, and checked against two independent encoders.
+    </p>
+    <p>Once the QR code has been generated, you can download it as an <code>SVG</code> image.</p>
+    <p>The diagram follows the steps needed to create the symbol:</p>
+    <ol>
+        <li><strong>Bytes.</strong> Each character is one byte.</li>
+        <li>
+            <strong>Bitstream.</strong> A sequence of bits, prefixed by a 4-bit mode flag, an 8-bit character count,
+            136-bits of data and finally, a 4-bit terminator.
+        </li>
+        <li><strong>Data codewords.</strong> The bits are cut into 19 codewords of 8 bits, with padding.</li>
+        <li>
+            <strong>Reed-Solomon.</strong> Each data codeword takes the remainder of a division one step further. The
+            remainder is the 7 error correction codewords, which let a scanner repair a damaged symbol.
+        </li>
+        <li>
+            <strong>Function modules.</strong> Different regions of the symbol perform specific functions. These are
+            specific patterns known as the finder, separator and timing, and a dark module. These modules are drawn
+            first. The format modules are reserved, but are not yet assigned a colour.
+        </li>
+        <li>
+            <strong>Placement.</strong> The other modules are populated with the 26 codewords - 19 codewords for the
+            data, plus 7 codewords for error correction, two columns at a time.
+        </li>
+        <li>
+            <strong>Masks.</strong> Each of eight masks flips a pattern of the data modules. Each candidate gets its own
+            format information and is scored, and the lowest score wins.
+        </li>
+    </ol>
+    <p>
+        At the last step, "Export SVG" asks the browser to save the finished symbol as <code>qr-code.svg</code>. The
+        file adds the quiet zone of four light modules that a scanner needs, which the matrix on screen leaves out. It
+        is pure black on white, with every module a whole number of pixels, and it has been read back by an independent
+        decoder.
+    </p>
+    <p>The scene is large, so it opens in a window of its own.</p>
+    <button id="qr-code-open" class="open-window" type="button">Open the demo in its own window</button>
+</section>

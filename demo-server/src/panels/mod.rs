@@ -4,10 +4,11 @@
 //! Mirrors `svg-dom`'s own `demo-server/src/panels/mod.rs`. Its menu groups panels under headings like "Basic Nodes"
 //! and "Operators", each of which expands to show its panels.
 //!
-//! The panels describe themselves. Each fragment's opening `<section>` tag carries the group the panel is filed under,
-//! its menu label and its place within the group, as `data-group`, `data-label` and `data-order`. The fragments in
-//! `demo/panels/` are therefore the single source of truth for which panels exist, and nothing else lists them.
-//! [`GROUP_ORDER`] only decides the order of the headings.
+//! The folder structure of `demo/panels/` is the menu. Each subfolder is a group, named `NN-group-name`, where `NN` is
+//! two digits that put the group in order, and the hyphens of the name become the spaces of the heading. Each fragment
+//! in a group folder is named `NN-demo-name.html` in the same way, and `NN` puts the panel in order within its group.
+//! The fragment's own opening `<section>` tag still carries the panel's `id` and its menu label as `data-label`,
+//! since neither can be worked out from a file name.
 //!
 //! It does not know anything about the Rust demo functions that build each panel's content. That mapping lives in
 //! `demo-app/src/lib.rs`'s `demo_gallery!` invocation instead. That invocation holds a separate list for a separate
@@ -15,97 +16,129 @@
 //!
 //! # Adding a new demo
 //!
-//! Create `demo/panels/{id}.html`, whose root element is
-//! `<section class="section" id="{id}" data-group="..." data-label="..." data-order="...">`. Orders within a group are
-//! numbered in tens, so that a panel can be slotted between two others. Then add the matching `demo_gallery!` entry in
-//! `demo-app/src/lib.rs`. A panel in a group that is new needs the group adding to [`GROUP_ORDER`].
+//! Create `demo/panels/NN-group-name/NN-demo-name.html`, whose root element is
+//! `<section class="section" id="panel-..." data-label="...">`. Number the files so that a panel can be slotted between
+//! two others by renumbering. Then add the matching `demo_gallery!` entry in `demo-app/src/lib.rs`. A panel in a group
+//! that is new needs a new `NN-group-name` folder.
 
 mod error;
 
 pub(crate) use error::AssembleError;
-use std::{fs, path::Path};
+use std::{
+    fs,
+    path::{Path, PathBuf},
+};
 
 const PANELS_PLACEHOLDER: &str = "{{PANELS}}";
 const MENU_PLACEHOLDER: &str = "{{MENU}}";
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The headings of the menu, in the order they are drawn. A group with no panels is not drawn.
-const GROUP_ORDER: &[&str] = &[
-    "Basic Nodes",
-    "Data Nodes",
-    "Operators",
-    "Cell selection",
-    "Text nodes",
-    "Nested scenes",
-    "Cryptographic Algorithms",
-    "Encoding & Compression",
-    "Error Detection & Correction",
-    "Sorting",
-    "Graph algorithms",
-    "Signal processing",
-];
-
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// One panel, as its own fragment describes it.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// One panel, as its place in `demo/panels/` and its own fragment describe it.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Panel {
     pub id: String,
+    /// The heading of the panel's group, made from the name of the group's folder.
     pub group: String,
     /// The text of the panel's menu item. A group that holds only this panel shows the group's heading instead.
     pub label: String,
-    /// Where the panel comes in its group: lower first, and a tie goes to the lower id.
-    pub order: u32,
+    /// The fragment's path below the panels folder: its group's folder, and then its own file name.
+    pub path: PathBuf,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Every panel in `panels_dir`, in menu order: by the position of its group in [`GROUP_ORDER`], then by `data-order`,
-/// then by id.
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Every panel in `panels_dir`, in menu order: by group folder name, and then by file name. The two-digit numbers that
+/// start those names put them in order.
 ///
-/// Reads and checks every fragment, so a fragment that is wrongly named, whose id does not match its name, or that
-/// lacks its metadata is reported here, whichever caller asked.
+/// Reads and checks every fragment, so a folder or fragment that is wrongly named, a number that is used twice, an id
+/// that is not valid or is used twice, or a fragment that lacks its label is reported here, whichever caller asked.
 pub fn catalogue(panels_dir: &Path) -> Result<Vec<Panel>, AssembleError> {
-    let mut panels = Vec::new();
-    for id in list_fragment_ids(panels_dir)? {
-        if !is_valid_panel_id(&id) {
-            return Err(AssembleError::InvalidPanelId(id));
+    let mut panels: Vec<Panel> = Vec::new();
+    let mut group_numbers: Vec<(String, PathBuf)> = Vec::new();
+    for group_name in list_names(panels_dir, true)? {
+        let (number, heading) =
+            split_name(&group_name).ok_or_else(|| AssembleError::InvalidGroupFolder(group_name.clone()))?;
+        if let Some((_, other)) = group_numbers.iter().find(|(n, _)| *n == number) {
+            return Err(AssembleError::DuplicateNumber {
+                path: PathBuf::from(&group_name),
+                other: other.clone(),
+            });
         }
-        let fragment_path = panels_dir.join(format!("{id}.html"));
-        let fragment = read_to_string(&fragment_path)?;
-        if !fragment.contains(&format!("id=\"{id}\"")) {
-            return Err(AssembleError::FragmentIdMismatch { id, fragment_path });
+        group_numbers.push((number.to_owned(), PathBuf::from(&group_name)));
+        let heading = heading_of(heading);
+
+        let group_dir = panels_dir.join(&group_name);
+        let mut fragment_numbers: Vec<(String, PathBuf)> = Vec::new();
+        for file_name in list_names(&group_dir, false)? {
+            let path = Path::new(&group_name).join(&file_name);
+            let stem = file_name.strip_suffix(".html").unwrap_or(&file_name);
+            let (number, _) = split_name(stem).ok_or_else(|| AssembleError::InvalidFragmentName(path.clone()))?;
+            if let Some((_, other)) = fragment_numbers.iter().find(|(n, _)| *n == number) {
+                return Err(AssembleError::DuplicateNumber { path, other: other.clone() });
+            }
+            fragment_numbers.push((number.to_owned(), path.clone()));
+
+            let fragment_path = panels_dir.join(&path);
+            let fragment = read_to_string(&fragment_path)?;
+            let attribute = |name: &'static str| {
+                section_attribute(&fragment, name).ok_or_else(|| AssembleError::MissingAttribute {
+                    fragment_path: fragment_path.clone(),
+                    attribute: name,
+                })
+            };
+            let id = attribute("id")?;
+            if !is_valid_panel_id(&id) {
+                return Err(AssembleError::InvalidPanelId { id, fragment_path });
+            }
+            if let Some(other) = panels.iter().find(|panel| panel.id == id) {
+                return Err(AssembleError::DuplicatePanelId {
+                    id,
+                    fragment_path,
+                    other: panels_dir.join(&other.path),
+                });
+            }
+            let label = attribute("data-label")?;
+            panels.push(Panel {
+                id,
+                group: heading.clone(),
+                label,
+                path,
+            });
         }
-        let attribute = |name: &'static str| {
-            section_attribute(&fragment, name).ok_or_else(|| AssembleError::MissingAttribute {
-                fragment_path: fragment_path.clone(),
-                attribute: name,
-            })
-        };
-        let group = attribute("data-group")?;
-        let label = attribute("data-label")?;
-        let order_text = attribute("data-order")?;
-        let order = order_text.parse().map_err(|_| AssembleError::InvalidOrder {
-            fragment_path: fragment_path.clone(),
-            value: order_text.clone(),
-        })?;
-        if !GROUP_ORDER.contains(&group.as_str()) {
-            return Err(AssembleError::UnknownGroup { fragment_path, group });
-        }
-        panels.push(Panel { id, group, label, order });
     }
-    sort_into_menu_order(&mut panels);
     Ok(panels)
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Puts `panels` in menu order. See [`catalogue`].
-fn sort_into_menu_order(panels: &mut [Panel]) {
-    let group_position = |panel: &Panel| GROUP_ORDER.iter().position(|g| *g == panel.group);
-    panels.sort_by(|a, b| {
-        group_position(a)
-            .cmp(&group_position(b))
-            .then(a.order.cmp(&b.order))
-            .then_with(|| a.id.cmp(&b.id))
-    });
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Splits a folder name or a fragment's name without its extension, `NN-some-name`, into `NN` and `some-name`. `None` if
+/// it is not two digits, a hyphen, and then one or more lowercase letters, digits and hyphens that do not start or end
+/// with a hyphen.
+fn split_name(name: &str) -> Option<(&str, &str)> {
+    let (number, rest) = (name.get(..2)?, name.get(3..)?);
+    let valid = number.bytes().all(|b| b.is_ascii_digit())
+        && name.as_bytes()[2] == b'-'
+        && !rest.is_empty()
+        && !rest.starts_with('-')
+        && !rest.ends_with('-')
+        && rest.bytes().all(|b| b.is_ascii_lowercase() || b.is_ascii_digit() || b == b'-');
+    valid.then_some((number, rest))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The heading for a group folder's name without its number: the hyphens become spaces, and each word starts with a
+/// capital, except for the small words that join others, which only do at the start.
+fn heading_of(name: &str) -> String {
+    const SMALL: &[&str] = &["a", "an", "and", "of", "the", "or"];
+    name.split('-')
+        .enumerate()
+        .map(|(position, word)| {
+            let mut letters = word.chars();
+            match letters.next() {
+                Some(first) if position == 0 || !SMALL.contains(&word) => first.to_uppercase().chain(letters).collect(),
+                _ => word.to_owned(),
+            }
+        })
+        .collect::<Vec<String>>()
+        .join(" ")
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -195,29 +228,29 @@ fn check_placeholder_count(
     }
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The panel id each `demo/panels/*.html` fragment is filed under (its filename, minus `.html`), in alphabetical order.
-fn list_fragment_ids(panels_dir: &Path) -> Result<Vec<String>, AssembleError> {
-    let entries = fs::read_dir(panels_dir).map_err(|source| AssembleError::Io {
-        path: panels_dir.to_path_buf(),
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The names in `dir`, in alphabetical order, which is menu order: the subfolders if `folders` is true, otherwise the
+/// `.html` files. Anything else is ignored, such as `.DS_Store`.
+fn list_names(dir: &Path, folders: bool) -> Result<Vec<String>, AssembleError> {
+    let io_error = |source| AssembleError::Io {
+        path: dir.to_path_buf(),
         source,
-    })?;
-
-    let mut ids = Vec::new();
-    for entry in entries {
-        let entry = entry.map_err(|source| AssembleError::Io {
-            path: panels_dir.to_path_buf(),
-            source,
-        })?;
+    };
+    let mut names = Vec::new();
+    for entry in fs::read_dir(dir).map_err(io_error)? {
+        let entry = entry.map_err(io_error)?;
         let path = entry.path();
-        if path.extension().is_some_and(|ext| ext == "html")
-            && let Some(stem) = path.file_stem().and_then(|s| s.to_str())
-        {
-            ids.push(stem.to_owned());
+        let wanted = if folders {
+            path.is_dir()
+        } else {
+            path.is_file() && path.extension().is_some_and(|ext| ext == "html")
+        };
+        if wanted && let Some(name) = path.file_name().and_then(|n| n.to_str()) {
+            names.push(name.to_owned());
         }
     }
-    ids.sort();
-    Ok(ids)
+    names.sort();
+    Ok(names)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -237,7 +270,7 @@ fn check_no_leftover_placeholders(assembled: &str) -> Result<(), AssembleError> 
 fn render_panels(panels_dir: &Path, panels: &[Panel]) -> Result<String, AssembleError> {
     let mut body = String::new();
     for panel in panels {
-        body.push_str(&read_to_string(&panels_dir.join(format!("{}.html", panel.id)))?);
+        body.push_str(&read_to_string(&panels_dir.join(&panel.path))?);
         body.push('\n');
     }
     Ok(body)
@@ -259,10 +292,10 @@ fn render_menu(panels: &[Panel]) -> String {
         )
     };
     let mut menu = String::new();
-    for heading in GROUP_ORDER {
-        let members: Vec<&Panel> = panels.iter().filter(|panel| panel.group == *heading).collect();
-        match members.as_slice() {
-            [] => {},
+    // Panels are in menu order, so the panels of a group are next to each other.
+    for members in panels.chunk_by(|a, b| a.group == b.group) {
+        let heading = members[0].group.as_str();
+        match members {
             [only] => {
                 menu.push_str("            ");
                 menu.push_str(&button("menu-item menu-item-top", &only.id, heading));
