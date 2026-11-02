@@ -2,7 +2,7 @@
 //!
 //! Used by the demos that put their own controls in the scene beside the library's nodes.
 
-use crate::util::required_element;
+use super::required_element;
 use std::rc::Rc;
 use svg_dom::root::utils::Rect;
 use wasm_bindgen::{JsCast, closure::Closure};

@@ -4,10 +4,7 @@
 mod plots;
 
 use crate::plot_scene::Plot;
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, required_element},
-};
+use demo_common::util::{document, required_element};
 use plots::{
     AMPLITUDE_STEP, AMPLITUDES, FREQUENCIES, FREQUENCY_STEP, PHASE_STEP, PHASES, Wave, amplitude_text, config,
     description, frequency_text, items, phase_text,
@@ -16,12 +13,13 @@ use std::{
     cell::{Cell, RefCell},
     rc::Rc,
 };
+use svg_dom_graph::controls::sliders::{self, Slider};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
 
 /// The files behind this demo's one function: the configuration of the plot and what is drawn on it. The sliders are in
-/// `demo-common/src/sliders`, which the other demos with sliders in the scene share.
+/// `src/controls/sliders`, which the other demos with sliders in the scene share.
 pub(crate) const FILES: &[crate::SourceFile] =
     &[crate::source_file!("amplitude_frequency/plots/mod.rs", "plots/mod.rs")];
 

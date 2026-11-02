@@ -15,15 +15,13 @@ use super::{
     argand::{Argand, Guides, Mark, PAD, rectangular_text},
     describe,
 };
-use demo_common::{
-    sliders::{self, Orientation, Spec},
-    util::{clear_error, document, report_error, stringify},
-};
+use demo_common::util::{clear_error, document, report_error, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     DominantBaseline, SvgRoot, TextAnchor,
     root::utils::{Point, Size},
 };
+use svg_dom_graph::controls::sliders::{self, Orientation, Spec};
 use svg_dom_graph::{
     NodeId,
     complex::Complex,

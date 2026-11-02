@@ -14,10 +14,8 @@ use super::{
     stats_text,
     viewport::Frame,
 };
-use demo_common::{
-    svg_buttons,
-    util::{announce, stringify},
-};
+use demo_common::util::{announce, stringify};
+use svg_dom_graph::controls::svg_buttons;
 use svg_dom_graph::scene::{Scene, Selection};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

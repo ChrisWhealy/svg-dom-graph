@@ -35,7 +35,7 @@ Editing `demo/index.template.html`, `demo/panels/*/*.html`, or `demo/style.css` 
 - `demo-common/src/util.rs`<br>
   Small DOM/error helpers shared by more than one demo module.
   `demo-common` is a crate of its own, which `demo-app` depends on.
-  It also holds `svg_buttons.rs` and the `sorting/` module that every sorting demo shares.
+  It also holds the `sorting/` module that every sorting demo shares. The SVG buttons and range sliders that demos put in a scene are the library's own `svg_dom_graph::controls`.
 - `demo-app/src/source_frame.rs`<br>
   Builds each panel's own collapsible `<details>` block.
   The block shows the exact Rust source of the function that built the panel.

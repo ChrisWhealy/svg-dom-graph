@@ -1,7 +1,8 @@
 //! The buttons in the scene that choose the array to sort, and what they do.
 
 use super::{Algorithm, array, go, with_runtime};
-use crate::svg_buttons::{self, Button};
+use svg_dom_graph::controls::svg_buttons::{self, Button};
+
 use svg_dom::root::utils::{Point, Rect, Size};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

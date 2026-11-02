@@ -24,6 +24,7 @@
 
 pub(crate) mod colours;
 pub mod complex;
+pub mod controls;
 pub(crate) mod error;
 pub mod geometry;
 pub(crate) mod model;

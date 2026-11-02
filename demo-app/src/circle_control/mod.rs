@@ -9,12 +9,10 @@ pub(crate) mod angles;
 
 use crate::plot_scene::{Plot, listen};
 use angles::{angle_of, height, key_angle, whole, width};
-use demo_common::{
-    svg_buttons,
-    util::{document, required_element},
-};
+use demo_common::util::{document, required_element};
 use std::{cell::Cell, rc::Rc};
 use svg_dom::root::utils::Point;
+use svg_dom_graph::controls::svg_buttons;
 use svg_dom_graph::scene::{PlotConfig, PlotItem};
 
 /// How near to C, in pixels, a pointer has to be to take hold of it, and the radius of the ring that shows C has the

@@ -2,15 +2,13 @@
 //! fixing-point slider, and a straight/elbow toggle. See [`build_edge_anchors_demo`]'s own doc comment for what it
 //! demonstrates.
 
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, required_element, required_input, stringify},
-};
+use demo_common::util::{document, required_element, required_input, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::sliders::{self, Slider};
 use svg_dom_graph::{
     EdgeId,
     scene::{ConnectorOptions, ConnectorType, DragOptions, EdgeAnchors, NodeOptions, Scene},

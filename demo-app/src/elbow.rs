@@ -1,15 +1,13 @@
 //! `panel-elbow` / `#elbow-diagram`: two boxes, a straight/elbow toggle, and a corner-radius slider. See
 //! [`build_elbow_demo`]'s own doc comment for what it demonstrates.
 
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, required_input, required_query, stringify},
-};
+use demo_common::util::{document, required_input, required_query, stringify};
 use std::{cell::RefCell, rc::Rc};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::sliders::{self, Slider};
 use svg_dom_graph::{
     EdgeId,
     scene::{ConnectorType, DragOptions, Scene},

@@ -49,7 +49,7 @@ A value is always a whole number of steps from the least, so that it can be writ
 
 ## The sliders of `demo-common`
 
-The sliders are `demo-common/src/sliders`, and do not know what they are for.
+The sliders are `src/controls/sliders` in the library, and do not know what they are for.
 The function given to `sliders::watch` is told, from the `input` event, which slider moved and to what, draws that, and tells the slider what to write with `sliders::set_value`.
 The connector routing, fixing points, ellipses and complex number panels have sliders too, and all use the same module.
 
@@ -66,5 +66,5 @@ So the slider is the same element before the scene is drawn again and after, a d
 ## How it is checked
 
 `amplitude_frequency/plots/unit_tests.rs` checks the configuration, the wave, that it never goes beyond its amplitude, that a wave of n cycles has the right number of turns, the dotted lines, and the formula, and that it is below where the wave goes.
-`demo-common/src/sliders/unit_tests.rs` checks where a slider goes, how a value is rounded, and the style that the thumbs are given.
+`src/controls/sliders/unit_tests.rs` checks where a slider goes, how a value is rounded, and the style that the thumbs are given.
 `amplitude_frequency.rs` in the CDP tests checks the size of the scene, the three sliders, the pointer and the keys, and that the wave changes.

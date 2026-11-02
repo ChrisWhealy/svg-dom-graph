@@ -47,7 +47,7 @@ jobs:
       - name: Unit tests (demo-app)
         run: cargo test -p svg-dom-graph-demo
 
-      # demo-common holds what the demos share (DOM helpers, SVG buttons, the sorting visualisation). Its unit tests are
+      # demo-common holds what the demos share (DOM helpers, the sorting visualisation). Its unit tests are
       # plain `#[test]`s that run natively, and `--all-targets` lints them too.
       - name: Clippy (demo-common)
         run: cargo clippy -p demo-common --all-targets -- -D warnings
@@ -103,6 +103,21 @@ jobs:
       # The demo itself is built by the `cdp-build` job below, which runs the same `cargo run -p demo-server --
       # --build-only` pipeline as `cargo demo` and then hands the result to the CDP shards. Building it here as well
       # would only do the same work twice.
+
+  library-version:
+    name: library version
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+        with:
+          # The commit to compare with is not in a shallow clone.
+          fetch-depth: 0
+      - name: Test the version check
+        run: .github/scripts/test-check-library-version.sh
+      # A change to src/ needs a new version. A change to the demos or the tests does not, and goes in
+      # demo/CHANGELOG.md instead.
+      - name: A change to the library needs a new version
+        run: .github/scripts/check-library-version.sh "${{ github.event.pull_request.base.sha || github.event.before }}"
 
   msrv:
     name: MSRV (1.85)

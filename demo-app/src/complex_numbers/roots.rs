@@ -9,15 +9,13 @@ use super::{
     FEATURE_SIDE, GAP, MARGIN, NODE_GAP, TOOLBAR_ROOM,
     argand::{Argand, Guides, Mark, PAD},
 };
-use demo_common::{
-    sliders::Listener,
-    util::{clear_error, document, ensure_svg_in, report_error, required_element, resize_svg, stringify},
-};
+use demo_common::util::{clear_error, document, ensure_svg_in, report_error, required_element, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
+use svg_dom_graph::controls::sliders::Listener;
 use svg_dom_graph::{
     complex::Complex,
     scene::{

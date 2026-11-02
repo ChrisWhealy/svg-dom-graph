@@ -11,7 +11,7 @@ The first runs `demo-app`'s native unit tests.
 These are the syntax highlighter in `highlight/unit_tests.rs`, and `unit_tests.rs`, whose `every_registered_demo_has_extractable_source` guards against a `demo_gallery!` entry whose source text `demo_fn_source` can no longer locate.
 Each hash demo's own panel also has a test that it shows the calculation and the walk behind its one function.
 
-`demo-common/src/sliders/unit_tests.rs` checks the arithmetic of the sliders that the amplitude, frequency and phase, connector routing, fixing points, ellipses and complex number panels put in their scenes, which needs no browser:
+`src/controls/sliders/unit_tests.rs` checks the arithmetic of the sliders that the amplitude, frequency and phase, connector routing, fixing points, ellipses and complex number panels put in their scenes, which needs no browser:
 
 * a slider is one thumb longer than the axis it lies along, so that its thumb's centre covers the axis
 * the vertical slider is turned so that its minimum is at the bottom

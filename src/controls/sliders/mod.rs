@@ -26,7 +26,7 @@
 //! own, directly in the `<svg>`, and [`clear_scene`] takes everything out of the `<svg>` but those groups. The slider
 //! is then the same element before the scene is drawn again and after, and the drag and the keyboard focus carry on.
 
-use crate::util::required_element;
+use super::required_element;
 use std::cell::RefCell;
 use svg_dom::root::utils::{Point, Size};
 use wasm_bindgen::{JsCast, closure::Closure};

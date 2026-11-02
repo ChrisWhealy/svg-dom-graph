@@ -4,6 +4,11 @@ All notable changes to this project will be documented in this file.
 
 The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/), and this project's crate version follows [Semantic Versioning](https://semver.org/spec/v2.0.0.html).
 
+This file only records changes to the `svg-dom--graph` library.
+Changes to the demo gallery, the demo server and the tests are recorded separately in [`demo/changelog.md`](demo/changelog.md), as they do not affect the library version.
+CI fails a change to `src/` that leaves the version in `Cargo.toml` as it was.
+Entries up to 0.2.47 also hold demo changes, from before the two were separated.
+
 # [Unreleased]
 
 ## [0.2.47] - 2026-11-02
@@ -14,6 +19,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 - Phase shift demo panel (`fdb996a`)
 - Amplitude/Frequency demo panel (`eeb30d0`)
 - Pythagorean theory demo panel (`223280f`)
+- Move widely used features from `demo-common` into the libarary module `svg_dom_graph::controls` (``)
 
 ## Changed
 
@@ -23,7 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/),
 
 ## Fixed
 
-- Correct failing CI test (``)
+- Correct failing CI test (`dcd7162`)
 
 # [Released]
 

@@ -2,15 +2,13 @@
 //! rectangle, and a clock ellipse whose connector leaves at the minute a slider chooses. See [`build_ellipse_demo`]'s own
 //! doc comment for what it demonstrates.
 
-use demo_common::{
-    sliders::{self, Slider},
-    util::{document, ensure_svg_in, required_element, resize_svg, stringify},
-};
+use demo_common::util::{document, ensure_svg_in, required_element, resize_svg, stringify};
 use std::cell::RefCell;
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::sliders::{self, Slider};
 use svg_dom_graph::{
     NodeId,
     scene::{

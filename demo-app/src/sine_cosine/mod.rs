@@ -6,7 +6,6 @@ pub(crate) mod plots;
 use crate::{circle_control::CircleControl, plot_scene::Plot};
 use demo_common::{
     force::animation::AnimationLoop,
-    svg_buttons::{self, Button},
     util::{document, required_element},
 };
 use plots::{circle_config, circle_items, cosine_config, cosine_items, readout, sine_config, sine_items, turned};
@@ -15,6 +14,7 @@ use std::{
     rc::{Rc, Weak},
 };
 use svg_dom::root::utils::{Point, Rect, Size};
+use svg_dom_graph::controls::svg_buttons::{self, Button};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");

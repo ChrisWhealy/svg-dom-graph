@@ -6,11 +6,9 @@ use super::{
     redraw,
     walk::ARRIVAL,
 };
-use demo_common::{
-    svg_buttons::{self, Button},
-    util::{document, stringify},
-};
+use demo_common::util::{document, stringify};
 use svg_dom::root::utils::{Point, Rect, Size};
+use svg_dom_graph::controls::svg_buttons::{self, Button};
 use svg_dom_graph::{
     NodeId,
     scene::{NodeOptions, Scene},

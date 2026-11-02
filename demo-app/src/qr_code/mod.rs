@@ -30,12 +30,9 @@ mod state;
 mod text;
 mod viewport;
 
-use demo_common::{
-    svg_buttons::{self, Button},
-    util::{
-        CONTENT_TOP, MARGIN, add_step_driver, announce, clear_error, document, ensure_svg_in, fit_window_to_stage,
-        report_error, resize_svg, step_toolbar_options, stringify, wire_open_window,
-    },
+use demo_common::util::{
+    CONTENT_TOP, MARGIN, add_step_driver, announce, clear_error, document, ensure_svg_in, fit_window_to_stage,
+    report_error, resize_svg, step_toolbar_options, stringify, wire_open_window,
 };
 use graph::Graph;
 use grid::{BitGrid, CellState, QrModuleKind, SIZE};
@@ -48,6 +45,7 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::svg_buttons::{self, Button};
 use svg_dom_graph::{
     NodeId,
     scene::{Scene, SceneTitleOptions, Selection, Side, ToolbarOptions},

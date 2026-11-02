@@ -25,7 +25,6 @@ use controller::{Controller, ControllerCommand, PAUSE_ACTION, PanelView, RANDOMI
 use core::Core;
 use demo_common::{
     force::{animation::AnimationLoop, bridge::CommandBridge},
-    svg_buttons::{self, Button},
     util::{MARGIN, document, ensure_svg_in, required_element, stringify},
 };
 use fixture::Fixture;
@@ -34,6 +33,7 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::svg_buttons::{self, Button};
 use svg_dom_graph::{
     NodeId,
     scene::{

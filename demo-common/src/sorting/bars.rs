@@ -10,14 +10,12 @@ use super::{
     array::{HIGHEST, LEN},
     controls,
 };
-use crate::{
-    svg_buttons,
-    util::{MARGIN, add_step_driver, document, ensure_svg_in, required_element, resize_svg, stringify},
-};
+use crate::util::{MARGIN, add_step_driver, document, ensure_svg_in, required_element, resize_svg, stringify};
 use svg_dom::{
     SvgRoot,
     root::utils::{Point, Size},
 };
+use svg_dom_graph::controls::svg_buttons;
 use svg_dom_graph::{
     NodeId,
     scene::{NodeOptions, Scene, Side, ToolbarOptions},

@@ -7,10 +7,7 @@ pub(crate) mod encode;
 mod layout;
 
 use crate::source_file;
-use demo_common::{
-    svg_buttons::{self, Button},
-    util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify},
-};
+use demo_common::util::{MARGIN, document, ensure_svg_in, required_element, resize_svg, stringify};
 use encode::{SAMPLES, button_label, byte_template_bits, encode, explain, hex_of, payload_groups};
 use layout::{centred_lefts, centred_over};
 use std::cell::{Cell, RefCell};
@@ -18,6 +15,7 @@ use svg_dom::{
     SvgRoot,
     root::utils::{Point, Rect, Size},
 };
+use svg_dom_graph::controls::svg_buttons::{self, Button};
 use svg_dom_graph::scene::{
     BitValues, ConnectorOptions, ConnectorType, DataFormat, DataNodeContent, DragOptions, GridLayout, NodeValues,
     Scene, Side, ToolbarOptions,
