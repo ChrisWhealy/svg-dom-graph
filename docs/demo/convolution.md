@@ -57,6 +57,15 @@ For a wave `A · sin(2π · f · t + φ)` over whole cycles, the raw integral wi
 So `a` and `b` in the spectrum are twice the raw integrals, which is `2/T` for a window of `T` = 1 second, and the spectrum says so in its first line: `a = 2 × 0.32 = +0.64`.
 Without the 2 the amplitudes found would be half as tall as the waves that made the signal.
 
+**Zero frequency.**
+This is a special case.
+The cosine probe is always 1 and the sine probe is always 0, so the integral with the cosine is the mean of the signal, and the integral with the sine is nothing.
+The amplitude is the size of the constant that the signal is offset by, which is the mean itself and not twice it, so the factor is 1 and not `2/T`.
+A constant is not a wave, so the page says no phase for it, and `Finding::has_phase` is false.
+In the transform the bin for 0 Hz is `X = N · a`, where the others are `X = N/2 · (a − i·b)`.
+The signal of the demo has a mean of nothing, so the page shows `a = 1 × 0.00` at 0 Hz, and a constant that is added to it is found at 0 Hz and nowhere else.
+The same is true of a phase at no amplitude: the page does not say one, since a wave that is not there has none.
+
 **The conventions of the FFT demo.**
 The frequency is in cycles per second and the angle is `2π · f · t`.
 A wave is `A · sin(2π · f · t + φ)`, so a positive phase moves it to the left, as in Phase Shift and Amplitude, Frequency and Phase.

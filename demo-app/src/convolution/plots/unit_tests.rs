@@ -240,3 +240,14 @@ fn the_ticks_of_the_time_axes_are_in_seconds_with_none_at_zero() {
     let labels: Vec<&str> = coarse.iter().map(|t| t.1.as_str()).collect();
     assert_eq!(labels, ["0.25 s", "0.50 s", "0.75 s", "1 s"]);
 }
+
+#[test]
+fn the_spectrum_says_a_constant_is_found_once_and_has_no_phase() {
+    let samples: Vec<f64> = samples().into_iter().map(|s| s + 0.5).collect();
+    let [first, second] = result_lines(&Finding::new(&samples, 0.0));
+    assert_eq!(first, "0.0 Hz:   a = 1 \u{00D7} 0.50 = +0.50   b = 1 \u{00D7} 0.00 = 0.00");
+    assert_eq!(second, "amplitude = \u{221A}(a\u{00B2} + b\u{00B2}) = 0.50   phase = \u{2014}");
+    // A wave is still twice, and has its phase.
+    let [wave, _] = result_lines(&Finding::new(&samples, 2.0));
+    assert!(wave.contains("a = 2 \u{00D7} 0.32 = +0.64"), "{wave}");
+}

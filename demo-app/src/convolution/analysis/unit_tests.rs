@@ -219,3 +219,84 @@ fn the_trapezoid_rule_gives_the_area_of_the_shape_that_is_shaded() {
         }
     }
 }
+
+/// The signal of the demo with a constant of `offset` added to it.
+fn offset_by(offset: f64) -> Vec<f64> {
+    samples().into_iter().map(|s| s + offset).collect()
+}
+
+#[test]
+fn zero_frequency_finds_the_mean_of_the_signal_and_not_twice_it() {
+    let found = Finding::new(&offset_by(0.5), 0.0);
+    assert!(found.is_constant());
+    assert_eq!(found.factor(), 1.0);
+    assert!(near(found.a(), 0.5, 1e-9), "{}", found.a());
+    assert!(
+        near(found.b(), 0.0, 1e-12),
+        "the sine probe is nothing, so there is nothing to find with it"
+    );
+    assert!(
+        near(found.amplitude(), 0.5, 1e-9),
+        "the size of the constant, not twice it: {}",
+        found.amplitude()
+    );
+    // A constant below zero is the same size, and is not a different amplitude.
+    assert!(near(Finding::new(&offset_by(-0.5), 0.0).amplitude(), 0.5, 1e-9));
+    assert!(near(Finding::new(&offset_by(-0.5), 0.0).a(), -0.5, 1e-9));
+}
+
+#[test]
+fn zero_frequency_has_no_phase_however_large_the_constant_is() {
+    assert!(!Finding::new(&offset_by(0.5), 0.0).has_phase());
+    assert!(!Finding::new(&offset_by(100.0), 0.0).has_phase());
+    // A wave has one, and a frequency that is not in the signal has not.
+    assert!(Finding::new(&samples(), 2.0).has_phase());
+    assert!(!Finding::new(&samples(), 3.0).has_phase());
+    assert!(!Finding::new(&samples(), 0.0).has_phase());
+}
+
+#[test]
+fn the_demos_own_signal_has_no_constant_in_it() {
+    let found = Finding::new(&samples(), 0.0);
+    assert!(
+        found.amplitude() < 1e-9,
+        "its two waves make whole cycles, so its mean is nothing: {}",
+        found.amplitude()
+    );
+}
+
+#[test]
+fn a_constant_does_not_change_what_the_other_frequencies_find() {
+    // Whole cycles of a cosine or a sine add up to nothing, so the constant is found at 0 Hz and nowhere else.
+    let with = offset_by(0.75);
+    for c in COMPONENTS {
+        let found = Finding::new(&with, c.frequency);
+        assert!(
+            near(found.amplitude(), c.amplitude, 1e-3),
+            "{} Hz: {}",
+            c.frequency,
+            found.amplitude()
+        );
+        assert!(near(found.phase(), c.phase, 0.1), "{} Hz", c.frequency);
+    }
+    assert!(Finding::new(&with, 3.0).amplitude() < 1e-3);
+}
+
+#[test]
+fn the_bin_of_the_transform_for_zero_frequency_is_n_times_the_constant_and_not_half_n() {
+    let with = offset_by(0.5);
+    let found = Finding::new(&with, 0.0);
+    let (re, im) = dft_bin(&with, 0);
+    let n = SEGMENTS as f64;
+    assert!(near(re, n * found.a(), 1e-6), "X = N · a, not N/2 · a: {re}");
+    assert!(near(im, 0.0, 1e-6));
+    // The amplitude of a constant is |X|/N, where for a wave it is 2|X|/N.
+    assert!(near(re.abs() / n, found.amplitude(), 1e-9));
+}
+
+#[test]
+fn the_spectrum_at_zero_hz_is_the_size_of_the_constant() {
+    let found = spectrum(&offset_by(0.5));
+    assert!(found[0].0 == 0.0 && near(found[0].1, 0.5, 1e-9), "{:?}", found[0]);
+    assert!(near(found[20].1, 1.0, 1e-3), "2 Hz is still 1.0: {:?}", found[20]);
+}

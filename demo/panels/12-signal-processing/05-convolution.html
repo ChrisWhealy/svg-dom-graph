@@ -76,6 +76,14 @@
         amplitudes found would be half as tall as the waves that made the signal.
     </p>
     <p>
+        Zero frequency is a special case. The cosine probe is then always <code>1</code> and the sine probe always
+        <code>0</code>, so the integral is simply the <em>mean</em> of the signal, which is the constant that the signal
+        is offset by (its &ldquo;DC component&rdquo;). The mean of a constant is the constant itself, so here the
+        amplitude is the integral, and the factor is <code>1</code> and not <code>2</code>. A constant is not a wave,
+        so it has no phase. The signal in this demo has a mean of zero, so you will see
+        <code>a&nbsp;=&nbsp;1&nbsp;&times;&nbsp;0.00</code> at 0 Hz.
+    </p>
+    <p>
         The plot at the bottom repeats this for every frequency the slider can take. It has a peak at 2 Hz of height
         <code>1.0</code>, and a peak at 5 Hz of height <code>0.6</code>, which are the amplitudes of the two waves that
         made the signal. The signal has been analysed into its frequencies.

@@ -11,6 +11,11 @@
 //! sine squared is a half. Twice each integral, `a` and `b`, is therefore `A · sin φ` and `A · cos φ`, and together they
 //! give the amplitude and the phase. The factor of 2 is `2/T` for a window of `T` = 1 second.
 //!
+//! Zero frequency is a special case. The cosine probe is 1 and the sine probe is 0, so the integral is the mean of the
+//! signal, and the amplitude is that mean, not twice it: the factor is 1 and not `2/T`. It is the size of the constant
+//! that the signal is offset by, which is not a wave, so there is no phase. In the transform, the bin for it is
+//! `X = N · a`, and the others are `X = N/2 · (a − i·b)`.
+//!
 //! Strictly this is a correlation, or a projection of the signal onto the probe, and not a convolution: nothing is
 //! slid or flipped, and each frequency gives one number.
 //!
@@ -31,6 +36,10 @@ pub(crate) const SEGMENTS: usize = 512;
 /// The least and the greatest frequency of the probe, in Hz, and the distance between the frequencies that it can take.
 pub(crate) const FREQUENCIES: (f64, f64) = (0.0, 10.0);
 pub(crate) const FREQUENCY_STEP: f64 = 0.1;
+
+/// The least amplitude that is taken to be a wave in the signal, and not what is left of the waves that are not there,
+/// so that a phase is only said for something.
+pub(crate) const MINIMUM_AMPLITUDE: f64 = 0.02;
 
 /// The frequency of the probe that the page starts with, which is that of the first wave in the signal.
 pub(crate) const FIRST_PROBE: f64 = 3.0;
@@ -183,26 +192,48 @@ impl Finding {
         }
     }
 
-    /// Twice the integral of the product with the cosine, which is `A · sin φ` for a wave of that frequency. The
-    /// integral on its own is only half of that.
+    /// Whether this is zero frequency, which is a special case. The cosine probe is 1 all the time and the sine probe is
+    /// 0 all the time, so the integral of the product with the cosine is the mean of the signal, and the product with
+    /// the sine is nothing. What is found is the constant that the signal is offset by, which is not a wave.
+    pub(crate) fn is_constant(&self) -> bool {
+        self.frequency == 0.0
+    }
+
+    /// What the integrals are multiplied by to find the amplitude: 2 for a wave, which is `2/T` for a window of `T` = 1
+    /// second, and 1 for a constant. A wave is half as tall as the integral of its product with the probe, since the
+    /// average of a sine squared is a half. A constant is not, since the average of 1 squared is 1.
+    pub(crate) fn factor(&self) -> f64 {
+        if self.is_constant() { 1.0 } else { 2.0 }
+    }
+
+    /// The integral of the product with the cosine, times [`Finding::factor`]. For a wave of that frequency it is
+    /// `A · sin φ`, and for a constant it is the constant. The integral on its own is only half of the first.
     pub(crate) fn a(&self) -> f64 {
-        2.0 * self.cosine.areas.net()
+        self.factor() * self.cosine.areas.net()
     }
 
-    /// Twice the integral of the product with the sine, which is `A · cos φ` for a wave of that frequency. The integral
-    /// on its own is only half of that.
+    /// The integral of the product with the sine, times [`Finding::factor`]. For a wave of that frequency it is
+    /// `A · cos φ`, and for a constant it is nothing.
     pub(crate) fn b(&self) -> f64 {
-        2.0 * self.sine.areas.net()
+        self.factor() * self.sine.areas.net()
     }
 
-    /// How tall the wave of that frequency is in the signal.
+    /// How tall the wave of that frequency is in the signal, or for zero frequency how far the signal is from zero on
+    /// average, which is the size of its constant part.
     pub(crate) fn amplitude(&self) -> f64 {
         self.a().hypot(self.b())
     }
 
-    /// How far along its cycle that wave is at time 0, in degrees from 0 up to but not including 360.
+    /// How far along its cycle that wave is at time 0, in degrees from 0 up to but not including 360. Only meaningful
+    /// where [`Finding::has_phase`] is true.
     pub(crate) fn phase(&self) -> f64 {
         self.a().atan2(self.b()).to_degrees().rem_euclid(360.0)
+    }
+
+    /// Whether there is a wave of that frequency in the signal, to have a phase. A wave of no height has none, and a
+    /// constant is not a wave, so has none either.
+    pub(crate) fn has_phase(&self) -> bool {
+        !self.is_constant() && self.amplitude() >= MINIMUM_AMPLITUDE
     }
 }
 

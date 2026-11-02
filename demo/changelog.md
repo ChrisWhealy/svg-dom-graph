@@ -22,5 +22,6 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Fixed
 
+- Convolution demo: zero frequency is a special case, in which the amplitude is the mean of the signal and not twice it, the factor written is 1, and there is no phase
 - Convolution demo: a scene that cannot be drawn is reported as an error that says the four scenes may disagree, the remembered frequency changes only when all four are drawn, and a later success hides the error
 - Pythagoras drag test rounds the mouse position to whole pixels, so that CI reads back the angle that was dragged to

@@ -307,7 +307,13 @@ fn the_keys_move_the_slider_and_every_scene_follows() -> Result<(), String> {
     check_eq(slider(&tab, "value")?, "10".to_owned())?;
     press(&tab, "Home")?;
     check_eq(slider(&tab, "value")?, "0".to_owned())?;
-    check(written(&tab, SPECTRUM)?.contains("0.0 Hz:"), "the spectrum says 0.0 Hz")
+    let spectrum = written(&tab, SPECTRUM)?;
+    check(spectrum.contains("0.0 Hz:"), "the spectrum says 0.0 Hz")?;
+    // Zero frequency is a constant, so the factor is 1 and not 2, and there is no phase.
+    check(
+        spectrum.contains("a = 1 \u{00D7} 0.00") && spectrum.contains("phase = \u{2014}"),
+        &spectrum,
+    )
 }
 
 #[test]

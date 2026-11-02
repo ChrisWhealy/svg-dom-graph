@@ -105,18 +105,19 @@ fn plain(value: f64) -> String {
 }
 
 /// What the writing in the spectrum says about the frequency that has been found, in two lines. The first says that `a`
-/// and `b` are twice the integrals that are written in the products, which are only half of the wave that was found.
-/// The second says the amplitude and the phase, which is only said when there is some of the frequency in the signal
-/// to have one.
+/// and `b` are twice the integrals that are written in the products, which are only half of the wave that was found,
+/// or for zero frequency once the integrals, since a constant is not half of its integral. The second says the
+/// amplitude and the phase, which is only said when there is a wave of that frequency in the signal to have one.
 pub(crate) fn result_lines(finding: &Finding) -> [String; 2] {
-    let phase = if finding.amplitude() < 0.02 {
-        "\u{2014}".to_owned()
-    } else {
+    let phase = if finding.has_phase() {
         format!("{:.0}\u{00B0}", finding.phase())
+    } else {
+        "\u{2014}".to_owned()
     };
+    let factor = finding.factor();
     [
         format!(
-            "{}:   a = 2 \u{00D7} {} = {}   b = 2 \u{00D7} {} = {}",
+            "{}:   a = {factor} \u{00D7} {} = {}   b = {factor} \u{00D7} {} = {}",
             frequency_text(finding.frequency),
             plain(finding.cosine.areas.net()),
             signed(finding.a()),

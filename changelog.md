@@ -27,6 +27,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Make consistent use of `<input type="range">` as `foreignObject` across all demos (`52f50ab`)
 - Adjust demo panel order plus some refactoring (`38993aa`)
 - Simplify demo panel structure and correct failing CI test (`b126213`)
+- Provide a mathematical qualification for a probe frequency of zero (``)
 
 ## Fixed
 
@@ -34,7 +35,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Adjust Signal Processing demos in light of review findings (`7535932`)
 - Prevent `Plot` baseline detection from failing for small values (`5db6247`)
 - CI library version check only fails if `crates.io` version is the same a `Cargo.toml` (`323e078`)
-- Prevent convolution demo from becoming inconsistent after failed plot updates (``)
+- Prevent convolution demo from becoming inconsistent after failed plot updates (`4c47372`)
 
 # [Released]
 
