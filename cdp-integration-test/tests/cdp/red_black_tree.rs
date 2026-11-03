@@ -208,6 +208,21 @@ fn fail_writes_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
     text(tab, &script).map(|_| ())
 }
 
+/// Makes `removeAttribute` throw for `name`, or stops it.
+fn fail_removals_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__removed) {{ p.__removed = p.removeAttribute; }} \
+             p.removeAttribute = function (n) {{ if (n === '{name}') {{ throw new Error('injected'); }} \
+             return p.__removed.apply(this, arguments); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__removed) { p.removeAttribute = p.__removed; } return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
 /// Makes the browser's own `replaceChildren` throw, which is the call that swaps the tree in. With `after` it throws
 /// once the stage has already been changed, and without it, before anything is.
 fn fail_replacement(tab: &Tab, failing: bool, after: bool) -> Result<(), String> {
@@ -1217,6 +1232,91 @@ fn a_control_that_cannot_be_written_puts_back_the_others_and_leaves_the_old_tree
         check_eq(position(&tab)?, 11).map_err(|e| format!("{name}: {e}"))?;
     }
     Ok(())
+}
+
+#[test]
+fn a_rollback_that_cannot_take_off_an_attribute_that_was_absent_leaves_the_page_dirty() -> Result<(), String> {
+    let tab = open()?;
+    // The Next button has no `aria-disabled` here. A write of it that is then rolled back must take it off again.
+    text(
+        &tab,
+        "(() => { document.querySelector('[data-action=\"next\"]').removeAttribute('aria-disabled'); return 'ok'; })()",
+    )?;
+    fail_writes_of(&tab, "aria-valuetext", true)?;
+    fail_removals_of(&tab, "aria-disabled", true)?;
+    click_button(&tab, "next")?;
+    fail_writes_of(&tab, "aria-valuetext", false)?;
+    fail_removals_of(&tab, "aria-disabled", false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check(
+        content(&tab, "#rbt-error")?.contains("could not all be put back"),
+        &content(&tab, "#rbt-error")?,
+    )?;
+    check_eq(position(&tab)?, 0)?;
+    // The run is at its first step, so Restart has nowhere to go. It still commits a page that is out of date.
+    click_button(&tab, "restart")?;
+    check(banner_hidden(&tab)?, "repaired by a button with nowhere to go")?;
+    check_eq(live(&tab)?, "Already at the first step.".to_owned())?;
+    check_eq(attribute(&tab, "[data-action=\"next\"]", "aria-disabled")?, "false".to_owned())?;
+    click_button(&tab, "next")?;
+    check_eq(position(&tab)?, 1)
+}
+
+#[test]
+fn a_rollback_that_went_back_whole_leaves_the_page_clean() -> Result<(), String> {
+    let tab = open()?;
+    fail_writes_of(&tab, "aria-valuetext", true)?;
+    click_button(&tab, "next")?;
+    fail_writes_of(&tab, "aria-valuetext", false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check(
+        !content(&tab, "#rbt-error")?.contains("could not all be put back"),
+        &content(&tab, "#rbt-error")?,
+    )?;
+    // The page was not touched, so a button with nowhere to go does not commit it, and the line stays.
+    click_button(&tab, "restart")?;
+    check(!banner_hidden(&tab)?, "still reported: nothing needed repairing")
+}
+
+#[test]
+fn an_error_line_that_cannot_be_hidden_fails_the_step_and_the_next_action_repairs_it() -> Result<(), String> {
+    let tab = open()?;
+    fail_writes_of(&tab, "aria-level", true)?;
+    click_button(&tab, "next")?;
+    fail_writes_of(&tab, "aria-level", false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    // A step that works must now clear the line, and cannot.
+    fail_writes_of(&tab, "hidden", true)?;
+    click_button(&tab, "next")?;
+    fail_writes_of(&tab, "hidden", false)?;
+    check(!banner_hidden(&tab)?, "the line is still there")?;
+    // The step was not taken as done, though the tree on the page was swapped, so the page is dirty. Previous has nowhere
+    // to go, and commits the page again at the step the run is really at, which is the first.
+    click_button(&tab, "previous")?;
+    check(banner_hidden(&tab)?, "cleared by the repair")?;
+    check_eq(live(&tab)?, "Already at the first step.".to_owned())?;
+    check_eq(position(&tab)?, 0)?;
+    click_button(&tab, "next")?;
+    check_eq(position(&tab)?, 1)
+}
+
+#[test]
+fn an_error_line_that_cannot_be_shown_is_still_said_in_the_live_region() -> Result<(), String> {
+    let tab = open()?;
+    fail_removals_of(&tab, "hidden", true)?;
+    fail_writes_of(&tab, "aria-level", true)?;
+    click_button(&tab, "next")?;
+    fail_writes_of(&tab, "aria-level", false)?;
+    fail_removals_of(&tab, "hidden", false)?;
+    check(banner_hidden(&tab)?, "the line could not be made visible")?;
+    check(
+        live(&tab)?.contains("could not be drawn") && live(&tab)?.contains("error line could not be shown"),
+        &live(&tab)?,
+    )?;
+    // Hiding it is still tried later, and the step works.
+    click_button(&tab, "next")?;
+    check_eq(position(&tab)?, 1)?;
+    check(banner_hidden(&tab)?, "hidden")
 }
 
 #[test]

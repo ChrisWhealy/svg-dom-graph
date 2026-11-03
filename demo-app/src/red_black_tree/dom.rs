@@ -80,20 +80,18 @@ impl Journal {
         input.set_value(value);
     }
 
-    /// Puts everything back as far as it can be. A put-back that fails is left, and the page is then repaired by the
-    /// next action.
-    pub(super) fn restore(&mut self) {
+    /// Puts everything back as far as it can be, and says whether all of it went back. A put-back that fails is left,
+    /// and the caller then treats what is on the page as unknown, which the next action repairs.
+    pub(super) fn restore(&mut self) -> bool {
+        let mut whole = true;
         while let Some(undo) = self.undo.pop() {
             match undo {
-                Undo::Attr(element, name, Some(old)) => {
-                    let _ = element.set_attribute(&name, &old);
-                },
-                Undo::Attr(element, name, None) => {
-                    let _ = element.remove_attribute(&name);
-                },
+                Undo::Attr(element, name, Some(old)) => whole &= element.set_attribute(&name, &old).is_ok(),
+                Undo::Attr(element, name, None) => whole &= element.remove_attribute(&name).is_ok(),
                 Undo::Text(element, old) => element.set_text_content(old.as_deref()),
                 Undo::Input(input, old) => input.set_value(&old),
             }
         }
+        whole
     }
 }

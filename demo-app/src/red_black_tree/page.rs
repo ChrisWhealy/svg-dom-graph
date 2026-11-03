@@ -399,17 +399,33 @@ impl Page {
         Ok(())
     }
 
-    fn hide_error(&self) {
-        if self.error_shown.replace(false) {
-            let _ = set(&self.chrome.error, "hidden", "");
+    /// Hides the error line, if it is shown. It is still taken to be shown if that fails, so that the next call tries
+    /// again.
+    fn hide_error(&self) -> Result<(), String> {
+        if self.error_shown.get() {
+            set(&self.chrome.error, "hidden", "")?;
             self.chrome.error.set_text_content(None);
+            self.error_shown.set(false);
         }
+        Ok(())
     }
 
-    fn show_error(&self, message: &str) {
+    /// Shows `message` in the error line, and says whether the line could be made visible. It is taken to be shown
+    /// either way, so that hiding it is tried later.
+    fn show_error(&self, message: &str) -> bool {
         self.chrome.error.set_text_content(Some(message));
-        let _ = self.chrome.error.remove_attribute("hidden");
+        let shown = self.chrome.error.remove_attribute("hidden").is_ok();
         self.error_shown.set(true);
+        shown
+    }
+
+    /// Shows `message` in the error line and says it in the live region, which says so if the line could not be shown.
+    fn report(&self, message: &str) {
+        if self.show_error(message) {
+            self.say(message);
+        } else {
+            self.say(&format!("{message} The error line could not be shown."));
+        }
     }
 }
 
@@ -439,6 +455,15 @@ fn apply_view(items: &BTreeMap<Key, web_sys::Element>, snapshot: &Snapshot, view
     Ok(())
 }
 
+/// Adds to `problem` that the controls could not all be put back, if that is so.
+fn put_back(problem: String, whole: bool) -> String {
+    if whole {
+        problem
+    } else {
+        format!("{problem}, and the controls could not all be put back")
+    }
+}
+
 fn commit_error(restored: bool, problem: String) -> CommitError {
     if restored {
         CommitError::Detached(problem)
@@ -457,14 +482,14 @@ impl Surface for Page {
         let board = self.build_board(snapshot, view).map_err(CommitError::Detached)?;
         let mut journal = Journal::default();
         if let Err(problem) = self.write_controls(&mut journal, trace, index, view) {
-            journal.restore();
+            let whole = journal.restore();
             board.root.remove();
-            return Err(CommitError::Detached(problem));
+            return Err(commit_error(whole, put_back(problem, whole)));
         }
         if let Err(failure) = self.replace_board(&board.root) {
-            journal.restore();
+            let whole = journal.restore();
             board.root.remove();
-            return Err(commit_error(failure.restored, failure.problem));
+            return Err(commit_error(failure.restored && whole, put_back(failure.problem, whole)));
         }
         let old = self.board.replace(Some(board));
         drop(old);
@@ -474,7 +499,7 @@ impl Surface for Page {
         if let Some(target) = target {
             self.restore_focus(target).map_err(CommitError::Live)?;
         }
-        self.hide_error();
+        self.hide_error().map_err(CommitError::Live)?;
         Ok(())
     }
 
@@ -486,8 +511,7 @@ impl Surface for Page {
         let (selected, note) = selection_texts(snapshot, view);
         self.chrome.fields[5].set_text_content(Some(&selected));
         self.chrome.fields[6].set_text_content(Some(&note));
-        self.hide_error();
-        Ok(())
+        self.hide_error()
     }
 
     fn focus_key(&self, key: Key) -> Result<(), String> {
@@ -513,7 +537,9 @@ impl Surface for Page {
         };
         let mut journal = Journal::default();
         if let Err(problem) = journal.attr(button, "aria-label", label) {
-            journal.restore();
+            // The error makes the controller mark the page dirty, so whether all of this went back does not change
+            // that.
+            let _ = journal.restore();
             return Err(problem);
         }
         if let Some(text) = button.query_selector("text").ok().flatten() {
@@ -535,8 +561,7 @@ impl Surface for Page {
             "The tree could not be drawn: {problem}. What is shown may be out of date. The next button, key or move of the \
              range draws it again."
         );
-        self.show_error(&message);
-        self.say(&message);
+        self.report(&message);
     }
 
     fn playback_failed(&self, problem: &str) {
@@ -544,7 +569,6 @@ impl Surface for Page {
             "Play could not carry on: {problem}. The tree is right, and the run is paused where it is. Press Play to try \
              again."
         );
-        self.show_error(&message);
-        self.say(&message);
+        self.report(&message);
     }
 }

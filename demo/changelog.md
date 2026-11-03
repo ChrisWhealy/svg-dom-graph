@@ -26,6 +26,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Convolution demo: Show that the conventions are those of the FFT demo
 - Demo panels are grouped and ordered by the folders under `demo/panels/` not by `data-group` and `data-order` tags
 - `svg_buttons` and `sliders` moved from `demo-common` to the library, as `svg_dom_graph::controls`
+- Red Black: Fully account for DOM rollback failures (``)
 
 ### Fixed
 
@@ -45,4 +46,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Edmonds-Karp: Implement 5 seperate review fixes (`7076d8e`)
 - Edmonds-Karp: Initial Play state failure stops playback from starting (`16c5a72`)
 - Prevent keyboard focus movement from failing silently (`e000303`)
-- Prevent pointer selection and actual focus from diverging (``)
+- Prevent pointer selection and actual focus from diverging (`24f0f6e`)
