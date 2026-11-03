@@ -143,6 +143,10 @@ All timing goes through a small `Scheduler` trait.
 The page uses the browser's timers.
 A test can ask for a scheduler that runs a tick only when it is told to, by putting `?manual-clock` in the address or setting `window.__nQueensManualClock` before the panel is built.
 Then `window.__nQueensAdvance(n)` runs up to `n` ticks, and `window.__nQueensPending()` says how many are waiting.
+The hooks belong to the manual clock, and are not left behind.
+When the page is left, the controller is torn down, and that takes the hooks off the window and frees them.
+A hook that another clock has put in its place is left alone.
+The real clock's own teardown clears any timer that is waiting.
 A tick carries the number of the run of playback that asked for it, so one that was already on its way when playback stopped does nothing.
 Scheduling a tick can fail, since the browser can refuse a timer.
 `Scheduler::schedule` therefore returns a `Result`.

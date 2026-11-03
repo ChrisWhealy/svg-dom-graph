@@ -619,7 +619,7 @@ fn playback_stops_and_says_so_when_a_later_tick_cannot_be_scheduled() {
     );
     assert_eq!(rig.surface.playback_failures.borrow().len(), 1);
     assert_eq!((rig.controller.is_dirty(), rig.surface.failures.borrow().len()), (false, 0));
-    assert_eq!(rig.scheduler.advance(), false, "there is nothing left to run");
+    assert!(!rig.scheduler.advance(), "there is nothing left to run");
 }
 
 #[test]
@@ -754,6 +754,29 @@ fn a_failed_new_board_stops_the_playback_and_the_old_board_can_play_on() {
 }
 
 // The end.
+
+#[test]
+fn teardown_tears_the_scheduler_down_once_and_takes_back_what_it_held() {
+    let rig = Rig::new(4);
+    rig.scheduler.keep_cancelled();
+    rig.act(Action::Play);
+    rig.act(Action::Pause);
+    assert_eq!(rig.scheduler.pending(), 1, "a stale tick is still queued");
+    assert_eq!(rig.scheduler.teardowns(), 0);
+    rig.controller.teardown();
+    assert_eq!(rig.scheduler.teardowns(), 1);
+    assert_eq!(rig.scheduler.pending(), 0, "and teardown took it");
+}
+
+#[test]
+fn nothing_is_scheduled_after_teardown() {
+    let rig = Rig::new(4);
+    rig.controller.teardown();
+    rig.act(Action::Play);
+    rig.controller.set_speed(5);
+    assert_eq!(rig.scheduler.pending(), 0);
+    assert!(!rig.controller.is_playing());
+}
 
 #[test]
 fn after_teardown_nothing_a_person_does_has_any_effect_and_no_tick_runs() {

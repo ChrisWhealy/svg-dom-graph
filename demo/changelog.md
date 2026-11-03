@@ -35,4 +35,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Prevent `Board::new` from panicing for certain board sizes (`a6fcb7c`)
 - Prevent simulation timing from behaving unexpectedly at invalid inputs (`4376156`)
 - N-Queens: Make board replacement fully transactional (`81dbca9`)
-- N-Queens: Prevent real-time scheduler from silently accepting timer creation failures (``)
+- N-Queens: Prevent real-time scheduler from silently accepting timer creation failures (`9204f7a`)
+- N-Queens: Release manual-clock browser hooks (``)

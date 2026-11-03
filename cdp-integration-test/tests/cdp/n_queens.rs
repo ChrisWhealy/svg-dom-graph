@@ -20,6 +20,8 @@
 //! - A new size of board replaces the grid, and stops the playback.
 //! - A new board that cannot be made, because a write to the controls fails, leaves the old board, its trace, its step
 //!   and the end of the range as they were, and the selector says the old size.
+//! - The manual clock's hooks are on the window only while the page is, come off when it is left, and are not taken
+//!   off if another clock has replaced them. A page with the real clock has none.
 //! - A timer that cannot be set, when Play starts and when a later tick is scheduled, stops the playback and says so,
 //!   and Play works again once timers do.
 //! - A write that fails is reported and leaves the step where it was, and the next button, even one with nowhere to go,
@@ -636,7 +638,8 @@ fn the_arrow_keys_home_and_end_move_between_squares_and_do_not_move_the_search()
 fn control_with_home_and_end_go_to_the_corners() -> Result<(), String> {
     let tab = open()?;
     text(&tab, "document.getElementById('nq-r3-c3').focus(), 'ok'")?;
-    for (key, expected) in [("End", "nq-r3-c7")] {
+    {
+        let (key, expected) = ("End", "nq-r3-c7");
         tab.press_key(key).map_err(|e| e.to_string())?;
         check_eq(active_cell(&tab)?, expected.to_owned())?;
     }
@@ -1012,4 +1015,55 @@ fn a_tick_that_cannot_be_scheduled_stops_the_playback_and_says_so() -> Result<()
     wait_until(&tab, 10, |tab| Ok(position(tab)? > stopped + 2))?;
     click(&tab, "n-queens-play")?;
     check(banner_hidden(&tab)?, "the message went when playback started again")
+}
+
+// The manual clock's hooks.
+
+fn hook_types(tab: &Tab) -> Result<String, String> {
+    text(tab, "typeof window.__nQueensAdvance + ',' + typeof window.__nQueensPending")
+}
+
+/// Says that the page is being left, as the browser does, which tears the controller down.
+fn leave(tab: &Tab) -> Result<(), String> {
+    text(tab, "(() => { window.dispatchEvent(new Event('pagehide')); return 'ok'; })()").map(|_| ())
+}
+
+#[test]
+fn the_manual_clocks_hooks_are_on_the_window_while_the_page_is_and_come_off_when_it_is_left() -> Result<(), String> {
+    let tab = open_manual()?;
+    check_eq(hook_types(&tab)?, "function,function".to_owned())?;
+    click(&tab, "n-queens-play")?;
+    check_eq((waiting(&tab)?, advance(&tab, 2)?), (1, 2))?;
+    leave(&tab)?;
+    check_eq(hook_types(&tab)?, "undefined,undefined".to_owned())?;
+    // Nothing that a person does has any effect once the page is left, and no tick is left waiting to run.
+    let at = position(&tab)?;
+    click(&tab, "n-queens-next")?;
+    click(&tab, "n-queens-play")?;
+    check_eq(position(&tab)?, at)
+}
+
+#[test]
+fn a_hook_that_another_clock_put_in_place_is_left_alone() -> Result<(), String> {
+    let tab = open_manual()?;
+    text(
+        &tab,
+        "(() => { window.__nQueensAdvance = function () { return 'other'; }; return 'ok'; })()",
+    )?;
+    leave(&tab)?;
+    // The one that was replaced is not ours to remove. The one that was not, is.
+    check_eq(hook_types(&tab)?, "function,undefined".to_owned())?;
+    check_eq(text(&tab, "String(window.__nQueensAdvance())")?, "other".to_owned())
+}
+
+#[test]
+fn a_page_with_the_real_clock_puts_no_hooks_on_the_window() -> Result<(), String> {
+    let tab = open()?;
+    check_eq(hook_types(&tab)?, "undefined,undefined".to_owned())?;
+    click(&tab, "n-queens-play")?;
+    leave(&tab)?;
+    // The timer that was waiting is cleared, so the search does not move on after the page is left.
+    let at = position(&tab)?;
+    std::thread::sleep(Duration::from_millis(400));
+    check_eq(position(&tab)?, at)
 }

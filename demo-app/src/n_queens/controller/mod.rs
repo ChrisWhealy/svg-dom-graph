@@ -66,6 +66,10 @@ pub(crate) trait Scheduler {
 
     /// Takes back the task with `handle`, if it has not run.
     fn cancel(&self, handle: u64);
+
+    /// Gives up everything that the scheduler holds in the browser: the tasks that are waiting, and any hook that it
+    /// put on the page. Nothing is scheduled after this. It does nothing if the scheduler holds nothing.
+    fn teardown(&self) {}
 }
 
 /// A task that is waiting: its handle, its delay, and what it runs.
@@ -81,6 +85,9 @@ pub(crate) struct ManualScheduler {
     keep_cancelled: Cell<bool>,
     /// How many of the next calls to [`Scheduler::schedule`] fail, as a browser's timers can.
     failures: Cell<u32>,
+    /// How many times the scheduler has been torn down.
+    #[cfg(test)]
+    teardowns: Cell<u32>,
 }
 
 impl ManualScheduler {
@@ -108,6 +115,12 @@ impl ManualScheduler {
             },
             None => false,
         }
+    }
+
+    /// How many times [`Scheduler::teardown`] has been called.
+    #[cfg(test)]
+    pub(crate) fn teardowns(&self) -> u32 {
+        self.teardowns.get()
     }
 
     /// Makes the next `count` calls to [`Scheduler::schedule`] fail, to test that playback stops and says so.
@@ -139,6 +152,12 @@ impl Scheduler for ManualScheduler {
         if !self.keep_cancelled.get() {
             self.tasks.borrow_mut().retain(|&(at, _, _)| at != handle);
         }
+    }
+
+    fn teardown(&self) {
+        #[cfg(test)]
+        self.teardowns.set(self.teardowns.get() + 1);
+        self.tasks.borrow_mut().clear();
     }
 }
 
@@ -467,6 +486,7 @@ impl Controller {
     pub(crate) fn teardown(&self) {
         self.stop();
         self.torn_down.set(true);
+        self.scheduler.teardown();
     }
 }
 
