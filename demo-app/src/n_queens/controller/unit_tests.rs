@@ -587,10 +587,55 @@ fn a_board_that_cannot_be_made_leaves_the_old_one_and_reports() {
     let rig = Rig::new(8);
     rig.act(Action::Seek(100));
     rig.surface.fail_rebuild.set(true);
-    rig.controller.change_size(Trace::build(5).expect("a trace"));
+    let changed = rig.controller.change_size(Trace::build(5).expect("a trace"));
+    assert!(!changed);
     assert_eq!((rig.at(), rig.controller.trace().size()), (100, 8));
     assert_eq!(rig.surface.failures.borrow().len(), 1);
     assert!(rig.surface.rebuilds.borrow().is_empty());
+}
+
+#[test]
+fn a_size_that_is_changed_says_so_and_a_size_that_is_not_does_not() {
+    let rig = Rig::new(8);
+    assert!(rig.controller.change_size(Trace::build(6).expect("a trace")));
+    rig.surface.fail_rebuild.set(true);
+    assert!(!rig.controller.change_size(Trace::build(5).expect("a trace")));
+    assert_eq!(rig.controller.trace().size(), 6, "the board it was on");
+}
+
+#[test]
+fn a_failed_new_board_leaves_the_page_dirty_so_that_the_next_action_draws_the_old_board_in_full() {
+    let rig = Rig::new(8);
+    rig.act(Action::Seek(100));
+    rig.surface.fail_rebuild.set(true);
+    rig.controller.change_size(Trace::build(5).expect("a trace"));
+    // The controls may be part way between the two boards, so nothing is trusted until it is drawn again.
+    assert!(rig.controller.is_dirty());
+    rig.surface.fail_rebuild.set(false);
+    // An action with nowhere to go still repairs, and does so with the trace and the index that were kept.
+    rig.act(Action::Seek(100));
+    assert!(!rig.controller.is_dirty());
+    assert_eq!(rig.last_draw(), Some((100, true)));
+    assert_eq!(
+        (rig.at(), rig.controller.trace().size(), rig.controller.trace().len()),
+        (100, 8, 33_589)
+    );
+}
+
+#[test]
+fn a_failed_new_board_stops_the_playback_and_the_old_board_can_play_on() {
+    let rig = Rig::new(8);
+    rig.act(Action::Play);
+    rig.scheduler.advance();
+    rig.surface.fail_rebuild.set(true);
+    rig.controller.change_size(Trace::build(5).expect("a trace"));
+    assert!(!rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 0);
+    rig.surface.fail_rebuild.set(false);
+    rig.act(Action::Play);
+    assert!(rig.controller.is_playing());
+    rig.scheduler.advance();
+    assert_eq!(rig.at(), 2, "it carried on from where it was, on the old board");
 }
 
 // The end.

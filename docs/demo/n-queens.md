@@ -127,7 +127,15 @@ The next thing a person does, whatever it is, first draws the selected snapshot 
 That includes a button with nowhere to go, such as Next at the last step, and a seek to where the range already is.
 If that draw fails too, nothing else happens, and the page stays dirty.
 A new size of board replaces the whole board, so it makes a dirty page right.
-If the new board cannot be made, the old one stays as it was.
+
+A new size is a transaction.
+Everything that can fail is done before the old board goes.
+The new board is made and drawn apart from the page, and its active square and focus ring are set on it.
+Then the controls are written, with the end of the range last, so a failure never leaves the range going further than the old trace.
+If a control cannot be written, the controls are put back as far as they can be, and the old board, its trace and its step stay.
+The page is then marked dirty, because the controls may be part way between the two boards, and the next action draws the old board again in full.
+The selector goes back to the size of the board that is on the page.
+Only when all of that has worked is the new board swapped in, and nothing after the swap can fail.
 
 ## Playback and the clock
 

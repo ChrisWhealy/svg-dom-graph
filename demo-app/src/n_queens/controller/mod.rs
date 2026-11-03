@@ -29,7 +29,10 @@ pub(crate) trait Surface {
     /// Returns `Err` if a write failed. What is on the page is then unknown, and the next draw must be a full one.
     fn draw(&self, trace: &Trace, index: usize, full: bool) -> Result<(), String>;
 
-    /// Replaces the board with one for `trace`, and draws its first snapshot. Nothing is changed if this fails.
+    /// Replaces the board with one for `trace`, and draws its first snapshot.
+    ///
+    /// Everything that can fail is done before the old board goes. If something fails, the old board stays, and what
+    /// was written to the controls on the way is put back as far as it can be.
     ///
     /// # Errors
     ///
@@ -395,11 +398,14 @@ impl Controller {
         }
     }
 
-    /// Moves to a board of another size. Playback stops first. If the new board cannot be made, the old one stays,
-    /// as it was, and the failure is reported.
-    pub(crate) fn change_size(&self, trace: Trace) {
+    /// Moves to a board of another size, and says whether it did. Playback stops first.
+    ///
+    /// If the new board cannot be made, the old board and its trace stay, as they were, and the failure is reported.
+    /// The page is then marked dirty, since the controls were written on the way and may be part way between the two.
+    /// The next action draws the old board again in full, which puts them right.
+    pub(crate) fn change_size(&self, trace: Trace) -> bool {
         if self.torn_down.get() {
-            return;
+            return false;
         }
         self.stop();
         match self.surface.rebuild(&trace) {
@@ -410,8 +416,13 @@ impl Controller {
                 self.dirty.set(false);
                 self.surface
                     .say(&format!("The board is now {size} by {size}, at the first step."));
+                true
             },
-            Err(problem) => self.surface.failed(&problem),
+            Err(problem) => {
+                self.dirty.set(true);
+                self.surface.failed(&problem);
+                false
+            },
         }
     }
 

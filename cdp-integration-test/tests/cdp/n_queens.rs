@@ -18,6 +18,8 @@
 //! - The arrow keys, Home and End move between squares, a click moves the focus and not the search, and the ring is
 //!   shown only while the grid has the focus.
 //! - A new size of board replaces the grid, and stops the playback.
+//! - A new board that cannot be made, because a write to the controls fails, leaves the old board, its trace, its step
+//!   and the end of the range as they were, and the selector says the old size.
 //! - A write that fails is reported and leaves the step where it was, and the next button, even one with nowhere to go,
 //!   draws the board again.
 //!
@@ -874,4 +876,59 @@ fn a_new_size_leaves_the_controls_where_they_were() -> Result<(), String> {
     check_eq(after, before)?;
     check_eq(text(&tab, "document.getElementById('n-queens-size').value")?, "5".to_owned())?;
     check_eq(attribute(&tab, "#n-queens-seek", "max")?, last_step(&tab)?.to_string())
+}
+
+// A new size that cannot be made.
+
+/// The number of squares on the board, which is how big it is.
+fn squares(tab: &Tab) -> Result<usize, String> {
+    count(tab, &format!("{SVG} [role=gridcell]"))
+}
+
+#[test]
+fn a_new_board_that_cannot_be_made_leaves_the_old_board_trace_and_range_as_they_were() -> Result<(), String> {
+    // The attributes that the controls are written with, which a new board writes: the end of the range, the dimming of
+    // a button, and what the range says.
+    for name in ["max", "aria-disabled", "aria-valuetext"] {
+        let tab = open()?;
+        seek(&tab, 100)?;
+        fail_writes_of(&tab, name, true)?;
+        select(&tab, "n-queens-size", "5")?;
+        // While the writes still fail, the page is the old one, whole.
+        check_eq(squares(&tab)?, 64).map_err(|e| format!("{name}: the board: {e}"))?;
+        check_eq(position(&tab)?, 100).map_err(|e| format!("{name}: the step: {e}"))?;
+        check_eq(last_step(&tab)?, 33_589).map_err(|e| format!("{name}: the trace: {e}"))?;
+        check_eq(attribute(&tab, "#n-queens-seek", "max")?, "33589".to_owned())
+            .map_err(|e| format!("{name}: the range: {e}"))?;
+        check_eq(text(&tab, "document.getElementById('n-queens-size').value")?, "8".to_owned())
+            .map_err(|e| format!("{name}: the selector: {e}"))?;
+        check(!banner_hidden(&tab)?, &format!("{name}: the failure is reported"))?;
+        fail_writes_of(&tab, name, false)?;
+        // The next action, even one with nowhere to go, draws the old board again, and then everything agrees.
+        click(&tab, "n-queens-next")?;
+        check_eq(position(&tab)?, 101).map_err(|e| format!("{name}: after: {e}"))?;
+        check_eq(attribute(&tab, "#n-queens-seek", "max")?, "33589".to_owned())?;
+        check_eq(text(&tab, "document.getElementById('n-queens-seek').value")?, "101".to_owned())?;
+        check_eq(field(&tab, "depth")?.ends_with("/ 8"), true)?;
+        check_eq(squares(&tab)?, 64)?;
+        check(banner_hidden(&tab)?, &format!("{name}: repaired"))?;
+        // And the size can be changed once the writes work.
+        select(&tab, "n-queens-size", "5")?;
+        check_eq((squares(&tab)?, last_step(&tab)?, position(&tab)?), (25, 504, 0))
+            .map_err(|e| format!("{name}: then: {e}"))?;
+        check_eq(attribute(&tab, "#n-queens-seek", "max")?, "504".to_owned())?;
+    }
+    Ok(())
+}
+
+#[test]
+fn a_new_board_that_cannot_be_made_keeps_the_focus_and_the_active_square() -> Result<(), String> {
+    let tab = open()?;
+    text(&tab, "document.getElementById('nq-r6-c6').focus(), 'ok'")?;
+    fail_writes_of(&tab, "max", true)?;
+    select(&tab, "n-queens-size", "4")?;
+    fail_writes_of(&tab, "max", false)?;
+    check_eq(active_cell(&tab)?, "nq-r6-c6".to_owned())?;
+    check_eq(count(&tab, &format!("{SVG} [role=gridcell][tabindex=\"0\"]"))?, 1)?;
+    check_eq(squares(&tab)?, 64)
 }

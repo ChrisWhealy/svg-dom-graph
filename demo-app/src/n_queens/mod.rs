@@ -202,9 +202,13 @@ fn wire_selectors(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), St
             return;
         };
         match Trace::build(n) {
-            Ok(trace) => controller_for_size.change_size(trace),
+            Ok(trace) => {
+                controller_for_size.change_size(trace);
+            },
             Err(problem) => page_for_size.failed(&problem.to_string()),
         }
+        // The selector says the board that is on the page, which is the old one if the new one could not be made.
+        chosen.set_value(&page_for_size.size().to_string());
         page_for_size.show_playback();
     })?;
     let (controller, page, chosen) = (Rc::clone(controller), Rc::clone(page), speed.clone());

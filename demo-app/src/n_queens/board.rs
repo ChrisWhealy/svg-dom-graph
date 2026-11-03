@@ -205,6 +205,20 @@ pub(super) fn grid_label(size: usize) -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes `active` the one square of `board` that has `tabindex=0`, and puts the focus ring on it, shown or hidden. It
+/// is for a board that is not yet in the page, so that a failure leaves the page as it was.
+///
+/// # Errors
+///
+/// Returns `Err` if an attribute could not be written.
+pub(super) fn arrange(board: &BoardParts, active: (usize, usize), ring_shown: bool) -> Result<(), String> {
+    set(&board.hits[board.at(active.0, active.1)], "tabindex", "0")?;
+    let (x, y) = cell_origin(board.size, active.0, active.1);
+    set(&board.ring, "transform", &format!("translate({x} {y})"))?;
+    set(&board.ring, "class", if ring_shown { "nq-ring" } else { "nq-ring nq-off" })
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the squares, the rays, the outline and the frame for `view` into `board`. When `previous` is the view that
 /// is already drawn, only what differs is written. With `None`, every square is written.
 ///

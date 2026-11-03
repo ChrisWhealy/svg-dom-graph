@@ -1,7 +1,7 @@
 //! The page: the board that is drawn, the view that was drawn last, and the square that the keys act on.
 
 use super::{
-    board::{BoardParts, apply, build_board},
+    board::{BoardParts, apply, arrange, build_board},
     chrome::Chrome,
     controller::Surface,
     controls::Controls,
@@ -127,7 +127,8 @@ impl Page {
     }
 
     /// Writes `aria-disabled` on the buttons that are at an end, for the ones that differ from `previous`, and puts
-    /// the range at the step of `view`.
+    /// the range at the step of `view`. The end of the range is written last, and only if it differs, so that a write
+    /// that fails never leaves the range going further than the trace that the page has.
     pub(super) fn write_controls(&self, previous: Option<&View>, view: &View) -> Result<(), String> {
         let now = view.boundaries();
         let before = previous.map(View::boundaries);
@@ -136,7 +137,11 @@ impl Page {
                 self.controls.dim(action, flag(&now))?;
             }
         }
-        self.controls.set_seek(view.index, &seek_text(view))
+        self.controls.set_seek(view.index, &seek_text(view))?;
+        if previous.is_none_or(|p| p.last != view.last) {
+            self.controls.set_last(view.last)?;
+        }
+        Ok(())
     }
 
     /// Writes what the playback is doing in its field of the status.
@@ -226,15 +231,29 @@ impl Surface for Page {
     fn rebuild(&self, trace: &Trace) -> Result<(), String> {
         let size = trace.size();
         let view = project(trace, 0).ok_or_else(|| "the new board has no first snapshot".to_owned())?;
-        // Everything that can fail is done before the old board goes, so that a failure changes nothing.
+        // Everything that can fail is done before the old board goes. First the new board, apart from the page.
         let parts = build_board(&self.document, size)?;
         apply(&parts, None, &view)?;
         let had_focus = self.grid_has_focus();
+        let active = clamp_cell(self.active.get(), size);
+        let ring_shown = self.ring_shown.get() || had_focus;
+        arrange(&parts, active, ring_shown)?;
+        // Then the controls, which are in the page already, so they are put back if one fails. The end of the range is
+        // the last thing written, so a failure never leaves it going further than the old trace.
+        let old = self.committed.borrow().clone();
+        if let Err(problem) = self.write_controls(None, &view) {
+            let restored = old.as_ref().is_some_and(|old| self.write_controls(None, old).is_ok());
+            if !restored {
+                // What the controls show is not known, so the next draw writes all of it.
+                *self.committed.borrow_mut() = None;
+            }
+            return Err(problem);
+        }
+        // From here nothing can fail.
         self.host.replace_children_with_node_1(&parts.root);
         *self.board.borrow_mut() = parts;
-        *self.committed.borrow_mut() = None;
-        let _ = self.controls.set_last(view.last);
-        let _ = self.write_controls(None, &view);
+        self.active.set(active);
+        self.ring_shown.set(ring_shown);
         self.write_status(&view);
         self.chrome.info.set_text_content(Some(&board_text(
             size,
@@ -243,10 +262,8 @@ impl Surface for Page {
             trace.allocated_bytes(),
         )));
         *self.committed.borrow_mut() = Some(view);
-        self.set_active(clamp_cell(self.active.get(), size));
         if had_focus {
-            self.show_ring(true);
-            if let Some(hit) = self.hit(self.active.get()) {
+            if let Some(hit) = self.hit(active) {
                 focus(&hit);
             }
         }
