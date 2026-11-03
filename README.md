@@ -23,43 +23,27 @@ The original target algorithms were SHA1, SHA2 and SHA3; but since implementing 
 <dl>
     <dt>Cryptographic Algorithms</dt>
     <dd>
-        <p>SHA1</p>
-        <p>SHA2</p>
-        <p>SHA3</p>
-        <p>ChaCha20</p>
+        <p>SHA1<br>SHA2<br>SHA3<br>ChaCha20</p>
     </dd>
     <dt>Encoding and Compression</dt>
     <dd>
-        <p>Huffman Encoding</p>
-        <p>Base64 Encoding</p>
-        <p>UTF-8 Encoding</p>
+        <p>Huffman Encoding<br>Base64 Encoding<br>UTF-8 Encoding</p>
     </dd>
     <dt>Error Detection and Correction</dt>
     <dd>
-        <p>CRC-32</p>
-        <p>Hamming(7,4)</p>
-        <p>QR Code</p>
+        <p>CRC-32<br>Hamming(7,4)<br>QR Code</p>
     </dd>
     <dt>Sorting</dt>
     <dd>
-        <p>Bubble Sort</p>
-        <p>Shell Sort</p>
-        <p>Quicksort</p>
+        <p>Bubble Sort<br>Shell Sort<br>Quicksort</p>
     </dd>
     <dt>Graph Algorithms</dt>
     <dd>
-        <p>Dijkstra's Shortest Paths</p>
-        <p>Weighted Springs</p>
-        <p>Edmonds-Karp Maximum Flow</p>
+        <p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow</p>
     </dd>
     <dt>Signal Processing</dt>
     <dd>
-        <p>Sine and Cosine</p>
-        <p>Pythagoras</p>
-        <p>Amplitude and Frequency</p>
-        <p>Phase Shift</p>
-        <p>Convolution</p>
-        <p>Fast Fourier Transform</p>
+        <p>Sine and Cosine<br>Pythagoras<br>Amplitude and Frequency<br>Phase Shift<br>Convolution<br>Fast Fourier Transform</p>
     </dd>
     <dt>Cellular Automata</dt>
     <dd>Conway's Game of Life</dd>
