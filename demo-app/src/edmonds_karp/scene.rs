@@ -7,7 +7,7 @@
 
 use super::{
     chrome::Chrome,
-    dom::{add, make, set},
+    dom::{add, make, remove, set},
     fixtures::{Fixture, NAMES, VIEW_HEIGHT, VIEW_WIDTH},
     geometry::Geometry,
     projection::{NODE_RADIUS, Slots, Target, Write},
@@ -49,15 +49,14 @@ impl Scene {
 ///
 /// # Errors
 ///
-/// Returns `Err` if an attribute could not be written, part way through, which leaves the scene partly written.
+/// Returns `Err` if an attribute could not be written or removed, part way through, which leaves the scene partly
+/// written.
 pub(super) fn apply_scene_writes(scene: &Scene, writes: &[Write]) -> Result<(), String> {
     for write in writes {
         match write {
             Write::Class(at, class) => set(&scene.slots[*at].target, "class", class)?,
             Write::Attr(at, name, value) => set(&scene.slots[*at].target, name, value)?,
-            Write::RemoveAttr(at, name) => {
-                let _ = scene.slots[*at].target.remove_attribute(name);
-            },
+            Write::RemoveAttr(at, name) => remove(&scene.slots[*at].target, name)?,
             Write::Text(at, text) => {
                 if let Some(element) = &scene.slots[*at].text {
                     element.set_text_content(Some(text));

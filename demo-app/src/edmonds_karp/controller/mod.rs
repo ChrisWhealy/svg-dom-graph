@@ -50,8 +50,12 @@ pub(crate) trait Surface {
     fn switch(&self, fixture: &'static Fixture, trace: &Trace, view: &View, generation: u64)
     -> Result<(), SwitchError>;
 
-    /// Says that playback started or stopped.
-    fn playing_changed(&self, playing: bool);
+    /// Says that playback started or stopped, and writes it on the Play button.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the button could not be written, so what it says is wrong until the next full draw.
+    fn playing_changed(&self, playing: bool) -> Result<(), String>;
 
     /// Tells a person something, in the polite live region.
     fn say(&self, text: &str);
@@ -268,7 +272,11 @@ pub(crate) struct Controller {
     shown_playing: Cell<bool>,
     /// The latest place that the range has been moved to and not yet drawn, with the generation it was made against.
     pending_seek: Cell<Option<(usize, u64)>>,
-    frame: Cell<Option<u64>>,
+    /// The frame that a seek is waiting for: its handle, and the token that its task carries.
+    frame: Cell<Option<(u64, u64)>>,
+    /// Counted up for each frame that is asked for, so that a frame that was taken back but arrives anyway is not taken
+    /// for the one that is waiting.
+    frame_tokens: Cell<u64>,
     torn_down: Cell<bool>,
 }
 
@@ -298,6 +306,7 @@ impl Controller {
             shown_playing: Cell::new(false),
             pending_seek: Cell::new(None),
             frame: Cell::new(None),
+            frame_tokens: Cell::new(0),
             torn_down: Cell::new(false),
         });
         if let Err(problem) = controller.surface.draw(&controller.trace(), 0, &view, true) {
@@ -372,7 +381,16 @@ impl Controller {
             self.scheduler.cancel(handle);
         }
         if self.shown_playing.replace(false) {
-            self.surface.playing_changed(false);
+            self.show_playing(false);
+        }
+    }
+
+    /// Tells the page that playback started or stopped. A button that could not be written is left saying the wrong
+    /// thing, so the page is dirty, and the next action draws it again before anything else.
+    fn show_playing(&self, playing: bool) {
+        if let Err(problem) = self.surface.playing_changed(playing) {
+            self.dirty.set(true);
+            self.surface.failed(&problem);
         }
     }
 
@@ -542,7 +560,7 @@ impl Controller {
         match self.schedule_next() {
             Ok(()) => {
                 self.shown_playing.set(true);
-                self.surface.playing_changed(true);
+                self.show_playing(true);
             },
             Err(problem) => self.surface.playback_failed(&problem),
         }
@@ -569,13 +587,15 @@ impl Controller {
             return;
         }
         let (generation, me) = (self.generation.get(), self.me.clone());
+        let token = self.frame_tokens.get() + 1;
+        self.frame_tokens.set(token);
         let task: Box<dyn FnOnce()> = Box::new(move || {
             if let Some(controller) = me.upgrade() {
-                controller.on_frame(generation);
+                controller.on_frame(generation, token);
             }
         });
         match self.scheduler.request_frame(task) {
-            Ok(handle) => self.frame.set(Some(handle)),
+            Ok(handle) => self.frame.set(Some((handle, token))),
             Err(problem) => {
                 // No frame will come, so the latest place is drawn now, once, and a person is warned.
                 self.surface.warn(&format!("Could not ask for a frame: {problem}"));
@@ -584,8 +604,11 @@ impl Controller {
         }
     }
 
-    fn on_frame(&self, generation: u64) {
-        if self.torn_down.get() || generation != self.generation.get() {
+    /// Draws the place that was asked for, if this is the frame that is waiting. A frame that was taken back, or that
+    /// is for another graph, does nothing, even if it arrives while a newer frame is waiting.
+    fn on_frame(&self, generation: u64, token: u64) {
+        let waiting = self.frame.get().map(|(_, token)| token);
+        if self.torn_down.get() || generation != self.generation.get() || waiting != Some(token) {
             return;
         }
         self.frame.set(None);
@@ -610,7 +633,7 @@ impl Controller {
         if self.torn_down.get() {
             return;
         }
-        if let Some(handle) = self.frame.take() {
+        if let Some((handle, _)) = self.frame.take() {
             self.scheduler.cancel_frame(handle);
         }
         self.stop_playback();
@@ -623,7 +646,7 @@ impl Controller {
     /// Takes back a seek that is waiting for its frame, and the frame.
     fn cancel_pending_seek(&self) {
         self.pending_seek.set(None);
-        if let Some(handle) = self.frame.take() {
+        if let Some((handle, _)) = self.frame.take() {
             self.scheduler.cancel_frame(handle);
         }
     }

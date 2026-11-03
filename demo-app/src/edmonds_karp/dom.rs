@@ -11,6 +11,14 @@ pub(super) fn set(element: &web_sys::Element, name: &str, value: &str) -> Result
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Removes the attribute `name` from `element`.
+pub(super) fn remove(element: &web_sys::Element, name: &str) -> Result<(), String> {
+    element
+        .remove_attribute(name)
+        .map_err(|e| format!("could not remove {name}: {e:?}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes an SVG element called `tag` with `attributes`.
 pub(super) fn make(
     document: &web_sys::Document,

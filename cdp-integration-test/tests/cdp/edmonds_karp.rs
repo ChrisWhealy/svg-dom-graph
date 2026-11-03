@@ -232,6 +232,38 @@ fn fail_writes_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
     text(tab, &script).map(|_| ())
 }
 
+/// Makes `removeAttribute` throw for `name`, or stops it.
+fn fail_removals_of(tab: &Tab, name: &str, failing: bool) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__removed) {{ p.__removed = p.removeAttribute; }} \
+             p.removeAttribute = function (n) {{ if (n === '{name}') {{ throw new Error('injected'); }} \
+             return p.__removed.apply(this, arguments); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__removed) { p.removeAttribute = p.__removed; } return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
+/// Makes the browser's own `replaceChildren` throw, which is the call that replaces the scene. With `after` it throws
+/// once the host has already been changed, and without it, before anything is.
+fn fail_replacement(tab: &Tab, failing: bool, after: bool) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__replaced) {{ p.__replaced = p.replaceChildren; }} \
+             p.replaceChildren = function () {{ if ({after}) {{ p.__replaced.apply(this, arguments); }} \
+             throw new Error('injected'); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__replaced) { p.replaceChildren = p.__replaced; } \
+         return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
 fn root_id(tab: &Tab) -> Result<String, String> {
     attribute(tab, &format!("{SVG} .ek-root"), "id")
 }
@@ -724,15 +756,80 @@ fn a_button_with_nowhere_to_go_still_draws_a_page_that_is_out_of_date() -> Resul
 
 #[test]
 fn a_failed_toggle_keeps_the_pressed_state_that_was_committed_and_is_repaired() -> Result<(), String> {
-    let tab = open()?;
-    fail_writes_of(&tab, "aria-pressed", true)?;
-    click(&tab, "ek-toggle-queue")?;
-    fail_writes_of(&tab, "aria-pressed", false)?;
+    // The first write of a toggle is aria-pressed, and the fill and the stroke come after it. A failure at any of them
+    // leaves the button as it was, and not half changed.
+    for name in ["aria-pressed", "fill", "stroke"] {
+        let tab = open()?;
+        let look = |tab: &Tab| -> Result<(String, String, String), String> {
+            Ok((
+                attribute(tab, "#ek-toggle-queue", "aria-pressed")?,
+                attribute(tab, "#ek-toggle-queue rect", "fill")?,
+                attribute(tab, "#ek-toggle-queue rect", "stroke")?,
+            ))
+        };
+        let committed = look(&tab)?;
+        fail_writes_of(&tab, name, true)?;
+        click(&tab, "ek-toggle-queue")?;
+        fail_writes_of(&tab, name, false)?;
+        check(!banner_hidden(&tab)?, &format!("{name}: reported"))?;
+        check_eq(look(&tab)?, committed.clone())
+            .map_err(|e| format!("{name}: the button shows what was committed: {e}"))?;
+        check_eq(attribute(&tab, "#ek-toggle-queue", "aria-pressed")?, "true".to_owned())?;
+        click(&tab, "ek-next")?;
+        check(banner_hidden(&tab)?, &format!("{name}: repaired"))?;
+        check_eq(look(&tab)?, committed).map_err(|e| format!("{name}: after the repair: {e}"))?;
+    }
+    Ok(())
+}
+
+#[test]
+fn a_play_button_whose_label_could_not_be_written_is_repaired_by_a_press_with_nowhere_to_go() -> Result<(), String> {
+    let tab = open_manual()?;
+    click(&tab, "ek-play")?;
+    check_eq(play_label(&tab)?, "Pause".to_owned())?;
+    fail_writes_of(&tab, "aria-label", true)?;
+    click(&tab, "ek-play")?;
+    fail_writes_of(&tab, "aria-label", false)?;
+    check_eq(waiting(&tab)?, 0)?;
     check(!banner_hidden(&tab)?, "reported")?;
-    check_eq(attribute(&tab, "#ek-toggle-queue", "aria-pressed")?, "true".to_owned())?;
+    // The run is at its first step, so Previous has nowhere to go. It still draws a page that is out of date.
+    click(&tab, "ek-previous")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check_eq(play_label(&tab)?, "Play".to_owned())?;
+    check_eq(attribute(&tab, "#ek-play", "aria-label")?, "Play".to_owned())?;
+    check_eq(position(&tab)?, 0)
+}
+
+#[test]
+fn a_failed_removal_of_an_attribute_is_reported_and_the_next_action_repairs_it() -> Result<(), String> {
+    let tab = open()?;
+    seek(&tab, 40)?;
+    let lanes = format!("{SVG} g.ek-res");
+    let both = format!("{lanes}[aria-label][aria-hidden]");
+    check(
+        count(&tab, &format!("{lanes}[aria-label]"))? > 0,
+        "the lanes are named while they show",
+    )?;
+    // Hiding the lanes takes their name off them.
+    fail_removals_of(&tab, "aria-label", true)?;
+    click(&tab, "ek-toggle-residual")?;
+    fail_removals_of(&tab, "aria-label", false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check_eq(attribute(&tab, "#ek-toggle-residual", "aria-pressed")?, "true".to_owned())?;
     click(&tab, "ek-next")?;
     check(banner_hidden(&tab)?, "repaired")?;
-    check_eq(attribute(&tab, "#ek-toggle-queue", "aria-pressed")?, "true".to_owned())
+    check_eq(position(&tab)?, 41)?;
+    check_eq(count(&tab, &both)?, 0)?;
+    check(
+        count(&tab, &format!("{lanes}[aria-label]"))? > 0,
+        "the toggle did not take, so they show",
+    )?;
+    // With nothing failing, the same toggle hides them and leaves no name on any.
+    click(&tab, "ek-toggle-residual")?;
+    check(banner_hidden(&tab)?, "no failure")?;
+    check_eq(count(&tab, &format!("{lanes}:not(.ek-off)"))?, 0)?;
+    check_eq(count(&tab, &format!("{lanes}[aria-label]"))?, 0)?;
+    check_eq(count(&tab, &both)?, 0)
 }
 
 // A switch of graph that fails.
@@ -769,9 +866,9 @@ fn a_switch_that_fails_at_a_control_leaves_the_old_graph_whole_and_a_later_switc
 fn a_switch_whose_replacement_fails_leaves_the_old_graph_and_its_controls() -> Result<(), String> {
     let tab = open()?;
     seek(&tab, 12)?;
-    text(&tab, "(() => { window.__ekFailReplace = true; return 'ok'; })()")?;
+    fail_replacement(&tab, true, false)?;
     select(&tab, "ek-fixture", "reverse")?;
-    text(&tab, "(() => { window.__ekFailReplace = false; return 'ok'; })()")?;
+    fail_replacement(&tab, false, false)?;
     check_eq(root_id(&tab)?, "ek-1-g0-canonical-root".to_owned())?;
     check_eq((position(&tab)?, last_step(&tab)?), (12, 86))?;
     check_eq(attribute(&tab, "#ek-seek", "max")?, "86".to_owned())?;
@@ -787,12 +884,34 @@ fn a_switch_whose_replacement_fails_leaves_the_old_graph_and_its_controls() -> R
 }
 
 #[test]
+fn a_replacement_that_throws_after_it_changed_the_host_puts_the_old_graph_back() -> Result<(), String> {
+    let tab = open()?;
+    seek(&tab, 12)?;
+    fail_replacement(&tab, true, true)?;
+    select(&tab, "ek-fixture", "reverse")?;
+    fail_replacement(&tab, false, true)?;
+    check_eq(root_id(&tab)?, "ek-1-g0-canonical-root".to_owned())?;
+    check_eq(count(&tab, &format!("{SVG} .ek-root"))?, 1)?;
+    check_eq((position(&tab)?, last_step(&tab)?), (12, 86))?;
+    check_eq(
+        text(&tab, "document.getElementById('ek-fixture').value")?,
+        "canonical".to_owned(),
+    )?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    click(&tab, "ek-next")?;
+    check_eq(position(&tab)?, 13)?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    select(&tab, "ek-fixture", "reverse")?;
+    check_eq(root_id(&tab)?, "ek-1-g1-reverse-root".to_owned())
+}
+
+#[test]
 fn a_failed_switch_pauses_the_playback_and_a_successful_one_does_too() -> Result<(), String> {
     let tab = open_manual()?;
     click(&tab, "ek-play")?;
-    text(&tab, "(() => { window.__ekFailReplace = true; return 'ok'; })()")?;
+    fail_replacement(&tab, true, false)?;
     select(&tab, "ek-fixture", "reverse")?;
-    text(&tab, "(() => { window.__ekFailReplace = false; return 'ok'; })()")?;
+    fail_replacement(&tab, false, false)?;
     check_eq((waiting(&tab)?, play_label(&tab)?), (0, "Play".to_owned()))?;
     click(&tab, "ek-play")?;
     select(&tab, "ek-fixture", "reverse")?;

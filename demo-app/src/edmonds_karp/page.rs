@@ -14,11 +14,7 @@ use super::{
     solver::Trace,
 };
 use std::cell::{Cell, RefCell};
-use wasm_bindgen::JsValue;
-
-/// The window property that makes the next replacement of the scene fail, which a test sets to see what a switch does
-/// when the replacement fails after the controls have been written.
-const FAIL_REPLACE: &str = "__ekFailReplace";
+use wasm_bindgen::{JsCast, JsValue};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(super) struct Page {
@@ -136,11 +132,36 @@ impl Page {
         }
     }
 
-    /// Whether the replacement of the scene has been told to fail, which only a test does.
-    fn replacement_fails() -> bool {
-        web_sys::window()
-            .and_then(|window| js_sys::Reflect::get(&window, &JsValue::from_str(FAIL_REPLACE)).ok())
-            .is_some_and(|flag| flag.is_truthy())
+    /// Replaces what is in the host with `root`, in the one call the browser has for it.
+    ///
+    /// If the call throws, the host may be untouched or already changed, so what was there is taken out of it again and
+    /// put back, as far as that works. The call is made by name, so that a test can make the real one throw.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the call threw.
+    fn replace_scene(&self, root: &web_sys::Element) -> Result<(), String> {
+        let mut old = Vec::new();
+        let mut child = self.host.first_child();
+        while let Some(node) = child {
+            child = node.next_sibling();
+            old.push(node);
+        }
+        let called = js_sys::Reflect::get(&self.host, &JsValue::from_str("replaceChildren"))
+            .and_then(|function| function.dyn_into::<js_sys::Function>())
+            .and_then(|function| function.call1(&self.host, root));
+        let Err(problem) = called else {
+            return Ok(());
+        };
+        while let Some(node) = self.host.first_child() {
+            if self.host.remove_child(&node).is_err() {
+                break;
+            }
+        }
+        for node in &old {
+            let _ = self.host.append_child(node);
+        }
+        Err(format!("the scene could not be replaced: {problem:?}"))
     }
 }
 
@@ -161,12 +182,17 @@ impl Surface for Page {
         };
         apply_writes(&self.scene.borrow(), &self.chrome, &writes)?;
         let state = self.control_state(trace, index, view);
-        self.controls.write_state(
-            &mut Journal::default(),
+        // Kept, so that a control that was changed before a write failed is put back to what the page still commits.
+        let mut journal = Journal::default();
+        if let Err(problem) = self.controls.write_state(
+            &mut journal,
             previous_controls.as_ref(),
             &state,
             &seek_text(index, trace.last()),
-        )?;
+        ) {
+            journal.restore();
+            return Err(problem);
+        }
         *self.committed.borrow_mut() = Some(next);
         *self.control_state.borrow_mut() = Some(state);
         self.hide_error();
@@ -219,12 +245,11 @@ impl Surface for Page {
             return Err(SwitchError::Live(problem));
         }
         // Last, the one replacement of the scene.
-        if Self::replacement_fails() {
+        if let Err(problem) = self.replace_scene(&candidate.root) {
             journal.restore();
             self.forget();
-            return Err(SwitchError::Live("the scene could not be replaced".to_owned()));
+            return Err(SwitchError::Live(problem));
         }
-        self.host.replace_children_with_node_1(&candidate.root);
         *self.scene.borrow_mut() = candidate;
         *self.committed.borrow_mut() = Some(presentation);
         *self.control_state.borrow_mut() = Some(state);
@@ -237,18 +262,24 @@ impl Surface for Page {
         Ok(())
     }
 
-    fn playing_changed(&self, playing: bool) {
+    fn playing_changed(&self, playing: bool) -> Result<(), String> {
         self.playing.set(playing);
         let mut state = self.control_state.borrow_mut();
         // The label is written whether or not the rest of what the controls show is known, since a switch that failed
         // puts the old label back, and the person must see what Play will do now.
-        let written = self.controls.write_play(&mut Journal::default(), playing);
-        match (written, state.as_mut()) {
+        let mut journal = Journal::default();
+        let written = self.controls.write_play(&mut journal, playing);
+        match (&written, state.as_mut()) {
             (Ok(()), Some(shown)) => shown.playing = playing,
             // The label could not be written, so what the controls show is not known, and the next draw writes it all.
-            (Err(_), _) => *state = None,
+            // What was written before the failure is put back, so that the button does not show half a change.
+            (Err(_), _) => {
+                journal.restore();
+                *state = None;
+            },
             (Ok(()), None) => {},
         }
+        written
     }
 
     fn say(&self, text: &str) {

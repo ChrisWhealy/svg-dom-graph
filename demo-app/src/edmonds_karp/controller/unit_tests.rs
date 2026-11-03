@@ -21,6 +21,8 @@ struct Fake {
     playing: RefCell<Vec<bool>>,
     /// How many of the next draws fail.
     fail_draws: Cell<u32>,
+    /// How many of the next writes of the Play button fail.
+    fail_playing: Cell<u32>,
     switches: RefCell<Vec<(&'static str, u64)>>,
     switch_error: RefCell<Option<SwitchError>>,
 }
@@ -46,8 +48,13 @@ impl Surface for Fake {
         }
     }
 
-    fn playing_changed(&self, playing: bool) {
+    fn playing_changed(&self, playing: bool) -> Result<(), String> {
         self.playing.borrow_mut().push(playing);
+        if self.fail_playing.get() > 0 {
+            self.fail_playing.set(self.fail_playing.get() - 1);
+            return Err("the label could not be written".to_owned());
+        }
+        Ok(())
     }
 
     fn say(&self, text: &str) {
@@ -879,4 +886,67 @@ fn a_manual_scheduler_runs_timers_and_frames_in_order_and_only_when_told() {
     assert!(scheduler.advance() && scheduler.advance() && !scheduler.advance());
     assert!(scheduler.advance_frame() && !scheduler.advance_frame());
     assert_eq!(order.borrow().as_slice(), &["a", "b", "frame"]);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_frame_that_was_taken_back_but_arrives_does_not_consume_a_newer_seek() {
+    let rig = Rig::new();
+    rig.scheduler.keep_cancelled();
+    // Seek A asks for frame A, which is then taken back by letting go of the range, but arrives anyway.
+    rig.controller.seek_input(10);
+    rig.controller.seek_release(10);
+    assert_eq!(rig.at(), 10);
+    // Seek B, in the same graph, asks for frame B.
+    rig.controller.seek_input(40);
+    assert_eq!(rig.scheduler.pending_frames(), 2, "the taken-back frame A, and frame B");
+    // Frame A arrives first. It is not the frame that is waiting, so it draws nothing.
+    rig.scheduler.advance_frame();
+    assert_eq!(rig.at(), 10, "frame A did not draw seek B");
+    // Frame B is still being waited for, and draws it.
+    rig.scheduler.advance_frame();
+    assert_eq!(rig.at(), 40);
+}
+
+#[test]
+fn a_seek_whose_frame_was_taken_back_by_a_switch_is_not_drawn_by_that_frame_in_the_next_graph() {
+    let rig = Rig::new();
+    rig.scheduler.keep_cancelled();
+    rig.controller.seek_input(20);
+    rig.act(Action::SwitchFixture(&REVERSE));
+    rig.controller.seek_input(5);
+    rig.scheduler.advance_frame();
+    assert_eq!(rig.at(), 0, "the old frame is not the one that is waiting");
+    rig.scheduler.advance_frame();
+    assert_eq!(rig.at(), 5);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_pause_whose_label_could_not_be_written_leaves_the_page_dirty_and_a_boundary_press_repairs_it() {
+    let rig = Rig::new();
+    rig.act(Action::Play);
+    assert!(rig.controller.is_playing());
+    rig.surface.fail_playing.set(1);
+    rig.act(Action::Restart);
+    assert!(rig.controller.is_dirty(), "the button may still say Pause");
+    assert_eq!(rig.surface.failures.borrow().len(), 1);
+    let draws = rig.surface.draws.borrow().len();
+    // The range is at its first step, so Previous has nowhere to go, but it draws the page that is out of date first.
+    rig.act(Action::Previous);
+    assert_eq!(
+        rig.surface.draws.borrow().get(draws),
+        Some(&(0, true)),
+        "a full draw before the no-op"
+    );
+    assert!(!rig.controller.is_dirty());
+}
+
+#[test]
+fn a_play_whose_label_could_not_be_written_leaves_the_page_dirty() {
+    let rig = Rig::new();
+    rig.surface.fail_playing.set(1);
+    rig.act(Action::Play);
+    assert!(rig.controller.is_playing(), "the run does play");
+    assert!(rig.controller.is_dirty(), "but the button may still say Play");
 }

@@ -176,7 +176,8 @@ A test asks for a clock that runs a tick or a frame only when it is told to, by 
 Then `window.__ekAdvance(n)` and `window.__ekAdvanceFrame(n)` run up to `n`, and `window.__ekPending()` and `window.__ekPendingFrames()` say how many wait.
 When the page is left, the hooks come off the window and are freed, unless another clock has put its own in their place.
 `?always-full` makes every draw a full one, which a test uses to compare it with a diffed page.
-Setting `window.__ekFailReplace` makes the next replacement of the scene fail, to test the switch.
+A test makes the replacement of the scene fail by overriding `Element.prototype.replaceChildren`, before it changes the host or after.
+The page then puts the old scene back.
 
 ## Accessibility
 
