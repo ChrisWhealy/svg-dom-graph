@@ -22,6 +22,10 @@
 //! - `panel-game-of-life` / `#game-of-life-stage` — [`game_of_life::build_game_of_life_demo`]: Conway's rules on a
 //!   board of 40 by 30 cells that a person draws on by click, drag or keys, with buttons for the generations, the edges
 //!   and some patterns, and a slider for the speed.
+//! - `panel-n-queens` / `#n-queens-stage` — [`n_queens::build_n_queens_demo`]: the whole depth-first search of the
+//!   N-Queens puzzle on a board of 4 to 9, one event at a time. A Try draws three rays through its square, a Reject marks
+//!   the reason, a Place draws a queen and a solution is framed. A range goes straight to any step, and buttons step,
+//!   restart, play and jump between solutions. The search is plain Rust, and every step is worked out from one trace.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -152,6 +156,7 @@ mod game_of_life;
 mod hamming;
 mod highlight;
 mod huffman;
+mod n_queens;
 mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
@@ -285,6 +290,7 @@ demo_gallery! {
     "panel-quicksort" => quicksort::build_quicksort_demo + quicksort::FILES,
     "panel-dijkstra" => dijkstra::build_dijkstra_demo + dijkstra::FILES,
     "panel-game-of-life" => game_of_life::build_game_of_life_demo + game_of_life::FILES,
+    "panel-n-queens" => n_queens::build_n_queens_demo + n_queens::FILES,
     "panel-springs" => springs::build_springs_demo + springs::FILES,
 }
 

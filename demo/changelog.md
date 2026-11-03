@@ -10,12 +10,12 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Conway's Game of Life demo panel, in a new group, "Cellular Automata": a 40 by 30 board that is drawn on by click, drag or keys, with Play, Step, Random, Clear, wrapping or stopping edges, five patterns including the Gosper glider gun, and a speed slider
 - Game of Life demo: a second row of buttons under the board that adds a light, medium or heavy weight spaceship at the left edge, level with the cursor, flying to the right
 - Convolution demo panel, after Phase Shift: a signal of two sine waves probed with a cosine and a sine, with the area under each product shaded above and below the axis, and the amplitude found at every frequency
 - Angle curve, labelled &theta;, in the Pythagoras demo
 - Pythagoras demo text beside the scene
 - Conway's Game of Life demo (`eb3dcd8`)
+- N-Queens demo panel, in a new "Backtracking" group (``)
 
 ### Changed
 

@@ -1186,3 +1186,233 @@ label.demo-slider-container {
     background: #d9dde1;
     color: #3a3f45;
 }
+
+/* The N-Queens panel: the scene, with the controls above the board, beside the status and the legend, and the layers of
+   the board. The squares and the queens, the rays, the outline, the frame and the focus ring are separate layers, so
+   that the rays pass under the queens and the outline over the rays. Every state differs by its shape or its dash as
+   well as by its colour. */
+
+/* The buttons are drawn in the scene by the library, which gives them no focus style. */
+#n-queens-stage [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.nq-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.nq-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.nq-side {
+    flex: 1 1 18rem;
+    max-width: 34rem;
+}
+
+.nq-side > h3:first-child {
+    margin-top: 0;
+}
+
+.nq-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.2rem 0.75rem;
+    margin: 0 0 0.75rem;
+    font-variant-numeric: tabular-nums;
+}
+
+/* The general rules for a definition list make a term a sub-heading with a rule beside its data. These are rows of a
+   table in all but name, so they are undone here. */
+.section .nq-status dt {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.section .nq-status dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+}
+
+.nq-note {
+    color: var(--text-muted);
+}
+
+.nq-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.nq-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.nq-key {
+    flex: 0 0 auto;
+    border: 1px solid var(--border-strong);
+}
+
+.nq-board .nq-light {
+    fill: #eef4ff;
+}
+
+.nq-board .nq-dark {
+    fill: #b9c7dc;
+}
+
+.nq-light {
+    fill: #eef4ff;
+}
+
+.nq-off {
+    display: none;
+}
+
+.nq-glyph {
+    visibility: hidden;
+    fill: #1f2937;
+    stroke: #ffffff;
+    stroke-width: 1.2;
+    paint-order: stroke;
+    text-anchor: middle;
+    dominant-baseline: central;
+    pointer-events: none;
+    user-select: none;
+}
+
+.nq-glyph.nq-on {
+    visibility: visible;
+}
+
+.nq-rays,
+.nq-glyphs,
+.nq-outline,
+.nq-frame,
+.nq-ring {
+    pointer-events: none;
+}
+
+.nq-ray {
+    fill: none;
+    stroke: #475569;
+    stroke-width: 2.5;
+    stroke-linecap: round;
+}
+
+.nq-ray.nq-muted {
+    stroke-width: 1.5;
+    stroke-dasharray: 5 5;
+}
+
+.nq-ray.nq-chosen {
+    stroke: #b91c1c;
+    stroke-width: 6;
+}
+
+.nq-o-box {
+    fill: none;
+}
+
+.nq-o-cross {
+    display: none;
+    fill: none;
+    stroke: #b91c1c;
+    stroke-width: 4;
+    stroke-linecap: round;
+}
+
+.nq-candidate .nq-o-box {
+    stroke: #1d4ed8;
+    stroke-width: 5;
+}
+
+.nq-rejected .nq-o-box {
+    stroke: #b91c1c;
+    stroke-width: 5;
+    stroke-dasharray: 10 6;
+}
+
+.nq-rejected .nq-o-cross {
+    display: inline;
+}
+
+.nq-removed .nq-o-box {
+    stroke: #6d28d9;
+    stroke-width: 4;
+    stroke-dasharray: 1 7;
+    stroke-linecap: round;
+}
+
+.nq-frame {
+    fill: none;
+    stroke: #0f766e;
+    stroke-width: 6;
+    stroke-dasharray: 18 6;
+}
+
+.nq-cell {
+    fill: transparent;
+    outline: none;
+}
+
+.nq-ring-outer {
+    fill: none;
+    stroke: #111827;
+    stroke-width: 3;
+}
+
+.nq-ring-inner {
+    fill: none;
+    stroke: #ffffff;
+    stroke-width: 2;
+}
+
+@media (forced-colors: active) {
+    .nq-light,
+    .nq-dark,
+    .nq-board .nq-light,
+    .nq-board .nq-dark {
+        fill: Canvas;
+        stroke: CanvasText;
+        stroke-width: 0.5;
+    }
+
+    .nq-glyph {
+        fill: CanvasText;
+        stroke: Canvas;
+    }
+
+    .nq-ray {
+        stroke: CanvasText;
+    }
+
+    .nq-ray.nq-chosen,
+    .nq-candidate .nq-o-box,
+    .nq-rejected .nq-o-box,
+    .nq-o-cross,
+    .nq-removed .nq-o-box,
+    .nq-frame {
+        stroke: Highlight;
+    }
+
+    .nq-ring-outer {
+        stroke: Highlight;
+    }
+
+    .nq-ring-inner {
+        stroke: Canvas;
+    }
+}

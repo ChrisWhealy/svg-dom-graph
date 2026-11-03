@@ -78,6 +78,10 @@
 //! - [`game_of_life`] — the Game of Life panel in the built demo gallery: the board, the ten buttons and the slider, the
 //!   rules that Step works out, drawing by click and by drag, the cursor and the keys, the patterns, the edges that wrap
 //!   or stop, and the speed. Also runs against the built demo gallery.
+//! - [`n_queens`] — the N-Queens panel in the built demo gallery: the board as a grid in layers, what a Try, a Reject, a
+//!   Place and a solution show, the range that goes to any step, the buttons and their ends, playback on a clock the test
+//!   advances, the keys and the focus ring, a new board size, and a write that fails. Also runs against the built demo
+//!   gallery.
 //! - [`pythagoras`] — the Pythagoras panel in the built demo gallery: the scene with no plot, the right triangle in the
 //!   unit circle and the blue and green squares on its sides, the squares that are drawn again as C is dragged or moved
 //!   with the keys, and the areas that are written in them. Also runs against the built demo gallery.
@@ -135,6 +139,7 @@ mod dijkstra;
 mod edge_anchors;
 mod fft;
 mod game_of_life;
+mod n_queens;
 mod hamming;
 mod hex_dump_geometry;
 mod hex_dump_paint_order;
