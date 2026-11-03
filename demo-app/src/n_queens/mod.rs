@@ -2,8 +2,8 @@
 //! [`build_n_queens_demo`] for what the page does, [`solver`] for the search, [`projection`] for what each step looks
 //! like, and [`controller`] for the buttons, the range and the playback.
 //!
-//! The rest of this module is the browser side. [`layout`] says where everything is in the scene, [`controls`] draws the
-//! selectors, the buttons and the range in it, and [`board`] draws the layers of one board. [`chrome`] finds the
+//! The rest of this module is the browser side. [`layout`] says where everything is in the scene, [`controls`] draws
+//! the selectors, the buttons and the range in it, and [`board`] draws the layers of one board. [`chrome`] finds the
 //! elements that the panel's HTML declares, [`page`] is what the controller draws on, and [`scheduler`] runs the
 //! playback's ticks.
 

@@ -11,6 +11,8 @@ struct Fake {
     draws: RefCell<Vec<(usize, bool)>>,
     said: RefCell<Vec<String>>,
     failures: RefCell<Vec<String>>,
+    /// What was reported when no tick could be scheduled.
+    playback_failures: RefCell<Vec<String>>,
     playing: RefCell<Vec<bool>>,
     rebuilds: RefCell<Vec<usize>>,
     /// How many of the next draws fail.
@@ -52,6 +54,10 @@ impl Surface for Fake {
 
     fn failed(&self, problem: &str) {
         self.failures.borrow_mut().push(problem.to_owned());
+    }
+
+    fn playback_failed(&self, problem: &str) {
+        self.playback_failures.borrow_mut().push(problem.to_owned());
     }
 }
 
@@ -561,6 +567,115 @@ fn a_new_speed_while_paused_starts_nothing() {
     assert_eq!(rig.scheduler.pending(), 0);
 }
 
+// A timer that cannot be set.
+
+#[test]
+fn play_does_not_claim_to_be_playing_when_the_first_tick_cannot_be_scheduled() {
+    let rig = Rig::new(4);
+    rig.scheduler.fail_next(1);
+    rig.act(Action::Play);
+    assert!(!rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 0, "nothing is waiting that could advance the search");
+    assert!(rig.surface.playing.borrow().is_empty(), "the page was never told that it plays");
+    assert_eq!(rig.surface.playback_failures.borrow().len(), 1, "and the person is told why");
+    assert!(rig.surface.playback_failures.borrow()[0].contains("timer"));
+    assert_eq!(
+        (rig.at(), rig.controller.is_dirty()),
+        (0, false),
+        "the board is right, and is not dirty"
+    );
+    assert!(rig.surface.failures.borrow().is_empty(), "it is not a failure to draw");
+}
+
+#[test]
+fn play_works_when_it_is_pressed_again_after_a_timer_that_could_not_be_set() {
+    let rig = Rig::new(4);
+    rig.scheduler.fail_next(1);
+    rig.act(Action::Play);
+    rig.act(Action::Play);
+    assert!(rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 1);
+    rig.scheduler.advance();
+    assert_eq!(rig.at(), 1);
+    assert_eq!(rig.surface.playing.borrow().as_slice(), &[true]);
+}
+
+#[test]
+fn playback_stops_and_says_so_when_a_later_tick_cannot_be_scheduled() {
+    let rig = Rig::new(4);
+    rig.act(Action::Play);
+    rig.scheduler.advance();
+    assert_eq!(rig.at(), 1);
+    // The tick after the next one cannot be set.
+    rig.scheduler.fail_next(1);
+    rig.scheduler.advance();
+    assert_eq!(rig.at(), 2, "the step that was drawn is kept");
+    assert!(!rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 0);
+    assert_eq!(
+        rig.surface.playing.borrow().as_slice(),
+        &[true, false],
+        "it showed as playing, then as paused"
+    );
+    assert_eq!(rig.surface.playback_failures.borrow().len(), 1);
+    assert_eq!((rig.controller.is_dirty(), rig.surface.failures.borrow().len()), (false, 0));
+    assert_eq!(rig.scheduler.advance(), false, "there is nothing left to run");
+}
+
+#[test]
+fn playback_carries_on_from_the_same_step_when_play_is_pressed_after_a_later_failure() {
+    let rig = Rig::new(4);
+    rig.act(Action::Play);
+    rig.scheduler.fail_next(1);
+    rig.scheduler.advance();
+    assert_eq!((rig.at(), rig.controller.is_playing()), (1, false));
+    rig.act(Action::Play);
+    rig.scheduler.advance();
+    assert_eq!(rig.at(), 2);
+    assert!(rig.controller.is_playing());
+}
+
+#[test]
+fn a_new_speed_that_cannot_be_scheduled_stops_playback_and_says_so() {
+    let rig = Rig::new(4);
+    rig.act(Action::Play);
+    rig.scheduler.fail_next(1);
+    rig.controller.set_speed(5);
+    assert!(!rig.controller.is_playing());
+    assert_eq!(
+        rig.scheduler.pending(),
+        0,
+        "the old tick was taken back, and no new one is waiting"
+    );
+    assert_eq!(rig.surface.playing.borrow().as_slice(), &[true, false]);
+    assert_eq!(rig.surface.playback_failures.borrow().len(), 1);
+    assert_eq!(rig.controller.speed(), 5, "the speed that was chosen is kept");
+}
+
+#[test]
+fn a_timer_that_cannot_be_set_never_leaves_a_stale_tick_that_could_run_later() {
+    let rig = Rig::new(4);
+    rig.scheduler.keep_cancelled();
+    rig.act(Action::Play);
+    rig.scheduler.fail_next(1);
+    rig.scheduler.advance();
+    // The tick that failed to schedule its successor was the last, so none is left to move the search on its own.
+    assert_eq!(rig.scheduler.pending(), 0);
+    assert!(!rig.scheduler.advance());
+    assert_eq!(rig.at(), 1);
+}
+
+#[test]
+fn a_failure_to_schedule_does_not_stop_the_buttons_from_working() {
+    let rig = Rig::new(4);
+    rig.scheduler.fail_next(1);
+    rig.act(Action::Play);
+    rig.act(Action::Next);
+    rig.act(Action::NextSolution);
+    assert!(rig.at() > 1);
+    assert!(!rig.controller.is_playing());
+}
+
 // A board of another size.
 
 #[test]
@@ -660,10 +775,12 @@ fn a_manual_scheduler_runs_tasks_in_order_and_only_when_told() {
     let order = Rc::new(RefCell::new(Vec::new()));
     for name in ["a", "b"] {
         let order = Rc::clone(&order);
-        scheduler.schedule(5, Box::new(move || order.borrow_mut().push(name)));
+        scheduler
+            .schedule(5, Box::new(move || order.borrow_mut().push(name)))
+            .expect("scheduled");
     }
     assert!(order.borrow().is_empty());
-    let handle = scheduler.schedule(5, Box::new(|| {}));
+    let handle = scheduler.schedule(5, Box::new(|| {})).expect("scheduled");
     scheduler.cancel(handle);
     assert_eq!(scheduler.pending(), 2);
     assert!(scheduler.advance() && scheduler.advance() && !scheduler.advance());

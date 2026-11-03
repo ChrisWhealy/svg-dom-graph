@@ -144,6 +144,11 @@ The page uses the browser's timers.
 A test can ask for a scheduler that runs a tick only when it is told to, by putting `?manual-clock` in the address or setting `window.__nQueensManualClock` before the panel is built.
 Then `window.__nQueensAdvance(n)` runs up to `n` ticks, and `window.__nQueensPending()` says how many are waiting.
 A tick carries the number of the run of playback that asked for it, so one that was already on its way when playback stopped does nothing.
+Scheduling a tick can fail, since the browser can refuse a timer.
+`Scheduler::schedule` therefore returns a `Result`.
+Play shows as playing only once its first tick is waiting, so a timer that cannot be set never leaves the page saying "Pause" with nothing to advance the search.
+If a later tick, or a new speed, cannot be scheduled, playback stops where it is and says so in the error line and the live region.
+The board is right then, so the page is not dirty, and pressing Play again carries on from the same step.
 
 ## Accessibility
 

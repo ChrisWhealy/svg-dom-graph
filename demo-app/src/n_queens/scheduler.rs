@@ -42,7 +42,7 @@ impl TimeoutScheduler {
 }
 
 impl Scheduler for TimeoutScheduler {
-    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> u64 {
+    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> Result<u64, String> {
         self.reap();
         let id = Rc::new(Cell::new(0));
         let (finished, own) = (Rc::clone(&self.finished), Rc::clone(&id));
@@ -61,9 +61,10 @@ impl Scheduler for TimeoutScheduler {
             Ok(handle) => {
                 id.set(handle);
                 self.closures.borrow_mut().insert(handle, closure);
-                handle as u64
+                Ok(handle as u64)
             },
-            Err(_) => 0,
+            // The closure is dropped here, and the task with it, so nothing is left that could run.
+            Err(e) => Err(format!("could not set a timer: {e:?}")),
         }
     }
 

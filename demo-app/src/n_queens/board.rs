@@ -199,7 +199,7 @@ pub(super) fn build_board(document: &web_sys::Document, size: usize) -> Result<B
 pub(super) fn grid_label(size: usize) -> String {
     format!(
         "N-Queens board, {size} rows by {size} columns. The arrow keys move between squares, Home and End go to the \
-         start and end of a row. By using Hone and End with Control, you can navigate to the corners of the board. \
+         start and end of a row. By using Home and End with Control, you can navigate to the corners of the board. \
          The board only shows the search."
     )
 }

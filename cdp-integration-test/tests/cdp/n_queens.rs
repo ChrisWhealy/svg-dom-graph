@@ -1,5 +1,5 @@
-//! The N-Queens panel in the built demo gallery: a scene with selectors, buttons and a range above a board of squares in
-//! layers, a status beside it, and a playback that a test can drive one tick at a time.
+//! The N-Queens panel in the built demo gallery: a scene with selectors, buttons and a range above a board of squares
+//! in layers, a status beside it, and a playback that a test can drive one tick at a time.
 //!
 //! Native unit tests cover the search, what each step shows, and every rule of the controls. What they cannot reach is
 //! the browser. These tests check the following:
@@ -20,6 +20,8 @@
 //! - A new size of board replaces the grid, and stops the playback.
 //! - A new board that cannot be made, because a write to the controls fails, leaves the old board, its trace, its step
 //!   and the end of the range as they were, and the selector says the old size.
+//! - A timer that cannot be set, when Play starts and when a later tick is scheduled, stops the playback and says so,
+//!   and Play works again once timers do.
 //! - A write that fails is reported and leaves the step where it was, and the next button, even one with nowhere to go,
 //!   draws the board again.
 //!
@@ -931,4 +933,83 @@ fn a_new_board_that_cannot_be_made_keeps_the_focus_and_the_active_square() -> Re
     check_eq(active_cell(&tab)?, "nq-r6-c6".to_owned())?;
     check_eq(count(&tab, &format!("{SVG} [role=gridcell][tabindex=\"0\"]"))?, 1)?;
     check_eq(squares(&tab)?, 64)
+}
+
+// A timer that cannot be set.
+
+/// Makes `setTimeout` throw for the delay of a tick at the default speed, which is 50 milliseconds, after the first
+/// `allowed` of them, or puts the browser's own back. Timers for any other delay are left alone.
+fn fail_timers(tab: &Tab, allowed: Option<u32>) -> Result<(), String> {
+    let script = match allowed {
+        Some(allowed) => format!(
+            "(() => {{ if (!window.__setTimeout) {{ window.__setTimeout = window.setTimeout; }} let n = 0; \
+             const real = window.__setTimeout; \
+             window.setTimeout = function (f, d) {{ if (d === 50 && ++n > {allowed}) {{ throw new Error('injected'); }} \
+             return real.apply(this, arguments); }}; return 'ok'; }})()"
+        ),
+        None => "(() => { if (window.__setTimeout) { window.setTimeout = window.__setTimeout; } return 'ok'; })()"
+            .to_owned(),
+    };
+    text(tab, &script).map(|_| ())
+}
+
+fn play_label(tab: &Tab) -> Result<String, String> {
+    content(tab, "#n-queens-play")
+}
+
+#[test]
+fn play_does_not_show_as_playing_when_no_timer_can_be_set() -> Result<(), String> {
+    let tab = open()?;
+    fail_timers(&tab, Some(0))?;
+    click(&tab, "n-queens-play")?;
+    check_eq(play_label(&tab)?, "Play".to_owned())?;
+    check_eq(field(&tab, "playback")?, "Paused at 20 events per second".to_owned())?;
+    check(!banner_hidden(&tab)?, "the failure is reported")?;
+    check(
+        content(&tab, "#n-queens-error")?.contains("Play could not carry on"),
+        "and says what failed",
+    )?;
+    check(live(&tab)?.contains("Play could not carry on"), "and is announced")?;
+    // Nothing is going to move the search, however long is waited.
+    std::thread::sleep(Duration::from_millis(400));
+    check_eq(position(&tab)?, 0)?;
+    // The board is right: a button still works, and the failure is not one of drawing the board.
+    click(&tab, "n-queens-next")?;
+    check_eq(position(&tab)?, 1)?;
+    // Once timers work, Play works, and the message goes.
+    fail_timers(&tab, None)?;
+    click(&tab, "n-queens-play")?;
+    check_eq(play_label(&tab)?, "Pause".to_owned())?;
+    check(banner_hidden(&tab)?, "the message goes when playback starts")?;
+    wait_until(&tab, 10, |tab| Ok(position(tab)? > 3))?;
+    click(&tab, "n-queens-play")?;
+    check_eq(play_label(&tab)?, "Play".to_owned())
+}
+
+#[test]
+fn a_tick_that_cannot_be_scheduled_stops_the_playback_and_says_so() -> Result<(), String> {
+    let tab = open()?;
+    // The first tick can be set, and the one after it cannot.
+    fail_timers(&tab, Some(1))?;
+    click(&tab, "n-queens-play")?;
+    // The first tick comes after 50 milliseconds, which a round trip to the browser can outlast, so only the end is
+    // waited for.
+    wait_until(&tab, 10, |tab| Ok(!banner_hidden(tab)?))?;
+    check_eq(play_label(&tab)?, "Play".to_owned())?;
+    check_eq(field(&tab, "playback")?, "Paused at 20 events per second".to_owned())?;
+    check(
+        content(&tab, "#n-queens-error")?.contains("Play could not carry on"),
+        "and says what failed",
+    )?;
+    // The step that was drawn stays, and nothing runs on after it.
+    let stopped = position(&tab)?;
+    check_eq(stopped, 1)?;
+    std::thread::sleep(Duration::from_millis(400));
+    check_eq(position(&tab)?, stopped)?;
+    // The board is whole, and carries on from where it was once timers work.
+    fail_timers(&tab, None)?;
+    click(&tab, "n-queens-play")?;
+    wait_until(&tab, 10, |tab| Ok(position(tab)? > stopped + 2))?;
+    click(&tab, "n-queens-play")?;
+    check(banner_hidden(&tab)?, "the message went when playback started again")
 }

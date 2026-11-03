@@ -274,6 +274,10 @@ impl Surface for Page {
     fn playing_changed(&self, playing: bool) {
         self.playing.set(playing);
         let _ = self.controls.set_playing(playing);
+        if playing {
+            // A tick was scheduled, so whatever stopped playback before has been put right.
+            self.hide_error();
+        }
         self.show_playback();
     }
 
@@ -289,6 +293,17 @@ impl Surface for Page {
         let message = format!(
             "The board could not be drawn: {problem}. What is shown may be out of date. The next button, key or move \
              of the range draws it again."
+        );
+        self.chrome.error.set_text_content(Some(&message));
+        let _ = self.chrome.error.remove_attribute("hidden");
+        self.error_shown.set(true);
+        self.say(&message);
+    }
+
+    fn playback_failed(&self, problem: &str) {
+        let message = format!(
+            "Play could not carry on: {problem}. The board is right, and the search is paused where it is. Press Play \
+             to try again."
         );
         self.chrome.error.set_text_content(Some(&message));
         let _ = self.chrome.error.remove_attribute("hidden");

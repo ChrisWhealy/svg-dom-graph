@@ -47,6 +47,10 @@ pub(crate) trait Surface {
 
     /// Reports a write that failed.
     fn failed(&self, problem: &str);
+
+    /// Reports that playback could not carry on, because no tick could be scheduled. The board is right, and the search
+    /// is paused where it is.
+    fn playback_failed(&self, problem: &str);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -54,7 +58,11 @@ pub(crate) trait Surface {
 /// [`ManualScheduler`], which only runs a task when it is told to.
 pub(crate) trait Scheduler {
     /// Runs `task` after `delay_ms` milliseconds, and gives a handle that [`Scheduler::cancel`] takes.
-    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> u64;
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the task could not be scheduled, in which case it will never run.
+    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> Result<u64, String>;
 
     /// Takes back the task with `handle`, if it has not run.
     fn cancel(&self, handle: u64);
@@ -71,6 +79,8 @@ pub(crate) struct ManualScheduler {
     tasks: RefCell<Vec<Waiting>>,
     /// Whether a cancelled task stays, as a callback that was already on its way to the browser's queue would.
     keep_cancelled: Cell<bool>,
+    /// How many of the next calls to [`Scheduler::schedule`] fail, as a browser's timers can.
+    failures: Cell<u32>,
 }
 
 impl ManualScheduler {
@@ -100,6 +110,12 @@ impl ManualScheduler {
         }
     }
 
+    /// Makes the next `count` calls to [`Scheduler::schedule`] fail, to test that playback stops and says so.
+    #[cfg(test)]
+    pub(crate) fn fail_next(&self, count: u32) {
+        self.failures.set(count);
+    }
+
     /// Makes [`Scheduler::cancel`] leave the task waiting, to test that a stale callback does nothing.
     #[cfg(test)]
     pub(crate) fn keep_cancelled(&self) {
@@ -108,11 +124,15 @@ impl ManualScheduler {
 }
 
 impl Scheduler for ManualScheduler {
-    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> u64 {
+    fn schedule(&self, delay_ms: u32, task: Box<dyn FnOnce()>) -> Result<u64, String> {
+        if self.failures.get() > 0 {
+            self.failures.set(self.failures.get() - 1);
+            return Err("the timer could not be set".to_owned());
+        }
         let handle = self.next.get() + 1;
         self.next.set(handle);
         self.tasks.borrow_mut().push((handle, delay_ms, task));
-        handle
+        Ok(handle)
     }
 
     fn cancel(&self, handle: u64) {
@@ -264,7 +284,11 @@ impl Controller {
     }
 
     /// Asks for the next tick, which is the only one that is ever waiting.
-    fn schedule_next(&self) {
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the tick could not be scheduled. Then none is waiting, and nothing will advance the search.
+    fn schedule_next(&self) -> Result<(), String> {
         debug_assert!(self.waiting.get().is_none(), "a tick is already waiting");
         let (epoch, me) = (self.epoch.get(), self.me.clone());
         let task: Box<dyn FnOnce()> = Box::new(move || {
@@ -273,7 +297,15 @@ impl Controller {
             }
         });
         let delay = (1000 / self.speed.get()).max(1);
-        self.waiting.set(Some(self.scheduler.schedule(delay, task)));
+        self.waiting.set(Some(self.scheduler.schedule(delay, task)?));
+        Ok(())
+    }
+
+    /// Stops playback because no tick could be scheduled, and says so. The board is right, so the page is not dirty,
+    /// and the search stays where it is.
+    fn schedule_failed(&self, problem: &str) {
+        self.stop();
+        self.surface.playback_failed(problem);
     }
 
     /// Shows the next snapshot, and asks for the tick after it only once the page has been written. A tick from an
@@ -290,8 +322,8 @@ impl Controller {
         }
         if target >= last {
             self.stop();
-        } else {
-            self.schedule_next();
+        } else if let Err(problem) = self.schedule_next() {
+            self.schedule_failed(&problem);
         }
     }
 
@@ -344,10 +376,13 @@ impl Controller {
             match (self.playing.get(), at >= last) {
                 (true, _) => {},
                 (false, true) => self.surface.say(AT_LAST),
-                (false, false) => {
-                    self.playing.set(true);
-                    self.surface.playing_changed(true);
-                    self.schedule_next();
+                // Playing is claimed only once a tick is waiting, so a timer that cannot be set never shows as Playing.
+                (false, false) => match self.schedule_next() {
+                    Ok(()) => {
+                        self.playing.set(true);
+                        self.surface.playing_changed(true);
+                    },
+                    Err(problem) => self.surface.playback_failed(&problem),
                 },
             }
             return;
@@ -394,7 +429,9 @@ impl Controller {
             if let Some(handle) = self.waiting.take() {
                 self.scheduler.cancel(handle);
             }
-            self.schedule_next();
+            if let Err(problem) = self.schedule_next() {
+                self.schedule_failed(&problem);
+            }
         }
     }
 
