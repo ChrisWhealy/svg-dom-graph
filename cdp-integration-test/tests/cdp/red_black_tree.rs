@@ -1290,8 +1290,8 @@ fn an_error_line_that_cannot_be_hidden_fails_the_step_and_the_next_action_repair
     click_button(&tab, "next")?;
     fail_writes_of(&tab, "hidden", false)?;
     check(!banner_hidden(&tab)?, "the line is still there")?;
-    // The step was not taken as done, though the tree on the page was swapped, so the page is dirty. Previous has nowhere
-    // to go, and commits the page again at the step the run is really at, which is the first.
+    // The step was not taken as done, though the tree on the page was swapped, so the page is dirty. Previous has
+    // nowhere to go, and commits the page again at the step the run is really at, which is the first.
     click_button(&tab, "previous")?;
     check(banner_hidden(&tab)?, "cleared by the repair")?;
     check_eq(live(&tab)?, "Already at the first step.".to_owned())?;

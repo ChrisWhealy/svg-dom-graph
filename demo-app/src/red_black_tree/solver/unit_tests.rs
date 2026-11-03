@@ -481,3 +481,50 @@ fn many_random_runs_keep_every_rule_and_match_a_set() {
         }
     }
 }
+
+#[test]
+fn a_fixup_case_names_what_it_will_do_and_changes_nothing_itself() {
+    // Every case of the fix-up that any of these runs reaches, on the fixture and on trees that reach the other cases.
+    let runs: [&[Op]; 3] = [
+        &FIXTURE,
+        &[
+            Op::Insert(10),
+            Op::Insert(5),
+            Op::Insert(15),
+            Op::Insert(1),
+            Op::Insert(7),
+            Op::Insert(12),
+            Op::Insert(20),
+            Op::Delete(1),
+            Op::Delete(7),
+        ],
+        &[
+            Op::Insert(1),
+            Op::Insert(2),
+            Op::Insert(3),
+            Op::Insert(4),
+            Op::Insert(5),
+            Op::Insert(6),
+            Op::Insert(7),
+            Op::Delete(1),
+            Op::Delete(2),
+        ],
+    ];
+    let mut cases = BTreeSet::new();
+    for ops in runs {
+        let t = Trace::build(ops).expect("valid");
+        for (at, s) in t.snapshots().iter().enumerate() {
+            let Event::DeleteFixupCase { case, .. } = s.event else { continue };
+            cases.insert(case);
+            let before = &t.snapshots()[at - 1];
+            assert_eq!((&s.nodes, s.root), (&before.nodes, before.root), "case {case} changed the tree");
+            assert!(s.description.contains("will "), "{}", s.description);
+            assert!(
+                !s.description.contains(" turns ") && !s.description.contains(" rotates "),
+                "{}",
+                s.description
+            );
+        }
+    }
+    assert!(cases.contains(&3) && cases.contains(&4), "{cases:?}");
+}

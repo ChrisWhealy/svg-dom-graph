@@ -680,7 +680,7 @@ impl Builder {
                 self.emit(
                     Event::DeleteFixupCase { case: 1, mirrored, cursor: c },
                     vec![p, w],
-                    describe(1, &format!("Sibling {w} is red, so {w} turns black, {p} turns red, and {p} rotates to make the sibling black."), c),
+                    describe(1, &format!("Sibling {w} is red, so the fix-up will recolour {w} black and {p} red, and then rotate at {p} to make the sibling black."), c),
                     Some(c),
                 )?;
                 self.colour(&[(w, Colour::Black), (p, Colour::Red)], "Preparing the rotation of case 1.")?;
@@ -700,7 +700,7 @@ impl Builder {
                 self.emit(
                     Event::DeleteFixupCase { case: 2, mirrored, cursor: c },
                     vec![p, w],
-                    describe(2, &format!("Sibling {w} and both its children are black, so {w} turns red and the extra black moves up to {p}."), c),
+                    describe(2, &format!("Sibling {w} and both its children are black, so the fix-up will recolour {w} red, which moves the extra black up to {p}."), c),
                     Some(c),
                 )?;
                 self.colour(&[(w, Colour::Red)], "The extra black moves up one level.")?;
@@ -717,7 +717,7 @@ impl Builder {
                 self.emit(
                     Event::DeleteFixupCase { case: 3, mirrored, cursor: c },
                     vec![p, w, n],
-                    describe(3, &format!("Sibling {w} is black, its far child is black and its near child {n} is red, so {n} turns black, {w} turns red, and {w} rotates to put a red child on the far side."), c),
+                    describe(3, &format!("Sibling {w} is black, its far child is black and its near child {n} is red, so the fix-up will recolour {n} black and {w} red, and then rotate at {w} to put a red child on the far side."), c),
                     Some(c),
                 )?;
                 self.colour(&[(n, Colour::Black), (w, Colour::Red)], "Preparing the rotation of case 3.")?;
@@ -734,7 +734,7 @@ impl Builder {
             self.emit(
                 Event::DeleteFixupCase { case: 4, mirrored, cursor: c },
                 vec![p, w, far],
-                describe(4, &format!("Sibling {w} is black with a red far child {far}, so {w} takes {p}'s colour, {p} and {far} turn black, and {p} rotates to settle the extra black."), c),
+                describe(4, &format!("Sibling {w} is black with a red far child {far}, so the fix-up will give {w} the colour of {p}, recolour {p} and {far} black, and then rotate at {p} to settle the extra black."), c),
                 Some(c),
             )?;
             self.colour(
