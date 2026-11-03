@@ -15,53 +15,58 @@ Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 `svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what sort of graph a caller builds.
 See [`library/README.md`](docs/library/README.md) for more details.
 
-***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
+_**IMPORTANT**_<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
 
-The goal is to create a scene that contains SVG elements suitable for visualising the data flow through an algorithm.
+The goal is to allow the users to create a scene containing SVG elements suitable for visualising the data flow through an algorithm.
 The original target algorithms were SHA1, SHA2 and SHA3; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
 
 <dl>
     <dt>Cryptographic Algorithms</dt>
-    <dd>SHA1</dd>
-    <dd>SHA2</dd>
-    <dd>SHA3</dd>
-    <dd>ChaCha20</dd>
-
+    <dd>
+        <p>SHA1</p>
+        <p>SHA2</p>
+        <p>SHA3</p>
+        <p>ChaCha20</p>
+    </dd>
     <dt>Encoding and Compression</dt>
-    <dd>HUffman Encoding</dd>
-    <dd>Base64 Encoding</dd>
-    <dd>UTF-8 Encoding</dd>
-
+    <dd>
+        <p>Huffman Encoding</p>
+        <p>Base64 Encoding</p>
+        <p>UTF-8 Encoding</p>
+    </dd>
     <dt>Error Detection and Correction</dt>
-    <dd>CRC-32</dd>
-    <dd>Hamming(7,4)</dd>
-    <dd>QR Code</dd>
-
+    <dd>
+        <p>CRC-32</p>
+        <p>Hamming(7,4)</p>
+        <p>QR Code</p>
+    </dd>
     <dt>Sorting</dt>
-    <dd>Bubble Sort</dd>
-    <dd>Shell Sort</dd>
-    <dd>Quicksort</dd>
-
+    <dd>
+        <p>Bubble Sort</p>
+        <p>Shell Sort</p>
+        <p>Quicksort</p>
+    </dd>
     <dt>Graph Algorithms</dt>
-    <dd>Dijkstra's Shortest Paths</dd>
-    <dd>Weighted Springs</dd>
-    <dd>Edmonds-Karp Maximum Flow</dd>
-
+    <dd>
+        <p>Dijkstra's Shortest Paths</p>
+        <p>Weighted Springs</p>
+        <p>Edmonds-Karp Maximum Flow</p>
+    </dd>
     <dt>Signal Processing</dt>
-    <dd>Sine and Cosine</dd>
-    <dd>Pythagoras</dd>
-    <dd>Amplitude and Frequency</dd>
-    <dd>Phase Shift</dd>
-    <dd>Convolution</dd>
-    <dd>Fast Fourier Transform</dd>
-
+    <dd>
+        <p>Sine and Cosine</p>
+        <p>Pythagoras</p>
+        <p>Amplitude and Frequency</p>
+        <p>Phase Shift</p>
+        <p>Convolution</p>
+        <p>Fast Fourier Transform</p>
+    </dd>
     <dt>Cellular Automata</dt>
     <dd>Conway's Game of Life</dd>
-
     <dt>Backtracking</dt>
     <dd>N-Queens Problem</dd>
-</dl>
 
+</dl>
 
 ## [Changelog](changelog.md)
 
@@ -69,12 +74,12 @@ A list of the significant commits making up each release.
 
 ## Documentation
 
-| File | Description
-|---|---
-| [`library/README.md`](docs/library/README.md) | The crate's own module layout, and `Scene`'s public API grouped by area.
-| [`demo/README.md`](docs/demo/README.md) | What the demo shows, how the demo server works and how `demo-app`/`demo-server` are put together.
-| [`testing/README.md`](docs/testing/README.md) | The test suite: native unit tests, browser integration tests, and the CDP tests.
-| [`security.md`](docs/security.md) | Resource limits to impose when building a graph from untrusted input.
+| File                                          | Description                                                                                       |
+| --------------------------------------------- | ------------------------------------------------------------------------------------------------- |
+| [`library/README.md`](docs/library/README.md) | The crate's own module layout, and `Scene`'s public API grouped by area.                          |
+| [`demo/README.md`](docs/demo/README.md)       | What the demo shows, how the demo server works and how `demo-app`/`demo-server` are put together. |
+| [`testing/README.md`](docs/testing/README.md) | The test suite: native unit tests, browser integration tests, and the CDP tests.                  |
+| [`security.md`](docs/security.md)             | Resource limits to impose when building a graph from untrusted input.                             |
 
 ## Live Demo
 
