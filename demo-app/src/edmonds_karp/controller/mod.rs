@@ -555,12 +555,17 @@ impl Controller {
         self.start_playing();
     }
 
-    /// Schedules the first tick, and claims to be playing only once one is waiting.
+    /// Schedules the first tick, and claims to be playing only once one is waiting and the button says so. If the
+    /// button cannot be written, the tick is taken back and playback stays paused.
     fn start_playing(&self) {
         match self.schedule_next() {
             Ok(()) => {
                 self.shown_playing.set(true);
-                self.show_playing(true);
+                if let Err(problem) = self.surface.playing_changed(true) {
+                    // Stopping also writes the button back to Play. If that fails too, the page is dirty.
+                    self.stop_playback();
+                    self.surface.playback_failed(&problem);
+                }
             },
             Err(problem) => self.surface.playback_failed(&problem),
         }

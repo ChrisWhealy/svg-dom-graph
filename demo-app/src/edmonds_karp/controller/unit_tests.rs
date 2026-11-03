@@ -943,10 +943,29 @@ fn a_pause_whose_label_could_not_be_written_leaves_the_page_dirty_and_a_boundary
 }
 
 #[test]
-fn a_play_whose_label_could_not_be_written_leaves_the_page_dirty() {
+fn a_play_whose_label_could_not_be_written_does_not_start_and_leaves_no_tick_waiting() {
     let rig = Rig::new();
     rig.surface.fail_playing.set(1);
     rig.act(Action::Play);
-    assert!(rig.controller.is_playing(), "the run does play");
-    assert!(rig.controller.is_dirty(), "but the button may still say Play");
+    assert!(!rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 0, "the tick was taken back");
+    assert_eq!(rig.surface.playback_failures.borrow().len(), 1);
+    assert_eq!(
+        *rig.surface.playing.borrow(),
+        vec![true, false],
+        "the button is written back to Play"
+    );
+    assert!(!rig.controller.is_dirty(), "the page is right");
+    rig.act(Action::Play);
+    assert!(rig.controller.is_playing(), "a later Play works");
+}
+
+#[test]
+fn a_play_whose_label_cannot_be_written_back_either_leaves_the_page_dirty() {
+    let rig = Rig::new();
+    rig.surface.fail_playing.set(2);
+    rig.act(Action::Play);
+    assert!(!rig.controller.is_playing());
+    assert_eq!(rig.scheduler.pending(), 0);
+    assert!(rig.controller.is_dirty());
 }
