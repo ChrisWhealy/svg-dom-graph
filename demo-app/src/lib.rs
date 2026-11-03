@@ -30,6 +30,10 @@
 //!   one event at a time, on the classic network and on one that makes the search take flow back along an edge. The
 //!   controls and the graph are in one scene, the residual transitions are a layer of their own, and a text panel says all
 //!   that the picture says. The algorithm is plain Rust, and is checked against the minimum cut of 1,000 graphs.
+//! - `panel-red-black-tree` / `#rbt-stage` — [`red_black_tree::build_red_black_tree_demo`]: a red-black tree built by six
+//!   insertions and then a deletion of a node with two children, one event at a time. Each step is a real `Scene` of
+//!   circles and connectors, drawn again from the trace, with a semantic tree above it for the keyboard and for screen
+//!   readers. What you select stays selected through the deletion, and in reverse.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -153,6 +157,7 @@ mod data;
 mod dijkstra;
 mod edge_anchors;
 mod edmonds_karp;
+mod red_black_tree;
 mod elbow;
 mod ellipse;
 mod fft;
@@ -298,6 +303,7 @@ demo_gallery! {
     "panel-n-queens" => n_queens::build_n_queens_demo + n_queens::FILES,
     "panel-springs" => springs::build_springs_demo + springs::FILES,
     "panel-edmonds-karp" => edmonds_karp::build_edmonds_karp_demo + edmonds_karp::FILES,
+    "panel-red-black-tree" => red_black_tree::build_red_black_tree_demo + red_black_tree::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

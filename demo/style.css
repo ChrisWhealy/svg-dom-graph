@@ -1713,3 +1713,106 @@ label.demo-slider-container {
         stroke: Canvas;
     }
 }
+
+/* Red-black tree
+   The stage is one svg: the controls above, and below them the board, which is two layers: the Scene that is the picture, and above it a transparent semantic tree that the
+   keyboard and a screen reader use. The staging box is in the page, so that labels can be measured, and cannot be seen. */
+/* The buttons are drawn in the scene by the library, which gives them no focus style. */
+#rbt-stage [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.rbt-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.rbt-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.rbt-side {
+    flex: 1 1 20rem;
+    max-width: 40rem;
+}
+
+.rbt-side > h3:first-child {
+    margin-top: 0;
+}
+
+.section .rbt-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0;
+}
+
+.section .rbt-status dt {
+    color: var(--text-muted);
+}
+
+.section .rbt-status dd {
+    margin: 0;
+}
+
+.canvas .rbt-overlay {
+    background: transparent;
+}
+
+.rbt-staging {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 760px;
+    height: 672px;
+    visibility: hidden;
+    pointer-events: none;
+    overflow: hidden;
+}
+
+/* A treeitem is a group that holds its children's items, so the browser's own focus outline would box the whole
+   subtree. The ring is drawn on the item's own circle instead. */
+.rbt-overlay [role="treeitem"] {
+    outline: none;
+}
+
+.rbt-hit {
+    fill: transparent;
+    stroke: none;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.rbt-focus-ring {
+    display: none;
+    fill: none;
+    stroke: #f0883e;
+    stroke-width: 3;
+    stroke-dasharray: 6 4;
+    pointer-events: none;
+}
+
+.rbt-overlay [role="treeitem"]:focus > .rbt-focus-ring {
+    display: inline;
+}
+
+.rbt-overlay [data-rbt-selected="true"] > .rbt-hit {
+    stroke: #1f6feb;
+    stroke-width: 5;
+}
+
+.rbt-overlay [data-rbt-active="true"] > .rbt-hit {
+    stroke: #d29922;
+    stroke-width: 2;
+}
+
+.rbt-overlay [data-rbt-active="true"][data-rbt-selected="true"] > .rbt-hit {
+    stroke: #1f6feb;
+    stroke-width: 5;
+}

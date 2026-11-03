@@ -11,6 +11,21 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
+## [0.2.48] - 2026-11-03
+
+## Added
+
+- Implement Red-Black Tree demo (``)
+
+## Changed
+
+- Updated README (`0bf6c0d`)
+- Updated README again (`5d4cb49`)
+- Updated README yet again (`2ea3a72`)
+- Correct README.md formatting (`b12f28d`)
+
+# [Released]
+
 ## [0.2.47] - 2026-11-02
 
 ## Added
@@ -36,8 +51,6 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Prevent `Plot` baseline detection from failing for small values (`5db6247`)
 - CI library version check only fails if `crates.io` version is the same a `Cargo.toml` (`323e078`)
 - Prevent convolution demo from becoming inconsistent after failed plot updates (`4c47372`)
-
-# [Released]
 
 ## [0.2.46] - 2026-10-29
 

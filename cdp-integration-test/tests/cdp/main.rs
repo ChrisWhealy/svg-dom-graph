@@ -82,6 +82,10 @@
 //!   graphs and the reverse transition, the keyboard and the focus, the toggles, the buttons at their ends, the range, playback on a
 //!   clock the test advances, writes that fail, a switch of graph that fails, a page that was diffed against one that was
 //!   drawn in full, and the clock's hooks. Also runs against the built demo gallery.
+//! - [`red_black_tree`] — the red-black tree panel in the built demo gallery: a real Scene redrawn for every step with a
+//!   semantic tree above it, connector endpoints read from the real paths, the golden links at the rotations and the
+//!   transplant, the keyboard pressed for real, a selection that survives the deletion, the focus through a swap, playback
+//!   on a clock the test advances, and writes, swaps and focus that fail.
 //! - [`n_queens`] — the N-Queens panel in the built demo gallery: the board as a grid in layers, what a Try, a Reject, a
 //!   Place and a solution show, the range that goes to any step, the buttons and their ends, playback on a clock the test
 //!   advances, the keys and the focus ring, a new board size, and a write that fails. Also runs against the built demo
@@ -142,6 +146,7 @@ mod crc32;
 mod dijkstra;
 mod edge_anchors;
 mod edmonds_karp;
+mod red_black_tree;
 mod fft;
 mod game_of_life;
 mod hamming;

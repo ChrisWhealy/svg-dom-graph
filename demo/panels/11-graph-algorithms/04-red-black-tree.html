@@ -1,0 +1,74 @@
+<section class="section" id="panel-red-black-tree" data-label="Red-Black Tree">
+    <h2>Red&ndash;Black Tree</h2>
+    <p>
+        A <b>binary search tree</b> gets slow when its keys arrive in order, because it grows into a line. A
+        <b>red&ndash;black tree</b> stays short by colouring every node red or black and keeping a few rules: the root is
+        black, a red node never has a red child, and every path from the root down to an empty place passes the same
+        number of black nodes.
+    </p>
+    <p>
+        When an insertion or a deletion breaks a rule, the tree repairs itself by <b>recolouring</b> and by
+        <b>rotating</b>. A rotation changes which node is the parent of which, and moves one subtree across, without
+        losing the order of the keys. This run inserts 10, 5, 1, 15, 20 and 12, and then deletes 15, which has two
+        children, so its place is taken by the next key in order, the original node 20, which is moved and not copied.
+    </p>
+    <p class="demo-error" id="rbt-error" hidden></p>
+    <p class="visually-hidden" id="rbt-live" role="status" aria-live="polite"></p>
+    <div class="rbt-wrap">
+        <div class="canvas rbt-canvas">
+            <div id="rbt-stage"></div>
+        </div>
+        <div class="rbt-side">
+            <h3>This step</h3>
+            <dl class="rbt-status">
+                <dt>Step</dt>
+                <dd id="rbt-p-step">Step 0 of 0</dd>
+                <dt>State</dt>
+                <dd id="rbt-p-state">&mdash;</dd>
+                <dt>This event</dt>
+                <dd id="rbt-p-event">&mdash;</dd>
+                <dt>Size</dt>
+                <dd id="rbt-p-size">0 keys</dd>
+                <dt>Root</dt>
+                <dd id="rbt-p-root">none</dd>
+                <dt>Selected</dt>
+                <dd id="rbt-p-selected">none</dd>
+                <dt>Note</dt>
+                <dd id="rbt-p-note">&mdash;</dd>
+            </dl>
+        </div>
+    </div>
+    <div id="rbt-staging" class="rbt-staging" aria-hidden="true" inert></div>
+    <h3>Reading the picture</h3>
+    <ul>
+        <li>Each circle says its key and its colour: <b>B</b> for black and <b>R</b> for red, so the colour is also written.</li>
+        <li>A line runs from a parent to its child, and its arrowhead points at the child.</li>
+        <li>A solid blue ring marks the key you selected. A dashed orange ring marks the key that has the keyboard focus.</li>
+        <li>
+            A step in the middle of a repair says <b>Repair in progress</b>, because the tree may break a rule until the
+            repair ends. A step that ends an insertion or a deletion says it is a valid red&ndash;black tree.
+        </li>
+    </ul>
+    <h3>Using the page</h3>
+    <ul>
+        <li>The buttons and the range are in the scene, above the tree.</li>
+        <li>
+            <b>Next</b> and <b>Previous</b> move one event. <b>Restart</b> goes back to the empty tree. A button that has
+            nowhere to go is dimmed but can still be pressed, and then says so.
+        </li>
+        <li>
+            The three jump buttons go to the state just after a rotation or choice: the right rotation at 10 and the left
+            rotation at 10 while building, and the choice of 20 as the successor of 15.
+        </li>
+        <li>
+            <b>Play</b> steps through the run twice a second and stops at the end. Any other button, or the range, stops
+            it. While it plays, only finished operations, rotations, the transplant and the repair cases are announced to a
+            screen reader. Pausing says where the run is.
+        </li>
+        <li id="rbt-help"></li>
+        <li>
+            Selecting a key remembers your choice. If you select 15 and play past its deletion, 20 is shown as selected and
+            the note says why. Going back shows 15 again.
+        </li>
+    </ul>
+</section>

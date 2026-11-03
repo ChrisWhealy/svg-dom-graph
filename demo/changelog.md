@@ -18,6 +18,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - N-Queens demo panel, in a new "Backtracking" group (`572ecd9`)
 - Implement a demo of the Edmonds-Karp algorithm (`dcdba3e`)
 - Cleanup module to remove old Chrome processes after CDP tests (`ca48276`)
+- Red-black tree demo panel, after Edmonds–Karp: six insertions and a two-child deletion, as a real Scene with a semantic tree above it
 
 ### Changed
 
