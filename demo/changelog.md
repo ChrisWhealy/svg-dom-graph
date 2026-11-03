@@ -40,4 +40,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - N-Queens: Prevent real-time scheduler from silently accepting timer creation failures (`9204f7a`)
 - N-Queens: Release manual-clock browser hooks (`6c92cdd`)
 - N-Queens: Associate seek requests with a trace generation number. Ignore earlier generation requests (`82542bf`)
-- Edmonds-Karp: Implement 5 seperate review fixes (``)
+- Edmonds-Karp: Implement 5 seperate review fixes (`7076d8e`)
