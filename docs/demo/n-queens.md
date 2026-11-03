@@ -107,6 +107,8 @@ The board is in its own group below them, and a new size of board replaces only 
 * **The range** goes straight to any step, and never draws the steps between.
   Moving it asks for a draw at the next animation frame, and a burst of moves between two frames is drawn once, at the last place.
   Letting it rest draws that place at once, and then says where it is, once.
+  A move that is waiting for its frame when the size of the board changes is dropped, since a step of one board means nothing on another.
+  Each request is tagged with the generation of the trace that it was made against, which the controller counts up each time a new board replaces the old.
   The left and right arrow keys move it by one step, and the Page keys move it by whatever the browser does.
   At 9 by 9 there are 153,502 steps, so dragging with the pointer is coarse by nature.
 * **Play** shows the next step after a delay of 1000 divided by the speed, and the speed is 1, 5, 20 or 50 events a second.

@@ -164,7 +164,7 @@ fn wire_seek(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String>
     let frame = {
         let (controller, request) = (Rc::clone(controller), Rc::clone(&request));
         AnimationLoop::new(move |_| {
-            if let Some(index) = request.take() {
+            if let Some(index) = request.take(controller.generation()) {
                 controller.act(Action::Seek(index));
             }
         })?
@@ -174,16 +174,16 @@ fn wire_seek(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String>
         move || page.controls().seek().value().parse::<usize>().unwrap_or(0)
     };
     let moved = value.clone();
-    let (asked, asking) = (Rc::clone(&request), Rc::clone(&frame));
+    let (asked, asking, moving) = (Rc::clone(&request), Rc::clone(&frame), Rc::clone(controller));
     listen(&page.controls().seek().clone(), "input", move |_: web_sys::Event| {
-        if asked.request(moved()) {
+        if asked.request(moved(), moving.generation()) {
             asking.request();
         }
     })?;
     let controller = Rc::clone(controller);
     listen(&page.controls().seek().clone(), "change", move |_: web_sys::Event| {
         frame.cancel();
-        let index = request.take().unwrap_or_else(&value);
+        let index = request.take(controller.generation()).unwrap_or_else(&value);
         controller.act(Action::Seek(index));
         if !controller.is_dirty() {
             controller.announce_current();

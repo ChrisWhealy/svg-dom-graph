@@ -36,4 +36,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Prevent simulation timing from behaving unexpectedly at invalid inputs (`4376156`)
 - N-Queens: Make board replacement fully transactional (`81dbca9`)
 - N-Queens: Prevent real-time scheduler from silently accepting timer creation failures (`9204f7a`)
-- N-Queens: Release manual-clock browser hooks (``)
+- N-Queens: Release manual-clock browser hooks (`6c92cdd`)
+- N-Queens: Associate seek requests with a trace generation number. Ignore earlier generation requests (``)

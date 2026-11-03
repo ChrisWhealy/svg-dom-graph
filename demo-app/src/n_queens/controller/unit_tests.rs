@@ -214,11 +214,68 @@ fn a_seek_to_where_it_is_draws_nothing_and_says_nothing() {
 #[test]
 fn the_seek_request_keeps_the_latest_and_asks_for_one_frame() {
     let request = SeekRequest::default();
-    assert!(request.request(5), "the first request needs a frame");
-    assert!(!request.request(9) && !request.request(7), "later ones wait for the same frame");
-    assert_eq!(request.take(), Some(7));
-    assert_eq!(request.take(), None);
-    assert!(request.request(1), "after a frame, the next request needs another");
+    assert!(request.request(5, 0), "the first request needs a frame");
+    assert!(
+        !request.request(9, 0) && !request.request(7, 0),
+        "later ones wait for the same frame"
+    );
+    assert_eq!(request.take(0), Some(7));
+    assert_eq!(request.take(0), None);
+    assert!(request.request(1, 0), "after a frame, the next request needs another");
+}
+
+#[test]
+fn a_seek_request_made_against_an_earlier_trace_is_dropped_and_not_applied() {
+    let request = SeekRequest::default();
+    request.request(20_000, 0);
+    // The board was replaced before the frame came, so the generation on the page is 1.
+    assert_eq!(request.take(1), None);
+    assert_eq!(request.take(1), None, "and it is forgotten, not kept for later");
+}
+
+#[test]
+fn a_seek_request_made_after_the_board_was_replaced_is_kept() {
+    let request = SeekRequest::default();
+    request.request(20_000, 0);
+    assert!(!request.request(70, 1), "a frame is already on its way, and will take this one");
+    assert_eq!(request.take(1), Some(70));
+}
+
+#[test]
+fn the_generation_goes_up_when_a_new_board_replaces_the_old_and_only_then() {
+    let rig = Rig::new(8);
+    assert_eq!(rig.controller.generation(), 0);
+    rig.act(Action::Seek(500));
+    rig.act(Action::Restart);
+    assert_eq!(rig.controller.generation(), 0, "stepping does not change the trace");
+    assert!(rig.controller.change_size(Trace::build(5).expect("a trace")));
+    assert_eq!(rig.controller.generation(), 1);
+    rig.surface.fail_rebuild.set(true);
+    assert!(!rig.controller.change_size(Trace::build(4).expect("a trace")));
+    assert_eq!(
+        rig.controller.generation(),
+        1,
+        "a board that could not be made left the old trace"
+    );
+}
+
+#[test]
+fn a_seek_queued_before_a_new_size_does_not_move_the_new_board() {
+    let rig = Rig::new(8);
+    let request = SeekRequest::default();
+    // The range is dragged to 20000 on the board of 8, and the frame has not come.
+    request.request(20_000, rig.controller.generation());
+    assert!(rig.controller.change_size(Trace::build(4).expect("a trace")));
+    // The frame comes. What it takes is nothing, so nothing is asked of the controller.
+    if let Some(index) = request.take(rig.controller.generation()) {
+        rig.act(Action::Seek(index));
+    }
+    assert_eq!(
+        rig.at(),
+        0,
+        "the new board is at its first snapshot, and not clamped to its last"
+    );
+    assert_eq!(rig.controller.trace().len(), 139);
 }
 
 #[test]

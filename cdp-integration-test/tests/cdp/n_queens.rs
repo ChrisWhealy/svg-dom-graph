@@ -18,6 +18,8 @@
 //! - The arrow keys, Home and End move between squares, a click moves the focus and not the search, and the ring is
 //!   shown only while the grid has the focus.
 //! - A new size of board replaces the grid, and stops the playback.
+//! - A move of the range that is waiting for its frame when the board size changes is dropped, and does not carry the
+//!   new board to its last step.
 //! - A new board that cannot be made, because a write to the controls fails, leaves the old board, its trace, its step
 //!   and the end of the range as they were, and the selector says the old size.
 //! - The manual clock's hooks are on the window only while the page is, come off when it is left, and are not taken
@@ -1066,4 +1068,40 @@ fn a_page_with_the_real_clock_puts_no_hooks_on_the_window() -> Result<(), String
     let at = position(&tab)?;
     std::thread::sleep(Duration::from_millis(400));
     check_eq(position(&tab)?, at)
+}
+
+// A move of the range that is waiting for its frame.
+
+#[test]
+fn a_move_of_the_range_that_is_waiting_for_its_frame_does_not_move_a_board_of_another_size() -> Result<(), String> {
+    let tab = open()?;
+    // Both happen in one task, as when a person moves the range and the selector between two frames: the range is moved
+    // to 20000 on the board of eight, and the size is changed to four before the frame that would draw it.
+    text(
+        &tab,
+        "(() => { const r = document.getElementById('n-queens-seek'); r.value = '20000'; \
+         r.dispatchEvent(new Event('input', { bubbles: true })); \
+         const s = document.getElementById('n-queens-size'); s.value = '4'; \
+         s.dispatchEvent(new Event('change', { bubbles: true })); return 'ok'; })()",
+    )?;
+    // The frame that was waiting comes now.
+    std::thread::sleep(Duration::from_millis(300));
+    check_eq((squares(&tab)?, last_step(&tab)?), (16, 139))?;
+    check_eq(position(&tab)?, 0).map_err(|e| format!("the new board is not at its first step: {e}"))?;
+    check_eq(field(&tab, "kind")?, "Initial".to_owned())?;
+    check_eq(text(&tab, "document.getElementById('n-queens-seek').value")?, "0".to_owned())?;
+    // A move of the range made after the new board is on the page is applied as usual.
+    seek(&tab, 100)?;
+    check_eq(position(&tab)?, 100)
+}
+
+#[test]
+fn a_move_of_the_range_that_is_waiting_is_still_applied_when_the_size_does_not_change() -> Result<(), String> {
+    let tab = open()?;
+    text(
+        &tab,
+        "(() => { const r = document.getElementById('n-queens-seek'); r.value = '2000'; \
+         r.dispatchEvent(new Event('input', { bubbles: true })); return 'ok'; })()",
+    )?;
+    wait_until(&tab, 5, |tab| Ok(position(tab)? == 2_000))
 }

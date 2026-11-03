@@ -164,21 +164,29 @@ impl Scheduler for ManualScheduler {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The latest place that the range has been moved to and not yet drawn. Moving it many times between two frames asks
 /// for one draw, of the last place.
+///
+/// A place is an index into one trace, so a request is kept with the generation of the trace that it was made against
+/// (see [`Controller::generation`]). If the board is replaced before the frame comes, the place means nothing on the
+/// new one, and the request is dropped and not applied.
 #[derive(Default)]
 pub(crate) struct SeekRequest {
-    latest: Cell<Option<usize>>,
+    latest: Cell<Option<(usize, u64)>>,
 }
 
 impl SeekRequest {
-    /// Records that the range is now at `index`, and says whether a frame has to be asked for, which is so only for
-    /// the first request since the last [`SeekRequest::take`].
-    pub(crate) fn request(&self, index: usize) -> bool {
-        self.latest.replace(Some(index)).is_none()
+    /// Records that the range is now at `index` of the trace of `generation`, and says whether a frame has to be asked
+    /// for, which is so only for the first request since the last [`SeekRequest::take`].
+    pub(crate) fn request(&self, index: usize, generation: u64) -> bool {
+        self.latest.replace(Some((index, generation))).is_none()
     }
 
-    /// The place that was last asked for, which is forgotten.
-    pub(crate) fn take(&self) -> Option<usize> {
-        self.latest.take()
+    /// The place that was last asked for, which is forgotten. It is `None` if the last request was made against a
+    /// trace other than that of `generation`, which is the one on the page now.
+    pub(crate) fn take(&self, generation: u64) -> Option<usize> {
+        self.latest
+            .take()
+            .filter(|&(_, asked)| asked == generation)
+            .map(|(index, _)| index)
     }
 }
 
@@ -215,6 +223,8 @@ pub(crate) struct Controller {
     /// How many snapshots are shown in each second while playing.
     speed: Cell<u32>,
     torn_down: Cell<bool>,
+    /// Counted up each time a new trace replaces the old one, so that a request made against the old one can be told.
+    generation: Cell<u64>,
 }
 
 impl Controller {
@@ -233,9 +243,17 @@ impl Controller {
             waiting: Cell::new(None),
             speed: Cell::new(speed.max(1)),
             torn_down: Cell::new(false),
+            generation: Cell::new(0),
         });
         controller.draw_first();
         controller
+    }
+
+    /// Which trace is on the page, counted from 0, and counted up each time a board of another size replaces it. A
+    /// place in one trace means nothing in another, so a request for one is tagged with this, and dropped if it is out
+    /// of date.
+    pub(crate) fn generation(&self) -> u64 {
+        self.generation.get()
     }
 
     /// The trace on the page.
@@ -468,6 +486,7 @@ impl Controller {
             Ok(()) => {
                 let size = trace.size();
                 *self.trace.borrow_mut() = Rc::new(trace);
+                self.generation.set(self.generation.get() + 1);
                 self.selected.set(0);
                 self.dirty.set(false);
                 self.surface
