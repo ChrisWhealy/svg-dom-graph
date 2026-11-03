@@ -12,8 +12,8 @@
 | `src/geometry/` | Pure, DOM-free routing mathematics providing<ul><li>`boundary_point`</li><li>`snapped_anchor`</li><li>`clamp_to_bounds`</li><li>elbow-corner routing</li><li>zoom and pan arithmetic (`ViewTransform`)</li></ul> | public: `Side` and `ViewTransform` are re-exported from `scene`, and `geometry` itself is public. | `cargo test`
 | `src/model/`  | DOM-free graph topology and node content<ul><li>`Graph`, `Node` and `Edge`</li><li>`DataNodeContent`, `NodeValues`, `DataFormat`, `GridLayout`, `ByteOrder` and `LabellingStyle`</li><li>`Selection` and the three operator enums</li></ul> | crate-private: exposes opaque `NodeId`/`EdgeId` handles, and re-exports the content types through `scene` | `cargo test`
 | `src/error/` | This crate's own `Error` type, wrapping `svg_dom::Error` and adding graph-domain variants | public: `Error` only | `cargo test`
-| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>plot nodes</li>
-<li>nested scenes</li></ul> | public | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md))
+| `src/scene/` | Renders a graph onto the DOM: `Scene`, a cheap cloneable handle. It also owns<ul><li>the nodes of every kind and their connectors</li><li>dragging</li><li>the zoom toolbar and the pan and wheel-zoom gestures</li><li>the selection toolbar</li><li>the scene title</li><li>plot nodes</li><li>nested scenes</li></ul>
+| public | `cargo test`, `wasm-pack test` and the CDP tests (see [Testing](../testing/README.md))
 
 ## `Scene`'s Public API
 
