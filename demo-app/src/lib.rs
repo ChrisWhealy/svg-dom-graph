@@ -26,6 +26,10 @@
 //!   N-Queens puzzle on a board of 4 to 9, one event at a time. A Try draws three rays through its square, a Reject marks
 //!   the reason, a Place draws a queen and a solution is framed. A range goes straight to any step, and buttons step,
 //!   restart, play and jump between solutions. The search is plain Rust, and every step is worked out from one trace.
+//! - `panel-edmonds-karp` / `#ek-stage` — [`edmonds_karp::build_edmonds_karp_demo`]: the Edmonds-Karp maximum flow algorithm
+//!   one event at a time, on the classic network and on one that makes the search take flow back along an edge. The
+//!   controls and the graph are in one scene, the residual transitions are a layer of their own, and a text panel says all
+//!   that the picture says. The algorithm is plain Rust, and is checked against the minimum cut of 1,000 graphs.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -148,6 +152,7 @@ mod crc32;
 mod data;
 mod dijkstra;
 mod edge_anchors;
+mod edmonds_karp;
 mod elbow;
 mod ellipse;
 mod fft;
@@ -292,6 +297,7 @@ demo_gallery! {
     "panel-game-of-life" => game_of_life::build_game_of_life_demo + game_of_life::FILES,
     "panel-n-queens" => n_queens::build_n_queens_demo + n_queens::FILES,
     "panel-springs" => springs::build_springs_demo + springs::FILES,
+    "panel-edmonds-karp" => edmonds_karp::build_edmonds_karp_demo + edmonds_karp::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -37,13 +37,21 @@ A list of the significant commits making up each release.
 | [`testing/README.md`](docs/testing/README.md) | The test suite: native unit tests, browser integration tests, and the CDP tests.
 | [`security.md`](docs/security.md) | Resource limits to impose when building a graph from untrusted input.
 
-## Running the demo
+## Live Demo
+
+A live demo is [available here](https://whealy.com/Rust/svg-dom-graph/index.html)
+
+## Running the Demo Locally
 
 The demo is a non-published workspace crate that serves as a standalone demo app.
+Clone this repo to your local machine, then run:
 
 ```sh
 cargo demo
 ```
+
+A demo gallery app is now available at <http://127.0.0.1:8080/demo>.
+The coding used to create each demo is shown beneath each example.
 
 ## Testing
 

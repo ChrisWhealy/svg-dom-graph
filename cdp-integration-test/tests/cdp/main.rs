@@ -78,6 +78,10 @@
 //! - [`game_of_life`] — the Game of Life panel in the built demo gallery: the board, the ten buttons and the slider, the
 //!   rules that Step works out, drawing by click and by drag, the cursor and the keys, the patterns, the edges that wrap
 //!   or stop, and the speed. Also runs against the built demo gallery.
+//! - [`edmonds_karp`] — the Edmonds-Karp panel in the built demo gallery: the controls and the graph in the scene, both
+//!   graphs and the reverse transition, the keyboard and the focus, the toggles, the buttons at their ends, the range, playback on a
+//!   clock the test advances, writes that fail, a switch of graph that fails, a page that was diffed against one that was
+//!   drawn in full, and the clock's hooks. Also runs against the built demo gallery.
 //! - [`n_queens`] — the N-Queens panel in the built demo gallery: the board as a grid in layers, what a Try, a Reject, a
 //!   Place and a solution show, the range that goes to any step, the buttons and their ends, playback on a clock the test
 //!   advances, the keys and the focus ring, a new board size, and a write that fails. Also runs against the built demo
@@ -138,6 +142,7 @@ mod crc32;
 mod dijkstra;
 mod edge_anchors;
 mod fft;
+mod edmonds_karp;
 mod game_of_life;
 mod hamming;
 mod hex_dump_geometry;

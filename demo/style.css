@@ -1416,3 +1416,300 @@ label.demo-slider-container {
         stroke: Canvas;
     }
 }
+
+/* The Edmonds-Karp panel: the scene, with the controls above the graph, beside the text of the step. Every meaning in the
+   picture has a shape, a dash or a width as well as a colour, and the text panel says it again in words. */
+.ek-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.ek-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.ek-side {
+    flex: 1 1 20rem;
+    max-width: 40rem;
+}
+
+.ek-side > h3:first-child {
+    margin-top: 0;
+}
+
+.section .ek-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.2rem 0.75rem;
+    margin: 0 0 0.75rem;
+}
+
+.section .ek-status dt {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.section .ek-status dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+}
+
+.ek-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.ek-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.ek-key {
+    flex: 0 0 auto;
+    background: #fffbe6;
+    border: 1px solid var(--border-strong);
+}
+
+#ek-stage [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.ek-off {
+    display: none;
+}
+
+.ek-node-circle {
+    fill: #eef4ff;
+    stroke: #334155;
+    stroke-width: 2.5;
+}
+
+.ek-node-text {
+    fill: #0f172a;
+    font-size: 14px;
+    font-weight: 600;
+    pointer-events: none;
+    user-select: none;
+}
+
+.ek-source .ek-node-circle {
+    stroke-width: 4;
+}
+
+.ek-sink .ek-node-circle {
+    stroke-dasharray: 5 3;
+    stroke-width: 4;
+}
+
+.ek-found .ek-node-circle {
+    fill: #dbeafe;
+}
+
+.ek-current .ek-node-circle,
+.ek-current-key {
+    stroke: #b45309;
+    stroke-width: 6;
+    fill: #fef3c7;
+}
+
+.ek-s .ek-node-circle {
+    fill: #ccfbf1;
+}
+
+.ek-t .ek-node-circle {
+    fill: #e2e8f0;
+}
+
+.ek-node:focus,
+.ek-edge:focus {
+    outline: none;
+}
+
+.ek-node:focus-visible .ek-node-circle,
+.ek-node.ek-focused .ek-node-circle {
+    stroke-dasharray: 2 3;
+    stroke-width: 6;
+}
+
+.ek-edge-line {
+    fill: none;
+    stroke: #475569;
+    stroke-width: 2.5;
+}
+
+.ek-edge-hit,
+.ek-res-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 14;
+    pointer-events: stroke;
+}
+
+.ek-zero .ek-edge-line {
+    stroke-dasharray: 1 5;
+    stroke-linecap: round;
+}
+
+.ek-edge.ek-examined .ek-edge-line {
+    stroke: #1d4ed8;
+    stroke-width: 4;
+}
+
+.ek-edge.ek-pred .ek-edge-line {
+    stroke: #0f766e;
+}
+
+.ek-edge.ek-path .ek-edge-line,
+.ek-path-key {
+    stroke: #b45309;
+    stroke-width: 6;
+}
+
+.ek-edge.ek-aug .ek-edge-line {
+    stroke: #b91c1c;
+    stroke-width: 7;
+}
+
+.ek-edge.ek-cut .ek-edge-line,
+.ek-cut-key {
+    stroke: #b91c1c;
+    stroke-width: 7;
+}
+
+.ek-edge.ek-dim {
+    opacity: 0.35;
+}
+
+.ek-edge:focus-visible .ek-edge-line,
+.ek-edge.ek-focused .ek-edge-line {
+    stroke-width: 6;
+    stroke-dasharray: 10 4;
+}
+
+.ek-res-line {
+    fill: none;
+    stroke-width: 2;
+    stroke-dasharray: 6 4;
+}
+
+.ek-res-f .ek-res-line {
+    stroke: #0e7490;
+}
+
+.ek-res-r .ek-res-line {
+    stroke: #b45309;
+}
+
+.ek-res.ek-examined .ek-res-line {
+    stroke-width: 4;
+}
+
+.ek-res.ek-path .ek-res-line {
+    stroke-width: 5;
+    stroke-dasharray: 6 2;
+}
+
+.ek-mk-edge path {
+    fill: #475569;
+}
+
+.ek-mk-res-f path {
+    fill: none;
+    stroke: #0e7490;
+    stroke-width: 1.5;
+}
+
+.ek-mk-res-r path {
+    fill: none;
+    stroke: #b45309;
+    stroke-width: 1.5;
+}
+
+.ek-key-head {
+    fill: #475569;
+}
+
+.ek-key-chevron {
+    fill: none;
+    stroke: #0e7490;
+    stroke-width: 1.5;
+}
+
+.ek-key-diamond {
+    fill: none;
+    stroke: #b45309;
+    stroke-width: 1.5;
+}
+
+.ek-label,
+.ek-res-label {
+    fill: #0f172a;
+    font-size: 12px;
+    paint-order: stroke;
+    stroke: #fffbe6;
+    stroke-width: 3px;
+    pointer-events: none;
+    user-select: none;
+}
+
+.ek-label.ek-aug {
+    font-weight: 700;
+}
+
+.ek-res-label {
+    font-size: 11px;
+    fill: #334155;
+}
+
+.ek-badge-circle {
+    fill: #ffffff;
+    stroke: #1d4ed8;
+    stroke-width: 2;
+}
+
+.ek-badge-text {
+    fill: #1d4ed8;
+    font-size: 11px;
+    font-weight: 700;
+}
+
+@media (forced-colors: active) {
+    .ek-node-circle,
+    .ek-badge-circle {
+        fill: Canvas;
+        stroke: CanvasText;
+    }
+
+    .ek-edge-line,
+    .ek-res-line {
+        stroke: CanvasText;
+    }
+
+    .ek-edge.ek-path .ek-edge-line,
+    .ek-edge.ek-aug .ek-edge-line,
+    .ek-edge.ek-cut .ek-edge-line,
+    .ek-edge.ek-examined .ek-edge-line,
+    .ek-current .ek-node-circle {
+        stroke: Highlight;
+    }
+
+    .ek-label,
+    .ek-res-label,
+    .ek-node-text,
+    .ek-badge-text {
+        fill: CanvasText;
+        stroke: Canvas;
+    }
+}
