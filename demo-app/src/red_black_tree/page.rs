@@ -61,6 +61,8 @@ pub(super) struct Page {
     /// Set while the page itself moves the focus, so that the focus event it causes is not taken for a person's.
     restoring: Cell<bool>,
     error_shown: Cell<bool>,
+    /// The snapshot that the tree on the page is of.
+    shown: Cell<Option<usize>>,
 }
 
 impl Page {
@@ -74,6 +76,7 @@ impl Page {
             said: Cell::new(0),
             restoring: Cell::new(false),
             error_shown: Cell::new(false),
+            shown: Cell::new(None),
         })
     }
 
@@ -317,19 +320,33 @@ impl Page {
         }
     }
 
-    /// Puts the focus on the item that the tab stop is on, or on the tree if there is none, and checks that it took.
-    fn restore_focus(&self, snapshot: &Snapshot, view: &View) -> Result<(), String> {
+    /// Puts the focus on `key`'s item, or on the tree if there is none, and checks that it took.
+    fn restore_focus(&self, key: Option<Key>) -> Result<(), String> {
         let board = self.board.borrow();
         let board = board.as_ref().ok_or("there is no tree to focus")?;
-        let target = resolve_roving(view.roving, snapshot)
-            .and_then(|k| board.items.get(&k))
-            .unwrap_or(&board.overlay);
+        let target = key.and_then(|k| board.items.get(&k)).unwrap_or(&board.overlay);
         self.restoring.set(true);
         focus(target);
         self.restoring.set(false);
         match self.document.active_element() {
             Some(active) if &active == target => Ok(()),
             _ => Err("the focus could not be put back".to_owned()),
+        }
+    }
+
+    /// The key that the focus goes to after a swap, if it was in the tree before.
+    ///
+    /// Normally the focus is on the tab stop, and then it follows the tab stop, which keeps the key a deleted one was
+    /// replaced by, and goes back to it on reversing. If the focus was somewhere else than the tab stop of the tree
+    /// that was shown, it stays with the key it was on, wherever that key is in the new tree.
+    fn focus_target(&self, before: Focus, trace: &Trace, snapshot: &Snapshot, view: &View) -> Option<Key> {
+        let at_tab_stop = match (before, self.shown.get().and_then(|i| trace.snapshot(i))) {
+            (Focus::Item(key), Some(shown)) => resolve_roving(view.roving, shown) == Some(key),
+            _ => true,
+        };
+        match before {
+            Focus::Item(key) if !at_tab_stop => resolve(Some(key), snapshot),
+            _ => resolve_roving(view.roving, snapshot),
         }
     }
 
@@ -451,8 +468,11 @@ impl Surface for Page {
         }
         let old = self.board.replace(Some(board));
         drop(old);
-        if focus_before.is_some() {
-            self.restore_focus(snapshot, view).map_err(CommitError::Live)?;
+        // The target is worked out against the tree that was shown, so it comes before this one is recorded.
+        let target = focus_before.map(|before| self.focus_target(before, trace, snapshot, view));
+        self.shown.set(Some(index));
+        if let Some(target) = target {
+            self.restore_focus(target).map_err(CommitError::Live)?;
         }
         self.hide_error();
         Ok(())

@@ -471,18 +471,32 @@ impl Controller {
         }
     }
 
-    /// Selects `key`, the key that has the focus. It is what a person chose, and it stays that until they choose again.
+    /// Selects `key`. It is what a person chose, and it stays that until they choose again.
+    ///
+    /// The focus goes to `key` as well, so that the tab stop, the selection and the focus are one place: a click that
+    /// selects a key while another has the focus moves the focus, and the next arrow key goes on from the key that was
+    /// chosen. If the focus cannot be moved, the selection stands, the tab stop stays where the focus really is, and
+    /// the failure is reported.
     fn choose(&self, key: Key) {
         let Some(snapshot) = self.trace.snapshot(self.selected.get()) else { return };
         if !snapshot.has_key(key) {
             return;
         }
+        let before = self.view.get();
         self.view.set(View {
             chosen: Some(key),
             roving: Some(key),
         });
         self.project();
         self.surface.say(&format!("Selected {}.", item_name(snapshot, key)));
+        if let Err(problem) = self.surface.focus_key(key) {
+            self.view.set(View {
+                roving: before.roving,
+                ..self.view.get()
+            });
+            self.project();
+            self.surface.failed(&problem);
+        }
     }
 
     /// Moves the tab stop and the focus with a key of the keyboard. A key that goes nowhere does nothing.

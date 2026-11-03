@@ -44,4 +44,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - N-Queens: Associate seek requests with a trace generation number. Ignore earlier generation requests (`82542bf`)
 - Edmonds-Karp: Implement 5 seperate review fixes (`7076d8e`)
 - Edmonds-Karp: Initial Play state failure stops playback from starting (`16c5a72`)
-- Prevent keyboard focus movement from failing silently (``)
+- Prevent keyboard focus movement from failing silently (`e000303`)
+- Prevent pointer selection and actual focus from diverging (``)

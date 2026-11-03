@@ -716,6 +716,71 @@ fn an_arrow_key_whose_focus_cannot_move_keeps_the_tab_stop_where_the_focus_is() 
 }
 
 #[test]
+fn a_click_that_selects_another_key_moves_the_focus_there_and_the_next_arrow_goes_on_from_it() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-1")?;
+    focus_item(&tab, 5)?;
+    // A synthetic click does not move the focus the way a real one does, so the page has to.
+    click_item(&tab, 20)?;
+    check_eq(focused(&tab)?, "key:20".to_owned())?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} [aria-selected=\"true\"]"), "data-rbt-key")?,
+        "20".to_owned(),
+    )?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"), "data-rbt-key")?,
+        "20".to_owned(),
+    )?;
+    press(&tab, "ArrowUp")?;
+    check_eq(focused(&tab)?, "key:15".to_owned())
+}
+
+#[test]
+fn a_click_whose_focus_cannot_move_selects_but_leaves_the_tab_stop_on_the_focused_key() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-1")?;
+    focus_item(&tab, 5)?;
+    fail_focus(&tab, true)?;
+    click_item(&tab, 20)?;
+    fail_focus(&tab, false)?;
+    check_eq(focused(&tab)?, "key:5".to_owned())?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} [aria-selected=\"true\"]"), "data-rbt-key")?,
+        "20".to_owned(),
+    )?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"), "data-rbt-key")?,
+        "5".to_owned(),
+    )?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    press(&tab, "ArrowRight")?;
+    check_eq(focused(&tab)?, "key:1".to_owned())
+}
+
+#[test]
+fn a_focus_that_is_not_at_the_tab_stop_stays_with_its_key_through_a_step() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-1")?;
+    // The tab stop is on the root, 5. The focus is moved to 10 without the page hearing of it.
+    text(
+        &tab,
+        "(() => { window.__mute = e => e.stopPropagation(); document.addEventListener('focusin', window.__mute, true); \
+         return 'ok'; })()",
+    )?;
+    focus_item(&tab, 10)?;
+    text(
+        &tab,
+        "(() => { document.removeEventListener('focusin', window.__mute, true); return 'ok'; })()",
+    )?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"), "data-rbt-key")?,
+        "5".to_owned(),
+    )?;
+    click_button(&tab, "next")?;
+    check_eq(focused(&tab)?, "key:10".to_owned())
+}
+
+#[test]
 fn the_right_child_of_a_node_with_two_children_is_reached_with_down() -> Result<(), String> {
     let tab = open()?;
     click_button(&tab, "jump-2")?;

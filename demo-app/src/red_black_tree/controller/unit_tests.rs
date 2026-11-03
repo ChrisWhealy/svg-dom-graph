@@ -645,3 +645,42 @@ fn a_focus_that_did_not_move_and_a_tab_stop_that_cannot_be_written_back_leaves_t
     rig.act(Action::Previous);
     assert!(!rig.controller.is_dirty(), "the next action commits the page again");
 }
+
+#[test]
+fn choosing_a_key_moves_the_focus_to_it_even_if_another_key_has_it() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.act(Action::Navigate(Nav::Right)); // the focus is on 1
+    rig.act(Action::Choose(12));
+    assert_eq!(rig.surface.focused.borrow().last(), Some(&12));
+    assert_eq!(
+        rig.controller.view(),
+        View {
+            chosen: Some(12),
+            roving: Some(12)
+        }
+    );
+    // The next key goes on from the key that was chosen.
+    rig.act(Action::Navigate(Nav::Up));
+    assert_eq!(rig.controller.view().roving, Some(10));
+}
+
+#[test]
+fn a_choice_whose_focus_cannot_move_keeps_the_choice_and_the_tab_stop_where_the_focus_is() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.act(Action::Navigate(Nav::Right)); // the focus is on 1
+    rig.surface.fail_focus.set(1);
+    rig.act(Action::Choose(12));
+    assert_eq!(
+        rig.controller.view(),
+        View {
+            chosen: Some(12),
+            roving: Some(1)
+        }
+    );
+    assert_eq!(rig.surface.failures.borrow().len(), 1);
+    assert!(!rig.controller.is_dirty());
+    rig.act(Action::Navigate(Nav::Down));
+    assert_eq!(rig.controller.view().roving, Some(5), "from 1, where the focus is");
+}
