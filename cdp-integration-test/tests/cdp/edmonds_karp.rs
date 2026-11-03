@@ -872,7 +872,7 @@ fn a_page_that_was_diffed_step_by_step_is_the_same_as_one_drawn_in_full_at_every
     };
     let tab = open()?;
     check_eq(page_html(&tab)?, fresh[0].clone())?;
-    for step in 1..=86 {
+    for (step, _) in fresh.iter().enumerate().take(86 + 1).skip(1) {
         click(&tab, "ek-next")?;
         check(
             page_html(&tab)? == fresh[step],
@@ -911,7 +911,7 @@ fn the_same_holds_for_the_reverse_graph_and_for_a_graph_that_was_switched_to() -
     };
     let tab = open()?;
     select(&tab, "ek-fixture", "reverse")?;
-    for step in 0..=43 {
+    for (step, _) in fresh.iter().enumerate().take(43 + 1) {
         if step > 0 {
             click(&tab, "ek-next")?;
         }

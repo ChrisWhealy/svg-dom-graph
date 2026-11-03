@@ -10,6 +10,8 @@
 //! calls them exactly once per test run, via a lazily-initialised `OnceLock`, and hands every scenario module its own
 //! [`Tab`](headless_chrome::Tab) from the one shared [`Browser`] instance.
 
+mod cleanup;
+
 use fd_lock::RwLock;
 use headless_chrome::{Browser, LaunchOptions, browser::default_executable};
 use std::{
@@ -193,13 +195,33 @@ const IDLE_TIMEOUT: std::time::Duration = std::time::Duration::from_secs(3600);
 /// uses deltas relative to an element's own midpoint, so a larger window changes nothing for them.
 pub fn launch_browser() -> Result<Browser, Box<dyn std::error::Error>> {
     let path = default_executable().map_err(|e| format!("could not locate a Chrome/Chromium binary: {e}"))?;
+    // Chrome that an earlier run left behind, because it was killed or crashed, is cleared away first, with its folder.
+    let temp = std::env::temp_dir();
+    cleanup::sweep_stale(&temp, cleanup::is_alive);
+    // The profile folder is named by this crate, so that the process that owns it can be told, and so that it is
+    // removed when the process exits. `headless_chrome` removes only a folder that it made itself, and only if its
+    // browser is dropped, which a browser in a static never is.
+    let profile = cleanup::profile_dir_in(&temp, std::process::id());
+    std::fs::create_dir_all(&profile)?;
     let launch_options = LaunchOptions::default_builder()
         .path(Some(path))
+        .user_data_dir(Some(profile.clone()))
         .sandbox(false)
         .window_size(Some((1200, 900)))
         .idle_browser_timeout(IDLE_TIMEOUT)
         .build()?;
-    Ok(Browser::new(launch_options)?)
+    let browser = match Browser::new(launch_options) {
+        Ok(browser) => browser,
+        Err(error) => {
+            let _ = std::fs::remove_dir_all(&profile);
+            return Err(error.into());
+        },
+    };
+    // Registered, so that Chrome is killed and the folder removed when the process exits or is stopped.
+    if let Some(chrome) = browser.get_process_id() {
+        cleanup::register(chrome, profile);
+    }
+    Ok(browser)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

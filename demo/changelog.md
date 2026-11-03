@@ -10,14 +10,14 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 
 ### Added
 
-- Edmonds–Karp maximum flow demo panel, in "Graph Algorithms": the algorithm one event at a time on the classic network (flow 23) and on a network that needs a reverse transition (flow 3), with the controls drawn in the scene, residual lanes, a text panel, jumps between augmentations, and a diff renderer that is tested against a full redraw
 - Game of Life demo: a second row of buttons under the board that adds a light, medium or heavy weight spaceship at the left edge, level with the cursor, flying to the right
 - Convolution demo panel, after Phase Shift: a signal of two sine waves probed with a cosine and a sine, with the area under each product shaded above and below the axis, and the amplitude found at every frequency
 - Angle curve, labelled &theta;, in the Pythagoras demo
 - Pythagoras demo text beside the scene
 - Conway's Game of Life demo (`eb3dcd8`)
 - N-Queens demo panel, in a new "Backtracking" group (`572ecd9`)
-- Implement a demo of the Edmonds-Karp algorithm (``)
+- Implement a demo of the Edmonds-Karp algorithm (`dcdba3e`)
+- Cleanup module to remove old Chrome processes after CDP tests (``)
 
 ### Changed
 

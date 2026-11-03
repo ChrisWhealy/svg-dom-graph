@@ -128,3 +128,23 @@ An export that works keeps its address.
 Not run by a plain `cargo test` — see `cdp-integration-test/tests/cdp/main.rs`'s own doc comment for why.
 
 Needs the latest version of the Chrome/Chromium binary to be locally installed.
+
+## Chrome does not outlive the run
+
+The harness keeps its browsers in statics, and a static is never dropped when a process exits.
+Under `cargo nextest`, where every test is a process of its own, that once left one Chrome, with its helpers and a profile folder, behind for each test.
+Hundreds built up in a session.
+
+`cdp-integration-test/src/cleanup/` now prevents this:
+
+* Each browser has a profile folder that the crate names, `svg-dom-graph-cdp-<pid>-<n>` in the temporary directory, so the process that owns it can be told from its name.
+* Every browser that is launched is registered.
+  A hook that runs when the process exits kills it and removes its folder.
+  A handler for `SIGTERM`, `SIGINT` and `SIGHUP` kills it when a runner stops a test, for example at a timeout.
+* Every launch first sweeps up after runs that were killed with `SIGKILL` or crashed.
+  A folder whose owner process is gone has the Chrome that still uses it killed, and is removed.
+* Chrome starts a crash reporter that detaches itself and stays for half a minute after Chrome has gone.
+  It keeps Chrome's own shared crash database, so nothing finds it by the profile folder.
+  It is killed with the rest, but only when no Chrome of your own is running, so the crash reporter of a browser that you use is never touched.
+
+The unit tests of this module cover the names, the sweep, a real process being killed with its folder, and which crash reporters are leftovers.
