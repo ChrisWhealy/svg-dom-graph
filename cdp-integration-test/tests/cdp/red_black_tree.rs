@@ -689,6 +689,33 @@ fn tab_enters_the_tree_once_and_leaves_it_and_the_arrows_go_where_they_should() 
 }
 
 #[test]
+fn an_arrow_key_whose_focus_cannot_move_keeps_the_tab_stop_where_the_focus_is() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-2")?;
+    focus_item(&tab, 5)?;
+    fail_focus(&tab, true)?;
+    press(&tab, "ArrowRight")?;
+    fail_focus(&tab, false)?;
+    check_eq(focused(&tab)?, "key:5".to_owned())?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check(
+        content(&tab, "#rbt-error")?.contains("could not be moved to 1"),
+        &content(&tab, "#rbt-error")?,
+    )?;
+    check_eq(count(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"))?, 1)?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"), "data-rbt-key")?,
+        "5".to_owned(),
+    )?;
+    // The next key moves from where the focus really is, to 1, and not from the key that the failed move aimed at.
+    press(&tab, "ArrowRight")?;
+    check_eq(focused(&tab)?, "key:1".to_owned())?;
+    check(banner_hidden(&tab)?, "a move that works clears it")?;
+    press(&tab, "ArrowDown")?;
+    check_eq(focused(&tab)?, "key:5".to_owned())
+}
+
+#[test]
 fn the_right_child_of_a_node_with_two_children_is_reached_with_down() -> Result<(), String> {
     let tab = open()?;
     click_button(&tab, "jump-2")?;

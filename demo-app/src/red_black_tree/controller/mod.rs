@@ -52,8 +52,12 @@ pub(crate) trait Surface {
     /// Returns `Err` if a write failed. What is on the page is then unknown.
     fn project(&self, trace: &Trace, index: usize, view: &View) -> Result<(), String>;
 
-    /// Gives the keyboard focus to the item of `key`.
-    fn focus_key(&self, key: Key);
+    /// Gives the keyboard focus to the item of `key`, and checks that the browser moved it there.
+    ///
+    /// # Errors
+    ///
+    /// Returns `Err` if the focus is not on that item afterwards. It is then still where it was.
+    fn focus_key(&self, key: Key) -> Result<(), String>;
 
     /// Says that playback started or stopped, and writes it on the Play button.
     ///
@@ -489,7 +493,13 @@ impl Controller {
         if let Some(to) = navigate(snapshot, from, nav) {
             self.view.set(View { roving: Some(to), ..view });
             self.project();
-            self.surface.focus_key(to);
+            if let Err(problem) = self.surface.focus_key(to) {
+                // The browser's focus is still on the key it was on, so the tab stop goes back there, and the next key
+                // moves from where the focus really is.
+                self.view.set(view);
+                self.project();
+                self.surface.failed(&problem);
+            }
         }
     }
 

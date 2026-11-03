@@ -19,6 +19,9 @@ struct Fake {
     commit_failures: RefCell<Vec<CommitError>>,
     fail_project: Cell<u32>,
     fail_playing: Cell<u32>,
+    fail_focus: Cell<u32>,
+    /// The number of the call of `project` that fails, counted from one, or zero for none.
+    fail_project_call: Cell<u32>,
 }
 
 impl Surface for Fake {
@@ -30,6 +33,9 @@ impl Surface for Fake {
 
     fn project(&self, _: &Trace, _: usize, _: &View) -> Result<(), String> {
         self.projects.set(self.projects.get() + 1);
+        if self.fail_project_call.get() == self.projects.get() {
+            return Err("the ring could not be written".to_owned());
+        }
         if self.fail_project.get() > 0 {
             self.fail_project.set(self.fail_project.get() - 1);
             return Err("the ring could not be written".to_owned());
@@ -37,8 +43,13 @@ impl Surface for Fake {
         Ok(())
     }
 
-    fn focus_key(&self, key: Key) {
+    fn focus_key(&self, key: Key) -> Result<(), String> {
         self.focused.borrow_mut().push(key);
+        if self.fail_focus.get() > 0 {
+            self.fail_focus.set(self.fail_focus.get() - 1);
+            return Err("the focus could not be moved".to_owned());
+        }
+        Ok(())
     }
 
     fn playing_changed(&self, playing: bool) -> Result<(), String> {
@@ -596,4 +607,41 @@ fn a_ring_that_could_not_be_written_leaves_the_page_dirty_for_the_next_action() 
     assert!(rig.controller.is_dirty());
     rig.act(Action::Previous);
     assert!(!rig.controller.is_dirty());
+}
+
+#[test]
+fn a_focus_that_did_not_move_puts_the_tab_stop_back_and_reports_it() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.act(Action::Navigate(Nav::Right)); // from the root 5 to 1
+    assert_eq!(rig.controller.view().roving, Some(1));
+    rig.surface.fail_focus.set(1);
+    let projects = rig.surface.projects.get();
+    rig.act(Action::Navigate(Nav::Down)); // 1 to 5 cannot take the focus
+    assert_eq!(
+        rig.controller.view().roving,
+        Some(1),
+        "the tab stop is where the focus really is"
+    );
+    assert_eq!(rig.surface.projects.get(), projects + 2, "written, and then written back");
+    assert_eq!(rig.surface.failures.borrow().len(), 1);
+    assert!(!rig.controller.is_dirty());
+    // The next key moves from where the focus really is.
+    rig.act(Action::Navigate(Nav::Down));
+    assert_eq!(rig.controller.view().roving, Some(5));
+    assert_eq!(*rig.surface.focused.borrow(), vec![1, 5, 5]);
+}
+
+#[test]
+fn a_focus_that_did_not_move_and_a_tab_stop_that_cannot_be_written_back_leaves_the_page_dirty() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.surface.fail_focus.set(1);
+    // The first write of the tab stop works, and the one that puts it back is the next call.
+    rig.surface.fail_project_call.set(rig.surface.projects.get() + 2);
+    rig.act(Action::Navigate(Nav::Right));
+    assert_eq!(rig.controller.view().roving, None, "the intent is back where it was");
+    assert!(rig.controller.is_dirty(), "but what the page shows may not be");
+    rig.act(Action::Previous);
+    assert!(!rig.controller.is_dirty(), "the next action commits the page again");
 }

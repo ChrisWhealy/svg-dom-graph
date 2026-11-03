@@ -470,11 +470,18 @@ impl Surface for Page {
         Ok(())
     }
 
-    fn focus_key(&self, key: Key) {
-        if let Some(element) = self.board.borrow().as_ref().and_then(|b| b.items.get(&key)) {
-            self.restoring.set(true);
-            focus(element);
-            self.restoring.set(false);
+    fn focus_key(&self, key: Key) -> Result<(), String> {
+        let board = self.board.borrow();
+        let element = board
+            .as_ref()
+            .and_then(|b| b.items.get(&key))
+            .ok_or_else(|| format!("there is no item for {key}"))?;
+        self.restoring.set(true);
+        focus(element);
+        self.restoring.set(false);
+        match self.document.active_element() {
+            Some(active) if &active == element => Ok(()),
+            _ => Err(format!("the focus could not be moved to {key}")),
         }
     }
 
