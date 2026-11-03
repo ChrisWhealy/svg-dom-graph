@@ -12,17 +12,56 @@ Each connector routes as a straight line or an elbow, with a configurable corner
 
 Built using [`svg-dom`](https://github.com/ChrisWhealy/svg-dom).
 
-`svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what the graph a caller builds.
+`svg-dom-graph` is a library and holds no opinion about which HTML page hosts it or what sort of graph a caller builds.
 See [`library/README.md`](docs/library/README.md) for more details.
 
 ***IMPORTANT***<br>In keeping with the `svg-dom` crate, this crate also targets WebAssembly only.
 
-The goal is to draw a set of labelled boxes arranged in a graph that may be cyclic or acyclic, directed or undirected.
-As a box is dragged, the connectors between it and its connected nodes are redrawn dynamically with automatic collision handling.
+The goal is to create a scene that contains SVG elements suitable for visualising the data flow through an algorithm.
+The original target algorithms were SHA1, SHA2 and SHA3; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
 
-An optional toolbar adds zoom controls fixed to any edge of the scene.
-By default, while it is shown, dragging the background pans the view, and holding down Ctrl or Cmd while using the mouse wheel zooms about the pointer.
-Both gestures can also be switched on or off independently of the toolbar, for an application that supplies its own controls.
+<dl>
+    <dt>Cryptographic Algorithms</dt>
+    <dd>SHA1</dd>
+    <dd>SHA2</dd>
+    <dd>SHA3</dd>
+    <dd>ChaCha20</dd>
+
+    <dt>Encoding and Compression</dt>
+    <dd>HUffman Encoding</dd>
+    <dd>Base64 Encoding</dd>
+    <dd>UTF-8 Encoding</dd>
+
+    <dt>Error Detection and Correction</dt>
+    <dd>CRC-32</dd>
+    <dd>Hamming(7,4)</dd>
+    <dd>QR Code</dd>
+
+    <dt>Sorting</dt>
+    <dd>Bubble Sort</dd>
+    <dd>Shell Sort</dd>
+    <dd>Quicksort</dd>
+
+    <dt>Graph Algorithms</dt>
+    <dd>Dijkstra's Shortest Paths</dd>
+    <dd>Weighted Springs</dd>
+    <dd>Edmonds-Karp Maximum Flow</dd>
+
+    <dt>Signal Processing</dt>
+    <dd>Sine and Cosine</dd>
+    <dd>Pythagoras</dd>
+    <dd>Amplitude and Frequency</dd>
+    <dd>Phase Shift</dd>
+    <dd>Convolution</dd>
+    <dd>Fast Fourier Transform</dd>
+
+    <dt>Cellular Automata</dt>
+    <dd>Conway's Game of Life</dd>
+
+    <dt>Backtracking</dt>
+    <dd>N-Queens Problem</dd>
+</dl>
+
 
 ## [Changelog](changelog.md)
 
