@@ -34,6 +34,10 @@
 //!   insertions and then a deletion of a node with two children, one event at a time. Each step is a real `Scene` of
 //!   circles and connectors, drawn again from the trace, with a semantic tree above it for the keyboard and for screen
 //!   readers. What you select stays selected through the deletion, and in reverse.
+//! - `panel-marching-squares` / `#ms-stage` — [`marching_squares::build_marching_squares_demo`]: the marching squares
+//!   algorithm on a sampled field, one cell at a time, at three levels. Ambiguous cells are settled by the sign of `Q`,
+//!   and an exact tie is two strands that cross. The scene zooms and pans, the controls do not, and any cell can be
+//!   inspected.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -165,6 +169,7 @@ mod game_of_life;
 mod hamming;
 mod highlight;
 mod huffman;
+mod marching_squares;
 mod n_queens;
 mod operators_arithmetic;
 mod operators_binary;
@@ -304,6 +309,7 @@ demo_gallery! {
     "panel-springs" => springs::build_springs_demo + springs::FILES,
     "panel-edmonds-karp" => edmonds_karp::build_edmonds_karp_demo + edmonds_karp::FILES,
     "panel-red-black-tree" => red_black_tree::build_red_black_tree_demo + red_black_tree::FILES,
+    "panel-marching-squares" => marching_squares::build_marching_squares_demo + marching_squares::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

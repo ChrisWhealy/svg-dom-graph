@@ -86,6 +86,10 @@
 //!   semantic tree above it, connector endpoints read from the real paths, the golden links at the rotations and the
 //!   transplant, the keyboard pressed for real, a selection that survives the deletion, the focus through a swap, playback
 //!   on a clock the test advances, and writes, swaps and focus that fail.
+//! - [`marching_squares`] — the marching squares panel in the built demo gallery: controls in the stage SVG that do not
+//!   zoom, a plot whose vertices are checked against the field in the grid's own coordinates at 25%, 100% and 400% and
+//!   after a pan, the ends of open contours surviving clipping, a scene rebuilt 25 times, threshold edits and their
+//!   refusal, coalesced range frames, and writes, scenes and swaps that fail.
 //! - [`n_queens`] — the N-Queens panel in the built demo gallery: the board as a grid in layers, what a Try, a Reject, a
 //!   Place and a solution show, the range that goes to any step, the buttons and their ends, playback on a clock the test
 //!   advances, the keys and the focus ring, a new board size, and a write that fails. Also runs against the built demo
@@ -153,6 +157,7 @@ mod hex_dump_geometry;
 mod hex_dump_paint_order;
 mod hex_dump_selection;
 mod huffman_walk;
+mod marching_squares;
 mod n_queens;
 mod overlap_resolution;
 mod pan;

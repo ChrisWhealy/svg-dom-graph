@@ -20,6 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Cleanup module to remove old Chrome processes after CDP tests (`ca48276`)
 - Red-black tree demo panel, after Edmonds–Karp: six insertions and a two-child deletion, as a real Scene with a semantic tree above it
 - Implement Red-Black Tree demo (`3a900bd`)
+- Implement marching squares demo panel, in a new "Computational Geometry" group (``)
 
 ### Changed
 

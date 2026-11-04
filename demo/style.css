@@ -1816,3 +1816,79 @@ label.demo-slider-container {
     stroke: #1f6feb;
     stroke-width: 5;
 }
+
+/* Marching squares
+   The stage is one svg: the controls above, which never zoom, and below them the scene, which does. The scene is built in
+   the hidden staging box, which is in the page so that it can be measured, and is swapped in whole. */
+#ms-stage [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.ms-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.ms-wrap .canvas {
+    flex: 0 0 auto;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.ms-wrap .canvas svg {
+    background: #fffdf0;
+}
+
+.ms-side {
+    flex: 1 1 22rem;
+    max-width: 40rem;
+}
+
+.ms-side > h3:first-child {
+    margin-top: 0;
+}
+
+.section .ms-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.25rem 1rem;
+    margin: 0;
+}
+
+.section .ms-status dt {
+    color: var(--text-muted);
+}
+
+.section .ms-status dd {
+    margin: 0;
+}
+
+.ms-inspector {
+    display: block;
+    color: var(--text);
+    background: var(--surface);
+    border: 1px solid var(--border-strong);
+    border-radius: 6px;
+}
+
+.ms-footer {
+    font-family: ui-monospace, SFMono-Regular, Menlo, monospace;
+    font-size: 0.8rem;
+    color: var(--text-muted);
+    word-break: break-word;
+}
+
+.ms-staging {
+    position: absolute;
+    left: 0;
+    top: 0;
+    width: 760px;
+    height: 698px;
+    visibility: hidden;
+    pointer-events: none;
+    overflow: hidden;
+}

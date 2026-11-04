@@ -1,0 +1,86 @@
+<section class="section" id="panel-marching-squares" data-label="Marching Squares">
+    <h2>Marching Squares</h2>
+    <p>
+        A <b>contour line</b> joins the places where a surface has the same height. Given a grid of heights, the
+        <b>marching squares</b> algorithm finds those lines one cell at a time. Each corner of a cell is either above a
+        chosen level or below it, which gives 16 cases, and each case says which sides of the cell the line crosses and how
+        the crossings are joined. Where it crosses a side, the point is found by interpolating between the two samples, and
+        the two cells that share that side use the same point, so the lines meet exactly.
+    </p>
+    <p>
+        Two of the 16 cases are <b>ambiguous</b>: the two corners above the level are opposite each other, and the line
+        could either join them or keep them apart. The surface between the corners settles it. The sign of
+        <code>Q&nbsp;=&nbsp;g<sub>TL</sub>&middot;g<sub>BR</sub>&nbsp;&minus;&nbsp;g<sub>TR</sub>&middot;g<sub>BL</sub></code>,
+        where <code>g</code> is a sample minus the level, says which way. If <code>Q</code> is exactly zero the two strands
+        cross at the saddle of the surface.
+    </p>
+    <p class="demo-error" id="ms-error" hidden></p>
+    <p class="visually-hidden" id="ms-live" role="status" aria-live="polite"></p>
+    <div class="ms-wrap">
+        <div class="canvas ms-canvas">
+            <div id="ms-stage"></div>
+        </div>
+        <div class="ms-side">
+            <h3>This step</h3>
+            <dl class="ms-status">
+                <dt>Step</dt>
+                <dd id="ms-p-step">Step 0 of 0</dd>
+                <dt>Cell</dt>
+                <dd id="ms-p-status">&mdash;</dd>
+                <dt>Contours</dt>
+                <dd id="ms-p-levels">&mdash;</dd>
+                <dt>Levels</dt>
+                <dd id="ms-p-legend">&mdash;</dd>
+                <dt>Zoom</dt>
+                <dd id="ms-p-zoom">100%</dd>
+            </dl>
+            <h3>Inspected cell</h3>
+            <svg id="ms-inspector" class="ms-inspector" viewBox="0 0 220 240" width="220" height="240" aria-hidden="true"></svg>
+        </div>
+    </div>
+    <p class="ms-footer" id="ms-p-footer"></p>
+    <div id="ms-staging" class="ms-staging" aria-hidden="true" inert></div>
+    <h3>Reading the picture</h3>
+    <ul>
+        <li>
+            The three levels are told apart by their line as well as their colour: <b>low</b> is solid blue,
+            <b>middle</b> is dashed amber, and <b>high</b> is dotted green.
+        </li>
+        <li>The small grey dots are the samples. A red outline marks the cell being inspected.</li>
+        <li>A purple outline marks a cell where the case is ambiguous, once it has been visited.</li>
+        <li>
+            Only the cells visited so far are drawn. A line that stops in the middle of the field is a provisional open end
+            on the edge of the cells visited, and it is not reported as finished. A loop is called closed only when all of
+            its cells have been visited.
+        </li>
+    </ul>
+    <h3>Using the page</h3>
+    <ul>
+        <li>The controls are in the scene, above the plot, and they do not zoom with it.</li>
+        <li>
+            <b>Next</b> and <b>Previous</b> visit one cell. <b>Restart</b> goes back to no cells. The range goes straight to
+            any place, and its arrow keys move it one cell at a time. A button at an end is dimmed but can still be pressed,
+            and then says so.
+        </li>
+        <li>
+            <b>Field</b> chooses the field. Ripple plane is the default, and the saddle lab has the five named cells.
+            <b>Show</b> draws all three levels or one. <b>Inspect</b> chooses the level that the numbers are read at.
+        </li>
+        <li>
+            <b>Threshold</b> edits the level of the inspected slot. The three levels must stay in order, low then middle
+            then high, and no sample may be exactly at a level. A value that is refused leaves everything as it was.
+        </li>
+        <li>
+            <b>Row</b> and <b>Column</b> choose a cell to inspect, and clicking the plot chooses the cell you click. A cell
+            that has not been visited yet says so and shows nothing more.
+        </li>
+        <li>
+            Zoom and pan with the toolbar at the right of the plot, or hold Ctrl or Cmd and use the wheel. Nothing is worked
+            out again when you zoom.
+        </li>
+        <li>
+            <b>Rebuild scene</b> makes the scene again from the state, and keeps the zoom, the pan, the step and the cell.
+            <b>Retry</b> draws the page again if a write failed.
+        </li>
+    </ul>
+</section>
