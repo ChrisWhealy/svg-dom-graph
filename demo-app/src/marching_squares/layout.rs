@@ -75,6 +75,26 @@ pub(crate) const RANGE_MIDDLE: f64 = 152.0;
 /// The padding of the axes round the grid, so that a contour end on the outer boundary is inside the plotted area.
 pub(crate) const PADDING: f64 = 0.25;
 
+/// How far the pointer must move, in screen pixels, before a press on the plot is a drag that pans and no longer a
+/// click that chooses a cell.
+pub(crate) const DRAG_THRESHOLD: f64 = 4.0;
+
+/// Whether a pointer that has moved `dx` and `dy` pixels since it went down is dragging.
+pub(crate) fn is_drag(dx: f64, dy: f64) -> bool {
+    dx.hypot(dy) >= DRAG_THRESHOLD
+}
+
+/// The translation of the view after a drag of `dx` and `dy` screen pixels from a view translated by `tx` and `ty`,
+/// when a unit of the scene is `per_unit` pixels. A drag that cannot be turned into a distance leaves the view as it
+/// was.
+pub(crate) fn panned(tx: f64, ty: f64, dx: f64, dy: f64, per_unit: f64) -> (f64, f64) {
+    if per_unit.is_finite() && per_unit > 0.0 && dx.is_finite() && dy.is_finite() {
+        (tx + dx / per_unit, ty + dy / per_unit)
+    } else {
+        (tx, ty)
+    }
+}
+
 /// The cell that a point of the plot is in, for a grid of `width` by `height` samples, or `None` outside the grid. A
 /// point on a line between cells is in the cell below it and to the right of it, except at the far edge, where it is in
 /// the last cell.

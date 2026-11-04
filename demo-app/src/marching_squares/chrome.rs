@@ -47,6 +47,8 @@ pub(super) const FIELDS: [&str; 6] = [
 
 pub(super) struct Chrome {
     pub(super) stage: web_sys::Element,
+    /// The `<svg>` of the stage, whose box is the stage on the screen.
+    pub(super) stage_svg: web_sys::Element,
     /// The group in the stage that each scene is swapped into.
     pub(super) host: web_sys::Element,
     /// The `<svg>` in the hidden place, in which each scene is built before it is swapped in.
@@ -159,6 +161,7 @@ impl Chrome {
         add(&svg, &host)?;
         Ok(Self {
             stage: required_element(document, STAGE)?,
+            stage_svg: svg.clone(),
             host,
             staging: required_element(document, STAGING_SVG)?,
             live: required_element(document, LIVE)?,

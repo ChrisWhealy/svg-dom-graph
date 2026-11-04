@@ -10,7 +10,7 @@ use super::{
     controller::{CommitError, DrawKind, Meta, Surface},
     dom::{Journal, add, make, set},
     field::{FieldId, LEVELS, SLOT_COLOURS, SLOT_DASHES, SLOT_NAMES, SLOT_PATTERNS},
-    layout::{BUTTONS, PADDING, SCENE_HEIGHT, STAGE_WIDTH, cell_at_point},
+    layout::{BUTTONS, PADDING, SCENE_HEIGHT, STAGE_WIDTH, cell_at_point, is_drag, panned},
     projection::{CellView, Inspected, Projection, State, level_text, project},
     solver::{Decision, Trace},
 };
@@ -72,6 +72,19 @@ pub(super) struct Page {
     /// The view of a scene that was swapped out and could not be put back, which belongs to the committed state, so the
     /// scene that is built again from it takes it.
     lost_view: Cell<Option<ViewTransform>>,
+    /// A press on the plot that may become a pan.
+    pan: Cell<Option<Pan>>,
+    /// Whether the click that follows a pan is to be swallowed, so that panning does not choose a cell.
+    swallow_click: Cell<bool>,
+}
+
+/// A press on the plot: where it went down, the view then, and how big a unit of the scene is on the screen.
+#[derive(Debug, Clone, Copy)]
+struct Pan {
+    from: (f64, f64),
+    view: ViewTransform,
+    per_unit: f64,
+    dragged: bool,
 }
 
 impl Page {
@@ -90,6 +103,8 @@ impl Page {
             error_shown: Cell::new(false),
             click: RefCell::new(None),
             lost_view: Cell::new(None),
+            pan: Cell::new(None),
+            swallow_click: Cell::new(false),
         })
     }
 
@@ -100,6 +115,71 @@ impl Page {
     /// Sets what a click on the plot does. It is held by the scene's listener, so it must hold the controller weakly.
     pub(super) fn set_click_handler(&self, handler: ClickHandler) {
         *self.click.borrow_mut() = Some(handler);
+    }
+
+    /// A press went down at `x`, `y` on `target`. If that is on the plot, and not on the toolbar or the control that
+    /// the keyboard pans with, it may become a pan.
+    ///
+    /// The plot fills the scene, so the surface behind it that the library pans with is never reached. The pan is done
+    /// here, by setting the view, which is the same view that the toolbar and the keyboard change.
+    pub(super) fn pan_start(&self, target: &web_sys::Element, x: f64, y: f64) {
+        self.swallow_click.set(false);
+        let on_control = target
+            .closest("[aria-label=\"Scene controls\"], [aria-label^=\"Graph view\"]")
+            .ok()
+            .flatten()
+            .is_some();
+        if on_control || !self.chrome.host.contains(Some(target)) {
+            return;
+        }
+        let Some(view) = self.live.borrow().as_ref().map(|l| l.scene.view()) else {
+            return;
+        };
+        let per_unit = self.chrome.stage_svg.get_bounding_client_rect().width() / STAGE_WIDTH;
+        self.pan.set(Some(Pan {
+            from: (x, y),
+            view,
+            per_unit,
+            dragged: false,
+        }));
+    }
+
+    /// The pointer moved to `x`, `y`. If a press is down and has moved far enough, the view follows it.
+    pub(super) fn pan_move(&self, x: f64, y: f64) {
+        let Some(mut pan) = self.pan.get() else { return };
+        let (dx, dy) = (x - pan.from.0, y - pan.from.1);
+        if !pan.dragged && !is_drag(dx, dy) {
+            return;
+        }
+        pan.dragged = true;
+        self.pan.set(Some(pan));
+        let (tx, ty) = panned(pan.view.tx, pan.view.ty, dx, dy, pan.per_unit);
+        let moved = self
+            .live
+            .borrow()
+            .as_ref()
+            .map(|l| l.scene.set_view(ViewTransform { tx, ty, ..pan.view }));
+        if let Some(Err(problem)) = moved {
+            // The view that was set stays, and the press is let go, so that one failure does not repeat on every move.
+            self.pan.set(None);
+            self.warn_text(&format!("The view could not be moved: {problem}"));
+        }
+    }
+
+    /// The press was let go. If it was a pan, the click that follows is swallowed.
+    pub(super) fn pan_end(&self) {
+        if let Some(pan) = self.pan.take() {
+            self.swallow_click.set(pan.dragged);
+        }
+    }
+
+    /// Whether this click is the end of a pan, which must not choose a cell. Asking clears it.
+    pub(super) fn take_swallowed_click(&self) -> bool {
+        self.swallow_click.replace(false)
+    }
+
+    fn warn_text(&self, text: &str) {
+        self.show_error(&format!("Warning: {text}"));
     }
 
     /// The zoom of the scene on the page, as a percentage.

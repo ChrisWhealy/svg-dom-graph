@@ -60,6 +60,11 @@ The plot items are the samples, an outline for each ambiguous cell that has been
 A loop repeats its first point, which leaves a notch at the seam, so a dot as wide as the line goes there.
 The inspector beside the plot draws the inspected cell enlarged: its samples, its crossings and its segments.
 
+The plot fills the scene, so the surface behind it that the library pans with is never pressed, and a drag on the plot would not pan.
+The page pans it itself: a press on the plot that moves 4 pixels or more sets the view, which is the same view that the toolbar, the wheel and the keyboard change.
+The click that ends such a drag is swallowed, so panning does not choose a cell, and a press that does not move still does.
+A press on the toolbar or on the keyboard's pan target does not start a pan.
+
 The scene is built in a hidden `<svg>` that is in the document, so that it can be measured, and it is swapped in with one call to `replaceChildren` only when all of it has been built.
 The zoom and the pan are carried over to the new scene before the swap if the field has the same axes, and a view that cannot be set aborts the swap.
 Every scene has an ID of its own, so a retry never reuses one.
@@ -101,7 +106,7 @@ The solver is also checked in native tests against a second reading of the same 
 | Clipping | With the axes padded by 0.25, every open contour has both ends on the boundary, at every level |
 | Closed seam | A loop is drawn as a polyline that repeats its first point, with a dot of radius half the line width at the seam |
 | Legend | Three entries, each with its name and pattern |
-| Zoom and pan | The toolbar and the keyboard work in a `<svg>` nested in the stage. The label says the zoom, the geometry is the same at 25%, 100% and 400% and after a pan, and the painted box of each contour is within 0.5 pixels of its vertices through the transform |
+| Zoom and pan | The toolbar, the keyboard and the wheel with Ctrl work in a `<svg>` nested in the stage, and a wheel turn about a pointer keeps the point under it within 0.75 pixels. A pointer drag on the plot did not pan, since the plot covers the library's pan surface, so the page pans it itself. The label says the zoom, the geometry is the same at 25%, 100% and 400% and after a pan, and the painted box of each contour is within 0.5 pixels of its vertices through the transform |
 | Stage controls | The size of the buttons and the range is the same at every zoom |
 | Hidden candidate | The scene is built attached and hidden, view carried over, and swapped. A failed build, set of the view or swap leaves the old scene, its view and its focus |
 

@@ -14,6 +14,8 @@
 //!   not been visited reveals nothing.
 //! - A threshold edit changes the topology and editing it back restores the digest, and a refused one leaves
 //!   everything.
+//! - A real Ctrl wheel about an off-centre pointer keeps the point under it still, a real drag pans the view by its
+//!   distance without choosing a cell, a click still does, the toolbar does not move, and a rebuild keeps all of it.
 //! - A scene rebuilt 25 times at a zoomed and panned view is the same, with unique IDs, one scene, and one handler.
 //! - A burst of range moves draws once, and a late frame cannot overwrite a newer move.
 //! - A write that fails, a scene that cannot be built, or a swap that throws before or after it changes the host, is
@@ -21,7 +23,7 @@
 //!
 //! Like [`crate::red_black_tree`], these run against the built demo gallery.
 
-use crate::common::{DemoTab, new_demo_tab};
+use crate::common::{DemoTab, ctrl_wheel, drag, new_demo_tab};
 use headless_chrome::Tab;
 use serde_json::Value;
 use std::time::{Duration, Instant};
@@ -503,6 +505,36 @@ fn drawn_contours(tab: &Tab) -> Result<String, String> {
     )
 }
 
+/// Where the first corner of the outline of the inspected cell is on the screen, which a zoom about a pointer over it
+/// must not move, and which a pan moves by the distance of the drag.
+fn outline_corner(tab: &Tab) -> Result<(f64, f64), String> {
+    let v = json(
+        tab,
+        r#"(() => { const p = [...document.querySelectorAll('#ms-stage .ms-scene polyline')].find(e => e.getAttribute('stroke') === '#be123c');
+            const m = p.getScreenCTM(), [x, y] = p.getAttribute('points').trim().split(/\s+/)[0].split(',').map(Number);
+            return JSON.stringify([m.a * x + m.c * y + m.e, m.b * x + m.d * y + m.f]); })()"#,
+    )?;
+    Ok((v[0].as_f64().unwrap_or(f64::NAN), v[1].as_f64().unwrap_or(f64::NAN)))
+}
+
+/// Where the toolbar is, as its left, top, width and height from the top left corner of the stage. The stage is
+/// measured and not the scene, since the box of the scene's `<svg>` grows with its zoomed content.
+fn toolbar_place(tab: &Tab) -> Result<Vec<f64>, String> {
+    let v = json(
+        tab,
+        r#"(() => { const scene = document.getElementById('ms-stage-svg').getBoundingClientRect();
+            const bar = document.querySelector('#ms-stage .ms-scene [aria-label="Scene controls"]').getBoundingClientRect();
+            return JSON.stringify([bar.left - scene.left, bar.top - scene.top, bar.width, bar.height]); })()"#,
+    )?;
+    Ok(v.as_array()
+        .map(|a| a.iter().filter_map(Value::as_f64).collect())
+        .unwrap_or_default())
+}
+
+fn near(a: (f64, f64), b: (f64, f64), tolerance: f64) -> bool {
+    (a.0 - b.0).abs() <= tolerance && (a.1 - b.1).abs() <= tolerance
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // The page.
 
@@ -660,6 +692,115 @@ fn the_geometry_is_unchanged_by_zoom_and_pan_and_the_model_digest_does_not_move(
     check_geometry(&tab, (14, 12), "after a pan at 400%")?;
     check(screen_deviation(&tab)? <= SCREEN_TOLERANCE, "after a pan")?;
     check_eq((digest(&tab)?, drawn_contours(&tab)?), before)
+}
+
+#[test]
+fn a_wheel_zoom_about_an_off_centre_pointer_and_a_pointer_pan_survive_a_rebuild() -> Result<(), String> {
+    let tab = open()?;
+    // A cell near the top left, so that the pointer is well away from the centre of the scene.
+    inspect_cell(&tab, 4, 1)?;
+    let toolbar = toolbar_place(&tab)?;
+    let start = outline_corner(&tab)?;
+    // Two turns of the real wheel with Ctrl held, over the corner of the cell. The point under the pointer must not
+    // move.
+    for round in 1..=2 {
+        let before = zoom_percent(&tab)?;
+        ctrl_wheel(&tab, start, -100.0)?;
+        wait_until(&tab, 3, |t| Ok(zoom_percent(t)? > before))?;
+        let now = outline_corner(&tab)?;
+        check(
+            near(now, start, 0.75),
+            &format!("turn {round}: the point under the pointer moved from {start:?} to {now:?}"),
+        )?;
+    }
+    check(zoom_percent(&tab)? > 100, "zoomed in")?;
+    check_eq(
+        toolbar_place(&tab)?.iter().map(|v| v.round()).collect::<Vec<_>>(),
+        toolbar.iter().map(|v| v.round()).collect::<Vec<_>>(),
+    )?;
+    // A drag on the plot with the real mouse pans the view by the distance of the drag.
+    let before = (outline_corner(&tab)?, view_transform(&tab)?);
+    let from = (before.0.0 + 60.0, before.0.1 + 60.0);
+    drag(
+        &tab,
+        &[
+            from,
+            (from.0 + 20.0, from.1 + 10.0),
+            (from.0 + 60.0, from.1 + 30.0),
+            (from.0 + 90.0, from.1 + 45.0),
+        ],
+    )?;
+    let panned = outline_corner(&tab)?;
+    check(view_transform(&tab)? != before.1, "the drag moved the view")?;
+    check(
+        near(panned, (before.0.0 + 90.0, before.0.1 + 45.0), 2.0),
+        &format!("moved from {:?} to {panned:?}", before.0),
+    )?;
+    check_eq(
+        toolbar_place(&tab)?.iter().map(|v| v.round()).collect::<Vec<_>>(),
+        toolbar.iter().map(|v| v.round()).collect::<Vec<_>>(),
+    )?;
+    // The contours are the same in the grid's coordinates, and in the page.
+    let (percent, view) = (zoom_percent(&tab)?, view_transform(&tab)?);
+    let drawn = (digest(&tab)?, drawn_contours(&tab)?);
+    check_geometry(&tab, (4, 1), "after a wheel zoom and a pan")?;
+    check(screen_deviation(&tab)? <= SCREEN_TOLERANCE, "on the screen")?;
+    // Rebuilding keeps all of it.
+    click_button(&tab, "rebuild")?;
+    check_eq((zoom_percent(&tab)?, view_transform(&tab)?), (percent, view))?;
+    check_eq((digest(&tab)?, drawn_contours(&tab)?), drawn)?;
+    check(
+        near(outline_corner(&tab)?, panned, 0.75),
+        &format!("the cell moved to {:?}", outline_corner(&tab)?),
+    )?;
+    check_eq(
+        toolbar_place(&tab)?.iter().map(|v| v.round()).collect::<Vec<_>>(),
+        toolbar.iter().map(|v| v.round()).collect::<Vec<_>>(),
+    )?;
+    check_geometry(&tab, (4, 1), "after the rebuild")?;
+    check(screen_deviation(&tab)? <= SCREEN_TOLERANCE, "on the screen after the rebuild")
+}
+
+#[test]
+fn a_drag_on_the_plot_pans_and_does_not_choose_a_cell_and_a_click_still_does() -> Result<(), String> {
+    let tab = open()?;
+    inspect_cell(&tab, 9, 12)?;
+    zoom_to(&tab, 400)?;
+    let before = (outline_corner(&tab)?, view_transform(&tab)?);
+    let centre = json(
+        &tab,
+        "(() => { const r = document.getElementById('ms-stage-svg').getBoundingClientRect(); return JSON.stringify([r.left + 380, r.top + 178 + 260]); })()",
+    )?;
+    let from = (centre[0].as_f64().unwrap_or(0.0), centre[1].as_f64().unwrap_or(0.0));
+    drag(&tab, &[from, (from.0 + 25.0, from.1 + 25.0), (from.0 + 70.0, from.1 - 30.0)])?;
+    check(view_transform(&tab)? != before.1, "the drag panned")?;
+    check(
+        near(outline_corner(&tab)?, (before.0.0 + 70.0, before.0.1 - 30.0), 2.0),
+        &format!("{:?}", outline_corner(&tab)?),
+    )?;
+    // A drag is not a click, so the cell that was chosen is still the one.
+    check_eq(
+        (value_of(&tab, "ms-row")?, value_of(&tab, "ms-column")?),
+        ("9".to_owned(), "12".to_owned()),
+    )?;
+    // A press that does not move is a click, and chooses the cell that it is on.
+    let spot = outline_corner(&tab)?;
+    tab.click_point(headless_chrome::browser::tab::point::Point {
+        x: spot.0 + 20.0,
+        y: spot.1 + 20.0,
+    })
+    .map_err(|e| e.to_string())?;
+    wait_until(&tab, 3, |t| Ok(value_of(t, "ms-column")? == "12"))?;
+    check_eq(view_transform(&tab)? != before.1, true)?;
+    // A drag that begins on the toolbar does not pan.
+    let view = view_transform(&tab)?;
+    let bar = json(
+        &tab,
+        "(() => { const r = document.querySelector('#ms-stage .ms-scene [aria-label=\"Scene controls\"]').getBoundingClientRect(); return JSON.stringify([r.left + r.width / 2, r.top + 4]); })()",
+    )?;
+    let from = (bar[0].as_f64().unwrap_or(0.0), bar[1].as_f64().unwrap_or(0.0));
+    drag(&tab, &[from, (from.0 - 30.0, from.1 - 5.0), (from.0 - 90.0, from.1 - 10.0)])?;
+    check_eq(view_transform(&tab)?, view)
 }
 
 #[test]

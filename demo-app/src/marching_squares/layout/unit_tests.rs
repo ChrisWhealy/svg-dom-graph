@@ -72,3 +72,24 @@ fn the_controls_fit_in_the_strip_and_do_not_overlap() {
     }
     const { assert!(RANGE_MIDDLE + 20.0 <= CONTROLS_HEIGHT) };
 }
+
+#[test]
+fn a_press_is_a_drag_only_after_it_has_moved_a_few_pixels() {
+    assert!(!is_drag(0.0, 0.0) && !is_drag(2.0, 2.0) && !is_drag(-3.0, 0.0));
+    assert!(is_drag(4.0, 0.0) && is_drag(-3.0, 3.0) && is_drag(0.0, -10.0));
+}
+
+#[test]
+fn a_drag_moves_the_view_by_the_distance_of_the_drag_in_scene_units() {
+    assert_eq!(panned(10.0, -20.0, 30.0, 15.0, 1.0), (40.0, -5.0));
+    assert_eq!(panned(0.0, 0.0, 30.0, 15.0, 2.0), (15.0, 7.5));
+    assert_eq!(panned(5.0, 6.0, -10.0, 4.0, 0.5), (-15.0, 14.0));
+}
+
+#[test]
+fn a_drag_that_cannot_be_measured_leaves_the_view() {
+    for per_unit in [0.0, -1.0, f64::NAN, f64::INFINITY] {
+        assert_eq!(panned(1.0, 2.0, 30.0, 15.0, per_unit), (1.0, 2.0), "{per_unit}");
+    }
+    assert_eq!(panned(1.0, 2.0, f64::NAN, 15.0, 1.0), (1.0, 2.0));
+}

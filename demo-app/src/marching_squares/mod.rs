@@ -124,6 +124,7 @@ pub(crate) fn build_marching_squares_demo() -> Result<(), String> {
     wire_range(&controller, &page)?;
     wire_selectors(&controller, &page)?;
     wire_zoom(&page)?;
+    wire_pan(&page)?;
     let leaving = Rc::clone(&controller);
     listen(
         &web_sys::window().ok_or("no window")?.into(),
@@ -218,5 +219,43 @@ fn wire_zoom(page: &Rc<Page>) -> Result<(), String> {
             }
         })?;
     }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes dragging the plot pan the view. The plot fills the scene, so the library's own surface for panning is behind
+/// it and is never pressed. The press is heard on the host, which every scene is swapped into, and the moves and the
+/// release on the window. The click that ends a drag is swallowed before the plot hears it, so that panning does not
+/// choose a cell.
+fn wire_pan(page: &Rc<Page>) -> Result<(), String> {
+    let window: web_sys::EventTarget = web_sys::window().ok_or("no window")?.into();
+    let host = page.chrome().host.clone();
+    let pressed = Rc::clone(page);
+    listen(&host, "pointerdown", move |e: web_sys::PointerEvent| {
+        if e.button() != 0 {
+            return;
+        }
+        if let Some(target) = e.target().and_then(|t| t.dyn_into::<web_sys::Element>().ok()) {
+            pressed.pan_start(&target, f64::from(e.client_x()), f64::from(e.client_y()));
+        }
+    })?;
+    let moved = Rc::clone(page);
+    listen(&window, "pointermove", move |e: web_sys::PointerEvent| {
+        moved.pan_move(f64::from(e.client_x()), f64::from(e.client_y()));
+    })?;
+    for event in ["pointerup", "pointercancel"] {
+        let released = Rc::clone(page);
+        listen(&window, event, move |_: web_sys::PointerEvent| released.pan_end())?;
+    }
+    // In the capture phase, so that it runs before the plot's own listener, which is below the host.
+    let clicked = Rc::clone(page);
+    let swallow = wasm_bindgen::closure::Closure::<dyn FnMut(web_sys::Event)>::new(move |e: web_sys::Event| {
+        if clicked.take_swallowed_click() {
+            e.stop_propagation();
+        }
+    });
+    host.add_event_listener_with_callback_and_bool("click", swallow.as_ref().unchecked_ref(), true)
+        .map_err(|e| format!("could not attach the click listener: {e:?}"))?;
+    swallow.forget();
     Ok(())
 }
