@@ -15,7 +15,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## Added
 
-- Red-Black Tree demo (``)
+- Red-Black Tree demo (`ae3000c`)
 
 ## Changed
 
