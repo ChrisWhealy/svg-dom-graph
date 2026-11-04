@@ -39,7 +39,7 @@ The original target algorithms were SHA1, SHA2 and SHA3; but since implementing 
     </dd>
     <dt>Graph Algorithms</dt>
     <dd>
-        <p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow</p>
+        <p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow<br>Red-Black Tree</p>
     </dd>
     <dt>Signal Processing</dt>
     <dd>

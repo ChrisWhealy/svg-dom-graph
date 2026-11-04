@@ -13,6 +13,10 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## [0.2.48] - 2026-11-03
 
+## Added
+
+- Red-Black Tree demo (``)
+
 ## Changed
 
 - Updated README (`0bf6c0d`)
