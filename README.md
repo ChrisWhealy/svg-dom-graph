@@ -20,39 +20,73 @@ _**IMPORTANT**_<br>In keeping with the `svg-dom` crate, this crate also targets 
 The goal is to allow the users to create a scene containing SVG elements suitable for visualising the data flow through an algorithm.
 The original target algorithms were SHA1, SHA2 and SHA3; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
 
-<dl>
-    <dt>Cryptographic Algorithms</dt>
-    <dd>
-        <p>SHA1<br>SHA2<br>SHA3<br>ChaCha20</p>
-    </dd>
-    <dt>Encoding and Compression</dt>
-    <dd>
-        <p>Huffman Encoding<br>Base64 Encoding<br>UTF-8 Encoding</p>
-    </dd>
-    <dt>Error Detection and Correction</dt>
-    <dd>
-        <p>CRC-32<br>Hamming(7,4)<br>QR Code</p>
-    </dd>
-    <dt>Sorting</dt>
-    <dd>
-        <p>Bubble Sort<br>Shell Sort<br>Quicksort</p>
-    </dd>
-    <dt>Graph Algorithms</dt>
-    <dd>
-        <p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow<br>Red-Black Tree</p>
-    </dd>
-    <dt>Signal Processing</dt>
-    <dd>
-        <p>Sine and Cosine<br>Pythagoras<br>Amplitude and Frequency<br>Phase Shift<br>Convolution<br>Fast Fourier Transform</p>
-    </dd>
-    <dt>Cellular Automata</dt>
-    <dd>Conway's Game of Life</dd>
-    <dt>Backtracking</dt>
-    <dd>N-Queens Problem</dd>
-    <dt>Computational Geometry</dt>
-    <dd>Marching Squares</dd>
+<details>
+<summary>Algorithms visualised</summary>
 
-</dl>
+<details>
+<summary>Cryptographic Algorithms</summary>
+
+<p>SHA1<br>SHA2<br>SHA3<br>ChaCha20</p>
+
+</details>
+
+<details>
+<summary>Encoding and Compression</summary>
+
+<p>Huffman Encoding<br>Base64 Encoding<br>UTF-8 Encoding</p>
+
+</details>
+
+<details>
+<summary>Error Detection and Correction</summary>
+
+<p>CRC-32<br>Hamming(7,4)<br>QR Code</p>
+
+</details>
+
+<details>
+<summary>Sorting</summary>
+
+<p>Bubble Sort<br>Shell Sort<br>Quicksort</p>
+
+</details>
+
+<details>
+<summary>Graph Algorithms</summary>
+
+<p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow<br>Red-Black Tree<br>Tarjan's Strongly Connected Components</p>
+
+</details>
+
+<details>
+<summary>Signal Processing</summary>
+
+<p>Sine and Cosine<br>Pythagoras<br>Amplitude and Frequency<br>Phase Shift<br>Convolution<br>Fast Fourier Transform</p>
+
+</details>
+
+<details>
+<summary>Cellular Automata</summary>
+
+<p>Conway's Game of Life</p>
+
+</details>
+
+<details>
+<summary>Backtracking</summary>
+
+<p>N-Queens Problem</p>
+
+</details>
+
+<details>
+<summary>Computational Geometry</summary>
+
+<p>Marching Squares</p>
+
+</details>
+
+</details>
 
 ## [Changelog](changelog.md)
 

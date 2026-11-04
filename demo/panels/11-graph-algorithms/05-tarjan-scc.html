@@ -1,16 +1,16 @@
 <section class="section" id="panel-tarjan" data-label="Tarjan Strongly Connected Components">
     <h2>Tarjan&rsquo;s Strongly Connected Components</h2>
     <p>
-        In a directed graph, two vertices are in the same <b>strongly connected component</b> if each can be reached from
-        the other. Tarjan&rsquo;s algorithm finds every component in one depth-first search. Each vertex gets an
+        In a directed graph, two vertices are in the same <b>strongly connected component</b> if each can be reached
+        from the other. Tarjan&rsquo;s algorithm finds every component in one depth-first search. Each vertex gets an
         <b>index</b>, the order that the search discovered it in, and a <b>lowlink</b>, the lowest index that it can get
         back to. A vertex whose lowlink is still its own index is the root of a component.
     </p>
     <p>
-        The search keeps a <b>stack</b> of the vertices that have been discovered and are not yet in a component. It is not
-        the chain of calls: a vertex can stay on the stack after its call has returned. When a root is found, every vertex
-        above it on the stack is popped at once, and they are one component. The graph below has 64 vertices, 114 edges and
-        ten components, and a second graph, the <b>condensation</b>, shows how the components connect.
+        The search keeps a <b>stack</b> of the vertices that have been discovered and are not yet in a component. It is
+        not the chain of calls: a vertex can stay on the stack after its call has returned. When a root is found, every
+        vertex above it on the stack is popped at once, and they are one component. The graph below has 64 vertices, 114
+        edges and ten components, and a second graph, the <b>condensation</b>, shows how the components connect.
     </p>
     <p>
         Everything is in one scene: the graph, the stack of the algorithm, the list of components found so far, and the
@@ -35,7 +35,10 @@
             <svg class="tj-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
                 <rect class="tj-key-box tj-key-closed" x="10" y="3" width="40" height="18" rx="4" />
             </svg>
-            <span>A vertex whose component is found: a tinted box, and the label of its component, such as C3, above it.</span>
+            <span>
+                A vertex whose component is found: a tinted box, and the label of its component, such as C3, above
+                it.</span
+            >
         </li>
         <li>
             <svg class="tj-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
@@ -47,48 +50,56 @@
             <svg class="tj-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
                 <rect class="tj-key-outline" x="6" y="3" width="48" height="18" rx="6" />
             </svg>
-            <span>A dashed outline round each vertex of a component, with the number of the component above it. The vertices of a component are not next to each other, so the picture does not give them away.</span>
+            <span>
+                A dashed outline round each vertex of a component, with the number of the component above it. The
+                vertices of a component are not next to each other, so the picture does not give them away.</span
+            >
         </li>
         <li>
             <svg class="tj-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
                 <path class="tj-key-tree" d="M4 12H52" />
             </svg>
-            <span>The edge being inspected: a tree edge is thick and solid, a stack edge thick and dashed, a closed edge thick and dotted.</span>
+            <span
+                >The edge being inspected: a tree edge is thick and solid, a stack edge thick and dashed, a closed edge
+                thick and dotted.</span
+            >
         </li>
     </ul>
     <h3>Using the page</h3>
     <p>The speed, the buttons and the range are in the strip at the top of the window.</p>
     <ul>
         <li>
-            <b>Next</b> and <b>Previous</b> move one event. <b>Restart</b> goes back to the start. A button that has nowhere
-            to go is dimmed but can still be pressed, and then says so.
+            <b>Next</b> and <b>Previous</b> move one event. <b>Restart</b> goes back to the start. A button that has
+            nowhere to go is dimmed but can still be pressed, and then says so.
         </li>
         <li>
             <b>Previous SCC</b> and <b>Next SCC</b> jump to the closest step where a component closes, and
-            <b>Jump to final</b> goes to the end. Each puts the middle of the vertices of the component that it lands on in the middle of the view.
+            <b>Jump to final</b> goes to the end. Each puts the middle of the vertices of the component that it lands on
+            in the middle of the view.
         </li>
         <li>
-            <b>Play</b> steps through the run at the speed you choose and stops at the end. Only a component closing and the
-            end are announced to a screen reader while it plays. The range goes straight to any step and never moves the
-            view.
+            <b>Play</b> steps through the run at the speed you choose and stops at the end. Only a component closing and
+            the end are announced to a screen reader while it plays. The range goes straight to any step and never moves
+            the view.
         </li>
         <li>
-            <b>Follow active vertex</b> keeps the search in view as it plays and as you step, by panning when the vertex that
-            it is about leaves the middle of the view. Zoom, pan or use the zoom buttons yourself and following turns off, and stays off until you
-            press the button again.
+            <b>Follow active vertex</b> keeps the search in view as it plays and as you step, by panning when the vertex
+            that it is about leaves the middle of the view. Zoom, pan or use the zoom buttons yourself and following
+            turns off, and stays off until you press the button again.
         </li>
         <li>
             When the vertex that the step is about is off-screen, or near the edge, the page says so, and
             <b>Zoom to active vertex</b> puts that vertex in the middle at a scale that is easy to read.
         </li>
         <li>
-            Click a vertex or an edge, or use the arrow keys, <b>Home</b> and <b>End</b> to move between the vertices and then
-            the edges, to see it described. This is a single tab stop, and it never changes the step. A component in the
-            list of components, or in the condensation, picks it out in the graph.
+            Click a vertex or an edge, or use the arrow keys, <b>Home</b> and <b>End</b> to move between the vertices
+            and then the edges, to see it described. This is a single tab stop, and it never changes the step. A
+            component in the list of components, or in the condensation, picks it out in the graph.
         </li>
         <li>
-            The window opens as large as the screen allows, with the whole scene scaled down to fit it. The whole scene zooms and pans together, and the controls and the text do not. The stack is at the left of the
-            graph, the components found are next to it, and the condensation is below them.
+            The window opens as large as the screen allows, with the whole scene scaled down to fit it. The whole scene
+            zooms and pans together, and the controls and the text do not. The stack is at the left of the graph, the
+            components found are next to it, and the condensation is below them.
         </li>
     </ul>
 </section>
