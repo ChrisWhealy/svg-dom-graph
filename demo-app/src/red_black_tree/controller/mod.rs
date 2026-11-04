@@ -189,8 +189,11 @@ pub(crate) enum Action {
     Pause,
     /// Select this key, which is the one that has the focus.
     Choose(Key),
-    /// A key of the keyboard that moves through the tree.
-    Navigate(Nav),
+    /// A key of the keyboard that moves through the tree, pressed with the focus on `from`.
+    Navigate {
+        nav: Nav,
+        from: Key,
+    },
     /// The focus has been moved to this key by a person, and not by the page.
     FocusMoved(Key),
 }
@@ -394,7 +397,7 @@ impl Controller {
             },
             Action::Play => self.play(at, last),
             Action::Choose(key) => self.choose(key),
-            Action::Navigate(nav) => self.navigate(nav),
+            Action::Navigate { nav, from } => self.navigate(nav, from),
             Action::FocusMoved(_) => {},
             Action::Previous => self.move_to(at.checked_sub(1), AT_FIRST, true),
             Action::Restart => self.move_to((at > 0).then_some(0), AT_FIRST, true),
@@ -499,12 +502,23 @@ impl Controller {
         }
     }
 
-    /// Moves the tab stop and the focus with a key of the keyboard. A key that goes nowhere does nothing.
-    fn navigate(&self, nav: Nav) {
+    /// Moves the tab stop and the focus with a key of the keyboard, pressed with the focus on `from`. A key that goes
+    /// nowhere does nothing.
+    ///
+    /// The move starts from the key that really has the focus, and not from the tab stop. The two can differ, for
+    /// example when a rebuild has kept the focus on its key while the tab stop is on another, and the tab stop is
+    /// brought to the focus first.
+    fn navigate(&self, nav: Nav, from: Key) {
         let Some(snapshot) = self.trace.snapshot(self.selected.get()) else { return };
+        self.focus_moved(from);
         let view = self.view.get();
-        let Some(from) = resolve_roving(view.roving, snapshot) else { return };
-        if let Some(to) = navigate(snapshot, from, nav) {
+        let origin = if snapshot.has_key(from) {
+            Some(from)
+        } else {
+            resolve_roving(view.roving, snapshot)
+        };
+        let Some(origin) = origin else { return };
+        if let Some(to) = navigate(snapshot, origin, nav) {
             self.view.set(View { roving: Some(to), ..view });
             self.project();
             if let Err(problem) = self.surface.focus_key(to) {

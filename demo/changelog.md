@@ -47,4 +47,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Edmonds-Karp: Initial Play state failure stops playback from starting (`16c5a72`)
 - Prevent keyboard focus movement from failing silently (`e000303`)
 - Prevent pointer selection and actual focus from diverging (`24f0f6e`)
-- Red Black: Prevent delete fix-up descriptions from preceding their actions (``)
+- Red Black: Prevent delete fix-up descriptions from preceding their actions (`6adb2a6`)
+- Red Black: Correct review findings (``)

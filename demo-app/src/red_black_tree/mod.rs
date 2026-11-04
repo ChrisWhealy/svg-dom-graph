@@ -192,7 +192,7 @@ fn wire_tree(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String>
         }
         if let Some(nav) = Nav::from_key(&e.key()) {
             e.prevent_default();
-            keyed.act(Action::Navigate(nav));
+            keyed.act(Action::Navigate { nav, from: key });
         } else if e.key() == "Enter" || e.key() == " " {
             e.prevent_default();
             keyed.act(Action::Choose(key));

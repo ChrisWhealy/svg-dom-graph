@@ -3,7 +3,10 @@
 //! only when told to.
 
 use super::*;
-use crate::red_black_tree::solver::{Event, Op, Phase};
+use crate::red_black_tree::{
+    a11y::resolve_roving,
+    solver::{Event, Op, Phase},
+};
 
 /// A surface that remembers what it was asked to do, and that fails when it is told to.
 #[derive(Default)]
@@ -122,6 +125,14 @@ impl Rig {
 
     fn act(&self, action: Action) {
         self.controller.act(action);
+    }
+
+    /// A key of the keyboard pressed with the focus on the tab stop, which is where it is in these tests unless said.
+    fn navigate(&self, nav: Nav) {
+        let snapshot = self.trace.snapshot(self.controller.index()).expect("a snapshot");
+        if let Some(from) = resolve_roving(self.controller.view().roving, snapshot) {
+            self.act(Action::Navigate { nav, from });
+        }
     }
 
     fn at(&self) -> usize {
@@ -531,11 +542,11 @@ fn the_keys_move_the_tab_stop_and_the_focus() {
     let rig = Rig::new();
     rig.goto(rig.trace.last());
     // The tab stop starts at the root, 5, whose left child is 1 and whose right child is 12.
-    rig.act(Action::Navigate(Nav::Right));
+    rig.navigate(Nav::Right);
     assert_eq!(rig.controller.view().roving, Some(1));
-    rig.act(Action::Navigate(Nav::Down));
+    rig.navigate(Nav::Down);
     assert_eq!(rig.controller.view().roving, Some(5));
-    rig.act(Action::Navigate(Nav::Down));
+    rig.navigate(Nav::Down);
     assert_eq!(rig.controller.view().roving, Some(10));
     assert_eq!(*rig.surface.focused.borrow(), vec![1, 5, 10]);
     assert_eq!(rig.controller.view().chosen, None, "moving never selects");
@@ -546,13 +557,13 @@ fn a_key_that_goes_nowhere_does_nothing() {
     let rig = Rig::new();
     rig.goto(rig.trace.last());
     // The tab stop is on the root, which has no parent.
-    rig.act(Action::Navigate(Nav::Left));
+    rig.navigate(Nav::Left);
     assert!(rig.surface.focused.borrow().is_empty());
     assert_eq!(rig.controller.view().roving, None);
-    rig.act(Action::Navigate(Nav::End));
+    rig.navigate(Nav::End);
     let projects = rig.surface.projects.get();
-    rig.act(Action::Navigate(Nav::Down));
-    rig.act(Action::Navigate(Nav::End));
+    rig.navigate(Nav::Down);
+    rig.navigate(Nav::End);
     assert_eq!(*rig.surface.focused.borrow(), vec![20], "only the first End moved");
     assert_eq!(rig.surface.projects.get(), projects, "and the others wrote nothing");
 }
@@ -560,7 +571,7 @@ fn a_key_that_goes_nowhere_does_nothing() {
 #[test]
 fn a_key_on_an_empty_tree_does_nothing() {
     let rig = Rig::new();
-    rig.act(Action::Navigate(Nav::Down));
+    rig.navigate(Nav::Down);
     assert!(rig.surface.focused.borrow().is_empty());
 }
 
@@ -613,11 +624,11 @@ fn a_ring_that_could_not_be_written_leaves_the_page_dirty_for_the_next_action() 
 fn a_focus_that_did_not_move_puts_the_tab_stop_back_and_reports_it() {
     let rig = Rig::new();
     rig.goto(rig.trace.last());
-    rig.act(Action::Navigate(Nav::Right)); // from the root 5 to 1
+    rig.navigate(Nav::Right); // from the root 5 to 1
     assert_eq!(rig.controller.view().roving, Some(1));
     rig.surface.fail_focus.set(1);
     let projects = rig.surface.projects.get();
-    rig.act(Action::Navigate(Nav::Down)); // 1 to 5 cannot take the focus
+    rig.navigate(Nav::Down); // 1 to 5 cannot take the focus
     assert_eq!(
         rig.controller.view().roving,
         Some(1),
@@ -627,7 +638,7 @@ fn a_focus_that_did_not_move_puts_the_tab_stop_back_and_reports_it() {
     assert_eq!(rig.surface.failures.borrow().len(), 1);
     assert!(!rig.controller.is_dirty());
     // The next key moves from where the focus really is.
-    rig.act(Action::Navigate(Nav::Down));
+    rig.navigate(Nav::Down);
     assert_eq!(rig.controller.view().roving, Some(5));
     assert_eq!(*rig.surface.focused.borrow(), vec![1, 5, 5]);
 }
@@ -639,7 +650,7 @@ fn a_focus_that_did_not_move_and_a_tab_stop_that_cannot_be_written_back_leaves_t
     rig.surface.fail_focus.set(1);
     // The first write of the tab stop works, and the one that puts it back is the next call.
     rig.surface.fail_project_call.set(rig.surface.projects.get() + 2);
-    rig.act(Action::Navigate(Nav::Right));
+    rig.navigate(Nav::Right);
     assert_eq!(rig.controller.view().roving, None, "the intent is back where it was");
     assert!(rig.controller.is_dirty(), "but what the page shows may not be");
     rig.act(Action::Previous);
@@ -650,7 +661,7 @@ fn a_focus_that_did_not_move_and_a_tab_stop_that_cannot_be_written_back_leaves_t
 fn choosing_a_key_moves_the_focus_to_it_even_if_another_key_has_it() {
     let rig = Rig::new();
     rig.goto(rig.trace.last());
-    rig.act(Action::Navigate(Nav::Right)); // the focus is on 1
+    rig.navigate(Nav::Right); // the focus is on 1
     rig.act(Action::Choose(12));
     assert_eq!(rig.surface.focused.borrow().last(), Some(&12));
     assert_eq!(
@@ -661,7 +672,7 @@ fn choosing_a_key_moves_the_focus_to_it_even_if_another_key_has_it() {
         }
     );
     // The next key goes on from the key that was chosen.
-    rig.act(Action::Navigate(Nav::Up));
+    rig.navigate(Nav::Up);
     assert_eq!(rig.controller.view().roving, Some(10));
 }
 
@@ -669,7 +680,7 @@ fn choosing_a_key_moves_the_focus_to_it_even_if_another_key_has_it() {
 fn a_choice_whose_focus_cannot_move_keeps_the_choice_and_the_tab_stop_where_the_focus_is() {
     let rig = Rig::new();
     rig.goto(rig.trace.last());
-    rig.act(Action::Navigate(Nav::Right)); // the focus is on 1
+    rig.navigate(Nav::Right); // the focus is on 1
     rig.surface.fail_focus.set(1);
     rig.act(Action::Choose(12));
     assert_eq!(
@@ -681,6 +692,35 @@ fn a_choice_whose_focus_cannot_move_keeps_the_choice_and_the_tab_stop_where_the_
     );
     assert_eq!(rig.surface.failures.borrow().len(), 1);
     assert!(!rig.controller.is_dirty());
-    rig.act(Action::Navigate(Nav::Down));
+    rig.navigate(Nav::Down);
     assert_eq!(rig.controller.view().roving, Some(5), "from 1, where the focus is");
+}
+
+#[test]
+fn a_key_moves_from_the_key_that_has_the_focus_even_if_the_tab_stop_is_elsewhere() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    // The tab stop is on the root, 5, and the focus is on 10, which the controller was not told of.
+    assert_eq!(rig.controller.view().roving, None);
+    rig.act(Action::Navigate { nav: Nav::Down, from: 10 });
+    assert_eq!(rig.controller.view().roving, Some(12), "from 10, and not from 5");
+    assert_eq!(rig.surface.focused.borrow().last(), Some(&12));
+}
+
+#[test]
+fn a_key_that_goes_nowhere_still_brings_the_tab_stop_to_the_focus() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.act(Action::Navigate { nav: Nav::Right, from: 1 }); // 1 is a leaf
+    assert_eq!(rig.controller.view().roving, Some(1));
+    assert!(rig.surface.focused.borrow().is_empty());
+}
+
+#[test]
+fn a_focus_that_cannot_move_goes_back_to_the_key_that_really_has_it() {
+    let rig = Rig::new();
+    rig.goto(rig.trace.last());
+    rig.surface.fail_focus.set(1);
+    rig.act(Action::Navigate { nav: Nav::Down, from: 10 });
+    assert_eq!(rig.controller.view().roving, Some(10), "not the root it was on before");
 }

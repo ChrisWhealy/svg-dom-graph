@@ -792,7 +792,14 @@ fn a_focus_that_is_not_at_the_tab_stop_stays_with_its_key_through_a_step() -> Re
         "5".to_owned(),
     )?;
     click_button(&tab, "next")?;
-    check_eq(focused(&tab)?, "key:10".to_owned())
+    check_eq(focused(&tab)?, "key:10".to_owned())?;
+    // The keys go on from the key that has the focus, and not from the tab stop, which is still on the root.
+    press(&tab, "ArrowDown")?;
+    check_eq(focused(&tab)?, "key:15".to_owned())?;
+    check_eq(
+        attribute(&tab, &format!("{STAGE} .rbt-overlay [tabindex=\"0\"]"), "data-rbt-key")?,
+        "15".to_owned(),
+    )
 }
 
 #[test]
@@ -1317,6 +1324,35 @@ fn an_error_line_that_cannot_be_shown_is_still_said_in_the_live_region() -> Resu
     click_button(&tab, "next")?;
     check_eq(position(&tab)?, 1)?;
     check(banner_hidden(&tab)?, "hidden")
+}
+
+#[test]
+fn a_focus_lost_by_a_swap_that_could_not_put_it_back_is_restored_by_the_repair() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-2")?;
+    focus_item(&tab, 5)?;
+    fail_focus(&tab, true)?;
+    click_button(&tab, "next")?;
+    fail_focus(&tab, false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    // The focus went with the element that was swapped out. A button with nowhere to go repairs the page.
+    click_button(&tab, "jump-2")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check_eq(focused(&tab)?, "key:5".to_owned())
+}
+
+#[test]
+fn a_repair_does_not_take_the_focus_from_where_the_person_has_put_it() -> Result<(), String> {
+    let tab = open()?;
+    click_button(&tab, "jump-2")?;
+    focus_item(&tab, 5)?;
+    fail_focus(&tab, true)?;
+    click_button(&tab, "next")?;
+    fail_focus(&tab, false)?;
+    text(&tab, "(() => { document.getElementById('rbt-seek').focus(); return 'ok'; })()")?;
+    click_button(&tab, "jump-2")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check_eq(focused(&tab)?, "id:rbt-seek".to_owned())
 }
 
 #[test]
