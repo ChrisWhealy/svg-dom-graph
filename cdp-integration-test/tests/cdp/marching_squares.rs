@@ -223,6 +223,32 @@ fn fail_replacement(tab: &Tab, failing: bool, after: bool) -> Result<(), String>
     text(tab, &script).map(|_| ())
 }
 
+/// Makes `focus()` do nothing on SVG elements, which stands in for a focus that cannot be put back.
+fn fail_focus(tab: &Tab, failing: bool) -> Result<(), String> {
+    let script = if failing {
+        "(() => { const p = SVGElement.prototype; if (!p.__focused) { p.__focused = p.focus; } \
+         p.focus = function () {}; return 'ok'; })()"
+    } else {
+        "(() => { const p = SVGElement.prototype; if (p.__focused) { p.focus = p.__focused; } return 'ok'; })()"
+    };
+    text(tab, script).map(|_| ())
+}
+
+/// Lets the next `allow` calls of `replaceChildren` work, and makes every one after them throw, or stops it.
+fn fail_replacement_after(tab: &Tab, failing: bool, allow: usize) -> Result<(), String> {
+    let script = if failing {
+        format!(
+            "(() => {{ const p = Element.prototype; if (!p.__replaced) {{ p.__replaced = p.replaceChildren; }} \
+             window.__allow = {allow}; p.replaceChildren = function () {{ if (window.__allow-- > 0) {{ \
+             return p.__replaced.apply(this, arguments); }} throw new Error('injected'); }}; return 'ok'; }})()"
+        )
+    } else {
+        "(() => { const p = Element.prototype; if (p.__replaced) { p.replaceChildren = p.__replaced; } return 'ok'; })()"
+            .to_owned()
+    };
+    text(tab, &script).map(|_| ())
+}
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Geometry.
 
@@ -1357,6 +1383,130 @@ fn a_swap_that_throws_before_or_after_it_changes_the_host_leaves_the_old_scene()
         check_geometry(&tab, (14, 12), "after the retry")?;
     }
     Ok(())
+}
+
+/// Whether the scene on the page is the one for the 25 by 19 field: it is described as that field, and it has a sample
+/// for each of the 475 points of the grid, which the 9 by 7 field's scene, with 63, does not.
+fn has_ripple_axes(tab: &Tab) -> Result<bool, String> {
+    let found = json(
+        tab,
+        r#"(() => { const scene = document.querySelector('#ms-stage .ms-scene');
+            const described = [...scene.querySelectorAll('[aria-label]')].some(e => e.getAttribute('aria-label').includes('Ripple plane'));
+            return JSON.stringify([described, scene.querySelectorAll('circle').length]); })()"#,
+    )?;
+    Ok(found[0].as_bool() == Some(true) && found[1].as_u64().unwrap_or(0) >= 475)
+}
+
+#[test]
+fn a_write_that_fails_after_a_swap_to_another_grid_puts_the_old_scene_back_with_its_axes_and_view() -> Result<(), String>
+{
+    let tab = open()?;
+    inspect_cell(&tab, 14, 12)?;
+    zoom_to(&tab, 400)?;
+    let view = view_transform(&tab)?;
+    let before = (digest(&tab)?, drawn_contours(&tab)?);
+    check(has_ripple_axes(&tab)?, "the default field has its own axes")?;
+    // The focus is in the scene, so that putting it back is a write that follows the swap, and it fails.
+    text(
+        &tab,
+        &format!(
+            "(() => {{ document.querySelector('{STAGE} .ms-scene [aria-label=\"Zoom in\"]').focus(); return 'ok'; }})()"
+        ),
+    )?;
+    fail_focus(&tab, true)?;
+    choose(&tab, "ms-field", "coarse")?;
+    fail_focus(&tab, false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check(
+        content(&tab, "#ms-error")?.contains("earlier scene was put back"),
+        &content(&tab, "#ms-error")?,
+    )?;
+    // The committed field is still the old one, and so are the axes, the contours and the view.
+    check_eq((value_of(&tab, "ms-field")?, step(&tab)?), ("ripple".to_owned(), CELLS))?;
+    check(has_ripple_axes(&tab)?, "the old scene's axes")?;
+    check_eq(
+        (digest(&tab)?, drawn_contours(&tab)?, view_transform(&tab)?, zoom_percent(&tab)?),
+        (before.0.clone(), before.1.clone(), view.clone(), 400),
+    )?;
+    check_eq(
+        (count(&tab, &format!("{STAGE} .ms-scene"))?, count(&tab, "#ms-staging svg > *")?),
+        (1, 0),
+    )?;
+    // The page is dirty. Any action draws the committed state again first, and it is a step on the old scene.
+    click_button(&tab, "retry")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check(has_ripple_axes(&tab)?, "still the old axes")?;
+    check_geometry(&tab, (14, 12), "after the repair")?;
+    check_eq((view_transform(&tab)?, zoom_percent(&tab)?), (view, 400))?;
+    choose(&tab, "ms-field", "coarse")?;
+    check_eq(step(&tab)?, 48)?;
+    check(!has_ripple_axes(&tab)?, "the switch works once nothing fails")
+}
+
+#[test]
+fn a_swap_that_cannot_be_put_back_is_built_again_from_the_committed_field_with_its_view() -> Result<(), String> {
+    let tab = open()?;
+    inspect_cell(&tab, 14, 12)?;
+    zoom_to(&tab, 400)?;
+    let view = view_transform(&tab)?;
+    let before = (digest(&tab)?, drawn_contours(&tab)?);
+    text(
+        &tab,
+        &format!(
+            "(() => {{ document.querySelector('{STAGE} .ms-scene [aria-label=\"Zoom in\"]').focus(); return 'ok'; }})()"
+        ),
+    )?;
+    // The swap works, then the focus cannot be put back, and then the old scene cannot be put back either.
+    fail_focus(&tab, true)?;
+    fail_replacement_after(&tab, true, 1)?;
+    choose(&tab, "ms-field", "coarse")?;
+    fail_replacement_after(&tab, false, 0)?;
+    fail_focus(&tab, false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check(
+        content(&tab, "#ms-error")?.contains("could not be put back"),
+        &content(&tab, "#ms-error")?,
+    )?;
+    check_eq((value_of(&tab, "ms-field")?, step(&tab)?), ("ripple".to_owned(), CELLS))?;
+    check(
+        !has_ripple_axes(&tab)?,
+        "the scene on the page is the new one, for the wrong grid",
+    )?;
+    check_eq(count(&tab, "#ms-staging svg > *")?, 0)?;
+    // The next action builds the committed field again, and does not draw its contours into the wrong axes.
+    click_button(&tab, "retry")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check(has_ripple_axes(&tab)?, "the committed field's axes")?;
+    check_eq((digest(&tab)?, drawn_contours(&tab)?), before)?;
+    check_geometry(&tab, (14, 12), "after the reconstruction")?;
+    check_eq((view_transform(&tab)?, zoom_percent(&tab)?), (view, 400))?;
+    check_eq(count(&tab, &format!("{STAGE} .ms-scene"))?, 1)?;
+    choose(&tab, "ms-field", "coarse")?;
+    check_eq(step(&tab)?, 48)
+}
+
+#[test]
+fn a_write_that_fails_after_a_swap_to_a_grid_of_the_same_size_leaves_a_scene_that_a_step_can_repair()
+-> Result<(), String> {
+    let tab = open()?;
+    inspect_cell(&tab, 14, 12)?;
+    zoom_to(&tab, 400)?;
+    let view = view_transform(&tab)?;
+    text(
+        &tab,
+        &format!(
+            "(() => {{ document.querySelector('{STAGE} .ms-scene [aria-label=\"Zoom in\"]').focus(); return 'ok'; }})()"
+        ),
+    )?;
+    fail_focus(&tab, true)?;
+    choose(&tab, "ms-field", "twin")?;
+    fail_focus(&tab, false)?;
+    check(!banner_hidden(&tab)?, "reported")?;
+    check_eq(value_of(&tab, "ms-field")?, "ripple".to_owned())?;
+    click_button(&tab, "retry")?;
+    check(banner_hidden(&tab)?, "repaired")?;
+    check_geometry(&tab, (14, 12), "after the repair")?;
+    check_eq((view_transform(&tab)?, zoom_percent(&tab)?), (view, 400))
 }
 
 #[test]

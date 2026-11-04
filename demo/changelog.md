@@ -20,7 +20,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Cleanup module to remove old Chrome processes after CDP tests (`ca48276`)
 - Red-black tree demo panel, after Edmonds–Karp: six insertions and a two-child deletion, as a real Scene with a semantic tree above it
 - Implement Red-Black Tree demo (`3a900bd`)
-- Implement marching squares demo panel, in a new "Computational Geometry" group (``)
+- Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
 
 ### Changed
 
@@ -50,3 +50,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Prevent pointer selection and actual focus from diverging (`24f0f6e`)
 - Red Black: Prevent delete fix-up descriptions from preceding their actions (`6adb2a6`)
 - Red Black: Correct review findings (`7052aed`)
+- Marching Squares: Repair after a successful scene swap can restore the wrong field geometry (``)

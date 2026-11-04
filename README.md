@@ -49,6 +49,8 @@ The original target algorithms were SHA1, SHA2 and SHA3; but since implementing 
     <dd>Conway's Game of Life</dd>
     <dt>Backtracking</dt>
     <dd>N-Queens Problem</dd>
+    <dt>Computational Geometry</dt>
+    <dd>Marching Squares</dd>
 
 </dl>
 

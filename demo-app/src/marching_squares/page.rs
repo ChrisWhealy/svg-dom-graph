@@ -48,6 +48,8 @@ struct Live {
     root: web_sys::Element,
     scene: Scene,
     plot: NodeId,
+    /// The width and the height of the grid that the scene's axes are for.
+    size: (usize, usize),
 }
 
 /// Why the one call that swaps the scene in failed.
@@ -67,6 +69,9 @@ pub(super) struct Page {
     said: Cell<u32>,
     error_shown: Cell<bool>,
     click: RefCell<Option<ClickHandler>>,
+    /// The view of a scene that was swapped out and could not be put back, which belongs to the committed state, so the
+    /// scene that is built again from it takes it.
+    lost_view: Cell<Option<ViewTransform>>,
 }
 
 impl Page {
@@ -84,6 +89,7 @@ impl Page {
             said: Cell::new(0),
             error_shown: Cell::new(false),
             click: RefCell::new(None),
+            lost_view: Cell::new(None),
         })
     }
 
@@ -203,7 +209,12 @@ impl Page {
         let root = make(&self.document, "g", &[("class", "ms-scene-root")])?;
         add(&self.chrome.staging, &root)?;
         match self.fill_scene(&root, &scene_id, trace, state, projection) {
-            Ok((scene, plot)) => Ok(Live { root, scene, plot }),
+            Ok((scene, plot)) => Ok(Live {
+                root,
+                scene,
+                plot,
+                size: (trace.grid.width, trace.grid.height),
+            }),
             Err(problem) => {
                 root.remove();
                 Err(problem)
@@ -617,6 +628,12 @@ impl Page {
     }
 
     fn draw_step(&self, trace: &Trace, state: &State, meta: Meta) -> Result<(), CommitError> {
+        // A step only replaces the items. If the scene on the page is for another grid, as it is after a swap that
+        // could not be put back, its axes are wrong for these items, so the whole scene is built again from the state.
+        let size = self.live.borrow().as_ref().map(|l| l.size);
+        if size != Some((trace.grid.width, trace.grid.height)) {
+            return self.draw_scene(trace, state, true, meta);
+        }
         let projection = project(trace, state);
         let picture = self.inspector_picture(trace, &projection).map_err(CommitError::Detached)?;
         let (plot, scene) = {
@@ -662,14 +679,22 @@ impl Page {
         let picture = self.inspector_picture(trace, &projection).map_err(CommitError::Detached)?;
         let candidate = self.build_scene(trace, state, &projection).map_err(CommitError::Detached)?;
         let discard = |candidate: &Live| candidate.root.remove();
-        // The view is carried over before the swap, so that a view that cannot be set never replaces a working one.
-        let saved: Option<ViewTransform> = self.live.borrow().as_ref().map(|l| l.scene.view());
-        if keep_view {
-            if let Some(view) = saved {
-                if let Err(problem) = candidate.scene.set_view(view) {
-                    discard(&candidate);
-                    return Err(CommitError::Detached(stringify(problem)));
-                }
+        // The view is carried over before the swap, so that a view that cannot be set never replaces a working one. It
+        // is the view of the scene on the page, if that is for the same axes, or else the one that was lost with a swap
+        // that could not be put back.
+        let lost = self.lost_view.get();
+        let live_view: Option<(ViewTransform, (usize, usize))> =
+            self.live.borrow().as_ref().map(|l| (l.scene.view(), l.size));
+        let same_axes = live_view.is_some_and(|(_, size)| size == candidate.size);
+        let carried = match (lost, live_view) {
+            (Some(view), _) => Some(view),
+            (None, Some((view, _))) if keep_view && same_axes => Some(view),
+            _ => None,
+        };
+        if let Some(view) = carried {
+            if let Err(problem) = candidate.scene.set_view(view) {
+                discard(&candidate);
+                return Err(CommitError::Detached(stringify(problem)));
             }
         }
         let label = self.focus_label();
@@ -685,12 +710,55 @@ impl Page {
             return Err(commit_error(failure.restored && whole, put_back(failure.problem, whole)));
         }
         let (scene, plot) = (candidate.scene.clone(), candidate.plot);
-        let old = self.live.replace(Some(candidate));
-        drop(old);
-        if let Some(label) = label {
-            self.restore_focus(&label).map_err(CommitError::Live)?;
+        // The scene that was swapped out is kept until everything after the swap has worked, so that it can be put
+        // back.
+        let previous = self.live.replace(Some(candidate));
+        let after = match label {
+            Some(label) => self.restore_focus(&label),
+            None => Ok(()),
         }
-        self.finish(&scene, plot, trace, &projection, &picture)
+        .map_err(CommitError::Live)
+        .and_then(|()| self.finish(&scene, plot, trace, &projection, &picture));
+        let Err(CommitError::Live(problem)) = after else {
+            self.lost_view.set(None);
+            drop(previous);
+            return after;
+        };
+        Err(CommitError::Live(self.roll_back(previous, &mut journal, lost, problem)))
+    }
+
+    /// Puts the scene that was swapped out back, and the controls with it, after a write that followed the swap failed.
+    ///
+    /// The page is left dirty either way, so that the next action draws it again from the committed state. If the old
+    /// scene is back, that is a step on it. If it cannot be put back, the scene on the page is for the wrong grid, and
+    /// the next draw builds the committed one again, with the view that the old scene had.
+    fn roll_back(
+        &self,
+        previous: Option<Live>,
+        journal: &mut Journal,
+        lost: Option<ViewTransform>,
+        problem: String,
+    ) -> String {
+        let controls = journal.restore();
+        let Some(previous) = previous else {
+            return format!("{problem}, and there was no earlier scene to put back");
+        };
+        let view = previous.scene.view();
+        match self.replace_scene(&previous.root) {
+            Ok(()) => {
+                let removed = self.live.replace(Some(previous));
+                drop(removed);
+                self.lost_view.set(lost);
+                format!(
+                    "{problem}, and the earlier scene was put back{}",
+                    if controls { "" } else { ", but not all of its controls" }
+                )
+            },
+            Err(failure) => {
+                self.lost_view.set(Some(lost.unwrap_or(view)));
+                format!("{problem}, and the earlier scene could not be put back: {}", failure.problem)
+            },
+        }
     }
 
     /// Draws the first scene, which has no earlier one to carry anything over from.
