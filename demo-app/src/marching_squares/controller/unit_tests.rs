@@ -341,20 +341,52 @@ fn a_rebuild_keeps_the_view_the_state_and_says_nothing() {
 }
 
 #[test]
-fn a_rebuild_that_fails_keeps_the_old_scene_and_the_next_gets_a_fresh_generation() {
+fn every_try_to_replace_the_scene_has_a_number_of_its_own_even_one_that_fails() {
     let rig = Rig::new();
+    let committed = rig.controller.meta().generation;
     rig.fail_next(CommitError::Detached("the swap failed".to_owned()));
-    let before = rig.controller.meta().generation;
     rig.act(Action::Rebuild);
-    assert_eq!(rig.controller.meta().generation, before, "nothing was replaced");
+    assert_eq!(
+        rig.controller.meta().generation,
+        committed,
+        "nothing was replaced, so the committed one is as it was"
+    );
+    assert_eq!(rig.controller.meta().attempt, 1, "but the try was counted");
     rig.act(Action::Rebuild);
-    let metas: Vec<u64> = rig.surface.draws.borrow().iter().map(|d| d.2.generation).collect();
+    let metas: Vec<(u64, u64)> = rig
+        .surface
+        .draws
+        .borrow()
+        .iter()
+        .map(|d| (d.2.generation, d.2.attempt))
+        .collect();
     assert_eq!(
         metas,
-        vec![before + 1, before + 1],
-        "each attempt is drawn as the generation it would become"
+        vec![(committed + 1, 1), (committed + 1, 2)],
+        "the one that would be committed is the same, and the tries are told apart"
     );
-    assert_eq!(rig.controller.meta().generation, before + 1);
+    assert_eq!(rig.controller.meta().generation, committed + 1);
+    assert_eq!(rig.controller.meta().attempt, 2);
+}
+
+#[test]
+fn a_step_is_not_a_try_to_replace_and_every_other_kind_of_replacement_is() {
+    let rig = Rig::new();
+    rig.act(Action::Seek(10));
+    rig.act(Action::SetShow(Show::One(1)));
+    assert_eq!(rig.controller.meta().attempt, 0, "steps replace nothing");
+    rig.fail_next(CommitError::Detached("x".to_owned()));
+    rig.act(Action::SetThreshold(0.102)); // a new trace, which fails
+    rig.act(Action::SetThreshold(0.102));
+    rig.act(Action::SetField(FieldId::Coarse));
+    rig.act(Action::Rebuild);
+    assert_eq!(rig.controller.meta().attempt, 4);
+    assert_eq!(rig.controller.meta().generation, 3, "three of the four were committed");
+    // Repairing a page draws a step, and is not a try either.
+    rig.fail_next(CommitError::Live("a".to_owned()));
+    rig.act(Action::Next);
+    rig.act(Action::Retry);
+    assert_eq!(rig.controller.meta().attempt, 4);
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

@@ -51,4 +51,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Red Black: Prevent delete fix-up descriptions from preceding their actions (`6adb2a6`)
 - Red Black: Correct review findings (`7052aed`)
 - Marching Squares: Repair after a successful scene swap can restore the wrong field geometry (`2c49afd`)
-- Marching Squares: Pointer-centred zoom and pointer panning need regression coverage (``)
+- Marching Squares: Pointer-centred zoom and pointer panning need regression coverage (`885af74`)
+- Marching Squares: Reconstruction generation identifiers are reused after failure (``)

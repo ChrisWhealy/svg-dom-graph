@@ -39,9 +39,14 @@ pub(crate) enum DrawKind {
 }
 
 /// The numbers that a draw is tagged with, which the diagnostic footer shows.
+///
+/// The generation is the committed one: it counts the traces and scenes that are on the page, and a request from before
+/// it does nothing. The attempt counts every try to replace the trace or the scene, including one that failed, so no
+/// two tries share a number, and a try that is made again after a failure is told apart from the one that failed.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Meta {
     pub(crate) generation: u64,
+    pub(crate) attempt: u64,
     pub(crate) token: u64,
 }
 
@@ -198,6 +203,8 @@ pub(crate) struct Controller {
     dirty: Cell<bool>,
     /// Counted up whenever the trace or the scene is replaced, so that a request from before does nothing.
     generation: Cell<u64>,
+    /// Counted up at every try to replace the trace or the scene, before it is drawn, so a failed try is counted too.
+    attempts: Cell<u64>,
     /// Counted up for each frame that is asked for, so that a frame that was taken back but arrives anyway is not taken
     /// for the one that is waiting.
     token: Cell<u64>,
@@ -219,6 +226,7 @@ impl Controller {
             scheduler,
             dirty: Cell::new(false),
             generation: Cell::new(0),
+            attempts: Cell::new(0),
             token: Cell::new(0),
             pending: Cell::new(None),
             frame: Cell::new(None),
@@ -237,6 +245,7 @@ impl Controller {
     pub(crate) fn meta(&self) -> Meta {
         Meta {
             generation: self.generation.get(),
+            attempt: self.attempts.get(),
             token: self.token.get(),
         }
     }
@@ -279,8 +288,13 @@ impl Controller {
         let shown = new_trace.clone().unwrap_or_else(|| self.trace());
         let replaces = new_trace.is_some() || matches!(kind, DrawKind::Scene { .. });
         let generation = self.generation.get() + u64::from(replaces);
+        // A try to replace is counted before it is drawn, so that one that fails is never counted again by the next.
+        if replaces {
+            self.attempts.set(self.attempts.get() + 1);
+        }
         let meta = Meta {
             generation,
+            attempt: self.attempts.get(),
             token: self.token.get(),
         };
         match self.surface.draw(&shown, &next, kind, meta) {

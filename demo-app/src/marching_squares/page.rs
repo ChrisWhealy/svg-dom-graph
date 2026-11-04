@@ -473,12 +473,13 @@ impl Page {
         };
         let selected = state.selected.map_or_else(|| "none".to_owned(), |(r, c)| format!("({r}, {c})"));
         let footer = format!(
-            "{} {}×{} · visited {step}/{last} · selected {selected} · segments {} · generation {} · token {} · digest {:08x}",
+            "{} {}×{} · visited {step}/{last} · selected {selected} · segments {} · generation {} · attempt {} · token {} · digest {:08x}",
             state.field.label(),
             trace.grid.width,
             trace.grid.height,
             projection.segments,
             meta.generation,
+            meta.attempt,
             meta.token,
             projection.digest >> 32,
         );

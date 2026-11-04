@@ -84,7 +84,8 @@ The controller has the same `Surface` and `Scheduler` as the other demos.
 A draw that fails before the page is touched keeps the state.
 One that fails after, or a rollback that was not whole, marks the page dirty, and the next action draws it again first, even one with nowhere to go.
 Range input is coalesced to one draw for each frame.
-Each frame carries the generation, which counts the traces and scenes, and a token of its own, so a frame that was taken back but arrives cannot overwrite a newer move.
+The generation counts the traces and scenes that are on the page, and the attempt counts every try to replace one, including a try that failed, so that no two tries share a number and a request from before a replacement does nothing.
+Each frame carries the generation and a token of its own, so a frame that was taken back but arrives cannot overwrite a newer move.
 
 ## Tests
 

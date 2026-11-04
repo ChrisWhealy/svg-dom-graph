@@ -1203,10 +1203,12 @@ fn a_scene_rebuilt_twenty_five_times_at_a_zoomed_and_panned_view_is_the_same() -
     )?;
     let mut ids = std::collections::BTreeSet::new();
     let mut generations = Vec::new();
+    let mut attempts = Vec::new();
     for round in 0..25 {
         click_button(&tab, "rebuild")?;
         ids.insert(attribute(&tab, &format!("{STAGE} .ms-scene"), "id")?);
         generations.push(footer_number(&tab, "generation")?);
+        attempts.push(footer_number(&tab, "attempt")?);
         check_eq((digest(&tab)?, drawn_contours(&tab)?, field(&tab, "status")?), first.clone())
             .map_err(|e| format!("round {round}: {e}"))?;
         check_eq(view_transform(&tab)?, view.clone()).map_err(|e| format!("round {round}: the view: {e}"))?;
@@ -1218,6 +1220,7 @@ fn a_scene_rebuilt_twenty_five_times_at_a_zoomed_and_panned_view_is_the_same() -
     }
     check_eq(ids.len(), 25)?;
     check(generations.windows(2).all(|w| w[1] == w[0] + 1), &format!("{generations:?}"))?;
+    check(attempts.windows(2).all(|w| w[1] == w[0] + 1), &format!("{attempts:?}"))?;
     check_geometry(&tab, (14, 12), "after 25 rebuilds")?;
     // The controls are the very same elements, and the page's own IDs are unique.
     check_eq(
@@ -1472,6 +1475,7 @@ fn a_scene_that_cannot_be_built_keeps_the_old_one_and_the_next_try_gets_a_fresh_
     zoom_to(&tab, 400)?;
     let old = attribute(&tab, &format!("{STAGE} .ms-scene"), "id")?;
     let view = view_transform(&tab)?;
+    let (generation, attempt) = (footer_number(&tab, "generation")?, footer_number(&tab, "attempt")?);
     fail_writes_of(&tab, "viewBox", true)?;
     click_button(&tab, "rebuild")?;
     fail_writes_of(&tab, "viewBox", false)?;
@@ -1491,6 +1495,11 @@ fn a_scene_that_cannot_be_built_keeps_the_old_one_and_the_next_try_gets_a_fresh_
     click_button(&tab, "rebuild")?;
     let fresh = attribute(&tab, &format!("{STAGE} .ms-scene"), "id")?;
     check(fresh != old, "a new ID")?;
+    // The failed try used a number of its own: the committed generation moved once, and the attempt twice.
+    check_eq(
+        (footer_number(&tab, "generation")?, footer_number(&tab, "attempt")?),
+        (generation + 1, attempt + 2),
+    )?;
     check_eq((view_transform(&tab)?, zoom_percent(&tab)?), (view, 400))?;
     check(banner_hidden(&tab)?, "cleared")
 }
