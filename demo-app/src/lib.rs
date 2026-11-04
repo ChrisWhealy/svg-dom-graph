@@ -38,6 +38,10 @@
 //!   algorithm on a sampled field, one cell at a time, at three levels. Ambiguous cells are settled by the sign of `Q`,
 //!   and an exact tie is two strands that cross. The scene zooms and pans, the controls do not, and any cell can be
 //!   inspected.
+//! - `panel-petri-net` / `#pn-stage` — [`petri_net::build_petri_net_demo`]: a bounded buffer that four producers fill and
+//!   three consumers empty, as an ordinary place/transition Petri net. Three scripts show a full and an empty buffer,
+//!   two producers that compete for the last slot, and workers that overlap. A manual branch lets a person fire the
+//!   enabled transitions. The net, not the page, stops a full buffer from taking an item.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -175,6 +179,7 @@ mod operators_arithmetic;
 mod operators_binary;
 mod operators_chained;
 mod operators_unary;
+mod petri_net;
 mod phase_shift;
 mod plot_scene;
 mod pythagoras;
@@ -310,6 +315,7 @@ demo_gallery! {
     "panel-edmonds-karp" => edmonds_karp::build_edmonds_karp_demo + edmonds_karp::FILES,
     "panel-red-black-tree" => red_black_tree::build_red_black_tree_demo + red_black_tree::FILES,
     "panel-marching-squares" => marching_squares::build_marching_squares_demo + marching_squares::FILES,
+    "panel-petri-net" => petri_net::build_petri_net_demo + petri_net::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

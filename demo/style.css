@@ -1892,3 +1892,345 @@ label.demo-slider-container {
     pointer-events: none;
     overflow: hidden;
 }
+
+/* The Petri net panel: the scene, with the controls above the net, beside the text of the snapshot. Every meaning in the
+   picture has a shape, a dash or a width as well as a colour, and the text panel says it again in words. */
+.pn-wrap {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 1.5rem;
+    margin: 0.75rem 0;
+}
+
+.pn-wrap .canvas {
+    flex: 1 1 60rem;
+    max-width: 100%;
+    overflow-x: auto;
+}
+
+.pn-wrap .canvas > svg {
+    display: block;
+    width: 100%;
+    max-width: 1040px;
+    height: auto;
+}
+
+.pn-side {
+    flex: 1 1 16rem;
+    max-width: 36rem;
+}
+
+.pn-side > h3:first-child {
+    margin-top: 0;
+}
+
+.section .pn-status {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0.2rem 0.75rem;
+    margin: 0 0 0.75rem;
+}
+
+.section .pn-status dt {
+    margin: 0;
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.section .pn-status dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+}
+
+.pn-notice {
+    margin: 0.5rem 0;
+    padding: 0.4rem 0.75rem;
+    border-left: 4px solid #b45309;
+    background: #fef3c7;
+    color: #451a03;
+}
+
+.pn-legend {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.pn-legend li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.pn-key {
+    flex: 0 0 auto;
+    background: #f8fafc;
+    border: 1px solid var(--border-strong);
+}
+
+#pn-stage [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+/* The overlay does not take the pointer, except at the targets, which are drawn above the library's own nodes. */
+.pn-overlay {
+    pointer-events: none;
+}
+
+.pn-overlay .pn-hit {
+    fill: transparent;
+    pointer-events: all;
+    cursor: pointer;
+}
+
+.pn-place,
+.pn-gate {
+    outline: none;
+}
+
+.pn-ring {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 3;
+}
+
+.pn-place:focus-visible .pn-ring,
+.pn-gate:focus-visible .pn-ring {
+    stroke: #1d4ed8;
+    stroke-dasharray: 5 3;
+    stroke-width: 3;
+}
+
+[data-pn-selected="true"] > .pn-ring {
+    stroke: #1d4ed8;
+    stroke-width: 3;
+}
+
+.pn-place.pn-waiting > .pn-ring {
+    stroke: #b45309;
+    stroke-dasharray: 2 3;
+    stroke-width: 4;
+}
+
+.pn-dot {
+    display: none;
+    fill: #0f172a;
+    pointer-events: none;
+}
+
+.pn-place.pn-tok-1 > .pn-dot {
+    display: inline;
+}
+
+.pn-count {
+    fill: #0f172a;
+    font-size: 20px;
+    font-weight: 700;
+    pointer-events: none;
+}
+
+.pn-name {
+    fill: #0f172a;
+    font-size: 11px;
+    font-weight: 600;
+    pointer-events: none;
+}
+
+.pn-state {
+    font-size: 10px;
+    font-weight: 400;
+    pointer-events: none;
+}
+
+.pn-zone {
+    fill: #475569;
+    font-size: 13px;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+}
+
+.pn-ring-title,
+.pn-hub-note {
+    fill: #64748b;
+    font-size: 11px;
+}
+
+.pn-caption {
+    fill: #0f172a;
+    font-size: 14px;
+    font-weight: 600;
+}
+
+.pn-bar {
+    pointer-events: none;
+}
+
+.pn-gate.pn-enabled .pn-bar {
+    fill: #0f766e;
+    stroke: #134e4a;
+    stroke-width: 2;
+}
+
+.pn-gate.pn-disabled .pn-bar {
+    fill: #e2e8f0;
+    stroke: #64748b;
+    stroke-dasharray: 3 2;
+    stroke-width: 1.5;
+}
+
+.pn-gate.pn-enabled .pn-state {
+    fill: #0f766e;
+    font-weight: 700;
+}
+
+.pn-gate.pn-disabled .pn-state {
+    fill: #64748b;
+}
+
+.pn-gate.pn-new > .pn-ring {
+    stroke: #0f766e;
+    stroke-dasharray: none;
+    stroke-width: 2;
+}
+
+.pn-gate.pn-new .pn-bar {
+    stroke-width: 4;
+}
+
+.pn-gate.pn-fired > .pn-ring {
+    stroke: #b45309;
+    stroke-dasharray: none;
+    stroke-width: 5;
+}
+
+.pn-gate.pn-fired .pn-state {
+    fill: #b45309;
+    font-weight: 700;
+}
+
+.pn-cell {
+    fill: #ffffff;
+    stroke: #64748b;
+    stroke-width: 1.5;
+}
+
+.pn-cell[data-pn-full="true"] {
+    fill: #2563eb;
+    stroke: #1e3a8a;
+}
+
+/* The library's own connectors carry the arc's index. Emphasis changes how they look and nothing else. */
+.pn-scene path[data-pn-emphasis="dim"] {
+    opacity: 0.15;
+}
+
+.pn-scene path[data-pn-emphasis="on"] {
+    stroke: #0f766e;
+    stroke-width: 3.5;
+}
+
+.pn-key-place {
+    fill: #ffffff;
+    stroke: #334155;
+    stroke-width: 2;
+}
+
+.pn-key-dot {
+    fill: #0f172a;
+}
+
+.pn-key-on {
+    fill: #0f766e;
+    stroke: #134e4a;
+    stroke-width: 2;
+}
+
+.pn-key-off {
+    fill: #e2e8f0;
+    stroke: #64748b;
+    stroke-dasharray: 3 2;
+    stroke-width: 1.5;
+}
+
+.pn-key-new {
+    fill: #0f766e;
+    stroke: #0f766e;
+    stroke-width: 5;
+    paint-order: stroke;
+}
+
+.pn-key-fired {
+    fill: #0f766e;
+    stroke: #b45309;
+    stroke-width: 5;
+}
+
+.pn-key-waiting {
+    stroke: #b45309;
+    stroke-dasharray: 2 3;
+    stroke-width: 3;
+}
+
+.pn-key-arc {
+    fill: none;
+    stroke: #475569;
+    stroke-width: 2;
+}
+
+.pn-key-head {
+    fill: #475569;
+}
+
+.pn-key-cell {
+    fill: #ffffff;
+    stroke: #64748b;
+    stroke-width: 1.5;
+}
+
+.pn-key-full {
+    fill: #2563eb;
+    stroke: #1e3a8a;
+}
+
+@media (forced-colors: active) {
+    .pn-gate.pn-enabled .pn-bar,
+    .pn-key-on {
+        fill: Highlight;
+        stroke: CanvasText;
+    }
+
+    .pn-gate.pn-disabled .pn-bar,
+    .pn-key-off {
+        fill: Canvas;
+        stroke: GrayText;
+    }
+
+    .pn-cell[data-pn-full="true"],
+    .pn-key-full {
+        fill: Highlight;
+        stroke: CanvasText;
+    }
+
+    .pn-place:focus-visible .pn-ring,
+    .pn-gate:focus-visible .pn-ring,
+    [data-pn-selected="true"] > .pn-ring {
+        stroke: Highlight;
+    }
+
+    .pn-place.pn-waiting > .pn-ring,
+    .pn-gate.pn-fired > .pn-ring {
+        stroke: LinkText;
+    }
+
+    .pn-count,
+    .pn-name,
+    .pn-caption,
+    .pn-gate .pn-state {
+        fill: CanvasText;
+    }
+}

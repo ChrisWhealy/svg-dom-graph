@@ -1,0 +1,150 @@
+<section class="section" id="panel-petri-net" data-label="Petri Net: Bounded Buffer">
+    <h2>Petri Net: Bounded Producer&ndash;Consumer System</h2>
+    <p>
+        A <b>Petri net</b> consists of two types of elements: <b>places</b> (drawn as circles) and
+        <b>transitions</b> (drawn as rectangles).
+    </p>
+    <p>
+        A place may hold zero or more <b>tokens</b>, and a transition is said to be <b>enabled</b> if all places
+        connected to it as inputs contain at least one token.
+    </p>
+    <p>
+        Firing a transition transfers one token from each of those input places and adds one to each place it feeds, all
+        at once.
+    </p>
+    <p>
+        Here four producers prepare items and put them into a buffer of eight slots, and three consumers take them out
+        and process them. The buffer is two places, <code>Free</code> and <code>Used</code>, which always add up to
+        eight. A <code>Put</code> needs a free slot and a <code>Take</code> needs a stored item, so nothing in the page
+        stops a full buffer from taking another item. The net does, because the transition is not enabled.
+    </p>
+    <p class="demo-error" id="pn-error" hidden></p>
+    <p class="visually-hidden" id="pn-live" role="status" aria-live="polite"></p>
+    <p class="pn-notice" id="pn-notice" hidden></p>
+    <div class="pn-wrap">
+        <div class="canvas" id="pn-stage"></div>
+        <div class="pn-side">
+            <h3>This snapshot</h3>
+            <dl class="pn-status">
+                <dt>Snapshot</dt>
+                <dd id="pn-p-snapshot">0 of 0</dd>
+                <dt>History</dt>
+                <dd id="pn-p-history">&mdash;</dd>
+                <dt>This event</dt>
+                <dd id="pn-p-event">&mdash;</dd>
+                <dt>Tokens</dt>
+                <dd id="pn-p-tokens">&mdash;</dd>
+                <dt>Enabled changes</dt>
+                <dd id="pn-p-changes">&mdash;</dd>
+                <dt>Enabled now</dt>
+                <dd id="pn-p-enabled">&mdash;</dd>
+                <dt>Waiting</dt>
+                <dd id="pn-p-blocked">&mdash;</dd>
+                <dt>Buffer</dt>
+                <dd id="pn-p-buffer">&mdash;</dd>
+                <dt>Counts</dt>
+                <dd id="pn-p-counts">&mdash;</dd>
+                <dt>Selected</dt>
+                <dd id="pn-p-inspector">&mdash;</dd>
+            </dl>
+        </div>
+    </div>
+    <h3>Reading the picture</h3>
+    <ul class="pn-legend" id="pn-legend">
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <circle class="pn-key-place" cx="30" cy="12" r="9" />
+                <circle class="pn-key-dot" cx="30" cy="12" r="3.5" />
+            </svg>
+            <span>A place with a token: a circle with a solid dot. A place with none is an empty circle.</span>
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <rect class="pn-key-on" x="24" y="2" width="12" height="20" />
+            </svg>
+            <span>An enabled transition: a solid bar with a solid outline, and the word &ldquo;enabled&rdquo;.</span>
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <rect class="pn-key-off" x="24" y="2" width="12" height="20" />
+            </svg>
+            <span>A disabled transition: a pale bar with a dashed outline, and the word &ldquo;disabled&rdquo;.</span>
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <rect class="pn-key-new" x="24" y="2" width="12" height="20" />
+            </svg>
+            <span>A transition that has just become enabled: a double outline, and the word &ldquo;new&rdquo;.</span>
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <rect class="pn-key-fired" x="24" y="2" width="12" height="20" />
+            </svg>
+            <span>The transition that just fired: a thick ring, and the word &ldquo;fired&rdquo;.</span>
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <circle class="pn-key-place pn-key-waiting" cx="30" cy="12" r="9" />
+            </svg>
+            <span
+                >A worker that waits on the buffer: a dotted ring. A prepared item waits for a free slot, and an idle
+                consumer waits for an item.</span
+            >
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <path class="pn-key-arc" d="M4 12H48" />
+                <path class="pn-key-head" d="M46 7L56 12L46 17Z" />
+            </svg>
+            <span
+                >An arc: a line with an arrowhead showing its direction. Every arc has weight 1, so none is
+                labelled.</span
+            >
+        </li>
+        <li>
+            <svg class="pn-key" viewBox="0 0 60 24" width="60" height="24" aria-hidden="true">
+                <rect class="pn-key-cell pn-key-full" x="6" y="4" width="16" height="16" rx="2" />
+                <rect class="pn-key-cell" x="26" y="4" width="16" height="16" rx="2" />
+            </svg>
+            <span>The buffer: one filled cell for each used slot. The words say Used and Free as well.</span>
+        </li>
+    </ul>
+    <h3>Using the page</h3>
+    <p>The selectors, the buttons and the range are in the scene, above the net.</p>
+    <ul>
+        <li>
+            Choose a <b>scenario</b>. <b>Walkthrough</b> fills the buffer, blocks a producer, releases it, drains the
+            buffer and blocks the consumers. <b>Contention</b> has two producers compete for the last free slot.
+            <b>Interleaving</b> keeps several workers busy, ready and processing at once. Choosing one shows its first
+            snapshot on the same net.
+        </li>
+        <li>
+            <b>Next</b> and <b>Previous</b> move one event. <b>Restart</b> goes back to the first snapshot. A button
+            that has nowhere to go is dimmed but can still be pressed, and then says so. The range goes straight to any
+            snapshot, and a <b>checkpoint</b> goes to a named one.
+        </li>
+        <li>
+            <b>Play</b> steps through a script at the speed you choose and stops at the end. It never loops. While it
+            plays, only a change in who waits on the buffer is announced to a screen reader.
+        </li>
+        <li>
+            Click a place or a transition, or move the keyboard focus to it, to see its inputs, outputs and tokens, and
+            for a disabled transition, which input has no token. Selecting never fires anything.
+        </li>
+        <li>
+            <b>Enter manual</b> starts a branch from the snapshot you are on. In manual mode, select an enabled
+            transition and press <b>Fire selected</b>, double-click it, or press Enter or Space while it has the focus.
+            A disabled transition says what it is missing and changes nothing. <b>Return to script</b> goes back to the
+            snapshot you left, and choosing a scenario discards the branch and says so.
+        </li>
+        <li>
+            <b>Focused wiring</b> dims the arcs that are not part of the selected place or transition. It changes how
+            the arcs look and nothing else.
+        </li>
+        <li>
+            Tab to the net, which is a single stop, and use the arrow keys to move between the places and the
+            transitions, and <b>Home</b> and <b>End</b> to the first and the last. The scene zooms and pans, and the
+            controls do not.
+        </li>
+    </ul>
+</section>

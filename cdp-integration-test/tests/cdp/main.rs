@@ -161,6 +161,7 @@ mod marching_squares;
 mod n_queens;
 mod overlap_resolution;
 mod pan;
+mod petri_net;
 mod phase_shift;
 mod pythagoras;
 mod qr_code;
