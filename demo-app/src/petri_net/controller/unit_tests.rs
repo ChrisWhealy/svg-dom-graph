@@ -463,6 +463,38 @@ fn the_quick_route_selects_the_transition_and_fires_it_once() {
 }
 
 #[test]
+fn the_quick_route_does_not_fire_when_its_selection_could_not_be_drawn_even_if_that_transition_was_already_selected() {
+    let r = rig();
+    r.act(Action::EnterManual);
+    r.select(T::start(0));
+    assert_eq!(r.controller.view().selected, Some(Target::Transition(T::start(0))));
+    r.fake.fail_draws.set(1);
+    r.act(Action::Fire(T::start(0)));
+    assert!(r.controller.is_dirty());
+    assert_eq!((r.controller.cursor(), r.controller.last()), (0, 0), "no snapshot was appended");
+    assert_eq!(r.fake.failures.borrow().len(), 1);
+    // The next action repairs the page first, and then a firing works.
+    r.act(Action::Fire(T::start(0)));
+    assert!(!r.controller.is_dirty());
+    assert_eq!((r.controller.cursor(), r.controller.last()), (1, 1));
+}
+
+#[test]
+fn the_quick_route_does_not_fire_when_its_selection_could_not_be_drawn_and_another_was_selected() {
+    let r = rig();
+    r.act(Action::EnterManual);
+    r.select(T::start(1));
+    r.fake.fail_draws.set(1);
+    r.act(Action::Fire(T::start(0)));
+    assert_eq!((r.controller.cursor(), r.controller.last()), (0, 0));
+    assert_eq!(
+        r.controller.view().selected,
+        Some(Target::Transition(T::start(1))),
+        "the view was not committed"
+    );
+}
+
+#[test]
 fn in_manual_mode_previous_next_restart_and_seek_browse_without_recomputing() {
     let r = rig();
     r.act(Action::EnterManual);

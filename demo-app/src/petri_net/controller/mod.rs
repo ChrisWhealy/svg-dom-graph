@@ -378,15 +378,21 @@ impl Controller {
     }
 
     /// Commits a change of view the way an index is committed: only after the page has been drawn with it.
-    fn commit_view(&self, view: View) {
+    ///
+    /// Says whether it was committed, which a caller that goes on to act on the new view must check.
+    fn commit_view(&self, view: View) -> bool {
         match self.paint(self.cursor(), &view, false, &self.notice.borrow().clone()) {
-            Ok(()) => self.view.set(view),
+            Ok(()) => {
+                self.view.set(view);
+                true
+            },
             Err(problem) => {
                 // A tick that was waiting would draw the next snapshot onto a page that is out of date, and a tick does
                 // not repair it first, so playback stops here.
                 self.dirty.set(true);
                 self.stop_playback();
                 self.surface.failed(&problem);
+                false
             },
         }
     }
@@ -446,8 +452,9 @@ impl Controller {
                 let mut view = self.view.get();
                 view.selected = Some(Target::Transition(t));
                 view.roving = Target::Transition(t);
-                self.commit_view(view);
-                if self.view.get().selected == Some(Target::Transition(t)) {
+                // Only a selection that the page has drawn is fired. If the draw failed, the page is dirty, and the
+                // next action repairs it before anything else happens.
+                if self.commit_view(view) {
                     self.fire_selected();
                 }
             },

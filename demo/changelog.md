@@ -54,4 +54,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Marching Squares: Repair after a successful scene swap can restore the wrong field geometry (`2c49afd`)
 - Marching Squares: Pointer-centred zoom and pointer panning need regression coverage (`885af74`)
 - Marching Squares: Reconstruction generation identifiers are reused after failure (`9e638c5`)
-- Petri Net: Stop playback on failed selection or wiring update (``)
+- Petri Net: Stop playback on failed selection or wiring update (`1bcc0f4`)
+- Petri Net: Quick-fire can proceed after its selection draw fails (``)
