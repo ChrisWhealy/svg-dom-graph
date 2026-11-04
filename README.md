@@ -21,71 +21,72 @@ The goal is to allow the users to create a scene containing SVG elements suitabl
 The original target algorithms were SHA1, SHA2 and SHA3; but since implementing these, the number and type of algorithm being visualised has expanded significantly.
 
 <details>
-<summary>Algorithms visualised</summary>
-
-<details>
 <summary>Cryptographic Algorithms</summary>
-
-<p>SHA1<br>SHA2<br>SHA3<br>ChaCha20</p>
-
+<p>&nbsp;&nbsp;&nbsp;SHA1<br>
+    &nbsp;&nbsp;&nbsp;SHA2<br>
+    &nbsp;&nbsp;&nbsp;SHA3<br>
+    &nbsp;&nbsp;&nbsp;ChaCha20
+</p>
 </details>
 
 <details>
 <summary>Encoding and Compression</summary>
-
-<p>Huffman Encoding<br>Base64 Encoding<br>UTF-8 Encoding</p>
-
+<p>&nbsp;&nbsp;&nbsp;Huffman Encoding<br>
+    &nbsp;&nbsp;&nbsp;Base64 Encoding<br>
+    &nbsp;&nbsp;&nbsp;UTF-8 Encoding
+</p>
 </details>
 
 <details>
 <summary>Error Detection and Correction</summary>
-
-<p>CRC-32<br>Hamming(7,4)<br>QR Code</p>
-
+<p>&nbsp;&nbsp;&nbsp;CRC-32<br>
+    &nbsp;&nbsp;&nbsp;Hamming(7,4)<br>
+    &nbsp;&nbsp;&nbsp;QR Code
+</p>
 </details>
 
 <details>
 <summary>Sorting</summary>
-
-<p>Bubble Sort<br>Shell Sort<br>Quicksort</p>
-
+<p>&nbsp;&nbsp;&nbsp;Bubble Sort<br>
+    &nbsp;&nbsp;&nbsp;Shell Sort<br>
+    &nbsp;&nbsp;&nbsp;Quicksort
+</p>
 </details>
 
 <details>
 <summary>Graph Algorithms</summary>
-
-<p>Dijkstra's Shortest Paths<br>Weighted Springs<br>Edmonds-Karp Maximum Flow<br>Red-Black Tree<br>Tarjan's Strongly Connected Components</p>
-
+<p>&nbsp;&nbsp;&nbsp;Dijkstra's Shortest Paths<br>
+    &nbsp;&nbsp;&nbsp;Weighted Springs<br>
+    &nbsp;&nbsp;&nbsp;Edmonds-Karp Maximum Flow<br>
+    &nbsp;&nbsp;&nbsp;Red-Black Tree<br>
+    &nbsp;&nbsp;&nbsp;Tarjan's Strongly Connected Components
+</p>
 </details>
 
 <details>
 <summary>Signal Processing</summary>
-
-<p>Sine and Cosine<br>Pythagoras<br>Amplitude and Frequency<br>Phase Shift<br>Convolution<br>Fast Fourier Transform</p>
-
+<p>&nbsp;&nbsp;&nbsp;Sine and Cosine<br>
+    &nbsp;&nbsp;&nbsp;Pythagoras<br>
+    &nbsp;&nbsp;&nbsp;Amplitude and Frequency<br>
+    &nbsp;&nbsp;&nbsp;Phase Shift<br>
+    &nbsp;&nbsp;&nbsp;Convolution<br>
+    &nbsp;&nbsp;&nbsp;Fast Fourier Transform
+</p>
 </details>
 
 <details>
 <summary>Cellular Automata</summary>
-
-<p>Conway's Game of Life</p>
-
+<p>&nbsp;&nbsp;&nbsp;Conway's Game of Life</p>
 </details>
 
 <details>
 <summary>Backtracking</summary>
-
-<p>N-Queens Problem</p>
-
+<p>&nbsp;&nbsp;&nbsp;N-Queens Problem</p>
 </details>
 
 <details>
 <summary>Computational Geometry</summary>
-
-<p>Marching Squares</p>
-
-</details>
-
+<p>&nbsp;&nbsp;&nbsp;Marching Squares</p>
 </details>
 
 ## [Changelog](changelog.md)

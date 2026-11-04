@@ -30,7 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Demo panels are grouped and ordered by the folders under `demo/panels/` not by `data-group` and `data-order` tags
 - `svg_buttons` and `sliders` moved from `demo-common` to the library, as `svg_dom_graph::controls`
 - Red Black: Fully account for DOM rollback failures (`dd71128`)
-- Update top level README (``)
+- Update top level README (`c12dfd9`)
+- Update top level README again (``)
 
 ### Fixed
 
