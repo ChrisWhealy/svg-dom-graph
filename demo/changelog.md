@@ -31,6 +31,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - `svg_buttons` and `sliders` moved from `demo-common` to the library, as `svg_dom_graph::controls`
 - Red Black: Fully account for DOM rollback failures (`dd71128`)
 - Update top level README (`c12dfd9`)
+- Update top level README again (`a312666`)
 - Update top level README again (``)
 
 ### Fixed
