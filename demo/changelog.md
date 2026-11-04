@@ -21,7 +21,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Red-black tree demo panel, after Edmonds–Karp: six insertions and a two-child deletion, as a real Scene with a semantic tree above it
 - Implement Red-Black Tree demo (`3a900bd`)
 - Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
-- Add a Petri Net demo (``)
+- Add a Petri Net demo (`eb06cfa`)
 
 ### Changed
 
@@ -54,3 +54,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Marching Squares: Repair after a successful scene swap can restore the wrong field geometry (`2c49afd`)
 - Marching Squares: Pointer-centred zoom and pointer panning need regression coverage (`885af74`)
 - Marching Squares: Reconstruction generation identifiers are reused after failure (`9e638c5`)
+- Petri Net: Stop playback on failed selection or wiring update (``)

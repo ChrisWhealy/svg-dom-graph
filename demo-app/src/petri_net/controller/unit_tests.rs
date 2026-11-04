@@ -654,6 +654,43 @@ fn a_failed_write_keeps_the_index_marks_the_page_dirty_and_stops_playback() {
 }
 
 #[test]
+fn a_failed_selection_stops_playback_so_that_a_tick_that_was_waiting_cannot_draw_on_a_page_that_is_out_of_date() {
+    let r = rig();
+    r.act(Action::Seek(4));
+    r.act(Action::Play);
+    assert!(r.controller.is_playing());
+    r.clock.keep_cancelled();
+    r.fake.fail_draws.set(1);
+    r.select(T::put(0));
+    assert!(r.controller.is_dirty());
+    assert!(!r.controller.is_playing(), "the failed write stopped playback");
+    assert!(!*r.fake.playing.borrow().last().unwrap(), "and the Play button says so");
+    let draws = r.fake.draws.borrow().len();
+    r.clock.advance();
+    assert_eq!(r.controller.cursor(), 4, "the old tick did nothing");
+    assert_eq!(r.fake.draws.borrow().len(), draws, "and drew nothing");
+    assert!(
+        r.controller.is_dirty(),
+        "the page is still repaired by the next action, not by a tick"
+    );
+    r.act(Action::Next);
+    assert!(!r.controller.is_dirty() && r.controller.cursor() == 5);
+}
+
+#[test]
+fn a_failed_change_of_wiring_stops_playback_in_the_same_way() {
+    let r = rig();
+    r.act(Action::Play);
+    r.clock.keep_cancelled();
+    r.fake.fail_draws.set(1);
+    r.act(Action::SetWiring(Wiring::Focused));
+    assert!(r.controller.is_dirty() && !r.controller.is_playing());
+    r.clock.advance();
+    assert_eq!(r.controller.cursor(), 0);
+    assert_eq!(r.controller.view().wiring, Wiring::Overview, "the view was not committed");
+}
+
+#[test]
 fn the_next_action_draws_the_committed_snapshot_in_full_before_anything_else() {
     let r = rig();
     r.act(Action::Seek(4));

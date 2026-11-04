@@ -22,7 +22,8 @@ pub(crate) const SCENE: Size = Size {
 pub(crate) const RADIUS: f64 = 24.0;
 pub(crate) const HUB_RADIUS: f64 = 34.0;
 
-/// How far above the centre of a hub the library's label ("Free" or "Used") is moved, to leave room for the count under it.
+/// How far above the centre of a hub the library's label ("Free" or "Used") is moved, to leave room for the count under
+/// it.
 pub(crate) const HUB_LABEL_LIFT: f64 = 14.0;
 
 /// The width and height of every gate, which is a narrow upright bar.

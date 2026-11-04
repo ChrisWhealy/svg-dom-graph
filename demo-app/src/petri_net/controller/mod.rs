@@ -382,7 +382,10 @@ impl Controller {
         match self.paint(self.cursor(), &view, false, &self.notice.borrow().clone()) {
             Ok(()) => self.view.set(view),
             Err(problem) => {
+                // A tick that was waiting would draw the next snapshot onto a page that is out of date, and a tick does
+                // not repair it first, so playback stops here.
                 self.dirty.set(true);
+                self.stop_playback();
                 self.surface.failed(&problem);
             },
         }
