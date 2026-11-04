@@ -2234,3 +2234,348 @@ label.demo-slider-container {
         fill: CanvasText;
     }
 }
+
+/* The Tarjan window (`tarjan-scc-window.html`): a strip of controls, the text of the step, and the one scene, which
+   fills what is left of the window. Every meaning in the picture has a dash, a width or a word as well as a colour. */
+body.tj-window {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.section.active.tj-stage {
+    display: flex;
+    flex-direction: column;
+    gap: 0.5rem;
+    box-sizing: border-box;
+    height: 100vh;
+    padding: 0.5rem 0.75rem;
+}
+
+.tj-scene svg {
+    background: #ffffee;
+}
+
+.tj-scene {
+    flex: 1 1 0;
+    min-height: 0;
+    border: 1px solid var(--border-strong);
+}
+
+.tj-text {
+    /* A fixed height, so that a longer sentence in it never changes the size of the scene above it. */
+    flex: 0 0 150px;
+    overflow-y: auto;
+    display: flex;
+    flex-wrap: wrap;
+    align-items: flex-start;
+    gap: 0.25rem 1.5rem;
+    font-size: 0.9rem;
+}
+
+.tj-text .tj-status {
+    display: grid;
+    /* Three columns, the middle one wider for the longer sentences. */
+    grid-template-columns: 30% 40% 30%;
+    gap: 0.1rem 0;
+    margin: 0;
+    flex: 1 1 600px;
+}
+
+.tj-text .tj-status > div {
+    display: grid;
+    grid-template-columns: max-content 1fr;
+    gap: 0 0.75rem;
+    padding-right: 1rem;
+    min-width: 0;
+}
+
+.tj-text .tj-status dt {
+    margin: 0;
+    font-weight: 600;
+}
+
+.tj-text .tj-status dd {
+    margin: 0;
+    padding: 0;
+    border: 0;
+    overflow-wrap: anywhere;
+}
+
+.tj-notice {
+    flex: 1 1 100%;
+    margin: 0;
+    padding: 0.3rem 0.75rem;
+    border-left: 4px solid #b45309;
+    background: #fef3c7;
+    color: #451a03;
+}
+
+.tj-notice[hidden] + .tj-fit-inline {
+    display: none;
+}
+
+.tj-fit-inline {
+    margin: 0;
+}
+
+/* The pieces of the condensation and of the roster that are not shown yet or any more. */
+.tj-scene-svg [data-tj-hidden="true"] {
+    display: none;
+}
+
+.tj-roster-row rect {
+    fill: Canvas;
+    stroke: var(--border-strong, #64748b);
+    stroke-width: 2;
+}
+
+.tj-roster-row text {
+    fill: CanvasText;
+    font-size: 15px;
+}
+
+.tj-heading {
+    fill: CanvasText;
+    font-size: 18px;
+}
+
+.tj-heading {
+    font-weight: 700;
+}
+
+.tj-roster-row {
+    cursor: pointer;
+    pointer-events: all;
+}
+
+.tj-roster-row.tj-selected rect {
+    stroke: #b45309;
+    stroke-width: 4;
+    stroke-dasharray: 8 4;
+}
+
+.tj-roster-row:focus-visible rect,
+[data-tj-dag-node]:focus-visible rect {
+    stroke: #1d4ed8;
+    stroke-width: 4;
+}
+
+[data-tj-dag-node] {
+    cursor: pointer;
+}
+
+#tj-controls-svg [data-action]:focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+/* The overlay on the source scene. Only the hit targets take the pointer, and a vertex is above every edge. */
+.tj-overlay {
+    pointer-events: none;
+}
+
+.tj-vertex {
+    fill: transparent;
+    stroke: transparent;
+    stroke-width: 2;
+    pointer-events: all;
+    cursor: pointer;
+    outline: none;
+}
+
+.tj-vertex.tj-on-stack {
+    stroke: #1d4ed8;
+    stroke-width: 3;
+    stroke-dasharray: 6 3;
+}
+
+.tj-vertex.tj-closed {
+    stroke-width: 2;
+    fill-opacity: 0.3;
+}
+
+.tj-vertex.tj-current {
+    stroke: #b45309;
+    stroke-width: 5;
+    stroke-dasharray: none;
+}
+
+.tj-vertex.tj-selected {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.tj-vertex:focus-visible,
+.tj-edge-hit:focus-visible {
+    outline: 3px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.tj-edge-hit {
+    fill: none;
+    stroke: transparent;
+    stroke-width: 14px;
+    vector-effect: non-scaling-stroke;
+    pointer-events: stroke;
+    cursor: pointer;
+    outline: none;
+}
+
+.tj-edge-hit.tj-selected {
+    stroke: rgba(29, 78, 216, 0.35);
+}
+
+.tj-scene-svg path[data-tj-inspected="tree"] {
+    stroke: #b45309;
+    stroke-width: 4.5;
+}
+
+.tj-scene-svg path[data-tj-inspected="stack"] {
+    stroke: #b45309;
+    stroke-width: 4.5;
+    stroke-dasharray: 10 5;
+}
+
+.tj-scene-svg path[data-tj-inspected="closed"] {
+    stroke: #b45309;
+    stroke-width: 4.5;
+    stroke-dasharray: 2 5;
+}
+
+.tj-outline rect {
+    fill: none;
+    stroke-width: 3;
+    stroke-dasharray: 12 6;
+}
+
+.tj-outline.tj-selected rect {
+    stroke-width: 7;
+}
+
+.tj-outline-label {
+    font-size: 18px;
+    font-weight: 700;
+    paint-order: stroke;
+    stroke: #ffffff;
+    stroke-width: 4px;
+}
+
+/* Ten hues, and each component is also named in its outline and its roster row, so no meaning is colour alone. */
+.tj-comp-1 { --tj-hue: #0f766e; }
+.tj-comp-2 { --tj-hue: #7c3aed; }
+.tj-comp-3 { --tj-hue: #be123c; }
+.tj-comp-4 { --tj-hue: #0369a1; }
+.tj-comp-5 { --tj-hue: #a16207; }
+.tj-comp-6 { --tj-hue: #15803d; }
+.tj-comp-7 { --tj-hue: #c2410c; }
+.tj-comp-8 { --tj-hue: #4338ca; }
+.tj-comp-9 { --tj-hue: #86198f; }
+.tj-comp-10 { --tj-hue: #475569; }
+
+.tj-vertex.tj-closed:not(.tj-current) {
+    fill: var(--tj-hue, #64748b);
+    stroke: var(--tj-hue, #64748b);
+}
+
+.tj-outline rect,
+.tj-outline-label {
+    fill: none;
+}
+
+.tj-outline rect {
+    stroke: var(--tj-hue, #64748b);
+}
+
+.tj-outline-label {
+    fill: var(--tj-hue, #64748b);
+}
+
+.tj-scene-svg [data-tj-selected="true"] rect {
+    stroke: #b45309;
+    stroke-width: 5;
+}
+
+.tj-key {
+    flex: 0 0 auto;
+    background: #f8fafc;
+    border: 1px solid var(--border-strong);
+}
+
+.tj-keys {
+    list-style: none;
+    margin: 0;
+    padding: 0;
+}
+
+.tj-keys li {
+    display: flex;
+    align-items: center;
+    gap: 0.6rem;
+    margin-bottom: 0.4rem;
+}
+
+.tj-key-box {
+    fill: #ffffff;
+    stroke: #64748b;
+    stroke-width: 2;
+}
+
+.tj-key-onstack {
+    stroke: #1d4ed8;
+    stroke-width: 3;
+    stroke-dasharray: 6 3;
+}
+
+.tj-key-closed {
+    fill: #0f766e;
+    fill-opacity: 0.3;
+    stroke: #0f766e;
+}
+
+.tj-key-current {
+    stroke: #b45309;
+    stroke-width: 5;
+}
+
+.tj-key-outline {
+    fill: none;
+    stroke: #7c3aed;
+    stroke-width: 3;
+    stroke-dasharray: 8 4;
+}
+
+.tj-key-tree {
+    fill: none;
+    stroke: #b45309;
+    stroke-width: 4.5;
+}
+
+@media (prefers-reduced-motion: reduce) {
+    .tj-stage * {
+        transition: none !important;
+        animation: none !important;
+    }
+}
+
+@media (forced-colors: active) {
+    .tj-vertex.tj-current,
+    .tj-vertex.tj-selected {
+        stroke: Highlight;
+        outline-color: Highlight;
+    }
+
+    .tj-vertex.tj-on-stack,
+    .tj-outline rect {
+        stroke: CanvasText;
+    }
+
+    .tj-vertex.tj-closed:not(.tj-current) {
+        fill: Highlight;
+        stroke: CanvasText;
+    }
+
+    .tj-outline-label {
+        fill: CanvasText;
+    }
+}

@@ -29,6 +29,7 @@ features = [
     "BlobPropertyBag",
     "DomRect",
     "Element",
+    "Screen",
     "Event",
     "EventTarget",
     "FocusEvent",

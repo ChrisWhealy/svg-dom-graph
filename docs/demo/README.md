@@ -32,6 +32,7 @@
 - [Red–black tree](red-black-tree.md)
 - [Marching squares](marching-squares.md)
 - [Petri net](petri-net.md)
+- [Tarjan's strongly connected components](tarjan-scc.md)
 - [Conway's Game of Life](game-of-life.md)
 - [The N-Queens puzzle](n-queens.md)
 - [Internal Workings of the Demo Server](demo-internals.md)

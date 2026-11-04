@@ -175,6 +175,7 @@ mod small_drag;
 mod sorting;
 mod springs;
 mod step_driver_accessibility;
+mod tarjan;
 mod text_nodes;
 mod text_selection;
 mod utf8;

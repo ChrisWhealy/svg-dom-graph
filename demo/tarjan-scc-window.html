@@ -1,0 +1,74 @@
+<!doctype html>
+<html lang="en">
+
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Tarjan&rsquo;s strongly connected components — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+</head>
+
+<!-- The Tarjan scene in a window of its own. The gallery's own panel keeps the description and opens this page (see
+     `build_tarjan_demo`). `init_tarjan_window` builds the one scene here: the controls, the graph, the stack, the list of
+     components and the condensation. The scene fills the window above the text of the step. -->
+
+<body class="tj-window">
+    <section class="section active tj-stage" id="tarjan-window">
+        <p class="demo-error" id="tj-error" hidden></p>
+        <p class="visually-hidden" id="tj-live" role="status" aria-live="polite"></p>
+        <div class="tj-scene" id="tj-scene"></div>
+        <div class="tj-text">
+            <p class="tj-notice" id="tj-p-view" hidden></p>
+            <button type="button" class="tj-fit-inline" id="tj-fit-inline">Zoom to active vertex</button>
+            <dl class="tj-status">
+                <div>
+                    <dt>Step</dt>
+                    <dd id="tj-p-snapshot">0 of 0</dd>
+                </div>
+                <div>
+                    <dt>This event</dt>
+                    <dd id="tj-p-event">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Attention</dt>
+                    <dd id="tj-p-attention">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Tarjan SCC stack</dt>
+                    <dd id="tj-p-stack">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Active DFS chain</dt>
+                    <dd id="tj-p-chain">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Components</dt>
+                    <dd id="tj-p-components">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Condensation</dt>
+                    <dd id="tj-p-dag">&mdash;</dd>
+                </div>
+                <div>
+                    <dt>Selected</dt>
+                    <dd id="tj-p-selected">&mdash;</dd>
+                </div>
+            </dl>
+        </div>
+    </section>
+
+    <script type="module">
+        import init, { init_tarjan_window } from "./pkg/svg_dom_graph_demo.js"
+
+        try {
+            await init()
+            init_tarjan_window()
+        } catch (err) {
+            const banner = document.getElementById('tj-error')
+            banner.textContent = `This demo failed to build: ${err}`
+            banner.hidden = false
+        }
+    </script>
+</body>
+
+</html>

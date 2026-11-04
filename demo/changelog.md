@@ -22,6 +22,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Implement Red-Black Tree demo (`3a900bd`)
 - Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
 - Add a Petri Net demo (`eb06cfa`)
+- Add a Tarjan's Strongly Connected Components demo (``)
 
 ### Changed
 
