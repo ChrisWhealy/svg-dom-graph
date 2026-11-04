@@ -35,6 +35,7 @@ pub(crate) trait Scheduler {
 /// A task that is waiting: its handle, its delay, and what it runs.
 type Waiting = (u64, u32, Box<dyn FnOnce()>);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A scheduler that runs a task only when [`ManualScheduler::advance`] or [`ManualScheduler::advance_frame`] is called,
 /// and so needs no clock.
 #[derive(Default)]
@@ -56,16 +57,19 @@ impl ManualScheduler {
         self.timers.borrow().len()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn pending_frames(&self) -> usize {
         self.frames.borrow().len()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The delay of the timer that is waiting, if there is one.
     #[cfg(test)]
     pub(crate) fn delay(&self) -> Option<u32> {
         self.timers.borrow().first().map(|&(_, delay, _)| delay)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn run_first(list: &RefCell<Vec<Waiting>>) -> bool {
         let task = {
             let mut tasks = list.borrow_mut();
@@ -80,39 +84,46 @@ impl ManualScheduler {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs the oldest waiting timer, and says whether there was one. The task may schedule another.
     pub(crate) fn advance(&self) -> bool {
         Self::run_first(&self.timers)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs the oldest waiting frame, and says whether there was one.
     pub(crate) fn advance_frame(&self) -> bool {
         Self::run_first(&self.frames)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn teardowns(&self) -> u32 {
         self.teardowns.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes the next `count` timers fail to be scheduled.
     #[cfg(test)]
     pub(crate) fn fail_next_timers(&self, count: u32) {
         self.timer_failures.set(count);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes the next `count` frames fail to be asked for.
     #[cfg(test)]
     pub(crate) fn fail_next_frames(&self, count: u32) {
         self.frame_failures.set(count);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Makes cancelling leave the task waiting, to test that a stale callback does nothing.
     #[cfg(test)]
     pub(crate) fn keep_cancelled(&self) {
         self.keep_cancelled.set(true);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn push(
         &self,
         list: &RefCell<Vec<Waiting>>,
@@ -136,22 +147,26 @@ impl Scheduler for ManualScheduler {
         self.push(&self.timers, &self.timer_failures, delay_ms, task)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn cancel(&self, handle: u64) {
         if !self.keep_cancelled.get() {
             self.timers.borrow_mut().retain(|&(at, _, _)| at != handle);
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn request_frame(&self, task: Box<dyn FnOnce()>) -> Result<u64, String> {
         self.push(&self.frames, &self.frame_failures, 0, task)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn cancel_frame(&self, handle: u64) {
         if !self.keep_cancelled.get() {
             self.frames.borrow_mut().retain(|&(at, _, _)| at != handle);
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn teardown(&self) {
         #[cfg(test)]
         self.teardowns.set(self.teardowns.get() + 1);

@@ -1038,3 +1038,91 @@ fn the_label_of_the_manual_button_stays_inside_the_button_in_both_of_its_states(
     }
     Ok(())
 }
+
+/// How many listeners of each type Chrome says are on the object that `expression` evaluates to.
+fn listener_counts(tab: &Tab, expression: &str) -> Result<std::collections::BTreeMap<String, usize>, String> {
+    use headless_chrome::protocol::cdp::DOMDebugger::GetEventListeners;
+    let object_id = tab
+        .evaluate(expression, false)
+        .map_err(|e| format!("could not evaluate {expression}: {e}"))?
+        .object_id
+        .ok_or_else(|| format!("{expression} is not an object"))?;
+    let listeners = tab
+        .call_method(GetEventListeners {
+            object_id,
+            depth: None,
+            pierce: None,
+        })
+        .map_err(|e| format!("could not ask for the listeners of {expression}: {e}"))?
+        .listeners;
+    let mut counts = std::collections::BTreeMap::new();
+    for listener in listeners {
+        *counts.entry(listener.Type).or_insert(0) += 1;
+    }
+    Ok(counts)
+}
+
+#[test]
+fn leaving_the_page_takes_off_every_listener_that_the_demo_added_and_only_those() -> Result<(), String> {
+    // For each target, the types of listener that the demo adds to it, once each. The library's own listeners on the
+    // same targets are not the demo's to take off, so each count is compared with itself from before.
+    let targets: [(&str, &[&str]); 7] = [
+        (
+            "document.getElementById('pn-stage-svg')",
+            &["click", "dblclick", "keydown", "focusin"],
+        ),
+        ("document.getElementById('pn-stage')", &["click", "keydown"]),
+        ("document.getElementById('pn-seek')", &["input", "change"]),
+        ("document.getElementById('pn-scenario')", &["change"]),
+        ("document.getElementById('pn-checkpoint')", &["change"]),
+        ("document.getElementById('pn-speed')", &["change"]),
+        ("window", &["pagehide"]),
+    ];
+    let tab = open_manual()?;
+    let before: Vec<_> = targets
+        .iter()
+        .map(|(t, _)| listener_counts(&tab, t))
+        .collect::<Result<_, _>>()?;
+    for ((target, types), counts) in targets.iter().zip(&before) {
+        for kind in *types {
+            check(
+                counts.get(*kind).copied().unwrap_or(0) >= 1,
+                &format!("{target} has no {kind} listener to begin with"),
+            )?;
+        }
+    }
+    text(&tab, "(() => { window.dispatchEvent(new Event('pagehide')); return 'ok'; })()")?;
+    for (((target, types), was), _) in targets.iter().zip(&before).zip(0..) {
+        let now = listener_counts(&tab, target)?;
+        for kind in *types {
+            let (was, now) = (was.get(*kind).copied().unwrap_or(0), now.get(*kind).copied().unwrap_or(0));
+            if *target == "window" {
+                // The one listener that is kept for the life of the page, which holds only a number.
+                check_eq(now, was)?;
+            } else {
+                check_eq(
+                    (target.to_owned(), kind.to_owned(), was - now),
+                    (target.to_owned(), kind.to_owned(), 1),
+                )?;
+            }
+        }
+    }
+    Ok(())
+}
+
+#[test]
+fn a_page_that_has_been_left_does_nothing_and_leaving_twice_is_harmless() -> Result<(), String> {
+    let tab = open_manual()?;
+    seek(&tab, 4)?;
+    text(
+        &tab,
+        "(() => { window.dispatchEvent(new Event('pagehide')); window.dispatchEvent(new Event('pagehide')); return 'ok'; })()",
+    )?;
+    click(&tab, "pn-next")?;
+    focus(&tab, &gate("Put[0]"))?;
+    check_eq(
+        (position(&tab)?, attribute(&tab, &gate("Put[0]"), "data-pn-selected")?),
+        (4, "false".to_owned()),
+    )?;
+    check_eq(text(&tab, "typeof window.__pnAdvance")?, "undefined".to_owned())
+}

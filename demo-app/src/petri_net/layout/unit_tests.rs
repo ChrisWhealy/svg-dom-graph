@@ -101,7 +101,7 @@ fn a_gate_never_gets_a_clock_and_a_circle_never_gets_a_side() {
         let ends = arc_ends(&arc);
         let (gate, place) = if arc.input { (ends.to, ends.from) } else { (ends.from, ends.to) };
         assert!(!matches!(gate, End::Clock(_)), "{}", arc.transition.name());
-        assert!(!matches!(place, End::Side(..)), "{}", arc.place.name());
+        assert!(!matches!(place, End::Pinned(..)), "{}", arc.place.name());
     }
 }
 
@@ -142,7 +142,7 @@ fn the_free_arc_is_always_above_the_used_arc_on_a_shared_side() {
             continue;
         }
         let ends = arc_ends(&arc);
-        let End::Side(_, position) = (if arc.input { ends.to } else { ends.from }) else {
+        let End::Pinned(_, position) = (if arc.input { ends.to } else { ends.from }) else {
             panic!("{} has no side", gate.name());
         };
         let expected = if hub.kind() == PlaceKind::Free { FREE_POSITION } else { USED_POSITION };
@@ -154,13 +154,13 @@ fn the_free_arc_is_always_above_the_used_arc_on_a_shared_side() {
 fn a_put_and_a_take_use_four_different_anchors() {
     let arcs = Net::bounded_buffer().arcs();
     for t in TransitionId::all().filter(|t| matches!(t.kind(), TransitionKind::Put | TransitionKind::Take)) {
-        let mut anchors: Vec<(GateSide, u32)> = arcs
+        let mut anchors: Vec<(Side, u32)> = arcs
             .iter()
             .filter(|a| a.transition == t)
             .map(|a| {
                 let ends = arc_ends(a);
                 match if a.input { ends.to } else { ends.from } {
-                    End::Side(side, position) => (side, (position * 100.0) as u32),
+                    End::Pinned(side, position) => (side, (position * 100.0) as u32),
                     other => panic!("{other:?}"),
                 }
             })

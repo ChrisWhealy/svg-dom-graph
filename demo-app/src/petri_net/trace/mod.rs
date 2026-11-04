@@ -32,12 +32,14 @@ impl Totals {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The transition that fired.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Event {
     pub(crate) transition: TransitionId,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A marking, the counters at that point, and the event that led to it, which the starting snapshot lacks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Snapshot {
@@ -56,6 +58,7 @@ impl Snapshot {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Checks the marking, and the two equations that tie the counters to it.
     ///
     /// # Errors
@@ -110,6 +113,7 @@ impl Trace {
         Self { snapshots: vec![first] }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The history that fires `events` one after another from the initial snapshot.
     ///
     /// # Errors
@@ -123,30 +127,36 @@ impl Trace {
         Ok(trace)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The index of the last snapshot, which is the number of events.
     pub(crate) fn last(&self) -> usize {
         self.snapshots.len() - 1
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn len(&self) -> usize {
         self.snapshots.len()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn snapshot(&self, index: usize) -> Option<&Snapshot> {
         self.snapshots.get(index)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn snapshots(&self) -> &[Snapshot] {
         &self.snapshots
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The snapshot before the one at `index`, which there is not for the first.
     pub(crate) fn before(&self, index: usize) -> Option<&Snapshot> {
         index.checked_sub(1).and_then(|at| self.snapshots.get(at))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Fires `t` at the last snapshot and adds the result. Nothing is added if the firing fails.
     ///
     /// # Errors
@@ -167,6 +177,7 @@ impl Trace {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Drops every snapshot after `index`.
     pub(crate) fn truncate_after(&mut self, index: usize) {
         self.snapshots.truncate(index + 1);
@@ -193,18 +204,22 @@ impl Branch {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn trace(&self) -> &Trace {
         &self.trace
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn cursor(&self) -> usize {
         self.cursor
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn set_cursor(&mut self, cursor: usize) {
         self.cursor = cursor.min(self.trace.last());
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The history that results from firing `t` at the cursor: the snapshots after the cursor are dropped and the new
     /// one follows it. The branch itself is not changed, so that a page can draw the candidate before it is kept.
     ///

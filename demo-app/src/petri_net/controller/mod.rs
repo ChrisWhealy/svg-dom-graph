@@ -40,6 +40,7 @@ pub(crate) struct Frame<'a> {
     pub(crate) notice: &'a str,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the controller draws on and says to a person, which in the page is the DOM.
 pub(crate) trait Surface {
     /// Draws `frame`. When `full` is set every element is written. Otherwise only what differs from what was drawn
@@ -175,23 +176,28 @@ impl Controller {
         controller
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn net(&self) -> &Net {
         &self.net
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn view(&self) -> View {
         self.view.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn scenario(&self) -> Scenario {
         self.scenario.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn is_manual(&self) -> bool {
         self.branch.borrow().is_some()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The history that is shown, which is the manual branch when there is one.
     pub(crate) fn source(&self) -> Source {
         match &*self.branch.borrow() {
@@ -203,6 +209,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The index of the snapshot on the page, in the coordinates of the history that is shown.
     pub(crate) fn cursor(&self) -> usize {
         match &*self.branch.borrow() {
@@ -211,36 +218,43 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The index of the last snapshot of the history that is shown.
     pub(crate) fn last(&self) -> usize {
         self.with_trace(|trace| trace.last())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn script_index(&self) -> usize {
         self.script_index.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn is_dirty(&self) -> bool {
         self.dirty.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn history_generation(&self) -> u64 {
         self.history.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn playback_epoch(&self) -> u64 {
         self.epoch.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether a tick is waiting for the current epoch, which is all that playing is.
     pub(crate) fn is_playing(&self) -> bool {
         self.tick.get().is_some() || self.ticking.get()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn with_trace<R>(&self, f: impl FnOnce(&Trace) -> R) -> R {
         match &*self.branch.borrow() {
             Some(branch) => f(branch.trace()),
@@ -248,6 +262,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the snapshot at `index` of the history that is shown, with `view` and `notice`.
     fn paint(&self, index: usize, view: &View, full: bool, notice: &str) -> Result<(), String> {
         let source = self.source();
@@ -285,6 +300,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback, and counts the stop, whether or not anything was waiting and whether or not taking it back
     /// worked.
     fn stop_playback(&self) {
@@ -297,6 +313,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn show_playing(&self, playing: bool) {
         if let Err(problem) = self.surface.playing_changed(playing) {
             self.dirty.set(true);
@@ -304,6 +321,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Asks for the next tick, which is the only one that is ever waiting. It carries the epoch and the history that it
     /// was asked for.
     fn schedule_next(&self) -> Result<(), String> {
@@ -319,11 +337,13 @@ impl Controller {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn schedule_failed(&self, problem: &str) {
         self.stop_playback();
         self.surface.playback_failed(problem);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows the next snapshot, and asks for the tick after it only once the page has been written. A tick from before
     /// a stop, or from another history, does nothing.
     fn on_tick(&self, epoch: u64, history: u64) {
@@ -346,6 +366,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Records `index` as the snapshot on the page. The manual branch keeps its own, and the script keeps its own.
     fn set_cursor(&self, index: usize) {
         match &mut *self.branch.borrow_mut() {
@@ -354,6 +375,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the snapshot at `target` and, once that works, makes it the one on the page. A failure leaves the index
     /// where it was, marks the page dirty, stops playback and reports it.
     fn go(&self, target: usize, announce: bool) -> bool {
@@ -377,6 +399,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Commits a change of view the way an index is committed: only after the page has been drawn with it.
     ///
     /// Says whether it was committed, which a caller that goes on to act on the new view must check.
@@ -488,6 +511,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Starts playing if there is further to go, and says so if there is not.
     fn play(&self, at: usize, last: usize) {
         if self.is_playing() {
@@ -504,6 +528,7 @@ impl Controller {
         self.start_playing();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Schedules the first tick, and claims to be playing only once one is waiting and the button says so. If the
     /// button cannot be written, the tick is taken back and playback stays paused.
     fn start_playing(&self) {
@@ -519,6 +544,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Says where the run is, after a person has moved the range to rest.
     pub(crate) fn announce_current(&self) {
         let text = self.with_trace(|trace| summary(&self.net, trace, self.cursor()));
@@ -556,6 +582,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Goes back to the script at the snapshot the branch was forked from, and discards the branch.
     fn return_to_script(&self) {
         self.stop_playback();
@@ -581,6 +608,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Shows `scenario` at snapshot 0 on the same scene, and discards a manual branch. A failure leaves the scenario,
     /// the branch and the index as they were.
     fn select_scenario(&self, scenario: Scenario) {
@@ -627,6 +655,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Fires the selected transition in the manual branch, at the snapshot on the page.
     ///
     /// The candidate history is drawn before it is kept. A transition that is not enabled, a place, and a script all
@@ -706,6 +735,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Counts a change of history, so that every tick and every seek that was asked for before it does nothing.
     fn bump_history(&self) {
         self.history.set(self.history.get() + 1);
@@ -742,6 +772,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the place that was asked for, if this is the frame that is waiting. A frame that was taken back, or that
     /// is for another history, does nothing, even if it arrives while a newer frame is waiting.
     fn on_frame(&self, history: u64, token: u64) {
@@ -753,6 +784,7 @@ impl Controller {
         self.flush_seek(None);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Draws the place that the range was moved to, if it is for the history that is shown. A request for another
     /// history is dropped, and `fallback` is the place that is drawn in its stead, if there is one.
     fn flush_seek(&self, fallback: Option<usize>) {
@@ -765,6 +797,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The range has been let go at `index`. What is waiting is drawn now, and once the page has it, it is said once.
     pub(crate) fn seek_release(&self, index: usize) {
         if self.torn_down.get() {
@@ -780,6 +813,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn cancel_pending_seek(&self) {
         self.pending_seek.set(None);
         if let Some((handle, _)) = self.frame.take() {
@@ -787,6 +821,7 @@ impl Controller {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Stops playback for good, as when the page is left. Nothing that was asked of the controller then has any effect.
     pub(crate) fn teardown(&self) {
         self.stop_playback();

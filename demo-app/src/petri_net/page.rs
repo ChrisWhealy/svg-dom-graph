@@ -65,10 +65,12 @@ impl Page {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn controls(&self) -> &Controls {
         &self.controls
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Gives the keyboard focus to the element of `target`.
     pub(super) fn focus_target(&self, target: Target) {
         if let Some(element) = self.built.element_of(target) {
@@ -76,18 +78,21 @@ impl Page {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn hide_error(&self) {
         if self.error_shown.replace(false) {
             let _ = self.chrome.error.set_attribute("hidden", "");
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn show_error(&self, message: &str) {
         self.chrome.error.set_text_content(Some(message));
         let _ = self.chrome.error.remove_attribute("hidden");
         self.error_shown.set(true);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the controls should show for `frame`.
     fn control_state(&self, frame: &Frame) -> ControlState {
         ControlState {
@@ -102,6 +107,7 @@ impl Page {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the name of the scenario and the kind of history on the stage, which is what a test reads them from.
     fn write_root(&self, source: Source) -> Result<(), String> {
         super::dom::set(&self.root, "data-pn-scenario", source.scenario().key())?;
@@ -112,6 +118,7 @@ impl Page {
         )
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes the sentence that stays on the page until the next successful action, or hides the line if there is none.
     fn write_notice(&self, notice: &str) {
         self.chrome.notice.set_text_content(Some(notice));
@@ -151,6 +158,7 @@ impl Surface for Page {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn playing_changed(&self, playing: bool) -> Result<(), String> {
         self.playing.set(playing);
         let mut state = self.control_state.borrow_mut();
@@ -169,6 +177,7 @@ impl Surface for Page {
         written
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn say(&self, text: &str) {
         // A message that repeats the last one is still read out, since the text differs by an invisible space.
         let n = self.said.get();
@@ -177,6 +186,7 @@ impl Surface for Page {
         self.chrome.live.set_text_content(Some(&format!("{text}{tail}")));
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn failed(&self, problem: &str) {
         let message = format!(
             "The net could not be drawn: {problem}. What is shown may be out of date. The next button, key or move \
@@ -186,15 +196,17 @@ impl Surface for Page {
         self.say(&message);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn playback_failed(&self, problem: &str) {
         let message = format!(
-            "Play could not carry on: {problem}. The net is right, and the script is paused where it is. Press Play \
-             to try again."
+            "Play could not carry on: {problem}. The net is right, with the script paused at its current location. \
+             Press Play to try again."
         );
         self.show_error(&message);
         self.say(&message);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn warn(&self, text: &str) {
         self.show_error(&format!("Warning: {text}"));
     }

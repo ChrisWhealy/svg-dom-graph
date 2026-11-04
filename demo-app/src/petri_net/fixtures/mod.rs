@@ -23,6 +23,7 @@ pub(crate) struct Checkpoint {
     pub(crate) snapshot: usize,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const fn at(label: &'static str, snapshot: usize) -> Checkpoint {
     Checkpoint { label, snapshot }
 }
@@ -37,9 +38,11 @@ const INTERLEAVING: [Checkpoint; 5] = [
     at("Home again", 30),
 ];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scenario {
     pub(crate) const ALL: [Self; 3] = [Self::Walkthrough, Self::Contention, Self::Interleaving];
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What the scenario is called in the page's `data-pn-scenario` and in a selector.
     pub(crate) fn key(self) -> &'static str {
         match self {
@@ -49,6 +52,7 @@ impl Scenario {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// What a person reads.
     pub(crate) fn label(self) -> &'static str {
         match self {
@@ -58,10 +62,12 @@ impl Scenario {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn from_key(key: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|s| s.key() == key)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The named checkpoints, which are the only ones there are.
     pub(crate) fn checkpoints(self) -> &'static [Checkpoint] {
         match self {
@@ -71,6 +77,7 @@ impl Scenario {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The transitions to fire, in order.
     pub(crate) fn events(self) -> Vec<TransitionId> {
         let mut out = Vec::new();
@@ -137,6 +144,7 @@ impl Scenario {
         out
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The trace, which comes from firing [`Scenario::events`] through `net`.
     ///
     /// # Errors

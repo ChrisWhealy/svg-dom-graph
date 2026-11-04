@@ -10,8 +10,8 @@ use super::{
     chrome::Chrome,
     dom::{add, make, remove, set},
     layout::{
-        CAPTION_AT, CELL_GAP, CELL_ORIGIN, CELL_SIZE, End, FREE_CENTRE, GATE, GateSide, HUB_LABEL_LIFT, HUB_RADIUS,
-        RADIUS, TOP, USED_CENTRE, VIEW_HEIGHT, VIEW_WIDTH, arc_ends, gate_centre, gate_label, gate_rect, place_centre,
+        CAPTION_AT, CELL_GAP, CELL_ORIGIN, CELL_SIZE, End, FREE_CENTRE, GATE, HUB_LABEL_LIFT, HUB_RADIUS, RADIUS, TOP,
+        USED_CENTRE, VIEW_HEIGHT, VIEW_WIDTH, arc_ends, gate_centre, gate_label, gate_rect, place_centre,
         ring_title_at,
     },
     net::{ARCS, CAPACITY, CONSUMERS, Net, PRODUCERS, PlaceId, PlaceKind, TransitionId},
@@ -36,6 +36,7 @@ pub(super) struct SlotEl {
     text: Option<web_sys::Element>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The scene, built and in the page.
 pub(super) struct Built {
     /// Kept so that the scene, and the listeners it put on the page, live as long as the page does.
@@ -48,6 +49,7 @@ impl Built {
         &self.scene
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The element of a place or a gate, which is what the keyboard focus goes to.
     pub(super) fn element_of(&self, target: Target) -> Option<web_sys::Element> {
         let at = match target {
@@ -58,6 +60,7 @@ impl Built {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes the writes that concern the scene, and not the text panel.
 ///
 /// # Errors
@@ -80,6 +83,7 @@ pub(super) fn apply_scene_writes(built: &Built, writes: &[Write]) -> Result<(), 
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Writes all of `writes`, the text panel's too.
 ///
 /// # Errors
@@ -102,6 +106,7 @@ fn n(x: f64) -> String {
     format!("{x:.1}")
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a place says inside its circle.
 fn place_word(p: PlaceId) -> &'static str {
     match p.kind() {
@@ -114,31 +119,24 @@ fn place_word(p: PlaceId) -> &'static str {
     }
 }
 
-fn side_of(side: GateSide) -> Side {
-    match side {
-        GateSide::North => Side::North,
-        GateSide::South => Side::South,
-        GateSide::East => Side::East,
-        GateSide::West => Side::West,
-    }
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The options of a straight connector whose ends are fixed as `from` and `to` say.
 fn connector(from: End, to: End) -> Result<ConnectorOptions, String> {
     let mut options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
     match from {
         End::Auto => {},
         End::Clock(m) => options = options.with_from_clock(Some(ClockPosition::try_from(m).map_err(stringify)?)),
-        End::Side(side, at) => options = options.with_from_side(Some(side_of(side))).with_from_position(Some(at)),
+        End::Pinned(side, at) => options = options.with_from_side(Some(side)).with_from_position(Some(at)),
     }
     match to {
         End::Auto => {},
         End::Clock(m) => options = options.with_to_clock(Some(ClockPosition::try_from(m).map_err(stringify)?)),
-        End::Side(side, at) => options = options.with_to_side(Some(side_of(side))).with_to_position(Some(at)),
+        End::Pinned(side, at) => options = options.with_to_side(Some(side)).with_to_position(Some(at)),
     }
     Ok(options)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn text_at(
     document: &web_sys::Document,
     class: &str,
@@ -308,6 +306,7 @@ pub(super) fn build_scene(
     Ok(Built { scene, slots })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The things that never change: the names of the three zones and of each worker's ring.
 fn decorate(document: &web_sys::Document, overlay: &web_sys::Element) -> Result<(), String> {
     let layer = make(document, "g", &[("class", "pn-decor"), ("aria-hidden", "true")])?;
@@ -343,6 +342,7 @@ fn decorate(document: &web_sys::Document, overlay: &web_sys::Element) -> Result<
     Ok(())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The target of a place: its rings, its hit area, its token and, for a hub, its count.
 fn place_target(
     document: &web_sys::Document,
@@ -399,6 +399,7 @@ fn place_target(
     Ok(SlotEl { target: group, text })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The target of a gate: its ring, its hit area, and its name and status beside it.
 fn gate_target(
     document: &web_sys::Document,

@@ -47,6 +47,7 @@ enum Undo {
     Input(web_sys::HtmlInputElement, String),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A list of what has been written, in order, which is put back in the reverse order.
 #[derive(Default)]
 pub(super) struct Journal {
@@ -62,22 +63,26 @@ impl Journal {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Sets the text of an element, and remembers what it was.
     pub(super) fn text(&mut self, element: &web_sys::Element, text: &str) {
         self.undo.push(Undo::Text(element.clone(), element.text_content()));
         element.set_text_content(Some(text));
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn select(&mut self, select: &web_sys::HtmlSelectElement, value: &str) {
         self.undo.push(Undo::Select(select.clone(), select.value()));
         select.set_value(value);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn input(&mut self, input: &web_sys::HtmlInputElement, value: &str) {
         self.undo.push(Undo::Input(input.clone(), input.value()));
         input.set_value(value);
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Puts everything back as far as it can be, in the reverse order. A put-back that fails is left, and the page is
     /// then repaired by the next action.
     pub(super) fn restore(&mut self) {
@@ -111,6 +116,7 @@ pub(super) struct ControlState {
     pub(super) playing: bool,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text that the range writes above itself.
 pub(super) fn seek_text(state: &ControlState) -> String {
     let kind = if state.manual { "Manual snapshot" } else { "Snapshot" };
@@ -219,27 +225,33 @@ impl Controls {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn scenario_selector(&self) -> &web_sys::HtmlSelectElement {
         &self.scenario
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn checkpoint_selector(&self) -> &web_sys::HtmlSelectElement {
         &self.checkpoint
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(super) fn speed_selector(&self) -> &web_sys::HtmlSelectElement {
         &self.speed
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The range that goes to a snapshot, whose `input` and `change` events the page listens to.
     pub(super) fn seek(&self) -> &web_sys::HtmlInputElement {
         &self.seek
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn button(&self, action: &str) -> Result<web_sys::Element, String> {
         find_button(&self.layer, action)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn seek_text_element(&self) -> Result<web_sys::Element, String> {
         self.scene
             .query_selector(&format!("[data-slider-host=\"{SEEK}\"] .scene-slider-value"))
@@ -264,6 +276,7 @@ impl Controls {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Replaces the options of the checkpoint selector with those of `scenario`, with the prompt chosen.
     fn write_checkpoints(&self, scenario: Scenario) -> Result<(), String> {
         while let Some(child) = self.checkpoint.first_child() {
@@ -284,6 +297,7 @@ impl Controls {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Writes what differs between `prev` and `next` through `journal`, with the end of the range last.
     ///
     /// A dimmed button is `aria-disabled` and keeps its place in the tab order, so a button that has the focus when the
@@ -390,6 +404,7 @@ fn checkpoint_options(scenario: Scenario) -> Vec<(String, String)> {
         .collect()
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The button in `layer` whose action is `action`.
 fn find_button(layer: &web_sys::Element, action: &str) -> Result<web_sys::Element, String> {
     layer
@@ -398,6 +413,7 @@ fn find_button(layer: &web_sys::Element, action: &str) -> Result<web_sys::Elemen
         .ok_or_else(|| format!("there is no button {action:?}"))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Draws a selector in `layer`: its name written beside it, and the browser's own `<select>` in a `<foreignObject>`.
 ///
 /// # Errors

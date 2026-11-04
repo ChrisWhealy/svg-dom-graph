@@ -14,6 +14,7 @@ mod controls;
 mod dom;
 mod fixtures;
 mod layout;
+mod listeners;
 mod net;
 mod page;
 mod projection;
@@ -21,7 +22,6 @@ mod scene;
 mod scheduler;
 mod trace;
 
-use crate::plot_scene::listen;
 use chrome::{STAGE, SVG};
 use controller::{Action, Controller, Surface};
 use controls::ControlState;
@@ -29,13 +29,16 @@ use demo_common::util::{document, ensure_svg_in, required_element};
 use dom::set;
 use fixtures::Scenario;
 use layout::SCENE;
+use listeners::Listeners;
 use net::{Net, PlaceId, TransitionId};
 use page::Page;
 use projection::{Speed, Target, View, Wiring, bounds, move_roving, target_order};
 use scheduler::make_scheduler;
-use std::{cell::Cell, rc::Rc};
-use svg_dom_graph::controls::svg_buttons;
-use wasm_bindgen::JsCast;
+use std::{
+    cell::{Cell, RefCell},
+    rc::{Rc, Weak},
+};
+use wasm_bindgen::{JsCast, closure::Closure};
 
 /// This module's own full source, embedded at compile time — see `crate::source_frame`'s own doc comment for why.
 pub(crate) const SOURCE: &str = include_str!("mod.rs");
@@ -44,7 +47,7 @@ pub(crate) const SOURCE: &str = include_str!("mod.rs");
 /// controls, and the browser side.
 pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("petri_net/net/mod.rs", "net/mod.rs"),
-    crate::source_file!("petri_net/fixtures.rs", "fixtures.rs"),
+    crate::source_file!("petri_net/fixtures/mod.rs", "fixtures/mod.rs"),
     crate::source_file!("petri_net/trace/mod.rs", "trace/mod.rs"),
     crate::source_file!("petri_net/projection/mod.rs", "projection/mod.rs"),
     crate::source_file!("petri_net/controller/mod.rs", "controller/mod.rs"),
@@ -55,6 +58,7 @@ pub(crate) const FILES: &[crate::SourceFile] = &[
     crate::source_file!("petri_net/chrome.rs", "chrome.rs"),
     crate::source_file!("petri_net/scheduler.rs", "scheduler.rs"),
     crate::source_file!("petri_net/dom.rs", "dom.rs"),
+    crate::source_file!("petri_net/listeners.rs", "listeners.rs"),
 ];
 
 thread_local! {
@@ -75,6 +79,7 @@ fn target_of(target: Option<web_sys::EventTarget>) -> Option<Target> {
     TransitionId::all().find(|t| t.name() == name).map(Target::Transition)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a press of the button for `action` asks the controller to do. Play is Pause while it plays, and the manual
 /// button enters or leaves manual mode.
 fn action_for(action: &str, playing: bool, manual: bool, wiring: Wiring) -> Option<Action> {
@@ -94,6 +99,7 @@ fn action_for(action: &str, playing: bool, manual: bool, wiring: Wiring) -> Opti
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether the address asks for every draw to be a full one, which a test uses to compare a page that was diffed with
 /// one that was not.
 fn always_full_requested() -> bool {
@@ -154,28 +160,135 @@ pub(crate) fn build_petri_net_demo() -> Result<(), String> {
     let page = Rc::new(Page::new(&document, &svg, &net, &state, instance, always_full_requested())?);
     let controller = Controller::new(net, scenario, view, Rc::clone(&page) as Rc<dyn Surface>, make_scheduler()?);
 
-    wire_buttons(&document, &controller)?;
-    wire_range(&controller, &page)?;
-    wire_selectors(&controller, &page)?;
-    wire_graph(&svg, &controller, &page)?;
-    let leaving = Rc::clone(&controller);
-    listen(
-        &web_sys::window().ok_or("no window")?.into(),
-        "pagehide",
-        move |_: web_sys::Event| leaving.teardown(),
-    )?;
+    let listeners = match wire_all(&document, &svg, &controller, &page) {
+        Ok(listeners) => listeners,
+        Err(problem) => {
+            // What was added is taken off again as the registry is dropped, and the controller lets go of its clock.
+            controller.teardown();
+            return Err(problem);
+        },
+    };
+    LIVE.with(|live| {
+        live.borrow_mut().push(Demo {
+            instance,
+            controller,
+            _page: page,
+            listeners,
+        });
+    });
+    // This one listener is deliberately kept for the life of the page. It holds only a number, so that it frees nothing
+    // that it must not and holds nothing that is torn down, and it does nothing the second time that it is called.
+    let leaving = Closure::<dyn FnMut(web_sys::Event)>::new(move |_: web_sys::Event| shut_down(instance));
+    web_sys::window()
+        .ok_or("no window")?
+        .add_event_listener_with_callback("pagehide", leaving.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the pagehide listener: {e:?}"))?;
+    leaving.forget();
     Ok(())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// Makes the buttons work. A button that is only dimmed still gets its press, so that a page that is out of date is
-/// drawn again even when the action then has nowhere to go.
-fn wire_buttons(document: &web_sys::Document, controller: &Rc<Controller>) -> Result<(), String> {
-    let controller = Rc::clone(controller);
-    svg_buttons::watch(document, STAGE, move |action| {
-        let view = controller.view();
-        if let Some(action) = action_for(action, controller.is_playing(), controller.is_manual(), view.wiring) {
-            controller.act(action);
+/// A demo that is on the page: the controller, the page that it draws on, and every listener that was added for them.
+///
+/// The listeners hold the controller and the page weakly, so that this is what keeps them alive, from the moment that
+/// the demo is built to the moment that it is shut down.
+struct Demo {
+    instance: u32,
+    controller: Rc<Controller>,
+    _page: Rc<Page>,
+    listeners: Listeners,
+}
+
+thread_local! {
+    /// The demos that are on the page, which is where each one is owned.
+    static LIVE: RefCell<Vec<Demo>> = const { RefCell::new(Vec::new()) };
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Shuts down the demo with this instance number: stops its playback, takes off its clock's hooks and every listener
+/// that was added for it, and lets go of the controller, the page and the scene. Shutting down twice does nothing.
+fn shut_down(instance: u32) {
+    let demo = LIVE.with(|live| {
+        let mut live = live.borrow_mut();
+        live.iter().position(|d| d.instance == instance).map(|at| live.remove(at))
+    });
+    if let Some(mut demo) = demo {
+        demo.controller.teardown();
+        demo.listeners.detach_all();
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Calls `f` with what `weak` points to, if it is still there. A listener that is called after its demo was shut down
+/// finds nothing, and does nothing.
+fn with<T>(weak: &Weak<T>, f: impl FnOnce(&T)) {
+    if let Some(strong) = weak.upgrade() {
+        f(&strong);
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Adds every listener that the page needs, and gives the registry that holds them.
+///
+/// # Errors
+///
+/// Returns `Err` if the stage is missing, or a listener could not be attached. The registry is then dropped, which
+/// takes off what had been added.
+fn wire_all(
+    document: &web_sys::Document,
+    svg: &web_sys::Element,
+    controller: &Rc<Controller>,
+    page: &Rc<Page>,
+) -> Result<Listeners, String> {
+    let mut listeners = Listeners::default();
+    let (controller, page) = (Rc::downgrade(controller), Rc::downgrade(page));
+    wire_buttons(&mut listeners, document, &controller)?;
+    wire_range(&mut listeners, &controller, &page)?;
+    wire_selectors(&mut listeners, &controller, &page)?;
+    wire_graph(&mut listeners, svg, &controller, &page)?;
+    Ok(listeners)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The action of the button that an event is on, from its `data-action`.
+fn button_action(target: Option<web_sys::EventTarget>) -> Option<String> {
+    target
+        .and_then(|t| t.dyn_into::<web_sys::Element>().ok())
+        .and_then(|e| e.closest("[data-action]").ok().flatten())
+        .and_then(|button| button.get_attribute("data-action"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Makes the buttons work, with one listener for clicks and one for the Enter and Space keys on the stage, which find
+/// the button by its `data-action`. A button that is only dimmed still gets its press, so that a page that is out of
+/// date is drawn again even when the action then has nowhere to go.
+fn wire_buttons(
+    listeners: &mut Listeners,
+    document: &web_sys::Document,
+    controller: &Weak<Controller>,
+) -> Result<(), String> {
+    let stage: web_sys::EventTarget = required_element(document, STAGE)?.into();
+    let press = |controller: &Weak<Controller>, action: &str| {
+        with(controller, |controller| {
+            let view = controller.view();
+            if let Some(action) = action_for(action, controller.is_playing(), controller.is_manual(), view.wiring) {
+                controller.act(action);
+            }
+        });
+    };
+    let clicked = controller.clone();
+    listeners.add(&stage, "click", move |e: web_sys::Event| {
+        if let Some(action) = button_action(e.target()) {
+            press(&clicked, &action);
+        }
+    })?;
+    let keyed = controller.clone();
+    listeners.add(&stage, "keydown", move |e: web_sys::KeyboardEvent| {
+        if e.key() == "Enter" || e.key() == " " {
+            if let Some(action) = button_action(e.target()) {
+                e.prevent_default();
+                press(&keyed, &action);
+            }
         }
     })
 }
@@ -183,45 +296,64 @@ fn wire_buttons(document: &web_sys::Document, controller: &Rc<Controller>) -> Re
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the range work. Moving it draws the latest place at the next frame, and letting it rest draws that place at
 /// once and says where it is, once.
-fn wire_range(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String> {
-    let seek = page.controls().seek().clone();
+fn wire_range(listeners: &mut Listeners, controller: &Weak<Controller>, page: &Weak<Page>) -> Result<(), String> {
+    let Some(seek) = page.upgrade().map(|page| page.controls().seek().clone()) else {
+        return Err("the page was dropped before its range was wired".to_owned());
+    };
     let value = {
         let seek = seek.clone();
         move || seek.value().parse::<usize>().unwrap_or(0)
     };
-    let (moving, read) = (Rc::clone(controller), value.clone());
-    listen(&seek, "input", move |_: web_sys::Event| moving.seek_input(read()))?;
-    let resting = Rc::clone(controller);
-    listen(&seek, "change", move |_: web_sys::Event| resting.seek_release(value()))
+    let (moving, read) = (controller.clone(), value.clone());
+    listeners.add(&seek, "input", move |_: web_sys::Event| {
+        with(&moving, |controller| controller.seek_input(read()));
+    })?;
+    let resting = controller.clone();
+    listeners.add(&seek, "change", move |_: web_sys::Event| {
+        with(&resting, |controller| controller.seek_release(value()));
+    })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the selectors work. A selector says what is on the page, which is the old value if the new one could not be
 /// shown.
-fn wire_selectors(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String> {
-    let scenario = page.controls().scenario_selector().clone();
-    let (switching, chosen) = (Rc::clone(controller), scenario.clone());
-    listen(&scenario, "change", move |_: web_sys::Event| {
-        if let Some(wanted) = Scenario::from_key(&chosen.value()) {
-            switching.act(Action::SelectScenario(wanted));
-        }
-        chosen.set_value(switching.scenario().key());
+fn wire_selectors(listeners: &mut Listeners, controller: &Weak<Controller>, page: &Weak<Page>) -> Result<(), String> {
+    let Some((scenario, checkpoint, speed)) = page.upgrade().map(|page| {
+        let controls = page.controls();
+        (
+            controls.scenario_selector().clone(),
+            controls.checkpoint_selector().clone(),
+            controls.speed_selector().clone(),
+        )
+    }) else {
+        return Err("the page was dropped before its selectors were wired".to_owned());
+    };
+    let (switching, chosen) = (controller.clone(), scenario.clone());
+    listeners.add(&scenario, "change", move |_: web_sys::Event| {
+        with(&switching, |controller| {
+            if let Some(wanted) = Scenario::from_key(&chosen.value()) {
+                controller.act(Action::SelectScenario(wanted));
+            }
+            chosen.set_value(controller.scenario().key());
+        });
     })?;
-    let checkpoint = page.controls().checkpoint_selector().clone();
-    let (jumping, chosen) = (Rc::clone(controller), checkpoint.clone());
-    listen(&checkpoint, "change", move |_: web_sys::Event| {
-        if let Ok(n) = chosen.value().parse::<usize>() {
-            jumping.act(Action::Checkpoint(n));
-        }
+    let (jumping, chosen) = (controller.clone(), checkpoint.clone());
+    listeners.add(&checkpoint, "change", move |_: web_sys::Event| {
+        with(&jumping, |controller| {
+            if let Ok(n) = chosen.value().parse::<usize>() {
+                controller.act(Action::Checkpoint(n));
+            }
+        });
         // The prompt is chosen again, so that the same checkpoint can be chosen twice.
         chosen.set_value("");
     })?;
-    let speed = page.controls().speed_selector().clone();
-    let (controller, chosen) = (Rc::clone(controller), speed.clone());
-    listen(&speed, "change", move |_: web_sys::Event| {
-        if let Some(speed) = Speed::from_key(&chosen.value()) {
-            controller.act(Action::SetSpeed(speed));
-        }
+    let (setting, chosen) = (controller.clone(), speed.clone());
+    listeners.add(&speed, "change", move |_: web_sys::Event| {
+        with(&setting, |controller| {
+            if let Some(speed) = Speed::from_key(&chosen.value()) {
+                controller.act(Action::SetSpeed(speed));
+            }
+        });
     })
 }
 
@@ -231,9 +363,15 @@ fn wire_selectors(controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), St
 ///
 /// Moving the focus selects, and never fires. A click only selects. A double click on a transition, and Enter or Space
 /// on a focused one, fire it in manual mode, and in a script they say why not.
-fn wire_graph(svg: &web_sys::Element, controller: &Rc<Controller>, page: &Rc<Page>) -> Result<(), String> {
-    let (keyed, keyed_page) = (Rc::clone(controller), Rc::clone(page));
-    listen(svg, "keydown", move |e: web_sys::KeyboardEvent| {
+fn wire_graph(
+    listeners: &mut Listeners,
+    svg: &web_sys::Element,
+    controller: &Weak<Controller>,
+    page: &Weak<Page>,
+) -> Result<(), String> {
+    let svg: &web_sys::EventTarget = svg;
+    let (keyed, keyed_page) = (controller.clone(), page.clone());
+    listeners.add(svg, "keydown", move |e: web_sys::KeyboardEvent| {
         let Some(from) = target_of(e.target()) else {
             return;
         };
@@ -244,38 +382,42 @@ fn wire_graph(svg: &web_sys::Element, controller: &Rc<Controller>, page: &Rc<Pag
             if e.repeat() {
                 return;
             }
-            match from {
-                Target::Transition(t) if keyed.is_manual() => keyed.act(Action::Fire(t)),
-                other => keyed.act(Action::Select(other)),
-            }
-            keyed_page.focus_target(from);
+            with(&keyed, |controller| match from {
+                Target::Transition(t) if controller.is_manual() => controller.act(Action::Fire(t)),
+                other => controller.act(Action::Select(other)),
+            });
+            with(&keyed_page, |page| page.focus_target(from));
             return;
         }
-        if let Some(next) = move_roving(&target_order(), keyed.view().roving, &key) {
-            e.prevent_default();
-            keyed.act(Action::Select(next));
-            keyed_page.focus_target(next);
-        }
-    })?;
-    let clicked = Rc::clone(controller);
-    listen(svg, "click", move |e: web_sys::MouseEvent| {
-        if let Some(target) = target_of(e.target()) {
-            clicked.act(Action::Select(target));
-        }
-    })?;
-    let double = Rc::clone(controller);
-    listen(svg, "dblclick", move |e: web_sys::MouseEvent| {
-        if let Some(Target::Transition(t)) = target_of(e.target()) {
-            double.act(Action::Fire(t));
-        }
-    })?;
-    let gained = Rc::clone(controller);
-    listen(svg, "focusin", move |e: web_sys::FocusEvent| {
-        if let Some(target) = target_of(e.target()) {
-            let view = gained.view();
-            if view.selected != Some(target) || view.roving != target {
-                gained.act(Action::Select(target));
+        with(&keyed, |controller| {
+            if let Some(next) = move_roving(&target_order(), controller.view().roving, &key) {
+                e.prevent_default();
+                controller.act(Action::Select(next));
+                with(&keyed_page, |page| page.focus_target(next));
             }
+        });
+    })?;
+    let clicked = controller.clone();
+    listeners.add(svg, "click", move |e: web_sys::MouseEvent| {
+        if let Some(target) = target_of(e.target()) {
+            with(&clicked, |controller| controller.act(Action::Select(target)));
+        }
+    })?;
+    let double = controller.clone();
+    listeners.add(svg, "dblclick", move |e: web_sys::MouseEvent| {
+        if let Some(Target::Transition(t)) = target_of(e.target()) {
+            with(&double, |controller| controller.act(Action::Fire(t)));
+        }
+    })?;
+    let gained = controller.clone();
+    listeners.add(svg, "focusin", move |e: web_sys::FocusEvent| {
+        if let Some(target) = target_of(e.target()) {
+            with(&gained, |controller| {
+                let view = controller.view();
+                if view.selected != Some(target) || view.roving != target {
+                    controller.act(Action::Select(target));
+                }
+            });
         }
     })
 }

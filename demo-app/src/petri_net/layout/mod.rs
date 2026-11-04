@@ -6,6 +6,7 @@
 
 use super::net::{Arc, PRODUCERS, PlaceId, PlaceKind, TransitionId, TransitionKind};
 use svg_dom::root::utils::{Point, Rect, Size};
+use svg_dom_graph::scene::Side;
 
 /// The size of the graph, in the units of the scene.
 pub(crate) const VIEW_WIDTH: f64 = 1040.0;
@@ -72,6 +73,7 @@ pub(crate) fn place_centre(p: PlaceId) -> Point {
     Point::new(x, y)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The centre of a gate.
 pub(crate) fn gate_centre(t: TransitionId) -> Point {
     let consumer = matches!(t.kind(), TransitionKind::Take | TransitionKind::Complete);
@@ -86,6 +88,7 @@ pub(crate) fn gate_centre(t: TransitionId) -> Point {
     Point::new(ox + dx, oy + dy)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where the label of a gate is written: the baseline of its first line, and which way the text runs from there. The
 /// label is on the side of the gate that has no arc.
 #[derive(Debug, Clone, Copy, PartialEq)]
@@ -97,6 +100,7 @@ pub(crate) struct LabelAt {
     pub(crate) inline: bool,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn gate_label(t: TransitionId) -> LabelAt {
     let c = gate_centre(t);
     let (half_w, half_h) = (GATE.width / 2.0, GATE.height / 2.0);
@@ -128,6 +132,7 @@ pub(crate) fn gate_label(t: TransitionId) -> LabelAt {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The rectangle of a gate.
 pub(crate) fn gate_rect(t: TransitionId) -> Rect {
     let c = gate_centre(t);
@@ -137,6 +142,7 @@ pub(crate) fn gate_rect(t: TransitionId) -> Rect {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The top left corner of the ring of a worker.
 fn ring_origin(worker: usize, consumer: bool) -> (f64, f64) {
     if consumer {
@@ -146,6 +152,7 @@ fn ring_origin(worker: usize, consumer: bool) -> (f64, f64) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Where a worker's ring is named, which is clear of every arc and every label.
 pub(crate) fn ring_title_at(worker: usize, consumer: bool) -> Point {
     let (x, y) = ring_origin(worker, consumer);
@@ -164,18 +171,11 @@ pub(crate) enum End {
     Auto,
     /// At this minute round a circle, 0 to 59.
     Clock(u8),
-    /// On this side of a gate, at this fraction of the way along it.
-    Side(GateSide, f64),
+    /// Pinned to this side of a gate, at this fraction of the way along it.
+    Pinned(Side, f64),
 }
 
-#[derive(Debug, Clone, Copy, PartialEq, Eq)]
-pub(crate) enum GateSide {
-    North,
-    South,
-    East,
-    West,
-}
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How both ends of an arc are fixed. The `from` end is the place for an input arc and the gate for an output arc.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct ArcEnds {
@@ -183,6 +183,7 @@ pub(crate) struct ArcEnds {
     pub(crate) to: End,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How the ends of `arc` are fixed. A gate never gets a clock position, since only a circle can have one.
 pub(crate) fn arc_ends(arc: &Arc) -> ArcEnds {
     let (place, t) = (arc.place, arc.transition);
@@ -190,22 +191,22 @@ pub(crate) fn arc_ends(arc: &Arc) -> ArcEnds {
     let (gate_end, place_end) = match (t.kind(), hub) {
         // A Put takes its prepared item from the north, returns the worker to the south, and has the buffer to the
         // east.
-        (TransitionKind::Put, false) if arc.input => (End::Side(GateSide::North, 0.5), End::Auto),
-        (TransitionKind::Put, false) => (End::Side(GateSide::South, 0.5), End::Auto),
+        (TransitionKind::Put, false) if arc.input => (End::Pinned(Side::North, 0.5), End::Auto),
+        (TransitionKind::Put, false) => (End::Pinned(Side::South, 0.5), End::Auto),
         (TransitionKind::Put, true) => (
-            End::Side(
-                GateSide::East,
+            End::Pinned(
+                Side::East,
                 if place.kind() == PlaceKind::Free { FREE_POSITION } else { USED_POSITION },
             ),
             End::Clock(PRODUCER_MINUTES[t.worker() % PRODUCERS]),
         ),
         // A Take mirrors it: the idle consumer is to the north, the processing consumer to the south, the buffer to the
         // west.
-        (TransitionKind::Take, false) if arc.input => (End::Side(GateSide::North, 0.5), End::Auto),
-        (TransitionKind::Take, false) => (End::Side(GateSide::South, 0.5), End::Auto),
+        (TransitionKind::Take, false) if arc.input => (End::Pinned(Side::North, 0.5), End::Auto),
+        (TransitionKind::Take, false) => (End::Pinned(Side::South, 0.5), End::Auto),
         (TransitionKind::Take, true) => (
-            End::Side(
-                GateSide::West,
+            End::Pinned(
+                Side::West,
                 if place.kind() == PlaceKind::Free { FREE_POSITION } else { USED_POSITION },
             ),
             End::Clock(CONSUMER_MINUTES[t.worker()]),
@@ -253,6 +254,7 @@ pub(crate) const BUTTONS: [(&str, &str, f64, bool); 7] = [
     ("toggle-focused", "Focused wiring", 130.0, true),
 ];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A selector and its name: where the name starts, and the area of the selector.
 #[derive(Debug, Clone, Copy, PartialEq)]
 pub(crate) struct SelectorPlace {
@@ -260,6 +262,7 @@ pub(crate) struct SelectorPlace {
     pub(crate) area: Rect,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const fn selector(name_left: f64, left: f64, width: f64) -> SelectorPlace {
     SelectorPlace {
         name_left,
@@ -274,6 +277,7 @@ pub(crate) const SCENARIO_SELECTOR: SelectorPlace = selector(MARGIN, 82.0, 330.0
 pub(crate) const CHECKPOINT_SELECTOR: SelectorPlace = selector(430.0, 520.0, 240.0);
 pub(crate) const SPEED_SELECTOR: SelectorPlace = selector(780.0, 840.0, 130.0);
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of text, in pixels, that is the usual size, or smaller if the longest of its `chars` characters would not
 /// fit across `width` once `spare` pixels are taken off for an arrow or a margin. A glyph is taken to be 0.62 of its
 /// size wide, as the widest of the fonts that the page may use is.
@@ -286,20 +290,24 @@ fn fitted_font_px(chars: usize, width: f64, spare: f64) -> f64 {
     ((width - spare) / (chars as f64 * GLYPH)).clamp(8.0, USUAL).floor()
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the text of a selector, which leaves room for the arrow.
 pub(crate) fn selector_font_px(chars: usize, width: f64) -> f64 {
     fitted_font_px(chars, width, 30.0)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The size of the text of a button, which leaves a margin on each side.
 pub(crate) fn button_font_px(chars: usize, width: f64) -> f64 {
     fitted_font_px(chars, width, 16.0)
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The range: the left end of its track and how long it is. The thumb is 16 pixels wide, half of it past either end.
 pub(crate) const RANGE_LEFT: f64 = MARGIN + 8.0;
 pub(crate) const RANGE_LENGTH: f64 = VIEW_WIDTH - 2.0 * RANGE_LEFT;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The area of the button at `index` of [`BUTTONS`]. The row goes from left to right, from the left margin.
 pub(crate) fn button_area(index: usize) -> Rect {
     let Some(&(_, _, width, _)) = BUTTONS.get(index) else {

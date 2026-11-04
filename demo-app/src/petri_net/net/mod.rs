@@ -27,11 +27,7 @@ pub(crate) const ARCS: usize = PRODUCERS * 8 + CONSUMERS * 6;
 #[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
 pub(crate) struct PlaceId(pub(crate) u8);
 
-/// The transition at this index. Producers come first, with `Start`, `Finish` and `Put` each, then consumers, with
-/// `Take` and `Complete` each.
-#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
-pub(crate) struct TransitionId(pub(crate) u8);
-
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a place holds, which is the state of one worker or part of the buffer.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum PlaceKind {
@@ -44,6 +40,7 @@ pub(crate) enum PlaceKind {
     Used,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a transition does.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum TransitionKind {
@@ -58,35 +55,43 @@ impl PlaceId {
     pub(crate) const FREE: Self = Self((PRODUCERS * 3 + CONSUMERS * 2) as u8);
     pub(crate) const USED: Self = Self(Self::FREE.0 + 1);
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn producer_idle(i: usize) -> Self {
         Self((i * 3) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn producer_busy(i: usize) -> Self {
         Self((i * 3 + 1) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn producer_ready(i: usize) -> Self {
         Self((i * 3 + 2) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn consumer_idle(j: usize) -> Self {
         Self((PRODUCERS * 3 + j * 2) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn consumer_processing(j: usize) -> Self {
         Self((PRODUCERS * 3 + j * 2 + 1) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn index(self) -> usize {
         usize::from(self.0)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Every place, in the order of the marking.
     pub(crate) fn all() -> impl Iterator<Item = Self> {
         (0..PLACES as u8).map(Self)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn kind(self) -> PlaceKind {
         let at = self.index();
         match at {
@@ -99,6 +104,7 @@ impl PlaceId {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Which producer or consumer the place belongs to, or `None` for `Free` and `Used`.
     pub(crate) fn worker(self) -> Option<usize> {
         let at = self.index();
@@ -109,6 +115,7 @@ impl PlaceId {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The name that a person reads: `P0.Idle`, `C2.Processing`, `Free`.
     pub(crate) fn name(self) -> String {
         let (worker, word) = match self.kind() {
@@ -124,36 +131,49 @@ impl PlaceId {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The transition at this index. Producers come first, with `Start`, `Finish` and `Put` each, then consumers, with
+/// `Take` and `Complete` each.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, PartialOrd, Ord, Hash)]
+pub(crate) struct TransitionId(pub(crate) u8);
+
 impl TransitionId {
     pub(crate) fn start(i: usize) -> Self {
         Self((i * 3) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn finish(i: usize) -> Self {
         Self((i * 3 + 1) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn put(i: usize) -> Self {
         Self((i * 3 + 2) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn take(j: usize) -> Self {
         Self((PRODUCERS * 3 + j * 2) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn complete(j: usize) -> Self {
         Self((PRODUCERS * 3 + j * 2 + 1) as u8)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn index(self) -> usize {
         usize::from(self.0)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Every transition, in order.
     pub(crate) fn all() -> impl Iterator<Item = Self> {
         (0..TRANSITIONS as u8).map(Self)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn kind(self) -> TransitionKind {
         let at = self.index();
         if at < PRODUCERS * 3 {
@@ -163,12 +183,14 @@ impl TransitionId {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Which producer or consumer the transition belongs to.
     pub(crate) fn worker(self) -> usize {
         let at = self.index();
         if at < PRODUCERS * 3 { at / 3 } else { (at - PRODUCERS * 3) / 2 }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The name that a person reads: `Start[0]`, `Take[2]`.
     pub(crate) fn name(self) -> String {
         let word = match self.kind() {
@@ -190,6 +212,7 @@ pub(crate) struct TransitionSpec {
     pub(crate) post: Vec<PlaceId>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a net could not be made.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum NetError {
@@ -238,6 +261,7 @@ impl Net {
         Self::from_specs(PLACES, Self::table()).expect("the fixed table is a valid net")
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The table of §3 of the design: one row for each transition, instantiated once for each worker.
     fn table() -> Vec<TransitionSpec> {
         let mut rows = Vec::with_capacity(TRANSITIONS);
@@ -268,6 +292,7 @@ impl Net {
         rows
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// A net from `places` and the rows of `transitions`, checked.
     ///
     /// # Errors
@@ -300,10 +325,12 @@ impl Net {
         Ok(Self { transitions })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn spec(&self, t: TransitionId) -> &TransitionSpec {
         &self.transitions[t.index()]
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The arcs, each as `(from_place, to_transition)` for an input arc or `(to_place, from_transition)` for an output
     /// one, in the order that the scene draws them: for each transition, its inputs and then its outputs.
     pub(crate) fn arcs(&self) -> Vec<Arc> {
@@ -324,11 +351,13 @@ impl Net {
         arcs
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether `t` can fire at `marking`: every input place holds a token.
     pub(crate) fn is_enabled(&self, marking: &Marking, t: TransitionId) -> bool {
         self.spec(t).pre.iter().all(|&p| marking.get(p) >= 1)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Every transition that can fire at `marking`.
     pub(crate) fn enabled(&self, marking: &Marking) -> TransitionSet {
         TransitionId::all()
@@ -336,11 +365,13 @@ impl Net {
             .fold(TransitionSet::default(), |set, t| set.with(t))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The input places of `t` that hold no token at `marking`, the actor's own place first.
     pub(crate) fn missing(&self, marking: &Marking, t: TransitionId) -> Vec<PlaceId> {
         self.spec(t).pre.iter().copied().filter(|&p| marking.get(p) < 1).collect()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Fires `t` at `marking` and gives the next marking. Nothing is changed in `marking`.
     ///
     /// # Errors
@@ -365,6 +396,7 @@ impl Net {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One arc of the net, which is always between a place and a transition.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct Arc {
@@ -384,24 +416,29 @@ impl TransitionSet {
         Self(self.0 | 1 << t.index())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn contains(self, t: TransitionId) -> bool {
         self.0 >> t.index() & 1 == 1
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The transitions that are in `self` and not in `other`.
     pub(crate) fn minus(self, other: Self) -> Self {
         Self(self.0 & !other.0)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     #[cfg(test)]
     pub(crate) fn len(self) -> usize {
         self.0.count_ones() as usize
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn is_empty(self) -> bool {
         self.0 == 0
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The members, in order.
     pub(crate) fn iter(self) -> impl Iterator<Item = TransitionId> {
         TransitionId::all().filter(move |&t| self.contains(t))
@@ -429,18 +466,22 @@ impl Marking {
         Self { tokens }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn get(&self, p: PlaceId) -> u8 {
         self.tokens[p.index()]
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn used(&self) -> u8 {
         self.get(PlaceId::USED)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn free(&self) -> u8 {
         self.get(PlaceId::FREE)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// How many consumers are processing an item.
     pub(crate) fn processing(&self) -> usize {
         (0..CONSUMERS)
@@ -448,6 +489,7 @@ impl Marking {
             .count()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Checks the rules that hold at every reachable marking: each worker is in exactly one state, and the buffer's two
     /// places always add up to its capacity.
     ///
@@ -475,6 +517,7 @@ impl Marking {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A rule that a marking breaks.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Violation {
@@ -499,6 +542,7 @@ impl fmt::Display for Violation {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a transition did not fire.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum FireError {
@@ -532,6 +576,7 @@ pub(crate) enum Blocked {
     Empty(usize),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The workers that wait on the buffer at `marking`: producers in `Ready` while `Free` is 0, and idle consumers while
 /// `Used` is 0.
 pub(crate) fn blocked(marking: &Marking) -> Vec<Blocked> {

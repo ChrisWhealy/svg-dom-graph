@@ -32,6 +32,7 @@ pub(crate) enum Target {
     Transition(TransitionId),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How much of the wiring is emphasised. It changes how the arcs look and nothing else.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Wiring {
@@ -39,6 +40,7 @@ pub(crate) enum Wiring {
     Focused,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How fast the script plays.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Speed {
@@ -51,6 +53,7 @@ pub(crate) enum Speed {
 impl Speed {
     pub(crate) const ALL: [Self; 4] = [Self::One, Self::Two, Self::Five, Self::Ten];
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn key(self) -> &'static str {
         match self {
             Self::One => "1",
@@ -60,6 +63,7 @@ impl Speed {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn label(self) -> &'static str {
         match self {
             Self::One => "1 event/s",
@@ -69,10 +73,12 @@ impl Speed {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     pub(crate) fn from_key(key: &str) -> Option<Self> {
         Self::ALL.into_iter().find(|s| s.key() == key)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The time between two events, in milliseconds.
     pub(crate) fn interval_ms(self) -> u32 {
         match self {
@@ -84,6 +90,7 @@ impl Speed {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a person has chosen to look at. None of it changes the net or the history.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) struct View {
@@ -105,6 +112,7 @@ impl View {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Which history the page is showing.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub(crate) enum Source {
@@ -153,6 +161,7 @@ pub(crate) fn target_order() -> Vec<Target> {
     order
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The target that `key` moves the focus to from `from`, if it moves it. The ends do not wrap.
 pub(crate) fn move_roving(order: &[Target], from: Target, key: &str) -> Option<Target> {
     let at = order.iter().position(|&t| t == from)?;
@@ -173,21 +182,26 @@ pub(crate) const fn place_slot(p: PlaceId) -> usize {
     p.0 as usize
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) const fn gate_slot(t: TransitionId) -> usize {
     PLACES + t.0 as usize
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) const fn arc_slot(index: usize) -> usize {
     PLACES + TRANSITIONS + index
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) const fn cell_slot(cell: usize) -> usize {
     PLACES + TRANSITIONS + ARCS + cell
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) const CAPTION_SLOT: usize = PLACES + TRANSITIONS + ARCS + CAPACITY as usize;
 pub(crate) const SLOTS: usize = CAPTION_SLOT + 1;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What one slot is: some attributes, and perhaps text.
 #[derive(Debug, Clone, Default, PartialEq, Eq)]
 pub(crate) struct SlotState {
@@ -201,6 +215,7 @@ impl SlotState {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The text panel's fields, in order: the DOM ID of each and the name that a person reads.
 pub(crate) const PANEL: [(&str, &str); 10] = [
     ("pn-p-snapshot", "Snapshot"),
@@ -215,6 +230,7 @@ pub(crate) const PANEL: [(&str, &str); 10] = [
     ("pn-p-inspector", "Selected"),
 ];
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Everything that the page shows for one snapshot and one view.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) struct Presentation {
@@ -223,6 +239,7 @@ pub(crate) struct Presentation {
     pub(crate) status: String,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// One change to make to a page.
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub(crate) enum Write {
@@ -232,6 +249,7 @@ pub(crate) enum Write {
     Panel(usize, String),
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The writes that draw all of `p`.
 pub(crate) fn full(p: &Presentation) -> Vec<Write> {
     let mut writes = Vec::new();
@@ -245,6 +263,7 @@ pub(crate) fn full(p: &Presentation) -> Vec<Write> {
     writes
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The writes that turn a page that shows `before` into one that shows `after`.
 pub(crate) fn diff(before: &Presentation, after: &Presentation) -> Vec<Write> {
     let mut writes = Vec::new();
@@ -285,6 +304,7 @@ struct Step {
     blocked: Vec<Blocked>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn step(net: &Net, trace: &Trace, index: usize) -> Option<Step> {
     let now = trace.snapshot(index)?;
     let enabled = net.enabled(&now.marking);
@@ -303,10 +323,12 @@ fn step(net: &Net, trace: &Trace, index: usize) -> Option<Step> {
     })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn names(places: &[PlaceId]) -> String {
     list(&places.iter().map(|p| p.name()).collect::<Vec<_>>())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn list(items: &[String]) -> String {
     match items {
         [] => "none".to_owned(),
@@ -315,10 +337,12 @@ fn list(items: &[String]) -> String {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn set_names(set: TransitionSet) -> String {
     list(&set.iter().map(TransitionId::name).collect::<Vec<_>>())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Why a worker waits, in words.
 fn waiting(b: Blocked) -> String {
     match b {
@@ -327,16 +351,19 @@ fn waiting(b: Blocked) -> String {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn tokens_word(n: u8) -> String {
     format!("{n} token{}", if n == 1 { "" } else { "s" })
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The input and the output places of `t`, as a person reads them.
 fn arcs_of(net: &Net, t: TransitionId) -> (String, String) {
     let spec = net.spec(t);
     (names(&spec.pre), names(&spec.post))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the inspector says of the selected target.
 fn inspector(net: &Net, snapshot: &Snapshot, step: &Step, selected: Option<Target>) -> String {
     match selected {
@@ -382,6 +409,7 @@ fn inspector(net: &Net, snapshot: &Snapshot, step: &Step, selected: Option<Targe
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The place that a blocked worker waits in, which is the one that holds its token.
 fn blocked_place(b: Blocked) -> PlaceId {
     match b {
@@ -390,6 +418,7 @@ fn blocked_place(b: Blocked) -> PlaceId {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What a transition consumed and produced, and what its firing enabled and disabled. This is what is said aloud after
 /// a manual firing.
 fn fired_sentence(net: &Net, t: TransitionId, step: &Step) -> String {
@@ -405,10 +434,12 @@ fn fired_sentence(net: &Net, t: TransitionId, step: &Step) -> String {
     text
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn buffer_sentence(s: &Snapshot) -> String {
     format!("Used {} of {CAPACITY}, Free {}", s.marking.used(), s.marking.free())
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn history_sentence(source: Source, trace: &Trace) -> String {
     match source {
         Source::Script(s) => format!("{}: immutable script of {} events", s.label(), trace.last()),
@@ -430,6 +461,7 @@ fn emphasised(selected: Option<Target>, arc: &Arc) -> Option<bool> {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The presentation of the snapshot at `index` of `trace`, or `None` if there is none.
 pub(crate) fn present(net: &Net, trace: &Trace, index: usize, source: Source, view: &View) -> Option<Presentation> {
     let snapshot = trace.snapshot(index)?;
@@ -594,6 +626,7 @@ pub(crate) struct Bounds {
     pub(crate) checkpoints: bool,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 pub(crate) fn bounds(net: &Net, trace: &Trace, index: usize, source: Source, view: &View) -> Bounds {
     let manual = source.is_manual();
     let last = trace.last();
@@ -611,6 +644,7 @@ pub(crate) fn bounds(net: &Net, trace: &Trace, index: usize, source: Source, vie
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is said aloud for the snapshot at `index`: the event, or the starting marking.
 pub(crate) fn summary(net: &Net, trace: &Trace, index: usize) -> String {
     match (trace.snapshot(index), step(net, trace, index)) {
@@ -622,6 +656,7 @@ pub(crate) fn summary(net: &Net, trace: &Trace, index: usize) -> String {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What is said aloud when playback pauses.
 pub(crate) fn pause_summary(net: &Net, trace: &Trace, index: usize) -> String {
     let buffer = trace.snapshot(index).map(buffer_sentence).unwrap_or_default();
@@ -632,6 +667,7 @@ pub(crate) fn pause_summary(net: &Net, trace: &Trace, index: usize) -> String {
     )
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether playback says anything aloud for the move to `index`. Only a change in who waits on the buffer is a
 /// milestone, and so is reaching the end.
 pub(crate) fn announced_while_playing(trace: &Trace, index: usize) -> bool {

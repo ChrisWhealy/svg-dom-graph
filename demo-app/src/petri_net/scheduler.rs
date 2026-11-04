@@ -42,6 +42,7 @@ impl BrowserScheduler {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Drops the closures of the timers and frames that have run.
     fn reap(&self) {
         for id in self.finished_timers.borrow_mut().drain(..).collect::<Vec<_>>() {
@@ -75,12 +76,14 @@ impl Scheduler for BrowserScheduler {
         Ok(handle as u64)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn cancel(&self, handle: u64) {
         self.window.clear_timeout_with_handle(handle as i32);
         self.timers.borrow_mut().remove(&(handle as i32));
         self.reap();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn request_frame(&self, task: Box<dyn FnOnce()>) -> Result<u64, String> {
         self.reap();
         let id = Rc::new(Cell::new(0));
@@ -101,12 +104,14 @@ impl Scheduler for BrowserScheduler {
         Ok(handle as u64)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn cancel_frame(&self, handle: u64) {
         let _ = self.window.cancel_animation_frame(handle as i32);
         self.frames.borrow_mut().remove(&(handle as i32));
         self.reap();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn teardown(&self) {
         let timers: Vec<i32> = self.timers.borrow().keys().copied().collect();
         for handle in timers {
@@ -143,6 +148,7 @@ impl Hooks {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A manual clock, and the hooks that a test drives it with. It owns the hooks, so it can take them off the window and
 /// free them, which happens when the page is torn down, and again if the clock is dropped without that.
 struct ManualClock {
@@ -202,6 +208,7 @@ impl ManualClock {
         Ok(this)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Takes the hooks off the window and frees them. A hook that a later clock has put in its place is left alone.
     fn release(&self) {
         let Some(hooks) = self.hooks.borrow_mut().take() else {
@@ -242,6 +249,7 @@ impl Drop for ManualClock {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Removes the property `name` of `window`, if it is `hook`. Another clock may have replaced it, and that is not for
 /// this one to remove.
 fn remove_hook(window: &web_sys::Window, name: &str, hook: &JsValue) {
@@ -252,6 +260,7 @@ fn remove_hook(window: &web_sys::Window, name: &str, hook: &JsValue) {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Whether the page that is being built asked, with a flag on the window or `?manual-clock` in its address, to be
 /// played by hand and not by the clock. A browser test sets one of them before the panel is built.
 fn manual_clock_requested() -> bool {
@@ -262,6 +271,7 @@ fn manual_clock_requested() -> bool {
     flag || window.location().search().is_ok_and(|query| query.contains(MANUAL_CLOCK_QUERY))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Makes the scheduler for the page: the browser's, or when a test asked for it a scheduler that runs a tick or a frame
 /// only when the test calls its hook. The hooks are taken off the window by [`Scheduler::teardown`].
 ///
