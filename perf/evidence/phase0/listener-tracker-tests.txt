@@ -1,0 +1,17 @@
+ok   the same listener added twice counts once
+ok   a different capture flag is a different registration
+ok   passive does not change identity
+ok   removing with the wrong capture flag removes nothing, and the right one removes it
+ok   removing something never added changes nothing
+ok   a different type is a different registration
+ok   a different callback is a different registration
+ok   a null callback is ignored
+ok   a handleEvent object counts once
+ok   a once listener stops counting after it fires, and a second dispatch changes nothing
+ok   a once listener added again after it fired is a new registration
+ok   a listener whose signal aborts stops counting
+ok   a listener with an already-aborted signal is never counted
+ok   a listener on a detached node counts as detached, and as connected once attached
+ok   50 listeners each added twice: Chrome and the tally both move by { chrome: 50, tally: 50 } and back to { chrome: 0, tally: 0 }
+
+all passed

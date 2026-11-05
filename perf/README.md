@@ -13,6 +13,7 @@ This directory holds what Phase 0 produced. No runner exists yet.
 | `schemas/check.mjs`              | Validates each schema against its examples and against deliberately broken documents |
 | `schemas/examples/`             | Valid example documents |
 | `spike/phase0-spike.mjs`         | The Phase 0 spike, which needs Node 22 or later and a local Chrome |
+| `spike/record-evidence.mjs`      | Reruns the experiments and writes their raw output, the environment and the fixture hashes to `evidence/phase0/` |
 | `spike/listener-ownership.mjs`   | Builds a scene twice and says who owns each listener that was added or removed |
 | `page/listener-tracker.js`       | Counts effective listener registrations, to be injected before any page script |
 | `page/test-listener-tracker.mjs` | Tests the tracker in Chrome, including against Chrome's own count |
@@ -26,7 +27,8 @@ Both are on-demand workspace members, like `cdp-integration-test`, and neither a
 
 ## Phase 0 findings
 
-Measured once, on one machine: macOS, headless Chrome 157, against the `cdp-test-fixture` build from 2 November.
+Measured on one machine: macOS, headless Chrome 157.0.8103.39, against a `cdp-test-fixture` built from commit `2fc8997`.
+The raw outputs are kept in [`evidence/phase0/`](evidence/phase0/), and the figures below can be checked against them.
 Take them as answers to design questions, not as performance figures.
 
 ### 1. Leaving a gallery panel does not tear it down
@@ -124,6 +126,31 @@ One limit remains: a `once` listener that calls `stopImmediatePropagation` on it
 node perf/spike/phase0-spike.mjs cdp-test-fixture
 node perf/spike/phase0-spike.mjs cdp-test-fixture isolated
 ```
+
+## Evidence
+
+`evidence/phase0/` holds what the experiments printed, and the environment they ran in.
+
+| File | Holds |
+|---|---|
+| `environment.json` | Commit and uncommitted changes, machine, full Chrome version, Node, `rustc` and `wasm-pack` versions, the SHA-256 and size of each built fixture file, and each command with its exit code |
+| `timer-and-counters-not-isolated.json` | Timer resolution, Chrome's counters, and the scene and listener figures, for a page that is not cross-origin isolated |
+| `timer-and-counters-isolated.json` | The same, served with COOP and COEP |
+| `listener-ownership.txt` | Which registrations a second scene build added and removed (finding 7) |
+| `listener-tracker-tests.txt` | The result of the tracker's tests, including the check against Chrome's count |
+
+To record it again, for example after a new Chrome or a change to `svg-dom`:
+
+```sh
+node perf/spike/record-evidence.mjs --build
+```
+
+`--build` rebuilds the fixture first. `cdp-test-fixture/pkg/` is not committed, so without `--build` the record says when the existing one was built, and it may not match the checkout.
+Compare the new `environment.json` with the old one before comparing any figure, since a different Chrome, `svg-dom` or fixture hash can explain a difference.
+The Phase 0 figures were first taken against an earlier fixture build, and reproduced exactly on this one: 100 µs and 5 µs, 780 and 1,560 elements, and 139 listeners before a collection and 37 after.
+
+Port numbers are replaced with `PORT`, since they change every run.
+`uncommitted_changes` lists what was not committed when the record was made.
 
 ## Not settled in Phase 0
 

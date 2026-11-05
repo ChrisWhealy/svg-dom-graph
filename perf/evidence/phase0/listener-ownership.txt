@@ -1,0 +1,63 @@
+after the first build:  {"total":37,"connected":37,"detached":0,"byKind":{"g":29,"rect":8},"byType":{"pointerdown":5,"pointermove":5,"pointerup":5,"pointercancel":5,"focus":4,"blur":4,"click":3,"keydown":4,"wheel":2}}
+after the second build: {"total":37,"connected":37,"detached":0,"byKind":{"g":29,"rect":8},"byType":{"pointerdown":5,"pointermove":5,"pointerup":5,"pointercancel":5,"focus":4,"blur":4,"click":3,"keydown":4,"wheel":2}}
+
+first build, by operation: { add: 44, remove: 7 }
+second build, by operation: { add: 44, remove: 44 }
+
+second build, removals by who registered what was removed:
+{ 'remove -> the second build': 7, 'remove -> the first build': 37 }
+
+second build, removals by target and type:
+{
+  'rect pointerdown': 2,
+  'rect pointermove': 2,
+  'rect pointerup': 2,
+  'rect pointercancel': 2,
+  'rect focus': 2,
+  'rect blur': 2,
+  'rect keydown': 2,
+  'g focus': 3,
+  'g blur': 3,
+  'g click': 3,
+  'g keydown': 3,
+  'rect wheel': 1,
+  'g wheel': 1,
+  'g pointerdown': 4,
+  'g pointermove': 4,
+  'g pointerup': 4,
+  'g pointercancel': 4
+}
+
+registrations that survive, by target and type:
+{ g: 29, rect: 8 } {
+  pointerdown: 5,
+  pointermove: 5,
+  pointerup: 5,
+  pointercancel: 5,
+  focus: 4,
+  blur: 4,
+  click: 3,
+  keydown: 4,
+  wheel: 2
+}
+
+one removal in the second build, with its call stack:
+{
+  "op": "remove",
+  "kind": "rect",
+  "type": "pointerdown",
+  "capture": false,
+  "born": 72,
+  "stack": "    at EventTarget.removeEventListener (<anonymous>:104:23)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:294:18\n    at handleError (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:528:18)\n    at __wbg_removeEventListener_6e68185345978771 (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:293:73)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[476]:0x5161d\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[247]:0x449de"
+}
+
+one addition in the second build, with its call stack:
+{
+  "op": "add",
+  "kind": "g",
+  "type": "pointerdown",
+  "capture": false,
+  "once": false,
+  "born": 44,
+  "stack": "    at http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:86:18\n    at handleError (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:528:18)\n    at __wbg_addEventListener_4d0db17c671ea324 (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:85:70)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[320]:0x4b34c\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[94]:0x19ef2\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[463]:0x50e9b"
+}

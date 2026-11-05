@@ -1,0 +1,60 @@
+{
+  "recorded_at": "2026-11-05T16:57:12.368Z",
+  "commit": "2fc89970573e7f82a7340dd87e43ada72be666c4",
+  "commit_date": "2026-11-05T16:56:15Z",
+  "uncommitted_changes": [
+    "M demo/changelog.md",
+    "?? perf/spike/record-evidence.mjs"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "macos": "27.2",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "browser": "Google Chrome 157.0.8103.39",
+  "node": "v26.13.0",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm_pack": "wasm-pack 0.15.1",
+  "fixture": {
+    "rebuilt_by_this_run": true,
+    "pkg_built": "2026-11-05T16:57:12.352Z",
+    "files": {
+      "cdp_test_fixture.js": {
+        "sha256": "f5b20954dd6f3a1e00433bb02c6b17f2770bfda065094475a748ec082e4c1f55",
+        "bytes": 29860
+      },
+      "cdp_test_fixture_bg.wasm": {
+        "sha256": "de52cb94b8615717565886365fcbb7668fa76c52f4785819e88c092493fb8a2a",
+        "bytes": 424666
+      }
+    }
+  },
+  "commands": [
+    {
+      "file": "timer-and-counters-not-isolated.json",
+      "command": "node perf/spike/phase0-spike.mjs cdp-test-fixture",
+      "exit_code": 0,
+      "seconds": 3.403
+    },
+    {
+      "file": "timer-and-counters-isolated.json",
+      "command": "node perf/spike/phase0-spike.mjs cdp-test-fixture isolated",
+      "exit_code": 0,
+      "seconds": 3.402
+    },
+    {
+      "file": "listener-ownership.txt",
+      "command": "node perf/spike/listener-ownership.mjs cdp-test-fixture",
+      "exit_code": 0,
+      "seconds": 2.902
+    },
+    {
+      "file": "listener-tracker-tests.txt",
+      "command": "node perf/page/test-listener-tracker.mjs",
+      "exit_code": 0,
+      "seconds": 1.198
+    }
+  ]
+}

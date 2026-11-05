@@ -1,0 +1,56 @@
+{
+  "isolated": true,
+  "crossOriginIsolated": true,
+  "timer_resolution_us": 4.999995231628418,
+  "user_agent": "Mozilla/5.0 (Macintosh; Intel Mac OS X 10_15_7) AppleWebKit/537.36 (KHTML, like Gecko) HeadlessChrome/157.0.0.0 Safari/537.36",
+  "metric_names": [
+    "JSEventListeners",
+    "Nodes",
+    "LayoutCount",
+    "RecalcStyleCount",
+    "ScriptDuration",
+    "JSHeapUsedSize",
+    "JSHeapTotalSize"
+  ],
+  "before": {
+    "Nodes": 961,
+    "JSEventListeners": 51,
+    "JSHeapUsedSize": 1012456
+  },
+  "first_scene": {
+    "scene_children": 5,
+    "elements": 780,
+    "ids": ["svg-dom-graph-arrow-0"],
+    "tally": {
+      "add": 44,
+      "remove": 7,
+      "net": 37
+    }
+  },
+  "second_run": "ok",
+  "second_scene": {
+    "scene_children": 10,
+    "elements": 1560,
+    "ids": ["svg-dom-graph-arrow-0", "svg-dom-graph-arrow-1"],
+    "tally": {
+      "add": 88,
+      "remove": 51,
+      "net": 37
+    }
+  },
+  "after_second_run_before_gc": {
+    "Nodes": 1898,
+    "JSEventListeners": 139,
+    "JSHeapUsedSize": 872508
+  },
+  "after_second_run_after_gc": {
+    "Nodes": 1794,
+    "JSEventListeners": 37,
+    "JSHeapUsedSize": 724584
+  },
+  "after_removing_the_svg": {
+    "Nodes": 1794,
+    "JSEventListeners": 37,
+    "JSHeapUsedSize": 724576
+  }
+}
