@@ -39,6 +39,7 @@ const MAX_REPORTED_PER_CHECKPOINT: usize = 20;
 /// How many times `performance.now()` is called to find the smallest step it makes.
 const RESOLUTION_PROBES: u32 = 200_000;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A deliberate fault in what was observed, to prove that the comparison notices it.
 ///
 /// It is applied to the observed checkpoint and never to the scene, so it tests the check and not the library. A run with a
@@ -72,6 +73,7 @@ impl Fault {
         })
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn apply(self, actual: &mut Checkpoint) {
         match self {
             Self::ConnectorOffset => {
@@ -109,6 +111,7 @@ impl Fault {
     }
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The digests of the stream that the workload report expects, produced by a different process.
 pub struct Expected {
     pub sha256: String,
@@ -140,15 +143,38 @@ impl Kind {
     }
 }
 
-/// A run of operations of one kind that is being timed.
-struct Segment {
-    kind: Kind,
-    started_ms: f64,
-    operations: u32,
-    /// Whether it is in the measured part. The warm-up's moves are timed too, to find the size of a batch, and kept apart.
-    recording: bool,
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// An operation with everything it needs already worked out, so that running it is only the library call.
+///
+/// Finding a node's id, building a key, copying a label and making the host element are the harness's own work. They are done
+/// when the operation is prepared, before any clock is read, so that a timed interval holds nothing but calls into the library.
+enum Prepared {
+    Create {
+        id: String,
+    },
+    AddNode {
+        key: String,
+        point: Point,
+        size: Size,
+        label: String,
+    },
+    AddEdge {
+        key: String,
+        from: NodeId,
+        to: NodeId,
+    },
+    Move {
+        id: NodeId,
+        point: Point,
+    },
+    Drop,
+    Remove,
 }
 
+/// What a run of waiting operations is: their kind, whether they are in the measured part, and whether they are timed.
+type Waiting = (Kind, bool, bool);
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What can be counted at one moment.
 #[derive(Debug, Clone, Copy, Default)]
 struct Resources {
@@ -184,7 +210,15 @@ struct Run<'a> {
     total_cycles: u64,
 
     timing_on: bool,
-    segment: Option<Segment>,
+    /// The operations that wait to be run together, all of one kind, and what they are.
+    pending: Vec<Prepared>,
+    pending_meta: Option<Waiting>,
+    /// The most that can wait. It is the size of the vector, which is made at full size so that it never grows during a run.
+    pending_capacity: usize,
+    /// The ids that a run of `add_node` calls gave back, kept until the calls are over.
+    scratch_ids: Vec<NodeId>,
+    /// A deliberate delay in the harness's own work, to prove that it is not in the timing. Zero outside the self-test.
+    harness_delay_us: f64,
     move_batch: Option<u32>,
     warmup_move_us: f64,
     warmup_moves: u64,
@@ -202,10 +236,12 @@ struct Run<'a> {
     fault: Option<Fault>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn describe(error: impl std::fmt::Display) -> String {
     error.to_string()
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl<'a> Run<'a> {
     fn new(manifest: &'a Manifest, mode: Mode) -> Result<Self, String> {
         let window = web_sys::window().ok_or("there is no window")?;
@@ -224,6 +260,10 @@ impl<'a> Run<'a> {
         } else {
             manifest.total_iterations()
         };
+        // Large enough for the biggest run of one kind in a build, and for a batch of moves, and never more than a
+        // fixed ceiling.
+        let pending_capacity =
+            (manifest.graph.nodes.max(manifest.graph.edges.unwrap_or(0)) as usize + 1).clamp(1024, 8192);
         let mut run = Self {
             manifest,
             mode,
@@ -235,7 +275,7 @@ impl<'a> Run<'a> {
             svg: None,
             scene: None,
             nodes: BTreeMap::new(),
-            edge_keys: Vec::new(),
+            edge_keys: Vec::with_capacity(manifest.graph.edges.unwrap_or(0) as usize),
             model: Model::new(),
             hasher: StreamHasher::new(),
             total_checkpoints,
@@ -244,7 +284,11 @@ impl<'a> Run<'a> {
             cycle: 0,
             total_cycles,
             timing_on: matches!(mode, Mode::Performance | Mode::Endurance),
-            segment: None,
+            pending: Vec::with_capacity(pending_capacity),
+            pending_meta: None,
+            pending_capacity,
+            scratch_ids: Vec::with_capacity(pending_capacity),
+            harness_delay_us: 0.0,
             move_batch: None,
             warmup_move_us: 0.0,
             warmup_moves: 0,
@@ -254,19 +298,25 @@ impl<'a> Run<'a> {
             baseline: Resources::default(),
             after_build: None,
             after_teardown: None,
-            // Everything the run records is made at its full size before the first reading. A vector that grew while the
-            // scene was being built and dropped would show in the live bytes, and would look like the library keeping memory.
+            // Everything the run records is made at its full size before the first reading. A vector that grew while
+            // the scene was being built and dropped would show in the live bytes, and would look like the library
+            // keeping memory.
             teardown_series: Vec::with_capacity(total_cycles as usize),
             checkpoint_this_cycle: false,
             outcome: RunOutcome::new("B", mode),
             fault: None,
         };
-        run.resolution_us = run.measure_resolution();
-        run.outcome.timer_resolution_us = run.resolution_us;
+        let (resolution_us, clock_read_us) = run.measure_resolution();
+        run.resolution_us = resolution_us;
+        run.outcome.timer_resolution_us = resolution_us;
+        run.outcome.notes.push(format!(
+            "a clock read costs about {clock_read_us:.2} us, and one is inside every timed interval"
+        ));
         run.baseline = run.sample_resources();
         Ok(run)
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// One vector for every metric that the run can record, each as large as it can ever need to be.
     fn sample_vectors(manifest: &Manifest) -> BTreeMap<&'static str, Vec<f64>> {
         let most = manifest.execution.measurement_iterations as usize;
@@ -285,14 +335,17 @@ impl<'a> Run<'a> {
         .collect()
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn now_ms(&self) -> f64 {
         self.performance.now()
     }
 
-    /// The smallest step that `performance.now()` makes, in microseconds.
-    fn measure_resolution(&self) -> f64 {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// The smallest step that `performance.now()` makes, and what one call costs, both in microseconds.
+    fn measure_resolution(&self) -> (f64, f64) {
         let mut smallest = f64::INFINITY;
-        let mut last = self.now_ms();
+        let began = self.now_ms();
+        let mut last = began;
         for _ in 0..RESOLUTION_PROBES {
             let now = self.now_ms();
             let step = (now - last) * 1000.0;
@@ -301,7 +354,8 @@ impl<'a> Run<'a> {
             }
             last = now;
         }
-        if smallest.is_finite() { smallest } else { 0.0 }
+        let per_call = (last - began) * 1000.0 / f64::from(RESOLUTION_PROBES);
+        (if smallest.is_finite() { smallest } else { 0.0 }, per_call)
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -321,6 +375,7 @@ impl<'a> Run<'a> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The effective listener registrations that the page's tracker counts, if the page has one.
     fn listener_total(&self) -> Option<f64> {
         let tracker = js_sys::Reflect::get(&self.window, &"__listeners".into())
@@ -345,28 +400,37 @@ impl<'a> Run<'a> {
                 Err(message)
             },
         });
-        self.close_segment();
-        match (result, failure) {
-            (_, Some(message)) => Err(message),
-            (Err(error), None) => Err(describe(error)),
-            (Ok(()), None) => Ok(()),
+        // Whatever still waits to be run is run now, unless the run has already failed.
+        let flushed = if failure.is_none() { self.flush() } else { Ok(()) };
+        match (result, failure, flushed) {
+            (_, Some(message), _) => Err(message),
+            (Err(error), None, _) => Err(describe(error)),
+            (Ok(()), None, flushed) => flushed,
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Takes in one operation of the stream.
+    ///
+    /// Everything here is the harness's own work: the reference model, the hash of the stream, the delay of the
+    /// self-test, and the preparation of the operation. None of it is done while a clock is running. An operation is
+    /// only queued here, and the library calls of a queue are made together by `flush`, which is the one place that
+    /// reads a clock.
     fn step(&mut self, op: &Op) -> Result<(), String> {
         self.model.apply(op)?;
+        self.hold_up();
 
-        // The build is over once an operation that is not part of it arrives.
+        // The build is over once an operation that is not part of it arrives, and what waits has to run first.
         let is_build = matches!(op, Op::CreateScene | Op::AddNode { .. } | Op::AddEdge { .. });
         if self.building && !is_build {
-            self.close_segment();
+            self.flush()?;
             self.building = false;
             self.on_build_complete();
         }
 
         match op {
             Op::Phase { phase } => {
-                self.close_segment();
+                self.flush()?;
                 self.hasher.push(op);
                 if *phase == Phase::Measure {
                     self.finish_warmup();
@@ -374,7 +438,7 @@ impl<'a> Run<'a> {
                 self.measuring = *phase == Phase::Measure;
             },
             Op::Checkpoint { index } => {
-                self.close_segment();
+                self.flush()?;
                 if self.mode == Mode::Correctness || performance_runs_checkpoint(*index, self.total_checkpoints) {
                     self.hasher.push(op);
                     self.check(*index)?;
@@ -382,94 +446,224 @@ impl<'a> Run<'a> {
             },
             _ => {
                 self.hasher.push(op);
-                self.apply_timed(op)?;
+                let kind = Kind::of(op).ok_or("a marker reached the queue")?;
+                // The measured part is timed. In the warm-up only the moves are, to find how many to time together.
+                let recording = self.measuring;
+                let timed = self.timing_on && (recording || kind == Kind::Moves);
+                let waiting = (kind, recording, timed);
+                // An operation of another kind runs what waits first, since it may need what that made, such as the nodes that
+                // an edge joins. This comes before it is prepared, for that reason.
+                if self.pending_meta != Some(waiting) {
+                    self.flush()?;
+                }
+                let prepared = self.prepare(op)?;
+                self.submit(prepared, waiting)?;
             },
         }
         Ok(())
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    /// Applies a mutation, timing it as part of a segment when this part of the run is timed.
-    fn apply_timed(&mut self, op: &Op) -> Result<(), String> {
-        let kind = Kind::of(op).ok_or("a marker reached apply_timed")?;
-        // The measured part is timed. In the warm-up only the moves are, to find out how many to time together.
-        let recording = self.measuring;
-        let timed = self.timing_on && (recording || kind == Kind::Moves);
-        if timed {
-            self.enter_segment(kind, recording);
+    /// A deliberate delay in the harness's own work, to prove that it never reaches a timed figure.
+    fn hold_up(&self) {
+        if self.harness_delay_us > 0.0 {
+            let until = self.now_ms() + self.harness_delay_us / 1000.0;
+            while self.now_ms() < until {}
         }
-        self.apply(op)?;
-        if timed {
-            self.after_apply(kind);
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Works out everything an operation needs, so that running it is only the library call.
+    fn prepare(&mut self, op: &Op) -> Result<Prepared, String> {
+        Ok(match op {
+            Op::CreateScene => {
+                self.cycle += 1;
+                self.checkpoint_this_cycle = false;
+                self.building = true;
+                let id = format!(
+                    "perf-svg-{}",
+                    SVG_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1
+                );
+                // The host element is the page's, not the library's, so it is made here and the scene is made on it later.
+                let (width, height) = field_for(self.manifest.graph.nodes);
+                let svg = self
+                    .document
+                    .create_element_ns(Some(SVG_NS), "svg")
+                    .map_err(|e| format!("{e:?}"))?;
+                for (name, value) in [
+                    ("id", id.clone()),
+                    ("width", width.to_string()),
+                    ("height", height.to_string()),
+                    ("viewBox", format!("0 0 {width} {height}")),
+                ] {
+                    svg.set_attribute(name, &value).map_err(|e| format!("{e:?}"))?;
+                }
+                self.document
+                    .body()
+                    .ok_or("there is no body")?
+                    .append_child(&svg)
+                    .map_err(|e| format!("{e:?}"))?;
+                self.svg = Some(svg);
+                Prepared::Create { id }
+            },
+            Op::AddNode { key, x, y, w, h, label } => Prepared::AddNode {
+                key: key.clone(),
+                point: Point::new(*x as f64, *y as f64),
+                size: Size::new(*w as f64, *h as f64),
+                label: label.clone(),
+            },
+            Op::AddEdge { from, to } => Prepared::AddEdge {
+                key: format!("{from}->{to}"),
+                from: self.node(from)?,
+                to: self.node(to)?,
+            },
+            Op::MoveNode { key, x, y } => Prepared::Move {
+                id: self.node(key)?,
+                point: Point::new(*x as f64, *y as f64),
+            },
+            Op::DropScene => Prepared::Drop,
+            Op::RemoveHost => Prepared::Remove,
+            Op::Phase { .. } | Op::Checkpoint { .. } => return Err("a marker reached prepare".to_string()),
+        })
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Queues a prepared operation, and runs the queue if it is full.
+    ///
+    /// A queue that is not timed holds one operation and runs at once. A timed batch of moves is as long as the warm-up
+    /// said it should be. Every other timed queue is a whole run of its kind, up to the capacity of the vector.
+    fn submit(&mut self, prepared: Prepared, waiting: Waiting) -> Result<(), String> {
+        self.pending_meta = Some(waiting);
+        self.pending.push(prepared);
+        let (kind, recording, timed) = waiting;
+        let wanted = if !timed {
+            1
+        } else if kind == Kind::Moves && recording {
+            self.move_batch.unwrap_or(1) as usize
+        } else {
+            self.pending_capacity
+        };
+        if self.pending.len() >= wanted.min(self.pending_capacity) {
+            self.flush()
+        } else {
+            Ok(())
         }
-        if matches!(op, Op::RemoveHost) {
-            self.close_segment();
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+   /// Runs the queue.
+    fn flush(&mut self) -> Result<(), String> {
+        let Some((kind, recording, timed)) = self.pending_meta.take() else {
+            return Ok(());
+        };
+        let count = self.pending.len();
+        if count == 0 {
+            return Ok(());
+        }
+        // The vector is taken out and put back, so that it keeps its capacity and no run allocates one.
+        let mut items = std::mem::take(&mut self.pending);
+        let elapsed = self.run_batch(kind, &mut items, timed);
+        items.clear();
+        self.pending = items;
+        let elapsed_us = elapsed?;
+        if timed {
+            self.record(kind, recording, count as u32, elapsed_us);
+        }
+        if kind == Kind::Remove {
             self.on_teardown_complete();
         }
         Ok(())
     }
 
-    fn enter_segment(&mut self, kind: Kind, recording: bool) {
-        if self
-            .segment
-            .as_ref()
-            .is_some_and(|s| s.kind == kind && s.recording == recording)
-        {
-            return;
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes the library calls of one queue, one after the other, and gives the time they took.
+    ///
+    /// The clock is read once before the first call and once after the last. Nothing else is between them: not the
+    /// model, not the hash, not the bookkeeping of what the calls returned, which is done after the second reading.
+    fn run_batch(&mut self, kind: Kind, items: &mut [Prepared], timed: bool) -> Result<f64, String> {
+        let started = if timed { self.now_ms() } else { 0.0 };
+        match kind {
+            Kind::Create => {
+                let Some(Prepared::Create { id }) = items.first() else {
+                    return Err("a create had no id".to_string());
+                };
+                let scene = Scene::new(SvgRoot::attach(id).map_err(describe)?).map_err(describe)?;
+                self.scene = Some(scene);
+            },
+            Kind::Nodes => {
+                let scene = self.scene.as_ref().ok_or("there is no scene")?;
+                self.scratch_ids.clear();
+                for item in items.iter_mut() {
+                    if let Prepared::AddNode { point, size, label, .. } = item {
+                        // The label is moved in and not copied, so that no copy is made while the clock runs.
+                        self.scratch_ids
+                            .push(scene.add_node(*point, *size, std::mem::take(label)).map_err(describe)?);
+                    }
+                }
+            },
+            Kind::Edges => {
+                let scene = self.scene.as_ref().ok_or("there is no scene")?;
+                // The library's default connector is an elbow, and the reference model predicts a straight one.
+                let options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
+                for item in items.iter() {
+                    if let Prepared::AddEdge { from, to, .. } = item {
+                        scene.add_edge_with(*from, *to, options).map_err(describe)?;
+                    }
+                }
+            },
+            Kind::Moves => {
+                let scene = self.scene.as_ref().ok_or("there is no scene")?;
+                for item in items.iter() {
+                    if let Prepared::Move { id, point } = item {
+                        scene.move_node(*id, *point).map_err(describe)?;
+                    }
+                }
+            },
+            Kind::Drop => drop(self.scene.take()),
+            Kind::Remove => {
+                if let Some(svg) = self.svg.take() {
+                    svg.remove();
+                }
+            },
         }
-        // One reading is both the end of the segment that finishes and the start of the one that begins.
-        let t = self.now_ms();
-        if let Some(finished) = self.segment.take() {
-            self.record(finished, t);
+        let elapsed_us = if timed { (self.now_ms() - started) * 1000.0 } else { 0.0 };
+
+        // What the calls returned is kept now, with the clock stopped.
+        match kind {
+            Kind::Nodes => {
+                for (item, id) in items.iter_mut().zip(self.scratch_ids.iter()) {
+                    if let Prepared::AddNode { key, .. } = item {
+                        self.nodes.insert(std::mem::take(key), *id);
+                    }
+                }
+            },
+            Kind::Edges => {
+                for item in items.iter_mut() {
+                    if let Prepared::AddEdge { key, .. } = item {
+                        self.edge_keys.push(std::mem::take(key));
+                    }
+                }
+            },
+            Kind::Drop => self.nodes.clear(),
+            Kind::Remove => self.edge_keys.clear(),
+            Kind::Create | Kind::Moves => {},
         }
-        self.segment = Some(Segment {
-            kind,
-            started_ms: t,
-            operations: 0,
-            recording,
-        });
+        Ok(elapsed_us)
     }
 
-    fn after_apply(&mut self, kind: Kind) {
-        let Some(segment) = self.segment.as_mut() else { return };
-        segment.operations += 1;
-        if kind == Kind::Moves && segment.recording && segment.operations >= self.move_batch.unwrap_or(1) {
-            let t = self.performance.now();
-            let finished = std::mem::replace(
-                segment,
-                Segment {
-                    kind,
-                    started_ms: t,
-                    operations: 0,
-                    recording: true,
-                },
-            );
-            self.record(finished, t);
-        }
-    }
-
-    fn close_segment(&mut self) {
-        if let Some(finished) = self.segment.take() {
-            let t = self.now_ms();
-            self.record(finished, t);
-        }
-    }
-
-    fn record(&mut self, segment: Segment, ended_ms: f64) {
-        let microseconds = (ended_ms - segment.started_ms) * 1000.0;
-        if segment.operations == 0 {
-            return;
-        }
-        match (segment.kind, segment.recording) {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Keeps the time of a queue that was run.
+    fn record(&mut self, kind: Kind, recording: bool, count: u32, microseconds: f64) {
+        match (kind, recording) {
             (Kind::Moves, false) => {
                 self.warmup_move_us += microseconds;
-                self.warmup_moves += u64::from(segment.operations);
+                self.warmup_moves += u64::from(count);
             },
             (Kind::Moves, true) => self
                 .samples
                 .entry("mutation.move_node")
                 .or_default()
-                .push(microseconds / f64::from(segment.operations)),
+                .push(microseconds / f64::from(count)),
             (kind, _) => {
                 let name = match kind {
                     Kind::Create => "construction.create_scene",
@@ -489,12 +683,20 @@ impl<'a> Run<'a> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Works out from the warm-up how many moves to time together, so that an observation spans enough timer steps.
     fn finish_warmup(&mut self) {
         if self.timing_on && self.manifest.workload == Workload::ConnectorRerouting {
             if self.warmup_moves > 0 {
                 let average = self.warmup_move_us / self.warmup_moves as f64;
-                self.move_batch = Some(batch_size(self.resolution_us, average));
+                let wanted = batch_size(self.resolution_us, average);
+                let batch = wanted.min(self.pending_capacity as u32);
+                if batch < wanted {
+                    self.outcome.notes.push(format!(
+                        "a batch of {wanted} moves was wanted, and {batch} is the most that can wait, so each observation is shorter than 50 timer steps"
+                    ));
+                }
+                self.move_batch = Some(batch);
             } else {
                 self.outcome
                     .notes
@@ -517,6 +719,7 @@ impl<'a> Run<'a> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn on_teardown_complete(&mut self) {
         if self.measuring && self.timing_on && self.cycle_teardown_us > 0.0 {
             self.samples.entry("teardown.total").or_default().push(self.cycle_teardown_us);
@@ -533,77 +736,6 @@ impl<'a> Run<'a> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-    fn apply(&mut self, op: &Op) -> Result<(), String> {
-        match op {
-            Op::CreateScene => {
-                self.cycle += 1;
-                self.checkpoint_this_cycle = false;
-                self.building = true;
-                let id = format!(
-                    "perf-svg-{}",
-                    SVG_SEQUENCE.fetch_add(1, std::sync::atomic::Ordering::Relaxed) + 1
-                );
-                let (width, height) = field_for(self.manifest.graph.nodes);
-                let svg = self
-                    .document
-                    .create_element_ns(Some(SVG_NS), "svg")
-                    .map_err(|e| format!("{e:?}"))?;
-                for (name, value) in [
-                    ("id", id.clone()),
-                    ("width", width.to_string()),
-                    ("height", height.to_string()),
-                    ("viewBox", format!("0 0 {width} {height}")),
-                ] {
-                    svg.set_attribute(name, &value).map_err(|e| format!("{e:?}"))?;
-                }
-                self.document
-                    .body()
-                    .ok_or("there is no body")?
-                    .append_child(&svg)
-                    .map_err(|e| format!("{e:?}"))?;
-                let scene = Scene::new(SvgRoot::attach(&id).map_err(describe)?).map_err(describe)?;
-                self.svg = Some(svg);
-                self.scene = Some(scene);
-            },
-            Op::AddNode { key, x, y, w, h, label } => {
-                let id = self
-                    .scene()?
-                    .add_node(Point::new(*x as f64, *y as f64), Size::new(*w as f64, *h as f64), label.clone())
-                    .map_err(describe)?;
-                self.nodes.insert(key.clone(), id);
-            },
-            Op::AddEdge { from, to } => {
-                let (from_id, to_id) = (self.node(from)?, self.node(to)?);
-                // The library's default connector is an elbow, and the reference model predicts a straight one.
-                let options = ConnectorOptions::default().with_connector_type(ConnectorType::Straight);
-                self.scene()?.add_edge_with(from_id, to_id, options).map_err(describe)?;
-                self.edge_keys.push(format!("{from}->{to}"));
-            },
-            Op::MoveNode { key, x, y } => {
-                let id = self.node(key)?;
-                self.scene()?
-                    .move_node(id, Point::new(*x as f64, *y as f64))
-                    .map_err(describe)?;
-            },
-            Op::DropScene => {
-                self.scene = None;
-                self.nodes.clear();
-            },
-            Op::RemoveHost => {
-                if let Some(svg) = self.svg.take() {
-                    svg.remove();
-                }
-                self.edge_keys.clear();
-            },
-            Op::Phase { .. } | Op::Checkpoint { .. } => return Err("a marker reached apply".to_string()),
-        }
-        Ok(())
-    }
-
-    fn scene(&self) -> Result<&Scene, String> {
-        self.scene.as_ref().ok_or_else(|| "there is no scene".to_string())
-    }
-
     fn node(&self, key: &str) -> Result<NodeId, String> {
         self.nodes.get(key).copied().ok_or_else(|| format!("the node {key} is unknown"))
     }
@@ -638,6 +770,7 @@ impl<'a> Run<'a> {
         Ok(())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// The checkpoint of a page with no scene on it, which is an empty one unless a host was left behind.
     fn observe_nothing(&self) -> Result<Checkpoint, String> {
         let leftover = self
@@ -680,6 +813,7 @@ impl<'a> Run<'a> {
         self.outcome
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Drops the scene and removes its host, if the workload left them behind. It is done after every figure is taken.
     fn clean_up(&mut self) {
         self.scene = None;
@@ -689,6 +823,7 @@ impl<'a> Run<'a> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn emit_timing_metrics(&mut self) {
         if !self.timing_on {
             self.outcome
@@ -737,6 +872,7 @@ impl<'a> Run<'a> {
             .collect();
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn emit_resource_metrics(&mut self) {
         let m = &self.manifest.measurement;
         let (baseline, built, torn) = (self.baseline, self.after_build, self.after_teardown);
@@ -830,6 +966,7 @@ impl<'a> Run<'a> {
         }
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether capacity is reused, and whether live bytes keep growing, once the warm-up cycles are over.
     fn emit_endurance_metrics(&mut self) {
         let series = &self.teardown_series;
@@ -895,6 +1032,21 @@ pub fn run_with_fault(
     expected: Option<&Expected>,
     fault: Option<Fault>,
 ) -> RunOutcome {
+    run_with_options(manifest, mode, expected, fault, 0.0)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same, with a deliberate delay of `harness_delay_us` microseconds in the harness's own work for every operation.
+///
+/// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it. The
+/// self-test runs a workload with and without it, and fails if a figure moves.
+pub fn run_with_options(
+    manifest: &Manifest,
+    mode: Mode,
+    expected: Option<&Expected>,
+    fault: Option<Fault>,
+    harness_delay_us: f64,
+) -> RunOutcome {
     if !matches!(mode, Mode::Correctness | Mode::Performance | Mode::Endurance) {
         let mut outcome = RunOutcome::new("B", mode);
         outcome.status = "error";
@@ -911,6 +1063,7 @@ pub fn run_with_fault(
         },
     };
     run.fault = fault;
+    run.harness_delay_us = harness_delay_us;
     if let Err(message) = run.execute() {
         run.outcome.status = "error";
         run.outcome.error = Some(message);

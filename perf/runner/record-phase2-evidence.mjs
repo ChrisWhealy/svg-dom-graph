@@ -2,8 +2,8 @@
 //
 //   node perf/runner/record-phase2-evidence.mjs
 //
-// It builds both runners, verifies the counting allocator, proves that the checkpoint comparison notices faults, runs the
-// unit tests, and runs the realistic manifests on both layers. The result documents and their raw samples are kept, so that the
+// It builds both runners, verifies the counting allocator, proves that the checkpoint comparison notices faults and that the
+// harness's own work is outside every timing, runs the unit tests, and runs the realistic manifests on both layers. The result documents and their raw samples are kept, so that the
 // figures can be read again and the schemas checked against them. It needs a Rust toolchain with wasm-pack and the
 // wasm32-wasip1 target, a local Chrome, Node 22 or later, and `npm ci` in perf/schemas.
 import fs from 'node:fs'
@@ -55,6 +55,7 @@ step('rust-tests-perf-harness-wasm32-wasi.txt', 'cargo', ['test', '-p', 'perf-ha
 })
 step('allocator-verification.txt', 'node', ['perf/runner/verify-allocator.mjs', '--out', path.join(out, 'allocator-verification.json')])
 step('checker-selftest.txt', 'node', ['perf/runner/selftest.mjs'])
+step('timing-selftest.txt', 'node', ['perf/runner/selftest-timing.mjs'])
 
 // The realistic manifests, on both layers. The small ones are covered by Phase 1 and by the self-test.
 const manifests = [

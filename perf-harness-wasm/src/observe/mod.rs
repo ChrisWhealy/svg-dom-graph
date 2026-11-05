@@ -36,6 +36,7 @@ struct NodeSeen {
     outputs: Vec<String>,
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Reads the checkpoint of the scene drawn in `svg`.
 ///
 /// `edge_keys` are the keys of the edges in the order they were made, which is how the connectors in the document are named.

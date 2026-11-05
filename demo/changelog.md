@@ -28,7 +28,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Implement effective-registration accounting in listener-tally spike (`2fc8997`) 
 - Perf Harness: Retain spike results as reproducible evidence (`89a03af`) 
 - Perf Harness Phase 1: Deterministic workload engine `perf-harness` (`a2c35b3`)
-- Perf Harness Phase 2: Layer A and Layer B runners `perf-harness-wasm` (``)
+- Perf Harness Phase 2: Layer A and Layer B runners `perf-harness-wasm` (`78eacc4`)
 
 ### Changed
 
@@ -71,3 +71,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Petri Net: Quick-fire can proceed after its selection draw fails (`71b617b`)
 - Petri Net: Teardown does not fully release listeners (`413be15`)
 - Perf Harness: Result schema fully represents statistical contract (`1d6a367`)
+- Perf Harness: Wait for timing segment to close before `step()` updates reference model (``)

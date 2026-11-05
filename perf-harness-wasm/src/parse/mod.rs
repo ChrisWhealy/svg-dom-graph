@@ -30,6 +30,7 @@ pub fn numbers_in(text: &str) -> Vec<f64> {
     numbers
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The nodes that a node's accessible name says it outputs to.
 ///
 /// The name reads `label. Output to X. Input from Y.`, so it is split on its full stops and the clauses that begin with the
@@ -43,5 +44,6 @@ pub fn outputs_in(accessible_name: &str) -> Vec<String> {
         .collect()
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

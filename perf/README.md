@@ -281,6 +281,7 @@ node perf/runner/run.mjs perf/manifests/w2-connector-rerouting-large.toml # both
 node perf/runner/run.mjs <manifest> --mode correctness --layers b         # one mode, one layer
 node perf/runner/verify-allocator.mjs                                     # does the counting allocator tell the truth?
 node perf/runner/selftest.mjs                                             # does the checkpoint comparison notice a fault?
+node perf/runner/selftest-timing.mjs                                      # is the harness's own work outside every timing?
 cargo test -p perf-harness-wasm                                           # the allocator's arithmetic and the parsers, natively
 ```
 
@@ -302,9 +303,14 @@ a gate.
 | `wasm.linear_memory_high_water` | B | The capacity of the linear memory, which is never live usage |
 | `wasm.memory_grow_events_after_warmup`, `wasm.live_bytes_growth_after_warmup` | B | Endurance only: whether capacity is reused and whether live bytes keep growing |
 
-Timing reads `performance.now()` only where one kind of operation gives way to another, never inside an operation. The checks,
-the resource counts and the model all run between segments, outside the timing. A timing under 50 timer steps that could not be
-batched carries `resolution_limited`, which says that it is quantised and must not be compared finely.
+A timed interval holds library calls and nothing else. Each operation is prepared first: its node ids are found, its strings
+are built, its host element is made, the reference model is updated and the stream is hashed. Prepared operations of one kind
+then wait in a queue that was allocated at full size. The queue runs as one tight loop of `Scene` calls, with `performance.now()`
+read once before the first and once after the last, and the results of the calls are kept after the second reading. Checks and
+resource counts run between queues, outside every interval. A queue is a whole run of one kind (all the nodes of a build, say),
+or for moves a batch sized from the warm-up. One clock read, which costs about a microsecond, is inside each interval, and the
+outcome says how much. A timing under 50 timer steps that could not be batched carries `resolution_limited`, which says that it
+is quantised and must not be compared finely.
 
 A performance run skips the checkpoints along the way and executes the last two outside its timing, so it still proves that
 what it timed was right. The run's digest is the mutations digest of the workload report, and a run that did not execute
@@ -331,10 +337,16 @@ with what exists and not with what it meant.
 - **A connector between boxes that touch has no path.** When two boxes meet along a side, both ends of the connector between them
   are the same point. The library drops a point that repeats the one before it, and writes an empty `d`. A random move produced
   this at scale, and the model now records such a connector with no coordinates, which `checkpoint.schema.json` allows.
+- **Timed intervals once held the harness's own work.** The first version timed a segment of same-kind operations while the
+  model update and the hash of each operation ran inside it, so a build of 200 nodes also timed 200 model updates. A review
+  found it. `selftest-timing.mjs` now delays the harness's own work by 100 to 200 us for every operation and fails if any timed
+  figure moves. As a negative control, the old executor with only that delay added reported 207.5 us a move against 7.3 without
+  the delay, 23 ms against 3.2 ms for 200 nodes, and 62 ms against 2.4 ms for 600 edges. The fixed executor reports 6.1 us, 3.1
+  ms and 2.2 ms. Every figure recorded before the fix was provisional, and the evidence has been recorded again.
 - **Repeatability, from `evidence/phase2/`.** Over five fresh-Chrome repetitions the construction medians of a 200-node build
-  agree to within 5% (nodes 2%, edges 5%, total 3%). The tiny operations (`create_scene`, `drop_scene`, `remove_host`) are under
+  agree to within 3% (nodes 3%, edges 2%, total 1%). The tiny operations (`create_scene`, `drop_scene`, `remove_host`) are under
   50 timer steps, are flagged `resolution_limited`, and vary by more. The 1,000-move run gives 40 observations a repetition, each
-  a batch of about 30 moves, and their medians span 7.0 to 8.2 us (16%). Forty is too few for a p95, so none is reported, which is
+  a batch of about 30 moves, and their medians span 6.8 to 7.2 us (5%). Forty is too few for a p95, so none is reported, which is
   the rule working. Layer A gives the same median in every repetition, since its figures are quantised by the timer's tick.
 - **The checkpoint comparison can fail.** `selftest.mjs` corrupts what was observed in six ways (a connector out by a unit, a
   node three units low, a node gone, changed text, swapped paint order, a missing edge). Each makes the run invalid and names

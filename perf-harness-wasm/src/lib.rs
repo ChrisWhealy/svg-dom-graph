@@ -8,27 +8,33 @@ pub mod alloc;
 pub mod memory;
 pub mod parse;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 pub mod observe;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 pub mod executor;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 pub mod allocator_check;
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 mod exports {
     use perf_harness::manifest::{Manifest, Mode};
     use perf_harness::outcome::RunOutcome;
     use wasm_bindgen::prelude::*;
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Reports a panic in the page's console, where a bare trap would give no message.
     #[wasm_bindgen(start)]
     fn start() {
         std::panic::set_hook(Box::new(|info| web_sys::console::error_1(&info.to_string().into())));
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn failed(mode: Mode, message: String) -> String {
         let mut outcome = RunOutcome::new("B", mode);
         outcome.status = "error";
@@ -36,6 +42,7 @@ mod exports {
         serde_json::to_string(&outcome).unwrap_or_else(|_| "{\"status\":\"error\"}".to_string())
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs one repetition of a workload and returns the outcome as JSON. It never throws: a failure is a status.
     ///
     /// `manifest_json` is the canonical manifest of a workload report. `expected_json` is `{"sha256", "mutations_sha256"}`
@@ -66,8 +73,9 @@ mod exports {
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 
-    /// Runs a workload in the correctness mode with a deliberate fault in what is observed, to prove that the comparison
-    /// notices it. `fault` is one of the names in `executor::Fault`.
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Runs a workload in the correctness mode with a deliberate fault in what is observed, to prove that the
+    /// comparison notices it. `fault` is one of the names in `executor::Fault`.
     #[wasm_bindgen]
     pub fn selftest_checker(manifest_json: &str, fault: &str) -> String {
         let mode = Mode::Correctness;
@@ -89,6 +97,28 @@ mod exports {
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Runs a workload with a deliberate delay of `delay_us` microseconds in the harness's own work for every
+    /// operation, and returns the outcome as JSON. No timing may show the delay, which the timing self-test checks.
+    #[wasm_bindgen]
+    pub fn selftest_timing(manifest_json: &str, mode: &str, delay_us: f64) -> String {
+        let mode = match mode {
+            "performance" => Mode::Performance,
+            "endurance" => Mode::Endurance,
+            other => return failed(Mode::Performance, format!("the timing self-test has no mode {other}")),
+        };
+        let manifest = match serde_json::from_str(manifest_json)
+            .map_err(|e| e.to_string())
+            .and_then(|v| Manifest::from_json(v).map_err(|e| e.to_string()))
+        {
+            Ok(manifest) => manifest,
+            Err(message) => return failed(mode, message),
+        };
+        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, delay_us);
+        serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs the counting allocator's checks and returns the result as JSON.
     #[wasm_bindgen]
     pub fn verify_allocator() -> String {
