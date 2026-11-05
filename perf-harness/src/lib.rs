@@ -7,10 +7,17 @@
 //! Nothing here touches a DOM or a clock. The crate builds for wasm as well as natively, so the browser runner can generate
 //! the stream itself from the same code. Switch off the `schema` feature to leave out the JSON-schema check on a manifest.
 
+pub mod compare;
 pub mod encode;
 pub mod manifest;
+pub mod metrics;
 pub mod model;
 pub mod ops;
+pub mod outcome;
 pub mod prng;
 pub mod report;
+pub mod stats;
 pub mod workload;
+
+#[cfg(feature = "layer-a")]
+pub mod layer_a;

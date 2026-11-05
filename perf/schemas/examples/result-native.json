@@ -1,0 +1,88 @@
+{
+  "schema_version": 1,
+  "run_id": "w2-layer-a-0001",
+  "started_at": "2026-11-05T12:00:00Z",
+  "repetition": 0,
+  "sequence_position": 0,
+  "environment": {
+    "kind": "native",
+    "os": "macOS 15",
+    "cpu": "Example CPU",
+    "runner_class": "local",
+    "timer_resolution_us": 0.041,
+    "protocol_version": "1",
+    "crate_version": "0.2.47",
+    "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "git_dirty": false,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w2",
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 12345,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 1000,
+        "edges": 3000,
+        "maximum_degree": 16
+      },
+      "execution": {
+        "modes": ["correctness", "performance"],
+        "warmup_iterations": 100,
+        "measurement_iterations": 1000,
+        "repetitions": 5,
+        "order": "interleaved"
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": true,
+        "checkpoint_every": 100
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "dom_nodes": 50000,
+        "wall_ms": 120000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "name": "rust.connector_endpoints",
+      "layer": "A",
+      "status": "measured",
+      "unit": "us",
+      "kind": "batch_throughput",
+      "batch_size": 5,
+      "samples": 6,
+      "dropped": 0,
+      "outliers_flagged": 0,
+      "summary": {
+        "min": 0.275,
+        "p50": 0.283,
+        "max": 0.475
+      },
+      "within_run": {
+        "mean": 0.372,
+        "stddev": 0.1,
+        "iqr": 0.18,
+        "tukey_low": 0.008,
+        "tukey_high": 0.742
+      },
+      "mechanism": "std::time::Instant"
+    }
+  ],
+  "raw_samples": "target/perf/w2-0001.samples.ndjson"
+}

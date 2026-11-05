@@ -21,6 +21,7 @@
 | `wasm-pack test --headless --firefox` and `wasm-pack test --headless --chrome` | The browser integration tests, which CI runs in both browsers |
 | `cargo test -p cdp-integration-test` | The CDP tests, against a local Chrome |
 | `cargo test -p perf-harness` | The performance harness's workload generator, reference model and manifest checks. See [`perf/README.md`](../../perf/README.md) |
+| `cargo test -p perf-harness-wasm` | The performance harness's counting allocator and parsers. The browser runner itself is driven by `node perf/runner/run.mjs`. See [`perf/README.md`](../../perf/README.md) |
 
 ## Error handling during testing
 

@@ -1,0 +1,36 @@
+# W2, connector rerouting, at the size of the design's example: 1,000 nodes, 3,000 edges, 100 warm-up and 1,000 measured moves.
+# The busiest node is dragged one move in four. This is the manifest to run for figures that mean something.
+# A workload manifest, schema version 1. The values are illustrative, not recommended thresholds.
+# The same manifest must give the same logical operation stream on every run, whatever the timing, machine or browser.
+schema_version = 1
+workload = "connector_rerouting" # W2. The others are "scene_construction" (W1) and "scene_lifecycle" (W3).
+seed = 12345
+prng = "splitmix64"              # A fixed algorithm implemented in the harness, never an external crate.
+
+[graph]
+nodes = 1000
+edges = 3000
+maximum_degree = 16
+
+[execution]
+modes = ["correctness", "performance"] # Each mode is a separate execution.
+warmup_iterations = 100
+measurement_iterations = 1000
+repetitions = 5                        # Separate runs, each in its own Chrome process.
+order = "interleaved"                  # Baseline and candidate alternate, so drift is shared between them.
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = false                # Chrome only, and a diagnostic.
+capture_wasm_capacity = true        # The high-water size of the wasm linear memory: capacity, not live usage.
+capture_wasm_live_allocation = true # Live bytes from a counting allocator, in Layer B only.
+capture_frame_timing = true
+checkpoint_every = 100              # Correctness mode only.
+
+[checkpoint]
+view = "unchanged" # "unchanged", "expected" (the workload states the final transform) or "ignored".
+
+[limits]
+dom_nodes = 50000
+wall_ms = 120000

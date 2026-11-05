@@ -98,8 +98,14 @@
     }
   ],
   "sections": {
-    "modelled": ["topology", "content", "interaction"],
-    "provisional": ["geometry", "paint_order"],
+    "modelled": [
+      "topology",
+      "content",
+      "interaction",
+      "geometry",
+      "paint_order"
+    ],
+    "provisional": [],
     "not_modelled": ["dom_identity.ids", "accessibility"]
   }
 }

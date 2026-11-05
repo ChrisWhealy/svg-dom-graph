@@ -104,12 +104,11 @@
     "modelled": [
       "topology",
       "content",
-      "interaction"
-    ],
-    "provisional": [
+      "interaction",
       "geometry",
       "paint_order"
     ],
+    "provisional": [],
     "not_modelled": [
       "dom_identity.ids",
       "accessibility"

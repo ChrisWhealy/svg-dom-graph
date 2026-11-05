@@ -139,7 +139,10 @@ fn the_checkpoints_are_numbered_in_order_and_point_at_checkpoint_operations() ->
 #[test]
 fn the_report_is_honest_about_what_the_model_does_not_predict() -> Result<(), String> {
     let r = report("scene_lifecycle", Some(2), 5)?;
-    if !r.sections.not_modelled.contains(&"accessibility") || !r.sections.provisional.contains(&"geometry") {
+    if !r.sections.not_modelled.contains(&"accessibility")
+        || !r.sections.modelled.contains(&"geometry")
+        || !r.sections.provisional.is_empty()
+    {
         return Err(format!("{:?}", r.sections));
     }
     Ok(())

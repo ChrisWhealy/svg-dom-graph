@@ -1,0 +1,15 @@
+ok   no fault: the run is valid, with 4 checkpoints passed
+ok   connector_offset: invalid_incorrect, and names geometry
+      checkpoint 0: geometry n6->n0: connector_path x1: expected 300, got 301
+ok   node_moved: invalid_incorrect, and names geometry
+      checkpoint 0: geometry n0: node_box y: expected 20, got 23
+ok   node_removed: invalid_incorrect, and names topology
+      checkpoint 0: topology n0: a node is missing: expected present, got absent
+ok   text_changed: invalid_incorrect, and names content
+      checkpoint 0: content n0: the text of a node: expected n0, got n0 (changed)
+ok   paint_order_swapped: invalid_incorrect, and names paint_order
+      checkpoint 0: paint_order: the order of the nodes in the document: expected n0,n1,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11, got n1,n0,n2,n3,n4,n5,n6,n7,n8,n9,n10,n11
+ok   edge_dropped: invalid_incorrect, and names topology
+      checkpoint 0: topology n11->n10: an edge is missing: expected present, got absent
+
+the check notices every fault, and passes a clean run

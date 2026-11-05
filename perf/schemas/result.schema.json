@@ -27,6 +27,10 @@
     "environment": {
       "type": "object",
       "properties": {
+        "kind": {
+          "enum": ["browser", "native"],
+          "description": "browser: a run in a browser, which names it. native: a run of native code, such as the Layer A runner, which has no browser."
+        },
         "browser": {
           "type": "string",
           "minLength": 1
@@ -77,22 +81,40 @@
         },
         "git_dirty": {
           "type": "boolean"
+        },
+        "build_profile": {
+          "type": "string",
+          "minLength": 1,
+          "description": "How the code under test was built, for example release."
         }
       },
       "required": [
-        "browser",
-        "browser_version",
+        "kind",
         "os",
         "cpu",
         "runner_class",
         "timer_resolution_us",
-        "cross_origin_isolated",
         "protocol_version",
         "crate_version",
         "git_sha",
         "git_dirty"
       ],
-      "additionalProperties": false
+      "additionalProperties": false,
+      "allOf": [
+        {
+          "if": {
+            "properties": {
+              "kind": {
+                "const": "browser"
+              }
+            },
+            "required": ["kind"]
+          },
+          "then": {
+            "required": ["browser", "browser_version", "cross_origin_isolated"]
+          }
+        }
+      ]
     },
     "manifest": {
       "type": "object",
@@ -237,6 +259,10 @@
           "reason": {
             "type": "string",
             "minLength": 1
+          },
+          "resolution_limited": {
+            "const": true,
+            "description": "The typical value is under 50 timer steps and was not batched, so the figure is quantised and must not be compared finely."
           }
         },
         "required": ["name", "layer", "status"],
@@ -395,6 +421,22 @@
                   "const": "bytes"
                 }
               }
+            }
+          },
+          {
+            "if": {
+              "required": ["resolution_limited"]
+            },
+            "then": {
+              "properties": {
+                "kind": {
+                  "const": "latency"
+                },
+                "unit": {
+                  "const": "us"
+                }
+              },
+              "required": ["kind", "unit"]
             }
           }
         ]

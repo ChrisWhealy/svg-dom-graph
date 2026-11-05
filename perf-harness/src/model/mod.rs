@@ -8,10 +8,10 @@
 //!
 //! * Topology and content are exact. They follow from the operations alone.
 //! * Node boxes are exact. A plain node is drawn at the size it was given.
-//! * A connector's ends are provisional. The model uses the library's documented rule for a straight connector: each end is
-//!   where the ray between the two boxes' centres crosses that box's boundary. Phase 2 has to confirm it against the DOM,
-//!   allowing for the arrowhead.
-//! * Paint order is provisional. It is node creation order, which does not allow for a node being raised by a move.
+//! * A connector's ends follow the library's documented rule for a straight connector: each end is where the ray between the
+//!   two boxes' centres crosses that box's boundary. Phase 2 confirmed it against the DOM. Where the two ends coincide the
+//!   library draws no path, and the model records a path with no coordinates.
+//! * Paint order is node creation order. Phase 2 confirmed in Chrome that a move does not raise a node.
 //! * DOM ids and the accessibility tree are not predicted. They are left empty and listed as not modelled.
 
 use crate::manifest::ViewPolicy;
@@ -299,10 +299,14 @@ impl Model {
             let (from, to) = (&self.nodes[edge.from], &self.nodes[edge.to]);
             let start = boundary_point(from, centre(to));
             let end = boundary_point(to, centre(from));
+            // The library drops a point that exactly repeats the one before it, so a connector whose two ends are the same
+            // point, such as one between two boxes that touch along a side, is left with a single point and is drawn as an
+            // empty path. It is recorded here as a path with no coordinates.
+            let coordinates = if start == end { Vec::new() } else { vec![start.0, start.1, end.0, end.1] };
             elements.push(GeometryElement {
                 key: edge_key(from, to),
                 kind: "connector_path",
-                coordinates: vec![start.0, start.1, end.0, end.1],
+                coordinates,
             });
         }
 

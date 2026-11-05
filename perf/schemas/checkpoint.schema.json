@@ -112,7 +112,8 @@
                 "type": "array",
                 "items": {
                   "type": "number"
-                }
+                },
+                "description": "A connector with no coordinates is not drawn, because its two ends are the same point."
               }
             },
             "required": ["key", "kind", "coordinates"],
@@ -163,7 +164,14 @@
                 "then": {
                   "properties": {
                     "coordinates": {
-                      "minItems": 4
+                      "anyOf": [
+                        {
+                          "maxItems": 0
+                        },
+                        {
+                          "minItems": 4
+                        }
+                      ]
                     }
                   }
                 }

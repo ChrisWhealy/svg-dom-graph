@@ -1,8 +1,8 @@
 # Performance harness
 
 The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 3.
-Phase 0 (methodology, schemas, spike) and Phase 1 (the deterministic workload engine) are done.
-No runner exists yet: that is Phase 2.
+Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine) and Phase 2 (the Layer A and Layer B runners) are done.
+The browser-level runner, Layer C, is Phase 3.
 
 | Path                             | Holds                                                              |
 | -------------------------------- | ------------------------------------------------------------------ |
@@ -23,11 +23,12 @@ No runner exists yet: that is Phase 2.
 | `schemas/examples/rejected-manifests.json` | Manifests that must be refused, read by both the JavaScript and the Rust validator |
 | `manifests/`                     | The three small reference manifests, one for each workload         |
 | `crosscheck/`                    | An independent JavaScript generator, a Rust-against-JavaScript comparison, a 32-bit wasm test runner, and the Phase 1 evidence recorder |
-| `evidence/`                      | What the Phase 0 and Phase 1 checks printed, with the environment  |
+| `runner/`                        | The orchestrator, the page that hosts the wasm runner, the allocator verification and the checker self-test |
+| `evidence/`                      | What the Phase 0, 1 and 2 checks printed, with the environment     |
 | `baselines/`                     | Baselines, which only an explicit promotion command writes         |
 
 `perf-harness/` is an on-demand workspace member, like `cdp-integration-test`: a plain `cargo test` does not build it, and it adds no dependency to the published library.
-The other planned crate, `perf-harness-wasm` (the Layer B runner), comes with Phase 2.
+`perf-harness-wasm/` is the Layer B runner, and is built on demand with `wasm-pack`.
 
 ## Phase 0 findings
 
@@ -230,8 +231,8 @@ Neither depends on `repetitions`, `limits` or the capture options, and the mutat
 | Section | Status |
 |---|---|
 | `topology`, `content`, `interaction` | Exact: they follow from the operations alone |
-| `geometry` | Provisional. Node boxes are exact. A straight connector's ends use the library's documented rule: where the ray between the two centres crosses each boundary. Phase 2 has to confirm that against the DOM, allowing for the arrowhead |
-| `paint_order` | Provisional. It is node creation order, which does not allow for a node being raised by a move |
+| `geometry` | Exact for node boxes. A straight connector's ends use the library's documented rule: where the ray between the two centres crosses each boundary, and no path at all where the two ends are one point. Confirmed against Chrome 157 in Phase 2 |
+| `paint_order` | Node creation order. Confirmed in Phase 2: a move does not raise a node |
 | `dom_identity.ids`, `accessibility` | Not modelled. They are empty, and a runner must not compare them. Ids come from a process-wide counter, and the accessibility tree has not been predicted |
 
 Geometry is compared within a tolerance and is never hashed for that purpose.
@@ -266,10 +267,110 @@ The reports of the reference manifests are there too, which is what a Phase 2 ru
 ### Handing over to Phase 2
 
 - Map the operations onto the `Scene` calls in the table above, and compare each checkpoint's `topology`, `content` and `interaction` exactly.
-- Confirm the two provisional sections against the DOM, and either keep the rule or correct the model.
+- Confirm the two provisional sections against the DOM, and either keep the rule or correct the model. Done in Phase 2.
 - Check the counting allocator against a deliberately retained allocation before using its figures.
 
+## Phase 2: the runners
+
+Layer A times the library's own DOM-free geometry natively. Layer B drives a real `Scene` in Chrome from a wasm module, times
+the synchronous calls, counts what was allocated, and checks what was drawn against the reference model.
+
+```sh
+wasm-pack build perf-harness-wasm --target web --release --out-dir pkg    # Layer B, built once
+node perf/runner/run.mjs perf/manifests/w2-connector-rerouting-large.toml # both layers, every mode in the manifest
+node perf/runner/run.mjs <manifest> --mode correctness --layers b         # one mode, one layer
+node perf/runner/verify-allocator.mjs                                     # does the counting allocator tell the truth?
+node perf/runner/selftest.mjs                                             # does the checkpoint comparison notice a fault?
+cargo test -p perf-harness-wasm                                           # the allocator's arithmetic and the parsers, natively
+```
+
+`run.mjs` builds both runners (without `--no-build`), asks `perf-harness` for the workload report, and runs each repetition of
+Layer B in a Chrome process of its own. Every result is checked against `result.schema.json` before it is kept, with its raw
+observations beside it in `target/perf/<manifest>/`. It prints the deterministic gates and exits 1 if one fails. Timing is never
+a gate.
+
+### What each layer reports
+
+| Metric | Layer | What it times or counts |
+|---|---|---|
+| `rust.connector_endpoints` | A | `boundary_point` for each connector at the moved node, in batches. W2 only |
+| `construction.create_scene`, `.nodes`, `.edges`, `.total` | B | The synchronous calls of one build, by kind. Not a frame time |
+| `teardown.drop_scene`, `.remove_host`, `.total` | B | Dropping the last `Scene` handle, and removing the host `<svg>` |
+| `mutation.move_node` | B | `Scene::move_node`, in batches sized from the warm-up so that one observation spans 50 timer steps |
+| `resource.dom_elements.*`, `resource.listeners.*` | B | Counts before the build, after it and after the teardown, and the difference after teardown |
+| `resource.live_bytes.*`, `resource.live_allocations.*` | B | The counting allocator's live bytes and blocks at the same three moments |
+| `wasm.linear_memory_high_water` | B | The capacity of the linear memory, which is never live usage |
+| `wasm.memory_grow_events_after_warmup`, `wasm.live_bytes_growth_after_warmup` | B | Endurance only: whether capacity is reused and whether live bytes keep growing |
+
+Timing reads `performance.now()` only where one kind of operation gives way to another, never inside an operation. The checks,
+the resource counts and the model all run between segments, outside the timing. A timing under 50 timer steps that could not be
+batched carries `resolution_limited`, which says that it is quantised and must not be compared finely.
+
+A performance run skips the checkpoints along the way and executes the last two outside its timing, so it still proves that
+what it timed was right. The run's digest is the mutations digest of the workload report, and a run that did not execute
+exactly that stream is invalid.
+
+### What Layer B reads back
+
+The runner applies operations through the library's public API, and reads the result out of the document, so that a comparison is
+with what exists and not with what it meant.
+
+| Section | Read from |
+|---|---|
+| Node boxes | The `translate(x, y)` of each node's group, and the `width` and `height` of its `rect` |
+| Edges | The "Output to" clauses of each node's accessible name |
+| Connector ends | The first and last point of each connector's `<path d>`, named by creation order |
+| Paint order | The order of the node groups in the document |
+| View, DOM ids | `Scene::view()`, and every `[id]` in the scene, checked only for duplicates |
+
+### What it found
+
+- **The provisional rules hold.** A straight connector's ends are where the ray between the two centres crosses each boundary, to
+  within the 0.01 tolerance, and paint order stays creation order after moves. The checkpoints of a 1,000-node, 3,000-edge run
+  with 1,100 moves agree on both layers.
+- **A connector between boxes that touch has no path.** When two boxes meet along a side, both ends of the connector between them
+  are the same point. The library drops a point that repeats the one before it, and writes an empty `d`. A random move produced
+  this at scale, and the model now records such a connector with no coordinates, which `checkpoint.schema.json` allows.
+- **Repeatability, from `evidence/phase2/`.** Over five fresh-Chrome repetitions the construction medians of a 200-node build
+  agree to within 5% (nodes 2%, edges 5%, total 3%). The tiny operations (`create_scene`, `drop_scene`, `remove_host`) are under
+  50 timer steps, are flagged `resolution_limited`, and vary by more. The 1,000-move run gives 40 observations a repetition, each
+  a batch of about 30 moves, and their medians span 7.0 to 8.2 us (16%). Forty is too few for a p95, so none is reported, which is
+  the rule working. Layer A gives the same median in every repetition, since its figures are quantised by the timer's tick.
+- **The checkpoint comparison can fail.** `selftest.mjs` corrupts what was observed in six ways (a connector out by a unit, a
+  node three units low, a node gone, changed text, swapped paint order, a missing edge). Each makes the run invalid and names
+  the right section, and a clean run passes.
+- **The counting allocator is verified.** It adds exactly the size of each retained block, returns exactly to where it started on
+  release, and counts closures leaked with `Closure::forget`, including the library's own `svg_buttons::watch`, which leaks bytes
+  that removing the element does not give back. `run.mjs` withholds every allocator figure if that check does not pass.
+- **Scenes do not leak across their lifecycle.** Over 219 cycles of building, dropping and removing a different graph, live bytes
+  after teardown hold at one exact value, capacity grew only during the warm-up, and the DOM and the listeners were back at their
+  baseline every time. The first scene costs about 4 KB that is never given back, once.
+- **The harness's own memory can look like the library's.** The first endurance run showed live bytes growing in steps of 320,
+  640, 1,280 and 2,560. Those were the harness's own vectors doubling. Everything a run records is now allocated at full size
+  before the first reading, and a cycle that ran a checkpoint is left out of the series. The same mistake had made the first
+  allocator check fail, for the same reason.
+
+### Limits, and where this departs from the design
+
+- **Listener counts are weak gates for these workloads.** The vocabulary has no `make_draggable`, no pan and no toolbar, so a
+  scene registers no listeners and the count is zero before, during and after. The gate is sound and proves little here. A
+  workload that makes nodes draggable is needed before it proves more.
+- **Layer A times W2 only.** The other workloads have no DOM-free library work. They are still run, to cross-check the library's
+  geometry against the model at every checkpoint.
+- **Timing is of synchronous calls.** A figure here says nothing about when anything was painted. That is Layer C.
+- **No Firefox figures, and no recovery mode yet.** Recovery is Phase 4.
+- **The correctness mode runs one repetition,** since it is deterministic, and the others run the manifest's repetitions.
+
+### Handing over to Phase 3
+
+- Layer C must read the same result schema, and the same page and orchestrator can host it.
+- The trace correlation of presentation time still needs its spike, as the design says.
+- A workload that makes nodes draggable would let the listener gate prove something, and gives Layer C real input to time.
+
 ## Evidence
+
+`evidence/phase2/` holds what the Phase 2 checks printed, the allocator verification, and the result documents and raw samples of the realistic manifests.
+`node perf/runner/record-phase2-evidence.mjs` writes it again.
 
 `evidence/phase1/` holds what the Phase 1 checks printed, the reports of the reference manifests and the environment, and is described under Phase 1 above.
 

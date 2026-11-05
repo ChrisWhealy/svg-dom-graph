@@ -11,8 +11,10 @@ publish = false
 
 [features]
 # Validating a manifest against its JSON schema needs `jsonschema`, which a wasm build of the workload engine can do without.
-default = ["schema"]
+# The Layer A runner times the library's own DOM-free geometry, so it needs the library, which the wasm build does not.
+default = ["schema", "layer-a"]
 schema = ["dep:jsonschema"]
+layer-a = ["dep:svg-dom-graph", "dep:svg-dom"]
 
 [dependencies]
 serde = { version = "1", features = ["derive"] }
@@ -20,3 +22,5 @@ serde_json = "1"
 sha2 = "0.11"
 toml = "1"
 jsonschema = { version = "0.60", default-features = false, optional = true }
+svg-dom-graph = { path = "..", optional = true }
+svg-dom = { version = "^0.2.17", optional = true }

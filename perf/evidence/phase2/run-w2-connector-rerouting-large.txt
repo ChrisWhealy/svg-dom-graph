@@ -1,0 +1,56 @@
+the counting allocator is verified
+
+results in perf/evidence/phase2/results/w2-connector-rerouting-large
+
+A correctness #0: ok, 12 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (5115 operations)
+B correctness #0: ok, 12 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (5115 operations)
+A performance #0: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.09 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+B performance #0: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 7.14 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+A performance #1: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.09 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+B performance #1: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 7.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+A performance #2: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.09 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+B performance #2: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 8.15 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+A performance #3: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.09 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+B performance #3: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 7.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+A performance #4: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.09 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+B performance #4: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 7.17 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (5105 operations)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  A performance rust.connector_endpoints: 0.0909 to 0.0909 us over 5 repetitions, 0% apart
+  B performance mutation.move_node: 7.00 to 8.15 us over 5 repetitions, 16% apart
+
+every deterministic gate passed

@@ -1,0 +1,34 @@
+# W3, scene lifecycle, as an endurance run: 220 cycles of building, dropping and removing a different graph each time.
+#
+# The first 20 cycles are the warm-up, after which memory capacity should be reused and nothing should grow. This one is long
+# enough to show a trend and short enough to run on any machine. A long soak uses the same manifest with more iterations.
+schema_version = 1
+workload = "scene_lifecycle"
+seed = 4242
+prng = "splitmix64"
+
+[graph]
+nodes = 40
+edges = 80
+maximum_degree = 8
+
+[execution]
+modes = ["endurance"]
+warmup_iterations = 20
+measurement_iterations = 200
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = false
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+checkpoint_every = 50
+
+[checkpoint]
+view = "unchanged"
+
+[limits]
+wall_ms = 600000

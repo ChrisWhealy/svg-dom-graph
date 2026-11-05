@@ -5,6 +5,7 @@
   "repetition": 0,
   "sequence_position": 0,
   "environment": {
+    "kind": "browser",
     "browser": "Chrome",
     "browser_version": "157.0.7632.0",
     "os": "macOS 15",
@@ -15,7 +16,8 @@
     "protocol_version": "1",
     "crate_version": "0.2.47",
     "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
-    "git_dirty": false
+    "git_dirty": false,
+    "build_profile": "release"
   },
   "manifest": {
     "id": "w2",

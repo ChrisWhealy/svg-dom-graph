@@ -1,0 +1,51 @@
+the counting allocator is verified
+
+results in perf/evidence/phase2/results/w3-scene-lifecycle-endurance
+
+B endurance #0: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 575.00 us
+    construction.edges p50 355.00 us
+    construction.total p50 935.00 us
+    teardown.drop_scene p50 5.00 us
+    teardown.remove_host p50 15.00 us
+    teardown.total p50 20.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (27064 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B endurance #1: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 585.00 us
+    construction.edges p50 360.00 us
+    construction.total p50 955.00 us
+    teardown.drop_scene p50 5.00 us
+    teardown.remove_host p50 15.00 us
+    teardown.total p50 20.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (27064 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B endurance #2: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 585.00 us
+    construction.edges p50 355.00 us
+    construction.total p50 945.00 us
+    teardown.drop_scene p50 5.00 us
+    teardown.remove_host p50 15.00 us
+    teardown.total p50 20.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (27064 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  B endurance construction.create_scene: 10.0 to 10.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B endurance construction.nodes: 575 to 585 us over 3 repetitions, 2% apart
+  B endurance construction.edges: 355 to 360 us over 3 repetitions, 1% apart
+  B endurance construction.total: 935 to 955 us over 3 repetitions, 2% apart
+  B endurance teardown.drop_scene: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B endurance teardown.remove_host: 15.0 to 15.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B endurance teardown.total: 20.0 to 20.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+
+every deterministic gate passed

@@ -104,8 +104,8 @@ jobs:
       # --build-only` pipeline as `cargo demo` and then hands the result to the CDP shards. Building it here as well
       # would only do the same work twice.
 
-  # The performance harness's workload generator, its reference model and its schemas. None of it needs a browser, so all
-  # of it runs on every commit. The independent JavaScript generator is the check that the stream does not depend on the
+  # The performance harness's workload generator, its reference model, its native runner, the parts of its wasm runner that
+  # need no browser, and its schemas. All of it runs on every commit. The independent JavaScript generator is the check that the stream does not depend on the
   # language, and the wasm32 run is the check that it does not depend on the width of an integer.
   perf-harness:
     name: perf harness (workloads · schemas)
@@ -141,6 +141,15 @@ jobs:
         run: cargo test -p perf-harness --no-default-features --target wasm32-wasip1
         env:
           CARGO_TARGET_WASM32_WASIP1_RUNNER: node ${{ github.workspace }}/perf/crosscheck/run-wasi.mjs
+
+      # The Layer B runner needs a browser to run, and its allocator and parsers do not. The browser runs come with Phase 5.
+      - name: Clippy (perf-harness-wasm, native and wasm32)
+        run: |
+          cargo clippy -p perf-harness-wasm --all-targets -- -D warnings
+          cargo clippy -p perf-harness-wasm --lib --target wasm32-unknown-unknown -- -D warnings
+
+      - name: Unit tests (perf-harness-wasm)
+        run: cargo test -p perf-harness-wasm
 
       - name: Rust and JavaScript generators agree
         run: node perf/crosscheck/crosscheck.mjs

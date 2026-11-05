@@ -76,6 +76,27 @@ for (const name of names) {
   )
 }
 
+// A connector between boxes that touch has no path, so its coordinates are empty.
+{
+  const touching = clone(valid.checkpoint)
+  touching.geometry.elements[1].coordinates = []
+  const check = validators.checkpoint
+  report(
+    check(touching),
+    `valid checkpoint with an undrawn connector${check.errors ? " " + ajv.errorsText(check.errors) : ""}`,
+  )
+}
+
+// A native run, such as Layer A, has no browser, and is a result like any other.
+{
+  const native = read("examples/result-native.json")
+  const check = validators.result
+  report(
+    check(native),
+    `valid native result${check.errors ? " " + ajv.errorsText(check.errors) : ""}`,
+  )
+}
+
 // The result's copy of its manifest must be the example manifest, so the two cannot drift apart.
 try {
   assert.deepEqual(valid.result.manifest.canonical, valid.manifest)
@@ -94,6 +115,9 @@ const rejected = {
     ]),
   ),
   checkpoint: {
+    "a connector with two numbers": d => {
+      d.geometry.elements[1].coordinates = [1, 2]
+    },
     "no nodes list": d => {
       delete d.topology.nodes
     },
@@ -144,6 +168,35 @@ const rejected = {
     },
   },
   result: {
+    "a resolution flag of false": d => {
+      d.metrics[0].resolution_limited = false
+    },
+    "a resolution flag on a count": d => {
+      d.metrics[1].resolution_limited = true
+    },
+    "a resolution flag on a batch": d => {
+      d.metrics[0].resolution_limited = true
+      d.metrics[0].kind = "batch_throughput"
+      d.metrics[0].batch_size = 5
+    },
+    "no environment kind": d => {
+      delete d.environment.kind
+    },
+    "an unknown environment kind": d => {
+      d.environment.kind = "cloud"
+    },
+    "a browser run with no browser": d => {
+      delete d.environment.browser
+    },
+    "a browser run with no browser version": d => {
+      delete d.environment.browser_version
+    },
+    "a browser run with no cross-origin flag": d => {
+      delete d.environment.cross_origin_isolated
+    },
+    "an empty build profile": d => {
+      d.environment.build_profile = ""
+    },
     "no stream scope": d => {
       delete d.manifest.operation_stream_scope
     },

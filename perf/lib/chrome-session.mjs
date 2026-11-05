@@ -32,7 +32,15 @@ export const launch = async () => {
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-chrome-'))
   const chrome = spawn(
     chromePath,
-    ['--headless=new', '--remote-debugging-port=0', `--user-data-dir=${profile}`, '--no-first-run', 'about:blank'],
+    [
+      '--headless=new',
+      '--remote-debugging-port=0',
+      `--user-data-dir=${profile}`,
+      '--no-first-run',
+      // A CI runner may not allow the sandbox. Set PERF_CHROME_NO_SANDBOX for it, and never on a machine that opens web pages.
+      ...(process.env.PERF_CHROME_NO_SANDBOX ? ['--no-sandbox'] : []),
+      'about:blank',
+    ],
     { stdio: ['ignore', 'ignore', 'pipe'] },
   )
   const wsUrl = await new Promise(resolve => {

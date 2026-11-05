@@ -78,6 +78,22 @@ impl GraphPlan {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The columns and rows of the smallest square-ish grid that holds `count` nodes.
+fn grid_for(count: usize) -> (usize, usize) {
+    let mut columns = 1usize;
+    while columns * columns < count {
+        columns += 1;
+    }
+    (columns, count.div_ceil(columns))
+}
+
+/// The width and height of the area that `node_count` planned nodes sit in, and may be moved within.
+pub fn field_for(node_count: u32) -> (i64, i64) {
+    let (columns, rows) = grid_for(node_count as usize);
+    (MARGIN + columns as i64 * PITCH_X, MARGIN + rows as i64 * PITCH_Y)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Plans `node_count` nodes on a grid and `edge_count` distinct directed edges between them.
 ///
 /// Edges are drawn at random. One that is a self-loop, a repeat, or would take either end over `max_degree` (in and out
@@ -93,11 +109,7 @@ pub fn plan_graph(
     max_degree: Option<u32>,
 ) -> Result<GraphPlan, WorkloadError> {
     let count = node_count as usize;
-    let mut columns = 1usize;
-    while columns * columns < count {
-        columns += 1;
-    }
-    let rows = count.div_ceil(columns);
+    let (columns, rows) = grid_for(count);
 
     let nodes: Vec<PlannedNode> = (0..count)
         .map(|index| PlannedNode {

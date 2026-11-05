@@ -1,0 +1,78 @@
+running 67 tests
+test compare::unit_tests::a_coordinate_that_is_not_a_number_is_always_a_difference ... ok
+test compare::unit_tests::a_difference_is_modelled_and_an_unconfirmed_rule_would_say_so ... ok
+test compare::unit_tests::a_geometry_difference_names_the_element_the_coordinate_both_values_and_the_distance ... ok
+test compare::unit_tests::content_view_focus_selection_and_duplicate_ids_are_each_checked ... ok
+test compare::unit_tests::edge_order_does_not_matter_and_node_order_matters_only_for_paint ... ok
+test compare::unit_tests::geometry_is_compared_within_the_tolerance_and_not_by_rounding ... ok
+test compare::unit_tests::identical_checkpoints_agree ... ok
+test compare::unit_tests::missing_and_unexpected_nodes_edges_and_elements_are_each_reported ... ok
+test compare::unit_tests::the_accessibility_tree_and_the_ids_themselves_are_not_compared ... ok
+test encode::unit_tests::a_float_is_its_bit_pattern_and_negative_zero_is_positive_zero ... ok
+test encode::unit_tests::a_float_that_is_not_finite_is_refused ... ok
+test encode::unit_tests::each_type_has_its_tag_and_fixed_layout ... ok
+test manifest::unit_tests::a_manifest_that_breaks_the_rules_is_refused ... ok
+test manifest::unit_tests::changing_a_value_changes_the_hash ... ok
+test manifest::unit_tests::every_shared_rejected_manifest_is_refused ... ok
+test manifest::unit_tests::more_edges_than_the_nodes_can_hold_are_refused ... ok
+test manifest::unit_tests::the_annotated_example_is_a_valid_manifest ... ok
+test manifest::unit_tests::the_canonical_hash_ignores_comments_layout_and_key_order ... ok
+test manifest::unit_tests::the_conditions_of_the_schema_are_also_checked_without_it ... ok
+test metrics::unit_tests::a_timing_is_a_latency_alone_and_a_batch_throughput_when_batched ... ok
+test metrics::unit_tests::a_timing_under_fifty_timer_steps_is_flagged_and_a_longer_one_is_not ... ok
+test metrics::unit_tests::every_kind_of_metric_satisfies_the_result_schema ... ok
+test metrics::unit_tests::no_observations_is_unavailable_and_never_a_made_up_figure ... ok
+test metrics::unit_tests::percentiles_appear_only_with_enough_observations ... ok
+test model::unit_tests::a_connector_between_boxes_that_touch_has_no_path ... ok
+test model::unit_tests::a_move_changes_the_geometry_and_nothing_else ... ok
+test model::unit_tests::a_straight_connector_runs_between_the_boundaries_along_the_line_of_centres ... ok
+test model::unit_tests::a_stream_that_makes_no_sense_is_refused ... ok
+test model::unit_tests::boxes_whose_centres_coincide_have_no_path_between_them ... ok
+test model::unit_tests::dropping_and_removing_leaves_nothing_and_the_scene_can_start_again ... ok
+test model::unit_tests::the_topology_is_sorted_by_key_and_edges_keep_their_order ... ok
+test model::unit_tests::the_view_follows_the_policy ... ok
+test ops::unit_tests::a_string_cannot_be_mistaken_for_its_neighbour ... ok
+test ops::unit_tests::changing_any_one_operation_changes_both_digests ... ok
+test ops::unit_tests::markers_change_the_full_digest_and_not_the_mutations_digest ... ok
+test ops::unit_tests::the_counts_say_how_many_operations_and_how_many_mutations ... ok
+test ops::unit_tests::the_stream_digests_match_an_independent_implementation ... ok
+test outcome::unit_tests::a_failed_checkpoint_or_a_different_stream_makes_a_run_invalid ... ok
+test outcome::unit_tests::a_performance_run_executes_only_the_last_two_checkpoints ... ok
+test outcome::unit_tests::an_error_stays_an_error ... ok
+test prng::unit_tests::below_stays_in_range_and_reaches_every_value ... ok
+test prng::unit_tests::below_throws_away_the_biased_tail_and_draws_again ... ok
+test prng::unit_tests::derived_streams_have_fixed_first_outputs_and_differ_from_each_other ... ok
+test prng::unit_tests::the_generator_gives_the_reference_sequence ... ok
+test report::unit_tests::building_a_report_twice_gives_the_same_bytes ... ok
+test report::unit_tests::settings_that_do_not_change_the_stream_do_not_change_its_digests ... ok
+test report::unit_tests::the_checkpoints_are_numbered_in_order_and_point_at_checkpoint_operations ... ok
+test report::unit_tests::the_digests_of_the_reference_workloads_are_fixed ... ok
+test report::unit_tests::the_mutations_digest_ignores_checkpoint_placement_and_the_full_digest_does_not ... ok
+test report::unit_tests::the_report_is_honest_about_what_the_model_does_not_predict ... ok
+test report::unit_tests::the_seed_and_the_graph_size_change_the_stream ... ok
+test stats::unit_tests::a_batch_makes_an_observation_span_enough_timer_steps ... ok
+test stats::unit_tests::a_description_has_the_hand_worked_figures ... ok
+test stats::unit_tests::a_high_percentile_needs_enough_observations ... ok
+test stats::unit_tests::one_observation_describes_itself_and_nothing_else_is_described ... ok
+test stats::unit_tests::outliers_are_flagged_and_never_removed ... ok
+test stats::unit_tests::percentiles_are_nearest_rank ... ok
+test workload::unit_tests::a_graph_that_cannot_be_placed_is_an_error_and_not_a_hang ... ok
+test workload::unit_tests::a_visitor_that_refuses_stops_the_stream ... ok
+test workload::unit_tests::checkpoints_come_at_the_interval_and_at_the_end_without_a_repeat ... ok
+test workload::unit_tests::construction_repeats_one_graph_and_lifecycle_builds_a_new_one_each_cycle ... ok
+test workload::unit_tests::edges_are_distinct_never_self_loops_and_within_the_degree_limit ... ok
+test workload::unit_tests::nodes_sit_on_a_grid_that_does_not_make_them_overlap ... ok
+test workload::unit_tests::rerouting_builds_once_then_moves_inside_the_field ... ok
+test workload::unit_tests::the_busiest_node_is_moved_more_often_than_chance ... ok
+test workload::unit_tests::the_same_manifest_gives_the_same_stream_and_another_seed_does_not ... ok
+test workload::unit_tests::the_warm_up_and_measured_markers_sit_at_the_right_places ... ok
+
+test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>

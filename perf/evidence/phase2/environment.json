@@ -1,0 +1,122 @@
+{
+  "recorded_at": "2026-11-05T18:43:18.560Z",
+  "commit": "a2c35b30def2c988aef28d5a69b438fc3bbf8562",
+  "uncommitted_changes": [
+    " M .github/workflows/ci.yml",
+    " M Cargo.toml",
+    " M demo/changelog.md",
+    " M design-specs/performance_harness.pdf",
+    " M docs/testing/README.md",
+    " M perf-harness/Cargo.toml",
+    " M perf-harness/src/lib.rs",
+    " M perf-harness/src/main.rs",
+    " M perf-harness/src/model/mod.rs",
+    " M perf-harness/src/model/unit_tests.rs",
+    " M perf-harness/src/report/mod.rs",
+    " M perf-harness/src/report/unit_tests.rs",
+    " M perf-harness/src/workload/mod.rs",
+    " M perf/README.md",
+    " M perf/evidence/phase1/environment.json",
+    " M perf/evidence/phase1/reports/w1-scene-construction-small.json",
+    " M perf/evidence/phase1/reports/w2-connector-rerouting-small.json",
+    " M perf/evidence/phase1/reports/w3-scene-lifecycle-small.json",
+    " M perf/evidence/phase1/rust-tests-native.txt",
+    " M perf/evidence/phase1/rust-tests-wasm32-wasi.txt",
+    " M perf/evidence/phase1/rust-tests-without-schema.txt",
+    " M perf/evidence/phase1/schema-checks.txt",
+    " M perf/lib/chrome-session.mjs",
+    " M perf/manifests/w1-scene-construction-small.toml",
+    " M perf/manifests/w2-connector-rerouting-small.toml",
+    " M perf/manifests/w3-scene-lifecycle-small.toml",
+    " M perf/schemas/check.mjs",
+    " M perf/schemas/checkpoint.schema.json",
+    " M perf/schemas/examples/result.json",
+    " M perf/schemas/examples/workload-report.json",
+    " M perf/schemas/result.schema.json",
+    "?? perf-harness-wasm/",
+    "?? perf-harness/src/compare/",
+    "?? perf-harness/src/layer_a/",
+    "?? perf-harness/src/metrics/",
+    "?? perf-harness/src/outcome/",
+    "?? perf-harness/src/stats/",
+    "?? perf/evidence/phase1/reports/w1-scene-construction-medium.json",
+    "?? perf/evidence/phase1/reports/w2-connector-rerouting-large.json",
+    "?? perf/evidence/phase1/reports/w3-scene-lifecycle-endurance.json",
+    "?? perf/evidence/phase2/",
+    "?? perf/manifests/w1-scene-construction-medium.toml",
+    "?? perf/manifests/w2-connector-rerouting-large.toml",
+    "?? perf/manifests/w3-scene-lifecycle-endurance.toml",
+    "?? perf/runner/",
+    "?? perf/schemas/examples/result-native.json"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "browser": "Google Chrome 157.0.8103.39",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm_pack": "wasm-pack 0.15.1",
+  "node": "v26.13.0",
+  "build_profile": "release",
+  "wasm_files": {
+    "perf_harness_wasm_bg.wasm": 603563
+  },
+  "commands": [
+    {
+      "file": "build.txt",
+      "command": "sh -c cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg",
+      "exit_code": 0,
+      "seconds": 0.837
+    },
+    {
+      "file": "rust-tests-perf-harness.txt",
+      "command": "cargo test -p perf-harness",
+      "exit_code": 0,
+      "seconds": 0.363
+    },
+    {
+      "file": "rust-tests-perf-harness-wasm.txt",
+      "command": "cargo test -p perf-harness-wasm",
+      "exit_code": 0,
+      "seconds": 0.65
+    },
+    {
+      "file": "rust-tests-perf-harness-wasm32-wasi.txt",
+      "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
+      "exit_code": 0,
+      "seconds": 0.245
+    },
+    {
+      "file": "allocator-verification.txt",
+      "command": "node perf/runner/verify-allocator.mjs --out <repo>/perf/evidence/phase2/allocator-verification.json",
+      "exit_code": 0,
+      "seconds": 0.541
+    },
+    {
+      "file": "checker-selftest.txt",
+      "command": "node perf/runner/selftest.mjs",
+      "exit_code": 0,
+      "seconds": 0.622
+    },
+    {
+      "file": "run-w1-scene-construction-medium.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w1-scene-construction-medium.toml --mode performance --no-build --out-dir <repo>/perf/evidence/phase2/results/w1-scene-construction-medium",
+      "exit_code": 0,
+      "seconds": 4.538
+    },
+    {
+      "file": "run-w2-connector-rerouting-large.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w2-connector-rerouting-large.toml --mode all --no-build --out-dir <repo>/perf/evidence/phase2/results/w2-connector-rerouting-large",
+      "exit_code": 0,
+      "seconds": 4.157
+    },
+    {
+      "file": "run-w3-scene-lifecycle-endurance.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w3-scene-lifecycle-endurance.toml --mode endurance --no-build --out-dir <repo>/perf/evidence/phase2/results/w3-scene-lifecycle-endurance --layers b",
+      "exit_code": 0,
+      "seconds": 2.659
+    }
+  ]
+}

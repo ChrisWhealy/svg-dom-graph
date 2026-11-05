@@ -3,6 +3,8 @@ ok   valid checkpoint
 ok   valid result
 ok   valid comparison
 ok   valid workload-report
+ok   valid checkpoint with an undrawn connector
+ok   valid native result
 ok   the result example carries the example manifest
 ok   manifest rejects an unknown top-level key
 ok   manifest rejects an unknown measurement option
@@ -23,6 +25,7 @@ ok   manifest rejects a checkpoint interval of zero
 ok   manifest rejects a wrong schema version
 ok   manifest rejects a missing capture option
 ok   manifest rejects a string for a count
+ok   checkpoint rejects a connector with two numbers
 ok   checkpoint rejects no nodes list
 ok   checkpoint rejects no edges list
 ok   checkpoint rejects no dom_identity
@@ -39,6 +42,15 @@ ok   checkpoint rejects a hash for geometry
 ok   checkpoint rejects a short hash
 ok   checkpoint rejects an edge without an end
 ok   checkpoint rejects a non-string content value
+ok   result rejects a resolution flag of false
+ok   result rejects a resolution flag on a count
+ok   result rejects a resolution flag on a batch
+ok   result rejects no environment kind
+ok   result rejects an unknown environment kind
+ok   result rejects a browser run with no browser
+ok   result rejects a browser run with no browser version
+ok   result rejects a browser run with no cross-origin flag
+ok   result rejects an empty build profile
 ok   result rejects no stream scope
 ok   result rejects an unknown stream scope
 ok   result rejects unknown top-level key

@@ -1,0 +1,90 @@
+the counting allocator is verified
+
+results in perf/evidence/phase2/results/w1-scene-construction-medium
+
+A performance #0: ok, 2 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+B performance #0: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 20.00 us
+    construction.nodes p50 3360.00 us
+    construction.edges p50 2660.00 us
+    construction.total p50 6090.00 us
+    teardown.drop_scene p50 30.00 us
+    teardown.remove_host p50 95.00 us
+    teardown.total p50 125.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+A performance #1: ok, 2 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+B performance #1: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 20.00 us
+    construction.nodes p50 3310.00 us
+    construction.edges p50 2550.00 us
+    construction.total p50 5930.00 us
+    teardown.drop_scene p50 30.00 us
+    teardown.remove_host p50 95.00 us
+    teardown.total p50 120.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+A performance #2: ok, 2 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+B performance #2: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 20.00 us
+    construction.nodes p50 3360.00 us
+    construction.edges p50 2560.00 us
+    construction.total p50 5935.00 us
+    teardown.drop_scene p50 30.00 us
+    teardown.remove_host p50 95.00 us
+    teardown.total p50 125.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+A performance #3: ok, 2 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+B performance #3: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 20.00 us
+    construction.nodes p50 3365.00 us
+    construction.edges p50 2580.00 us
+    construction.total p50 5990.00 us
+    teardown.drop_scene p50 30.00 us
+    teardown.remove_host p50 100.00 us
+    teardown.total p50 130.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+A performance #4: ok, 2 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+B performance #4: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 15.00 us
+    construction.nodes p50 3350.00 us
+    construction.edges p50 2545.00 us
+    construction.total p50 5915.00 us
+    teardown.drop_scene p50 30.00 us
+    teardown.remove_host p50 100.00 us
+    teardown.total p50 130.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (36139 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  B performance construction.create_scene: 15.0 to 20.0 us over 5 repetitions, 33% apart (under 50 timer steps, so coarse)
+  B performance construction.nodes: 3310 to 3365 us over 5 repetitions, 2% apart
+  B performance construction.edges: 2545 to 2660 us over 5 repetitions, 5% apart
+  B performance construction.total: 5915 to 6090 us over 5 repetitions, 3% apart
+  B performance teardown.drop_scene: 30.0 to 30.0 us over 5 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B performance teardown.remove_host: 95.0 to 100 us over 5 repetitions, 5% apart (under 50 timer steps, so coarse)
+  B performance teardown.total: 120 to 130 us over 5 repetitions, 8% apart (under 50 timer steps, so coarse)
+
+every deterministic gate passed

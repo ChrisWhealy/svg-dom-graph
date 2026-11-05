@@ -3,6 +3,11 @@
 //! * `validate` reads and checks a manifest.
 //! * `generate` prints the workload report as JSON, or writes it to `--out`.
 //! * `stream` prints the operation stream, one JSON operation per line.
+//! * `canonical` prints the manifest in its canonical JSON form, exactly as it is hashed.
+//! * `native` runs the Layer A runner (`--mode correctness|performance`) and prints its outcome as JSON, or writes it to `--out`.
+
+// Only the native runner reads `--mode`, so a build without it parses the option and has no use for it.
+#![cfg_attr(not(feature = "layer-a"), allow(unused_assignments, unused_variables))]
 
 use perf_harness::manifest::Manifest;
 use perf_harness::ops::Op;
@@ -28,7 +33,9 @@ fn main() -> ExitCode {
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn usage() -> ExitCode {
-    eprintln!("usage: perf-harness (validate | generate [--id NAME] [--out FILE] | stream) <manifest.toml>");
+    eprintln!(
+        "usage: perf-harness (validate | stream | canonical | generate [--id NAME] [--out FILE] | native [--mode MODE] [--out FILE]) <manifest.toml>"
+    );
     ExitCode::from(2)
 }
 
@@ -38,11 +45,13 @@ fn run(args: &[String]) -> Result<(), String> {
     let mut path = None;
     let mut id = None;
     let mut out = None;
+    let mut mode = None;
     let mut rest = rest.iter();
     while let Some(arg) = rest.next() {
         match arg.as_str() {
             "--id" => id = Some(rest.next().ok_or("--id needs a name")?.clone()),
             "--out" => out = Some(rest.next().ok_or("--out needs a file")?.clone()),
+            "--mode" => mode = Some(rest.next().ok_or("--mode needs a name")?.clone()),
             other => path = Some(other.to_string()),
         }
     }
@@ -70,6 +79,28 @@ fn run(args: &[String]) -> Result<(), String> {
                     Ok(())
                 },
             }
+        },
+        #[cfg(feature = "layer-a")]
+        "native" => {
+            use perf_harness::manifest::Mode;
+            let mode = match mode.as_deref().unwrap_or("performance") {
+                "correctness" => Mode::Correctness,
+                "performance" => Mode::Performance,
+                other => return Err(format!("the native runner has no mode {other}")),
+            };
+            let outcome = perf_harness::layer_a::run(&manifest, mode).map_err(|e| e.to_string())?;
+            let json = serde_json::to_string_pretty(&outcome).map_err(|e| e.to_string())?;
+            match out {
+                Some(file) => std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}")),
+                None => {
+                    println!("{json}");
+                    Ok(())
+                },
+            }
+        },
+        "canonical" => {
+            println!("{}", String::from_utf8(manifest.canonical_json()).map_err(|e| e.to_string())?);
+            Ok(())
         },
         "stream" => {
             let stdout = std::io::stdout();

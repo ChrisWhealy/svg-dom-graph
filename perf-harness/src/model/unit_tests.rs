@@ -60,10 +60,15 @@ fn a_straight_connector_runs_between_the_boundaries_along_the_line_of_centres() 
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[test]
-fn boxes_whose_centres_coincide_give_the_centre_as_both_ends() -> Result<(), String> {
+fn boxes_whose_centres_coincide_have_no_path_between_them() -> Result<(), String> {
+    // The ray has no direction, so both ends are the centre, which is one point, and the library draws no path for it.
     let checkpoint =
         live(&[node("a", 10, 10), node("b", 10, 10), edge("a", "b")])?.checkpoint(ViewPolicy::Unchanged)?;
-    near(&element(&checkpoint, "a->b")?.coordinates, &[50.0, 28.0, 50.0, 28.0])
+    if element(&checkpoint, "a->b")?.coordinates.is_empty() {
+        Ok(())
+    } else {
+        Err(format!("{:?}", element(&checkpoint, "a->b")?.coordinates))
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -226,4 +231,19 @@ fn a_checkpoint_satisfies_the_checkpoint_schema() -> Result<(), String> {
         }
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Two boxes that touch along a side have the same point as both ends of the connector between them, and the library draws no
+/// path for it. Found by a run of 1,000 nodes and 1,100 random moves, in which two boxes came to touch.
+#[test]
+fn a_connector_between_boxes_that_touch_has_no_path() -> Result<(), String> {
+    // 80 wide, side by side with no gap: the ray between the centres meets both boundaries at x = 80.
+    let touching = live(&[node("a", 0, 0), node("b", 80, 0), edge("a", "b")])?.checkpoint(ViewPolicy::Unchanged)?;
+    if !element(&touching, "a->b")?.coordinates.is_empty() {
+        return Err(format!("{:?}", element(&touching, "a->b")?.coordinates));
+    }
+    // One unit apart, there is a short path again.
+    let apart = live(&[node("a", 0, 0), node("b", 81, 0), edge("a", "b")])?.checkpoint(ViewPolicy::Unchanged)?;
+    near(&element(&apart, "a->b")?.coordinates, &[80.0, 18.0, 81.0, 18.0])
 }

@@ -1,0 +1,9 @@
+ok   retain: each of 100 retained blocks of 65536 bytes adds exactly 65536 bytes and one block
+ok   release: releasing every retained block returns the live bytes and blocks exactly to where they began
+ok   leaked closure: each of 100 closures leaked with forget() adds at least the 4096 bytes it captures, the live bytes never fall, the extra is at most 256 bytes a closure on average, and none comes back
+ok   library leak: 100 calls of the library's svg_buttons::watch, which leaks two closures each, add bytes on every call, the live bytes never fall, and removing the element gives none back
+ok   reallocation: a vector grown a byte at a time, which reallocates many times, is counted at its capacity as one block, and released exactly
+ok   repeated release: 25 rounds of retain and release each return exactly to the start, so nothing drifts or counts twice
+ok   capacity: the linear memory is at least as large as the most that was ever live
+
+the allocator is verified

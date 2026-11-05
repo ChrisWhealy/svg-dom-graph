@@ -1,0 +1,16 @@
+running 9 tests
+test alloc::unit_tests::an_allocation_is_counted_and_a_release_gives_it_back_exactly ... ok
+test alloc::unit_tests::a_reallocation_changes_the_bytes_and_not_the_number_of_blocks ... ok
+test alloc::unit_tests::a_zeroed_allocation_counts_like_any_other ... ok
+test parse::unit_tests::numbers_come_out_of_a_transform_and_a_path_in_order ... ok
+test parse::unit_tests::text_with_no_number_gives_none_and_a_lone_minus_is_not_one ... ok
+test parse::unit_tests::the_nodes_a_name_outputs_to_are_found_and_the_inputs_are_not ... ok
+test alloc::unit_tests::a_failed_allocation_is_not_counted ... ok
+test alloc::unit_tests::a_native_build_does_not_install_the_counter ... ok
+test alloc::unit_tests::many_blocks_add_up_exactly_and_release_in_any_order ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+
+running 0 tests
+
+test result: ok. 0 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>

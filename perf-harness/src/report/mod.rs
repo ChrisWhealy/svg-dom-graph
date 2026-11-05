@@ -47,7 +47,7 @@ pub struct CheckpointDigest {
 pub struct Sections {
     /// Predicted from the operations alone, so a difference is a real difference.
     pub modelled: Vec<&'static str>,
-    /// Predicted by a rule that Phase 2 has still to confirm against the rendered DOM.
+    /// Predicted by a rule that has still to be confirmed against the rendered DOM. None are, for the operations there are.
     pub provisional: Vec<&'static str>,
     /// Left empty by the model, and not to be compared.
     pub not_modelled: Vec<&'static str>,
@@ -113,8 +113,8 @@ pub fn build_report(manifest: &Manifest, id: &str) -> Result<Report, WorkloadErr
         },
         checkpoints,
         sections: Sections {
-            modelled: vec!["topology", "content", "interaction"],
-            provisional: vec!["geometry", "paint_order"],
+            modelled: vec!["topology", "content", "interaction", "geometry", "paint_order"],
+            provisional: vec![],
             not_modelled: vec!["dom_identity.ids", "accessibility"],
         },
     })

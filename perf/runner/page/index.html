@@ -1,0 +1,15 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>perf harness</title>
+</head>
+<body>
+  <script type="module">
+    import init, { run_workload, verify_allocator, selftest_checker } from "./pkg/perf_harness_wasm.js"
+    await init()
+    // The runner drives these from outside, through the DevTools Protocol.
+    window.perfHarness = { run_workload, verify_allocator, selftest_checker }
+  </script>
+</body>
+</html>
