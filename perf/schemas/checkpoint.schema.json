@@ -1,101 +1,305 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "svg-dom-graph/perf/checkpoint/1",
+  "$id": "urn:svg-dom-graph:perf:checkpoint:1",
   "title": "A structured snapshot of one scene, compared section by section",
   "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "topology": {
+      "type": "object",
+      "properties": {
+        "nodes": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "from": {
+                "type": "string",
+                "minLength": 1
+              },
+              "to": {
+                "type": "string",
+                "minLength": 1
+              },
+              "label": {
+                "type": "string"
+              }
+            },
+            "required": ["from", "to"],
+            "additionalProperties": false
+          }
+        },
+        "dangling": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "edge": {
+                "type": "string",
+                "minLength": 1
+              },
+              "missing": {
+                "type": "string",
+                "minLength": 1
+              }
+            },
+            "required": ["edge", "missing"],
+            "additionalProperties": false
+          }
+        },
+        "duplicate_keys": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["nodes", "edges", "dangling", "duplicate_keys"],
+      "additionalProperties": false
+    },
+    "dom_identity": {
+      "type": "object",
+      "properties": {
+        "ids": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "duplicates": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["ids", "duplicates"],
+      "additionalProperties": false
+    },
+    "geometry": {
+      "type": "object",
+      "properties": {
+        "tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "kind": {
+                "enum": ["node_box", "connector_path", "label"]
+              },
+              "coordinates": {
+                "type": "array",
+                "items": {
+                  "type": "number"
+                }
+              }
+            },
+            "required": ["key", "kind", "coordinates"],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "node_box"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "coordinates": {
+                      "minItems": 4,
+                      "maxItems": 4
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "label"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "coordinates": {
+                      "minItems": 2,
+                      "maxItems": 2
+                    }
+                  }
+                }
+              },
+              {
+                "if": {
+                  "properties": {
+                    "kind": {
+                      "const": "connector_path"
+                    }
+                  }
+                },
+                "then": {
+                  "properties": {
+                    "coordinates": {
+                      "minItems": 4
+                    }
+                  }
+                }
+              }
+            ]
+          }
+        }
+      },
+      "required": ["tolerance", "elements"],
+      "additionalProperties": false
+    },
+    "content": {
+      "type": "object",
+      "additionalProperties": {
+        "type": "string"
+      }
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "selection": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          },
+          "uniqueItems": true
+        },
+        "focused": {
+          "type": ["string", "null"]
+        },
+        "view": {
+          "oneOf": [
+            {
+              "type": "null"
+            },
+            {
+              "type": "object",
+              "properties": {
+                "x": {
+                  "type": "number"
+                },
+                "y": {
+                  "type": "number"
+                },
+                "scale": {
+                  "type": "number",
+                  "exclusiveMinimum": 0
+                }
+              },
+              "required": ["x", "y", "scale"],
+              "additionalProperties": false
+            }
+          ]
+        }
+      },
+      "required": ["selection", "focused", "view"],
+      "additionalProperties": false
+    },
+    "accessibility": {
+      "type": "object",
+      "properties": {
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "properties": {
+              "key": {
+                "type": "string",
+                "minLength": 1
+              },
+              "role": {
+                "type": "string"
+              },
+              "name": {
+                "type": "string"
+              }
+            },
+            "required": ["key", "role", "name"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["elements"],
+      "additionalProperties": false
+    },
+    "paint_order": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "uniqueItems": true
+    },
+    "section_hashes": {
+      "type": "object",
+      "properties": {
+        "topology": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "dom_identity": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "content": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "interaction": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "accessibility": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "paint_order": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        }
+      },
+      "required": [],
+      "additionalProperties": false
+    }
+  },
   "required": [
     "schema_version",
     "topology",
+    "dom_identity",
     "geometry",
     "content",
     "interaction",
     "accessibility",
     "paint_order"
   ],
-  "properties": {
-    "schema_version": { "const": 1 },
-    "topology": {
-      "description": "Compared exactly, by logical key. Never by DOM id, which is not stable across scenes.",
-      "type": "object",
-      "properties": {
-        "nodes": { "type": "array", "items": { "type": "string" } },
-        "edges": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["from", "to"],
-            "properties": {
-              "from": { "type": "string" },
-              "to": { "type": "string" },
-              "label": { "type": "string" }
-            }
-          }
-        },
-        "dangling": { "type": "array" },
-        "duplicate_keys": { "type": "array" }
-      }
-    },
-    "dom_identity": {
-      "description": "Uniqueness of rendered ids is always checked. Equality across rebuilds is not, because ids come from a process-wide counter.",
-      "type": "object",
-      "properties": {
-        "ids": { "type": "array", "items": { "type": "string" } },
-        "duplicates": { "type": "array" }
-      }
-    },
-    "geometry": {
-      "description": "Full numeric values, compared directly within the tolerance. A hash of this section is never the test.",
-      "type": "object",
-      "required": ["tolerance", "elements"],
-      "properties": {
-        "tolerance": { "type": "number", "default": 0.01 },
-        "elements": {
-          "type": "array",
-          "items": {
-            "type": "object",
-            "required": ["key", "kind", "coordinates"],
-            "properties": {
-              "key": { "type": "string" },
-              "kind": { "enum": ["node_box", "connector_path", "label"] },
-              "coordinates": { "type": "array", "items": { "type": "number" } }
-            }
-          }
-        }
-      }
-    },
-    "content": {
-      "description": "Compared exactly.",
-      "type": "object",
-      "additionalProperties": { "type": "string" }
-    },
-    "interaction": {
-      "type": "object",
-      "properties": {
-        "selection": { "type": "array", "items": { "type": "string" } },
-        "focused": { "type": ["string", "null"] },
-        "view": {
-          "type": "object",
-          "properties": {
-            "x": { "type": "number" },
-            "y": { "type": "number" },
-            "scale": { "type": "number" }
-          }
-        }
-      }
-    },
-    "accessibility": {
-      "description": "Compared exactly, and reported separately.",
-      "type": "object"
-    },
-    "paint_order": {
-      "description": "Logical keys in paint order. Order is significant here and nowhere else.",
-      "type": "array",
-      "items": { "type": "string" }
-    },
-    "section_hashes": {
-      "description": "SHA-256 of each exact section, for diagnosis. Geometry has none.",
-      "type": "object",
-      "additionalProperties": { "type": "string" }
-    }
-  }
+  "additionalProperties": false,
+  "description": "Topology is compared by logical key and never by DOM id. Geometry holds full values, compared within the tolerance, and is never hashed. Paint order is the one place order matters."
 }

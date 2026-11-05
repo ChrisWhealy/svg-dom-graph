@@ -24,7 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
 - Add a Petri Net demo (`eb06cfa`)
 - Add a Tarjan's Strongly Connected Components demo (`78e3e2c`)
-- Performance harness design spec and Phase 0 spike, schemas and findings, in `perf/` (``)
+- Performance harness design spec and Phase 0 spike, schemas and findings, in `perf/` (`84a9599`)
 
 ### Changed
 
@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update top level README (`c12dfd9`)
 - Update top level README again (`a312666`)
 - Update top level README again (`ef4e9fc`)
+- Perf Harness: Tighten JSON Schema validation (``)
 
 ### Fixed
 
@@ -63,4 +64,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Petri Net: Stop playback on failed selection or wiring update (`1bcc0f4`)
 - Petri Net: Quick-fire can proceed after its selection draw fails (`71b617b`)
 - Petri Net: Teardown does not fully release listeners (`413be15`)
-- Perf Harness: Result schema fully represents statistical contract (``)
+- Perf Harness: Result schema fully represents statistical contract (`1d6a367`)

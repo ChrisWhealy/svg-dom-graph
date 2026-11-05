@@ -1,0 +1,103 @@
+{
+  "schema_version": 1,
+  "run_id": "w2-0001",
+  "started_at": "2026-11-05T12:00:00Z",
+  "repetition": 0,
+  "sequence_position": 0,
+  "environment": {
+    "browser": "Chrome",
+    "browser_version": "157.0.7632.0",
+    "os": "macOS 15",
+    "cpu": "Example CPU",
+    "runner_class": "local",
+    "timer_resolution_us": 5.0,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "crate_version": "0.2.47",
+    "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "git_dirty": false
+  },
+  "manifest": {
+    "id": "w2",
+    "sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "operation_stream_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 12345,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 1000,
+        "edges": 3000,
+        "maximum_degree": 16
+      },
+      "execution": {
+        "modes": ["correctness", "performance"],
+        "warmup_iterations": 100,
+        "measurement_iterations": 1000,
+        "repetitions": 5,
+        "order": "interleaved"
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_memory": true,
+        "capture_frame_timing": true,
+        "checkpoint_every": 100
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "dom_nodes": 50000,
+        "wall_ms": 120000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "name": "mutation.move_node",
+      "layer": "B",
+      "status": "measured",
+      "unit": "us",
+      "kind": "latency",
+      "samples": 1000,
+      "dropped": 0,
+      "outliers_flagged": 3,
+      "summary": {
+        "min": 40.0,
+        "p50": 55.0,
+        "p95": 90.0,
+        "p99": 120.0,
+        "max": 300.0
+      },
+      "within_run": {
+        "mean": 58.0,
+        "stddev": 12.0,
+        "iqr": 18.0,
+        "tukey_low": 10.0,
+        "tukey_high": 130.0
+      },
+      "mechanism": "performance.now"
+    },
+    {
+      "name": "dom.elements",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 7000,
+      "mechanism": "dom"
+    },
+    {
+      "name": "presentation.move_node",
+      "layer": "C",
+      "status": "unavailable",
+      "reason": "no frame could be attributed to the mutation"
+    }
+  ],
+  "raw_samples": "target/perf/w2-0001.samples.ndjson"
+}

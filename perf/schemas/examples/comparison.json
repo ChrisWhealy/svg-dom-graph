@@ -1,0 +1,95 @@
+{
+  "schema_version": 1,
+  "generated_at": "2026-11-06T12:00:00Z",
+  "baseline": {
+    "git_sha": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "operation_stream_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "run_ids": ["r1", "r2", "r3", "r4", "r5"],
+    "promotion": {
+      "promoted_at": "2026-11-05T12:00:00Z",
+      "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+      "workload_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+      "environment_key": "macos-local-157",
+      "method_version": "1"
+    }
+  },
+  "candidate": {
+    "git_sha": "eeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeeee",
+    "manifest_sha256": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "operation_stream_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+    "run_ids": ["r1", "r2", "r3", "r4", "r5"]
+  },
+  "compatibility": {
+    "comparable": true,
+    "key": {
+      "os": "macOS 15",
+      "cpu": "Example CPU",
+      "runner_class": "local",
+      "browser_version": "157.0.7632.0",
+      "protocol_version": "1"
+    }
+  },
+  "method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "bootstrap_resamples": 10000,
+    "bootstrap_seed": 7,
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95,
+    "minimum_repetitions_for_verdict": 5,
+    "protocol_version": "1"
+  },
+  "comparisons": [
+    {
+      "metric": "mutation.move_node",
+      "layer": "B",
+      "statistic": "p50",
+      "baseline": {
+        "repetitions": 5,
+        "samples_per_repetition": [1000, 1000, 1000, 1000, 1000],
+        "median": 55.0,
+        "statistic_interval": {
+          "low": 52.25,
+          "high": 57.75,
+          "confidence": 0.95
+        },
+        "between_run": {
+          "stddev": 2.0,
+          "range": [52.0, 58.0]
+        },
+        "within_run": {
+          "median_stddev": 10.0,
+          "median_iqr": 15.0
+        },
+        "outliers_flagged": 4
+      },
+      "candidate": {
+        "repetitions": 5,
+        "samples_per_repetition": [1000, 1000, 1000, 1000, 1000],
+        "median": 70.0,
+        "statistic_interval": {
+          "low": 66.5,
+          "high": 73.5,
+          "confidence": 0.95
+        },
+        "between_run": {
+          "stddev": 2.0,
+          "range": [67.0, 73.0]
+        },
+        "within_run": {
+          "median_stddev": 10.0,
+          "median_iqr": 15.0
+        },
+        "outliers_flagged": 4
+      },
+      "ratio": 1.27,
+      "ratio_interval": {
+        "low": 1.15,
+        "high": 1.4,
+        "confidence": 0.95
+      },
+      "verdict": "regression"
+    }
+  ]
+}

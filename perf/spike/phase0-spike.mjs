@@ -213,14 +213,14 @@ out.after_second_run_after_gc = pick(await metrics())
 
 await evaluate(`document.querySelector('#diagram').remove()`)
 await send("HeapProfiler.collectGarbage")
-await new Promise((resolve) => setTimeout(resolve, 300))
+await new Promise(resolve => setTimeout(resolve, 300))
 out.after_removing_the_svg = pick(await metrics())
 
 console.log(JSON.stringify(out, null, 2))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Chrome may still be writing to its profile directory, so the clean-up waits for it to exit and then retries.
-const exited = new Promise((resolve) => chrome.once("exit", resolve))
+const exited = new Promise(resolve => chrome.once("exit", resolve))
 
 chrome.kill()
 await exited

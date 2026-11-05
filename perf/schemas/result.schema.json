@@ -1,26 +1,16 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
-  "$id": "svg-dom-graph/perf/result/1",
+  "$id": "urn:svg-dom-graph:perf:result:1",
   "title": "One repetition of one workload in one mode",
+  "description": "A single run. It holds no between-run statistic and no confidence interval, because one run has neither. Those belong to the comparison schema, which reads a collection of these.",
   "type": "object",
-  "required": [
-    "schema_version",
-    "run_id",
-    "started_at",
-    "repetition",
-    "environment",
-    "manifest",
-    "mode",
-    "status",
-    "metrics"
-  ],
   "properties": {
     "schema_version": {
       "const": 1
     },
     "run_id": {
       "type": "string",
-      "description": "Unique to this run. Comparison reports name runs by it."
+      "minLength": 1
     },
     "started_at": {
       "type": "string",
@@ -32,50 +22,45 @@
     },
     "sequence_position": {
       "type": "integer",
-      "minimum": 0,
-      "description": "Where this run fell in the interleaved order of a comparison, so drift can be examined."
+      "minimum": 0
     },
     "environment": {
       "type": "object",
-      "required": [
-        "browser",
-        "browser_version",
-        "os",
-        "cpu",
-        "timer_resolution_us",
-        "protocol_version",
-        "git_sha",
-        "git_dirty"
-      ],
       "properties": {
         "browser": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "browser_version": {
           "type": "string",
-          "description": "The full version, not the major number."
+          "pattern": "^\\d+(\\.\\d+)+$"
         },
         "os": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "cpu": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "memory_bytes": {
-          "type": "integer"
+          "type": "integer",
+          "minimum": 1
         },
         "runner_class": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "timer_resolution_us": {
-          "type": "number"
+          "type": "number",
+          "exclusiveMinimum": 0
         },
         "cross_origin_isolated": {
           "type": "boolean"
         },
         "protocol_version": {
           "type": "string",
-          "description": "The version of this harness's measurement protocol. Part of the comparison key."
+          "minLength": 1
         },
         "rustc": {
           "type": "string"
@@ -87,59 +72,74 @@
           "type": "string"
         },
         "git_sha": {
-          "type": "string"
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
         },
         "git_dirty": {
           "type": "boolean"
         }
-      }
+      },
+      "required": [
+        "browser",
+        "browser_version",
+        "os",
+        "cpu",
+        "runner_class",
+        "timer_resolution_us",
+        "cross_origin_isolated",
+        "protocol_version",
+        "crate_version",
+        "git_sha",
+        "git_dirty"
+      ],
+      "additionalProperties": false
     },
     "manifest": {
       "type": "object",
-      "required": ["id", "sha256", "operation_stream_sha256", "canonical"],
       "properties": {
         "id": {
-          "type": "string"
+          "type": "string",
+          "minLength": 1
         },
         "sha256": {
           "type": "string",
-          "description": "Of the canonical form below."
+          "pattern": "^[0-9a-f]{64}$"
         },
         "operation_stream_sha256": {
           "type": "string",
-          "description": "Of the stream that was executed. It must equal the generated stream's hash."
+          "pattern": "^[0-9a-f]{64}$"
         },
         "canonical": {
-          "$ref": "manifest.schema.json",
-          "description": "The complete manifest this run executed, so the result stands alone."
+          "$ref": "urn:svg-dom-graph:perf:manifest:1"
         }
-      }
+      },
+      "required": ["id", "sha256", "operation_stream_sha256", "canonical"],
+      "additionalProperties": false
     },
     "mode": {
       "enum": ["correctness", "performance", "recovery", "endurance"]
     },
     "status": {
-      "enum": ["ok", "invalid_incorrect", "refused", "timed_out", "error"],
-      "description": "The workload's own outcome. A metric that could not be collected does not change it; see each metric's status."
+      "enum": ["ok", "invalid_incorrect", "refused", "timed_out", "error"]
     },
     "error": {
-      "type": "string"
+      "type": "string",
+      "minLength": 1
     },
     "metrics": {
       "type": "array",
       "items": {
         "type": "object",
-        "required": ["name", "layer", "status"],
         "properties": {
           "name": {
-            "type": "string"
+            "type": "string",
+            "minLength": 1
           },
           "layer": {
             "enum": ["A", "B", "C"]
           },
           "status": {
-            "enum": ["measured", "unavailable", "measurement_error"],
-            "description": "unavailable: the mechanism does not exist here. measurement_error: it exists and failed, for example a trace that did not correlate."
+            "enum": ["measured", "unavailable", "measurement_error"]
           },
           "unit": {
             "enum": ["ms", "us", "count", "bytes"]
@@ -149,11 +149,11 @@
           },
           "batch_size": {
             "type": "integer",
-            "minimum": 1
+            "minimum": 2
           },
           "samples": {
             "type": "integer",
-            "minimum": 0
+            "minimum": 1
           },
           "dropped": {
             "type": "integer",
@@ -182,27 +182,22 @@
                 "type": "number"
               }
             },
-            "description": "Within this run only. The intervals come from the comparison report."
-          },
-          "mechanism": {
-            "type": "string",
-            "description": "How the value was obtained, for example cdp:Performance.getMetrics or tally."
-          },
-          "reason": {
-            "type": "string"
+            "required": ["min", "p50", "max"],
+            "additionalProperties": false
           },
           "within_run": {
             "type": "object",
-            "description": "Dispersion of the observations in this run.",
             "properties": {
               "mean": {
                 "type": "number"
               },
               "stddev": {
-                "type": "number"
+                "type": "number",
+                "minimum": 0
               },
               "iqr": {
-                "type": "number"
+                "type": "number",
+                "minimum": 0
               },
               "tukey_low": {
                 "type": "number"
@@ -210,24 +205,285 @@
               "tukey_high": {
                 "type": "number"
               }
+            },
+            "required": ["mean", "stddev", "iqr", "tukey_low", "tukey_high"],
+            "additionalProperties": false
+          },
+          "value": {
+            "type": "number"
+          },
+          "mechanism": {
+            "type": "string",
+            "minLength": 1
+          },
+          "reason": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["name", "layer", "status"],
+        "additionalProperties": false,
+        "allOf": [
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "measured"
+                }
+              }
+            },
+            "then": {
+              "required": ["unit", "kind", "mechanism"],
+              "not": {
+                "required": ["reason"]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "enum": ["unavailable", "measurement_error"]
+                }
+              }
+            },
+            "then": {
+              "required": ["reason"],
+              "not": {
+                "anyOf": [
+                  {
+                    "required": ["summary"]
+                  },
+                  {
+                    "required": ["value"]
+                  },
+                  {
+                    "required": ["samples"]
+                  },
+                  {
+                    "required": ["within_run"]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "measured"
+                },
+                "kind": {
+                  "enum": ["latency", "batch_throughput"]
+                }
+              },
+              "required": ["status", "kind"]
+            },
+            "then": {
+              "required": [
+                "samples",
+                "summary",
+                "within_run",
+                "dropped",
+                "outliers_flagged"
+              ],
+              "properties": {
+                "unit": {
+                  "enum": ["ms", "us"]
+                }
+              },
+              "not": {
+                "required": ["value"]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "measured"
+                },
+                "kind": {
+                  "const": "batch_throughput"
+                }
+              },
+              "required": ["status", "kind"]
+            },
+            "then": {
+              "required": ["batch_size"]
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "measured"
+                },
+                "kind": {
+                  "enum": ["count", "trend"]
+                }
+              },
+              "required": ["status", "kind"]
+            },
+            "then": {
+              "required": ["value"],
+              "properties": {
+                "unit": {
+                  "enum": ["count", "bytes"]
+                }
+              },
+              "not": {
+                "anyOf": [
+                  {
+                    "required": ["summary"]
+                  },
+                  {
+                    "required": ["batch_size"]
+                  }
+                ]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "kind": {
+                  "const": "latency"
+                }
+              },
+              "required": ["kind"]
+            },
+            "then": {
+              "not": {
+                "required": ["batch_size"]
+              }
             }
           }
-        }
+        ]
       }
     },
     "checkpoints_passed": {
-      "type": "integer"
+      "type": "integer",
+      "minimum": 0
     },
     "checkpoints_failed": {
       "type": "array",
       "items": {
-        "type": "object"
-      }
+        "type": "object",
+        "properties": {
+          "section": {
+            "enum": [
+              "topology",
+              "dom_identity",
+              "geometry",
+              "content",
+              "interaction",
+              "accessibility",
+              "paint_order"
+            ]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["section", "detail"],
+        "additionalProperties": false
+      },
+      "uniqueItems": true
     },
     "raw_samples": {
       "type": "string",
-      "description": "Path of the file holding every observation, outliers included."
+      "minLength": 1
     }
   },
-  "description": "A single run. It holds no between-run statistic and no confidence interval, because one run has neither. Those belong to comparison.schema.json, which reads a collection of these."
+  "required": [
+    "schema_version",
+    "run_id",
+    "started_at",
+    "repetition",
+    "environment",
+    "manifest",
+    "mode",
+    "status",
+    "metrics"
+  ],
+  "additionalProperties": false,
+  "allOf": [
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "enum": ["refused", "timed_out", "error"]
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["error"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "not": {
+          "required": ["error"]
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "status": {
+            "const": "invalid_incorrect"
+          }
+        },
+        "required": ["status"]
+      },
+      "then": {
+        "required": ["checkpoints_failed"],
+        "properties": {
+          "checkpoints_failed": {
+            "minItems": 1
+          }
+        }
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "const": "correctness"
+          }
+        },
+        "required": ["mode"]
+      },
+      "then": {
+        "required": ["checkpoints_passed", "checkpoints_failed"]
+      }
+    },
+    {
+      "if": {
+        "properties": {
+          "mode": {
+            "enum": ["performance", "endurance"]
+          },
+          "status": {
+            "const": "ok"
+          }
+        },
+        "required": ["mode", "status"]
+      },
+      "then": {
+        "required": ["raw_samples"]
+      }
+    }
+  ]
 }

@@ -10,6 +10,8 @@ This directory holds what Phase 0 produced. No runner exists yet.
 | `schemas/result.schema.json`     | One repetition of one workload, with no between-run statistic      |
 | `schemas/comparison.schema.json` | A baseline and a candidate collection of runs, with intervals and verdicts |
 | `schemas/checkpoint.schema.json` | A structured checkpoint, compared section by section               |
+| `schemas/check.mjs`              | Validates each schema against its examples and against deliberately broken documents |
+| `schemas/examples/`             | Valid example documents |
 | `spike/phase0-spike.mjs`         | The Phase 0 spike, which needs Node 22 or later and a local Chrome |
 | `manifests/`                     | Workload manifests, empty until Phase 1                            |
 | `baselines/`                     | Baselines, which only an explicit promotion command writes         |
@@ -95,3 +97,14 @@ node perf/spike/phase0-spike.mjs cdp-test-fixture isolated
 
 - The trace correlation for Layer C presentation timing (spec section 3.2) needs its own Phase 3 spike.
 - Firefox and Safari figures. Nothing here was run in either.
+
+## Checking the schemas
+
+```sh
+cd perf/schemas && npm install && npm test
+```
+
+The schemas reject unknown keys in every fixed object, and require fields according to a metric's or run's status.
+The script runs 85 cases: 4 valid documents, 1 consistency check between the example manifest and the example result, 1 incompatible pair that must pass, and 79 broken documents that must each fail.
+A schema that is too permissive therefore fails the script.
+Phase 1 should run the same cases against the Rust validator.

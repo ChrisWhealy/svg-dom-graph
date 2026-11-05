@@ -1,0 +1,64 @@
+{
+  "schema_version": 1,
+  "topology": {
+    "nodes": ["a", "b"],
+    "edges": [
+      {
+        "from": "a",
+        "to": "b"
+      }
+    ],
+    "dangling": [],
+    "duplicate_keys": []
+  },
+  "dom_identity": {
+    "ids": ["svg-dom-graph-arrow-0"],
+    "duplicates": []
+  },
+  "geometry": {
+    "tolerance": 0.01,
+    "elements": [
+      {
+        "key": "a",
+        "kind": "node_box",
+        "coordinates": [0, 0, 100, 40]
+      },
+      {
+        "key": "a->b",
+        "kind": "connector_path",
+        "coordinates": [100, 20, 200, 20]
+      },
+      {
+        "key": "a->b.label",
+        "kind": "label",
+        "coordinates": [150, 10]
+      }
+    ]
+  },
+  "content": {
+    "a": "1",
+    "b": "2"
+  },
+  "interaction": {
+    "selection": [],
+    "focused": null,
+    "view": {
+      "x": 0,
+      "y": 0,
+      "scale": 1
+    }
+  },
+  "accessibility": {
+    "elements": [
+      {
+        "key": "a",
+        "role": "group",
+        "name": "a"
+      }
+    ]
+  },
+  "paint_order": ["a", "b", "a->b"],
+  "section_hashes": {
+    "topology": "dddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddddd"
+  }
+}
