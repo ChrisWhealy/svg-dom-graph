@@ -25,6 +25,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Add a Petri Net demo (`eb06cfa`)
 - Add a Tarjan's Strongly Connected Components demo (`78e3e2c`)
 - Performance harness design spec and Phase 0 spike, schemas and findings, in `perf/` (`84a9599`)
+- Perf Harness: Implement effective-registration accounting in listener-tally spike (``) 
 
 ### Changed
 
@@ -35,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update top level README (`c12dfd9`)
 - Update top level README again (`a312666`)
 - Update top level README again (`ef4e9fc`)
-- Perf Harness: Tighten JSON Schema validation (``)
+- Perf Harness: Tighten JSON Schema validation (`e54ca79`)
 
 ### Fixed
 

@@ -13,6 +13,10 @@ This directory holds what Phase 0 produced. No runner exists yet.
 | `schemas/check.mjs`              | Validates each schema against its examples and against deliberately broken documents |
 | `schemas/examples/`             | Valid example documents |
 | `spike/phase0-spike.mjs`         | The Phase 0 spike, which needs Node 22 or later and a local Chrome |
+| `spike/listener-ownership.mjs`   | Builds a scene twice and says who owns each listener that was added or removed |
+| `page/listener-tracker.js`       | Counts effective listener registrations, to be injected before any page script |
+| `page/test-listener-tracker.mjs` | Tests the tracker in Chrome, including against Chrome's own count |
+| `lib/chrome-session.mjs`         | A static server and a headless Chrome with a small CDP client, shared by the scripts |
 | `manifests/`                     | Workload manifests, empty until Phase 1                            |
 | `baselines/`                     | Baselines, which only an explicit promotion command writes         |
 
@@ -50,7 +54,7 @@ Checkpoints therefore compare by logical key, which is the name the scene was gi
 ### 3. The library uses no `on*` property handlers
 
 Every listener goes through `add_event_listener_with_callback`.
-The listener tally needs no `on*` handling.
+The tracker needs no `on*` handling.
 `once`, `AbortSignal` and listener options are not used by the library itself, but a demo might use them, so the tally keeps the full
 key and treats a duplicate registration as one.
 
@@ -81,9 +85,37 @@ After a second scene was built it read 139, and 37 after `HeapProfiler.collectGa
 The first reading, before any collection, was 51 against a tally of 37.
 So Chrome's count is a diagnostic that needs a forced collection, and a raw call count is only a cross-check.
 
-One result is not explained yet.
-Building a second scene doubled the elements (780 to 1,560) and added 44 listeners and removed 44, a net change of zero.
-Phase 1 must find out which registrations are long-lived before a listener count can be used as a gate.
+### 7. Who owns the listeners
+
+The unexplained result is explained, using the effective-registration tracker (`page/listener-tracker.js`).
+The fixture keeps its only `Scene` handle in a `thread_local`, and `run()` replaces it (`cdp-test-fixture/src/lib.rs`, the line `*slot = Some(scene)`).
+So the second build dropped the first `Scene`.
+
+| What the tracker saw | First build | Second build |
+|---|---|---|
+| Listeners added | 44 | 44 |
+| Listeners removed | 7 | 44 |
+| of which, registered by the same build | 7 | 7 |
+| of which, registered by the first build | 0 | 37 |
+| Registrations alive afterwards | 37 | 37 |
+
+- **Scene-owned listeners are released when the last `Scene` handle drops**, even though the DOM it drew stays where it is.
+  The 37 are pointer, focus, keyboard, click and wheel listeners on the scene's `<g>` and `<rect>` elements.
+  The element count doubled because the first scene's elements were left behind, with no listeners.
+- **Seven registrations are transient.**
+  Each build puts 7 listeners (`pointerdown`, `pointermove`, `pointerup`, `pointercancel`, `focus`, `blur`, `keydown`) on one `<rect>` and removes them again a few calls later.
+  I did not find out why. They are self-cancelling and bounded, so they do not affect a count taken after a build.
+
+What this means for a listener-count gate:
+
+- The count is only meaningful once the last `Scene` handle has dropped, not when the host `<svg>` is removed.
+- The expected count after a drop is the count before the scene was built, which is a checkable gate.
+- A registration that survives a drop is a candidate leak. One on a node that is no longer in the document shows in the tracker's `detached` figure.
+- The tally is the cross-browser check. Chrome's count is its cross-check, and only after a forced collection.
+
+The tracker is tested in `page/test-listener-tracker.mjs`.
+It checks duplicates, capture flags, `once`, `AbortSignal`, `handleEvent` objects, null callbacks and detached nodes, and then compares the tally with Chrome's count after a collection (50 listeners added twice both read 50).
+One limit remains: a `once` listener that calls `stopImmediatePropagation` on itself is counted for too long.
 
 ## Running the spike
 
