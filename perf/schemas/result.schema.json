@@ -1,0 +1,113 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svg-dom-graph/perf/result/1",
+  "title": "One run of one workload in one mode",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "environment",
+    "manifest",
+    "mode",
+    "status",
+    "metrics"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "environment": {
+      "type": "object",
+      "required": [
+        "browser",
+        "browser_version",
+        "os",
+        "cpu",
+        "timer_resolution_us",
+        "protocol_version",
+        "git_sha",
+        "git_dirty"
+      ],
+      "properties": {
+        "browser": { "type": "string" },
+        "browser_version": {
+          "type": "string",
+          "description": "The full version, not the major number."
+        },
+        "os": { "type": "string" },
+        "cpu": { "type": "string" },
+        "memory_bytes": { "type": "integer" },
+        "runner_class": { "type": "string" },
+        "timer_resolution_us": { "type": "number" },
+        "cross_origin_isolated": { "type": "boolean" },
+        "protocol_version": {
+          "type": "string",
+          "description": "The version of this harness's measurement protocol. Part of the comparison key."
+        },
+        "rustc": { "type": "string" },
+        "wasm_pack": { "type": "string" },
+        "crate_version": { "type": "string" },
+        "git_sha": { "type": "string" },
+        "git_dirty": { "type": "boolean" }
+      }
+    },
+    "manifest": {
+      "type": "object",
+      "required": ["id", "sha256", "operation_stream_sha256"],
+      "properties": {
+        "id": { "type": "string" },
+        "sha256": { "type": "string" },
+        "operation_stream_sha256": {
+          "type": "string",
+          "description": "Of the stream that was executed. It must equal the generated stream's hash."
+        }
+      }
+    },
+    "mode": { "enum": ["correctness", "performance", "recovery", "endurance"] },
+    "repetition": { "type": "integer", "minimum": 0 },
+    "status": {
+      "enum": ["ok", "invalid_incorrect", "refused", "timed_out", "error"],
+      "description": "The workload's own outcome. A metric that could not be collected does not change it; see each metric's status."
+    },
+    "error": { "type": "string" },
+    "metrics": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["name", "layer", "status"],
+        "properties": {
+          "name": { "type": "string" },
+          "layer": { "enum": ["A", "B", "C"] },
+          "status": {
+            "enum": ["measured", "unavailable", "measurement_error"],
+            "description": "unavailable: the mechanism does not exist here. measurement_error: it exists and failed, for example a trace that did not correlate."
+          },
+          "unit": { "enum": ["ms", "us", "count", "bytes"] },
+          "kind": { "enum": ["latency", "batch_throughput", "count", "trend"] },
+          "batch_size": { "type": "integer", "minimum": 1 },
+          "samples": { "type": "integer", "minimum": 0 },
+          "dropped": { "type": "integer", "minimum": 0 },
+          "outliers_flagged": { "type": "integer", "minimum": 0 },
+          "summary": {
+            "type": "object",
+            "properties": {
+              "min": { "type": "number" },
+              "p50": { "type": "number" },
+              "p95": { "type": "number" },
+              "p99": { "type": "number" },
+              "max": { "type": "number" }
+            }
+          },
+          "mechanism": {
+            "type": "string",
+            "description": "How the value was obtained, for example cdp:Performance.getMetrics or tally."
+          },
+          "reason": { "type": "string" }
+        }
+      }
+    },
+    "checkpoints_passed": { "type": "integer" },
+    "checkpoints_failed": { "type": "array", "items": { "type": "object" } },
+    "raw_samples": {
+      "type": "string",
+      "description": "Path of the file holding every observation, outliers included."
+    }
+  }
+}

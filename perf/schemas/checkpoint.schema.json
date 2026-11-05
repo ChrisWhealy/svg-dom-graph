@@ -1,0 +1,101 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svg-dom-graph/perf/checkpoint/1",
+  "title": "A structured snapshot of one scene, compared section by section",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "topology",
+    "geometry",
+    "content",
+    "interaction",
+    "accessibility",
+    "paint_order"
+  ],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "topology": {
+      "description": "Compared exactly, by logical key. Never by DOM id, which is not stable across scenes.",
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "array", "items": { "type": "string" } },
+        "edges": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["from", "to"],
+            "properties": {
+              "from": { "type": "string" },
+              "to": { "type": "string" },
+              "label": { "type": "string" }
+            }
+          }
+        },
+        "dangling": { "type": "array" },
+        "duplicate_keys": { "type": "array" }
+      }
+    },
+    "dom_identity": {
+      "description": "Uniqueness of rendered ids is always checked. Equality across rebuilds is not, because ids come from a process-wide counter.",
+      "type": "object",
+      "properties": {
+        "ids": { "type": "array", "items": { "type": "string" } },
+        "duplicates": { "type": "array" }
+      }
+    },
+    "geometry": {
+      "description": "Full numeric values, compared directly within the tolerance. A hash of this section is never the test.",
+      "type": "object",
+      "required": ["tolerance", "elements"],
+      "properties": {
+        "tolerance": { "type": "number", "default": 0.01 },
+        "elements": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["key", "kind", "coordinates"],
+            "properties": {
+              "key": { "type": "string" },
+              "kind": { "enum": ["node_box", "connector_path", "label"] },
+              "coordinates": { "type": "array", "items": { "type": "number" } }
+            }
+          }
+        }
+      }
+    },
+    "content": {
+      "description": "Compared exactly.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    },
+    "interaction": {
+      "type": "object",
+      "properties": {
+        "selection": { "type": "array", "items": { "type": "string" } },
+        "focused": { "type": ["string", "null"] },
+        "view": {
+          "type": "object",
+          "properties": {
+            "x": { "type": "number" },
+            "y": { "type": "number" },
+            "scale": { "type": "number" }
+          }
+        }
+      }
+    },
+    "accessibility": {
+      "description": "Compared exactly, and reported separately.",
+      "type": "object"
+    },
+    "paint_order": {
+      "description": "Logical keys in paint order. Order is significant here and nowhere else.",
+      "type": "array",
+      "items": { "type": "string" }
+    },
+    "section_hashes": {
+      "description": "SHA-256 of each exact section, for diagnosis. Geometry has none.",
+      "type": "object",
+      "additionalProperties": { "type": "string" }
+    }
+  }
+}

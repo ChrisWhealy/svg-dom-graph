@@ -29,6 +29,7 @@ exclude = [
     "docs/",
     "img/",
     "design-specs/",
+    "perf/",
     "rustfmt.toml",
     "webdriver.json",
     "refresh-cdp-timings.sh",

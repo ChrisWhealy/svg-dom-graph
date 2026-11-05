@@ -1,6 +1,7 @@
 # Demo changelog
 
-Changes to the demo gallery (`demo-app`, `demo-common`, `demo/`), the demo server, the CDP tests and the docs.
+Changes to the demo gallery (`demo-app`, `demo-common`, `demo/`), the demo server, the CDP tests, the docs and the performance harness.
+
 These have no version of their own, and do not change the version of the library. Changes to the library itself are in [`changelog.md`](../changelog.md).
 Entries before the library's 0.2.47 are in that file, mixed with the library's own.
 
@@ -23,6 +24,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
 - Add a Petri Net demo (`eb06cfa`)
 - Add a Tarjan's Strongly Connected Components demo (`78e3e2c`)
+- Performance harness design spec and Phase 0 spike, schemas and findings, in `perf/` (``)
 
 ### Changed
 
