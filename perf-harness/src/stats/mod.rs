@@ -98,6 +98,28 @@ pub fn describe(samples: &[f64]) -> Option<Description> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The slope of the least-squares line through `points`, each an `(x, y)` pair.
+///
+/// It uses the real `x` of every point, so points that are not evenly spaced, such as cycles with gaps where some were left
+/// out, are weighted by where they are and not by how many come before them. It is `None` for fewer than two points, when
+/// every `x` is the same, or when a value is not a number.
+pub fn slope(points: &[(f64, f64)]) -> Option<f64> {
+    if points.len() < 2 || points.iter().any(|(x, y)| x.is_nan() || y.is_nan()) {
+        return None;
+    }
+    let n = points.len() as f64;
+    let (mean_x, mean_y) = (
+        points.iter().map(|p| p.0).sum::<f64>() / n,
+        points.iter().map(|p| p.1).sum::<f64>() / n,
+    );
+    let spread: f64 = points.iter().map(|p| (p.0 - mean_x).powi(2)).sum();
+    if spread == 0.0 {
+        return None;
+    }
+    Some(points.iter().map(|p| (p.0 - mean_x) * (p.1 - mean_y)).sum::<f64>() / spread)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How many operations to time together so that one observation spans enough timer steps.
 ///
 /// An operation that is already long enough is timed alone, which is a batch of one. `single_us` is a typical time for one

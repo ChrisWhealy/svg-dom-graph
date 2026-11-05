@@ -71,4 +71,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Petri Net: Quick-fire can proceed after its selection draw fails (`71b617b`)
 - Petri Net: Teardown does not fully release listeners (`413be15`)
 - Perf Harness: Result schema fully represents statistical contract (`1d6a367`)
-- Perf Harness: Wait for timing segment to close before `step()` updates reference model (``)
+- Perf Harness: Wait for timing segment to close before `step()` updates reference model (`56c2522`)
+- Perf Harness: Include cycles that run a checkpoint in the endurance series (``)

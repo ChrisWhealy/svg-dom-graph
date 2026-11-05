@@ -1,4 +1,4 @@
-running 67 tests
+running 76 tests
 test compare::unit_tests::a_coordinate_that_is_not_a_number_is_always_a_difference ... ok
 test compare::unit_tests::a_difference_is_modelled_and_an_unconfirmed_rule_would_say_so ... ok
 test compare::unit_tests::a_geometry_difference_names_the_element_the_coordinate_both_values_and_the_distance ... ok
@@ -11,6 +11,13 @@ test compare::unit_tests::the_accessibility_tree_and_the_ids_themselves_are_not_
 test encode::unit_tests::a_float_is_its_bit_pattern_and_negative_zero_is_positive_zero ... ok
 test encode::unit_tests::a_float_that_is_not_finite_is_refused ... ok
 test encode::unit_tests::each_type_has_its_tag_and_fixed_layout ... ok
+test endurance::unit_tests::a_series_that_does_not_move_has_no_net_change_no_slope_and_no_growth ... ok
+test endurance::unit_tests::capacity_growth_counts_after_the_warm_up_and_not_during_it ... ok
+test endurance::unit_tests::one_stray_reading_moves_the_net_change_and_barely_moves_the_slope ... ok
+test endurance::unit_tests::the_measured_interval_begins_at_the_first_measured_cycle_whatever_was_left_out ... ok
+test endurance::unit_tests::the_slope_and_the_net_change_are_two_different_figures_and_both_use_the_real_cycles ... ok
+test endurance::unit_tests::too_little_data_gives_no_figure_and_never_a_made_up_one ... ok
+test endurance::unit_tests::with_no_warm_up_the_first_measured_cycle_is_the_reference ... ok
 test manifest::unit_tests::a_manifest_that_breaks_the_rules_is_refused ... ok
 test manifest::unit_tests::changing_a_value_changes_the_hash ... ok
 test manifest::unit_tests::every_shared_rejected_manifest_is_refused ... ok
@@ -53,9 +60,11 @@ test report::unit_tests::the_seed_and_the_graph_size_change_the_stream ... ok
 test stats::unit_tests::a_batch_makes_an_observation_span_enough_timer_steps ... ok
 test stats::unit_tests::a_description_has_the_hand_worked_figures ... ok
 test stats::unit_tests::a_high_percentile_needs_enough_observations ... ok
+test stats::unit_tests::a_slope_is_the_least_squares_line_through_where_the_points_really_are ... ok
 test stats::unit_tests::one_observation_describes_itself_and_nothing_else_is_described ... ok
 test stats::unit_tests::outliers_are_flagged_and_never_removed ... ok
 test stats::unit_tests::percentiles_are_nearest_rank ... ok
+test stats::unit_tests::there_is_no_slope_without_two_places_or_with_a_value_that_is_not_a_number ... ok
 test workload::unit_tests::a_graph_that_cannot_be_placed_is_an_error_and_not_a_hang ... ok
 test workload::unit_tests::a_visitor_that_refuses_stops_the_stream ... ok
 test workload::unit_tests::checkpoints_come_at_the_interval_and_at_the_end_without_a_repeat ... ok
@@ -67,7 +76,7 @@ test workload::unit_tests::the_busiest_node_is_moved_more_often_than_chance ... 
 test workload::unit_tests::the_same_manifest_gives_the_same_stream_and_another_seed_does_not ... ok
 test workload::unit_tests::the_warm_up_and_measured_markers_sit_at_the_right_places ... ok
 
-test result: ok. 67 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+test result: ok. 76 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
 
 running 0 tests
 

@@ -9,6 +9,7 @@
 
 pub mod compare;
 pub mod encode;
+pub mod endurance;
 pub mod manifest;
 pub mod metrics;
 pub mod model;

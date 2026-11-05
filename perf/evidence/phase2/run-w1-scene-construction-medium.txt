@@ -7,12 +7,12 @@ A performance #0: ok, 2 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (36139 operations)
 B performance #0: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 10.00 us
-    construction.nodes p50 3205.00 us
-    construction.edges p50 2275.00 us
-    construction.total p50 5530.00 us
+    construction.nodes p50 3190.00 us
+    construction.edges p50 2265.00 us
+    construction.total p50 5480.00 us
     teardown.drop_scene p50 20.00 us
-    teardown.remove_host p50 90.00 us
-    teardown.total p50 110.00 us
+    teardown.remove_host p50 85.00 us
+    teardown.total p50 105.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (36139 operations)
     ok   dom_elements after teardown equal those before the build (delta 0)
@@ -22,12 +22,12 @@ A performance #1: ok, 2 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (36139 operations)
 B performance #1: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 10.00 us
-    construction.nodes p50 3170.00 us
-    construction.edges p50 2295.00 us
-    construction.total p50 5540.00 us
+    construction.nodes p50 3215.00 us
+    construction.edges p50 2235.00 us
+    construction.total p50 5500.00 us
     teardown.drop_scene p50 20.00 us
     teardown.remove_host p50 85.00 us
-    teardown.total p50 110.00 us
+    teardown.total p50 105.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (36139 operations)
     ok   dom_elements after teardown equal those before the build (delta 0)
@@ -37,9 +37,9 @@ A performance #2: ok, 2 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (36139 operations)
 B performance #2: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 10.00 us
-    construction.nodes p50 3225.00 us
-    construction.edges p50 2325.00 us
-    construction.total p50 5570.00 us
+    construction.nodes p50 3215.00 us
+    construction.edges p50 2300.00 us
+    construction.total p50 5565.00 us
     teardown.drop_scene p50 25.00 us
     teardown.remove_host p50 90.00 us
     teardown.total p50 110.00 us
@@ -52,12 +52,12 @@ A performance #3: ok, 2 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (36139 operations)
 B performance #3: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 10.00 us
-    construction.nodes p50 3250.00 us
-    construction.edges p50 2305.00 us
-    construction.total p50 5575.00 us
+    construction.nodes p50 3175.00 us
+    construction.edges p50 2260.00 us
+    construction.total p50 5475.00 us
     teardown.drop_scene p50 20.00 us
-    teardown.remove_host p50 90.00 us
-    teardown.total p50 115.00 us
+    teardown.remove_host p50 80.00 us
+    teardown.total p50 100.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (36139 operations)
     ok   dom_elements after teardown equal those before the build (delta 0)
@@ -67,12 +67,12 @@ A performance #4: ok, 2 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (36139 operations)
 B performance #4: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 10.00 us
-    construction.nodes p50 3245.00 us
-    construction.edges p50 2270.00 us
-    construction.total p50 5575.00 us
-    teardown.drop_scene p50 25.00 us
-    teardown.remove_host p50 90.00 us
-    teardown.total p50 110.00 us
+    construction.nodes p50 3185.00 us
+    construction.edges p50 2265.00 us
+    construction.total p50 5435.00 us
+    teardown.drop_scene p50 20.00 us
+    teardown.remove_host p50 85.00 us
+    teardown.total p50 105.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (36139 operations)
     ok   dom_elements after teardown equal those before the build (delta 0)
@@ -80,11 +80,11 @@ B performance #4: ok, 2 checkpoints passed, 0 failed
 
 the median of each timing in every repetition (the spread is highest over lowest):
   B performance construction.create_scene: 10.0 to 10.0 us over 5 repetitions, 0% apart (under 50 timer steps, so coarse)
-  B performance construction.nodes: 3170 to 3250 us over 5 repetitions, 3% apart
-  B performance construction.edges: 2270 to 2325 us over 5 repetitions, 2% apart
-  B performance construction.total: 5530 to 5575 us over 5 repetitions, 1% apart
+  B performance construction.nodes: 3175 to 3215 us over 5 repetitions, 1% apart
+  B performance construction.edges: 2235 to 2300 us over 5 repetitions, 3% apart
+  B performance construction.total: 5435 to 5565 us over 5 repetitions, 2% apart
   B performance teardown.drop_scene: 20.0 to 25.0 us over 5 repetitions, 25% apart (under 50 timer steps, so coarse)
-  B performance teardown.remove_host: 85.0 to 90.0 us over 5 repetitions, 6% apart (under 50 timer steps, so coarse)
-  B performance teardown.total: 110 to 115 us over 5 repetitions, 5% apart (under 50 timer steps, so coarse)
+  B performance teardown.remove_host: 80.0 to 90.0 us over 5 repetitions, 13% apart (under 50 timer steps, so coarse)
+  B performance teardown.total: 100 to 110 us over 5 repetitions, 10% apart (under 50 timer steps, so coarse)
 
 every deterministic gate passed

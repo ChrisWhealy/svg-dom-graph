@@ -301,7 +301,10 @@ a gate.
 | `resource.dom_elements.*`, `resource.listeners.*` | B | Counts before the build, after it and after the teardown, and the difference after teardown |
 | `resource.live_bytes.*`, `resource.live_allocations.*` | B | The counting allocator's live bytes and blocks at the same three moments |
 | `wasm.linear_memory_high_water` | B | The capacity of the linear memory, which is never live usage |
-| `wasm.memory_grow_events_after_warmup`, `wasm.live_bytes_growth_after_warmup` | B | Endurance only: whether capacity is reused and whether live bytes keep growing |
+| `wasm.memory_grow_events_after_warmup` | B | Endurance only: how often capacity changed between sampled cycles from the end of the warm-up on |
+| `wasm.live_bytes_net_change_after_warmup` | B | Endurance only: live bytes at the last measured cycle less those at the end of the warm-up. How far live memory moved |
+| `wasm.live_bytes_slope_per_cycle` | B | Endurance only: the least-squares slope of live bytes against the cycle, through every measured point. How fast it moves |
+| `lifecycle.measured_cycles_sampled` | B | Endurance only: how many measured cycles are in the series, since cycles that ran a checkpoint are left out |
 
 A timed interval holds library calls and nothing else. Each operation is prepared first: its node ids are found, its strings
 are built, its host element is made, the reference model is updated and the stream is hashed. Prepared operations of one kind
@@ -354,6 +357,14 @@ with what exists and not with what it meant.
 - **The counting allocator is verified.** It adds exactly the size of each retained block, returns exactly to where it started on
   release, and counts closures leaked with `Closure::forget`, including the library's own `svg_buttons::watch`, which leaks bytes
   that removing the element does not give back. `run.mjs` withholds every allocator figure if that check does not pass.
+- **The endurance series knows its own cycles.** Each sample carries its cycle number and whether that cycle was measured, and
+  the end of the warm-up is drawn from those and never from a position in the list. A cycle that ran a checkpoint is left out of
+  the series, so counting entries would over-skip whenever one of them was in the warm-up. The net change and the slope are
+  reported apart, since a net change is one stray reading away from changing and a slope is not. The slope uses the real cycle
+  numbers, so gaps do not distort it, and needs three points to count as a trend. Each metric says which cycles it covers, and
+  the raw series is saved with its cycle numbers (`resource.after_teardown.cycle`). In the W3 endurance run that is cycles 21 to
+  219, which is 199 of the 200 measured cycles. The last cycle ran a checkpoint. The logic is in `perf-harness/src/endurance`
+  and is tested natively with gaps in the warm-up and in the measured part.
 - **Scenes do not leak across their lifecycle.** Over 219 cycles of building, dropping and removing a different graph, live bytes
   after teardown hold at one exact value, capacity grew only during the warm-up, and the DOM and the listeners were back at their
   baseline every time. The first scene costs about 4 KB that is never given back, once.

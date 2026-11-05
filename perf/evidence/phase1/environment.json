@@ -1,53 +1,19 @@
 {
-  "recorded_at": "2026-11-05T18:43:03.864Z",
-  "commit": "a2c35b30def2c988aef28d5a69b438fc3bbf8562",
+  "recorded_at": "2026-11-05T19:09:35.658Z",
+  "commit": "56c2522a2be55c0c4cb62365950ce477346366e4",
   "uncommitted_changes": [
-    " M .github/workflows/ci.yml",
-    " M Cargo.toml",
     " M demo/changelog.md",
     " M design-specs/performance_harness.pdf",
-    " M docs/testing/README.md",
-    " M perf-harness/Cargo.toml",
+    " M perf-harness-wasm/src/executor/mod.rs",
     " M perf-harness/src/lib.rs",
-    " M perf-harness/src/main.rs",
-    " M perf-harness/src/model/mod.rs",
-    " M perf-harness/src/model/unit_tests.rs",
-    " M perf-harness/src/report/mod.rs",
-    " M perf-harness/src/report/unit_tests.rs",
-    " M perf-harness/src/workload/mod.rs",
+    " M perf-harness/src/stats/mod.rs",
+    " M perf-harness/src/stats/unit_tests.rs",
     " M perf/README.md",
     " D perf/evidence/phase1/environment.json",
-    " M perf/evidence/phase1/reports/w1-scene-construction-small.json",
-    " M perf/evidence/phase1/reports/w2-connector-rerouting-small.json",
-    " M perf/evidence/phase1/reports/w3-scene-lifecycle-small.json",
     " M perf/evidence/phase1/rust-tests-native.txt",
     " M perf/evidence/phase1/rust-tests-wasm32-wasi.txt",
     " M perf/evidence/phase1/rust-tests-without-schema.txt",
-    " M perf/evidence/phase1/schema-checks.txt",
-    " M perf/lib/chrome-session.mjs",
-    " M perf/manifests/w1-scene-construction-small.toml",
-    " M perf/manifests/w2-connector-rerouting-small.toml",
-    " M perf/manifests/w3-scene-lifecycle-small.toml",
-    " M perf/schemas/check.mjs",
-    " M perf/schemas/checkpoint.schema.json",
-    " M perf/schemas/examples/result.json",
-    " M perf/schemas/examples/workload-report.json",
-    " M perf/schemas/result.schema.json",
-    "?? perf-harness-wasm/",
-    "?? perf-harness/src/compare/",
-    "?? perf-harness/src/layer_a/",
-    "?? perf-harness/src/metrics/",
-    "?? perf-harness/src/outcome/",
-    "?? perf-harness/src/stats/",
-    "?? perf/evidence/phase1/reports/w1-scene-construction-medium.json",
-    "?? perf/evidence/phase1/reports/w2-connector-rerouting-large.json",
-    "?? perf/evidence/phase1/reports/w3-scene-lifecycle-endurance.json",
-    "?? perf/evidence/phase2/",
-    "?? perf/manifests/w1-scene-construction-medium.toml",
-    "?? perf/manifests/w2-connector-rerouting-large.toml",
-    "?? perf/manifests/w3-scene-lifecycle-endurance.toml",
-    "?? perf/runner/",
-    "?? perf/schemas/examples/result-native.json"
+    "?? perf-harness/src/endurance/"
   ],
   "machine": {
     "os": "Darwin 27.2.0",
@@ -67,67 +33,67 @@
       "file": "rust-tests-native.txt",
       "command": "cargo test -p perf-harness",
       "exit_code": 0,
-      "seconds": 0.412
+      "seconds": 0.364
     },
     {
       "file": "rust-tests-without-schema.txt",
       "command": "cargo test -p perf-harness --no-default-features",
       "exit_code": 0,
-      "seconds": 1.466
+      "seconds": 0.099
     },
     {
       "file": "rust-tests-wasm32-wasi.txt",
       "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
       "exit_code": 0,
-      "seconds": 0.759
+      "seconds": 0.973
     },
     {
       "file": "crosscheck-rust-vs-javascript.txt",
       "command": "node perf/crosscheck/crosscheck.mjs",
       "exit_code": 0,
-      "seconds": 0.854
+      "seconds": 0.872
     },
     {
       "file": "schema-checks.txt",
       "command": "npm test",
       "exit_code": 0,
-      "seconds": 0.13
+      "seconds": 0.127
     },
     {
       "file": "reports/w1-scene-construction-medium.json",
       "command": "perf-harness generate perf/manifests/w1-scene-construction-medium.toml --id w1-scene-construction-medium",
       "exit_code": 0,
-      "seconds": 0.324
+      "seconds": 0.325
     },
     {
       "file": "reports/w1-scene-construction-small.json",
       "command": "perf-harness generate perf/manifests/w1-scene-construction-small.toml --id w1-scene-construction-small",
       "exit_code": 0,
-      "seconds": 0.234
+      "seconds": 0.217
     },
     {
       "file": "reports/w2-connector-rerouting-large.json",
       "command": "perf-harness generate perf/manifests/w2-connector-rerouting-large.toml --id w2-connector-rerouting-large",
       "exit_code": 0,
-      "seconds": 0.425
+      "seconds": 0.415
     },
     {
       "file": "reports/w2-connector-rerouting-small.json",
       "command": "perf-harness generate perf/manifests/w2-connector-rerouting-small.toml --id w2-connector-rerouting-small",
       "exit_code": 0,
-      "seconds": 0.252
+      "seconds": 0.249
     },
     {
       "file": "reports/w3-scene-lifecycle-endurance.json",
       "command": "perf-harness generate perf/manifests/w3-scene-lifecycle-endurance.toml --id w3-scene-lifecycle-endurance",
       "exit_code": 0,
-      "seconds": 0.274
+      "seconds": 0.275
     },
     {
       "file": "reports/w3-scene-lifecycle-small.json",
       "command": "perf-harness generate perf/manifests/w3-scene-lifecycle-small.toml --id w3-scene-lifecycle-small",
       "exit_code": 0,
-      "seconds": 0.218
+      "seconds": 0.221
     }
   ]
 }

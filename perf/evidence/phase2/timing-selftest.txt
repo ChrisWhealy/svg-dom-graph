@@ -1,5 +1,5 @@
-ok   w2-connector-rerouting-large mutation.move_node: 7.3 us, and 6.1 us with 200 us of delay in the harness (at most 12.3; a leak would add 200 us a move)
-ok   w1-scene-construction-medium construction.nodes: 3070.0 us, and 3080.0 us with 100 us of delay in the harness (at most 4605.0; a leak would add 100 us a node, 20 ms in all)
-ok   w1-scene-construction-medium construction.edges: 2180.0 us, and 2235.0 us with 100 us of delay in the harness (at most 3270.0; a leak would add 100 us an edge, 60 ms in all)
+ok   w2-connector-rerouting-large mutation.move_node: 7.4 us, and 6.7 us with 200 us of delay in the harness (at most 12.4; a leak would add 200 us a move)
+ok   w1-scene-construction-medium construction.nodes: 3120.0 us, and 3195.0 us with 100 us of delay in the harness (at most 4680.0; a leak would add 100 us a node, 20 ms in all)
+ok   w1-scene-construction-medium construction.edges: 2185.0 us, and 2235.0 us with 100 us of delay in the harness (at most 3277.5; a leak would add 100 us an edge, 60 ms in all)
 
 no timed figure moved: the harness's own work is outside every timed interval

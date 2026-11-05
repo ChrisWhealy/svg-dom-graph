@@ -13,6 +13,7 @@ use crate::alloc;
 use crate::memory::capacity_bytes;
 use crate::observe::observe;
 use perf_harness::compare::compare;
+use perf_harness::endurance::{SeriesPoint, summarize};
 use perf_harness::manifest::{Manifest, Mode, ViewPolicy, Workload};
 use perf_harness::metrics::{self, Layer};
 use perf_harness::model::{Checkpoint, Model};
@@ -175,6 +176,17 @@ enum Prepared {
 type Waiting = (Kind, bool, bool);
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What was counted after one teardown, and which cycle it was.
+///
+/// The cycle and the phase are kept with the figures, so that the endurance summary draws the end of the warm-up from them and
+/// not from the position of the sample in a list that has had cycles taken out of it.
+#[derive(Debug, Clone, Copy)]
+struct SeriesEntry {
+    cycle: u64,
+    measured: bool,
+    resources: Resources,
+}
+
 /// What can be counted at one moment.
 #[derive(Debug, Clone, Copy, Default)]
 struct Resources {
@@ -229,7 +241,7 @@ struct Run<'a> {
     baseline: Resources,
     after_build: Option<Resources>,
     after_teardown: Option<Resources>,
-    teardown_series: Vec<Resources>,
+    teardown_series: Vec<SeriesEntry>,
     /// Whether the cycle in progress ran a checkpoint, whose own memory use must not be read as the library's.
     checkpoint_this_cycle: bool,
     outcome: RunOutcome,
@@ -551,7 +563,7 @@ impl<'a> Run<'a> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-   /// Runs the queue.
+    /// Runs the queue.
     fn flush(&mut self) -> Result<(), String> {
         let Some((kind, recording, timed)) = self.pending_meta.take() else {
             return Ok(());
@@ -730,7 +742,11 @@ impl<'a> Run<'a> {
             self.after_teardown = Some(sampled);
             // A cycle that ran a checkpoint is left out of the series, since the checking itself uses memory.
             if self.mode == Mode::Endurance && !self.checkpoint_this_cycle {
-                self.teardown_series.push(sampled);
+                self.teardown_series.push(SeriesEntry {
+                    cycle: self.cycle,
+                    measured: self.measuring,
+                    resources: sampled,
+                });
             }
         }
     }
@@ -969,39 +985,95 @@ impl<'a> Run<'a> {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Whether capacity is reused, and whether live bytes keep growing, once the warm-up cycles are over.
     fn emit_endurance_metrics(&mut self) {
-        let series = &self.teardown_series;
-        let warmup = self.manifest.execution.warmup_iterations as usize;
-        if series.len() < 2 {
-            self.outcome.metrics.push(metrics::unavailable(
-                "wasm.memory_grow_events_after_warmup",
-                Layer::B,
-                "the endurance series has fewer than two cycles",
-            ));
-            return;
-        }
-        let start = warmup.max(1).min(series.len() - 1);
-        let capacity: Vec<f64> = series.iter().filter_map(|r| r.capacity).collect();
-        if capacity.len() == series.len() {
-            let events = (start..capacity.len()).filter(|i| capacity[*i] != capacity[*i - 1]).count();
-            self.outcome.metrics.push(metrics::count(
+        let points: Vec<SeriesPoint> = self
+            .teardown_series
+            .iter()
+            .map(|entry| SeriesPoint {
+                cycle: entry.cycle,
+                measured: entry.measured,
+                live_bytes: entry.resources.live_bytes,
+                capacity: entry.resources.capacity,
+            })
+            .collect();
+        let summary = summarize(&points);
+        let measured_cycles = u64::from(self.manifest.execution.measurement_iterations);
+        // Cycles that ran a checkpoint are not in the series, and what is in it is said, so that a figure is never read as
+        // covering more than it does.
+        let coverage = match (summary.first_measured_cycle, summary.last_measured_cycle) {
+            (Some(first), Some(last)) => format!(
+                "cycles {first} to {last}, {} of the {measured_cycles} measured cycles, the rest having run a checkpoint",
+                summary.measured_points
+            ),
+            _ => "no measured cycle was sampled".to_string(),
+        };
+        let reference = summary
+            .reference_cycle
+            .map_or("none".to_string(), |cycle| format!("cycle {cycle}"));
+
+        self.outcome.metrics.push(metrics::count(
+            "lifecycle.measured_cycles_sampled",
+            Layer::B,
+            "count",
+            summary.measured_points as f64,
+            &format!("the endurance series, {coverage}"),
+        ));
+        match summary.grow_events {
+            Some(events) => self.outcome.metrics.push(metrics::count(
                 "wasm.memory_grow_events_after_warmup",
                 Layer::B,
                 "count",
                 events as f64,
-                "WebAssembly.Memory.buffer.byteLength sampled after each teardown",
-            ));
+                &format!("WebAssembly.Memory.buffer.byteLength after each teardown, from {reference} on, {coverage}"),
+            )),
+            None => self.outcome.metrics.push(metrics::unavailable(
+                "wasm.memory_grow_events_after_warmup",
+                Layer::B,
+                "fewer than two cycles were sampled, or a capacity reading was missing",
+            )),
         }
-        let live: Vec<f64> = series.iter().filter_map(|r| r.live_bytes).collect();
-        if live.len() == series.len() {
-            let growth = live[live.len() - 1] - live[start - 1];
-            self.outcome.metrics.push(metrics::trend(
-                "wasm.live_bytes_growth_after_warmup",
+        // The net change and the slope are different figures. The first is how far live memory moved, and one stray reading
+        // can move it. The second is how fast it moves each cycle, through every measured point.
+        match summary.net_live_change {
+            Some(change) => self.outcome.metrics.push(metrics::trend(
+                "wasm.live_bytes_net_change_after_warmup",
                 Layer::B,
                 "bytes",
-                growth,
-                "the counting allocator, after each teardown",
-            ));
+                change,
+                &format!("the counting allocator, the last measured cycle less {reference}, {coverage}"),
+            )),
+            None => self.outcome.metrics.push(metrics::unavailable(
+                "wasm.live_bytes_net_change_after_warmup",
+                Layer::B,
+                "no measured cycle differs from the reference, or a live-bytes reading was missing",
+            )),
         }
+        match summary.live_slope_per_cycle {
+            Some(slope) => self.outcome.metrics.push(metrics::trend(
+                "wasm.live_bytes_slope_per_cycle",
+                Layer::B,
+                "bytes",
+                slope,
+                &format!(
+                    "the least-squares slope of the counting allocator's live bytes against the cycle, {coverage}"
+                ),
+            )),
+            None => self.outcome.metrics.push(metrics::unavailable(
+                "wasm.live_bytes_slope_per_cycle",
+                Layer::B,
+                "fewer than 3 measured cycles were sampled, which is not a trend, or a live-bytes reading was missing",
+            )),
+        }
+
+        // The raw series, with the cycle of every point beside it, so that nobody has to guess which cycles are in it.
+        let series = &self.teardown_series;
+        self.outcome.samples.insert(
+            "resource.after_teardown.cycle".to_string(),
+            series.iter().map(|entry| entry.cycle as f64).collect(),
+        );
+        self.outcome.samples.insert(
+            "resource.after_teardown.measured".to_string(),
+            series.iter().map(|entry| f64::from(u8::from(entry.measured))).collect(),
+        );
         for (name, pick) in [
             (
                 "resource.listeners.after_teardown.per_cycle",
@@ -1011,8 +1083,9 @@ impl<'a> Run<'a> {
             ("resource.capacity.after_teardown.per_cycle", |r| r.capacity),
             ("resource.dom_elements.after_teardown.per_cycle", |r| r.dom_elements),
         ] {
-            let values: Vec<f64> = series.iter().filter_map(pick).collect();
-            if !values.is_empty() {
+            // Kept only if every point has a value, so that it lines up with the cycles.
+            let values: Vec<f64> = series.iter().filter_map(|entry| pick(&entry.resources)).collect();
+            if values.len() == series.len() && !values.is_empty() {
                 self.outcome.samples.insert(name.to_string(), values);
             }
         }

@@ -103,3 +103,46 @@ fn a_batch_makes_an_observation_span_enough_timer_steps() -> Result<(), String> 
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_slope_is_the_least_squares_line_through_where_the_points_really_are() -> Result<(), String> {
+    // y = 3x + 100 exactly, with x unevenly spaced, as it is when cycles that ran a checkpoint are left out.
+    let exact: Vec<(f64, f64)> = [21.0, 22.0, 23.0, 40.0, 41.0, 95.0, 200.0]
+        .iter()
+        .map(|x| (*x, 3.0 * x + 100.0))
+        .collect();
+    // The same y values taken as 0, 1, 2 ... would give a different slope, which is the mistake this avoids.
+    let by_position: Vec<(f64, f64)> = exact.iter().enumerate().map(|(i, p)| (i as f64, p.1)).collect();
+    let (real, positional) = (slope(&exact).ok_or("no slope")?, slope(&by_position).ok_or("no slope")?);
+    if !close(real, 3.0) || close(positional, 3.0) {
+        return Err(format!("by x {real}, by position {positional}"));
+    }
+    // A noisy line: 0 -> 1, 1 -> 3, 2 -> 2, 3 -> 5. The means are 1.5 and 2.75, the cross-products add to 5.5 and the squared
+    // deviations of x to 5, so the slope is 1.1.
+    if !close(slope(&[(0.0, 1.0), (1.0, 3.0), (2.0, 2.0), (3.0, 5.0)]).ok_or("no slope")?, 1.1) {
+        return Err("the noisy line was not 1.1".to_string());
+    }
+    // A flat series has a slope of zero, and one that falls has a negative one.
+    if slope(&[(1.0, 5.0), (2.0, 5.0), (3.0, 5.0)]) != Some(0.0) || slope(&[(1.0, 9.0), (2.0, 7.0)]) != Some(-2.0) {
+        return Err("a flat or falling series was not read".to_string());
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn there_is_no_slope_without_two_places_or_with_a_value_that_is_not_a_number() -> Result<(), String> {
+    for (label, points) in [
+        ("none", vec![]),
+        ("one", vec![(1.0, 1.0)]),
+        ("one place", vec![(2.0, 1.0), (2.0, 9.0)]),
+        ("a NaN y", vec![(1.0, f64::NAN), (2.0, 1.0)]),
+        ("a NaN x", vec![(f64::NAN, 1.0), (2.0, 1.0)]),
+    ] {
+        if slope(&points).is_some() {
+            return Err(format!("{label} gave a slope"));
+        }
+    }
+    Ok(())
+}
