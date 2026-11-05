@@ -1,0 +1,68 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svg-dom-graph/perf/manifest/1",
+  "title": "A workload manifest, as TOML converts to JSON",
+  "description": "manifest.example.toml is an annotated instance. A result carries a complete copy of the manifest it ran.",
+  "type": "object",
+  "required": ["schema_version", "workload", "seed", "prng", "execution"],
+  "properties": {
+    "schema_version": { "const": 1 },
+    "workload": {
+      "enum": ["scene_construction", "connector_rerouting", "scene_lifecycle"]
+    },
+    "seed": { "type": "integer", "minimum": 0 },
+    "prng": { "const": "splitmix64" },
+    "graph": {
+      "type": "object",
+      "properties": {
+        "nodes": { "type": "integer", "minimum": 0 },
+        "edges": { "type": "integer", "minimum": 0 },
+        "maximum_degree": { "type": "integer", "minimum": 0 }
+      }
+    },
+    "execution": {
+      "type": "object",
+      "required": [
+        "modes",
+        "warmup_iterations",
+        "measurement_iterations",
+        "repetitions"
+      ],
+      "properties": {
+        "modes": {
+          "type": "array",
+          "items": {
+            "enum": ["correctness", "performance", "recovery", "endurance"]
+          },
+          "minItems": 1
+        },
+        "warmup_iterations": { "type": "integer", "minimum": 0 },
+        "measurement_iterations": { "type": "integer", "minimum": 1 },
+        "repetitions": { "type": "integer", "minimum": 1 },
+        "order": { "enum": ["sequential", "interleaved"] }
+      }
+    },
+    "measurement": {
+      "type": "object",
+      "properties": {
+        "capture_dom_counts": { "type": "boolean" },
+        "capture_listener_tally": { "type": "boolean" },
+        "capture_heap": { "type": "boolean" },
+        "capture_wasm_memory": { "type": "boolean" },
+        "capture_frame_timing": { "type": "boolean" },
+        "checkpoint_every": { "type": "integer", "minimum": 1 }
+      }
+    },
+    "checkpoint": {
+      "type": "object",
+      "properties": { "view": { "enum": ["unchanged", "expected", "ignored"] } }
+    },
+    "limits": {
+      "type": "object",
+      "properties": {
+        "dom_nodes": { "type": "integer", "minimum": 1 },
+        "wall_ms": { "type": "integer", "minimum": 1 }
+      }
+    }
+  }
+}

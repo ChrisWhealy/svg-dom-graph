@@ -6,7 +6,9 @@ This directory holds what Phase 0 produced. No runner exists yet.
 | Path                             | Holds                                                              |
 | -------------------------------- | ------------------------------------------------------------------ |
 | `schemas/manifest.example.toml`  | An annotated workload manifest, schema version 1                   |
-| `schemas/result.schema.json`     | The result of one run                                              |
+| `schemas/manifest.schema.json`   | A workload manifest, which each result copies in full              |
+| `schemas/result.schema.json`     | One repetition of one workload, with no between-run statistic      |
+| `schemas/comparison.schema.json` | A baseline and a candidate collection of runs, with intervals and verdicts |
 | `schemas/checkpoint.schema.json` | A structured checkpoint, compared section by section               |
 | `spike/phase0-spike.mjs`         | The Phase 0 spike, which needs Node 22 or later and a local Chrome |
 | `manifests/`                     | Workload manifests, empty until Phase 1                            |

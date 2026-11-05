@@ -1,0 +1,270 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "svg-dom-graph/perf/comparison/1",
+  "title": "A comparison of a candidate collection of runs with a baseline collection",
+  "description": "A separate artifact from a run result. The statistical unit is the repetition (one run), and the only inputs are result.schema.json documents.",
+  "type": "object",
+  "required": [
+    "schema_version",
+    "generated_at",
+    "baseline",
+    "candidate",
+    "compatibility",
+    "method",
+    "comparisons"
+  ],
+  "$defs": {
+    "collection": {
+      "type": "object",
+      "required": ["git_sha", "manifest_sha256", "run_ids"],
+      "properties": {
+        "git_sha": {
+          "type": "string"
+        },
+        "manifest_sha256": {
+          "type": "string",
+          "description": "Every run in a collection must share it."
+        },
+        "operation_stream_sha256": {
+          "type": "string"
+        },
+        "run_ids": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          },
+          "minItems": 1
+        },
+        "promotion": {
+          "type": "object",
+          "description": "Baseline only: the record the promotion command wrote.",
+          "properties": {
+            "promoted_at": {
+              "type": "string",
+              "format": "date-time"
+            },
+            "commit": {
+              "type": "string"
+            },
+            "workload_hash": {
+              "type": "string"
+            },
+            "environment_key": {
+              "type": "string"
+            },
+            "method_version": {
+              "type": "string"
+            }
+          }
+        }
+      }
+    },
+    "interval": {
+      "type": "object",
+      "required": ["low", "high", "confidence"],
+      "properties": {
+        "low": {
+          "type": "number"
+        },
+        "high": {
+          "type": "number"
+        },
+        "confidence": {
+          "type": "number"
+        }
+      }
+    },
+    "side": {
+      "type": "object",
+      "required": ["repetitions", "median", "between_run", "within_run"],
+      "properties": {
+        "repetitions": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "samples_per_repetition": {
+          "type": "array",
+          "items": {
+            "type": "integer"
+          }
+        },
+        "median": {
+          "type": "number",
+          "description": "Median of the repetition statistics."
+        },
+        "statistic_interval": {
+          "$ref": "#/$defs/interval"
+        },
+        "between_run": {
+          "type": "object",
+          "description": "Spread of the statistic across repetitions.",
+          "properties": {
+            "stddev": {
+              "type": "number"
+            },
+            "range": {
+              "type": "array",
+              "items": {
+                "type": "number"
+              },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          }
+        },
+        "within_run": {
+          "type": "object",
+          "description": "Typical spread inside one repetition, so the two sources of variation can be told apart.",
+          "properties": {
+            "median_stddev": {
+              "type": "number"
+            },
+            "median_iqr": {
+              "type": "number"
+            }
+          }
+        },
+        "outliers_flagged": {
+          "type": "integer",
+          "minimum": 0
+        }
+      }
+    }
+  },
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "generated_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "baseline": {
+      "$ref": "#/$defs/collection"
+    },
+    "candidate": {
+      "$ref": "#/$defs/collection"
+    },
+    "compatibility": {
+      "type": "object",
+      "required": ["comparable", "key"],
+      "properties": {
+        "comparable": {
+          "type": "boolean"
+        },
+        "key": {
+          "type": "object",
+          "description": "Must be equal on both sides for the comparison to be made.",
+          "properties": {
+            "os": {
+              "type": "string"
+            },
+            "cpu": {
+              "type": "string"
+            },
+            "runner_class": {
+              "type": "string"
+            },
+            "browser_version": {
+              "type": "string",
+              "description": "The full version."
+            },
+            "protocol_version": {
+              "type": "string"
+            }
+          }
+        },
+        "reason": {
+          "type": "string",
+          "description": "Why not, when comparable is false. No verdict is issued."
+        }
+      }
+    },
+    "method": {
+      "type": "object",
+      "required": [
+        "statistic",
+        "bootstrap_resamples",
+        "bootstrap_seed",
+        "ratio_tolerance",
+        "confidence"
+      ],
+      "properties": {
+        "statistic": {
+          "const": "ratio of repetition medians"
+        },
+        "bootstrap": {
+          "const": "hierarchical: repetitions, then observations within each"
+        },
+        "bootstrap_resamples": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "bootstrap_seed": {
+          "type": "integer"
+        },
+        "ratio_tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "description": "delta. The bounds are 1 + delta and 1 / (1 + delta)."
+        },
+        "confidence": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        },
+        "minimum_repetitions_for_verdict": {
+          "type": "integer",
+          "minimum": 2
+        },
+        "protocol_version": {
+          "type": "string"
+        }
+      }
+    },
+    "comparisons": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "required": ["metric", "layer", "verdict"],
+        "properties": {
+          "metric": {
+            "type": "string"
+          },
+          "layer": {
+            "enum": ["A", "B", "C"]
+          },
+          "statistic": {
+            "enum": ["p50", "p95", "p99"]
+          },
+          "baseline": {
+            "$ref": "#/$defs/side"
+          },
+          "candidate": {
+            "$ref": "#/$defs/side"
+          },
+          "ratio": {
+            "type": "number"
+          },
+          "ratio_interval": {
+            "$ref": "#/$defs/interval"
+          },
+          "verdict": {
+            "enum": [
+              "regression",
+              "improvement",
+              "no_material_change",
+              "inconclusive",
+              "diagnostic",
+              "not_comparable"
+            ],
+            "description": "diagnostic: too few repetitions for a verdict. inconclusive is never a pass."
+          },
+          "reason": {
+            "type": "string"
+          }
+        }
+      }
+    }
+  }
+}

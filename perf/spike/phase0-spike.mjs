@@ -11,30 +11,30 @@
 //   node perf/spike/phase0-spike.mjs cdp-test-fixture [isolated]
 //
 // Set CHROME to the path of a Chrome binary if it is not the default macOS install. It needs Node 22 or later.
-import http from "node:http";
-import fs from "node:fs";
-import os from "node:os";
-import path from "node:path";
-import { spawn } from "node:child_process";
+import http from "node:http"
+import fs from "node:fs"
+import os from "node:os"
+import path from "node:path"
+import { spawn } from "node:child_process"
 
-const dir = process.argv[2];
-const isolated = process.argv[3] === "isolated";
+const dir = process.argv[2]
+const isolated = process.argv[3] === "isolated"
 const chromePath =
   process.env.CHROME ??
-  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome";
+  "/Applications/Google Chrome.app/Contents/MacOS/Google Chrome"
 
 if (!dir) {
   console.error(
     "usage: node phase0-spike.mjs <directory with index.html> [isolated]",
-  );
-  process.exit(2);
+  )
+  process.exit(2)
 }
 
 const types = {
   ".html": "text/html",
   ".js": "text/javascript",
   ".wasm": "application/wasm",
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Serves the directory. COOP and COEP headers are added only when asked, so both timer resolutions can be compared.
@@ -43,25 +43,25 @@ const server = http
     const file = path.join(
       dir,
       req.url === "/" ? "index.html" : req.url.split("?")[0],
-    );
+    )
 
-    if (!fs.existsSync(file)) return res.writeHead(404).end();
+    if (!fs.existsSync(file)) return res.writeHead(404).end()
 
     const headers = {
       "content-type": types[path.extname(file)] ?? "application/octet-stream",
-    };
-
-    if (isolated) {
-      headers["cross-origin-opener-policy"] = "same-origin";
-      headers["cross-origin-embedder-policy"] = "require-corp";
     }
 
-    res.writeHead(200, headers).end(fs.readFileSync(file));
-  })
-  .listen(0);
+    if (isolated) {
+      headers["cross-origin-opener-policy"] = "same-origin"
+      headers["cross-origin-embedder-policy"] = "require-corp"
+    }
 
-const port = server.address().port;
-const profile = fs.mkdtempSync(path.join(os.tmpdir(), "perf-spike-"));
+    res.writeHead(200, headers).end(fs.readFileSync(file))
+  })
+  .listen(0)
+
+const port = server.address().port
+const profile = fs.mkdtempSync(path.join(os.tmpdir(), "perf-spike-"))
 const chrome = spawn(
   chromePath,
   [
@@ -72,72 +72,72 @@ const chrome = spawn(
     "about:blank",
   ],
   { stdio: ["ignore", "ignore", "pipe"] },
-);
+)
 
-const wsUrl = await new Promise((resolve) => {
-  let log = "";
+const wsUrl = await new Promise(resolve => {
+  let log = ""
 
-  chrome.stderr.on("data", (chunk) => {
-    log += chunk;
-    const found = log.match(/ws:\/\/\S+/);
-    if (found) resolve(found[0]);
-  });
-});
+  chrome.stderr.on("data", chunk => {
+    log += chunk
+    const found = log.match(/ws:\/\/\S+/)
+    if (found) resolve(found[0])
+  })
+})
 
-const host = wsUrl.match(/ws:\/\/([^/]+)/)[1];
-const tabs = await (await fetch(`http://${host}/json`)).json();
+const host = wsUrl.match(/ws:\/\/([^/]+)/)[1]
+const tabs = await (await fetch(`http://${host}/json`)).json()
 const socket = new WebSocket(
-  tabs.find((tab) => tab.type === "page").webSocketDebuggerUrl,
-);
+  tabs.find(tab => tab.type === "page").webSocketDebuggerUrl,
+)
 
-await new Promise((resolve) => (socket.onopen = resolve));
+await new Promise(resolve => (socket.onopen = resolve))
 
-let nextId = 0;
-const pending = new Map();
+let nextId = 0
+const pending = new Map()
 
-socket.onmessage = (event) => {
-  const message = JSON.parse(event.data);
+socket.onmessage = event => {
+  const message = JSON.parse(event.data)
 
   if (message.id && pending.has(message.id)) {
-    pending.get(message.id)(message);
-    pending.delete(message.id);
+    pending.get(message.id)(message)
+    pending.delete(message.id)
   }
-};
+}
 
 const send = (method, params = {}) =>
-  new Promise((resolve) => {
-    const id = ++nextId;
-    pending.set(id, resolve);
-    socket.send(JSON.stringify({ id, method, params }));
-  });
+  new Promise(resolve => {
+    const id = ++nextId
+    pending.set(id, resolve)
+    socket.send(JSON.stringify({ id, method, params }))
+  })
 
-const evaluate = async (expression) => {
+const evaluate = async expression => {
   const reply = await send("Runtime.evaluate", {
     expression,
     awaitPromise: true,
     returnByValue: true,
-  });
+  })
 
-  return reply.result.result?.value;
-};
+  return reply.result.result?.value
+}
 
 const metrics = async () => {
-  const reply = await send("Performance.getMetrics");
+  const reply = await send("Performance.getMetrics")
 
   return Object.fromEntries(
-    reply.result.metrics.map((metric) => [metric.name, metric.value]),
-  );
-};
+    reply.result.metrics.map(metric => [metric.name, metric.value]),
+  )
+}
 
-const pick = (m) => ({
+const pick = m => ({
   Nodes: m.Nodes,
   JSEventListeners: m.JSEventListeners,
   JSHeapUsedSize: m.JSHeapUsedSize,
-});
+})
 
-await send("Performance.enable");
-await send("Page.enable");
-await send("HeapProfiler.enable");
+await send("Performance.enable")
+await send("Page.enable")
+await send("HeapProfiler.enable")
 
 // A naive tally, installed before any page script runs. It counts calls, not effective registrations, which is the
 // weakness question 3 is checking.
@@ -154,14 +154,14 @@ await send("Page.addScriptToEvaluateOnNewDocument", {
       __tally.remove++
       return remove.call(this, type, listener, options)
     }`,
-});
-await send("Page.navigate", { url: `http://127.0.0.1:${port}/` });
-await new Promise((resolve) => setTimeout(resolve, 2500));
+})
+await send("Page.navigate", { url: `http://127.0.0.1:${port}/` })
+await new Promise(resolve => setTimeout(resolve, 2500))
 
 const out = {
   isolated,
   crossOriginIsolated: await evaluate("crossOriginIsolated"),
-};
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Question 1: the smallest non-zero step of performance.now() over a tight loop.
@@ -175,14 +175,14 @@ out.timer_resolution_us = await evaluate(`(() => {
     last = now
   }
   return smallest * 1000
-})()`);
-out.user_agent = await evaluate("navigator.userAgent");
+})()`)
+out.user_agent = await evaluate("navigator.userAgent")
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // Question 2: which counters exist.
-const first = await metrics();
+const first = await metrics()
 
-out.metric_names = Object.keys(first).filter((name) =>
+out.metric_names = Object.keys(first).filter(name =>
   /Nodes|Listeners|JSHeap|LayoutCount|RecalcStyleCount|ScriptDuration/.test(
     name,
   ),

@@ -1,10 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "svg-dom-graph/perf/result/1",
-  "title": "One run of one workload in one mode",
+  "title": "One repetition of one workload in one mode",
   "type": "object",
   "required": [
     "schema_version",
+    "run_id",
+    "started_at",
+    "repetition",
     "environment",
     "manifest",
     "mode",
@@ -12,7 +15,26 @@
     "metrics"
   ],
   "properties": {
-    "schema_version": { "const": 1 },
+    "schema_version": {
+      "const": 1
+    },
+    "run_id": {
+      "type": "string",
+      "description": "Unique to this run. Comparison reports name runs by it."
+    },
+    "started_at": {
+      "type": "string",
+      "format": "date-time"
+    },
+    "repetition": {
+      "type": "integer",
+      "minimum": 0
+    },
+    "sequence_position": {
+      "type": "integer",
+      "minimum": 0,
+      "description": "Where this run fell in the interleaved order of a comparison, so drift can be examined."
+    },
     "environment": {
       "type": "object",
       "required": [
@@ -26,88 +48,186 @@
         "git_dirty"
       ],
       "properties": {
-        "browser": { "type": "string" },
+        "browser": {
+          "type": "string"
+        },
         "browser_version": {
           "type": "string",
           "description": "The full version, not the major number."
         },
-        "os": { "type": "string" },
-        "cpu": { "type": "string" },
-        "memory_bytes": { "type": "integer" },
-        "runner_class": { "type": "string" },
-        "timer_resolution_us": { "type": "number" },
-        "cross_origin_isolated": { "type": "boolean" },
+        "os": {
+          "type": "string"
+        },
+        "cpu": {
+          "type": "string"
+        },
+        "memory_bytes": {
+          "type": "integer"
+        },
+        "runner_class": {
+          "type": "string"
+        },
+        "timer_resolution_us": {
+          "type": "number"
+        },
+        "cross_origin_isolated": {
+          "type": "boolean"
+        },
         "protocol_version": {
           "type": "string",
           "description": "The version of this harness's measurement protocol. Part of the comparison key."
         },
-        "rustc": { "type": "string" },
-        "wasm_pack": { "type": "string" },
-        "crate_version": { "type": "string" },
-        "git_sha": { "type": "string" },
-        "git_dirty": { "type": "boolean" }
+        "rustc": {
+          "type": "string"
+        },
+        "wasm_pack": {
+          "type": "string"
+        },
+        "crate_version": {
+          "type": "string"
+        },
+        "git_sha": {
+          "type": "string"
+        },
+        "git_dirty": {
+          "type": "boolean"
+        }
       }
     },
     "manifest": {
       "type": "object",
-      "required": ["id", "sha256", "operation_stream_sha256"],
+      "required": ["id", "sha256", "operation_stream_sha256", "canonical"],
       "properties": {
-        "id": { "type": "string" },
-        "sha256": { "type": "string" },
+        "id": {
+          "type": "string"
+        },
+        "sha256": {
+          "type": "string",
+          "description": "Of the canonical form below."
+        },
         "operation_stream_sha256": {
           "type": "string",
           "description": "Of the stream that was executed. It must equal the generated stream's hash."
+        },
+        "canonical": {
+          "$ref": "manifest.schema.json",
+          "description": "The complete manifest this run executed, so the result stands alone."
         }
       }
     },
-    "mode": { "enum": ["correctness", "performance", "recovery", "endurance"] },
-    "repetition": { "type": "integer", "minimum": 0 },
+    "mode": {
+      "enum": ["correctness", "performance", "recovery", "endurance"]
+    },
     "status": {
       "enum": ["ok", "invalid_incorrect", "refused", "timed_out", "error"],
       "description": "The workload's own outcome. A metric that could not be collected does not change it; see each metric's status."
     },
-    "error": { "type": "string" },
+    "error": {
+      "type": "string"
+    },
     "metrics": {
       "type": "array",
       "items": {
         "type": "object",
         "required": ["name", "layer", "status"],
         "properties": {
-          "name": { "type": "string" },
-          "layer": { "enum": ["A", "B", "C"] },
+          "name": {
+            "type": "string"
+          },
+          "layer": {
+            "enum": ["A", "B", "C"]
+          },
           "status": {
             "enum": ["measured", "unavailable", "measurement_error"],
             "description": "unavailable: the mechanism does not exist here. measurement_error: it exists and failed, for example a trace that did not correlate."
           },
-          "unit": { "enum": ["ms", "us", "count", "bytes"] },
-          "kind": { "enum": ["latency", "batch_throughput", "count", "trend"] },
-          "batch_size": { "type": "integer", "minimum": 1 },
-          "samples": { "type": "integer", "minimum": 0 },
-          "dropped": { "type": "integer", "minimum": 0 },
-          "outliers_flagged": { "type": "integer", "minimum": 0 },
+          "unit": {
+            "enum": ["ms", "us", "count", "bytes"]
+          },
+          "kind": {
+            "enum": ["latency", "batch_throughput", "count", "trend"]
+          },
+          "batch_size": {
+            "type": "integer",
+            "minimum": 1
+          },
+          "samples": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "dropped": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "outliers_flagged": {
+            "type": "integer",
+            "minimum": 0
+          },
           "summary": {
             "type": "object",
             "properties": {
-              "min": { "type": "number" },
-              "p50": { "type": "number" },
-              "p95": { "type": "number" },
-              "p99": { "type": "number" },
-              "max": { "type": "number" }
-            }
+              "min": {
+                "type": "number"
+              },
+              "p50": {
+                "type": "number"
+              },
+              "p95": {
+                "type": "number"
+              },
+              "p99": {
+                "type": "number"
+              },
+              "max": {
+                "type": "number"
+              }
+            },
+            "description": "Within this run only. The intervals come from the comparison report."
           },
           "mechanism": {
             "type": "string",
             "description": "How the value was obtained, for example cdp:Performance.getMetrics or tally."
           },
-          "reason": { "type": "string" }
+          "reason": {
+            "type": "string"
+          },
+          "within_run": {
+            "type": "object",
+            "description": "Dispersion of the observations in this run.",
+            "properties": {
+              "mean": {
+                "type": "number"
+              },
+              "stddev": {
+                "type": "number"
+              },
+              "iqr": {
+                "type": "number"
+              },
+              "tukey_low": {
+                "type": "number"
+              },
+              "tukey_high": {
+                "type": "number"
+              }
+            }
+          }
         }
       }
     },
-    "checkpoints_passed": { "type": "integer" },
-    "checkpoints_failed": { "type": "array", "items": { "type": "object" } },
+    "checkpoints_passed": {
+      "type": "integer"
+    },
+    "checkpoints_failed": {
+      "type": "array",
+      "items": {
+        "type": "object"
+      }
+    },
     "raw_samples": {
       "type": "string",
       "description": "Path of the file holding every observation, outliers included."
     }
-  }
+  },
+  "description": "A single run. It holds no between-run statistic and no confidence interval, because one run has neither. Those belong to comparison.schema.json, which reads a collection of these."
 }

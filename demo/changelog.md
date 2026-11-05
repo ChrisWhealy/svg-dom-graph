@@ -63,3 +63,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Petri Net: Stop playback on failed selection or wiring update (`1bcc0f4`)
 - Petri Net: Quick-fire can proceed after its selection draw fails (`71b617b`)
 - Petri Net: Teardown does not fully release listeners (`413be15`)
+- Perf Harness: Result schema fully represents statistical contract (``)
