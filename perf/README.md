@@ -60,12 +60,36 @@ The tracker needs no `on*` handling.
 `once`, `AbortSignal` and listener options are not used by the library itself, but a demo might use them, so the tally keeps the full
 key and treats a duplicate registration as one.
 
-### 4. Closures that are leaked on purpose are invisible to the JS heap
+### 4. Closures that are leaked on purpose are invisible to the JS heap and the listener count
 
 `svg_buttons.rs` and `sliders/mod.rs` call `Closure::forget()` (three call sites in the library, and one more in `demo-common`).
-That memory lives in the wasm module's linear memory and its closure table.
-Neither `JSHeapUsedSize` nor a listener count shows it growing.
-The harness records the size of the module's linear memory (`capture_wasm_memory`) so that repeated scene creation can show it.
+The boxed closure and what it captured stay allocated in the wasm module for the life of the page.
+Neither `JSHeapUsedSize` nor a listener count shows it.
+
+The size of the wasm linear memory does not reliably show it either, and it must not be read as live memory:
+
+- Linear memory grows in 64 KiB pages and is never handed back, so its size is a high-water mark of what was ever needed.
+- A constant size can hide retained allocations, because a freed block can be reused by a retained one.
+- Growth is not by itself a leak. It can be the first use of capacity that later cycles then reuse.
+
+So the harness keeps wasm memory out of the heap and listener accounting and reports it as two separate things:
+
+| Figure | Kind | What it can tell you | Where |
+|---|---|---|---|
+| Linear-memory size (`capture_wasm_capacity`) | `capacity`, a high-water mark | How much the module ever needed. Reported as a diagnostic | Layers B and C |
+| Live bytes and allocation count (`capture_wasm_live_allocation`) | `count` | What is allocated now, so a `forget`ten closure shows as live bytes that do not come back | Layer B only |
+
+Live bytes come from a counting global allocator in `perf-harness-wasm`.
+The allocator is chosen by the final module, so the library links into it unchanged and its allocations are counted.
+The demo gallery's module has no such allocator, so Layer C reports capacity only.
+This is a design, not a result, and Phase 2 must show that it counts a leaked closure before it is relied on.
+
+A repeated lifecycle test reads these figures differently from a heap trend:
+
+- It does not expect linear memory to return to its starting size after a teardown.
+- After a warm-up of cycles it asks whether capacity is reused: the number of times memory grew during the measured cycles should be zero once it has levelled off (`wasm.memory_grow_events_after_warmup`).
+- Live bytes after a teardown are compared with live bytes before the build, as listener counts are.
+- Growth in capacity with flat live bytes is reported as an observation to look at, not as a leak.
 
 ### 5. Timer resolution
 
@@ -164,6 +188,6 @@ cd perf/schemas && npm install && npm test
 ```
 
 The schemas reject unknown keys in every fixed object, and require fields according to a metric's or run's status.
-The script runs 85 cases: 4 valid documents, 1 consistency check between the example manifest and the example result, 1 incompatible pair that must pass, and 79 broken documents that must each fail.
+The script runs 89 cases: 4 valid documents, 1 consistency check between the example manifest and the example result, 1 incompatible pair that must pass, and 83 broken documents that must each fail.
 A schema that is too permissive therefore fails the script.
 Phase 1 should run the same cases against the Rust validator.

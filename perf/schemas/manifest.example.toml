@@ -21,7 +21,8 @@ order = "interleaved"                  # Baseline and candidate alternate, so dr
 capture_dom_counts = true
 capture_listener_tally = true
 capture_heap = false          # Chrome only, and a diagnostic.
-capture_wasm_memory = true    # The size of the module's linear memory, which the JS heap does not show.
+capture_wasm_capacity = true   # The high-water size of the wasm linear memory: capacity, not live usage.
+capture_wasm_live_allocation = true   # Live bytes from a counting allocator, in Layer B only.
 capture_frame_timing = true
 checkpoint_every = 100        # Correctness mode only.
 

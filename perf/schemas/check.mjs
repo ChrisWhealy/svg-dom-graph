@@ -217,14 +217,26 @@ const rejected = {
     "a count in ms": d => {
       d.metrics[1].unit = "ms"
     },
+    "a capacity in counts": d => {
+      d.metrics[2].unit = "count"
+    },
+    "a capacity with a summary": d => {
+      d.metrics[2].summary = { min: 1, p50: 1, max: 1 }
+    },
+    "a capacity with no value": d => {
+      delete d.metrics[2].value
+    },
+    "a capacity with a batch size": d => {
+      d.metrics[2].batch_size = 2
+    },
     "an unavailable metric with no reason": d => {
-      delete d.metrics[2].reason
+      delete d.metrics[5].reason
     },
     "an unavailable metric with a value": d => {
-      d.metrics[2].value = 1
+      d.metrics[5].value = 1
     },
     "an unavailable metric with a summary": d => {
-      d.metrics[2].summary = { min: 1, p50: 1, max: 1 }
+      d.metrics[5].summary = { min: 1, p50: 1, max: 1 }
     },
     "a measured metric with a reason": d => {
       d.metrics[0].reason = "x"

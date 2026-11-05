@@ -84,8 +84,13 @@
         "capture_heap": {
           "type": "boolean"
         },
-        "capture_wasm_memory": {
-          "type": "boolean"
+        "capture_wasm_capacity": {
+          "type": "boolean",
+          "description": "The high-water size of the wasm linear memory. A capacity diagnostic, never a live-usage figure."
+        },
+        "capture_wasm_live_allocation": {
+          "type": "boolean",
+          "description": "Live bytes and allocation count from a counting allocator. Layer B only, where the harness module owns the allocator."
         },
         "capture_frame_timing": {
           "type": "boolean"
@@ -99,7 +104,8 @@
         "capture_dom_counts",
         "capture_listener_tally",
         "capture_heap",
-        "capture_wasm_memory",
+        "capture_wasm_capacity",
+        "capture_wasm_live_allocation",
         "capture_frame_timing"
       ],
       "additionalProperties": false

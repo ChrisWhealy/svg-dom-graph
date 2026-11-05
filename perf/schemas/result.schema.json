@@ -145,7 +145,14 @@
             "enum": ["ms", "us", "count", "bytes"]
           },
           "kind": {
-            "enum": ["latency", "batch_throughput", "count", "trend"]
+            "enum": [
+              "latency",
+              "batch_throughput",
+              "count",
+              "trend",
+              "capacity"
+            ],
+            "description": "capacity is the high-water mark of a resource that is not handed back, such as wasm linear memory. It says how much was ever needed. It is not live usage, and growth in it is not by itself a leak."
           },
           "batch_size": {
             "type": "integer",
@@ -320,7 +327,7 @@
                   "const": "measured"
                 },
                 "kind": {
-                  "enum": ["count", "trend"]
+                  "enum": ["count", "trend", "capacity"]
                 }
               },
               "required": ["status", "kind"]
@@ -356,6 +363,26 @@
             "then": {
               "not": {
                 "required": ["batch_size"]
+              }
+            }
+          },
+          {
+            "if": {
+              "properties": {
+                "status": {
+                  "const": "measured"
+                },
+                "kind": {
+                  "const": "capacity"
+                }
+              },
+              "required": ["status", "kind"]
+            },
+            "then": {
+              "properties": {
+                "unit": {
+                  "const": "bytes"
+                }
               }
             }
           }

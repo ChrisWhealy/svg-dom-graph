@@ -42,7 +42,8 @@
         "capture_dom_counts": true,
         "capture_listener_tally": true,
         "capture_heap": false,
-        "capture_wasm_memory": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
         "capture_frame_timing": true,
         "checkpoint_every": 100
       },
@@ -91,6 +92,33 @@
       "kind": "count",
       "value": 7000,
       "mechanism": "dom"
+    },
+    {
+      "name": "wasm.linear_memory_high_water",
+      "layer": "B",
+      "status": "measured",
+      "unit": "bytes",
+      "kind": "capacity",
+      "value": 16777216,
+      "mechanism": "WebAssembly.Memory.buffer.byteLength"
+    },
+    {
+      "name": "wasm.memory_grow_events_after_warmup",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 0,
+      "mechanism": "WebAssembly.Memory.buffer.byteLength sampled per cycle"
+    },
+    {
+      "name": "wasm.live_bytes_after_teardown",
+      "layer": "B",
+      "status": "measured",
+      "unit": "bytes",
+      "kind": "count",
+      "value": 48128,
+      "mechanism": "counting allocator"
     },
     {
       "name": "presentation.move_node",
