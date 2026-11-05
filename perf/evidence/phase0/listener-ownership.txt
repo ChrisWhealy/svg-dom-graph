@@ -48,7 +48,7 @@ one removal in the second build, with its call stack:
   "type": "pointerdown",
   "capture": false,
   "born": 72,
-  "stack": "    at EventTarget.removeEventListener (<anonymous>:104:23)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:294:18\n    at handleError (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:528:18)\n    at __wbg_removeEventListener_6e68185345978771 (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:293:73)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[476]:0x5161d\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[247]:0x449de"
+  "stack": "    at EventTarget.removeEventListener (<anonymous>:125:23)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:294:18\n    at handleError (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:528:18)\n    at __wbg_removeEventListener_6e68185345978771 (http://127.0.0.1:PORT/pkg/cdp_test_fixture.js:293:73)\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[476]:0x5161d\n    at http://127.0.0.1:PORT/pkg/cdp_test_fixture_bg.wasm:wasm-function[247]:0x449de"
 }
 
 one addition in the second build, with its call stack:

@@ -8,10 +8,10 @@
 // The browser's own listeners are not seen, only those added through `addEventListener`. Property handlers such as
 // `onclick` are not seen either, and Phase 0 found that the library uses none.
 //
-// To know that a `once` listener fired, and that a signal aborted, the tracker adds a small helper listener of its own
-// beside the original. The helpers go through the native methods, so they are never counted. If a `once` listener calls
-// `stopImmediatePropagation` itself, its helper does not fire and the registration is counted for too long. Checking the
-// tally against Chrome's own count after a collection exposes that case.
+// A `once` listener is registered through a thin wrapper that calls the original and then records that it has fired. The
+// wrapper runs whenever the original would, so a listener that calls `stopImmediatePropagation` on itself is still seen.
+// A signal is checked when the tally is read and when an identical listener is added again, so nothing has to listen for
+// the abort. The wrapper is the only trace the tracker leaves on a listener, and DevTools shows it in place of the original.
 ;(() => {
   if (window.__listeners) return
 
@@ -63,44 +63,65 @@
     }
   }
 
+  // The registration for `key`, or undefined. One whose signal has aborted is already gone from the browser, so it is
+  // removed here, and an identical listener can then be added again.
+  const liveRegistration = (entry, key) => {
+    const registration = entry.registrations.get(key)
+    if (registration && registration.signal && registration.signal.aborted) {
+      drop(entry, key, registration, 'aborted')
+      return undefined
+    }
+    return registration
+  }
+
   EventTarget.prototype.addEventListener = function (type, callback, options) {
-    const result = nativeAdd.call(this, type, callback, options)
     if (callback == null) {
       record('ignored-null', this, { type })
-      return result
+      return nativeAdd.call(this, type, callback, options)
     }
     const capture = captureOf(options)
-    const once = Boolean(options && typeof options === 'object' && options.once)
-    const signal = options && typeof options === 'object' ? options.signal : undefined
+    const object = options && typeof options === 'object'
+    const once = Boolean(object && options.once)
+    const signal = object ? options.signal : undefined
     if (signal && signal.aborted) {
       record('ignored-aborted', this, { type, capture })
-      return result
+      return nativeAdd.call(this, type, callback, options)
     }
     const entry = entryFor(this)
     const key = keyOf(type, callback, capture)
-    if (entry.registrations.has(key)) {
+    if (liveRegistration(entry, key)) {
       record('duplicate', this, { type, capture })
-      return result
+      return nativeAdd.call(this, type, callback, options)
     }
-    const registration = { type, capture, once, sequence: sequence++ }
+    const registration = { type, capture, once, signal, sequence: sequence++, wrapper: undefined }
+    let native = callback
+    if (once) {
+      // The native listener is the wrapper, so that firing is observed even if the original stops propagation.
+      registration.wrapper = function (event) {
+        try {
+          if (typeof callback === 'function') return callback.call(this, event)
+          return callback.handleEvent(event)
+        } finally {
+          drop(entry, key, registration, 'once-fired')
+        }
+      }
+      native = registration.wrapper
+    }
+    // The browser validates the callback and the options, and throws before anything is recorded.
+    const result = nativeAdd.call(this, type, native, options)
     entry.registrations.set(key, registration)
     record('add', this, { type, capture, once, born: registration.sequence })
-    if (once) nativeAdd.call(this, type, () => drop(entry, key, registration, 'once-fired'), { capture, once: true })
-    if (signal) nativeAdd.call(signal, 'abort', () => drop(entry, key, registration, 'aborted'), { once: true })
     return result
   }
 
   EventTarget.prototype.removeEventListener = function (type, callback, options) {
-    const result = nativeRemove.call(this, type, callback, options)
-    if (callback == null) return result
+    if (callback == null) return nativeRemove.call(this, type, callback, options)
     const entry = entries.get(this)
-    if (!entry) {
-      record('remove-unknown', this, { type, capture: captureOf(options) })
-      return result
-    }
     const capture = captureOf(options)
     const key = keyOf(type, callback, capture)
-    const registration = entry.registrations.get(key)
+    const registration = entry && liveRegistration(entry, key)
+    // A wrapped listener is the one the browser holds, so that is the one to take out.
+    const result = nativeRemove.call(this, type, registration && registration.wrapper ? registration.wrapper : callback, options)
     if (registration) drop(entry, key, registration, 'remove')
     else record('remove-unknown', this, { type, capture })
     return result
@@ -119,6 +140,7 @@
         live.delete(entry)
         continue
       }
+      for (const key of [...entry.registrations.keys()]) liveRegistration(entry, key)
       const count = entry.registrations.size
       if (!count) continue
       total += count

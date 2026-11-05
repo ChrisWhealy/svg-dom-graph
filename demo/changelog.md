@@ -38,7 +38,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update top level README again (`a312666`)
 - Update top level README again (`ef4e9fc`)
 - Perf Harness: Tighten JSON Schema validation (`e54ca79`)
-- Perf Harness: Treat WASM memory usage as a high water mark that does not need to shrink after teardown (``)
+- Perf Harness: Treat WASM memory usage as a high water mark that does not need to shrink after teardown (`4365961`)
+- Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (``)
 
 ### Fixed
 

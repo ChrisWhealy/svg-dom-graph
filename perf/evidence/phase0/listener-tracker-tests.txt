@@ -12,6 +12,16 @@ ok   a once listener added again after it fired is a new registration
 ok   a listener whose signal aborts stops counting
 ok   a listener with an already-aborted signal is never counted
 ok   a listener on a detached node counts as detached, and as connected once attached
+ok   a once listener that calls stopImmediatePropagation on itself stops counting
+ok   a once listener that an earlier listener keeps from running is still registered
+ok   a once listener that throws stops counting
+ok   a once listener removed before it fires stops counting, and never runs
+ok   a once listener runs once, with the event, and this is the target
+ok   a handleEvent object works as a once listener
+ok   a signal that aborts stops counting even when an earlier abort listener stops propagation
+ok   a listener can be added again after its signal aborted
+ok   a once registration and a plain one with the same key are one registration
+ok   20 once listeners that stop propagation (19 never run) and 20 aborted: Chrome and the tally both read { chrome: 19, tally: 19 }
 ok   50 listeners each added twice: Chrome and the tally both move by { chrome: 50, tally: 50 } and back to { chrome: 0, tally: 0 }
 
 all passed

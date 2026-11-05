@@ -82,7 +82,13 @@ So the harness keeps wasm memory out of the heap and listener accounting and rep
 Live bytes come from a counting global allocator in `perf-harness-wasm`.
 The allocator is chosen by the final module, so the library links into it unchanged and its allocations are counted.
 The demo gallery's module has no such allocator, so Layer C reports capacity only.
-This is a design, not a result, and Phase 2 must show that it counts a leaked closure before it is relied on.
+This is a design, not a result.
+Its figures are not authoritative until Phase 2 has verified it with a deliberately retained allocation:
+
+1. Allocate a known number of bytes and keep them. Live bytes must rise by at least that number, and the allocation count by at least one.
+2. Release them. Live bytes must fall back to within a stated tolerance of where they started.
+3. Leak a closure with `Closure::forget()`. Live bytes must rise and stay risen.
+4. Repeat each step many times, so that a counter that drifts or double-counts shows.
 
 A repeated lifecycle test reads these figures differently from a heap trend:
 
@@ -139,9 +145,15 @@ What this means for a listener-count gate:
 - A registration that survives a drop is a candidate leak. One on a node that is no longer in the document shows in the tracker's `detached` figure.
 - The tally is the cross-browser check. Chrome's count is its cross-check, and only after a forced collection.
 
-The tracker is tested in `page/test-listener-tracker.mjs`.
-It checks duplicates, capture flags, `once`, `AbortSignal`, `handleEvent` objects, null callbacks and detached nodes, and then compares the tally with Chrome's count after a collection (50 listeners added twice both read 50).
-One limit remains: a `once` listener that calls `stopImmediatePropagation` on itself is counted for too long.
+The tracker is tested in `page/test-listener-tracker.mjs`, with 25 checks in a real Chrome.
+It covers duplicates, capture flags, `once`, `AbortSignal`, `handleEvent` objects, null callbacks and detached nodes.
+It then compares the tally with Chrome's count after a collection, for 50 listeners added twice, and for `once` listeners that stop propagation and listeners on an aborted signal.
+
+An earlier version missed a `once` listener that calls `stopImmediatePropagation` on itself, because it relied on a helper listener that never ran.
+That is removed.
+A `once` listener now goes to the browser through a thin wrapper that records its own firing whenever the original would run, and a signal is checked when the tally is read, so nothing depends on a helper firing.
+The only trace left on a listener is that DevTools shows the wrapper in place of the original.
+The library, `demo-app`, `demo-common` and the fixture use neither `once` nor `stopImmediatePropagation`, so the case could not have arisen from them, but a listener-count gate no longer relies on that.
 
 ## Running the spike
 

@@ -96,6 +96,53 @@ await expect(
   [true, 1],
 )
 
+await expect(
+  'a once listener that calls stopImmediatePropagation on itself stops counting',
+  't.addEventListener("click", e => e.stopImmediatePropagation(), { once: true }); const a = mine(); t.dispatchEvent(new Event("click")); return [a, mine()]',
+  [1, 0],
+)
+await expect(
+  'a once listener that an earlier listener keeps from running is still registered',
+  't.addEventListener("click", e => e.stopImmediatePropagation()); t.addEventListener("click", f, { once: true }); t.dispatchEvent(new Event("click")); return mine()',
+  2,
+)
+await expect(
+  'a once listener that throws stops counting',
+  'const quiet = e => e.preventDefault(); window.addEventListener("error", quiet, { once: true }); t.addEventListener("click", () => { throw new Error("x") }, { once: true }); t.dispatchEvent(new Event("click")); return mine()',
+  0,
+)
+await expect(
+  'a once listener removed before it fires stops counting, and never runs',
+  'let ran = 0; const r = () => ran++; t.addEventListener("click", r, { once: true }); t.removeEventListener("click", r); const a = mine(); t.dispatchEvent(new Event("click")); return [a, ran]',
+  [0, 0],
+)
+await expect(
+  'a once listener runs once, with the event, and this is the target',
+  'const seen = []; t.addEventListener("click", function (e) { seen.push([this === t, e.type]) }, { once: true }); t.dispatchEvent(new Event("click")); t.dispatchEvent(new Event("click")); return seen',
+  [[true, 'click']],
+)
+await expect(
+  'a handleEvent object works as a once listener',
+  'let ran = 0; const h = { handleEvent() { ran++ } }; t.addEventListener("click", h, { once: true }); t.dispatchEvent(new Event("click")); t.dispatchEvent(new Event("click")); return [ran, mine()]',
+  [1, 0],
+)
+await expect(
+  'a signal that aborts stops counting even when an earlier abort listener stops propagation',
+  // The abort listener on the signal is itself a registration, so it is taken off the count.
+  'const c = new AbortController(); c.signal.addEventListener("abort", e => e.stopImmediatePropagation()); t.addEventListener("click", f, { signal: c.signal }); c.abort(); return mine() - 1',
+  0,
+)
+await expect(
+  'a listener can be added again after its signal aborted',
+  'const c = new AbortController(); t.addEventListener("click", f, { signal: c.signal }); c.abort(); t.addEventListener("click", f); return mine()',
+  1,
+)
+await expect(
+  'a once registration and a plain one with the same key are one registration',
+  't.addEventListener("click", f); t.addEventListener("click", f, { once: true }); t.dispatchEvent(new Event("click")); return mine()',
+  1,
+)
+
 // The independent check: Chrome's own count, after a collection, moves by the same amount as the tally.
 const base = await (async () => {
   await chrome.collectGarbage()
@@ -115,6 +162,30 @@ const removed = {
   chrome: (await chrome.metrics()).JSEventListeners - base.chrome,
   tally: (await chrome.evaluate(total)) - base.tally,
 }
+// The same check for the cases that used to disagree. Of 20 once listeners that stop propagation, only the first runs, so
+// 19 stay registered, and Chrome has to say the same. The 20 listeners on an aborted signal are all gone.
+const beforeOnce = {
+  chrome: (await chrome.metrics()).JSEventListeners,
+  tally: await chrome.evaluate(total),
+}
+await chrome.evaluate(`(() => {
+  const t = document.createElement("div")
+  document.body.append(t)
+  for (let i = 0; i < 20; i++) t.addEventListener("click", e => e.stopImmediatePropagation(), { once: true })
+  t.dispatchEvent(new Event("click"))
+  const c = new AbortController()
+  for (let i = 0; i < 20; i++) t.addEventListener("keydown", () => {}, { signal: c.signal })
+  c.abort()
+})()`)
+await chrome.collectGarbage()
+const onceAndAbort = {
+  chrome: (await chrome.metrics()).JSEventListeners - beforeOnce.chrome,
+  tally: (await chrome.evaluate(total)) - beforeOnce.tally,
+}
+const onceAgrees = onceAndAbort.chrome === 19 && onceAndAbort.tally === 19
+if (!onceAgrees) failures++
+console.log(`${onceAgrees ? 'ok  ' : 'FAIL'} 20 once listeners that stop propagation (19 never run) and 20 aborted: Chrome and the tally both read`, onceAndAbort)
+
 const agree = added.chrome === 50 && added.tally === 50 && removed.chrome === 0 && removed.tally === 0
 if (!agree) failures++
 console.log(`${agree ? 'ok  ' : 'FAIL'} 50 listeners each added twice: Chrome and the tally both move by`, added, 'and back to', removed)

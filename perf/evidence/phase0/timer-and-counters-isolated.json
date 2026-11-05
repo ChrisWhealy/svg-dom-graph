@@ -15,12 +15,14 @@
   "before": {
     "Nodes": 961,
     "JSEventListeners": 51,
-    "JSHeapUsedSize": 1012456
+    "JSHeapUsedSize": 1001592
   },
   "first_scene": {
     "scene_children": 5,
     "elements": 780,
-    "ids": ["svg-dom-graph-arrow-0"],
+    "ids": [
+      "svg-dom-graph-arrow-0"
+    ],
     "tally": {
       "add": 44,
       "remove": 7,
@@ -31,7 +33,10 @@
   "second_scene": {
     "scene_children": 10,
     "elements": 1560,
-    "ids": ["svg-dom-graph-arrow-0", "svg-dom-graph-arrow-1"],
+    "ids": [
+      "svg-dom-graph-arrow-0",
+      "svg-dom-graph-arrow-1"
+    ],
     "tally": {
       "add": 88,
       "remove": 51,
@@ -41,16 +46,16 @@
   "after_second_run_before_gc": {
     "Nodes": 1898,
     "JSEventListeners": 139,
-    "JSHeapUsedSize": 872508
+    "JSHeapUsedSize": 869336
   },
   "after_second_run_after_gc": {
     "Nodes": 1794,
     "JSEventListeners": 37,
-    "JSHeapUsedSize": 724584
+    "JSHeapUsedSize": 724632
   },
   "after_removing_the_svg": {
     "Nodes": 1794,
     "JSEventListeners": 37,
-    "JSHeapUsedSize": 724576
+    "JSHeapUsedSize": 724624
   }
 }
