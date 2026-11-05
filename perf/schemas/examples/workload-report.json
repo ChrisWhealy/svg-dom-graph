@@ -1,0 +1,105 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "example-rerouting",
+    "sha256": "d67266755d07502387305fe0e69345a0be65bc6e48359f62b0513bf8f21608ca",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 6,
+        "edges": 8,
+        "maximum_degree": 4
+      },
+      "execution": {
+        "modes": ["correctness", "performance"],
+        "warmup_iterations": 1,
+        "measurement_iterations": 4,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 2
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 60000
+      }
+    }
+  },
+  "stream": {
+    "encoding_version": 1,
+    "operations": 26,
+    "mutations": 20,
+    "sha256": "a9047feba9f47d31680d498235d4d3e7d214cad6e4a0f057a12924660b1494de",
+    "mutations_sha256": "e7413edb60737318a5598bd21310d800f508c11de5fba3b5f8e3dce665daa0e3"
+  },
+  "checkpoints": [
+    {
+      "index": 0,
+      "op_index": 15,
+      "model_sha256": "4502ce30ea1656ab979cdaf6e06fce9edc45931c0b9bda59617474bdd812b239",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "c8b2fec4734c41dc0df788487f2f092d919fbe34013c68f2faa41b1e9765474c",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "fb20740a516e9c8fd6ffd5e5a026fcf78b1f7017c5015b06b1d450d286e133cc",
+        "topology": "48fb173592dcc1d83ba213f33e90518b57cd7d66642c04f14583328eb988fb60"
+      }
+    },
+    {
+      "index": 1,
+      "op_index": 20,
+      "model_sha256": "12f149edd4d7c3e90e0e58cf23214e78cfd7a4f959dfd051215889bcfc27a9f3",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "c8b2fec4734c41dc0df788487f2f092d919fbe34013c68f2faa41b1e9765474c",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "fb20740a516e9c8fd6ffd5e5a026fcf78b1f7017c5015b06b1d450d286e133cc",
+        "topology": "48fb173592dcc1d83ba213f33e90518b57cd7d66642c04f14583328eb988fb60"
+      }
+    },
+    {
+      "index": 2,
+      "op_index": 23,
+      "model_sha256": "a3b77b56af90a65f5df2368314bcad0b33fb9c8cab140954156dfd39403921d3",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "c8b2fec4734c41dc0df788487f2f092d919fbe34013c68f2faa41b1e9765474c",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "fb20740a516e9c8fd6ffd5e5a026fcf78b1f7017c5015b06b1d450d286e133cc",
+        "topology": "48fb173592dcc1d83ba213f33e90518b57cd7d66642c04f14583328eb988fb60"
+      }
+    },
+    {
+      "index": 3,
+      "op_index": 25,
+      "model_sha256": "fb2a757b35768427014bde67c9ef4a3252d69f40eeb677433fc2966d4e377571",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "c8b2fec4734c41dc0df788487f2f092d919fbe34013c68f2faa41b1e9765474c",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "fb20740a516e9c8fd6ffd5e5a026fcf78b1f7017c5015b06b1d450d286e133cc",
+        "topology": "48fb173592dcc1d83ba213f33e90518b57cd7d66642c04f14583328eb988fb60"
+      }
+    }
+  ],
+  "sections": {
+    "modelled": ["topology", "content", "interaction"],
+    "provisional": ["geometry", "paint_order"],
+    "not_modelled": ["dom_identity.ids", "accessibility"]
+  }
+}

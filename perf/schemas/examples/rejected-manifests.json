@@ -1,0 +1,170 @@
+{
+  "description": "Manifests that must be refused. Each case edits the valid example manifest with `set` and `delete` operations, each on a path of keys. The JavaScript schema check and the Rust manifest reader both read this file, so the two validators are held to the same cases.",
+  "cases": [
+    {
+      "label": "an unknown top-level key",
+      "ops": [
+        {
+          "set": ["typo"],
+          "value": 1
+        }
+      ]
+    },
+    {
+      "label": "an unknown measurement option",
+      "ops": [
+        {
+          "set": ["measurement", "capture_everything"],
+          "value": true
+        }
+      ]
+    },
+    {
+      "label": "a missing graph",
+      "ops": [
+        {
+          "delete": ["graph"]
+        }
+      ]
+    },
+    {
+      "label": "missing limits",
+      "ops": [
+        {
+          "delete": ["limits"]
+        }
+      ]
+    },
+    {
+      "label": "zero repetitions",
+      "ops": [
+        {
+          "set": ["execution", "repetitions"],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "label": "no modes",
+      "ops": [
+        {
+          "set": ["execution", "modes"],
+          "value": []
+        }
+      ]
+    },
+    {
+      "label": "a repeated mode",
+      "ops": [
+        {
+          "set": ["execution", "modes"],
+          "value": ["performance", "performance"]
+        }
+      ]
+    },
+    {
+      "label": "an unknown workload",
+      "ops": [
+        {
+          "set": ["workload"],
+          "value": "nothing"
+        }
+      ]
+    },
+    {
+      "label": "connector rerouting without edges",
+      "ops": [
+        {
+          "delete": ["graph", "edges"]
+        }
+      ]
+    },
+    {
+      "label": "correctness without a checkpoint policy",
+      "ops": [
+        {
+          "delete": ["checkpoint"]
+        }
+      ]
+    },
+    {
+      "label": "correctness without a checkpoint interval",
+      "ops": [
+        {
+          "delete": ["measurement", "checkpoint_every"]
+        }
+      ]
+    },
+    {
+      "label": "a negative seed",
+      "ops": [
+        {
+          "set": ["seed"],
+          "value": -1
+        }
+      ]
+    },
+    {
+      "label": "no nodes",
+      "ops": [
+        {
+          "set": ["graph", "nodes"],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "label": "no measured iterations",
+      "ops": [
+        {
+          "set": ["execution", "measurement_iterations"],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "label": "a wall limit of zero",
+      "ops": [
+        {
+          "set": ["limits", "wall_ms"],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "label": "a checkpoint interval of zero",
+      "ops": [
+        {
+          "set": ["measurement", "checkpoint_every"],
+          "value": 0
+        }
+      ]
+    },
+    {
+      "label": "a wrong schema version",
+      "ops": [
+        {
+          "set": ["schema_version"],
+          "value": 2
+        }
+      ]
+    },
+    {
+      "label": "a missing capture option",
+      "ops": [
+        {
+          "delete": ["measurement", "capture_wasm_capacity"]
+        }
+      ]
+    },
+    {
+      "label": "a string for a count",
+      "ops": [
+        {
+          "set": ["graph", "nodes"],
+          "value": "many"
+        }
+      ]
+    }
+  ]
+}

@@ -20,6 +20,7 @@
 | `cargo test -p svg-dom-graph-demo` and `cargo test -p demo-server` | The demo's own tests |
 | `wasm-pack test --headless --firefox` and `wasm-pack test --headless --chrome` | The browser integration tests, which CI runs in both browsers |
 | `cargo test -p cdp-integration-test` | The CDP tests, against a local Chrome |
+| `cargo test -p perf-harness` | The performance harness's workload generator, reference model and manifest checks. See [`perf/README.md`](../../perf/README.md) |
 
 ## Error handling during testing
 

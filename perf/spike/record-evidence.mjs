@@ -52,7 +52,7 @@ const environment = {
   recorded_at: new Date().toISOString(),
   commit: first('git', ['rev-parse', 'HEAD']),
   commit_date: first('git', ['log', '-1', '--format=%cI']),
-  uncommitted_changes: run('git', ['status', '--porcelain']).stdout.trim().split('\n').filter(Boolean),
+  uncommitted_changes: run('git', ['status', '--porcelain']).stdout.split('\n').filter(Boolean),
   machine: { os: `${os.type()} ${os.release()}`, macos: first('sw_vers', ['-productVersion']), cpu: os.cpus()[0].model, cores: os.cpus().length, memory_bytes: os.totalmem() },
   browser: first(chrome, ['--version']),
   node: process.version,

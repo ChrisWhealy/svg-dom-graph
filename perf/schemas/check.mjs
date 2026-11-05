@@ -20,13 +20,30 @@ const ajv = new Ajv({
 })
 addFormats(ajv)
 
-const names = ["manifest", "checkpoint", "result", "comparison"]
+const names = [
+  "manifest",
+  "checkpoint",
+  "result",
+  "comparison",
+  "workload-report",
+]
 for (const name of names) ajv.addSchema(read(`${name}.schema.json`))
 const validators = Object.fromEntries(
   names.map(name => [name, ajv.getSchema(`urn:svg-dom-graph:perf:${name}:1`)]),
 )
 
 const clone = value => structuredClone(value)
+
+// A shared case is a list of operations on a path of keys: `set` puts a value there, and `delete` takes the key away.
+const applyOps = (doc, ops) => {
+  for (const op of ops) {
+    const path = [...(op.set ?? op.delete)]
+    const last = path.pop()
+    const parent = path.reduce((object, key) => object[key], doc)
+    if (op.set) parent[last] = op.value
+    else delete parent[last]
+  }
+}
 const valid = {
   // The parser's objects have another prototype, so a JSON round trip makes them comparable with the JSON examples.
   manifest: JSON.parse(
@@ -42,6 +59,7 @@ const valid = {
   checkpoint: read("examples/checkpoint.json"),
   result: read("examples/result.json"),
   comparison: read("examples/comparison.json"),
+  "workload-report": read("examples/workload-report.json"),
 }
 
 let failures = 0
@@ -68,44 +86,13 @@ try {
 
 // Each case takes a copy of a valid document, breaks one thing, and must then be rejected.
 const rejected = {
-  manifest: {
-    "unknown top-level key": d => {
-      d.typo = 1
-    },
-    "unknown measurement option": d => {
-      d.measurement.capture_everything = true
-    },
-    "missing graph": d => {
-      delete d.graph
-    },
-    "missing limits": d => {
-      delete d.limits
-    },
-    "zero repetitions": d => {
-      d.execution.repetitions = 0
-    },
-    "no modes": d => {
-      d.execution.modes = []
-    },
-    "duplicate mode": d => {
-      d.execution.modes = ["performance", "performance"]
-    },
-    "unknown workload": d => {
-      d.workload = "nothing"
-    },
-    "rerouting without edges": d => {
-      delete d.graph.edges
-    },
-    "correctness without a checkpoint policy": d => {
-      delete d.checkpoint
-    },
-    "correctness without a checkpoint interval": d => {
-      delete d.measurement.checkpoint_every
-    },
-    "negative seed": d => {
-      d.seed = -1
-    },
-  },
+  // Shared with the Rust manifest reader, which refuses the same cases.
+  manifest: Object.fromEntries(
+    read("examples/rejected-manifests.json").cases.map(c => [
+      c.label,
+      d => applyOps(d, c.ops),
+    ]),
+  ),
   checkpoint: {
     "no nodes list": d => {
       delete d.topology.nodes
@@ -157,6 +144,12 @@ const rejected = {
     },
   },
   result: {
+    "no stream scope": d => {
+      delete d.manifest.operation_stream_scope
+    },
+    "an unknown stream scope": d => {
+      d.manifest.operation_stream_scope = "everything"
+    },
     "unknown top-level key": d => {
       d.typo = 1
     },
@@ -265,6 +258,53 @@ const rejected = {
     },
     "a non-date start": d => {
       d.started_at = "yesterday"
+    },
+  },
+  "workload-report": {
+    "unknown top-level key": d => {
+      d.typo = 1
+    },
+    "no stream": d => {
+      delete d.stream
+    },
+    "an unsupported encoding version": d => {
+      d.stream.encoding_version = 2
+    },
+    "a short stream digest": d => {
+      d.stream.sha256 = "abc"
+    },
+    "no mutations digest": d => {
+      delete d.stream.mutations_sha256
+    },
+    "no operations": d => {
+      d.stream.operations = 0
+    },
+    "no checkpoints": d => {
+      d.checkpoints = []
+    },
+    "a checkpoint with no model digest": d => {
+      delete d.checkpoints[0].model_sha256
+    },
+    "a checkpoint with no section digests": d => {
+      delete d.checkpoints[0].section_sha256
+    },
+    "a checkpoint missing one section digest": d => {
+      delete d.checkpoints[0].section_sha256.topology
+    },
+    "a digest for geometry, which is compared within a tolerance": d => {
+      d.checkpoints[0].section_sha256.geometry = "f".repeat(64)
+    },
+    "a negative operation index": d => {
+      d.checkpoints[0].op_index = -1
+    },
+    "an invalid manifest copy": d => {
+      d.manifest.canonical.execution.repetitions = 0
+    },
+    "no section report": d => {
+      delete d.sections
+    },
+    "an unknown key in the manifest block": d => {
+      d.manifest.typo = 1
     },
   },
   comparison: {

@@ -1,0 +1,118 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "w1-scene-construction-small",
+    "sha256": "159333e16fc3c3fa5ac30f52e3280d32c753ed8c03247e0baf2ef2a1d2c9fb4b",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "scene_construction",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 20,
+        "maximum_degree": 8
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 2,
+        "measurement_iterations": 6,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 3
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 60000
+      }
+    }
+  },
+  "stream": {
+    "encoding_version": 1,
+    "operations": 286,
+    "mutations": 280,
+    "sha256": "0db9d34a16b9bcc40520dc979f28b39e699199573d5f5b7679b2f32a9bf06cd7",
+    "mutations_sha256": "bf9d701c5cf78fe93186f08d357402a6b542e0c00489fc608f6e62816182114d"
+  },
+  "checkpoints": [
+    {
+      "index": 0,
+      "op_index": 105,
+      "model_sha256": "0be9fb64ed2646758a02f7d4e64ba2e86554680c263488a60ea05ec280bb75d6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 1,
+      "op_index": 211,
+      "model_sha256": "0be9fb64ed2646758a02f7d4e64ba2e86554680c263488a60ea05ec280bb75d6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 2,
+      "op_index": 282,
+      "model_sha256": "0be9fb64ed2646758a02f7d4e64ba2e86554680c263488a60ea05ec280bb75d6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 3,
+      "op_index": 285,
+      "model_sha256": "82c804f325c0d737be08826b65193fe5c0ba9d77364c9472dbdd932f494b70d0",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "44136fa355b3678a1146ad16f7e8649e94fb4fc21fe77e8310c060f61caaff8a",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "4f53cda18c2baa0c0354bb5f9a3ecbe5ed12ab4d8e11ba873c2f11161202b945",
+        "topology": "c1679c9323500aa7065b2d8065c38e7e9953733d85bd1f1b7f4888ccacd02571"
+      }
+    }
+  ],
+  "sections": {
+    "modelled": [
+      "topology",
+      "content",
+      "interaction"
+    ],
+    "provisional": [
+      "geometry",
+      "paint_order"
+    ],
+    "not_modelled": [
+      "dom_identity.ids",
+      "accessibility"
+    ]
+  }
+}

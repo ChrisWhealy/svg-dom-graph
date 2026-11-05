@@ -104,6 +104,53 @@ jobs:
       # --build-only` pipeline as `cargo demo` and then hands the result to the CDP shards. Building it here as well
       # would only do the same work twice.
 
+  # The performance harness's workload generator, its reference model and its schemas. None of it needs a browser, so all
+  # of it runs on every commit. The independent JavaScript generator is the check that the stream does not depend on the
+  # language, and the wasm32 run is the check that it does not depend on the width of an integer.
+  perf-harness:
+    name: perf harness (workloads · schemas)
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          components: clippy
+          targets: wasm32-unknown-unknown, wasm32-wasip1
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+
+      - name: Clippy (perf-harness, with and without the schema check)
+        run: |
+          cargo clippy -p perf-harness --all-targets -- -D warnings
+          cargo clippy -p perf-harness --all-targets --no-default-features -- -D warnings
+
+      - name: Unit tests (perf-harness)
+        run: cargo test -p perf-harness
+
+      # A browser build has no JSON-schema check, so the rules that the schema states have to hold without it too.
+      - name: Unit tests (perf-harness, without the schema check)
+        run: cargo test -p perf-harness --no-default-features
+
+      - name: Clippy (perf-harness, wasm32 target)
+        run: cargo clippy -p perf-harness --lib --target wasm32-unknown-unknown --no-default-features -- -D warnings
+
+      # The same tests on a 32-bit platform, where the golden digests of the reference workloads must come out the same.
+      - name: Unit tests (perf-harness, on 32-bit wasm under Node)
+        run: cargo test -p perf-harness --no-default-features --target wasm32-wasip1
+        env:
+          CARGO_TARGET_WASM32_WASIP1_RUNNER: node ${{ github.workspace }}/perf/crosscheck/run-wasi.mjs
+
+      - name: Rust and JavaScript generators agree
+        run: node perf/crosscheck/crosscheck.mjs
+
+      - name: JSON schemas accept what they should and refuse what they should not
+        run: |
+          npm ci
+          npm test
+        working-directory: perf/schemas
+
   library-version:
     name: published library version
     runs-on: ubuntu-latest

@@ -27,6 +27,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Performance harness design spec and Phase 0 spike, schemas and findings, in `perf/` (`84a9599`)
 - Perf Harness: Implement effective-registration accounting in listener-tally spike (`2fc8997`) 
 - Perf Harness: Retain spike results as reproducible evidence (`89a03af`) 
+- Perf Harness Phase 1: Deterministic workload engine `perf-harness` (``)
 
 ### Changed
 
@@ -39,7 +40,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Update top level README again (`ef4e9fc`)
 - Perf Harness: Tighten JSON Schema validation (`e54ca79`)
 - Perf Harness: Treat WASM memory usage as a high water mark that does not need to shrink after teardown (`4365961`)
-- Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (``)
+- Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (`a6beaff`)
 
 ### Fixed
 

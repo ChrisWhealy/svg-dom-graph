@@ -1,5 +1,12 @@
 [workspace]
-members = ["demo-app", "demo-common", "demo-server", "cdp-test-fixture", "cdp-integration-test"]
+members = [
+    "demo-app",
+    "demo-common",
+    "demo-server",
+    "cdp-test-fixture",
+    "cdp-integration-test",
+    "perf-harness",
+]
 # Keep plain `cargo build` / `cargo test` focused on the library; the demo-app (a small worked example, consuming
 # svg-dom-graph only through its public API) and demo-server (the Actix-based static server that builds and serves
 # it — see demo-server/src/main.rs) are built only on demand, via `cargo demo` or an explicit `-p` invocation, and
@@ -45,7 +52,18 @@ wasm-bindgen = "0.2"
 
 [dependencies.web-sys]
 version = "0.3"
-features = ["Document", "DomRect", "Element", "Event", "EventTarget", "FocusOptions", "HtmlInputElement", "KeyboardEvent", "WheelEvent", "Window"]
+features = [
+    "Document",
+    "DomRect",
+    "Element",
+    "Event",
+    "EventTarget",
+    "FocusOptions",
+    "HtmlInputElement",
+    "KeyboardEvent",
+    "WheelEvent",
+    "Window",
+]
 
 [dev-dependencies]
 js-sys = "0.3"

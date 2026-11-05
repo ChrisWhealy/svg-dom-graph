@@ -1,0 +1,34 @@
+# W2, connector rerouting: one scene is built, then nodes are moved so that their connectors are routed again.
+#
+# The small reference manifest. Its digests are fixed in perf-harness/src/report/unit_tests.rs, so a change to the
+# generator, the encoding or the model shows at once. It is small enough to read and to run on any machine.
+schema_version = 1
+workload       = "connector_rerouting"
+seed           = 2026
+prng           = "splitmix64"
+
+[graph]
+nodes          = 12
+edges          = 20
+maximum_degree = 8
+
+[execution]
+modes                  = ["correctness", "performance"]
+warmup_iterations      = 2
+measurement_iterations = 6
+repetitions            = 3
+
+[measurement]
+capture_dom_counts           = true
+capture_listener_tally       = true
+capture_heap                 = false
+capture_wasm_capacity        = true
+capture_wasm_live_allocation = true
+capture_frame_timing         = false
+checkpoint_every             = 3
+
+[checkpoint]
+view = "unchanged"
+
+[limits]
+wall_ms = 60000

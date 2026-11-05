@@ -1,0 +1,161 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:svg-dom-graph:perf:workload-report:1",
+  "title": "What a manifest should do, and what the scene should look like at each checkpoint",
+  "description": "Written by `perf-harness generate`. A runner regenerates the stream, checks its digest against `stream`, and compares what it drew with the checkpoints. The model predicts exactly only the sections in `sections.modelled`. The `provisional` ones await Phase 2, and the `not_modelled` ones are empty and are not compared.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "manifest": {
+      "type": "object",
+      "properties": {
+        "id": {
+          "type": "string",
+          "minLength": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "canonical": {
+          "$ref": "urn:svg-dom-graph:perf:manifest:1"
+        }
+      },
+      "required": ["id", "sha256", "canonical"],
+      "additionalProperties": false
+    },
+    "stream": {
+      "type": "object",
+      "properties": {
+        "encoding_version": {
+          "const": 1
+        },
+        "operations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "mutations": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Over every operation, markers included. A correctness run executes all of them."
+        },
+        "mutations_sha256": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$",
+          "description": "Over the operations that change the scene. A performance run skips the checkpoints and proves it ran these."
+        }
+      },
+      "required": [
+        "encoding_version",
+        "operations",
+        "mutations",
+        "sha256",
+        "mutations_sha256"
+      ],
+      "additionalProperties": false
+    },
+    "checkpoints": {
+      "type": "array",
+      "minItems": 1,
+      "items": {
+        "type": "object",
+        "properties": {
+          "index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "op_index": {
+            "type": "integer",
+            "minimum": 0
+          },
+          "model_sha256": {
+            "type": "string",
+            "pattern": "^[0-9a-f]{64}$"
+          },
+          "section_sha256": {
+            "type": "object",
+            "properties": {
+              "topology": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "dom_identity": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "content": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "interaction": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "accessibility": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              },
+              "paint_order": {
+                "type": "string",
+                "pattern": "^[0-9a-f]{64}$"
+              }
+            },
+            "required": [
+              "topology",
+              "dom_identity",
+              "content",
+              "interaction",
+              "accessibility",
+              "paint_order"
+            ],
+            "additionalProperties": false
+          }
+        },
+        "required": ["index", "op_index", "model_sha256", "section_sha256"],
+        "additionalProperties": false
+      }
+    },
+    "sections": {
+      "type": "object",
+      "properties": {
+        "modelled": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "provisional": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "not_modelled": {
+          "type": "array",
+          "items": {
+            "type": "string",
+            "minLength": 1
+          }
+        }
+      },
+      "required": ["modelled", "provisional", "not_modelled"],
+      "additionalProperties": false
+    }
+  },
+  "required": [
+    "schema_version",
+    "manifest",
+    "stream",
+    "checkpoints",
+    "sections"
+  ],
+  "additionalProperties": false
+}

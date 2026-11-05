@@ -1,0 +1,86 @@
+//! Command line front end: `perf-harness <command> <manifest.toml>`.
+//!
+//! * `validate` reads and checks a manifest.
+//! * `generate` prints the workload report as JSON, or writes it to `--out`.
+//! * `stream` prints the operation stream, one JSON operation per line.
+
+use perf_harness::manifest::Manifest;
+use perf_harness::ops::Op;
+use perf_harness::report::build_report;
+use perf_harness::workload::{WorkloadError, generate};
+use std::io::Write;
+use std::process::ExitCode;
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn main() -> ExitCode {
+    let args: Vec<String> = std::env::args().skip(1).collect();
+    if args.is_empty() {
+        return usage();
+    }
+    match run(&args) {
+        Ok(()) => ExitCode::SUCCESS,
+        Err(message) => {
+            eprintln!("perf-harness: {message}");
+            ExitCode::FAILURE
+        },
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn usage() -> ExitCode {
+    eprintln!("usage: perf-harness (validate | generate [--id NAME] [--out FILE] | stream) <manifest.toml>");
+    ExitCode::from(2)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+fn run(args: &[String]) -> Result<(), String> {
+    let (command, rest) = args.split_first().ok_or("no command")?;
+    let mut path = None;
+    let mut id = None;
+    let mut out = None;
+    let mut rest = rest.iter();
+    while let Some(arg) = rest.next() {
+        match arg.as_str() {
+            "--id" => id = Some(rest.next().ok_or("--id needs a name")?.clone()),
+            "--out" => out = Some(rest.next().ok_or("--out needs a file")?.clone()),
+            other => path = Some(other.to_string()),
+        }
+    }
+    let path = path.ok_or("no manifest given")?;
+    let text = std::fs::read_to_string(&path).map_err(|e| format!("{path}: {e}"))?;
+    let manifest = Manifest::from_toml(&text).map_err(|e| e.to_string())?;
+
+    match command.as_str() {
+        "validate" => {
+            println!("{path}: ok, manifest sha256 {}", manifest.canonical_sha256());
+            Ok(())
+        },
+        "generate" => {
+            let id = id.unwrap_or_else(|| {
+                std::path::Path::new(&path)
+                    .file_stem()
+                    .map_or_else(|| "manifest".to_string(), |s| s.to_string_lossy().into())
+            });
+            let report = build_report(&manifest, &id).map_err(|e| e.to_string())?;
+            let json = serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
+            match out {
+                Some(file) => std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}")),
+                None => {
+                    println!("{json}");
+                    Ok(())
+                },
+            }
+        },
+        "stream" => {
+            let stdout = std::io::stdout();
+            let mut lock = std::io::BufWriter::new(stdout.lock());
+            generate(&manifest, &mut |op: &Op| {
+                serde_json::to_writer(&mut lock, op).map_err(|e| e.to_string())?;
+                lock.write_all(b"\n").map_err(|e| e.to_string())
+            })
+            .map_err(|e: WorkloadError| e.to_string())?;
+            lock.flush().map_err(|e| e.to_string())
+        },
+        _ => Err(format!("unknown command {command}")),
+    }
+}

@@ -1,0 +1,22 @@
+[package]
+name = "perf-harness"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Chris Whealy <chris@whealy.com>"]
+description = "Deterministic workloads, a reference model and reports for measuring svg-dom-graph"
+license = "MIT"
+# Not part of the published library. It is built on demand, like cdp-integration-test.
+publish = false
+
+[features]
+# Validating a manifest against its JSON schema needs `jsonschema`, which a wasm build of the workload engine can do without.
+default = ["schema"]
+schema = ["dep:jsonschema"]
+
+[dependencies]
+serde = { version = "1", features = ["derive"] }
+serde_json = "1"
+sha2 = "0.11"
+toml = "1"
+jsonschema = { version = "0.60", default-features = false, optional = true }

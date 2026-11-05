@@ -1,0 +1,82 @@
+{
+  "recorded_at": "2026-11-05T17:33:45.918Z",
+  "commit": "a6beaffb752175babee9eeeba03df80595b01e4f",
+  "uncommitted_changes": [
+    "M .github/workflows/ci.yml",
+    " M Cargo.toml",
+    " M demo/changelog.md",
+    " M perf/schemas/check.mjs",
+    " M perf/schemas/examples/result.json",
+    " M perf/schemas/result.schema.json",
+    "?? perf-harness/",
+    "?? perf/crosscheck/",
+    "?? perf/evidence/phase1/",
+    "?? perf/manifests/",
+    "?? perf/schemas/examples/rejected-manifests.json",
+    "?? perf/schemas/examples/workload-report.json",
+    "?? perf/schemas/workload-report.schema.json"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
+  "node": "v26.13.0",
+  "targets_run": [
+    "native (this machine)",
+    "wasm32-wasip1 (32-bit, under Node)"
+  ],
+  "commands": [
+    {
+      "file": "rust-tests-native.txt",
+      "command": "cargo test -p perf-harness",
+      "exit_code": 0,
+      "seconds": 0.121
+    },
+    {
+      "file": "rust-tests-without-schema.txt",
+      "command": "cargo test -p perf-harness --no-default-features",
+      "exit_code": 0,
+      "seconds": 0.904
+    },
+    {
+      "file": "rust-tests-wasm32-wasi.txt",
+      "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
+      "exit_code": 0,
+      "seconds": 0.694
+    },
+    {
+      "file": "crosscheck-rust-vs-javascript.txt",
+      "command": "node perf/crosscheck/crosscheck.mjs",
+      "exit_code": 0,
+      "seconds": 0.811
+    },
+    {
+      "file": "schema-checks.txt",
+      "command": "npm test",
+      "exit_code": 0,
+      "seconds": 0.123
+    },
+    {
+      "file": "reports/w1-scene-construction-small.json",
+      "command": "perf-harness generate perf/manifests/w1-scene-construction-small.toml --id w1-scene-construction-small",
+      "exit_code": 0,
+      "seconds": 0.253
+    },
+    {
+      "file": "reports/w2-connector-rerouting-small.json",
+      "command": "perf-harness generate perf/manifests/w2-connector-rerouting-small.toml --id w2-connector-rerouting-small",
+      "exit_code": 0,
+      "seconds": 0.222
+    },
+    {
+      "file": "reports/w3-scene-lifecycle-small.json",
+      "command": "perf-harness generate perf/manifests/w3-scene-lifecycle-small.toml --id w3-scene-lifecycle-small",
+      "exit_code": 0,
+      "seconds": 0.214
+    }
+  ]
+}
