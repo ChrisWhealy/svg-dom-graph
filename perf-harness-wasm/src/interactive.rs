@@ -58,8 +58,8 @@ pub fn build(manifest_json: &str, scale_percent: u32) -> String {
         Ok(manifest) => manifest,
         Err(message) => return error(message),
     };
-    if manifest.workload != Workload::Interaction {
-        return error("only the interaction workload is driven with input");
+    if !matches!(manifest.workload, Workload::Interaction | Workload::Recovery) {
+        return error("only the interaction and recovery workloads are driven with input");
     }
     match build_stage(&manifest, scale_percent) {
         Ok(summary) => summary.to_string(),
@@ -236,6 +236,17 @@ pub fn teardown() -> String {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Drops the scene and leaves its host in the document, which is what dropping the last handle does by itself. The listeners
+/// that the scene owns go with it, and the elements it drew stay where they are.
+pub fn drop_scene() -> String {
+    STAGE.with_borrow_mut(|stage| {
+        if let Some(stage) = stage.as_mut() {
+            stage.scene = None;
+        }
+    });
+    "ok".to_string()
+}
+
 /// Whether the host element is in the document, for a test that the teardown removed it.
 pub fn host_present() -> bool {
     web_sys::window()

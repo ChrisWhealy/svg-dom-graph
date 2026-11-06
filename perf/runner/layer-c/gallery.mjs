@@ -31,7 +31,7 @@ const DEFAULT_NAMES = {
   next: '^next\\b',
   previous: '^(previous|prev)\\b',
   // "Reset zoom" is a view control and not a restart of a walk, so the name has to begin with the word.
-  restart: '^restart\\b',
+  restart: '^restart\\b'
 }
 /** The most steps a walk makes forward, and then back. */
 const MAX_STEPS = 6
@@ -101,8 +101,22 @@ export const PAGE = `
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const click = async (page, at) => {
   await page.send('Input.dispatchMouseEvent', { type: 'mouseMoved', x: at.x, y: at.y })
-  await page.send('Input.dispatchMouseEvent', { type: 'mousePressed', x: at.x, y: at.y, button: 'left', buttons: 1, clickCount: 1 })
-  await page.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: at.x, y: at.y, button: 'left', buttons: 0, clickCount: 1 })
+  await page.send('Input.dispatchMouseEvent', {
+    type: 'mousePressed',
+    x: at.x,
+    y: at.y,
+    button: 'left',
+    buttons: 1,
+    clickCount: 1
+  })
+  await page.send('Input.dispatchMouseEvent', {
+    type: 'mouseReleased',
+    x: at.x,
+    y: at.y,
+    button: 'left',
+    buttons: 0,
+    clickCount: 1
+  })
 }
 
 /** Waits for the frames that follow a click to reach the screen. */
@@ -135,15 +149,31 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
   const errors = []
   try {
     await chrome.send('Runtime.enable')
-    await chrome.send('Emulation.setDeviceMetricsOverride', { width: 1280, height: 900, deviceScaleFactor: 1, mobile: false })
-    chrome.on('Runtime.exceptionThrown', params => errors.push({ kind: 'exception', text: params.exceptionDetails.exception?.description ?? params.exceptionDetails.text }))
+    await chrome.send('Emulation.setDeviceMetricsOverride', {
+      width: 1280,
+      height: 900,
+      deviceScaleFactor: 1,
+      mobile: false
+    })
+    chrome.on('Runtime.exceptionThrown', params =>
+      errors.push({
+        kind: 'exception',
+        text: params.exceptionDetails.exception?.description ?? params.exceptionDetails.text
+      })
+    )
     chrome.on('Runtime.consoleAPICalled', params => {
-      if (params.type === 'error') errors.push({ kind: 'console.error', text: params.args.map(arg => arg.value ?? arg.description).join(' ') })
+      if (params.type === 'error')
+        errors.push({ kind: 'console.error', text: params.args.map(arg => arg.value ?? arg.description).join(' ') })
     })
     await chrome.send('Page.addScriptToEvaluateOnNewDocument', { source: tracker })
     await chrome.send('Page.addScriptToEvaluateOnNewDocument', { source: PAGE })
     await chrome.send('Page.navigate', { url: `http://127.0.0.1:${port}/` })
-    for (let waited = 0; waited < 60000 && (await chrome.evaluate('window.perfG?.readyAt() ?? null')) === null; waited += 50) await pause(50)
+    for (
+      let waited = 0;
+      waited < 60000 && (await chrome.evaluate('window.perfG?.readyAt() ?? null')) === null;
+      waited += 50
+    )
+      await pause(50)
     const coldStartMs = await chrome.evaluate('perfG.readyAt()')
     if (coldStartMs === null) throw new Error('the gallery did not become ready')
     const version = (await chrome.send('Browser.getVersion')).result?.product ?? null
@@ -163,7 +193,14 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
       })
       const [time] = await timesOf(chrome, trace)
       const active = await chrome.evaluate('perfG.active()')
-      return { label, before, after: await chrome.evaluate('perfG.counts()'), time, active, errors: errors.slice(errorsBefore) }
+      return {
+        label,
+        before,
+        after: await chrome.evaluate('perfG.counts()'),
+        time,
+        active,
+        errors: errors.slice(errorsBefore)
+      }
     }
 
     // First pass: the first visit of every panel, which builds it.
@@ -171,19 +208,37 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
       const override = overrides[item.id] ?? {}
       if (override.before_build) await chrome.evaluate(override.before_build)
       const first = await visit(item, 'first')
-      const record = { id: item.id, label: item.label, group: item.group, status: 'ok', notes: [], errors: first.errors }
+      const record = {
+        id: item.id,
+        label: item.label,
+        group: item.group,
+        status: 'ok',
+        notes: [],
+        errors: first.errors
+      }
       if (first.active !== item.id) {
         record.status = 'error'
         record.notes.push(`selecting it left ${first.active ?? 'no panel'} current`)
       }
       record.build = first.time.ms !== undefined ? { ms: first.time.ms } : { unavailable: first.time.reason }
-      record.counts = { elements_before: first.before.elements, elements_after: first.after.elements, listeners_before: first.before.listeners, listeners_after: first.after.listeners }
+      record.counts = {
+        elements_before: first.before.elements,
+        elements_after: first.after.elements,
+        listeners_before: first.before.listeners,
+        listeners_after: first.after.listeners
+      }
       record.controls = await chrome.evaluate('perfG.controls()')
 
       // The walk, if the panel has controls to walk with.
-      const names = { ...DEFAULT_NAMES, ...Object.fromEntries(['next', 'previous', 'restart'].filter(key => override[key]).map(key => [key, override[key]])) }
+      const names = {
+        ...DEFAULT_NAMES,
+        ...Object.fromEntries(
+          ['next', 'previous', 'restart'].filter(key => override[key]).map(key => [key, override[key]])
+        )
+      }
       const found = {}
-      for (const key of ['next', 'previous', 'restart']) found[key] = await chrome.evaluate(`perfG.find(${JSON.stringify(names[key])})`)
+      for (const key of ['next', 'previous', 'restart'])
+        found[key] = await chrome.evaluate(`perfG.find(${JSON.stringify(names[key])})`)
       // A clock that has no hook to advance it is noted and left alone, and does not fail the sweep.
       let hookMissing = false
       const advance = async () => {
@@ -213,7 +268,8 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
         const firstRetraceMiss = () => {
           for (let index = 0; index < fingerprints.back.length - 1; index++) {
             const step = fingerprints.forward.length - index - 1
-            if (fingerprints.back[index] !== fingerprints.forward[step - 1]) return `at step ${step}, ${differences(`forward${step}`, `back${index}`)}`
+            if (fingerprints.back[index] !== fingerprints.forward[step - 1])
+              return `at step ${step}, ${differences(`forward${step}`, `back${index}`)}`
           }
           return ''
         }
@@ -223,9 +279,14 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
           if (!a || !b) return ''
           const seen = []
           for (let index = 0; index < Math.max(a.length, b.length) && seen.length < 3; index++) {
-            if (a[index] !== b[index]) seen.push(`#${index}: "${(a[index] ?? '(none)').slice(0, 90)}" became "${(b[index] ?? '(none)').slice(0, 90)}"`)
+            if (a[index] !== b[index])
+              seen.push(
+                `#${index}: "${(a[index] ?? '(none)').slice(0, 90)}" became "${(b[index] ?? '(none)').slice(0, 90)}"`
+              )
           }
-          return a.length === b.length ? `${seen.length}+ elements differ, first ${seen.join('; ')}` : `${a.length} elements became ${b.length}; ${seen.join('; ')}`
+          return a.length === b.length
+            ? `${seen.length}+ elements differ, first ${seen.join('; ')}`
+            : `${a.length} elements became ${b.length}; ${seen.join('; ')}`
         }
         let taken = 0
         const press = async (key, phase = key) => {
@@ -267,7 +328,8 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
         // The clicks that were made are the recorded events in the order they were made, and the steps say what each did.
         record.walk = {
           status: steps.length || override.advance ? 'walked' : 'downgraded',
-          reason: steps.length || override.advance ? undefined : 'the controls were disabled or missing when the walk began',
+          reason:
+            steps.length || override.advance ? undefined : 'the controls were disabled or missing when the walk began',
           forward: steps.filter(step => step.label === 'next').length,
           back: steps.filter(step => step.label === 'previous').length,
           restarted: steps.some(step => step.label === 'restart'),
@@ -275,18 +337,43 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
           changed: steps.filter(step => step.changed).length,
           step_ms: times.filter(time => time.ms !== undefined).map(time => time.ms),
           steps_unattributed: times.filter(time => time.ms === undefined).length,
-          unattributed: times.filter(time => time.ms === undefined).reduce((reasons, time) => ({ ...reasons, [time.reason.replace(/\d+/g, 'N')]: (reasons[time.reason.replace(/\d+/g, 'N')] ?? 0) + 1 }), {}),
-          errors: errors.slice(walkErrors),
+          unattributed: times
+            .filter(time => time.ms === undefined)
+            .reduce(
+              (reasons, time) => ({
+                ...reasons,
+                [time.reason.replace(/\d+/g, 'N')]: (reasons[time.reason.replace(/\d+/g, 'N')] ?? 0) + 1
+              }),
+              {}
+            ),
+          errors: errors.slice(walkErrors)
         }
         // What the walk found is judged against what is defined for the panel, and an observation that nothing defines is not a pass.
         const expect = override.expect ?? {}
-        Object.assign(record.walk, judgeWalk({ found, steps, fingerprints, errors: record.walk.errors, expect, differences: { back: firstRetraceMiss(), restart: differences('start', 'afterRestart'), restartEffect: differences('beforeRestart', 'afterRestart') } }))
+        Object.assign(
+          record.walk,
+          judgeWalk({
+            found,
+            steps,
+            fingerprints,
+            errors: record.walk.errors,
+            expect,
+            differences: {
+              back: firstRetraceMiss(),
+              restart: differences('start', 'afterRestart'),
+              restartEffect: differences('beforeRestart', 'afterRestart')
+            }
+          })
+        )
         if (override.expect) record.walk.expect = override.expect
-        for (const key of ['next', 'previous', 'restart']) if (!found[key]) record.notes.push(`no ${key} control by accessible name`)
+        for (const key of ['next', 'previous', 'restart'])
+          if (!found[key]) record.notes.push(`no ${key} control by accessible name`)
         if (!found.next && !found.previous && !found.restart) record.notes.push('advanced by its clock only')
       }
       panels.push(record)
-      log(`${record.status === 'ok' ? 'ok  ' : 'FAIL'} ${item.id}: build ${record.build.ms?.toFixed(1) ?? 'n/a'} ms, ${record.walk.status}${record.walk.clicks ? `, ${record.walk.clicks} clicks` : ''}`)
+      log(
+        `${record.status === 'ok' ? 'ok  ' : 'FAIL'} ${item.id}: build ${record.build.ms?.toFixed(1) ?? 'n/a'} ms, ${record.walk.status}${record.walk.clicks ? `, ${record.walk.clicks} clicks` : ''}`
+      )
     }
 
     // Second pass: a revisit of every panel, which only shows what is already built.
@@ -303,7 +390,8 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
     }
     for (const record of panels) if (record.errors.length > 0 && record.status === 'ok') record.status = 'errors'
     const verdicts = verdict => panels.filter(panel => panel.walk.verdict === verdict).length
-    const checks = outcome => panels.reduce((total, panel) => total + panel.walk.checks.filter(c => c.outcome === outcome).length, 0)
+    const checks = outcome =>
+      panels.reduce((total, panel) => total + panel.walk.checks.filter(c => c.outcome === outcome).length, 0)
 
     const walks = status => panels.filter(panel => panel.walk.status === status).length
     return {
@@ -326,16 +414,18 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
         checks_inconclusive: checks('inconclusive'),
         checks_fail: checks('fail'),
         first_visit_timed: panels.filter(panel => panel.build.ms !== undefined).length,
-        revisit_timed: panels.filter(panel => panel.revisit?.ms !== undefined).length,
+        revisit_timed: panels.filter(panel => panel.revisit?.ms !== undefined).length
       },
       browser: version,
       viewport: [1280, 900],
       time_definition: `${DEFINITION}, found with the wider qualifier (a style or layout step, or a repaint), because a panel is built from HTML and measured in its own task. A time here is the upper bound of a window in which the panel's change was presented, and an unrelated repaint in that window could be taken for it. Headless Chrome presents without a display.`,
       cold_start_ms: coldStartMs,
-      cold_start_definition: 'performance.now() in the page when the first panel is on screen, which is from the start of the navigation',
-      teardown: 'not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown',
+      cold_start_definition:
+        'performance.now() in the page when the first panel is on screen, which is from the start of the navigation',
+      teardown:
+        'not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown',
       panels,
-      page_errors: errors,
+      page_errors: errors
     }
   } finally {
     await chrome.close()

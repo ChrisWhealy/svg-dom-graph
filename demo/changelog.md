@@ -33,6 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Provide completion evidence of gallery sweep (`1d2c34f`)
 - Perf Harness: Implement accessibility checks to cover Chrome AX tree (`be3b0b1`)
 - Perf Harness: Gallery walk tests have "pass", "inconclusive" and "fail" outcomes (`4857001`)
+- Perf Harness Phase 4: Recovery and endurance testing under deliberate failures (``)
 
 ### Changed
 
@@ -79,4 +80,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Include cycles that run a checkpoint in the endurance series (`0d5d634`)
 - Perf Harness: Explain retained allocations in endurance test results (`cb03518`)
 - Perf Harness: Performance-mode correctness checks cover the measured work (`8736347`)
-- Perf Harness: Record attribution strength of the cause of a screen repaints (``)
+- Perf Harness: Record attribution strength of the cause of a screen repaints (`80e9916`)

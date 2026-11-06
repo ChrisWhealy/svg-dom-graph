@@ -63,9 +63,21 @@ export const parseTrace = (events, { dataLost = false } = {}) => {
   for (const event of [...events].sort((a, b) => a.ts - b.ts)) {
     if (event.cat?.includes('blink.user_timing') && event.args?.data?.startTime !== undefined) {
       if (marks.has(event.name)) duplicates.add(event.name)
-      marks.set(event.name, { name: event.name, ts: event.ts, startMs: event.args.data.startTime, pid: event.pid, tid: event.tid })
+      marks.set(event.name, {
+        name: event.name,
+        ts: event.ts,
+        startMs: event.args.data.startTime,
+        pid: event.pid,
+        tid: event.tid
+      })
     } else if (event.name === MAIN_FRAME && event.ph === 'X') {
-      frames.push({ id: event.args?.begin_frame_id, ts: event.ts, end: event.ts + (event.dur ?? 0), pid: event.pid, tid: event.tid })
+      frames.push({
+        id: event.args?.begin_frame_id,
+        ts: event.ts,
+        end: event.ts + (event.dur ?? 0),
+        pid: event.pid,
+        tid: event.tid
+      })
     } else if (STYLE_OR_LAYOUT.has(event.name) && event.ph === 'X') {
       styleSteps.push({ ts: event.ts, pid: event.pid, tid: event.tid })
     } else if (event.name === PAINT && event.ph === 'X') {
@@ -77,11 +89,21 @@ export const parseTrace = (events, { dataLost = false } = {}) => {
         const begin = open.get(key)
         open.delete(key)
         const reporter = begin.args?.frame_reporter
-        if (reporter) pipelines.push({ sequence: reporter.frame_sequence, state: reporter.state, begin: begin.ts, end: event.ts, pid: event.pid })
+        if (reporter)
+          pipelines.push({
+            sequence: reporter.frame_sequence,
+            state: reporter.state,
+            begin: begin.ts,
+            end: event.ts,
+            pid: event.pid
+          })
       }
     }
   }
-  const within = (steps, frame) => steps.filter(step => step.pid === frame.pid && step.tid === frame.tid && step.ts >= frame.ts && step.ts <= frame.end).map(step => step.ts)
+  const within = (steps, frame) =>
+    steps
+      .filter(step => step.pid === frame.pid && step.tid === frame.tid && step.ts >= frame.ts && step.ts <= frame.end)
+      .map(step => step.ts)
   for (const frame of frames) {
     frame.styleAt = within(styleSteps, frame)
     frame.updateAt = [...frame.styleAt, ...within(paintSteps, frame)].sort((a, b) => a - b)
@@ -124,17 +146,25 @@ export const attribute = (trace, name, { boundMs = 250, qualify = 'style' } = {}
     if (candidates.length > 1) break
   }
   if (containing && !candidates.includes(containing) && candidates.length > 0 && steps(containing).length > 0) {
-    return unavailable('the mark fell after the style step of its frame, and a later frame also has one, so they cannot be told apart')
+    return unavailable(
+      'the mark fell after the style step of its frame, and a later frame also has one, so they cannot be told apart'
+    )
   }
   const frame = candidates[0]
-  if (!frame) return unavailable(`no frame with a ${qualify === 'update' ? 'style, layout or paint' : 'style or layout'} step began within ${boundMs} ms of the mark`)
+  if (!frame)
+    return unavailable(
+      `no frame with a ${qualify === 'update' ? 'style, layout or paint' : 'style or layout'} step began within ${boundMs} ms of the mark`
+    )
 
   // A compositor frame is presented in whole or in part. A part that is presented while the main thread is still at work is
   // not the main thread's update, so only a presentation of everything, after the main thread has finished, is this frame's.
   const mine_ = trace.pipelines.filter(p => p.sequence === frame.id && p.pid === frame.pid)
   if (mine_.length === 0) return unavailable(`the compositor has no record of frame ${frame.id} in the trace`)
   const pipeline = mine_.find(p => p.state === 'STATE_PRESENTED_ALL' && p.end >= frame.end)
-  if (!pipeline) return unavailable(`frame ${frame.id} was not presented in full, it ended as ${mine_.map(p => p.state).join(' and ')}`)
+  if (!pipeline)
+    return unavailable(
+      `frame ${frame.id} was not presented in full, it ended as ${mine_.map(p => p.state).join(' and ')}`
+    )
   if (pipeline.end < mark.ts) return unavailable(`frame ${frame.id} was presented before the mark`)
   return {
     status: 'measured',
@@ -144,7 +174,7 @@ export const attribute = (trace, name, { boundMs = 250, qualify = 'style' } = {}
     presentedAt: pipeline.end,
     latencyMs: (pipeline.end - mark.ts) / 1000,
     // The same instant on the page's clock, which is how a start that the page stamped for itself is compared with it.
-    presentedAtPageMs: mark.startMs + (pipeline.end - mark.ts) / 1000,
+    presentedAtPageMs: mark.startMs + (pipeline.end - mark.ts) / 1000
   }
 }
 

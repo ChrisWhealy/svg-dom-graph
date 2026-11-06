@@ -51,13 +51,7 @@
           "description": "Over the operations that change the scene. A performance run skips the checkpoints and proves it ran these."
         }
       },
-      "required": [
-        "encoding_version",
-        "operations",
-        "mutations",
-        "sha256",
-        "mutations_sha256"
-      ],
+      "required": ["encoding_version", "operations", "mutations", "sha256", "mutations_sha256"],
       "additionalProperties": false
     },
     "checkpoints": {
@@ -106,14 +100,7 @@
                 "pattern": "^[0-9a-f]{64}$"
               }
             },
-            "required": [
-              "topology",
-              "dom_identity",
-              "content",
-              "interaction",
-              "accessibility",
-              "paint_order"
-            ],
+            "required": ["topology", "dom_identity", "content", "interaction", "accessibility", "paint_order"],
             "additionalProperties": false
           }
         },
@@ -150,12 +137,6 @@
       "additionalProperties": false
     }
   },
-  "required": [
-    "schema_version",
-    "manifest",
-    "stream",
-    "checkpoints",
-    "sections"
-  ],
+  "required": ["schema_version", "manifest", "stream", "checkpoints", "sections"],
   "additionalProperties": false
 }

@@ -25,9 +25,12 @@ const overrides = JSON.parse(fs.readFileSync(path.join(root, 'perf/gallery-overr
 const requireFromSchemas = createRequire(path.join(root, 'perf/schemas/package.json'))
 const Ajv = requireFromSchemas('ajv/dist/2020.js')
 const ajv = new Ajv({ strict: true, strictTypes: false, strictRequired: false, allErrors: true })
-const validate = ajv.compile(JSON.parse(fs.readFileSync(path.join(root, 'perf/schemas/gallery-report.schema.json'), 'utf8')))
+const validate = ajv.compile(
+  JSON.parse(fs.readFileSync(path.join(root, 'perf/schemas/gallery-report.schema.json'), 'utf8'))
+)
 
-const first = (command, args) => spawnSync(command, args, { cwd: root, encoding: 'utf8' }).stdout?.trim().split('\n')[0] ?? null
+const first = (command, args) =>
+  spawnSync(command, args, { cwd: root, encoding: 'utf8' }).stdout?.trim().split('\n')[0] ?? null
 const report = await sweepGallery({ stageDir, overrides, only, log: line => console.log(line) })
 report.git_sha = first('git', ['rev-parse', 'HEAD'])
 report.git_dirty = spawnSync('git', ['status', '--porcelain'], { cwd: root, encoding: 'utf8' }).stdout.trim().length > 0
@@ -48,21 +51,31 @@ const built = panels.filter(panel => panel.build.ms !== undefined).map(panel => 
 const revisited = panels.filter(panel => panel.revisit?.ms !== undefined).map(panel => panel.revisit.ms)
 console.log(`\n${panels.length} panels in ${path.relative(root, file)}`)
 console.log(`  cold start ${report.cold_start_ms.toFixed(0)} ms`)
-console.log(`  first visit: ${built.length} timed, median ${median(built)?.toFixed(1)} ms, slowest ${Math.max(...built).toFixed(1)} ms (${panels.find(panel => panel.build.ms === Math.max(...built))?.id})`)
+console.log(
+  `  first visit: ${built.length} timed, median ${median(built)?.toFixed(1)} ms, slowest ${Math.max(...built).toFixed(1)} ms (${panels.find(panel => panel.build.ms === Math.max(...built))?.id})`
+)
 console.log(`  revisit: ${revisited.length} timed, median ${median(revisited)?.toFixed(1)} ms`)
-console.log(`  swept ${summary.panels} of the ${summary.panels_in_gallery} panels in the gallery: ${summary.loaded} loaded, ${summary.failed_to_load} failed to load, ${summary.with_errors} with page errors`)
+console.log(
+  `  swept ${summary.panels} of the ${summary.panels_in_gallery} panels in the gallery: ${summary.loaded} loaded, ${summary.failed_to_load} failed to load, ${summary.with_errors} with page errors`
+)
 console.log(`  walked ${summary.walked}, downgraded ${summary.downgraded}, skipped ${summary.skipped}`)
-console.log(`  walk verdicts: ${summary.walks_pass} pass, ${summary.walks_inconclusive} inconclusive, ${summary.walks_fail} fail; of the ${summary.checks_pass + summary.checks_inconclusive + summary.checks_fail} checks, ${summary.checks_pass} pass, ${summary.checks_inconclusive} inconclusive, ${summary.checks_fail} fail`)
+console.log(
+  `  walk verdicts: ${summary.walks_pass} pass, ${summary.walks_inconclusive} inconclusive, ${summary.walks_fail} fail; of the ${summary.checks_pass + summary.checks_inconclusive + summary.checks_fail} checks, ${summary.checks_pass} pass, ${summary.checks_inconclusive} inconclusive, ${summary.checks_fail} fail`
+)
 
 let failed = 0
 const gate = (ok, text) => {
   if (!ok) failed++
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${text}`)
 }
-gate(summary.panels === summary.panels_in_gallery || only !== null, `the whole gallery was swept (${summary.panels} of ${summary.panels_in_gallery})`)
+gate(
+  summary.panels === summary.panels_in_gallery || only !== null,
+  `the whole gallery was swept (${summary.panels} of ${summary.panels_in_gallery})`
+)
 gate(summary.failed_to_load === 0, 'every panel came up when it was selected, on the first visit and on the revisit')
 for (const panel of panels.filter(panel => panel.walk.verdict === 'fail')) {
-  for (const failed of panel.walk.checks.filter(c => c.outcome === 'fail')) console.log(`      ${panel.id}: ${failed.name}: ${failed.detail}`)
+  for (const failed of panel.walk.checks.filter(c => c.outcome === 'fail'))
+    console.log(`      ${panel.id}: ${failed.name}: ${failed.detail}`)
 }
 gate(summary.walks_fail === 0, `no panel broke an expectation that is defined for it (${summary.walks_fail} did)`)
 gate(report.page_errors.length === 0, `the page threw nothing and logged no error (${report.page_errors.length})`)

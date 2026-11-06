@@ -1,0 +1,116 @@
+{
+  "B:edge_construction": {
+    "point": "edge_construction",
+    "contract": "undocumented",
+    "summary": "10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference). 1 at 10 (the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference)",
+    "details": {
+      "observed": [
+        {
+          "what_was_left": "the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference",
+          "failures": 4,
+          "calls": ["1 createElementNS path", "2 setAttribute path d", "3 appendChild svg", "4 appendChild g"]
+        },
+        {
+          "what_was_left": "the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
+          "failures": 5,
+          "calls": [
+            "5 setAttribute path fill",
+            "6 setAttribute path stroke",
+            "7 setAttribute path stroke-width",
+            "8 setAttribute path marker-end",
+            "9 setAttribute g aria-label"
+          ]
+        },
+        {
+          "what_was_left": "the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
+          "failures": 1,
+          "calls": ["10 setAttribute g aria-label"]
+        }
+      ]
+    }
+  },
+  "B:externref_slot_per_failed_call": {
+    "point": "externref_slot_per_failed_call",
+    "contract": "undocumented",
+    "summary": "a DOM call that fails costs wasm-bindgen's glue one externref slot for good if the call returns an object, and nothing if it returns nothing: createElementNS 40 lost in 40 failures, appendChild 40 lost in 40 failures, setAttribute 0 lost in 40 failures, getBBox 40 lost in 40 failures, addEventListener 0 lost in 40 failures. Exactly one slot per failure, for every method that returns an object, and none for the others. The slot holds undefined and is never freed, so the table, and the list of free slots beside it, grow for as long as failures happen. It is in the generated glue (wasm-bindgen 0.2.129) and not in the library, since the harness's own web-sys calls lose slots in the same way.",
+    "details": {
+      "failures_per_method": 40,
+      "table": [
+        {
+          "method": "createElementNS",
+          "returns_an_object": true,
+          "failures": 40,
+          "slots_lost": 40
+        },
+        {
+          "method": "appendChild",
+          "returns_an_object": true,
+          "failures": 40,
+          "slots_lost": 40
+        },
+        {
+          "method": "setAttribute",
+          "returns_an_object": false,
+          "failures": 40,
+          "slots_lost": 0
+        },
+        {
+          "method": "getBBox",
+          "returns_an_object": true,
+          "failures": 40,
+          "slots_lost": 40
+        },
+        {
+          "method": "addEventListener",
+          "returns_an_object": false,
+          "failures": 40,
+          "slots_lost": 0
+        }
+      ],
+      "losing": ["createElementNS", "appendChild", "getBBox"],
+      "exactly_one_slot_per_failed_object_call": true
+    }
+  },
+  "B:removed_host": {
+    "point": "removed_host",
+    "contract": "undocumented",
+    "summary": "with the host <svg> out of the document, 5 of 5 operations succeeded (add_node ok; move_node ok; add_edge ok; make_draggable ok; set_edge_label ok); put back, the scene was readable and agreed with the model",
+    "details": {
+      "outcomes": [
+        {
+          "op": "add_node",
+          "ok": true
+        },
+        {
+          "op": "move_node",
+          "ok": true
+        },
+        {
+          "op": "add_edge",
+          "ok": true
+        },
+        {
+          "op": "make_draggable",
+          "ok": true
+        },
+        {
+          "op": "set_edge_label",
+          "ok": true
+        }
+      ],
+      "readable_when_back": true,
+      "agrees_with_the_model_when_back": true,
+      "first_differences": []
+    }
+  },
+  "C:mid_drag_teardown": {
+    "point": "mid_drag_teardown",
+    "contract": "undocumented",
+    "summary": "what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style \"cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;\" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its baseline once the host was removed.",
+    "details": {
+      "runs": 10,
+      "runs_with_the_style_left": 10,
+      "style": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+    }
+  }
+}

@@ -22,7 +22,7 @@ const faults = [
   ['node_removed', 'topology'],
   ['text_changed', 'content'],
   ['paint_order_swapped', 'paint_order'],
-  ['edge_dropped', 'topology'],
+  ['edge_dropped', 'topology']
 ]
 
 const page = await openHarnessPage()
@@ -31,17 +31,32 @@ const report = (ok, text) => {
   if (!ok) failures++
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${text}`)
 }
-const run = async fault => JSON.parse(await page.evaluate(`window.perfHarness.selftest_checker(${JSON.stringify(canonical.stdout.trim())}, ${JSON.stringify(fault)})`))
+const run = async fault =>
+  JSON.parse(
+    await page.evaluate(
+      `window.perfHarness.selftest_checker(${JSON.stringify(canonical.stdout.trim())}, ${JSON.stringify(fault)})`
+    )
+  )
 
 const clean = await run('none')
-report(clean.status === 'ok' && clean.checkpoints_failed.length === 0, `no fault: the run is valid, with ${clean.checkpoints_passed} checkpoints passed`)
+report(
+  clean.status === 'ok' && clean.checkpoints_failed.length === 0,
+  `no fault: the run is valid, with ${clean.checkpoints_passed} checkpoints passed`
+)
 
 for (const [fault, section] of faults) {
   const outcome = await run(fault)
   const named = outcome.checkpoints_failed.some(failure => failure.section === section)
-  report(outcome.status === 'invalid_incorrect' && named, `${fault}: ${outcome.status}, and ${named ? `names ${section}` : `does not name ${section} (it names ${[...new Set(outcome.checkpoints_failed.map(f => f.section))].join(', ') || 'nothing'})`}`)
+  report(
+    outcome.status === 'invalid_incorrect' && named,
+    `${fault}: ${outcome.status}, and ${named ? `names ${section}` : `does not name ${section} (it names ${[...new Set(outcome.checkpoints_failed.map(f => f.section))].join(', ') || 'nothing'})`}`
+  )
   if (outcome.checkpoints_failed[0]) console.log(`      ${outcome.checkpoints_failed[0].detail}`)
 }
 await page.close()
-console.log(failures ? `\n${failures} did not behave: the check cannot be trusted` : '\nthe check notices every fault, and passes a clean run')
+console.log(
+  failures
+    ? `\n${failures} did not behave: the check cannot be trusted`
+    : '\nthe check notices every fault, and passes a clean run'
+)
 process.exit(failures ? 1 : 0)

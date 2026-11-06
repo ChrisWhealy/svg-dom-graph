@@ -14,10 +14,7 @@
         "maximum_degree": 6
       },
       "execution": {
-        "modes": [
-          "correctness",
-          "performance"
-        ],
+        "modes": ["correctness", "performance"],
         "warmup_iterations": 3,
         "measurement_iterations": 12,
         "repetitions": 3
@@ -35,16 +32,8 @@
         "view": "unchanged"
       },
       "interaction": {
-        "scales_percent": [
-          50,
-          100,
-          200
-        ],
-        "gestures": [
-          "drag",
-          "pan",
-          "wheel_zoom"
-        ],
+        "scales_percent": [50, 100, 200],
+        "gestures": ["drag", "pan", "wheel_zoom"],
         "steps": 8,
         "step_pixels": 6
       },
@@ -76,17 +65,8 @@
     }
   ],
   "sections": {
-    "modelled": [
-      "topology",
-      "content",
-      "interaction",
-      "geometry",
-      "paint_order"
-    ],
+    "modelled": ["topology", "content", "interaction", "geometry", "paint_order"],
     "provisional": [],
-    "not_modelled": [
-      "dom_identity.ids",
-      "accessibility"
-    ]
+    "not_modelled": ["dom_identity.ids", "accessibility"]
   }
 }

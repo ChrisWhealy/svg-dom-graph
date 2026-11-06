@@ -14,9 +14,7 @@
         "maximum_degree": 8
       },
       "execution": {
-        "modes": [
-          "endurance"
-        ],
+        "modes": ["endurance"],
         "warmup_iterations": 20,
         "measurement_iterations": 200,
         "repetitions": 3
@@ -126,17 +124,8 @@
     }
   ],
   "sections": {
-    "modelled": [
-      "topology",
-      "content",
-      "interaction",
-      "geometry",
-      "paint_order"
-    ],
+    "modelled": ["topology", "content", "interaction", "geometry", "paint_order"],
     "provisional": [],
-    "not_modelled": [
-      "dom_identity.ids",
-      "accessibility"
-    ]
+    "not_modelled": ["dom_identity.ids", "accessibility"]
   }
 }

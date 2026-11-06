@@ -25,6 +25,8 @@ pub enum Workload {
     SceneLifecycle,
     /// W4: build a scene once and leave it for a browser to be driven through with real input. See [`Interaction`].
     Interaction,
+    /// W5: build a scene once and break it on purpose, one fault point at a time. See [`Recovery`].
+    Recovery,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -90,6 +92,26 @@ pub struct Interaction {
     pub step_pixels: u32,
 }
 
+impl Recovery {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    fn check(&self) -> Result<(), ManifestError> {
+        if self.points.is_empty() {
+            return Err(ManifestError::Semantic(
+                "recovery.points must name at least one fault point".to_string(),
+            ));
+        }
+        for (index, entry) in self.points.iter().enumerate() {
+            if self.points[..index].iter().any(|earlier| earlier.point == entry.point) {
+                return Err(ManifestError::Semantic(
+                    "recovery.points must not repeat a fault point".to_string(),
+                ));
+            }
+        }
+        Ok(())
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Interaction {
     /// The scales that the library's view accepts, in percent: a quarter to four times.
     pub const SCALE_RANGE_PERCENT: std::ops::RangeInclusive<u32> = 25..=400;
@@ -120,6 +142,55 @@ impl Interaction {
         }
         Ok(())
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A place at which the library can fail part way, and the recovery runner breaks it. The contract of each is written down in
+/// `perf/fault-contracts.json`, from the library's code.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum FaultPoint {
+    NodeConstruction,
+    DomTransform,
+    ConnectorUpdate,
+    LabelUpdate,
+    DragInstall,
+    EdgeConstruction,
+    ScheduledFrame,
+    Teardown,
+    MidDragTeardown,
+    RemovedHost,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What a fault point is expected to leave behind, taken from the library's documented behaviour.
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum Expectation {
+    /// The state afterwards is the state before.
+    NothingCommitted,
+    /// A documented part of the change is kept, and a defined retry puts the rest right.
+    PartlyCommitted,
+    /// Nothing documents it. The runner records what it sees, and reports it as a finding and not as a pass or a failure.
+    Undocumented,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct FaultExpectation {
+    pub point: FaultPoint,
+    pub expect: Expectation,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The fault points of workload W5 and what each is expected to leave behind. The scene they are broken in is the one of the
+/// manifest's `[graph]`, built once. `execution.warmup_iterations` and `measurement_iterations` count the cycles of an
+/// endurance run, in each of which every fault point is broken and recovered from.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Recovery {
+    pub points: Vec<FaultExpectation>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -195,6 +266,8 @@ pub struct Manifest {
     pub checkpoint: Option<CheckpointPolicy>,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub interaction: Option<Interaction>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub recovery: Option<Recovery>,
     pub limits: Limits,
 }
 
@@ -334,6 +407,17 @@ impl Manifest {
             },
             (Some(interaction), _) => interaction.check()?,
             (None, _) => {},
+        }
+        match (&self.recovery, self.workload) {
+            (None, Workload::Recovery) => return refuse("the recovery workload needs a [recovery] table"),
+            (Some(_), workload) if workload != Workload::Recovery => {
+                return refuse("only the recovery workload takes a [recovery] table");
+            },
+            (Some(recovery), _) => recovery.check()?,
+            (None, _) => {},
+        }
+        if self.workload == Workload::Recovery && self.graph.edges.is_none_or(|edges| edges == 0) {
+            return refuse("the recovery workload needs graph.edges, since a connector has to exist to be broken");
         }
         Ok(())
     }

@@ -11,19 +11,29 @@ const root = path.resolve(import.meta.dirname, '../../..')
 
 export const wasmPackage = path.join(root, 'perf-harness-wasm/pkg')
 
-export const openHarnessPage = async ({ isolated = true } = {}) => {
+// `faults` puts the fault injector in the page. It wraps the DOM calls that the library makes, so it is only there when a run is
+// meant to break something, and never in a run that is timed.
+export const openHarnessPage = async ({ isolated = true, faults = false } = {}) => {
   if (!fs.existsSync(path.join(wasmPackage, 'perf_harness_wasm.js'))) {
-    throw new Error('the wasm package is not built: run `wasm-pack build perf-harness-wasm --target web --release --out-dir pkg`')
+    throw new Error(
+      'the wasm package is not built: run `wasm-pack build perf-harness-wasm --target web --release --out-dir pkg`'
+    )
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-page-'))
-  fs.copyFileSync(path.join(import.meta.dirname, '../page/index.html'), path.join(dir, 'index.html'))
+  for (const file of fs.readdirSync(path.join(import.meta.dirname, '../page')))
+    fs.copyFileSync(path.join(import.meta.dirname, '../page', file), path.join(dir, file))
   fs.cpSync(wasmPackage, path.join(dir, 'pkg'), { recursive: true })
 
   const { server, port } = await serve(dir, { isolated })
   const chrome = await launch()
   await chrome.send('Page.addScriptToEvaluateOnNewDocument', {
-    source: fs.readFileSync(path.join(root, 'perf/page/listener-tracker.js'), 'utf8'),
+    source: fs.readFileSync(path.join(root, 'perf/page/listener-tracker.js'), 'utf8')
   })
+  if (faults) {
+    await chrome.send('Page.addScriptToEvaluateOnNewDocument', {
+      source: fs.readFileSync(path.join(root, 'perf/page/fault-injector.js'), 'utf8')
+    })
+  }
   await chrome.send('Page.navigate', { url: `http://127.0.0.1:${port}/` })
   for (let waited = 0; waited < 20000; waited += 100) {
     if (await chrome.evaluate('Boolean(window.perfHarness)')) break

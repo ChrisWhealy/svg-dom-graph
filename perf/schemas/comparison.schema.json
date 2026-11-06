@@ -81,14 +81,7 @@
           "minimum": 0
         }
       },
-      "required": [
-        "repetitions",
-        "samples_per_repetition",
-        "median",
-        "between_run",
-        "within_run",
-        "outliers_flagged"
-      ],
+      "required": ["repetitions", "samples_per_repetition", "median", "between_run", "within_run", "outliers_flagged"],
       "additionalProperties": false
     }
   },
@@ -149,23 +142,11 @@
               "minLength": 1
             }
           },
-          "required": [
-            "promoted_at",
-            "commit",
-            "workload_hash",
-            "environment_key",
-            "method_version"
-          ],
+          "required": ["promoted_at", "commit", "workload_hash", "environment_key", "method_version"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "git_sha",
-        "manifest_sha256",
-        "operation_stream_sha256",
-        "run_ids",
-        "promotion"
-      ],
+      "required": ["git_sha", "manifest_sha256", "operation_stream_sha256", "run_ids", "promotion"],
       "additionalProperties": false
     },
     "candidate": {
@@ -216,22 +197,11 @@
               "minLength": 1
             }
           },
-          "required": [
-            "promoted_at",
-            "commit",
-            "workload_hash",
-            "environment_key",
-            "method_version"
-          ],
+          "required": ["promoted_at", "commit", "workload_hash", "environment_key", "method_version"],
           "additionalProperties": false
         }
       },
-      "required": [
-        "git_sha",
-        "manifest_sha256",
-        "operation_stream_sha256",
-        "run_ids"
-      ],
+      "required": ["git_sha", "manifest_sha256", "operation_stream_sha256", "run_ids"],
       "additionalProperties": false
     },
     "compatibility": {
@@ -264,13 +234,7 @@
               "minLength": 1
             }
           },
-          "required": [
-            "os",
-            "cpu",
-            "runner_class",
-            "browser_version",
-            "protocol_version"
-          ],
+          "required": ["os", "cpu", "runner_class", "browser_version", "protocol_version"],
           "additionalProperties": false
         },
         "reason": {
@@ -372,14 +336,7 @@
             "$ref": "#/$defs/interval"
           },
           "verdict": {
-            "enum": [
-              "regression",
-              "improvement",
-              "no_material_change",
-              "inconclusive",
-              "diagnostic",
-              "not_comparable"
-            ]
+            "enum": ["regression", "improvement", "no_material_change", "inconclusive", "diagnostic", "not_comparable"]
           },
           "reason": {
             "type": "string",
@@ -393,12 +350,7 @@
             "if": {
               "properties": {
                 "verdict": {
-                  "enum": [
-                    "regression",
-                    "improvement",
-                    "no_material_change",
-                    "inconclusive"
-                  ]
+                  "enum": ["regression", "improvement", "no_material_change", "inconclusive"]
                 }
               },
               "required": ["verdict"]
@@ -472,15 +424,7 @@
       }
     }
   },
-  "required": [
-    "schema_version",
-    "generated_at",
-    "baseline",
-    "candidate",
-    "compatibility",
-    "method",
-    "comparisons"
-  ],
+  "required": ["schema_version", "generated_at", "baseline", "candidate", "compatibility", "method", "comparisons"],
   "additionalProperties": false,
   "allOf": [
     {

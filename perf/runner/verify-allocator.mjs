@@ -17,6 +17,8 @@ for (const step of result.steps) {
   console.log(`${step.pass ? 'ok  ' : 'FAIL'} ${step.name}: ${step.expectation}`)
   if (!step.pass) console.log(`     observed ${JSON.stringify(step.observed)}`)
 }
-console.log(`\n${result.pass ? 'the allocator is verified' : 'the allocator is NOT verified: its figures must not be used'}`)
+console.log(
+  `\n${result.pass ? 'the allocator is verified' : 'the allocator is NOT verified: its figures must not be used'}`
+)
 if (out) fs.writeFileSync(out, JSON.stringify(result, null, 2) + '\n')
 process.exit(result.pass ? 0 : 1)

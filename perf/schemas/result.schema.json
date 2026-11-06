@@ -140,13 +140,7 @@
           "description": "Which digest of the workload report this run executed: every operation, or the mutations alone. A correctness run executes the full stream, and a performance run skips the checkpoints and executes the mutations."
         }
       },
-      "required": [
-        "id",
-        "sha256",
-        "operation_stream_scope",
-        "operation_stream_sha256",
-        "canonical"
-      ],
+      "required": ["id", "sha256", "operation_stream_scope", "operation_stream_sha256", "canonical"],
       "additionalProperties": false
     },
     "mode": {
@@ -178,13 +172,7 @@
             "enum": ["ms", "us", "count", "bytes"]
           },
           "kind": {
-            "enum": [
-              "latency",
-              "batch_throughput",
-              "count",
-              "trend",
-              "capacity"
-            ],
+            "enum": ["latency", "batch_throughput", "count", "trend", "capacity"],
             "description": "capacity is the high-water mark of a resource that is not handed back, such as wasm linear memory. It says how much was ever needed. It is not live usage, and growth in it is not by itself a leak."
           },
           "batch_size": {
@@ -324,13 +312,7 @@
               "required": ["status", "kind"]
             },
             "then": {
-              "required": [
-                "samples",
-                "summary",
-                "within_run",
-                "dropped",
-                "outliers_flagged"
-              ],
+              "required": ["samples", "summary", "within_run", "dropped", "outliers_flagged"],
               "properties": {
                 "unit": {
                   "enum": ["ms", "us"]
@@ -452,15 +434,7 @@
         "type": "object",
         "properties": {
           "section": {
-            "enum": [
-              "topology",
-              "dom_identity",
-              "geometry",
-              "content",
-              "interaction",
-              "accessibility",
-              "paint_order"
-            ]
+            "enum": ["topology", "dom_identity", "geometry", "content", "interaction", "accessibility", "paint_order"]
           },
           "detail": {
             "type": "string",
@@ -471,6 +445,26 @@
         "additionalProperties": false
       },
       "uniqueItems": true
+    },
+    "findings": {
+      "type": "array",
+      "description": "What a recovery run saw at a fault point that nothing documents. It is a finding and not a pass or a failure, since the library promises nothing there to test against.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "point": { "type": "string", "minLength": 1 },
+          "contract": { "const": "undocumented" },
+          "summary": { "type": "string", "minLength": 1 },
+          "details": { "type": "object" }
+        },
+        "required": ["point", "contract", "summary", "details"],
+        "additionalProperties": false
+      }
+    },
+    "cases": {
+      "type": "string",
+      "minLength": 1,
+      "description": "The file that holds one row for each failure that a recovery run injected."
     },
     "raw_samples": {
       "type": "string",

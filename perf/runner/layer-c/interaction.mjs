@@ -35,7 +35,12 @@ const MECHANISM =
 export const edgesOf = (binary, manifestPath) => {
   const run = spawnSync(binary, ['stream', manifestPath], { encoding: 'utf8', maxBuffer: 1 << 28 })
   if (run.status !== 0) throw new Error(`reading the stream: ${run.stderr}`)
-  return run.stdout.split('\n').filter(Boolean).map(line => JSON.parse(line)).filter(op => op.op === 'add_edge').map(op => [op.from, op.to])
+  return run.stdout
+    .split('\n')
+    .filter(Boolean)
+    .map(line => JSON.parse(line))
+    .filter(op => op.op === 'add_edge')
+    .map(op => [op.from, op.to])
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -43,13 +48,21 @@ const describeSamples = (binary, name, unit, values, mechanism) => {
   if (values.length === 0) return { name, layer: 'C', status: 'unavailable', reason: 'no observation was made' }
   const run = spawnSync(binary, ['metric', '--name', name, '--layer', 'C', '--unit', unit, '--mechanism', mechanism], {
     input: JSON.stringify(values),
-    encoding: 'utf8',
+    encoding: 'utf8'
   })
   if (run.status !== 0) throw new Error(`describing ${name}: ${run.stderr}`)
   return JSON.parse(run.stdout)
 }
 
-const count = (name, unit, value, mechanism) => ({ name, layer: 'C', status: 'measured', unit, kind: 'count', value, mechanism })
+const count = (name, unit, value, mechanism) => ({
+  name,
+  layer: 'C',
+  status: 'measured',
+  unit,
+  kind: 'count',
+  value,
+  mechanism
+})
 const unavailable = (name, reason) => ({ name, layer: 'C', status: 'unavailable', reason })
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -62,7 +75,7 @@ const resources = async page => {
   return {
     dom_elements: await page.evaluate('perfC.countElements()'),
     listeners: await page.evaluate('perfC.listeners()'),
-    js_heap_used_bytes: browser.JSHeapUsedSize,
+    js_heap_used_bytes: browser.JSHeapUsedSize
   }
 }
 
@@ -82,7 +95,8 @@ const verifyEffect = async (page, item, scalePercent) => {
     if (!near(node.x, item.expected[0], tolerance) || !near(node.y, item.expected[1], tolerance)) {
       return `${item.node} ended at (${node.x}, ${node.y}), the plan said (${item.expected[0]}, ${item.expected[1]})`
     }
-    if (!near(view.tx, 0, 1e-6) || !near(view.ty, 0, 1e-6) || !near(view.scale, scale, 1e-9)) return `a drag changed the view to ${JSON.stringify(view)}`
+    if (!near(view.tx, 0, 1e-6) || !near(view.ty, 0, 1e-6) || !near(view.scale, scale, 1e-9))
+      return `a drag changed the view to ${JSON.stringify(view)}`
     return null
   }
   const want = item.expected
@@ -102,10 +116,19 @@ const play = async (tab, item, origin, svgId) => {
   }
   // The press is made where the pointer reaches what the gesture is for, which is the planned place unless a connector is over it.
   const kind = item.gesture === 'drag' ? 'drag' : 'pan'
-  const press = await tab.evaluate(`perfC.pressPoint(${JSON.stringify(svgId)}, ${JSON.stringify(kind)}, ${JSON.stringify(item.node ?? null)}, ${JSON.stringify(item.from)})`)
+  const press = await tab.evaluate(
+    `perfC.pressPoint(${JSON.stringify(svgId)}, ${JSON.stringify(kind)}, ${JSON.stringify(item.node ?? null)}, ${JSON.stringify(item.from)})`
+  )
   if (!press) return { trips: [], moved: 0, unplaceable: true }
   // A drag is made from the node's own box, so a node that is dragged a distance moves by the distance whatever the press.
-  const trips = await dragPath(tab, [origin.left + press.x, origin.top + press.y], item.dx, item.dy, item.steps, STEP_GAP_MS)
+  const trips = await dragPath(
+    tab,
+    [origin.left + press.x, origin.top + press.y],
+    item.dx,
+    item.dy,
+    item.steps,
+    STEP_GAP_MS
+  )
   return { trips: trips.moves, moved: press.moved > 0.5 ? 1 : 0 }
 }
 
@@ -116,15 +139,35 @@ const play = async (tab, item, origin, svgId) => {
  * With `timed` off the gestures are played and checked and no trace is made, which is the correctness mode.
  */
 const runCase = async (tab, kase, canonical, timed, faults) => {
-  const result = { failures: [], latencies: [], inputDelays: [], trips: [], unattributed: {}, eventTiming: 0, checks: 0, build: null, relocated: 0 }
-  const build = JSON.parse(await tab.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${kase.scale_percent})`))
+  const result = {
+    failures: [],
+    latencies: [],
+    inputDelays: [],
+    trips: [],
+    unattributed: {},
+    eventTiming: 0,
+    checks: 0,
+    build: null,
+    relocated: 0
+  }
+  const build = JSON.parse(
+    await tab.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${kase.scale_percent})`)
+  )
   if (build.error) throw new Error(`building the scene: ${build.error}`)
   result.build = build
   // The whole host has to be on screen, or a gesture planned for a part of it that is not has nothing to land on. A wheel in a
   // tab that has not been sized lands outside the page and does nothing.
-  await tab.send('Emulation.setDeviceMetricsOverride', { width: build.host[0] + 40, height: build.host[1] + 40, deviceScaleFactor: 1, mobile: false })
+  await tab.send('Emulation.setDeviceMetricsOverride', {
+    width: build.host[0] + 40,
+    height: build.host[1] + 40,
+    deviceScaleFactor: 1,
+    mobile: false
+  })
   if (!build.checkpoint?.passed) {
-    result.failures.push({ section: 'build', detail: `the scene to be driven through is not the one meant: ${(build.checkpoint?.differences ?? []).join('; ')}` })
+    result.failures.push({
+      section: 'build',
+      detail: `the scene to be driven through is not the one meant: ${(build.checkpoint?.differences ?? []).join('; ')}`
+    })
   } else {
     result.checks++
   }
@@ -143,26 +186,41 @@ const runCase = async (tab, kase, canonical, timed, faults) => {
   await tab.evaluate('perfC.settle(100)')
 
   let gestureId = 0
-  const gestures = [...kase.warmup.map(item => ({ item, measured: false })), ...kase.measured.map(item => ({ item, measured: true }))]
+  const gestures = [
+    ...kase.warmup.map(item => ({ item, measured: false })),
+    ...kase.measured.map(item => ({ item, measured: true }))
+  ]
   const work = async () => {
     for (const { item, measured } of gestures) {
       // Every gesture starts from the same scene, so that one does not depend on the one before.
       const positions = item.gesture === 'drag' ? { [item.node]: item.start } : {}
-      const reset = JSON.parse(await tab.evaluate(`perfC.interactive_reset(${kase.scale_percent}, ${JSON.stringify(JSON.stringify(positions))})`))
+      const reset = JSON.parse(
+        await tab.evaluate(
+          `perfC.interactive_reset(${kase.scale_percent}, ${JSON.stringify(JSON.stringify(positions))})`
+        )
+      )
       if (reset.error) throw new Error(`resetting the scene: ${reset.error}`)
       await tab.evaluate('perfC.settle(40)')
       const origin = await tab.evaluate(`perfC.hostRect(${JSON.stringify(build.svg_id)})`)
       await tab.evaluate(`perfC.begin(${gestureId++}, ${measured})`)
       const { trips, moved, unplaceable } = await play(tab, item, origin, build.svg_id)
       result.relocated += moved ?? 0
-      if (unplaceable) result.failures.push({ section: 'interaction', detail: `${kase.gesture} ${gestureId - 1} at ${kase.scale_percent}%: no place was found at which the pointer reaches what the gesture is for` })
+      if (unplaceable)
+        result.failures.push({
+          section: 'interaction',
+          detail: `${kase.gesture} ${gestureId - 1} at ${kase.scale_percent}%: no place was found at which the pointer reaches what the gesture is for`
+        })
       await pause(SETTLE_MS)
       await tab.evaluate('perfC.end()')
       await tab.evaluate('perfC.settle(20)')
       if (measured) result.trips.push(...trips)
       const wrong = await verifyEffect(tab, item, kase.scale_percent)
       result.checks++
-      if (wrong) result.failures.push({ section: 'interaction', detail: `${kase.gesture} ${gestureId - 1} at ${kase.scale_percent}%: ${wrong}` })
+      if (wrong)
+        result.failures.push({
+          section: 'interaction',
+          detail: `${kase.gesture} ${gestureId - 1} at ${kase.scale_percent}%: ${wrong}`
+        })
     }
   }
 
@@ -173,13 +231,17 @@ const runCase = async (tab, kase, canonical, timed, faults) => {
   const events = await tab.evaluate('perfC.events()')
   // The input events that change the scene are the moves with the button down, and the wheel. The press and the release start
   // and end a gesture, and the click that follows a release is the browser's.
-  const counted = event => event.measured && (kase.gesture === 'wheel_zoom' ? event.type === 'wheel' : event.type === 'pointermove' && event.buttons === 1)
+  const counted = event =>
+    event.measured &&
+    (kase.gesture === 'wheel_zoom' ? event.type === 'wheel' : event.type === 'pointermove' && event.buttons === 1)
   for (const event of events.filter(counted)) {
     result.inputDelays.push(event.stamp - event.hardware)
     if (!trace) continue
     const frame = attribute(trace, `perf-c-${event.n}`, { boundMs: 250 })
     if (frame.status === 'measured') result.latencies.push(frame.latencyMs)
-    else result.unattributed[frame.reason.replace(/\d+/g, 'N')] = (result.unattributed[frame.reason.replace(/\d+/g, 'N')] ?? 0) + 1
+    else
+      result.unattributed[frame.reason.replace(/\d+/g, 'N')] =
+        (result.unattributed[frame.reason.replace(/\d+/g, 'N')] ?? 0) + 1
   }
   result.eventTiming = (await tab.evaluate('perfC.eventTiming()')).length
   return result
@@ -204,39 +266,77 @@ export const runInteraction = async ({ binary, mode, canonical, plan, report, ed
     gates: [],
     notes: [],
     stream: null,
-    timer_resolution_us: 0,
+    timer_resolution_us: 0
   }
   const page = await openLayerCPage()
   try {
     outcome.crossOriginIsolated = page.crossOriginIsolated
-    outcome.timer_resolution_us = await page.evaluate(`(() => { let s = Infinity, l = performance.now(); for (let i = 0; i < 200000; i++) { const n = performance.now(); const d = (n - l) * 1000; if (d > 0 && d < s) s = d; l = n } return Number.isFinite(s) ? s : 0 })()`)
+    outcome.timer_resolution_us = await page.evaluate(
+      `(() => { let s = Infinity, l = performance.now(); for (let i = 0; i < 200000; i++) { const n = performance.now(); const d = (n - l) * 1000; if (d > 0 && d < s) s = d; l = n } return Number.isFinite(s) ? s : 0 })()`
+    )
     // One observation, which the metric says by its sample count. A cold start cannot be repeated inside a run.
-    outcome.metrics.push(describeSamples(binary, 'cold_start.page_ready', 'ms', [page.coldStartMs], 'performance.now() in the page when the wasm module was ready, which is from the start of the navigation'))
-    outcome.notes.push(`plan ${plan.sha256}; input every ${STEP_GAP_MS} ms through Input.dispatchMouseEvent; a wheel case is run in a tab of its own, in front`)
+    outcome.metrics.push(
+      describeSamples(
+        binary,
+        'cold_start.page_ready',
+        'ms',
+        [page.coldStartMs],
+        'performance.now() in the page when the wasm module was ready, which is from the start of the navigation'
+      )
+    )
+    outcome.notes.push(
+      `plan ${plan.sha256}; input every ${STEP_GAP_MS} ms through Input.dispatchMouseEvent; a wheel case is run in a tab of its own, in front`
+    )
 
     // One build and one teardown, with the counts taken at each end after a settle step.
     const base = await resources(page)
     const first = plan.plan.cases[0]
-    const built = JSON.parse(await page.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${first.scale_percent})`))
+    const built = JSON.parse(
+      await page.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${first.scale_percent})`)
+    )
     if (built.error) throw new Error(built.error)
     const whileBuilt = await resources(page)
     await page.evaluate('perfC.interactive_teardown()')
     const hostGone = !(await page.evaluate('perfC.interactive_host_present()'))
     const after = await resources(page)
-    for (const [moment, figures] of [['baseline', base], ['while_built', whileBuilt], ['after_teardown', after]]) {
+    for (const [moment, figures] of [
+      ['baseline', base],
+      ['while_built', whileBuilt],
+      ['after_teardown', after]
+    ]) {
       for (const [name, unit, mechanism] of [
         ['dom_elements', 'count', 'document.querySelectorAll(*).length'],
         ['listeners', 'count', 'the effective-registration tracker'],
-        ['js_heap_used_bytes', 'bytes', 'Performance.getMetrics JSHeapUsedSize after a forced collection, and a diagnostic of Chrome only'],
+        [
+          'js_heap_used_bytes',
+          'bytes',
+          'Performance.getMetrics JSHeapUsedSize after a forced collection, and a diagnostic of Chrome only'
+        ]
       ]) {
-        outcome.metrics.push(figures[name] === null || figures[name] === undefined ? unavailable(`resource.${name}.${moment}`, `${mechanism} gave no reading`) : count(`resource.${name}.${moment}`, unit, figures[name], mechanism))
+        outcome.metrics.push(
+          figures[name] === null || figures[name] === undefined
+            ? unavailable(`resource.${name}.${moment}`, `${mechanism} gave no reading`)
+            : count(`resource.${name}.${moment}`, unit, figures[name], mechanism)
+        )
       }
     }
     const gate = (name, status, detail) => outcome.gates.push({ name, status, detail })
-    gate('interaction.listeners_return_to_baseline', after.listeners === base.listeners ? 'pass' : 'fail', `${base.listeners} before the build, ${whileBuilt.listeners} while it stood, ${after.listeners} after the teardown`)
+    gate(
+      'interaction.listeners_return_to_baseline',
+      after.listeners === base.listeners ? 'pass' : 'fail',
+      `${base.listeners} before the build, ${whileBuilt.listeners} while it stood, ${after.listeners} after the teardown`
+    )
     // A gate that passes because nothing was ever counted proves nothing, so the listeners of the draggable nodes have to be seen.
-    gate('interaction.listeners_are_seen_while_built', whileBuilt.listeners > base.listeners ? 'pass' : 'inconclusive', `${whileBuilt.listeners - base.listeners} listeners were added by a scene whose nodes are draggable`)
-    gate('interaction.dom_returns_to_baseline', after.dom_elements === base.dom_elements && hostGone ? 'pass' : 'fail', `${base.dom_elements} elements before, ${whileBuilt.dom_elements} while built, ${after.dom_elements} after, host present ${!hostGone}`)
+    gate(
+      'interaction.listeners_are_seen_while_built',
+      whileBuilt.listeners > base.listeners ? 'pass' : 'inconclusive',
+      `${whileBuilt.listeners - base.listeners} listeners were added by a scene whose nodes are draggable`
+    )
+    gate(
+      'interaction.dom_returns_to_baseline',
+      after.dom_elements === base.dom_elements && hostGone ? 'pass' : 'fail',
+      `${base.dom_elements} elements before, ${whileBuilt.dom_elements} while built, ${after.dom_elements} after, host present ${!hostGone}`
+    )
 
     // The cases.
     for (const kase of plan.plan.cases) {
@@ -256,16 +356,61 @@ export const runInteraction = async ({ binary, mode, canonical, plan, report, ed
         const scope = timed ? 'mutations' : 'full'
         const sha256 = timed ? result.build.mutations_sha256 : result.build.sha256
         const expected = timed ? report.stream.mutations_sha256 : report.stream.sha256
-        outcome.stream = { scope, operations: result.build.operations, sha256, expected_sha256: expected, matches: sha256 === expected }
+        outcome.stream = {
+          scope,
+          operations: result.build.operations,
+          sha256,
+          expected_sha256: expected,
+          matches: sha256 === expected
+        }
       }
       if (!timed) continue
       outcome.metrics.push(describeSamples(binary, `interaction.${key}.latency`, 'ms', result.latencies, MECHANISM))
-      outcome.metrics.push(describeSamples(binary, `interaction.${key}.input_delay`, 'ms', result.inputDelays, 'event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock'))
-      outcome.metrics.push(describeSamples(binary, `cdp.${key}.round_trip`, 'ms', result.trips, 'how long Input.dispatchMouseEvent took to answer, which is never used as a start time'))
+      outcome.metrics.push(
+        describeSamples(
+          binary,
+          `interaction.${key}.input_delay`,
+          'ms',
+          result.inputDelays,
+          'event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock'
+        )
+      )
+      outcome.metrics.push(
+        describeSamples(
+          binary,
+          `cdp.${key}.round_trip`,
+          'ms',
+          result.trips,
+          'how long Input.dispatchMouseEvent took to answer, which is never used as a start time'
+        )
+      )
       const lost = Object.values(result.unattributed).reduce((a, b) => a + b, 0)
-      outcome.metrics.push(count(`interaction.${key}.frames_unattributed`, 'count', lost, lost ? `the trace could not place these in a frame: ${JSON.stringify(result.unattributed)}` : 'every measured input event was placed in a frame'))
-      outcome.metrics.push(count(`interaction.${key}.presses_relocated`, 'count', result.relocated, 'gestures whose press was moved from the planned point to the nearest one that reaches the node or the pan surface, since connectors are drawn over nodes'))
-      outcome.metrics.push(count(`interaction.${key}.event_timing_entries`, 'count', result.eventTiming, 'Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above'))
+      outcome.metrics.push(
+        count(
+          `interaction.${key}.frames_unattributed`,
+          'count',
+          lost,
+          lost
+            ? `the trace could not place these in a frame: ${JSON.stringify(result.unattributed)}`
+            : 'every measured input event was placed in a frame'
+        )
+      )
+      outcome.metrics.push(
+        count(
+          `interaction.${key}.presses_relocated`,
+          'count',
+          result.relocated,
+          'gestures whose press was moved from the planned point to the nearest one that reaches the node or the pan surface, since connectors are drawn over nodes'
+        )
+      )
+      outcome.metrics.push(
+        count(
+          `interaction.${key}.event_timing_entries`,
+          'count',
+          result.eventTiming,
+          'Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above'
+        )
+      )
       outcome.samples[`interaction.${key}.latency`] = result.latencies
       outcome.samples[`interaction.${key}.input_delay`] = result.inputDelays
       outcome.samples[`cdp.${key}.round_trip`] = result.trips
@@ -280,7 +425,8 @@ export const runInteraction = async ({ binary, mode, canonical, plan, report, ed
   } finally {
     await page.close()
   }
-  if (outcome.status === 'ok' && (outcome.checkpoints_failed.length > 0 || outcome.stream?.matches === false)) outcome.status = 'invalid_incorrect'
+  if (outcome.status === 'ok' && (outcome.checkpoints_failed.length > 0 || outcome.stream?.matches === false))
+    outcome.status = 'invalid_incorrect'
   return outcome
 }
 
@@ -298,13 +444,23 @@ const accessibilityPass = async ({ page, plan, canonical, edges, outcome, fault 
   for (const scalePercent of scales) {
     const tab = await page.openTab()
     try {
-      const build = JSON.parse(await tab.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${scalePercent})`))
+      const build = JSON.parse(
+        await tab.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${scalePercent})`)
+      )
       if (build.error) throw new Error(`building the scene for the accessibility check: ${build.error}`)
-      await tab.send('Emulation.setDeviceMetricsOverride', { width: build.host[0] + 40, height: build.host[1] + 40, deviceScaleFactor: 1, mobile: false })
+      await tab.send('Emulation.setDeviceMetricsOverride', {
+        width: build.host[0] + 40,
+        height: build.host[1] + 40,
+        deviceScaleFactor: 1,
+        mobile: false
+      })
       await tab.evaluate('perfC.settle(100)')
       // The first measured gesture of each kind at this scale, with the wheel last so that the graph view's name has to change.
       const gestures = ['drag', 'pan', 'wheel_zoom']
-        .map(kind => plan.plan.cases.find(kase => kase.scale_percent === scalePercent && kase.gesture === kind)?.measured[0])
+        .map(
+          kind =>
+            plan.plan.cases.find(kase => kase.scale_percent === scalePercent && kase.gesture === kind)?.measured[0]
+        )
         .filter(Boolean)
       const play_ = async item => {
         const positions = item.gesture === 'drag' ? { [item.node]: item.start } : {}
@@ -314,7 +470,15 @@ const accessibilityPass = async ({ page, plan, canonical, edges, outcome, fault 
         await play(tab, item, origin, build.svg_id)
         await pause(SETTLE_MS)
       }
-      const { checks, stats } = await checkAccessibility({ tab, expected, scalePercent, gestures, play: play_, label: `accessibility at ${scalePercent}%`, fault })
+      const { checks, stats } = await checkAccessibility({
+        tab,
+        expected,
+        scalePercent,
+        gestures,
+        play: play_,
+        label: `accessibility at ${scalePercent}%`,
+        fault
+      })
       for (const check of checks) {
         if (check.ok) outcome.checkpoints_passed++
         else outcome.checkpoints_failed.push({ section: 'accessibility', detail: check.detail })
@@ -327,7 +491,21 @@ const accessibilityPass = async ({ page, plan, canonical, edges, outcome, fault 
     }
   }
   const how = 'Accessibility.getFullAXTree in a tab of its own, after the timed cases'
-  outcome.metrics.push(count('accessibility.checks', 'count', checked, `${how}: roles, names and relationships against the model, focus, and consistency after input`))
+  outcome.metrics.push(
+    count(
+      'accessibility.checks',
+      'count',
+      checked,
+      `${how}: roles, names and relationships against the model, focus, and consistency after input`
+    )
+  )
   outcome.metrics.push(count('accessibility.ax_nodes_largest_tree', 'count', largest, how))
-  outcome.metrics.push(count('accessibility.nodes_inspected', 'count', inspected, `${how}, at most ${MAX_NODES} nodes from those that have an edge`))
+  outcome.metrics.push(
+    count(
+      'accessibility.nodes_inspected',
+      'count',
+      inspected,
+      `${how}, at most ${MAX_NODES} nodes from those that have an edge`
+    )
+  )
 }

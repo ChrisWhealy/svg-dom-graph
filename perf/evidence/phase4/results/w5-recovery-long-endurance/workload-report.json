@@ -1,0 +1,121 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "w5-recovery-long",
+    "sha256": "418a4039d5b06b8ebfa21997c88bb3db9859df9551e3814d8937b3cd76567a17",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "recovery",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 18,
+        "maximum_degree": 6
+      },
+      "execution": {
+        "modes": [
+          "endurance"
+        ],
+        "warmup_iterations": 10,
+        "measurement_iterations": 190,
+        "repetitions": 2
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 1
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "recovery": {
+        "points": [
+          {
+            "point": "node_construction",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "dom_transform",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "connector_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "label_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "drag_install",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "edge_construction",
+            "expect": "undocumented"
+          },
+          {
+            "point": "scheduled_frame",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "mid_drag_teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "removed_host",
+            "expect": "undocumented"
+          }
+        ]
+      },
+      "limits": {
+        "wall_ms": 300000
+      }
+    }
+  },
+  "stream": {
+    "encoding_version": 1,
+    "operations": 32,
+    "mutations": 31,
+    "sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
+    "mutations_sha256": "7350594132b743d3a9123cc6b2e56ae71c06eb8784bef8af8ad68174ee28c5f1"
+  },
+  "checkpoints": [
+    {
+      "index": 0,
+      "op_index": 31,
+      "model_sha256": "2ab80c70c31d0e2d9598ef22cf4e6a31165b1c45c795e7aa44029866238433c3",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "c7e58e45b1b7b7e471b46e997f4cc9ec0c445a416adc83ee108c4fa2ad7567e6"
+      }
+    }
+  ],
+  "sections": {
+    "modelled": [
+      "topology",
+      "content",
+      "interaction",
+      "geometry",
+      "paint_order"
+    ],
+    "provisional": [],
+    "not_modelled": [
+      "dom_identity.ids",
+      "accessibility"
+    ]
+  }
+}

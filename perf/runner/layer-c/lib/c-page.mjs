@@ -8,6 +8,7 @@ import { wasmPackage } from '../../lib/harness-page.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../../..')
 const tracker = fs.readFileSync(path.join(root, 'perf/page/listener-tracker.js'), 'utf8')
+const injector = fs.readFileSync(path.join(root, 'perf/page/fault-injector.js'), 'utf8')
 
 // Waits until the page says it is ready. The page's own clock gives the time to ready, from the navigation's start.
 const ready = async page => {
@@ -18,9 +19,13 @@ const ready = async page => {
   throw new Error('the Layer C page did not start')
 }
 
-export const openLayerCPage = async ({ isolated = true } = {}) => {
+// `faults` puts the fault injector in the page, which wraps the DOM calls the library makes, so it is only there when a run is
+// meant to break something and never in a run that is timed.
+export const openLayerCPage = async ({ isolated = true, faults = false } = {}) => {
   if (!fs.existsSync(path.join(wasmPackage, 'perf_harness_wasm.js'))) {
-    throw new Error('the wasm package is not built: run `wasm-pack build perf-harness-wasm --target web --release --out-dir pkg`')
+    throw new Error(
+      'the wasm package is not built: run `wasm-pack build perf-harness-wasm --target web --release --out-dir pkg`'
+    )
   }
   const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-layer-c-'))
   fs.copyFileSync(path.join(import.meta.dirname, '../page/index.html'), path.join(dir, 'index.html'))
@@ -31,6 +36,7 @@ export const openLayerCPage = async ({ isolated = true } = {}) => {
 
   const start = async page => {
     await page.send('Page.addScriptToEvaluateOnNewDocument', { source: tracker })
+    if (faults) await page.send('Page.addScriptToEvaluateOnNewDocument', { source: injector })
     await page.send('Page.navigate', { url })
     return ready(page)
   }

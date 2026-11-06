@@ -1,0 +1,113 @@
+{
+  "recorded_at": "2026-11-06T13:12:16.369Z",
+  "commit": "80e9916077765584c865a0c17c25d900beb89f78",
+  "uncommitted_changes": [
+    " M .github/workflows/ci.yml",
+    " M demo/changelog.md",
+    " M docs/testing/README.md",
+    " M perf-harness-wasm/src/alloc/mod.rs",
+    " M perf-harness-wasm/src/alloc/unit_tests.rs",
+    " M perf-harness-wasm/src/executor/mod.rs",
+    " M perf-harness-wasm/src/interactive.rs",
+    " M perf-harness-wasm/src/lib.rs",
+    " M perf-harness-wasm/src/observe.rs",
+    " M perf-harness/src/manifest/mod.rs",
+    " M perf-harness/src/manifest/unit_tests.rs",
+    " M perf-harness/src/workload/mod.rs",
+    " M perf/crosscheck/crosscheck.mjs",
+    " M perf/crosscheck/reference-workload.mjs",
+    " M perf/runner/layer-c/lib/c-page.mjs",
+    " M perf/runner/layer-c/page/index.html",
+    " M perf/runner/lib/harness-page.mjs",
+    " M perf/runner/page/index.html",
+    " M perf/runner/run.mjs",
+    " M perf/schemas/examples/rejected-manifests.json",
+    " M perf/schemas/manifest.schema.json",
+    " M perf/schemas/result.schema.json",
+    "?? .prettierrc",
+    "?? perf-harness-wasm/src/recovery.rs",
+    "?? perf/evidence/phase4/",
+    "?? perf/fault-contracts.json",
+    "?? perf/lib/test-contracts.mjs",
+    "?? perf/manifests/w5-recovery-long.toml",
+    "?? perf/manifests/w5-recovery-small.toml",
+    "?? perf/page/fault-injector.js",
+    "?? perf/runner/layer-c/recovery.mjs",
+    "?? perf/runner/page/recovery.js",
+    "?? perf/runner/record-phase4-evidence.mjs",
+    "?? perf/runner/selftest-recovery.mjs"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "browser": "Google Chrome 157.0.8103.39",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm_pack": "wasm-pack 0.15.1",
+  "node": "v26.13.0",
+  "build_profile": "release",
+  "commands": [
+    {
+      "file": "build.txt",
+      "command": "sh -c cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg",
+      "exit_code": 0,
+      "seconds": 0.909
+    },
+    {
+      "file": "rust-tests-native.txt",
+      "command": "cargo test -p perf-harness",
+      "exit_code": 0,
+      "seconds": 0.496
+    },
+    {
+      "file": "rust-tests-wasm32-wasi.txt",
+      "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
+      "exit_code": 0,
+      "seconds": 0.367
+    },
+    {
+      "file": "crosscheck.txt",
+      "command": "node perf/crosscheck/crosscheck.mjs",
+      "exit_code": 0,
+      "seconds": 0.807
+    },
+    {
+      "file": "schema-checks.txt",
+      "command": "node check.mjs",
+      "exit_code": 0,
+      "seconds": 0.081
+    },
+    {
+      "file": "contract-checks.txt",
+      "command": "node perf/lib/test-contracts.mjs",
+      "exit_code": 0,
+      "seconds": 0.025
+    },
+    {
+      "file": "recovery-selftest.txt",
+      "command": "node perf/runner/selftest-recovery.mjs",
+      "exit_code": 0,
+      "seconds": 6.028
+    },
+    {
+      "file": "run-w5-recovery.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w5-recovery-small.toml --mode recovery --no-build --out-dir <repo>/perf/evidence/phase4/results/w5-recovery-small-recovery",
+      "exit_code": 0,
+      "seconds": 56.427
+    },
+    {
+      "file": "run-w5-endurance.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w5-recovery-small.toml --mode endurance --repetitions 2 --no-build --out-dir <repo>/perf/evidence/phase4/results/w5-recovery-small-endurance",
+      "exit_code": 0,
+      "seconds": 144.422
+    },
+    {
+      "file": "run-w5-endurance-long.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w5-recovery-long.toml --mode endurance --layers b --no-build --out-dir <repo>/perf/evidence/phase4/results/w5-recovery-long-endurance",
+      "exit_code": 0,
+      "seconds": 3.312
+    }
+  ]
+}

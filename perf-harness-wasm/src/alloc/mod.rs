@@ -40,6 +40,8 @@ pub struct AllocStats {
 /// A block that was allocated while tracking was on and is still live.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct TrackedBlock {
+    /// Where the block is in linear memory, which is what lets a diagnostic read what it holds.
+    pub address: usize,
     pub size: usize,
     /// What the program was doing when the block was allocated, as the tag it had set. See [`CountingAllocator::set_tag`].
     pub tag: usize,
@@ -123,6 +125,7 @@ impl CountingAllocator {
                 (pointer != 0 && pointer != FREED).then(|| {
                     let detail = self.details[slot].load(Relaxed);
                     TrackedBlock {
+                        address: pointer,
                         size: detail >> 8,
                         tag: detail & 0xff,
                     }

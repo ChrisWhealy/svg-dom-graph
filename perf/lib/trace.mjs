@@ -9,7 +9,7 @@ export const CATEGORIES = [
   'disabled-by-default-devtools.timeline.frame',
   'benchmark',
   'cc',
-  'viz',
+  'viz'
 ]
 
 /**
@@ -31,8 +31,8 @@ export const traced = async (page, work, { bufferKb } = {}) => {
     traceConfig: {
       recordMode: bufferKb ? 'recordUntilFull' : 'recordContinuously',
       includedCategories: CATEGORIES,
-      ...(bufferKb ? { traceBufferSizeInKb: bufferKb } : {}),
-    },
+      ...(bufferKb ? { traceBufferSizeInKb: bufferKb } : {})
+    }
   })
   const result = await work()
   // Frames that are still on their way to the screen when the work is over must reach the trace before it is closed.
@@ -40,5 +40,10 @@ export const traced = async (page, work, { bufferKb } = {}) => {
   await page.send('Tracing.end')
   const done = await complete
   stop()
-  return { result, trace: parseTrace(events, { dataLost: done.dataLossOccurred === true }), events, dataLossOccurred: done.dataLossOccurred === true }
+  return {
+    result,
+    trace: parseTrace(events, { dataLost: done.dataLossOccurred === true }),
+    events,
+    dataLossOccurred: done.dataLossOccurred === true
+  }
 }

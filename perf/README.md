@@ -1,7 +1,7 @@
 # Performance harness
 
-The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 4.
-Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine), Phase 2 (the Layer A and Layer B runners) and Phase 3 (the Layer C browser runner and the gallery adapter) are done.
+The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 5.
+Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine), Phase 2 (the Layer A and Layer B runners), Phase 3 (the Layer C browser runner and the gallery adapter) and Phase 4 (recovery and endurance under deliberate failures) are done.
 
 | Path                             | Holds                                                              |
 | -------------------------------- | ------------------------------------------------------------------ |
@@ -21,6 +21,10 @@ Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engin
 | `schemas/workload-report.schema.json` | What a manifest should do and what the scene should look like at each checkpoint, written by `perf-harness generate` |
 | `schemas/examples/rejected-manifests.json` | Manifests that must be refused, read by both the JavaScript and the Rust validator |
 | `manifests/`                     | The reference manifests: a small one for each of W1 to W3, and a small and a medium one for W4 |
+| `fault-contracts.json`           | What the library promises when something fails part way, for each fault point, with the code that says so |
+| `page/fault-injector.js`         | Makes the Nth DOM call of a page fail, refuses or holds animation frames. Present only in runs that break something |
+| `runner/page/recovery.js`        | The sweeps that break an operation at every DOM call, and the endurance cycles that do it again and again |
+| `runner/layer-c/recovery.mjs`    | The recovery scenarios that need a browser frame or real input |
 | `gallery-overrides.json`         | Per-panel overrides for the gallery sweep: a control's name, or the hook that advances a manual clock |
 | `lib/frames.mjs`, `lib/trace.mjs`, `lib/input.mjs` | The frame attribution rule and its tests (`lib/test-frames.mjs`), the trace recorder, and real input through CDP |
 | `spike/frame-correlation.mjs`    | The Phase 3 spike that the frame correlation rule was tested with |
@@ -435,7 +439,7 @@ with what exists and not with what it meant.
 - **Layer A times W2 only.** The other workloads have no DOM-free library work. They are still run, to cross-check the library's
   geometry against the model at every checkpoint.
 - **Timing is of synchronous calls.** A figure here says nothing about when anything was painted. That is Layer C.
-- **No Firefox figures, and no recovery mode yet.** Recovery is Phase 4.
+- **No Firefox figures.** Recovery mode arrived in Phase 4.
 - **The correctness mode runs one repetition,** since it is deterministic, and the others run the manifest's repetitions.
 
 ### Handing over to Phase 3
@@ -665,7 +669,139 @@ heaviest panels. Every click changed the panel in all 16 walks.
   has a drag in progress to tear down.
 - Endurance for Layer C (heap and listener counts over hours) can reuse the settle step and the listener gate.
 
+## Phase 4: recovery and endurance under deliberate failures
+
+A scene is broken on purpose, one fault point at a time, and what it is left holding is compared with what the library says it
+leaves. Then the same breaking is done cycle after cycle, to see that a failure and its recovery cost nothing that a success would not.
+
+```sh
+node perf/lib/test-contracts.mjs                                            # the contracts are well formed, and cite code that exists
+node perf/runner/selftest-recovery.mjs                                      # can the runner fail? does it break what it says?
+node perf/runner/run.mjs perf/manifests/w5-recovery-small.toml --mode recovery     # every fault point, on Layers B and C
+node perf/runner/run.mjs perf/manifests/w5-recovery-small.toml --mode endurance    # 35 cycles of every fault point, on both
+node perf/runner/run.mjs perf/manifests/w5-recovery-long.toml --mode endurance --layers b    # 200 cycles
+```
+
+### The contracts, from the code
+
+The design says to begin by tabulating each fault point's actual contract from the code, and to report a point that has none as a
+finding and not to test it against a guess. `fault-contracts.json` is that table, with the lines that say each thing, and
+`test-contracts.mjs` checks that every line it cites exists and that every recovery manifest expects what it says. A manifest names a
+fault point and what it expects (`nothing_committed`, `partly_committed` or `undocumented`) in a `[recovery]` table, workload W5.
+
+| Fault point | Operation | What the library says | Source |
+|---|---|---|---|
+| `node_construction` | `add_node` | Nothing committed. A guard unwinds the partly built node, and the model changes only once the element is attached | `render_guard.rs`, `scene_inner.rs` |
+| `dom_transform` | `move_node`, the transform write | Nothing committed. The node is where it was, in the model and on the page | `node/mod.rs` (public) |
+| `connector_update` | `move_node`, the connectors | Partly committed. The move stays, some connectors are redrawn and others not. A move to a different origin puts it right | `node/mod.rs` (public) |
+| `label_update` | `move_node`, the labels | Partly committed. A move to the origin the node already has retries the label | `node/mod.rs` (public) |
+| `drag_install` | `make_draggable_with` | Nothing committed, and a failed call can be retried | `drag/mod.rs` (public) |
+| `scheduled_frame` | A view change written in a frame | Partly committed. The view changes at once and the write waits for a frame. A refused frame, or a failed write, is tried again by the next event | `view_input/frame.rs`, `frame_request.rs` |
+| `teardown` | Dropping the last handle with a frame pending | The frame is cancelled before its closure goes, the waiting view is written, the listeners are released | `frame_request.rs`, `scene_inner.rs` |
+| `mid_drag_teardown` | Dropping it between a pointer down and up | The handlers hold the scene weakly and do nothing once it is gone | `drag/handlers.rs` |
+| `edge_construction` | `add_edge_with` | **Nothing.** Only the rejections before anything is drawn are promised | `connector/mod.rs` |
+| `removed_host` | Using a scene whose `<svg>` was removed | **Nothing** | none |
+
+### How a failure is put in
+
+`page/fault-injector.js` counts the DOM calls that the library makes and can fail (setting an attribute, creating or inserting an
+element, registering a listener, measuring a box) and makes the Nth one throw. An operation is first run on a twin with no fault,
+to learn how many calls it makes and what the scene looks like when it works. It is then run once for every one of those calls, with
+that call made to fail, so the failure is put at every place that the operation can have one and not at a few that were thought of.
+The twin has to agree with the reference model, so the reference is not the library agreeing with itself. A failure has three
+outcomes to tell apart, by comparing checkpoints and the document itself (element counts, listener counts, paths, label positions,
+styles, which a checkpoint does not read): nothing committed, partly committed, or something else.
+
+The recovery time of a point is taken in the page, around the failed call and the call that recovers from it, with no check inside.
+For a frame it is from the event that retries to the moment a `MutationObserver` reports the content layer's transform to be the
+scene's own view. For a teardown it is the drop itself.
+
+### What it found
+
+Every documented contract held, at every DOM call (`evidence/phase4/results/w5-recovery-small-recovery/`):
+
+| Point | Failures injected | Result |
+|---|---|---|
+| `node_construction` | 24, one at each DOM call of `add_node` | Each reported, each left nothing, each retry reached the reference |
+| `dom_transform` | 1 | Nothing committed |
+| `connector_update` | 2 | Node moved, connectors partly redrawn. A move to the same origin redrew nothing, and a move to another put the connectors right |
+| `label_update` | 3 | Node moved, label unplaced. The same-origin move placed it |
+| `drag_install` | 5, four listeners and a style | Nothing left, no listener dangling, the node not marked draggable |
+| `scheduled_frame` | 20, ten refused and ten whose write failed | The view changed at once, the document was stale, and the next event caught it up |
+| `teardown` | 10 | One frame cancelled each time, the view written, none ran late, no listener left |
+| `mid_drag_teardown` | 10 | Nothing moved after the drop, no error, page back to baseline |
+
+Four things were found, and are in `findings.json`. None is a pass or a failure of a contract, since nothing promises it.
+
+1. **`add_edge_with` has no rollback for a DOM failure after the connector is attached.** Of its 10 DOM calls, a failure at the first
+   four leaves nothing. A failure at the next five (the path's attributes, and the first end's name) leaves a stray connector in the
+   document, and a failure at the last leaves the edge in the graph with only one end named. In six of the ten, a retry does not
+   reach the reference: it adds a second connector beside the stray one. Nothing in the documentation says otherwise, and it is the one
+   place where a failure and a retry leave the scene different from a success.
+2. **A removed host is not an error.** With the `<svg>` out of the document, `add_node`, `move_node`, `add_edge_with`,
+   `make_draggable_with` and `set_edge_label` all succeeded, and put back, the scene agreed with the model.
+3. **A node dragged when its scene is dropped keeps `cursor: grabbing`** for as long as the host stays in the document. The documented
+   contract held, and what the node is left wearing is not documented.
+4. **A failed DOM call that returns an object costs wasm-bindgen one externref slot for good.** `createElementNS`, `appendChild` and
+   `getBBox` do, and `setAttribute` and `addEventListener`, which return nothing, do not. Over 40 failures of each, the table held
+   exactly 40 more slots filled with `undefined` that nothing frees, and none more for the others. The harness's own web-sys calls
+   lose them the same way, so it is in the generated glue (wasm-bindgen 0.2.129) and not in the library. Its cost is that the table, and the
+   free list beside it, grow for as long as failures happen.
+
+The fourth was found by the endurance run, which is what it is for.
+
+### Endurance under deliberate failures
+
+A cycle builds a scene and its twin, breaks each fault point of the manifest at one DOM call (a different one from cycle to cycle,
+so the cycles together reach all of them), recovers as the contract says, takes both down, and reads the document's elements and
+listeners and the counting allocator's live bytes. Layer C does the same with its three scenarios and reads the page's counts and
+the browser's heap after a settle step and a forced collection. The gates are exact: the elements and the listeners return to their
+baseline after every cycle, every recovery reaches the state the contract promises, and the live bytes do not grow after the warm-up.
+
+The first 200-cycle run failed the live-bytes gate, with a step of 1,024 bytes at cycle 141, and in a longer run another of 2,048
+at cycle 495. The steps double in size and in spacing, which is a block doubling because something grows a little every cycle. The
+JS handles held were constant. The blocks it was made of were the free list of the externref slab, and the slots were being lost by
+failed calls. The gate was right, and the cause was not the library's.
+
+Two things were done, and neither loosens the gate. The slab is sized before the baseline is read, as the harness sizes its own
+vectors, so that its doubling is not mistaken for growth. And the loss is counted exactly and held to a law of its own: the slots lost
+over a run must equal the number of failures of a call that returns an object, no more and no fewer
+(`endurance.lost_externref_slots_are_explained`). Over 200 cycles that was 144 slots for 144 failures. With that, the live bytes moved by
+0, and 600 recoveries each reached the state the contract promises.
+
+### The self-test
+
+`selftest-recovery.mjs` shows that a green run means something. Arming the Nth DOM call makes exactly that call fail, once, and a call
+beyond the last makes none. Each documented point, given the other outcome, fails. If `add_edge_with` were promised to roll back, 6 of
+its 10 failures would break the promise. With removal made to do nothing, which is a library with no rollback, `node_construction`
+fails at 22 of 24 calls. With the cancel of a pending frame made to do nothing, `teardown` fails and names the frame that ran
+after its closure was dropped. In endurance, a leak of bytes, of a listener, of an element, and a slot lost that no failure explains,
+each fails its own gate and no other.
+
+### Limits, and where this departs from the design
+
+- **Three outcomes, not two, in practice.** The design names nothing committed and partly committed. `undocumented` is the third, and
+  is how the design's own rule (a finding, not a guess) is written into a manifest.
+- **A failure is a thrown DOM call.** It is the only kind a page can cause the library to meet. A failure of the rollback itself, or
+  of a call that returns no error in `web-sys` (setting text, reading a rectangle), is not injected, since it could only escape as an
+  exception through the wasm frames.
+- **Chrome only, on one machine.** The heap is a Chrome diagnostic and not a gate.
+- **Label placement depends on history,** so a clean run is not a reference for it. A connector retry is held to the connectors.
+- **Not covered:** a label that cannot be drawn (`set_edge_label`), the elbow connector, failures in the nested-scene and operator
+  constructors, and anything the nodes with data content do.
+- **Hour-scale runs** are the same manifest with more cycles. The 200 cycles recorded take seconds on Layer B.
+
+### Handing over to Phase 5
+
+- CI has the contract checks and the unit tests, and no browser. The recovery and endurance profiles are ready to run in one.
+- Finding 1 is a candidate for a library fix, and the recovery sweep of `edge_construction` is the test for it: it would turn
+  from a finding into a contract (`nothing_committed`) by changing one word of a manifest.
+- Finding 4 is a candidate for a report to wasm-bindgen.
+
 ## Evidence
+
+`evidence/phase4/` holds what the Phase 4 checks printed, the recovery and endurance result documents with the table of every failure that was injected, and `findings.json`.
+`node perf/runner/record-phase4-evidence.mjs` writes it again.
 
 `evidence/phase3/` holds what the Phase 3 checks printed, the spike's raw output, the W4 result documents and raw samples, and the gallery report.
 `node perf/runner/record-phase3-evidence.mjs` writes it again.

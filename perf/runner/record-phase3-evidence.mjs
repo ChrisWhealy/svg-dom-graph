@@ -44,32 +44,65 @@ const step = (file, command, args, options = {}) => {
   if (!wanted(file)) return null
   const result = run(command, args, options)
   fs.writeFileSync(path.join(out, file), tidy(result.stdout + (result.status === 0 ? '' : result.stderr)))
-  commands.push({ file, command: `${command} ${args.join(' ')}`.replaceAll(root, '<repo>'), exit_code: result.status, seconds: result.seconds })
+  commands.push({
+    file,
+    command: `${command} ${args.join(' ')}`.replaceAll(root, '<repo>'),
+    exit_code: result.status,
+    seconds: result.seconds
+  })
   console.log(`${result.status === 0 ? 'ok  ' : 'FAIL'} ${file}`)
   return result
 }
 
-step('build.txt', 'sh', ['-c', 'cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg'])
+step('build.txt', 'sh', [
+  '-c',
+  'cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg'
+])
 
 // The deterministic parts, which need no browser.
 const wasiRunner = `node ${path.join(root, 'perf/crosscheck/run-wasi.mjs')}`
 step('rust-tests-native.txt', 'cargo', ['test', '-p', 'perf-harness'], { env: { ...process.env, RUST_BACKTRACE: '0' } })
-step('rust-tests-wasm32-wasi.txt', 'cargo', ['test', '-p', 'perf-harness', '--no-default-features', '--target', 'wasm32-wasip1'], {
-  env: { ...process.env, RUST_BACKTRACE: '0', CARGO_TARGET_WASM32_WASIP1_RUNNER: wasiRunner },
-})
+step(
+  'rust-tests-wasm32-wasi.txt',
+  'cargo',
+  ['test', '-p', 'perf-harness', '--no-default-features', '--target', 'wasm32-wasip1'],
+  {
+    env: { ...process.env, RUST_BACKTRACE: '0', CARGO_TARGET_WASM32_WASIP1_RUNNER: wasiRunner }
+  }
+)
 step('crosscheck.txt', 'node', ['perf/crosscheck/crosscheck.mjs'])
 step('schema-checks.txt', 'node', ['check.mjs'], { cwd: path.join(root, 'perf/schemas') })
 step('frame-attribution-tests.txt', 'node', ['perf/lib/test-frames.mjs'])
 step('walk-verdict-tests.txt', 'node', ['perf/runner/test-walk-verdict.mjs'])
 
 // The spike that Phase 3 is conditional on, and the self-test that Layer C measures what it says.
-step('frame-correlation-spike.txt', 'node', ['perf/spike/frame-correlation.mjs', '--out', path.join(out, 'frame-correlation.json')])
+step('frame-correlation-spike.txt', 'node', [
+  'perf/spike/frame-correlation.mjs',
+  '--out',
+  path.join(out, 'frame-correlation.json')
+])
 fs.rmSync(path.join(out, 'frame-correlation.txt'), { force: true })
 step('layer-c-selftest.txt', 'node', ['perf/runner/selftest-layer-c.mjs'])
 
 // The interaction workload on every layer, and the larger one on Layer C alone.
-step('run-w4-interaction-small.txt', 'node', ['perf/runner/run.mjs', 'perf/manifests/w4-interaction-small.toml', '--no-build', '--out-dir', path.join(out, 'results/w4-interaction-small')])
-step('run-w4-interaction-medium.txt', 'node', ['perf/runner/run.mjs', 'perf/manifests/w4-interaction-medium.toml', '--layers', 'c', '--mode', 'performance', '--no-build', '--out-dir', path.join(out, 'results/w4-interaction-medium')])
+step('run-w4-interaction-small.txt', 'node', [
+  'perf/runner/run.mjs',
+  'perf/manifests/w4-interaction-small.toml',
+  '--no-build',
+  '--out-dir',
+  path.join(out, 'results/w4-interaction-small')
+])
+step('run-w4-interaction-medium.txt', 'node', [
+  'perf/runner/run.mjs',
+  'perf/manifests/w4-interaction-medium.toml',
+  '--layers',
+  'c',
+  '--mode',
+  'performance',
+  '--no-build',
+  '--out-dir',
+  path.join(out, 'results/w4-interaction-medium')
+])
 
 // The gallery, and the proof that its verdicts can fail.
 step('gallery-selftest.txt', 'node', ['perf/runner/selftest-gallery.mjs'])
@@ -80,13 +113,18 @@ const environment = {
   recorded_at: new Date().toISOString(),
   commit: first('git', ['rev-parse', 'HEAD']),
   uncommitted_changes: run('git', ['status', '--porcelain']).stdout.split('\n').filter(Boolean),
-  machine: { os: `${os.type()} ${os.release()}`, cpu: os.cpus()[0].model, cores: os.cpus().length, memory_bytes: os.totalmem() },
+  machine: {
+    os: `${os.type()} ${os.release()}`,
+    cpu: os.cpus()[0].model,
+    cores: os.cpus().length,
+    memory_bytes: os.totalmem()
+  },
   browser: first(process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--version']),
   rustc: first('rustc', ['--version']),
   wasm_pack: first('wasm-pack', ['--version']),
   node: process.version,
   build_profile: 'release',
-  commands: only.length === 0 ? commands : [...previous.commands.filter(c => !only.includes(c.file)), ...commands],
+  commands: only.length === 0 ? commands : [...previous.commands.filter(c => !only.includes(c.file)), ...commands]
 }
 fs.writeFileSync(path.join(out, 'environment.json'), JSON.stringify(environment, null, 2) + '\n')
 console.log(`written to ${path.relative(root, out)}`)

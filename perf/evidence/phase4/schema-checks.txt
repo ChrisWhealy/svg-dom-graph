@@ -1,0 +1,162 @@
+ok   valid manifest
+ok   valid checkpoint
+ok   valid result
+ok   valid comparison
+ok   valid workload-report
+ok   valid gallery-report
+ok   valid checkpoint with an undrawn connector
+ok   valid native result
+ok   the result example carries the example manifest
+ok   manifest rejects an unknown top-level key
+ok   manifest rejects an unknown measurement option
+ok   manifest rejects a missing graph
+ok   manifest rejects missing limits
+ok   manifest rejects zero repetitions
+ok   manifest rejects no modes
+ok   manifest rejects a repeated mode
+ok   manifest rejects an unknown workload
+ok   manifest rejects connector rerouting without edges
+ok   manifest rejects correctness without a checkpoint policy
+ok   manifest rejects correctness without a checkpoint interval
+ok   manifest rejects a negative seed
+ok   manifest rejects no nodes
+ok   manifest rejects no measured iterations
+ok   manifest rejects a wall limit of zero
+ok   manifest rejects a checkpoint interval of zero
+ok   manifest rejects a wrong schema version
+ok   manifest rejects a missing capture option
+ok   manifest rejects a string for a count
+ok   manifest rejects a negative live growth allowance
+ok   manifest rejects a live growth allowance that is text
+ok   manifest rejects an interaction table on a workload that is not the interaction workload
+ok   manifest rejects the interaction workload with no interaction table
+ok   manifest rejects a recovery table on a workload that is not the recovery workload
+ok   manifest rejects the recovery workload with no recovery table
+ok   gallery-report rejects an unknown top-level key
+ok   gallery-report rejects a report that does not say what its times are
+ok   gallery-report rejects a report with no summary
+ok   gallery-report rejects a summary that is missing a count
+ok   gallery-report rejects a panel with no status
+ok   gallery-report rejects an unknown panel status
+ok   gallery-report rejects a panel id that is not a panel
+ok   gallery-report rejects a build with both a time and a reason
+ok   gallery-report rejects a negative time
+ok   gallery-report rejects a walk with no verdict
+ok   gallery-report rejects an unknown verdict
+ok   gallery-report rejects a walk with no checks
+ok   gallery-report rejects a check with an unknown outcome
+ok   gallery-report rejects a check with no detail
+ok   gallery-report rejects an expectation with no reason
+ok   gallery-report rejects an unwalked panel with no verdict
+ok   gallery-report rejects a downgraded walk with no reason
+ok   gallery-report rejects a walked panel with no clicks
+ok   gallery-report rejects a walked panel with a reason
+ok   gallery-report rejects an unknown walk status
+ok   gallery-report rejects a control with no name
+ok   gallery-report rejects a count that is not whole
+ok   gallery-report rejects a page error of an unknown kind
+ok   gallery-report rejects a viewport of three numbers
+ok   checkpoint rejects a connector with two numbers
+ok   checkpoint rejects no nodes list
+ok   checkpoint rejects no edges list
+ok   checkpoint rejects no dom_identity
+ok   checkpoint rejects no geometry tolerance
+ok   checkpoint rejects zero tolerance
+ok   checkpoint rejects unknown section
+ok   checkpoint rejects unknown key in topology
+ok   checkpoint rejects node box with three numbers
+ok   checkpoint rejects label with four numbers
+ok   checkpoint rejects duplicate paint-order key
+ok   checkpoint rejects zero view scale
+ok   checkpoint rejects view missing a field
+ok   checkpoint rejects a hash for geometry
+ok   checkpoint rejects a short hash
+ok   checkpoint rejects an edge without an end
+ok   checkpoint rejects a non-string content value
+ok   result rejects a gate with an unknown status
+ok   result rejects a gate with no detail
+ok   result rejects a gate with an unknown key
+ok   result rejects a resolution flag of false
+ok   result rejects a resolution flag on a count
+ok   result rejects a resolution flag on a batch
+ok   result rejects no environment kind
+ok   result rejects an unknown environment kind
+ok   result rejects a browser run with no browser
+ok   result rejects a browser run with no browser version
+ok   result rejects a browser run with no cross-origin flag
+ok   result rejects an empty build profile
+ok   result rejects no stream scope
+ok   result rejects an unknown stream scope
+ok   result rejects unknown top-level key
+ok   result rejects missing environment
+ok   result rejects a short git sha
+ok   result rejects a major-only browser version
+ok   result rejects missing manifest copy
+ok   result rejects an invalid manifest copy
+ok   result rejects a short manifest hash
+ok   result rejects a measured metric with no unit
+ok   result rejects a measured metric with no mechanism
+ok   result rejects a latency with no samples
+ok   result rejects a latency with no summary
+ok   result rejects a latency with no within-run spread
+ok   result rejects a latency in bytes
+ok   result rejects a latency with a value
+ok   result rejects a latency without p50
+ok   result rejects a latency batch size of one
+ok   result rejects a batch throughput without a batch size
+ok   result rejects a count with no value
+ok   result rejects a count with a summary
+ok   result rejects a count in ms
+ok   result rejects a capacity in counts
+ok   result rejects a capacity with a summary
+ok   result rejects a capacity with no value
+ok   result rejects a capacity with a batch size
+ok   result rejects an unavailable metric with no reason
+ok   result rejects an unavailable metric with a value
+ok   result rejects an unavailable metric with a summary
+ok   result rejects a measured metric with a reason
+ok   result rejects an unknown metric key
+ok   result rejects ok with an error
+ok   result rejects error without text
+ok   result rejects timed out without text
+ok   result rejects invalid_incorrect without failed checkpoints
+ok   result rejects correctness without checkpoint counts
+ok   result rejects performance ok without raw samples
+ok   result rejects a non-date start
+ok   workload-report rejects unknown top-level key
+ok   workload-report rejects no stream
+ok   workload-report rejects an unsupported encoding version
+ok   workload-report rejects a short stream digest
+ok   workload-report rejects no mutations digest
+ok   workload-report rejects no operations
+ok   workload-report rejects no checkpoints
+ok   workload-report rejects a checkpoint with no model digest
+ok   workload-report rejects a checkpoint with no section digests
+ok   workload-report rejects a checkpoint missing one section digest
+ok   workload-report rejects a digest for geometry, which is compared within a tolerance
+ok   workload-report rejects a negative operation index
+ok   workload-report rejects an invalid manifest copy
+ok   workload-report rejects no section report
+ok   workload-report rejects an unknown key in the manifest block
+ok   comparison rejects unknown top-level key
+ok   comparison rejects no baseline promotion record
+ok   comparison rejects a short baseline commit
+ok   comparison rejects no candidate runs
+ok   comparison rejects a repeated run id
+ok   comparison rejects too few bootstrap resamples
+ok   comparison rejects no ratio tolerance
+ok   comparison rejects confidence of one
+ok   comparison rejects a regression with no ratio
+ok   comparison rejects a regression with no interval
+ok   comparison rejects a regression with no candidate side
+ok   comparison rejects an inconclusive verdict with no reason
+ok   comparison rejects a diagnostic verdict with an interval
+ok   comparison rejects a not_comparable verdict carrying numbers
+ok   comparison rejects comparable false with no reason
+ok   comparison rejects incompatible yet a regression verdict
+ok   comparison rejects a side with no between-run spread
+ok   comparison rejects an unknown verdict
+ok   comparison rejects a missing compatibility key field
+ok   comparison accepts an incompatible pair with only not_comparable verdicts
+
+all passed

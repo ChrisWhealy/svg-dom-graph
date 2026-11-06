@@ -1,0 +1,110 @@
+the counting allocator is verified
+
+results in perf/evidence/phase4/results/w5-recovery-small-recovery
+
+B recovery #0: ok, 35 checkpoints passed, 0 failed
+    recovery.node_construction.time p50 70.00 us
+    recovery.dom_transform.time p50 15.00 us
+    recovery.connector_update.time p50 15.00 us
+    recovery.label_update.time p50 15.00 us
+    recovery.drag_install.time p50 25.00 us
+    recovery.edge_construction.time p50 10.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING edge_construction (undocumented): 10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0
+    FINDING externref_slot_per_failed_call (undocumented): a DOM call that fails costs wasm-bindgen's glue one externref slot for good if the call returns an object, and nothing if it returns nothing: createElementNS 40 lost in 40 failures, appendChild 40 lost in 40 failures, setAttribute 0 lost in 40 failures, getBBox 40 lost in 40 failures, addEventListener 0 lost in 40 failures. Exactly one slot per failure, for every method that returns an object, and
+    FINDING removed_host (undocumented): with the host <svg> out of the document, 5 of 5 operations succeeded (add_node ok; move_node ok; add_edge ok; make_draggable ok; set_edge_label ok); put back, the scene was readable and agreed with the model
+    ok   recovery.node_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.node_construction.matches_the_contract: pass, 24 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.move_node.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.dom_transform.matches_the_contract: pass, 1 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.connector_update.matches_the_contract: pass, 2 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.label_update.matches_the_contract: pass, 3 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.drag_install.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.drag_install.matches_the_contract: pass, 5 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.edge_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+C recovery #0: ok, 40 checkpoints passed, 0 failed
+    recovery.scheduled_frame.time p50 2.07 ms
+    recovery.teardown.time p50 0.36 ms
+    recovery.mid_drag_teardown.time p50 0.30 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING mid_drag_teardown (undocumented): what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its ba
+    ok   recovery.scheduled_frame.matches_the_contract: pass, 20 runs, each partly committed as documented
+    ok   recovery.teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+    ok   recovery.mid_drag_teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+B recovery #1: ok, 35 checkpoints passed, 0 failed
+    recovery.node_construction.time p50 70.00 us
+    recovery.dom_transform.time p50 25.00 us
+    recovery.connector_update.time p50 15.00 us
+    recovery.label_update.time p50 20.00 us
+    recovery.drag_install.time p50 25.00 us
+    recovery.edge_construction.time p50 15.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING edge_construction (undocumented): 10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0
+    FINDING externref_slot_per_failed_call (undocumented): a DOM call that fails costs wasm-bindgen's glue one externref slot for good if the call returns an object, and nothing if it returns nothing: createElementNS 40 lost in 40 failures, appendChild 40 lost in 40 failures, setAttribute 0 lost in 40 failures, getBBox 40 lost in 40 failures, addEventListener 0 lost in 40 failures. Exactly one slot per failure, for every method that returns an object, and
+    FINDING removed_host (undocumented): with the host <svg> out of the document, 5 of 5 operations succeeded (add_node ok; move_node ok; add_edge ok; make_draggable ok; set_edge_label ok); put back, the scene was readable and agreed with the model
+    ok   recovery.node_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.node_construction.matches_the_contract: pass, 24 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.move_node.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.dom_transform.matches_the_contract: pass, 1 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.connector_update.matches_the_contract: pass, 2 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.label_update.matches_the_contract: pass, 3 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.drag_install.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.drag_install.matches_the_contract: pass, 5 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.edge_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+C recovery #1: ok, 40 checkpoints passed, 0 failed
+    recovery.scheduled_frame.time p50 1.89 ms
+    recovery.teardown.time p50 0.37 ms
+    recovery.mid_drag_teardown.time p50 0.23 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING mid_drag_teardown (undocumented): what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its ba
+    ok   recovery.scheduled_frame.matches_the_contract: pass, 20 runs, each partly committed as documented
+    ok   recovery.teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+    ok   recovery.mid_drag_teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+B recovery #2: ok, 35 checkpoints passed, 0 failed
+    recovery.node_construction.time p50 65.00 us
+    recovery.dom_transform.time p50 25.00 us
+    recovery.connector_update.time p50 20.00 us
+    recovery.label_update.time p50 15.00 us
+    recovery.drag_install.time p50 20.00 us
+    recovery.edge_construction.time p50 15.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING edge_construction (undocumented): 10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0
+    FINDING externref_slot_per_failed_call (undocumented): a DOM call that fails costs wasm-bindgen's glue one externref slot for good if the call returns an object, and nothing if it returns nothing: createElementNS 40 lost in 40 failures, appendChild 40 lost in 40 failures, setAttribute 0 lost in 40 failures, getBBox 40 lost in 40 failures, addEventListener 0 lost in 40 failures. Exactly one slot per failure, for every method that returns an object, and
+    FINDING removed_host (undocumented): with the host <svg> out of the document, 5 of 5 operations succeeded (add_node ok; move_node ok; add_edge ok; make_draggable ok; set_edge_label ok); put back, the scene was readable and agreed with the model
+    ok   recovery.node_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.node_construction.matches_the_contract: pass, 24 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.move_node.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.dom_transform.matches_the_contract: pass, 1 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.connector_update.matches_the_contract: pass, 2 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.label_update.matches_the_contract: pass, 3 failures, each partly committed as documented, and the defined retry reached the reference
+    ok   recovery.drag_install.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+    ok   recovery.drag_install.matches_the_contract: pass, 5 failures, each nothing committed as documented, and the retry reached the reference
+    ok   recovery.edge_construction.reference_agrees_with_the_model: pass, the twin that made the call with no fault matches the reference model
+C recovery #2: ok, 40 checkpoints passed, 0 failed
+    recovery.scheduled_frame.time p50 1.91 ms
+    recovery.teardown.time p50 0.38 ms
+    recovery.mid_drag_teardown.time p50 0.25 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    FINDING mid_drag_teardown (undocumented): what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its ba
+    ok   recovery.scheduled_frame.matches_the_contract: pass, 20 runs, each partly committed as documented
+    ok   recovery.teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+    ok   recovery.mid_drag_teardown.matches_the_contract: pass, 10 runs, each nothing committed as documented
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  B recovery recovery.node_construction.time: 65.0 to 70.0 us over 3 repetitions, 8% apart
+  B recovery recovery.dom_transform.time: 15.0 to 25.0 us over 3 repetitions, 67% apart
+  B recovery recovery.connector_update.time: 15.0 to 20.0 us over 3 repetitions, 33% apart
+  B recovery recovery.label_update.time: 15.0 to 20.0 us over 3 repetitions, 33% apart
+  B recovery recovery.drag_install.time: 20.0 to 25.0 us over 3 repetitions, 25% apart
+  B recovery recovery.edge_construction.time: 10.0 to 15.0 us over 3 repetitions, 50% apart
+  C recovery recovery.scheduled_frame.time: 1.89 to 2.07 ms over 3 repetitions, 10% apart
+  C recovery recovery.teardown.time: 0.355 to 0.375 ms over 3 repetitions, 6% apart
+  C recovery recovery.mid_drag_teardown.time: 0.225 to 0.300 ms over 3 repetitions, 33% apart
+
+every deterministic gate passed

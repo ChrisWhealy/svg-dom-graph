@@ -70,8 +70,18 @@ const judge = (label, trace, records, prefix = 'perf-') => {
     else wrong.push(record.index)
     if (toPageMs(trace, name, result.presentedAt) >= record.rafEnd) presentedAfter++
   }
-  const summary = { label, samples: records.length, measured, right, presented_after_callback: presentedAfter, unavailable, wrong_indices: wrong }
-  say(`${label}: ${records.length} samples, ${measured} given a frame, ${right} of those hold the sample's own callback, ${presentedAfter} presented after it ends${Object.keys(unavailable).length ? `, unavailable: ${JSON.stringify(unavailable)}` : ''}`)
+  const summary = {
+    label,
+    samples: records.length,
+    measured,
+    right,
+    presented_after_callback: presentedAfter,
+    unavailable,
+    wrong_indices: wrong
+  }
+  say(
+    `${label}: ${records.length} samples, ${measured} given a frame, ${right} of those hold the sample's own callback, ${presentedAfter} presented after it ends${Object.keys(unavailable).length ? `, unavailable: ${JSON.stringify(unavailable)}` : ''}`
+  )
   return summary
 }
 
@@ -82,22 +92,39 @@ const plan = Array.from({ length: 70 }, (_, index) => ({ index, cost: costs[inde
 
 await open()
 {
-  const { result: records, trace } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(const s of ${JSON.stringify(plan)}){r.push(await spike.mutate(s.index,s.cost))}return r})()`))
+  const { result: records, trace } = await traced(chrome, () =>
+    chrome.evaluate(
+      `(async()=>{const r=[];for(const s of ${JSON.stringify(plan)}){r.push(await spike.mutate(s.index,s.cost))}return r})()`
+    )
+  )
   results.experiments.known_cost = judge('1 known cost, one at a time', trace, records)
-  const durations = records.map(record => {
-    const result = attribute(trace, `perf-${record.index}`, { boundMs: 100 })
-    return result.status === 'measured' ? { cost: record.cost, latency: result.latencyMs } : null
-  }).filter(Boolean)
+  const durations = records
+    .map(record => {
+      const result = attribute(trace, `perf-${record.index}`, { boundMs: 100 })
+      return result.status === 'measured' ? { cost: record.cost, latency: result.latencyMs } : null
+    })
+    .filter(Boolean)
   // A frame carrying a callback that spins for `cost` cannot be presented sooner than that after the mark.
   const tooSoon = durations.filter(d => d.latency < d.cost)
-  say(`  none presented sooner than the callback's own cost: ${tooSoon.length === 0}; latency by cost (ms): ${costs.map(cost => { const l = durations.filter(d => d.cost === cost).map(d => d.latency); return `${cost}→${(l.reduce((a, b) => a + b, 0) / l.length).toFixed(1)}` }).join(' ')}`)
+  say(
+    `  none presented sooner than the callback's own cost: ${tooSoon.length === 0}; latency by cost (ms): ${costs
+      .map(cost => {
+        const l = durations.filter(d => d.cost === cost).map(d => d.latency)
+        return `${cost}→${(l.reduce((a, b) => a + b, 0) / l.length).toFixed(1)}`
+      })
+      .join(' ')}`
+  )
   results.experiments.known_cost.presented_sooner_than_cost = tooSoon.length
 }
 
 await open()
 await chrome.evaluate('spike.startUnrelated(5)')
 {
-  const { result: records, trace } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(const s of ${JSON.stringify(plan)}){r.push(await spike.mutate(s.index,s.cost))}return r})()`))
+  const { result: records, trace } = await traced(chrome, () =>
+    chrome.evaluate(
+      `(async()=>{const r=[];for(const s of ${JSON.stringify(plan)}){r.push(await spike.mutate(s.index,s.cost))}return r})()`
+    )
+  )
   results.experiments.unrelated_work = judge('2 unrelated work making frames at 5 ms', trace, records)
 }
 await chrome.evaluate('spike.stopUnrelated()')
@@ -105,14 +132,20 @@ await chrome.evaluate('spike.stopUnrelated()')
 await open()
 {
   // Back to back: a new mutation every 6 ms, with the frames of the earlier ones still in flight.
-  const { result: records, trace } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<80;i++){r.push(spike.mutateNow(i,i%3===0?6:0));await new Promise(f=>setTimeout(f,6))}await new Promise(f=>setTimeout(f,120));return r})()`))
+  const { result: records, trace } = await traced(chrome, () =>
+    chrome.evaluate(
+      `(async()=>{const r=[];for(let i=0;i<80;i++){r.push(spike.mutateNow(i,i%3===0?6:0));await new Promise(f=>setTimeout(f,6))}await new Promise(f=>setTimeout(f,120));return r})()`
+    )
+  )
   results.experiments.back_to_back = judge('3 back to back, 6 ms apart', trace, records)
   // The naive rule: the first presentation after the mark. Its answer is judged against the same stamps.
   let naiveRight = 0
   let naiveMeasured = 0
   for (const record of records) {
     const mark = trace.marks.get(`perf-${record.index}`)
-    const next = trace.pipelines.filter(p => p.pid === mark?.pid && /PRESENTED/.test(p.state ?? '') && p.end > mark.ts).sort((a, b) => a.end - b.end)[0]
+    const next = trace.pipelines
+      .filter(p => p.pid === mark?.pid && /PRESENTED/.test(p.state ?? '') && p.end > mark.ts)
+      .sort((a, b) => a.end - b.end)[0]
     const frame = next && trace.frames.find(f => f.id === next.sequence && f.pid === next.pid)
     if (!frame) continue
     naiveMeasured++
@@ -121,29 +154,49 @@ await open()
     if (began <= record.rafStart + 0.25 && record.rafEnd <= ended + 0.25) naiveRight++
   }
   results.experiments.back_to_back.naive = { measured: naiveMeasured, right: naiveRight }
-  say(`  the naive rule, the next presentation after the mark: ${naiveMeasured} given a frame, ${naiveRight} of them right`)
+  say(
+    `  the naive rule, the next presentation after the mark: ${naiveMeasured} given a frame, ${naiveRight} of them right`
+  )
 }
 
 await open()
 {
-  const { result: records, trace } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<20;i++){r.push(await spike.noop(i))}return r})()`))
-  const measured = records.filter(record => attribute(trace, `perf-${record.index}`, { boundMs: 100 }).status === 'measured').length
+  const { result: records, trace } = await traced(chrome, () =>
+    chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<20;i++){r.push(await spike.noop(i))}return r})()`)
+  )
+  const measured = records.filter(
+    record => attribute(trace, `perf-${record.index}`, { boundMs: 100 }).status === 'measured'
+  ).length
   results.experiments.changes_nothing = { samples: records.length, measured }
   say(`4a a mutation that changes nothing: ${records.length} samples, ${measured} given a frame (it should be none)`)
 }
 await open()
 {
-  const { result: records, trace, dataLossOccurred } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<70;i++){r.push(await spike.mutate(i,2))}return r})()`), { bufferKb: 16 })
+  const {
+    result: records,
+    trace,
+    dataLossOccurred
+  } = await traced(
+    chrome,
+    () => chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<70;i++){r.push(await spike.mutate(i,2))}return r})()`),
+    { bufferKb: 16 }
+  )
   const summary = judge('4b a trace with a 16 KB buffer', trace, records)
   results.experiments.small_buffer = { ...summary, data_loss_reported: dataLossOccurred }
-  say(`  Chrome reported data loss: ${dataLossOccurred}; the marks that survived: ${trace.marks.size} of ${records.length}`)
+  say(
+    `  Chrome reported data loss: ${dataLossOccurred}; the marks that survived: ${trace.marks.size} of ${records.length}`
+  )
 }
 
 await open()
 {
   // The style and layout are forced in the task, as when a panel is built and measured, so only the frame's paint is left.
-  const { result: records, trace } = await traced(chrome, () => chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<40;i++){r.push(await spike.mutateForced(i))}return r})()`))
-  const strict = records.filter(record => attribute(trace, `perf-${record.index}`, { boundMs: 100 }).status === 'measured').length
+  const { result: records, trace } = await traced(chrome, () =>
+    chrome.evaluate(`(async()=>{const r=[];for(let i=0;i<40;i++){r.push(await spike.mutateForced(i))}return r})()`)
+  )
+  const strict = records.filter(
+    record => attribute(trace, `perf-${record.index}`, { boundMs: 100 }).status === 'measured'
+  ).length
   let wide = 0
   let wideRight = 0
   for (const record of records) {
@@ -152,8 +205,15 @@ await open()
     wide++
     if (holds(trace, `perf-${record.index}`, result, record)) wideRight++
   }
-  results.experiments.forced_layout = { samples: records.length, strict_measured: strict, update_measured: wide, update_right: wideRight }
-  say(`6 layout forced in the task: ${records.length} samples, ${strict} given a frame by the style rule, ${wide} by the wider rule, of which ${wideRight} hold the callback`)
+  results.experiments.forced_layout = {
+    samples: records.length,
+    strict_measured: strict,
+    update_measured: wide,
+    update_right: wideRight
+  }
+  say(
+    `6 layout forced in the task: ${records.length} samples, ${strict} given a frame by the style rule, ${wide} by the wider rule, of which ${wideRight} hold the callback`
+  )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -185,7 +245,9 @@ for (const deferred of [false, true]) {
   summary.mark_before_a_frame = before
   summary.cdp_round_trip_ms_median = [...roundTrips].sort((a, b) => a - b)[roundTrips.length >> 1]
   results.experiments[deferred ? 'input_deferred' : 'input_immediate'] = summary
-  say(`  the mark was inside a main frame ${inside} times and before one ${before} times; CDP round trip median ${summary.cdp_round_trip_ms_median.toFixed(2)} ms`)
+  say(
+    `  the mark was inside a main frame ${inside} times and before one ${before} times; CDP round trip median ${summary.cdp_round_trip_ms_median.toFixed(2)} ms`
+  )
 }
 
 await chrome.close()
@@ -194,15 +256,38 @@ server.close()
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const e = results.experiments
 const verdicts = [
-  [e.known_cost.measured === e.known_cost.samples && e.known_cost.right === e.known_cost.measured, 'one at a time, every sample is given the frame that holds its callback'],
-  [e.unrelated_work.measured > 0 && e.unrelated_work.right === e.unrelated_work.measured, 'with unrelated work, every sample that is given a frame is given the right one'],
-  [e.back_to_back.measured > 0 && e.back_to_back.right === e.back_to_back.measured, 'back to back, every sample that is given a frame is given the right one'],
-  [e.back_to_back.naive.right < e.back_to_back.naive.measured, 'the naive rule is wrong back to back, which is what the rule is for'],
+  [
+    e.known_cost.measured === e.known_cost.samples && e.known_cost.right === e.known_cost.measured,
+    'one at a time, every sample is given the frame that holds its callback'
+  ],
+  [
+    e.unrelated_work.measured > 0 && e.unrelated_work.right === e.unrelated_work.measured,
+    'with unrelated work, every sample that is given a frame is given the right one'
+  ],
+  [
+    e.back_to_back.measured > 0 && e.back_to_back.right === e.back_to_back.measured,
+    'back to back, every sample that is given a frame is given the right one'
+  ],
+  [
+    e.back_to_back.naive.right < e.back_to_back.naive.measured,
+    'the naive rule is wrong back to back, which is what the rule is for'
+  ],
   [e.changes_nothing.measured === 0, 'a mutation that changes nothing is never given a frame'],
   [e.small_buffer.right === e.small_buffer.measured, 'a trace that lost events gives no wrong frame'],
-  [e.forced_layout.strict_measured < e.forced_layout.samples && e.forced_layout.update_measured >= 0.9 * e.forced_layout.samples && e.forced_layout.update_right === e.forced_layout.update_measured, 'a change with its layout forced in the task is missed by the style rule and placed right by the wider one'],
-  [e.input_immediate.measured > 0 && e.input_immediate.right === e.input_immediate.measured, 'real input written at once is given the right frame'],
-  [e.input_deferred.measured > 0 && e.input_deferred.right === e.input_deferred.measured, 'real input deferred to a frame is given the right frame'],
+  [
+    e.forced_layout.strict_measured < e.forced_layout.samples &&
+      e.forced_layout.update_measured >= 0.9 * e.forced_layout.samples &&
+      e.forced_layout.update_right === e.forced_layout.update_measured,
+    'a change with its layout forced in the task is missed by the style rule and placed right by the wider one'
+  ],
+  [
+    e.input_immediate.measured > 0 && e.input_immediate.right === e.input_immediate.measured,
+    'real input written at once is given the right frame'
+  ],
+  [
+    e.input_deferred.measured > 0 && e.input_deferred.right === e.input_deferred.measured,
+    'real input deferred to a frame is given the right frame'
+  ]
 ]
 say('')
 let failed = 0
@@ -210,7 +295,11 @@ for (const [ok, text] of verdicts) {
   if (!ok) failed++
   say(`${ok ? 'ok  ' : 'FAIL'} ${text}`)
 }
-say(failed ? `\n${failed} did not hold: the rule must not be relied on` : '\nthe rule attributes frames correctly wherever it gives an answer')
+say(
+  failed
+    ? `\n${failed} did not hold: the rule must not be relied on`
+    : '\nthe rule attributes frames correctly wherever it gives an answer'
+)
 results.verdicts = verdicts.map(([ok, text]) => ({ ok, text }))
 if (out) {
   fs.mkdirSync(path.dirname(out), { recursive: true })

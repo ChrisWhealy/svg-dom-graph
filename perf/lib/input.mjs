@@ -12,9 +12,12 @@ const timed = async (page, params) => {
   return performance.now() - sent
 }
 
-export const move = (page, x, y, { buttons = 0 } = {}) => timed(page, { type: 'mouseMoved', x, y, button: buttons ? 'left' : 'none', buttons })
-export const press = (page, x, y) => timed(page, { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
-export const release = (page, x, y) => timed(page, { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
+export const move = (page, x, y, { buttons = 0 } = {}) =>
+  timed(page, { type: 'mouseMoved', x, y, button: buttons ? 'left' : 'none', buttons })
+export const press = (page, x, y) =>
+  timed(page, { type: 'mousePressed', x, y, button: 'left', buttons: 1, clickCount: 1 })
+export const release = (page, x, y) =>
+  timed(page, { type: 'mouseReleased', x, y, button: 'left', buttons: 0, clickCount: 1 })
 
 /** One notch of the wheel, with the control key held, which is how the library tells a zoom from a scroll. */
 export const wheel = (page, x, y, deltaY, { ctrl = true } = {}) =>
@@ -31,7 +34,11 @@ export const dragPath = async (page, from, dx, dy, steps, gapMs) => {
   trips.press = await press(page, from[0], from[1])
   await pause(gapMs)
   for (let step = 1; step <= steps; step++) {
-    trips.moves.push(await move(page, Math.round(from[0] + (dx * step) / steps), Math.round(from[1] + (dy * step) / steps), { buttons: 1 }))
+    trips.moves.push(
+      await move(page, Math.round(from[0] + (dx * step) / steps), Math.round(from[1] + (dy * step) / steps), {
+        buttons: 1
+      })
+    )
     await pause(gapMs)
   }
   trips.release = await release(page, Math.round(from[0] + dx), Math.round(from[1] + dy))

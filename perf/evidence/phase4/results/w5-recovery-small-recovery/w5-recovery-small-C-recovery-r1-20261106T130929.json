@@ -1,0 +1,217 @@
+{
+  "schema_version": 1,
+  "run_id": "w5-recovery-small-C-recovery-r1-20261106T130929",
+  "started_at": "2026-11-06T13:09:29.957Z",
+  "repetition": 1,
+  "sequence_position": 3,
+  "environment": {
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "157.0.8103.39",
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "memory_bytes": 34359738368,
+    "runner_class": "local",
+    "timer_resolution_us": 4.999995231628418,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "crate_version": "0.2.47",
+    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_dirty": true,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w5-recovery-small",
+    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "recovery",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 18,
+        "maximum_degree": 6
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "recovery",
+          "endurance"
+        ],
+        "warmup_iterations": 5,
+        "measurement_iterations": 30,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 1
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "recovery": {
+        "points": [
+          {
+            "point": "node_construction",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "dom_transform",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "connector_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "label_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "drag_install",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "edge_construction",
+            "expect": "undocumented"
+          },
+          {
+            "point": "scheduled_frame",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "mid_drag_teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "removed_host",
+            "expect": "undocumented"
+          }
+        ]
+      },
+      "limits": {
+        "wall_ms": 300000
+      }
+    }
+  },
+  "mode": "recovery",
+  "status": "ok",
+  "metrics": [
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "C",
+      "mechanism": "performance.now() in the page, from the first capture-phase listener for the event that retries (after a frame was refused, or its write failed) to the moment the content layer's transform became the scene's own view, which a MutationObserver reports",
+      "name": "recovery.scheduled_frame.time",
+      "outliers_flagged": 1,
+      "samples": 20,
+      "status": "measured",
+      "summary": {
+        "max": 3.0399999618530273,
+        "min": 1.6150000095367432,
+        "p50": 1.8899999856948853
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.18999993801116943,
+        "mean": 1.934249997138977,
+        "stddev": 0.29541796547624893,
+        "tukey_high": 2.259999930858612,
+        "tukey_low": 1.5000001788139343
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "C",
+      "mechanism": "performance.now() in the page around the drop of the last Scene handle with a frame pending, which cancels the frame, writes the view that was waiting and releases the listeners",
+      "name": "recovery.teardown.time",
+      "outliers_flagged": 4,
+      "samples": 10,
+      "status": "measured",
+      "summary": {
+        "max": 1.4550000429153442,
+        "min": 0.09500002861022949,
+        "p50": 0.36500000953674316
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.04999995231628418,
+        "mean": 0.47150001525878904,
+        "stddev": 0.38397085743219705,
+        "tukey_high": 0.47499990463256836,
+        "tukey_low": 0.27500009536743164
+      }
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "C",
+      "mechanism": "performance.now() in the page around the drop of the last Scene handle between a pointer down and a pointer up",
+      "name": "recovery.mid_drag_teardown.time",
+      "outliers_flagged": 0,
+      "samples": 10,
+      "status": "measured",
+      "summary": {
+        "max": 0.38499999046325684,
+        "min": 0.0849999189376831,
+        "p50": 0.2250000238418579
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.17499983310699463,
+        "mean": 0.23650001287460326,
+        "stddev": 0.10260631239403045,
+        "tukey_high": 0.5874996781349182,
+        "tukey_low": -0.1124996542930603
+      }
+    }
+  ],
+  "checkpoints_passed": 40,
+  "checkpoints_failed": [],
+  "gates": [
+    {
+      "name": "recovery.scheduled_frame.matches_the_contract",
+      "status": "pass",
+      "detail": "20 runs, each partly committed as documented"
+    },
+    {
+      "name": "recovery.teardown.matches_the_contract",
+      "status": "pass",
+      "detail": "10 runs, each nothing committed as documented"
+    },
+    {
+      "name": "recovery.mid_drag_teardown.matches_the_contract",
+      "status": "pass",
+      "detail": "10 runs, each nothing committed as documented"
+    }
+  ],
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T130929.samples.ndjson",
+  "findings": [
+    {
+      "point": "mid_drag_teardown",
+      "contract": "undocumented",
+      "summary": "what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style \"cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;\" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its baseline once the host was removed.",
+      "details": {
+        "runs": 10,
+        "runs_with_the_style_left": 10,
+        "style": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+      }
+    }
+  ],
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T130929.cases.json"
+}

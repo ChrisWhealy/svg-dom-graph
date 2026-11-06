@@ -1,0 +1,162 @@
+{
+  "schema_version": 1,
+  "run_id": "w5-recovery-small-C-endurance-r0-20261106T131100",
+  "started_at": "2026-11-06T13:11:00.938Z",
+  "repetition": 0,
+  "sequence_position": 1,
+  "environment": {
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "157.0.8103.39",
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "memory_bytes": 34359738368,
+    "runner_class": "local",
+    "timer_resolution_us": 4.999995231628418,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "crate_version": "0.2.47",
+    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_dirty": true,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w5-recovery-small",
+    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "recovery",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 18,
+        "maximum_degree": 6
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "recovery",
+          "endurance"
+        ],
+        "warmup_iterations": 5,
+        "measurement_iterations": 30,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 1
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "recovery": {
+        "points": [
+          {
+            "point": "node_construction",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "dom_transform",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "connector_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "label_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "drag_install",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "edge_construction",
+            "expect": "undocumented"
+          },
+          {
+            "point": "scheduled_frame",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "mid_drag_teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "removed_host",
+            "expect": "undocumented"
+          }
+        ]
+      },
+      "limits": {
+        "wall_ms": 300000
+      }
+    }
+  },
+  "mode": "endurance",
+  "status": "ok",
+  "metrics": [
+    {
+      "name": "lifecycle.measured_cycles_sampled",
+      "layer": "C",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 30,
+      "mechanism": "read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+    },
+    {
+      "name": "browser.js_heap_slope_per_cycle",
+      "layer": "C",
+      "status": "measured",
+      "unit": "bytes",
+      "kind": "trend",
+      "value": 1505.6071190211346,
+      "mechanism": "the least-squares slope of JSHeapUsedSize against the cycle over the measured cycles, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate. A diagnostic of Chrome only, and not a gate"
+    },
+    {
+      "name": "browser.js_heap_net_change_after_warmup",
+      "layer": "C",
+      "status": "measured",
+      "unit": "bytes",
+      "kind": "trend",
+      "value": 52984,
+      "mechanism": "JSHeapUsedSize of the last measured cycle less the first, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+    }
+  ],
+  "checkpoints_passed": 105,
+  "checkpoints_failed": [],
+  "gates": [
+    {
+      "name": "endurance.listeners_return_to_baseline",
+      "status": "pass",
+      "detail": "the effective listener count was 5 before the first cycle and after each of the 35 cycles"
+    },
+    {
+      "name": "endurance.dom_returns_to_baseline",
+      "status": "pass",
+      "detail": "the document's element count was 7 before the first cycle and after each of the 35 cycles"
+    },
+    {
+      "name": "endurance.recoveries_succeed",
+      "status": "pass",
+      "detail": "105 scenario runs over 35 cycles each held to the contract"
+    }
+  ],
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-C-endurance-r0-20261106T131100.samples.ndjson"
+}

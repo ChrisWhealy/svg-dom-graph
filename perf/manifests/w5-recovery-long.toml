@@ -1,0 +1,49 @@
+# W5, recovery, the long endurance manifest: 200 cycles, in each of which every fault point is broken and recovered from.
+#
+# A cycle breaks each fault point of the manifest at one DOM call, and a different one from cycle to cycle, so that the 200 cycles
+# reach every call of every operation many times over. It is meant for Layer B, where a cycle is quick: `node perf/runner/run.mjs
+# perf/manifests/w5-recovery-long.toml --mode endurance --layers b`. The hour-scale runs of the design are this with more cycles.
+schema_version = 1
+workload = "recovery"
+seed = 2026
+prng = "splitmix64"
+
+[graph]
+nodes = 12
+edges = 18
+maximum_degree = 6
+
+[execution]
+modes = ["endurance"]
+warmup_iterations = 10
+measurement_iterations = 190
+repetitions = 2
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+checkpoint_every = 1
+
+[checkpoint]
+view = "unchanged"
+
+[recovery]
+points = [
+    { point = "node_construction", expect = "nothing_committed" },
+    { point = "dom_transform", expect = "nothing_committed" },
+    { point = "connector_update", expect = "partly_committed" },
+    { point = "label_update", expect = "partly_committed" },
+    { point = "drag_install", expect = "nothing_committed" },
+    { point = "edge_construction", expect = "undocumented" },
+    { point = "scheduled_frame", expect = "partly_committed" },
+    { point = "teardown", expect = "nothing_committed" },
+    { point = "mid_drag_teardown", expect = "nothing_committed" },
+    { point = "removed_host", expect = "undocumented" },
+]
+
+[limits]
+wall_ms = 300000

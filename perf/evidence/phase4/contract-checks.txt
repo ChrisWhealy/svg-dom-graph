@@ -1,0 +1,69 @@
+ok   the contracts name the fault points of the manifest schema (10)
+ok   node_construction: it is called documented exactly when its contract is not "undocumented" (nothing_committed, code)
+ok   node_construction: a documented contract cites where
+ok   node_construction: a partly committed contract names the sections that differ and the retry
+ok   node_construction: src/scene/node/render_guard.rs:12-27 is in a file of 113 lines
+ok   node_construction: src/scene/scene_inner.rs:124-131 is in a file of 779 lines
+ok   dom_transform: it is called documented exactly when its contract is not "undocumented" (nothing_committed, public)
+ok   dom_transform: a documented contract cites where
+ok   dom_transform: a partly committed contract names the sections that differ and the retry
+ok   dom_transform: src/scene/node/mod.rs:325-331 is in a file of 404 lines
+ok   connector_update: it is called documented exactly when its contract is not "undocumented" (partly_committed, public)
+ok   connector_update: a documented contract cites where
+ok   connector_update: a partly committed contract names the sections that differ and the retry
+ok   connector_update: src/scene/node/mod.rs:332-341 is in a file of 404 lines
+ok   label_update: it is called documented exactly when its contract is not "undocumented" (partly_committed, public)
+ok   label_update: a documented contract cites where
+ok   label_update: a partly committed contract names the sections that differ and the retry
+ok   label_update: src/scene/node/mod.rs:332-341 is in a file of 404 lines
+ok   label_update: src/scene/scene_inner.rs:410-414 is in a file of 779 lines
+ok   label_update: src/scene/connector/edge_label.rs:329-334 is in a file of 481 lines
+ok   drag_install: it is called documented exactly when its contract is not "undocumented" (nothing_committed, public)
+ok   drag_install: a documented contract cites where
+ok   drag_install: a partly committed contract names the sections that differ and the retry
+ok   drag_install: src/scene/drag/mod.rs:125-129 is in a file of 294 lines
+ok   edge_construction: it is called documented exactly when its contract is not "undocumented" (undocumented, none)
+ok   edge_construction: a documented contract cites where
+ok   edge_construction: a partly committed contract names the sections that differ and the retry
+ok   edge_construction: src/scene/connector/mod.rs:357-363 is in a file of 548 lines
+ok   edge_construction: src/scene/connector/mod.rs:394-425 is in a file of 548 lines
+ok   scheduled_frame: it is called documented exactly when its contract is not "undocumented" (partly_committed, code)
+ok   scheduled_frame: a documented contract cites where
+ok   scheduled_frame: a partly committed contract names the sections that differ and the retry
+ok   scheduled_frame: src/scene/view_input/frame.rs:21-26 is in a file of 64 lines
+ok   scheduled_frame: src/scene/frame_request.rs:63-66 is in a file of 90 lines
+ok   teardown: it is called documented exactly when its contract is not "undocumented" (nothing_committed, code)
+ok   teardown: a documented contract cites where
+ok   teardown: a partly committed contract names the sections that differ and the retry
+ok   teardown: src/scene/frame_request.rs:1-14 is in a file of 90 lines
+ok   teardown: src/scene/frame_request.rs:84-88 is in a file of 90 lines
+ok   teardown: src/scene/scene_inner.rs:107-115 is in a file of 779 lines
+ok   mid_drag_teardown: it is called documented exactly when its contract is not "undocumented" (nothing_committed, code)
+ok   mid_drag_teardown: a documented contract cites where
+ok   mid_drag_teardown: a partly committed contract names the sections that differ and the retry
+ok   mid_drag_teardown: src/scene/drag/handlers.rs:1-13 is in a file of 289 lines
+ok   removed_host: it is called documented exactly when its contract is not "undocumented" (undocumented, none)
+ok   removed_host: a documented contract cites where
+ok   removed_host: a partly committed contract names the sections that differ and the retry
+ok   w5-recovery-long.toml: node_construction expects nothing_committed
+ok   w5-recovery-long.toml: dom_transform expects nothing_committed
+ok   w5-recovery-long.toml: connector_update expects partly_committed
+ok   w5-recovery-long.toml: label_update expects partly_committed
+ok   w5-recovery-long.toml: drag_install expects nothing_committed
+ok   w5-recovery-long.toml: edge_construction expects undocumented
+ok   w5-recovery-long.toml: scheduled_frame expects partly_committed
+ok   w5-recovery-long.toml: teardown expects nothing_committed
+ok   w5-recovery-long.toml: mid_drag_teardown expects nothing_committed
+ok   w5-recovery-long.toml: removed_host expects undocumented
+ok   w5-recovery-small.toml: node_construction expects nothing_committed
+ok   w5-recovery-small.toml: dom_transform expects nothing_committed
+ok   w5-recovery-small.toml: connector_update expects partly_committed
+ok   w5-recovery-small.toml: label_update expects partly_committed
+ok   w5-recovery-small.toml: drag_install expects nothing_committed
+ok   w5-recovery-small.toml: edge_construction expects undocumented
+ok   w5-recovery-small.toml: scheduled_frame expects partly_committed
+ok   w5-recovery-small.toml: teardown expects nothing_committed
+ok   w5-recovery-small.toml: mid_drag_teardown expects nothing_committed
+ok   w5-recovery-small.toml: removed_host expects undocumented
+
+the contracts are well formed, cited, and what the manifests expect

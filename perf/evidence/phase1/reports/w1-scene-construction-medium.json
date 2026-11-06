@@ -14,10 +14,7 @@
         "maximum_degree": 16
       },
       "execution": {
-        "modes": [
-          "correctness",
-          "performance"
-        ],
+        "modes": ["correctness", "performance"],
         "warmup_iterations": 5,
         "measurement_iterations": 40,
         "repetitions": 5
@@ -127,17 +124,8 @@
     }
   ],
   "sections": {
-    "modelled": [
-      "topology",
-      "content",
-      "interaction",
-      "geometry",
-      "paint_order"
-    ],
+    "modelled": ["topology", "content", "interaction", "geometry", "paint_order"],
     "provisional": [],
-    "not_modelled": [
-      "dom_identity.ids",
-      "accessibility"
-    ]
+    "not_modelled": ["dom_identity.ids", "accessibility"]
   }
 }

@@ -72,10 +72,16 @@ const inspect = (summary, expected, scale, label) => {
   const keys = [...expected.keys()].sort((a, b) => a.localeCompare(b, 'en', { numeric: true }))
   const sample = sampleOf(keys)
 
-  check(summary.size <= PER_NODE * keys.length + SPARE, `the tree holds ${summary.size} nodes, within the bound of ${PER_NODE * keys.length + SPARE}`)
+  check(
+    summary.size <= PER_NODE * keys.length + SPARE,
+    `the tree holds ${summary.size} nodes, within the bound of ${PER_NODE * keys.length + SPARE}`
+  )
   check(summary.views.length === 1, `there is one graph view (${summary.views.length})`)
   const zoom = `Graph view, zoom ${Math.round(scale * 100)}%`
-  check(summary.views[0]?.name === zoom, `the graph view is named "${summary.views[0]?.name}", and the view's scale says "${zoom}"`)
+  check(
+    summary.views[0]?.name === zoom,
+    `the graph view is named "${summary.views[0]?.name}", and the view's scale says "${zoom}"`
+  )
 
   for (const key of sample) {
     const found = summary.groups.get(key) ?? []
@@ -85,16 +91,23 @@ const inspect = (summary, expected, scale, label) => {
     }
     const { outs, ins } = expected.get(key)
     const mine = clauses(found[0].name)
-    const named = direction => mine.filter(([kind]) => kind === direction).map(([, other]) => other).sort()
+    const named = direction =>
+      mine
+        .filter(([kind]) => kind === direction)
+        .map(([, other]) => other)
+        .sort()
     const want = list => [...list].sort()
     const same = (a, b) => a.length === b.length && a.every((item, index) => item === b[index])
     check(
       same(named('Output to'), want(outs)) && same(named('Input from'), want(ins)),
-      `${key} says "${found[0].name}", and the model has it output to [${want(outs)}] and input from [${want(ins)}]`,
+      `${key} says "${found[0].name}", and the model has it output to [${want(outs)}] and input from [${want(ins)}]`
     )
   }
   // A relationship has to be with something. A clause that names a node that is not there is a dangling reference.
-  const dangling = [...summary.groups.values()].flat().flatMap(group => clauses(group.name)).filter(([, other]) => !expected.has(other))
+  const dangling = [...summary.groups.values()]
+    .flat()
+    .flatMap(group => clauses(group.name))
+    .filter(([, other]) => !expected.has(other))
   check(dangling.length === 0, `every relationship names a node that exists (${dangling.length} do not)`)
   return { checks, sample }
 }
@@ -103,10 +116,18 @@ const inspect = (summary, expected, scale, label) => {
 /** The browser's identity of the element the DOM calls active, and of the focused node in the tree that is not the page. */
 const focusOf = async page => {
   const tree = await readTree(page)
-  const focused = tree.filter(node => value(node.role) !== 'RootWebArea' && (node.properties ?? []).some(property => property.name === 'focused' && value(property.value) === true))
+  const focused = tree.filter(
+    node =>
+      value(node.role) !== 'RootWebArea' &&
+      (node.properties ?? []).some(property => property.name === 'focused' && value(property.value) === true)
+  )
   const active = (await page.send('Runtime.evaluate', { expression: 'document.activeElement' })).result.result
-  const described = active.objectId ? (await page.send('DOM.describeNode', { objectId: active.objectId })).result.node : null
-  const tag = await page.evaluate('document.activeElement === document.body ? "body" : document.activeElement.localName')
+  const described = active.objectId
+    ? (await page.send('DOM.describeNode', { objectId: active.objectId })).result.node
+    : null
+  const tag = await page.evaluate(
+    'document.activeElement === document.body ? "body" : document.activeElement.localName'
+  )
   return { focused, domBackendId: tag === 'body' ? null : described?.backendNodeId, tag }
 }
 
@@ -141,7 +162,10 @@ export const checkAccessibility = async ({ tab, expected, scalePercent, gestures
     if (state.tag === 'rect') landed = state
   }
   const agree = state => state.focused.length === 1 && state.focused[0].backendDOMNodeId === state.domBackendId
-  checks.push({ ok: landed !== null && agree(landed) && value(landed.focused[0].role) === 'application', detail: `${label}: after Tab the one focused node in the tree is the graph view, and it is the element the DOM calls active (${landed ? `${landed.focused.length} focused, role ${landed.focused[0] && value(landed.focused[0].role)}` : 'Tab never reached the graph view'})` })
+  checks.push({
+    ok: landed !== null && agree(landed) && value(landed.focused[0].role) === 'application',
+    detail: `${label}: after Tab the one focused node in the tree is the graph view, and it is the element the DOM calls active (${landed ? `${landed.focused.length} focused, role ${landed.focused[0] && value(landed.focused[0].role)}` : 'Tab never reached the graph view'})`
+  })
 
   // Input, and then the same look again.
   let scaleNow = scale
@@ -152,14 +176,32 @@ export const checkAccessibility = async ({ tab, expected, scalePercent, gestures
   await tab.evaluate('perfC.settle(80)')
   const after = summarise(await readTree(tab))
   add(inspect(after, expected, scaleNow, `${label} after ${gestures.map(g => g.gesture).join(', ')}`).checks)
-  const changed = first.sample.filter(key => JSON.stringify(before.groups.get(key)) !== JSON.stringify(after.groups.get(key)))
-  checks.push({ ok: changed.length === 0, detail: `${label}: the roles and names of the ${first.sample.length} inspected nodes are what they were before the input (${changed.length} differ)` })
+  const changed = first.sample.filter(
+    key => JSON.stringify(before.groups.get(key)) !== JSON.stringify(after.groups.get(key))
+  )
+  checks.push({
+    ok: changed.length === 0,
+    detail: `${label}: the roles and names of the ${first.sample.length} inspected nodes are what they were before the input (${changed.length} differ)`
+  })
   const late = await focusOf(tab)
-  checks.push({ ok: late.tag === 'body' || agree(late), detail: `${label}: after the input, focus is still one element in both the tree and the DOM (${late.tag}, ${late.focused.length} focused in the tree)` })
+  checks.push({
+    ok: late.tag === 'body' || agree(late),
+    detail: `${label}: after the input, focus is still one element in both the tree and the DOM (${late.tag}, ${late.focused.length} focused in the tree)`
+  })
 
   await tab.evaluate('perfC.interactive_teardown()')
   await tab.evaluate('perfC.settle(40)')
   const gone = summarise(await readTree(tab))
-  checks.push({ ok: gone.views.length === 0 && gone.groups.size === 0, detail: `${label}: with the scene torn down the tree holds no graph view and no group (${gone.views.length}, ${gone.groups.size})` })
-  return { checks, stats: { ax_nodes: Math.max(before.size, after.size), nodes_inspected: first.sample.length, nodes_with_an_edge: expected.size } }
+  checks.push({
+    ok: gone.views.length === 0 && gone.groups.size === 0,
+    detail: `${label}: with the scene torn down the tree holds no graph view and no group (${gone.views.length}, ${gone.groups.size})`
+  })
+  return {
+    checks,
+    stats: {
+      ax_nodes: Math.max(before.size, after.size),
+      nodes_inspected: first.sample.length,
+      nodes_with_an_edge: expected.size
+    }
+  }
 }

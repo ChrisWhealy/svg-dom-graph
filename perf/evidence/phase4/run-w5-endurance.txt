@@ -1,0 +1,34 @@
+the counting allocator is verified
+
+results in perf/evidence/phase4/results/w5-recovery-small-endurance
+
+B endurance #0: ok, 105 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 6 to 35, within the 0 allowed
+    ok   endurance.recoveries_succeed: pass, 105 recoveries over 35 cycles each reached the state the contract promises
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 0 before the first cycle and after each of the 35 teardowns
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 6 before the first cycle and after each of the 35 teardowns
+    ok   endurance.lost_externref_slots_are_explained: pass, 26 externref slots were lost over 35 cycles, one for each of the 26 failures of a DOM call that returns an object, and none for the others
+C endurance #0: ok, 105 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 5 before the first cycle and after each of the 35 cycles
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 7 before the first cycle and after each of the 35 cycles
+    ok   endurance.recoveries_succeed: pass, 105 scenario runs over 35 cycles each held to the contract
+B endurance #1: ok, 105 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 6 to 35, within the 0 allowed
+    ok   endurance.recoveries_succeed: pass, 105 recoveries over 35 cycles each reached the state the contract promises
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 0 before the first cycle and after each of the 35 teardowns
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 6 before the first cycle and after each of the 35 teardowns
+    ok   endurance.lost_externref_slots_are_explained: pass, 26 externref slots were lost over 35 cycles, one for each of the 26 failures of a DOM call that returns an object, and none for the others
+C endurance #1: ok, 105 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 5 before the first cycle and after each of the 35 cycles
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 7 before the first cycle and after each of the 35 cycles
+    ok   endurance.recoveries_succeed: pass, 105 scenario runs over 35 cycles each held to the contract
+
+every deterministic gate passed

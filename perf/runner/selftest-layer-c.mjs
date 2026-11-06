@@ -29,11 +29,12 @@ const dir = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-selftest-c-'))
 const manifest = path.join(dir, 'selftest.toml')
 fs.writeFileSync(
   manifest,
-  fs.readFileSync(path.join(root, 'perf/manifests/w4-interaction-small.toml'), 'utf8')
+  fs
+    .readFileSync(path.join(root, 'perf/manifests/w4-interaction-small.toml'), 'utf8')
     .replace('scales_percent = [50, 100, 200]', 'scales_percent = [100]')
     .replace('warmup_iterations = 3', 'warmup_iterations = 1')
     .replace('measurement_iterations = 12', 'measurement_iterations = 6')
-    .replace('steps = 8', 'steps = 5'),
+    .replace('steps = 8', 'steps = 5')
 )
 const sh = (...args) => {
   const result = spawnSync(binary, args, { encoding: 'utf8', maxBuffer: 1 << 28 })
@@ -51,14 +52,25 @@ const check = (ok, text) => {
   if (!ok) failures++
   console.log(`${ok ? 'ok  ' : 'FAIL'} ${text}`)
 }
-const median = (outcome, name) => outcome.metrics.find(metric => metric.name === name && metric.status === 'measured')?.summary.p50
+const median = (outcome, name) =>
+  outcome.metrics.find(metric => metric.name === name && metric.status === 'measured')?.summary.p50
 
 const clean = await play({})
-check(clean.status === 'ok' && clean.checkpoints_failed.length === 0, `as it is: ${clean.status}, ${clean.checkpoints_passed} checks passed, every gesture did what the plan said`)
+check(
+  clean.status === 'ok' && clean.checkpoints_failed.length === 0,
+  `as it is: ${clean.status}, ${clean.checkpoints_passed} checks passed, every gesture did what the plan said`
+)
 const view = clean.metrics.find(metric => metric.name === 'interaction.wheel_zoom.scale_100.latency')
-check(view?.status === 'measured' && view.samples === 6, 'the wheel, in a tab of its own, was placed in a frame every time')
+check(
+  view?.status === 'measured' && view.samples === 6,
+  'the wheel, in a tab of its own, was placed in a frame every time'
+)
 const axMetric = name => clean.metrics.find(metric => metric.name === name)?.value
-check(axMetric('accessibility.checks') > 0 && !clean.checkpoints_failed.some(failure => failure.section === 'accessibility'), `the accessibility tree agrees with the model: ${axMetric('accessibility.checks')} checks in a tab of their own, the largest tree ${axMetric('accessibility.ax_nodes_largest_tree')} nodes, ${axMetric('accessibility.nodes_inspected')} inspected`)
+check(
+  axMetric('accessibility.checks') > 0 &&
+    !clean.checkpoints_failed.some(failure => failure.section === 'accessibility'),
+  `the accessibility tree agrees with the model: ${axMetric('accessibility.checks')} checks in a tab of their own, the largest tree ${axMetric('accessibility.ax_nodes_largest_tree')} nodes, ${axMetric('accessibility.nodes_inspected')} inspected`
+)
 const base = median(clean, 'interaction.drag.scale_100.latency')
 const baseTrip = median(clean, 'cdp.drag.scale_100.round_trip')
 console.log(`      drag ${base.toFixed(2)} ms, CDP round trip ${baseTrip.toFixed(2)} ms`)
@@ -67,24 +79,43 @@ const slow = await play({ slowdownMs: 20 })
 const slowed = median(slow, 'interaction.drag.scale_100.latency')
 // The listener costs 20 ms after the library has written, so the frame cannot be presented before it returns, whatever the
 // move cost before it. A frame that is missed adds up to one more, at 60 Hz.
-check(slow.status === 'ok' && slowed >= 20 && slowed <= 20 + 17 + 4, `a 20 ms listener after every move: the drag time goes from ${base.toFixed(2)} to ${slowed.toFixed(2)} ms, and the run stays ${slow.status}`)
+check(
+  slow.status === 'ok' && slowed >= 20 && slowed <= 20 + 17 + 4,
+  `a 20 ms listener after every move: the drag time goes from ${base.toFixed(2)} to ${slowed.toFixed(2)} ms, and the run stays ${slow.status}`
+)
 
 const blocked = await play({ blockInput: true })
 const named = blocked.checkpoints_failed.some(failure => failure.section === 'interaction')
-check(blocked.status === 'invalid_incorrect' && named, `input that never reaches the library: ${blocked.status}, and ${named ? 'names interaction' : 'does not name interaction'}`)
+check(
+  blocked.status === 'invalid_incorrect' && named,
+  `input that never reaches the library: ${blocked.status}, and ${named ? 'names interaction' : 'does not name interaction'}`
+)
 if (blocked.checkpoints_failed[0]) console.log(`      ${blocked.checkpoints_failed[0].detail}`)
 
 const broken = await play({ accessibility: 'label' })
 const seen = broken.checkpoints_failed.filter(failure => failure.section === 'accessibility')
-check(broken.status === 'invalid_incorrect' && seen.length > 0, `a node that loses its relationship clauses: ${broken.status}, and the accessibility check names it`)
+check(
+  broken.status === 'invalid_incorrect' && seen.length > 0,
+  `a node that loses its relationship clauses: ${broken.status}, and the accessibility check names it`
+)
 if (seen[0]) console.log(`      ${seen[0].detail}`)
 
 const laggy = await play({ cdpExtraMs: 30 })
 const trip = median(laggy, 'cdp.drag.scale_100.round_trip')
 const lagged = median(laggy, 'interaction.drag.scale_100.latency')
-check(trip - baseTrip >= 25, `CDP made 30 ms slower: the round trip goes from ${baseTrip.toFixed(2)} to ${trip.toFixed(2)} ms`)
-check(Math.abs(lagged - base) <= 3, `and the interaction time does not move, ${base.toFixed(2)} to ${lagged.toFixed(2)} ms, since CDP's clock is never its start`)
+check(
+  trip - baseTrip >= 25,
+  `CDP made 30 ms slower: the round trip goes from ${baseTrip.toFixed(2)} to ${trip.toFixed(2)} ms`
+)
+check(
+  Math.abs(lagged - base) <= 3,
+  `and the interaction time does not move, ${base.toFixed(2)} to ${lagged.toFixed(2)} ms, since CDP's clock is never its start`
+)
 
 fs.rmSync(dir, { recursive: true, force: true })
-console.log(failures ? `\n${failures} did not behave: a Layer C figure cannot be trusted` : '\nLayer C moves by what it measures, and by nothing else')
+console.log(
+  failures
+    ? `\n${failures} did not behave: a Layer C figure cannot be trusted`
+    : '\nLayer C moves by what it measures, and by nothing else'
+)
 process.exit(failures ? 1 : 0)

@@ -8,7 +8,7 @@
 <body>
   <script type="module">
     import init, {
-      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present,
+      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present, interactive_drop_scene,
     } from "./pkg/perf_harness_wasm.js"
     await init()
 
@@ -50,7 +50,44 @@
     const frames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
     window.perfC = {
       readyAt: performance.now(),
-      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present,
+      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present, interactive_drop_scene,
+      // The view as the document has it, which is the content layer's transform and not the scene's own record of it.
+      domView: id => {
+        const content = document.getElementById(id)?.querySelector('g.svg-dom-graph-content')
+        if (!content) return null
+        const list = content.transform.baseVal
+        const matrix = list.numberOfItems > 0 ? list.consolidate().matrix : { a: 1, e: 0, f: 0 }
+        return { scale: matrix.a, tx: matrix.e, ty: matrix.f }
+      },
+      nodeStyle: (id, key) => {
+        const group = [...document.getElementById(id)?.querySelectorAll('g.svg-dom-graph-content > g') ?? []].find(g => g.querySelector('text')?.textContent === key)
+        return group ? { style: group.getAttribute('style') ?? '', transform: group.getAttribute('transform') ?? '' } : null
+      },
+      // Resolves with the page's clock when the document's view is the scene's own view, or null if it is not within `timeout`.
+      // It watches the content layer's transform, so the moment it becomes the view is the moment it is told, and not the next poll.
+      untilConsistent: (id, timeout) => new Promise(resolve => {
+        const content = document.getElementById(id)?.querySelector('g.svg-dom-graph-content')
+        const consistent = () => {
+          const dom = window.perfC.domView(id)
+          const model = JSON.parse(window.perfC.interactive_view())
+          return dom && Math.abs(dom.scale - model.scale) < 1e-6 && Math.abs(dom.tx - model.tx) < 1e-6 && Math.abs(dom.ty - model.ty) < 1e-6
+        }
+        if (!content || consistent()) return resolve(content ? performance.now() : null)
+        const watcher = new MutationObserver(() => {
+          if (consistent()) {
+            watcher.disconnect()
+            resolve(performance.now())
+          }
+        })
+        watcher.observe(content, { attributes: true, attributeFilter: ['transform'] })
+        setTimeout(() => { watcher.disconnect(); resolve(null) }, timeout)
+      }),
+      // How long dropping the scene takes, which is all that a teardown has to do for the page to be consistent.
+      timedDrop: () => {
+        const started = performance.now()
+        interactive_drop_scene()
+        return performance.now() - started
+      },
       // For the self-test only. A slowdown makes every move cost a known time in a listener that runs after the library's own, and
       // a block stops every input event before anything but the recorder has seen it. The first must show in the interaction
       // time by what it costs, and the second must make a run invalid, since a gesture that did nothing is not a measurement.

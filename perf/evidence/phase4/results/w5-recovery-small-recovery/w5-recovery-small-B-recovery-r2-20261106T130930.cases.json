@@ -1,0 +1,588 @@
+[
+ {
+  "point": "node_construction",
+  "index": 1,
+  "call": "createElementNS g",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 2,
+  "call": "appendChild svg",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 3,
+  "call": "createElementNS rect",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 4,
+  "call": "setAttribute rect x",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 5,
+  "call": "setAttribute rect y",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 6,
+  "call": "setAttribute rect width",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 7,
+  "call": "setAttribute rect height",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 8,
+  "call": "appendChild svg",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 9,
+  "call": "setAttribute rect fill",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 10,
+  "call": "setAttribute rect stroke",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 11,
+  "call": "setAttribute rect stroke-width",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 12,
+  "call": "createElementNS text",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 13,
+  "call": "setAttribute text x",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 14,
+  "call": "setAttribute text y",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 15,
+  "call": "appendChild svg",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 16,
+  "call": "setAttribute text text-anchor",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 17,
+  "call": "setAttribute text dominant-baseline",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 18,
+  "call": "setAttribute text font-size",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 19,
+  "call": "setAttribute text fill",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 20,
+  "call": "getBBox text",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 21,
+  "call": "appendChild g",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 22,
+  "call": "appendChild g",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 23,
+  "call": "setAttribute g transform",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "node_construction",
+  "index": 24,
+  "call": "appendChild g",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "dom_transform",
+  "index": 1,
+  "call": "setAttribute g transform",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "node_moved": false,
+  "left": [],
+  "retry_ok": true,
+  "retry": "the same move again",
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "connector_update",
+  "index": 2,
+  "call": "setAttribute path d",
+  "error_surfaced": true,
+  "outcome": "partly_committed",
+  "node_moved": true,
+  "left": [
+   "geometry"
+  ],
+  "retry_ok": true,
+  "same_origin_redraws_nothing": true,
+  "retry": "a move to a different origin",
+  "parts": {
+   "checkpoint_differences": 0,
+   "first": [],
+   "paths_equal": true,
+   "labels_equal": false
+  },
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "connector_update",
+  "index": 3,
+  "call": "setAttribute path d",
+  "error_surfaced": true,
+  "outcome": "partly_committed",
+  "node_moved": true,
+  "left": [
+   "geometry",
+   "paths"
+  ],
+  "retry_ok": true,
+  "same_origin_redraws_nothing": true,
+  "retry": "a move to a different origin",
+  "parts": {
+   "checkpoint_differences": 0,
+   "first": [],
+   "paths_equal": true,
+   "labels_equal": false
+  },
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "label_update",
+  "index": 4,
+  "call": "setAttribute g transform (a label)",
+  "error_surfaced": true,
+  "outcome": "partly_committed",
+  "node_moved": true,
+  "left": [
+   "geometry",
+   "labels",
+   "paths"
+  ],
+  "retry_ok": true,
+  "retry": "a move to the origin the node already has",
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "label_update",
+  "index": 5,
+  "call": "setAttribute g transform (a label)",
+  "error_surfaced": true,
+  "outcome": "partly_committed",
+  "node_moved": true,
+  "left": [
+   "geometry",
+   "labels",
+   "paths"
+  ],
+  "retry_ok": true,
+  "retry": "a move to the origin the node already has",
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "label_update",
+  "index": 6,
+  "call": "setAttribute g transform (a label)",
+  "error_surfaced": true,
+  "outcome": "partly_committed",
+  "node_moved": true,
+  "left": [
+   "geometry",
+   "labels",
+   "paths"
+  ],
+  "retry_ok": true,
+  "retry": "a move to the origin the node already has",
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "drag_install",
+  "index": 1,
+  "call": "addEventListener g pointerdown",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "listeners_left": 0,
+  "marked_draggable_by_the_failed_call": false,
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "drag_install",
+  "index": 2,
+  "call": "addEventListener g pointermove",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "listeners_left": 0,
+  "marked_draggable_by_the_failed_call": false,
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "drag_install",
+  "index": 3,
+  "call": "addEventListener g pointerup",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "listeners_left": 0,
+  "marked_draggable_by_the_failed_call": false,
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "drag_install",
+  "index": 4,
+  "call": "addEventListener g pointercancel",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "listeners_left": 0,
+  "marked_draggable_by_the_failed_call": false,
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "drag_install",
+  "index": 5,
+  "call": "setAttribute g style",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "left": [],
+  "listeners_left": 0,
+  "marked_draggable_by_the_failed_call": false,
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "edge_construction",
+  "index": 1,
+  "call": "createElementNS path",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "edge_construction",
+  "index": 2,
+  "call": "setAttribute path d",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "edge_construction",
+  "index": 3,
+  "call": "appendChild svg",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "edge_construction",
+  "index": 4,
+  "call": "appendChild g",
+  "error_surfaced": true,
+  "outcome": "nothing_committed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": true
+ },
+ {
+  "point": "edge_construction",
+  "index": 5,
+  "call": "setAttribute path fill",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ },
+ {
+  "point": "edge_construction",
+  "index": 6,
+  "call": "setAttribute path stroke",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ },
+ {
+  "point": "edge_construction",
+  "index": 7,
+  "call": "setAttribute path stroke-width",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ },
+ {
+  "point": "edge_construction",
+  "index": 8,
+  "call": "setAttribute path marker-end",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ },
+ {
+  "point": "edge_construction",
+  "index": 9,
+  "call": "setAttribute g aria-label",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 0,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ },
+ {
+  "point": "edge_construction",
+  "index": 10,
+  "call": "setAttribute g aria-label",
+  "error_surfaced": true,
+  "outcome": "changed",
+  "observed": {
+   "checkpoint_readable": true,
+   "sections_changed": [
+    "topology",
+    "geometry"
+   ],
+   "extra_elements": 1,
+   "paths_changed": true,
+   "ends_named": 1,
+   "edge_confirmed_by_the_call": 18
+  },
+  "retry_ok": true,
+  "retry_reaches_reference": false
+ }
+]

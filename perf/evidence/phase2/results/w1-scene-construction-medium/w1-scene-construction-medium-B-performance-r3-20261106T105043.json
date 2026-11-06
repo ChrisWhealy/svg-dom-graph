@@ -38,10 +38,7 @@
         "maximum_degree": 16
       },
       "execution": {
-        "modes": [
-          "correctness",
-          "performance"
-        ],
+        "modes": ["correctness", "performance"],
         "warmup_iterations": 5,
         "measurement_iterations": 40,
         "repetitions": 5

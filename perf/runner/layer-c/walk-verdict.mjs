@@ -23,7 +23,8 @@ const check = (name, outcome, detail) => ({ name, outcome, detail })
 /** The outcome of a check that every enabled press of a control changed the panel. */
 const changes = (name, control, found, presses) => {
   if (!found) return check(name, INCONCLUSIVE, `there is no ${control} control by accessible name`)
-  if (presses.length === 0) return check(name, INCONCLUSIVE, `${control} was disabled whenever it was looked for, so it was never pressed`)
+  if (presses.length === 0)
+    return check(name, INCONCLUSIVE, `${control} was disabled whenever it was looked for, so it was never pressed`)
   const idle = presses.filter(press => !press.changed).length
   return idle === 0
     ? check(name, PASS, `${presses.length} presses of ${control}, and each changed the panel`)
@@ -58,7 +59,10 @@ export const judgeWalk = ({ found, steps, fingerprints, errors, expect = {}, dif
   // The Next that is pressed once more before Restart, so that Restart has something to undo, is not part of the walk forward.
   const forward = presses('next').filter(step => step.phase !== 'nudge')
   const back = presses('previous')
-  const checks = [changes('next_changes_panel', 'Next', found.next, presses('next')), changes('previous_changes_panel', 'Previous', found.previous, back)]
+  const checks = [
+    changes('next_changes_panel', 'Next', found.next, presses('next')),
+    changes('previous_changes_panel', 'Previous', found.previous, back)
+  ]
   const because = expect.because ?? 'no reason given'
 
   // Whether Previous undoes Next: from each step, Previous has to land on the state that Next left from. Stepping back past the
@@ -80,7 +84,11 @@ export const judgeWalk = ({ found, steps, fingerprints, errors, expect = {}, dif
         : `Previous missed the state Next had left from at ${broken.length} of ${comparable} steps (${broken.map(r => r.step).join(', ')})${differences.back ? `: ${differences.back}` : ''}`
   const reversal =
     expect.reversible === true && forward.length > 0 && back.length < forward.length
-      ? check('back_retraces_forward', FAIL, `declared (${because}), and Previous stopped after ${back.length} of ${forward.length} steps`)
+      ? check(
+          'back_retraces_forward',
+          FAIL,
+          `declared (${because}), and Previous stopped after ${back.length} of ${forward.length} steps`
+        )
       : declared('back_retraces_forward', expect.reversible, because, holds, observed)
   if (reversal.outcome === INCONCLUSIVE && expect.reversible === undefined && holds !== null) {
     reversal.detail += holds ? ' (an observation and not a pass)' : ' (an observation and not a failure)'
@@ -94,26 +102,51 @@ export const judgeWalk = ({ found, steps, fingerprints, errors, expect = {}, dif
     !found.restart
       ? check('restart_changes_panel', INCONCLUSIVE, 'there is no Restart control by accessible name')
       : restarts.length === 0
-        ? check('restart_changes_panel', INCONCLUSIVE, 'Restart was disabled, or the panel could not be moved off its start for it to act on')
+        ? check(
+            'restart_changes_panel',
+            INCONCLUSIVE,
+            'Restart was disabled, or the panel could not be moved off its start for it to act on'
+          )
         : !moved
-          ? check('restart_changes_panel', INCONCLUSIVE, 'the panel was not away from its start when Restart was pressed')
+          ? check(
+              'restart_changes_panel',
+              INCONCLUSIVE,
+              'the panel was not away from its start when Restart was pressed'
+            )
           : restarts[0].changed
             ? check('restart_changes_panel', PASS, 'Restart changed a panel that had been moved')
-            : check('restart_changes_panel', FAIL, `Restart changed nothing in a panel that had been moved${fingerprints.beforeRestart === fingerprints.afterRestart ? ' (the fingerprints before and after are the same)' : ''}`),
+            : check(
+                'restart_changes_panel',
+                FAIL,
+                `Restart changed nothing in a panel that had been moved${fingerprints.beforeRestart === fingerprints.afterRestart ? ' (the fingerprints before and after are the same)' : ''}`
+              )
   )
-  const restartedTo = restarts.length > 0 && fingerprints.afterRestart !== null ? fingerprints.afterRestart === fingerprints.start : null
-  const restart = declared('restart_returns_to_start', expect.restart_to_start, because, restartedTo, `the panel is not what it was at the start${differences.restart ? ` (${differences.restart})` : ''}`)
+  const restartedTo =
+    restarts.length > 0 && fingerprints.afterRestart !== null ? fingerprints.afterRestart === fingerprints.start : null
+  const restart = declared(
+    'restart_returns_to_start',
+    expect.restart_to_start,
+    because,
+    restartedTo,
+    `the panel is not what it was at the start${differences.restart ? ` (${differences.restart})` : ''}`
+  )
   if (restart.outcome === INCONCLUSIVE && expect.restart_to_start === undefined && restartedTo !== null) {
-    restart.detail += restartedTo ? ' (it did return to the start, which is an observation and not a pass)' : ' (it did not return to the start, which is an observation and not a failure)'
+    restart.detail += restartedTo
+      ? ' (it did return to the start, which is an observation and not a pass)'
+      : ' (it did not return to the start, which is an observation and not a failure)'
   }
   checks.push(restart)
 
   checks.push(
     errors.length === 0
       ? check('no_page_errors_during_walk', PASS, 'the page threw nothing and logged no error')
-      : check('no_page_errors_during_walk', FAIL, `${errors.length} errors: ${errors[0].text.slice(0, 120)}`),
+      : check('no_page_errors_during_walk', FAIL, `${errors.length} errors: ${errors[0].text.slice(0, 120)}`)
   )
-  const verdict = checks.some(c => c.outcome === FAIL) ? FAIL : checks.some(c => c.outcome === PASS) ? PASS : INCONCLUSIVE
+  const verdict = checks.some(c => c.outcome === FAIL)
+    ? FAIL
+    : checks.some(c => c.outcome === PASS)
+      ? PASS
+      : INCONCLUSIVE
   return { verdict, checks }
 }
 

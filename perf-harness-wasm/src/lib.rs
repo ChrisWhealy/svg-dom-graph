@@ -26,6 +26,9 @@ pub mod interactive;
 #[cfg(target_arch = "wasm32")]
 pub mod persistent;
 
+#[cfg(target_arch = "wasm32")]
+pub mod recovery;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 mod exports {
@@ -246,10 +249,197 @@ mod exports {
         crate::interactive::teardown()
     }
 
+    /// Drops the scene on the stage and leaves its host in the document.
+    #[wasm_bindgen]
+    pub fn interactive_drop_scene() -> String {
+        crate::interactive::drop_scene()
+    }
+
     /// Whether the host of the stage's scene is in the document.
     #[wasm_bindgen]
     pub fn interactive_host_present() -> bool {
         crate::interactive::host_present()
+    }
+
+    /// Builds the scene of a recovery manifest on a slot, with labels on some edges if asked, and says what it made, as JSON.
+    #[wasm_bindgen]
+    pub fn recovery_build(manifest_json: &str, slot: u32, labelled: bool) -> String {
+        crate::recovery::build(manifest_json, slot, labelled)
+    }
+
+    /// What the scene on a slot was asked to do, as the reference model has it. See `recovery`.
+    #[wasm_bindgen]
+    pub fn recovery_intend(slot: u32, op_json: &str) -> String {
+        crate::recovery::intend(slot, op_json)
+    }
+
+    /// Does one thing to the scene on a slot, which can fail, and says whether it did.
+    #[wasm_bindgen]
+    pub fn recovery_act(slot: u32, op_json: &str) -> String {
+        crate::recovery::act(slot, op_json)
+    }
+
+    /// Reads the scene on a slot back from the document, and keeps it under a name.
+    #[wasm_bindgen]
+    pub fn recovery_snapshot(slot: u32, name: &str) -> String {
+        crate::recovery::snapshot(slot, name)
+    }
+
+    /// Keeps what the reference model predicts for the scene on a slot, under a name.
+    #[wasm_bindgen]
+    pub fn recovery_predicted(slot: u32, name: &str) -> String {
+        crate::recovery::predicted(slot, name)
+    }
+
+    /// The differences between two kept checkpoints, the expected one first.
+    #[wasm_bindgen]
+    pub fn recovery_differences(expected: &str, actual: &str) -> String {
+        crate::recovery::differences(expected, actual)
+    }
+
+    /// Where the scene on a slot says a node is.
+    #[wasm_bindgen]
+    pub fn recovery_node_rect(slot: u32, key: &str) -> String {
+        crate::recovery::node_rect(slot, key)
+    }
+
+    /// How many nodes and edges the scene on a slot has confirmed.
+    #[wasm_bindgen]
+    pub fn recovery_counts(slot: u32) -> String {
+        crate::recovery::counts(slot)
+    }
+
+    /// Drops the scene on a slot and removes its host.
+    #[wasm_bindgen]
+    pub fn recovery_teardown(slot: u32) -> String {
+        crate::recovery::teardown(slot)
+    }
+
+    /// Drops the scene on a slot and leaves its host in the document.
+    #[wasm_bindgen]
+    pub fn recovery_drop_scene(slot: u32) -> String {
+        crate::recovery::drop_scene(slot)
+    }
+
+    /// Forgets every kept checkpoint.
+    #[wasm_bindgen]
+    pub fn recovery_forget() {
+        crate::recovery::forget();
+    }
+
+    /// Starts following every block that is allocated from now on. A diagnostic, for finding what a leak is made of.
+    #[wasm_bindgen]
+    pub fn tracking_start() {
+        crate::alloc::start_tracking();
+    }
+
+    /// Stops following new blocks, and says which of the blocks followed are still live, with the start of what each holds, as JSON.
+    #[wasm_bindgen]
+    pub fn tracking_stop_and_dump(preview: u32) -> String {
+        crate::alloc::stop_tracking();
+        let blocks = crate::alloc::tracked_live();
+        let rows: Vec<serde_json::Value> = blocks
+            .iter()
+            .map(|block| {
+                let length = block.size.min(preview as usize);
+                // The block is live, so its first bytes are readable. They are looked at as text and as numbers.
+                let bytes = unsafe { std::slice::from_raw_parts(block.address as *const u8, length) };
+                serde_json::json!({
+                    "size": block.size,
+                    "text": String::from_utf8_lossy(bytes).replace(|c: char| c.is_control(), "."),
+                    "words": bytes.chunks(4).map(|c| c.iter().rev().fold(0u32, |a, b| (a << 8) | u32::from(*b))).collect::<Vec<_>>(),
+                })
+            })
+            .collect();
+        serde_json::json!({ "blocks": rows, "untracked": crate::alloc::untracked(), "growths": crate::alloc::growths() }).to_string()
+    }
+
+    /// Holds `count` JavaScript objects at once and then lets them all go, so that wasm-bindgen's table of externrefs, and the list
+    /// of its free slots, are as large as they will need to be. A run does this before it reads its baseline, as it sizes its own
+    /// vectors, so that the slab doubling is not mistaken for growth that the library caused.
+    #[wasm_bindgen]
+    pub fn reserve_handles(count: u32) {
+        let held: Vec<wasm_bindgen::JsValue> = (0..count).map(|_| js_sys::Object::new().into()).collect();
+        std::hint::black_box(&held);
+    }
+
+    /// Allocates `bytes` bytes and never frees them. For the self-test of the endurance gate alone.
+    #[wasm_bindgen]
+    pub fn leak_bytes(bytes: u32) {
+        let leaked: &'static mut [u8] = Box::leak(vec![1u8; bytes as usize].into_boxed_slice());
+        std::hint::black_box(leaked);
+    }
+
+    /// What the counting allocator and the module's memory say now, as JSON: live bytes, live blocks and linear-memory capacity.
+    #[wasm_bindgen]
+    pub fn resource_reading() -> String {
+        let stats = crate::alloc::stats();
+        serde_json::json!({
+            "live_bytes": stats.live_bytes,
+            "live_allocations": stats.live_allocations,
+            "capacity": crate::memory::capacity_bytes(),
+        })
+        .to_string()
+    }
+
+    /// The endurance verdict of a series of readings taken after each teardown, as JSON. The points are
+    /// `{cycle, measured, live_bytes, capacity}`, and the allowance is the most that live bytes may have grown by.
+    #[wasm_bindgen]
+    pub fn endurance_verdict(points_json: &str, allowance_bytes: f64) -> String {
+        use perf_harness::endurance::{SeriesPoint, Verdict, judge, summarize};
+        #[derive(serde::Deserialize)]
+        struct Point {
+            cycle: u64,
+            measured: bool,
+            live_bytes: Option<f64>,
+            capacity: Option<f64>,
+        }
+        let points: Vec<SeriesPoint> = match serde_json::from_str::<Vec<Point>>(points_json) {
+            Ok(points) => points
+                .into_iter()
+                .map(|p| SeriesPoint {
+                    cycle: p.cycle,
+                    measured: p.measured,
+                    live_bytes: p.live_bytes,
+                    capacity: p.capacity,
+                })
+                .collect(),
+            Err(e) => return serde_json::json!({ "error": e.to_string() }).to_string(),
+        };
+        let summary = summarize(&points);
+        let (status, detail) = match judge(&summary, allowance_bytes) {
+            Verdict::Pass(detail) => ("pass", detail),
+            Verdict::Fail(detail) => ("fail", detail),
+            Verdict::Inconclusive(detail) => ("inconclusive", detail),
+        };
+        serde_json::json!({
+            "status": status,
+            "detail": detail,
+            "measured_points": summary.measured_points,
+            "first_measured_cycle": summary.first_measured_cycle,
+            "last_measured_cycle": summary.last_measured_cycle,
+            "reference_cycle": summary.reference_cycle,
+            "net_live_change": summary.net_live_change,
+            "live_slope_per_cycle": summary.live_slope_per_cycle,
+            "grow_events": summary.grow_events,
+        })
+        .to_string()
+    }
+
+    /// Describes samples as a latency metric, with the same statistics as the other layers, as JSON. `layer` is `A`, `B` or `C`.
+    #[wasm_bindgen]
+    pub fn describe_metric(name: &str, layer: &str, unit: &str, samples_json: &str, mechanism: &str) -> String {
+        use perf_harness::metrics::{Layer, timing, unavailable};
+        let layer = match layer {
+            "A" => Layer::A,
+            "C" => Layer::C,
+            _ => Layer::B,
+        };
+        let samples: Vec<f64> = serde_json::from_str(samples_json).unwrap_or_default();
+        if samples.is_empty() {
+            return unavailable(name, layer, "no observation was made").to_string();
+        }
+        timing(name, layer, unit, &samples, None, mechanism).to_string()
     }
 
     /// Runs the counting allocator's checks and returns the result as JSON.

@@ -1,0 +1,104 @@
+{
+  "description": "What the library promises when something goes wrong part way through, for each fault point of the recovery runner (design section 7.1). It was written by reading the code and its doc comments, not by running anything, so that the runner tests a contract and does not guess one. `contract` is nothing_committed (the state afterwards is the state before), partly_committed (a documented part of the change is kept and a defined retry puts the rest right), or undocumented. An undocumented point is not tested against a guess: the runner records what it sees and reports it as a finding. `public` means the promise is in a public doc comment, and `code` that it is in the comment of an item that is not public.",
+  "points": [
+    {
+      "id": "node_construction",
+      "operation": "Scene::add_node",
+      "contract": "nothing_committed",
+      "documented": "code",
+      "says": "A failure at any step between creating an element and finishing the node removes every element it made, so nothing is left rendered, and the model is only changed after the element is attached.",
+      "retry": "Calling add_node again.",
+      "sources": ["src/scene/node/render_guard.rs:12-27", "src/scene/scene_inner.rs:124-131"]
+    },
+    {
+      "id": "dom_transform",
+      "operation": "Scene::move_node, the write of the node's transform",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "If the node's transform cannot be written, the call returns an error and the node is exactly where it was, in the model and on the page. node_rect never describes a position that was not drawn.",
+      "retry": "Calling move_node again.",
+      "sources": ["src/scene/node/mod.rs:325-331"]
+    },
+    {
+      "id": "connector_update",
+      "operation": "Scene::move_node, the redraw of the incident connectors",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "Once the transform has been written the move is committed and is not rolled back. If a connector then fails to update, the call returns an error, the node stays moved, node_rect reports the new position, and some incident connectors can be redrawn and others not.",
+      "differs": ["geometry"],
+      "retry": "The next move of the node, or of a node at the other end of one of its edges, to a different origin recomputes every incident connector.",
+      "sources": ["src/scene/node/mod.rs:332-341"]
+    },
+    {
+      "id": "label_update",
+      "operation": "Scene::move_node, the placing of edge labels",
+      "contract": "partly_committed",
+      "documented": "public",
+      "says": "If an edge label fails to update after the transform was written, the call returns an error, the node stays moved, and the label is marked as having missed the move.",
+      "differs": ["geometry"],
+      "retry": "A move_node to the origin the node already has redraws no connector, and retries the label that failed to place.",
+      "sources": [
+        "src/scene/node/mod.rs:332-341",
+        "src/scene/scene_inner.rs:410-414",
+        "src/scene/connector/edge_label.rs:329-334"
+      ]
+    },
+    {
+      "id": "drag_install",
+      "operation": "Scene::make_draggable_with",
+      "contract": "nothing_committed",
+      "documented": "public",
+      "says": "If set_attr or any one of the four pointer-listener registrations fails part way, the node is left exactly as it was, is not marked draggable, and none of the method's listeners are left on it. A failed call can safely be retried.",
+      "retry": "Calling make_draggable_with again.",
+      "sources": ["src/scene/drag/mod.rs:125-129"]
+    },
+    {
+      "id": "edge_construction",
+      "operation": "Scene::add_edge_with",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "Only the rejections before anything is drawn are promised to leave the scene as it was. Nothing is said about a DOM write that fails after the connector's path has been attached, or between the two relationship clauses that name its ends. The code attaches the path, writes its attributes, adds the edge to the graph, and then extends the names of both ends, with no rollback of the path or the edge.",
+      "sources": ["src/scene/connector/mod.rs:357-363", "src/scene/connector/mod.rs:394-425"]
+    },
+    {
+      "id": "scheduled_frame",
+      "operation": "A view change written in an animation frame",
+      "contract": "partly_committed",
+      "documented": "code",
+      "says": "A wheel or pan event updates the view at once and leaves the DOM write to the next frame. A frame callback has nowhere to report an error, and a failed write leaves the view marked as waiting. If the browser refuses the request for a frame, nothing is pending, so the next call tries again.",
+      "differs": ["interaction"],
+      "retry": "The next wheel or pan event requests a frame again, and the write catches the DOM up to the latest view.",
+      "sources": ["src/scene/view_input/frame.rs:21-26", "src/scene/frame_request.rs:63-66"]
+    },
+    {
+      "id": "teardown",
+      "operation": "Dropping the last Scene handle with a view write pending",
+      "contract": "nothing_committed",
+      "documented": "code",
+      "says": "A pending frame is cancelled before its closure goes, so the browser never calls a dropped function. A view change that has not reached the DOM is written when the scene is dropped, so the graph is drawn as the last input left it. The scene's listeners are released with it. The DOM it drew stays until the host is removed. After the host is removed the page is as it was before the scene.",
+      "retry": "Not applicable.",
+      "sources": [
+        "src/scene/frame_request.rs:1-14",
+        "src/scene/frame_request.rs:84-88",
+        "src/scene/scene_inner.rs:107-115"
+      ]
+    },
+    {
+      "id": "mid_drag_teardown",
+      "operation": "Dropping the last Scene handle between a pointer down and a pointer up",
+      "contract": "nothing_committed",
+      "documented": "code",
+      "says": "The pointer handlers hold only weak references to the scene and upgrade them when they run, so once the scene is gone a handler that runs finds nothing and returns. After the host is removed the page is as it was before the scene. What a handler leaves on the dragged node (a cursor style, say) while the scene is dropped is not said.",
+      "retry": "Not applicable.",
+      "sources": ["src/scene/drag/handlers.rs:1-13"]
+    },
+    {
+      "id": "removed_host",
+      "operation": "Removing the host <svg> from the document while the Scene is alive, and then using the Scene",
+      "contract": "undocumented",
+      "documented": "none",
+      "says": "Nothing in the public or private documentation says what the scene's operations do once its <svg> is no longer in the document, or whether a measurement that needs layout is expected to fail.",
+      "sources": []
+    }
+  ]
+}

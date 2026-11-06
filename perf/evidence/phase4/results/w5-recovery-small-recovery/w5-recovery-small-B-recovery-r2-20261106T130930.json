@@ -1,0 +1,466 @@
+{
+  "schema_version": 1,
+  "run_id": "w5-recovery-small-B-recovery-r2-20261106T130930",
+  "started_at": "2026-11-06T13:09:30.470Z",
+  "repetition": 2,
+  "sequence_position": 4,
+  "environment": {
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "157.0.8103.39",
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "memory_bytes": 34359738368,
+    "runner_class": "local",
+    "timer_resolution_us": 4.999995231628418,
+    "cross_origin_isolated": true,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "crate_version": "0.2.47",
+    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_dirty": true,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w5-recovery-small",
+    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "recovery",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 18,
+        "maximum_degree": 6
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "recovery",
+          "endurance"
+        ],
+        "warmup_iterations": 5,
+        "measurement_iterations": 30,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 1
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "recovery": {
+        "points": [
+          {
+            "point": "node_construction",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "dom_transform",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "connector_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "label_update",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "drag_install",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "edge_construction",
+            "expect": "undocumented"
+          },
+          {
+            "point": "scheduled_frame",
+            "expect": "partly_committed"
+          },
+          {
+            "point": "teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "mid_drag_teardown",
+            "expect": "nothing_committed"
+          },
+          {
+            "point": "removed_host",
+            "expect": "undocumented"
+          }
+        ]
+      },
+      "limits": {
+        "wall_ms": 300000
+      }
+    }
+  },
+  "mode": "recovery",
+  "status": "ok",
+  "metrics": [
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.node_construction.time",
+      "outliers_flagged": 2,
+      "samples": 24,
+      "status": "measured",
+      "summary": {
+        "max": 264.9998664855957,
+        "min": 55.00006675720215,
+        "p50": 65.00005722045898
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 10.000109672546387,
+        "mean": 78.33332816759746,
+        "stddev": 44.29803798043798,
+        "tukey_high": 85.00033617019653,
+        "tukey_low": 44.999897480010986
+      }
+    },
+    {
+      "name": "recovery.node_construction.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 24,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.dom_transform.time",
+      "outliers_flagged": 0,
+      "samples": 1,
+      "status": "measured",
+      "summary": {
+        "max": 24.99997615814209,
+        "min": 24.99997615814209,
+        "p50": 24.99997615814209
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 0,
+        "mean": 24.99997615814209,
+        "stddev": 0,
+        "tukey_high": 24.99997615814209,
+        "tukey_low": 24.99997615814209
+      }
+    },
+    {
+      "name": "recovery.dom_transform.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 1,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.connector_update.time",
+      "outliers_flagged": 0,
+      "samples": 2,
+      "status": "measured",
+      "summary": {
+        "max": 29.999971389770508,
+        "min": 19.999980926513672,
+        "p50": 19.999980926513672
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 9.999990463256836,
+        "mean": 24.99997615814209,
+        "stddev": 7.071061068369714,
+        "tukey_high": 44.99995708465576,
+        "tukey_low": 4.999995231628418
+      }
+    },
+    {
+      "name": "recovery.connector_update.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 2,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.label_update.time",
+      "outliers_flagged": 0,
+      "samples": 3,
+      "status": "measured",
+      "summary": {
+        "max": 29.999971389770508,
+        "min": 14.999985694885254,
+        "p50": 14.999985694885254
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 14.999985694885254,
+        "mean": 19.999980926513672,
+        "stddev": 8.660245778782537,
+        "tukey_high": 52.49994993209839,
+        "tukey_low": -7.499992847442627
+      }
+    },
+    {
+      "name": "recovery.label_update.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 3,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.drag_install.time",
+      "outliers_flagged": 1,
+      "samples": 5,
+      "status": "measured",
+      "summary": {
+        "max": 74.99992847442627,
+        "min": 19.999980926513672,
+        "p50": 20.000100135803223
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 15.000104904174805,
+        "mean": 34.00001525878906,
+        "stddev": 23.822219517181583,
+        "tukey_high": 57.500243186950684,
+        "tukey_low": -2.500176429748535
+      }
+    },
+    {
+      "name": "recovery.drag_install.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 5,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
+    },
+    {
+      "dropped": 0,
+      "kind": "latency",
+      "layer": "B",
+      "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
+      "name": "recovery.edge_construction.time",
+      "outliers_flagged": 1,
+      "samples": 10,
+      "status": "measured",
+      "summary": {
+        "max": 79.99992370605469,
+        "min": 4.999995231628418,
+        "p50": 14.999985694885254
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 9.999871253967283,
+        "mean": 20.49999237060547,
+        "stddev": 21.402205580991225,
+        "tukey_high": 34.9997878074646,
+        "tukey_low": -4.999697208404536
+      }
+    }
+  ],
+  "checkpoints_passed": 35,
+  "checkpoints_failed": [],
+  "gates": [
+    {
+      "name": "recovery.node_construction.reference_agrees_with_the_model",
+      "status": "pass",
+      "detail": "the twin that made the call with no fault matches the reference model"
+    },
+    {
+      "name": "recovery.node_construction.matches_the_contract",
+      "status": "pass",
+      "detail": "24 failures, each nothing committed as documented, and the retry reached the reference"
+    },
+    {
+      "name": "recovery.move_node.reference_agrees_with_the_model",
+      "status": "pass",
+      "detail": "the twin that made the call with no fault matches the reference model"
+    },
+    {
+      "name": "recovery.dom_transform.matches_the_contract",
+      "status": "pass",
+      "detail": "1 failures, each nothing committed as documented, and the retry reached the reference"
+    },
+    {
+      "name": "recovery.connector_update.matches_the_contract",
+      "status": "pass",
+      "detail": "2 failures, each partly committed as documented, and the defined retry reached the reference"
+    },
+    {
+      "name": "recovery.label_update.matches_the_contract",
+      "status": "pass",
+      "detail": "3 failures, each partly committed as documented, and the defined retry reached the reference"
+    },
+    {
+      "name": "recovery.drag_install.reference_agrees_with_the_model",
+      "status": "pass",
+      "detail": "the twin that made the call with no fault matches the reference model"
+    },
+    {
+      "name": "recovery.drag_install.matches_the_contract",
+      "status": "pass",
+      "detail": "5 failures, each nothing committed as documented, and the retry reached the reference"
+    },
+    {
+      "name": "recovery.edge_construction.reference_agrees_with_the_model",
+      "status": "pass",
+      "detail": "the twin that made the call with no fault matches the reference model"
+    }
+  ],
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T130930.samples.ndjson",
+  "findings": [
+    {
+      "point": "edge_construction",
+      "contract": "undocumented",
+      "summary": "10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference). 1 at 10 (the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference)",
+      "details": {
+        "observed": [
+          {
+            "what_was_left": "the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference",
+            "failures": 4,
+            "calls": [
+              "1 createElementNS path",
+              "2 setAttribute path d",
+              "3 appendChild svg",
+              "4 appendChild g"
+            ]
+          },
+          {
+            "what_was_left": "the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
+            "failures": 5,
+            "calls": [
+              "5 setAttribute path fill",
+              "6 setAttribute path stroke",
+              "7 setAttribute path stroke-width",
+              "8 setAttribute path marker-end",
+              "9 setAttribute g aria-label"
+            ]
+          },
+          {
+            "what_was_left": "the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
+            "failures": 1,
+            "calls": [
+              "10 setAttribute g aria-label"
+            ]
+          }
+        ]
+      }
+    },
+    {
+      "point": "externref_slot_per_failed_call",
+      "contract": "undocumented",
+      "summary": "a DOM call that fails costs wasm-bindgen's glue one externref slot for good if the call returns an object, and nothing if it returns nothing: createElementNS 40 lost in 40 failures, appendChild 40 lost in 40 failures, setAttribute 0 lost in 40 failures, getBBox 40 lost in 40 failures, addEventListener 0 lost in 40 failures. Exactly one slot per failure, for every method that returns an object, and none for the others. The slot holds undefined and is never freed, so the table, and the list of free slots beside it, grow for as long as failures happen. It is in the generated glue (wasm-bindgen 0.2.129) and not in the library, since the harness's own web-sys calls lose slots in the same way.",
+      "details": {
+        "failures_per_method": 40,
+        "table": [
+          {
+            "method": "createElementNS",
+            "returns_an_object": true,
+            "failures": 40,
+            "slots_lost": 40
+          },
+          {
+            "method": "appendChild",
+            "returns_an_object": true,
+            "failures": 40,
+            "slots_lost": 40
+          },
+          {
+            "method": "setAttribute",
+            "returns_an_object": false,
+            "failures": 40,
+            "slots_lost": 0
+          },
+          {
+            "method": "getBBox",
+            "returns_an_object": true,
+            "failures": 40,
+            "slots_lost": 40
+          },
+          {
+            "method": "addEventListener",
+            "returns_an_object": false,
+            "failures": 40,
+            "slots_lost": 0
+          }
+        ],
+        "losing": [
+          "createElementNS",
+          "appendChild",
+          "getBBox"
+        ],
+        "exactly_one_slot_per_failed_object_call": true
+      }
+    },
+    {
+      "point": "removed_host",
+      "contract": "undocumented",
+      "summary": "with the host <svg> out of the document, 5 of 5 operations succeeded (add_node ok; move_node ok; add_edge ok; make_draggable ok; set_edge_label ok); put back, the scene was readable and agreed with the model",
+      "details": {
+        "outcomes": [
+          {
+            "op": "add_node",
+            "ok": true
+          },
+          {
+            "op": "move_node",
+            "ok": true
+          },
+          {
+            "op": "add_edge",
+            "ok": true
+          },
+          {
+            "op": "make_draggable",
+            "ok": true
+          },
+          {
+            "op": "set_edge_label",
+            "ok": true
+          }
+        ],
+        "readable_when_back": true,
+        "agrees_with_the_model_when_back": true,
+        "first_differences": []
+      }
+    }
+  ],
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T130930.cases.json"
+}

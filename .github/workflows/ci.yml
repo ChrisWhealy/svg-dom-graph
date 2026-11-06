@@ -160,6 +160,7 @@ jobs:
         run: |
           node perf/lib/test-frames.mjs
           node perf/runner/test-walk-verdict.mjs
+          node perf/lib/test-contracts.mjs
 
       - name: JSON schemas accept what they should and refuse what they should not
         run: |

@@ -40,36 +40,70 @@ const step = (file, command, args, options = {}) => {
   const result = run(command, args, options)
   fs.writeFileSync(path.join(out, file), tidy(result.stdout + (result.status === 0 ? '' : result.stderr)))
   // The repository is wherever it was checked out, so its path is not kept.
-  commands.push({ file, command: `${command} ${args.join(' ')}`.replaceAll(root, '<repo>'), exit_code: result.status, seconds: result.seconds })
+  commands.push({
+    file,
+    command: `${command} ${args.join(' ')}`.replaceAll(root, '<repo>'),
+    exit_code: result.status,
+    seconds: result.seconds
+  })
   console.log(`${result.status === 0 ? 'ok  ' : 'FAIL'} ${file}`)
   return result
 }
 
 // Builds first, so that every later step uses the same binaries.
-step('build.txt', 'sh', ['-c', 'cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg'])
+step('build.txt', 'sh', [
+  '-c',
+  'cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg'
+])
 
 const wasiRunner = `node ${path.join(root, 'perf/crosscheck/run-wasi.mjs')}`
-step('rust-tests-perf-harness.txt', 'cargo', ['test', '-p', 'perf-harness'], { env: { ...process.env, RUST_BACKTRACE: '0' } })
-step('rust-tests-perf-harness-wasm.txt', 'cargo', ['test', '-p', 'perf-harness-wasm'], { env: { ...process.env, RUST_BACKTRACE: '0' } })
-step('rust-tests-perf-harness-wasm32-wasi.txt', 'cargo', ['test', '-p', 'perf-harness', '--no-default-features', '--target', 'wasm32-wasip1'], {
-  env: { ...process.env, RUST_BACKTRACE: '0', CARGO_TARGET_WASM32_WASIP1_RUNNER: wasiRunner },
+step('rust-tests-perf-harness.txt', 'cargo', ['test', '-p', 'perf-harness'], {
+  env: { ...process.env, RUST_BACKTRACE: '0' }
 })
-step('allocator-verification.txt', 'node', ['perf/runner/verify-allocator.mjs', '--out', path.join(out, 'allocator-verification.json')])
+step('rust-tests-perf-harness-wasm.txt', 'cargo', ['test', '-p', 'perf-harness-wasm'], {
+  env: { ...process.env, RUST_BACKTRACE: '0' }
+})
+step(
+  'rust-tests-perf-harness-wasm32-wasi.txt',
+  'cargo',
+  ['test', '-p', 'perf-harness', '--no-default-features', '--target', 'wasm32-wasip1'],
+  {
+    env: { ...process.env, RUST_BACKTRACE: '0', CARGO_TARGET_WASM32_WASIP1_RUNNER: wasiRunner }
+  }
+)
+step('allocator-verification.txt', 'node', [
+  'perf/runner/verify-allocator.mjs',
+  '--out',
+  path.join(out, 'allocator-verification.json')
+])
 step('checker-selftest.txt', 'node', ['perf/runner/selftest.mjs'])
 step('timing-selftest.txt', 'node', ['perf/runner/selftest-timing.mjs'])
 step('endurance-selftest.txt', 'node', ['perf/runner/selftest-endurance.mjs'])
 step('final-state-selftest.txt', 'node', ['perf/runner/selftest-final-state.mjs'])
-step('persistent-allocations.txt', 'node', ['perf/runner/attribute-persistent.mjs', '--out', path.join(out, 'persistent-allocations.json')])
+step('persistent-allocations.txt', 'node', [
+  'perf/runner/attribute-persistent.mjs',
+  '--out',
+  path.join(out, 'persistent-allocations.json')
+])
 
 // The realistic manifests, on both layers. The small ones are covered by Phase 1 and by the self-test.
 const manifests = [
   { name: 'w1-scene-construction-medium', mode: 'performance' },
   { name: 'w2-connector-rerouting-large', mode: 'all' },
-  { name: 'w3-scene-lifecycle-endurance', mode: 'endurance', layers: 'b' },
+  { name: 'w3-scene-lifecycle-endurance', mode: 'endurance', layers: 'b' }
 ]
 for (const { name, mode, layers } of manifests) {
   const outDir = path.join(out, 'results', name)
-  step(`run-${name}.txt`, 'node', ['perf/runner/run.mjs', `perf/manifests/${name}.toml`, '--mode', mode, '--no-build', '--out-dir', outDir, ...(layers ? ['--layers', layers] : [])])
+  step(`run-${name}.txt`, 'node', [
+    'perf/runner/run.mjs',
+    `perf/manifests/${name}.toml`,
+    '--mode',
+    mode,
+    '--no-build',
+    '--out-dir',
+    outDir,
+    ...(layers ? ['--layers', layers] : [])
+  ])
   // The results hold paths relative to the repository, and the samples sit beside them, so they are kept where they are.
 }
 
@@ -77,16 +111,24 @@ const environment = {
   recorded_at: new Date().toISOString(),
   commit: first('git', ['rev-parse', 'HEAD']),
   uncommitted_changes: run('git', ['status', '--porcelain']).stdout.split('\n').filter(Boolean),
-  machine: { os: `${os.type()} ${os.release()}`, cpu: os.cpus()[0].model, cores: os.cpus().length, memory_bytes: os.totalmem() },
+  machine: {
+    os: `${os.type()} ${os.release()}`,
+    cpu: os.cpus()[0].model,
+    cores: os.cpus().length,
+    memory_bytes: os.totalmem()
+  },
   browser: first(process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome', ['--version']),
   rustc: first('rustc', ['--version']),
   wasm_pack: first('wasm-pack', ['--version']),
   node: process.version,
   build_profile: 'release',
   wasm_files: Object.fromEntries(
-    fs.readdirSync(path.join(root, 'perf-harness-wasm/pkg')).filter(f => f.endsWith('.wasm')).map(f => [f, fs.statSync(path.join(root, 'perf-harness-wasm/pkg', f)).size]),
+    fs
+      .readdirSync(path.join(root, 'perf-harness-wasm/pkg'))
+      .filter(f => f.endsWith('.wasm'))
+      .map(f => [f, fs.statSync(path.join(root, 'perf-harness-wasm/pkg', f)).size])
   ),
-  commands,
+  commands
 }
 fs.writeFileSync(path.join(out, 'environment.json'), JSON.stringify(environment, null, 2) + '\n')
 console.log(`written to ${path.relative(root, out)}`)

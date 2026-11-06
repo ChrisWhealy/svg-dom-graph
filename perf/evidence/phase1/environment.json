@@ -52,10 +52,7 @@
   "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
   "cargo": "cargo 1.99.1 (5f94df478 2026-08-27)",
   "node": "v26.13.0",
-  "targets_run": [
-    "native (this machine)",
-    "wasm32-wasip1 (32-bit, under Node)"
-  ],
+  "targets_run": ["native (this machine)", "wasm32-wasip1 (32-bit, under Node)"],
   "commands": [
     {
       "file": "rust-tests-native.txt",

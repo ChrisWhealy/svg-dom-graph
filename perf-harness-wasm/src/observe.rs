@@ -22,6 +22,9 @@ use std::collections::BTreeMap;
 use svg_dom_graph::scene::Scene;
 use wasm_bindgen::JsCast;
 
+/// The attribute that marks an edge label's group, which the library writes.
+pub const EDGE_LABEL_ATTRIBUTE: &str = "data-svg-dom-graph-edge-label";
+
 /// The tolerance a checkpoint carries for geometry, in scene units.
 const GEOMETRY_TOLERANCE: f64 = 0.01;
 
@@ -62,6 +65,11 @@ pub fn observe(
         let child = children.item(index).ok_or("a child vanished")?;
         match child.local_name().as_str() {
             "g" => {
+                // An edge label is a group of a box and a text, as a node is, and is not one. The reference model does not model
+                // labels, so they are left out here, and a run that has them reads them from the document directly.
+                if child.has_attribute(EDGE_LABEL_ATTRIBUTE) {
+                    continue;
+                }
                 let (Some(rect), Some(text)) = (
                     child.query_selector("rect").map_err(|e| format!("{e:?}"))?,
                     child.query_selector("text").map_err(|e| format!("{e:?}"))?,

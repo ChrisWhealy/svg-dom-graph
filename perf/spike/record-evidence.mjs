@@ -44,7 +44,7 @@ const fixtureFiles = Object.fromEntries(
     .readdirSync(pkg)
     .filter(name => /\.(js|wasm)$/.test(name))
     .sort()
-    .map(name => [name, { sha256: sha256(path.join(pkg, name)), bytes: fs.statSync(path.join(pkg, name)).size }]),
+    .map(name => [name, { sha256: sha256(path.join(pkg, name)), bytes: fs.statSync(path.join(pkg, name)).size }])
 )
 const pkgBuilt = fs.statSync(path.join(pkg, 'cdp_test_fixture_bg.wasm')).mtime.toISOString()
 
@@ -53,19 +53,25 @@ const environment = {
   commit: first('git', ['rev-parse', 'HEAD']),
   commit_date: first('git', ['log', '-1', '--format=%cI']),
   uncommitted_changes: run('git', ['status', '--porcelain']).stdout.split('\n').filter(Boolean),
-  machine: { os: `${os.type()} ${os.release()}`, macos: first('sw_vers', ['-productVersion']), cpu: os.cpus()[0].model, cores: os.cpus().length, memory_bytes: os.totalmem() },
+  machine: {
+    os: `${os.type()} ${os.release()}`,
+    macos: first('sw_vers', ['-productVersion']),
+    cpu: os.cpus()[0].model,
+    cores: os.cpus().length,
+    memory_bytes: os.totalmem()
+  },
   browser: first(chrome, ['--version']),
   node: process.version,
   rustc: first('rustc', ['--version']),
   wasm_pack: first('wasm-pack', ['--version']),
-  fixture: { rebuilt_by_this_run: build, pkg_built: pkgBuilt, files: fixtureFiles },
+  fixture: { rebuilt_by_this_run: build, pkg_built: pkgBuilt, files: fixtureFiles }
 }
 
 const experiments = [
   { name: 'timer-and-counters-not-isolated.json', args: ['perf/spike/phase0-spike.mjs', 'cdp-test-fixture'] },
   { name: 'timer-and-counters-isolated.json', args: ['perf/spike/phase0-spike.mjs', 'cdp-test-fixture', 'isolated'] },
   { name: 'listener-ownership.txt', args: ['perf/spike/listener-ownership.mjs', 'cdp-test-fixture'] },
-  { name: 'listener-tracker-tests.txt', args: ['perf/page/test-listener-tracker.mjs'] },
+  { name: 'listener-tracker-tests.txt', args: ['perf/page/test-listener-tracker.mjs'] }
 ]
 const commands = []
 for (const { name, args } of experiments) {

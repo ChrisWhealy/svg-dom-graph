@@ -9,6 +9,8 @@
 //! * W1, scene construction: the same graph is built, dropped and removed again and again.
 //! * W2, connector rerouting: one scene is built, and then nodes are moved so that their connectors are routed again.
 //! * W3, scene lifecycle: a different graph is built, dropped and removed on every cycle.
+//! * W5, recovery: the same single build and checkpoint as W4. The failures are put in by a runner, one fault point at a time, and
+//!   are not part of this stream.
 //! * W4, interaction: one scene is built and checked, and a browser is then driven through it with real input. The input is
 //!   planned by [`crate::gestures`], and is not part of this stream.
 
@@ -230,7 +232,7 @@ pub fn generate(manifest: &Manifest, visit: Visit<'_>) -> Result<(), WorkloadErr
     match manifest.workload {
         Workload::SceneConstruction => cycles(manifest, &mut emitter, false),
         Workload::SceneLifecycle => cycles(manifest, &mut emitter, true),
-        Workload::Interaction => interaction(manifest, &mut emitter),
+        Workload::Interaction | Workload::Recovery => interaction(manifest, &mut emitter),
         Workload::ConnectorRerouting => rerouting(manifest, &mut emitter),
     }
 }

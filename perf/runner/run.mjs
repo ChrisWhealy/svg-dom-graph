@@ -16,6 +16,7 @@ import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from './lib/harness-page.mjs'
 import { edgesOf, runInteraction } from './layer-c/interaction.mjs'
+import { runRecoveryC } from './layer-c/recovery.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const requireFromSchemas = createRequire(path.join(root, 'perf/schemas/package.json'))
@@ -42,7 +43,8 @@ const parseArguments = argv => {
   return options
 }
 
-const run = (command, args, options = {}) => spawnSync(command, args, { cwd: root, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, ...options })
+const run = (command, args, options = {}) =>
+  spawnSync(command, args, { cwd: root, encoding: 'utf8', maxBuffer: 512 * 1024 * 1024, ...options })
 const first = (command, args) => run(command, args).stdout?.trim().split('\n')[0] ?? null
 const must = (result, what) => {
   if (result.status !== 0) throw new Error(`${what} failed:\n${result.stderr || result.stdout}`)
@@ -50,7 +52,8 @@ const must = (result, what) => {
 }
 
 // A seed can be larger than 2**53. The reviver keeps its exact text, so that it is written back as it was read.
-const readExact = text => JSON.parse(text, (key, value, context) => (key === 'seed' ? JSON.rawJSON(context.source) : value))
+const readExact = text =>
+  JSON.parse(text, (key, value, context) => (key === 'seed' ? JSON.rawJSON(context.source) : value))
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const options = parseArguments(process.argv.slice(2))
@@ -72,16 +75,25 @@ const manifest = report.manifest.canonical
 // Layer C drives a scene with real input, which only the interaction workload has. It is on by default for that workload and
 // refused for any other, and a layer that is asked for by name and cannot run says so and does not quietly do nothing.
 const interactive = manifest.workload === 'interaction'
-options.layers ??= interactive ? ['a', 'b', 'c'] : ['a', 'b']
-if (options.layers.includes('c') && !interactive) {
-  console.log(`skipping layer C: ${manifest.workload} has no input to drive, and only the interaction workload does`)
+const recovery = manifest.workload === 'recovery'
+options.layers ??= interactive || recovery ? ['a', 'b', 'c'] : ['a', 'b']
+if (options.layers.includes('c') && !interactive && !recovery) {
+  console.log(
+    `skipping layer C: ${manifest.workload} has no input to drive, and only the interaction and recovery workloads do`
+  )
   options.layers = options.layers.filter(layer => layer !== 'c')
 }
 if (options.build && (options.layers.includes('b') || options.layers.includes('c'))) {
-  must(run('wasm-pack', ['build', 'perf-harness-wasm', '--target', 'web', '--release', '--out-dir', 'pkg']), 'building perf-harness-wasm')
+  must(
+    run('wasm-pack', ['build', 'perf-harness-wasm', '--target', 'web', '--release', '--out-dir', 'pkg']),
+    'building perf-harness-wasm'
+  )
 }
 // The gestures are planned once, by the same engine that planned the scene, and every repetition plays the same plan.
-const gesturePlan = options.layers.includes('c') ? JSON.parse(must(run(binary, ['gestures', manifestPath]), 'planning the gestures').stdout) : null
+const gesturePlan =
+  options.layers.includes('c') && interactive
+    ? JSON.parse(must(run(binary, ['gestures', manifestPath]), 'planning the gestures').stdout)
+    : null
 
 const modes = options.mode === 'all' ? manifest.execution.modes : [options.mode]
 const repetitionsFor = mode => (mode === 'correctness' ? 1 : (options.repetitions ?? manifest.execution.repetitions))
@@ -92,7 +104,7 @@ const chromeVersion = first(chromePath, ['--version'])?.match(/(\d+(?:\.\d+)+)/)
 const crateVersion = fs.readFileSync(path.join(root, 'Cargo.toml'), 'utf8').match(/^version = "([^"]+)"/m)?.[1]
 const git = {
   sha: first('git', ['rev-parse', 'HEAD']),
-  dirty: run('git', ['status', '--porcelain']).stdout.trim().length > 0,
+  dirty: run('git', ['status', '--porcelain']).stdout.trim().length > 0
 }
 const environment = (kind, outcome, crossOriginIsolated) => ({
   kind,
@@ -109,12 +121,13 @@ const environment = (kind, outcome, crossOriginIsolated) => ({
   crate_version: crateVersion,
   git_sha: git.sha,
   git_dirty: git.dirty,
-  build_profile: 'release',
+  build_profile: 'release'
 })
 
 const ajv = new Ajv({ strict: true, strictTypes: false, strictRequired: false, allErrors: true })
 addFormats(ajv)
-for (const name of ['manifest', 'result']) ajv.addSchema(JSON.parse(fs.readFileSync(path.join(root, `perf/schemas/${name}.schema.json`), 'utf8')))
+for (const name of ['manifest', 'result'])
+  ajv.addSchema(JSON.parse(fs.readFileSync(path.join(root, `perf/schemas/${name}.schema.json`), 'utf8')))
 const validateResult = ajv.getSchema('urn:svg-dom-graph:perf:result:1')
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -130,28 +143,46 @@ if (options.layers.includes('b') && manifest.measurement.capture_wasm_live_alloc
   await page.close()
   fs.writeFileSync(path.join(outDir, 'allocator-verification.json'), JSON.stringify(verification, null, 2) + '\n')
   allocatorVerified = verification.pass
-  console.log(allocatorVerified ? 'the counting allocator is verified' : 'the counting allocator is NOT verified: its figures are withheld')
+  console.log(
+    allocatorVerified
+      ? 'the counting allocator is verified'
+      : 'the counting allocator is NOT verified: its figures are withheld'
+  )
 }
 
 const withholdAllocatorFigures = outcome => {
   // A gate that rests on the allocator's figures cannot be judged without them, and not judging is never a pass.
   outcome.gates = (outcome.gates ?? []).map(gate =>
-    gate.name.includes('live_bytes') ? { ...gate, status: 'inconclusive', detail: 'the counting allocator did not pass its verification' } : gate,
+    gate.name.includes('live_bytes')
+      ? { ...gate, status: 'inconclusive', detail: 'the counting allocator did not pass its verification' }
+      : gate
   )
   outcome.metrics = outcome.metrics.map(metric =>
     typeof metric.mechanism === 'string' && metric.mechanism.includes('counting allocator')
-      ? { name: metric.name, layer: metric.layer, status: 'unavailable', reason: 'the counting allocator did not pass its verification' }
-      : metric,
+      ? {
+          name: metric.name,
+          layer: metric.layer,
+          status: 'unavailable',
+          reason: 'the counting allocator did not pass its verification'
+        }
+      : metric
   )
 }
 
 const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
   const runId = `${manifestId}-${layer}-${mode}-r${repetition}-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}`
-  const keepsSamples = mode === 'performance' || mode === 'endurance'
+  const keepsSamples = mode === 'performance' || mode === 'endurance' || mode === 'recovery'
   const samplesFile = path.join(outDir, `${runId}.samples.ndjson`)
   if (keepsSamples) {
     const lines = Object.entries(outcome.samples ?? {}).map(([metric, values]) => JSON.stringify({ metric, values }))
     fs.writeFileSync(samplesFile, lines.map(line => line + '\n').join(''))
+  }
+  const casesFile = path.join(outDir, `${runId}.cases.json`)
+  if (outcome.cases?.length) fs.writeFileSync(casesFile, JSON.stringify(outcome.cases, null, 1) + '\n')
+  // The stream a recovery run built is held to the digest of the report, as the other layers' are.
+  if (outcome.stream && outcome.stream.expected_sha256 === null) {
+    outcome.stream.expected_sha256 = report.stream.sha256
+    outcome.stream.matches = outcome.stream.sha256 === report.stream.sha256
   }
   const document = {
     schema_version: 1,
@@ -165,7 +196,7 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
       sha256: report.manifest.sha256,
       operation_stream_scope: outcome.stream?.scope ?? 'mutations',
       operation_stream_sha256: outcome.stream?.sha256 ?? '0'.repeat(64),
-      canonical: manifest,
+      canonical: manifest
     },
     mode,
     status: outcome.status,
@@ -174,20 +205,26 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
     checkpoints_passed: outcome.checkpoints_passed,
     checkpoints_failed: outcome.checkpoints_failed,
     ...(outcome.gates?.length ? { gates: outcome.gates } : {}),
-    ...(keepsSamples ? { raw_samples: path.relative(root, samplesFile) } : {}),
+    ...(keepsSamples && Object.keys(outcome.samples ?? {}).length
+      ? { raw_samples: path.relative(root, samplesFile) }
+      : {}),
+    ...(outcome.findings?.length ? { findings: outcome.findings } : {}),
+    ...(outcome.cases?.length ? { cases: path.relative(root, casesFile) } : {})
   }
   // The seed is validated as the number it is. Only the file keeps its exact text.
   const asData = JSON.parse(JSON.stringify(document))
   if (!validateResult(asData)) {
-    throw new Error(`the result of ${runId} does not satisfy the result schema: ${ajv.errorsText(validateResult.errors)}`)
+    throw new Error(
+      `the result of ${runId} does not satisfy the result schema: ${ajv.errorsText(validateResult.errors)}`
+    )
   }
   fs.writeFileSync(path.join(outDir, `${runId}.json`), JSON.stringify(document, null, 2) + '\n')
   runs.push({ layer, mode, repetition, runId, outcome })
 }
 
 for (const mode of modes) {
-  if (mode === 'recovery') {
-    console.log('skipping recovery: that runner arrives in Phase 4')
+  if (mode === 'recovery' && !recovery) {
+    console.log(`skipping recovery: ${manifest.workload} has no fault points, and only the recovery workload does`)
     continue
   }
   for (let repetition = 0; repetition < repetitionsFor(mode); repetition++) {
@@ -197,14 +234,71 @@ for (const mode of modes) {
       keep('A', mode, repetition, JSON.parse(fs.readFileSync(file, 'utf8')), null)
       fs.rmSync(file)
     }
+    if (mode === 'endurance' && recovery) {
+      if (options.layers.includes('b')) {
+        const page = await openHarnessPage({ faults: true })
+        try {
+          const outcome = JSON.parse(
+            await page.evaluate(`window.perfHarness.recovery_endurance(${JSON.stringify(canonicalManifest)})`)
+          )
+          if (allocatorVerified === false) withholdAllocatorFigures(outcome)
+          keep('B', 'endurance', repetition, outcome, page.crossOriginIsolated)
+        } finally {
+          await page.close()
+        }
+      }
+      if (options.layers.includes('c')) {
+        const outcome = await runRecoveryC({
+          binary,
+          canonical: canonicalManifest,
+          manifest,
+          report,
+          endurance: {
+            warmup: manifest.execution.warmup_iterations,
+            measured: manifest.execution.measurement_iterations
+          }
+        })
+        keep('C', 'endurance', repetition, outcome, outcome.crossOriginIsolated ?? null)
+      }
+      continue
+    }
     if (options.layers.includes('c') && (mode === 'correctness' || mode === 'performance')) {
-      const outcome = await runInteraction({ binary, mode, canonical: canonicalManifest, plan: gesturePlan, report, edges: edgesOf(binary, manifestPath) })
+      const outcome = await runInteraction({
+        binary,
+        mode,
+        canonical: canonicalManifest,
+        plan: gesturePlan,
+        report,
+        edges: edgesOf(binary, manifestPath)
+      })
       keep('C', mode, repetition, outcome, outcome.crossOriginIsolated ?? null)
+    }
+    if (mode === 'recovery') {
+      if (options.layers.includes('b')) {
+        const page = await openHarnessPage({ faults: true })
+        try {
+          const outcome = JSON.parse(
+            await page.evaluate(`window.perfHarness.recovery_run(${JSON.stringify(canonicalManifest)})`)
+          )
+          keep('B', 'recovery', repetition, outcome, page.crossOriginIsolated)
+        } finally {
+          await page.close()
+        }
+      }
+      if (options.layers.includes('c')) {
+        const outcome = await runRecoveryC({ binary, canonical: canonicalManifest, manifest, report })
+        keep('C', 'recovery', repetition, outcome, outcome.crossOriginIsolated ?? null)
+      }
+      continue
     }
     if (options.layers.includes('b')) {
       const page = await openHarnessPage()
       try {
-        const outcome = JSON.parse(await page.evaluate(`window.perfHarness.run_workload(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(mode)}, ${JSON.stringify(expected)})`))
+        const outcome = JSON.parse(
+          await page.evaluate(
+            `window.perfHarness.run_workload(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(mode)}, ${JSON.stringify(expected)})`
+          )
+        )
         if (allocatorVerified === false) withholdAllocatorFigures(outcome)
         keep('B', mode, repetition, outcome, page.crossOriginIsolated)
       } finally {
@@ -221,15 +315,28 @@ const metricValue = (outcome, name) => outcome.metrics.find(m => m.name === name
 const spread = []
 for (const group of Object.values(Object.groupBy(runs, run => `${run.layer} ${run.mode}`))) {
   if (group.length < 2) continue
-  const names = new Set(group.flatMap(run => run.outcome.metrics.filter(m => m.status === 'measured' && m.summary).map(m => m.name)))
+  const names = new Set(
+    group.flatMap(run => run.outcome.metrics.filter(m => m.status === 'measured' && m.summary).map(m => m.name))
+  )
   for (const name of names) {
-    const medians = group.map(run => run.outcome.metrics.find(m => m.name === name && m.summary)?.summary.p50).filter(v => v !== undefined)
+    const medians = group
+      .map(run => run.outcome.metrics.find(m => m.name === name && m.summary)?.summary.p50)
+      .filter(v => v !== undefined)
     if (medians.length < 2) continue
     const low = Math.min(...medians)
     const high = Math.max(...medians)
     const coarse = group.some(run => run.outcome.metrics.find(m => m.name === name)?.resolution_limited === true)
     const unit = group[0].outcome.metrics.find(m => m.name === name)?.unit ?? 'us'
-    spread.push({ group: `${group[0].layer} ${group[0].mode}`, name, unit, repetitions: medians.length, low, high, coarse, percent: low > 0 ? ((high - low) / low) * 100 : null })
+    spread.push({
+      group: `${group[0].layer} ${group[0].mode}`,
+      name,
+      unit,
+      repetitions: medians.length,
+      low,
+      high,
+      coarse,
+      percent: low > 0 ? ((high - low) / low) * 100 : null
+    })
   }
 }
 
@@ -241,12 +348,23 @@ const gate = (ok, text) => {
 
 console.log(`\nresults in ${path.relative(root, outDir)}\n`)
 for (const { layer, mode, repetition, runId, outcome } of runs) {
-  const timing = outcome.metrics.filter(m => m.status === 'measured' && m.summary).map(m => `${m.name} p50 ${m.summary.p50.toFixed(2)} ${m.unit}`)
-  console.log(`${layer} ${mode} #${repetition}: ${outcome.status}, ${outcome.checkpoints_passed} checkpoints passed, ${outcome.checkpoints_failed.length} failed${timing.length ? `\n    ${timing.join('\n    ')}` : ''}`)
+  const timing = outcome.metrics
+    .filter(m => m.status === 'measured' && m.summary)
+    .map(m => `${m.name} p50 ${m.summary.p50.toFixed(2)} ${m.unit}`)
+  console.log(
+    `${layer} ${mode} #${repetition}: ${outcome.status}, ${outcome.checkpoints_passed} checkpoints passed, ${outcome.checkpoints_failed.length} failed${timing.length ? `\n    ${timing.join('\n    ')}` : ''}`
+  )
   gate(outcome.status === 'ok', `the run is valid (${outcome.status}${outcome.error ? `: ${outcome.error}` : ''})`)
-  gate(outcome.stream?.matches === true, `it executed the intended ${outcome.stream?.scope} stream (${outcome.stream?.operations} operations)`)
-  for (const failure of outcome.checkpoints_failed.slice(0, 5)) console.log(`      ${failure.section}: ${failure.detail}`)
-  for (const gateResult of outcome.gates ?? []) gate(gateResult.status === 'pass', `${gateResult.name}: ${gateResult.status}, ${gateResult.detail}`)
+  gate(
+    outcome.stream?.matches === true,
+    `it executed the intended ${outcome.stream?.scope} stream (${outcome.stream?.operations} operations)`
+  )
+  for (const failure of outcome.checkpoints_failed.slice(0, 5))
+    console.log(`      ${failure.section}: ${failure.detail}`)
+  for (const finding of outcome.findings ?? [])
+    console.log(`    FINDING ${finding.point} (${finding.contract}): ${finding.summary.slice(0, 400)}`)
+  for (const gateResult of outcome.gates ?? [])
+    gate(gateResult.status === 'pass', `${gateResult.name}: ${gateResult.status}, ${gateResult.detail}`)
   if (layer === 'B') {
     for (const name of ['dom_elements', 'listeners']) {
       const delta = metricValue(outcome, `resource.${name}.delta_after_teardown`)
@@ -259,7 +377,9 @@ if (spread.length) {
   const show = value => (value >= 100 ? value.toFixed(0) : value.toPrecision(3))
   for (const row of spread) {
     const coarse = row.coarse ? ' (under 50 timer steps, so coarse)' : ''
-    console.log(`  ${row.group} ${row.name}: ${show(row.low)} to ${show(row.high)} ${row.unit} over ${row.repetitions} repetitions, ${row.percent === null ? 'n/a' : `${row.percent.toFixed(0)}%`} apart${coarse}`)
+    console.log(
+      `  ${row.group} ${row.name}: ${show(row.low)} to ${show(row.high)} ${row.unit} over ${row.repetitions} repetitions, ${row.percent === null ? 'n/a' : `${row.percent.toFixed(0)}%`} apart${coarse}`
+    )
   }
 }
 console.log(gatesFailed ? `\n${gatesFailed} deterministic gate(s) failed` : '\nevery deterministic gate passed')

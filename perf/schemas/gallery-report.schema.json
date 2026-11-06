@@ -123,12 +123,7 @@
               "elements_after_revisit": { "$ref": "#/$defs/count" },
               "listeners_after_revisit": { "$ref": "#/$defs/count" }
             },
-            "required": [
-              "elements_before",
-              "elements_after",
-              "listeners_before",
-              "listeners_after"
-            ],
+            "required": ["elements_before", "elements_after", "listeners_before", "listeners_after"],
             "additionalProperties": false
           },
           "controls": {
@@ -242,18 +237,7 @@
             ]
           }
         },
-        "required": [
-          "id",
-          "label",
-          "group",
-          "status",
-          "notes",
-          "errors",
-          "build",
-          "counts",
-          "controls",
-          "walk"
-        ],
+        "required": ["id", "label", "group", "status", "notes", "errors", "build", "counts", "controls", "walk"],
         "additionalProperties": false
       }
     }

@@ -16,7 +16,7 @@ const types = {
   '.json': 'application/json',
   '.svg': 'image/svg+xml',
   '.png': 'image/png',
-  '.wasm': 'application/wasm',
+  '.wasm': 'application/wasm'
 }
 
 // Serves `dir`. COOP and COEP headers are sent only when `isolated` is set, which is what gives a finer timer.
@@ -94,9 +94,9 @@ export const launch = async () => {
       '--no-first-run',
       // A CI runner may not allow the sandbox. Set PERF_CHROME_NO_SANDBOX for it, and never on a machine that opens web pages.
       ...(process.env.PERF_CHROME_NO_SANDBOX ? ['--no-sandbox'] : []),
-      'about:blank',
+      'about:blank'
     ],
-    { stdio: ['ignore', 'ignore', 'pipe'] },
+    { stdio: ['ignore', 'ignore', 'pipe'] }
   )
   const wsUrl = await new Promise(resolve => {
     let log = ''

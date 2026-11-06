@@ -9,12 +9,7 @@
       "const": 1
     },
     "workload": {
-      "enum": [
-        "scene_construction",
-        "connector_rerouting",
-        "scene_lifecycle",
-        "interaction"
-      ]
+      "enum": ["scene_construction", "connector_rerouting", "scene_lifecycle", "interaction", "recovery"]
     },
     "seed": {
       "type": "integer",
@@ -69,12 +64,7 @@
           "enum": ["sequential", "interleaved"]
         }
       },
-      "required": [
-        "modes",
-        "warmup_iterations",
-        "measurement_iterations",
-        "repetitions"
-      ],
+      "required": ["modes", "warmup_iterations", "measurement_iterations", "repetitions"],
       "additionalProperties": false
     },
     "measurement": {
@@ -161,6 +151,40 @@
       "required": ["scales_percent", "gestures", "steps", "step_pixels"],
       "additionalProperties": false
     },
+    "recovery": {
+      "type": "object",
+      "description": "The fault points of the recovery workload, each with what it is expected to leave behind, taken from the library's documented behaviour (perf/fault-contracts.json). undocumented means that nothing documents it: the runner records what it sees and reports a finding, and does not test against a guess.",
+      "properties": {
+        "points": {
+          "type": "array",
+          "minItems": 1,
+          "items": {
+            "type": "object",
+            "properties": {
+              "point": {
+                "enum": [
+                  "node_construction",
+                  "dom_transform",
+                  "connector_update",
+                  "label_update",
+                  "drag_install",
+                  "edge_construction",
+                  "scheduled_frame",
+                  "teardown",
+                  "mid_drag_teardown",
+                  "removed_host"
+                ]
+              },
+              "expect": { "enum": ["nothing_committed", "partly_committed", "undocumented"] }
+            },
+            "required": ["point", "expect"],
+            "additionalProperties": false
+          }
+        }
+      },
+      "required": ["points"],
+      "additionalProperties": false
+    },
     "limits": {
       "type": "object",
       "properties": {
@@ -182,18 +206,26 @@
       "additionalProperties": false
     }
   },
-  "required": [
-    "schema_version",
-    "workload",
-    "seed",
-    "prng",
-    "graph",
-    "execution",
-    "measurement",
-    "limits"
-  ],
+  "required": ["schema_version", "workload", "seed", "prng", "graph", "execution", "measurement", "limits"],
   "additionalProperties": false,
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "workload": {
+            "const": "recovery"
+          }
+        }
+      },
+      "then": {
+        "required": ["recovery"]
+      },
+      "else": {
+        "not": {
+          "required": ["recovery"]
+        }
+      }
+    },
     {
       "if": {
         "properties": {

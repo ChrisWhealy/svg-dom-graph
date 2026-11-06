@@ -8,7 +8,12 @@ import fs from 'node:fs'
 import { WASI } from 'node:wasi'
 
 const [wasmPath, ...args] = process.argv.slice(2)
-const wasi = new WASI({ version: 'preview1', args: [wasmPath, ...args], env: { RUST_BACKTRACE: '0' }, returnOnExit: true })
+const wasi = new WASI({
+  version: 'preview1',
+  args: [wasmPath, ...args],
+  env: { RUST_BACKTRACE: '0' },
+  returnOnExit: true
+})
 const module = await WebAssembly.compile(fs.readFileSync(wasmPath))
 const instance = await WebAssembly.instantiate(module, wasi.getImportObject())
 process.exit(wasi.start(instance))

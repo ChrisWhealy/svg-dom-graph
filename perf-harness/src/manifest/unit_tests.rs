@@ -227,3 +227,67 @@ fn every_shared_rejected_manifest_is_refused() -> Result<(), String> {
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const RECOVERY: &str = include_str!("../../../perf/manifests/w5-recovery-small.toml");
+const CONTRACTS: &str = include_str!("../../../perf/fault-contracts.json");
+
+/// The expectations in a recovery manifest are taken from the library's documented behaviour, which `fault-contracts.json`
+/// writes down. So they must agree with it, for every fault point the manifest names.
+#[test]
+fn the_recovery_manifest_expects_what_the_contracts_say() -> Result<(), String> {
+    let manifest = Manifest::from_toml(RECOVERY).map_err(|e| e.to_string())?;
+    let recovery = manifest.recovery.ok_or("no recovery table")?;
+    let contracts: serde_json::Value = serde_json::from_str(CONTRACTS).map_err(|e| e.to_string())?;
+    let points = contracts["points"].as_array().ok_or("no points")?;
+    for entry in &recovery.points {
+        let id = serde_json::to_value(entry.point).map_err(|e| e.to_string())?;
+        let contract = points
+            .iter()
+            .find(|point| point["id"] == id)
+            .ok_or_else(|| format!("{id} is not in the contracts"))?;
+        let expected = serde_json::to_value(entry.expect).map_err(|e| e.to_string())?;
+        if contract["contract"] != expected {
+            return Err(format!(
+                "{id}: the manifest expects {expected}, the contracts say {}",
+                contract["contract"]
+            ));
+        }
+    }
+    if recovery.points.len() != points.len() {
+        return Err(format!(
+            "{} fault points in the manifest, {} in the contracts",
+            recovery.points.len(),
+            points.len()
+        ));
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_bad_recovery_table_is_refused() -> Result<(), String> {
+    let refused = |text: String, why: &str| match Manifest::from_toml(&text) {
+        Ok(_) => Err(format!("{why} was accepted")),
+        Err(_) => Ok(()),
+    };
+    refused(RECOVERY.replace("points = [", "points = [] #"), "an empty list of fault points")?;
+    refused(
+        RECOVERY.replace(
+            "{ point = \"dom_transform\", expect = \"nothing_committed\" },",
+            "{ point = \"node_construction\", expect = \"nothing_committed\" },",
+        ),
+        "a repeated fault point",
+    )?;
+    refused(
+        RECOVERY.replace("edges = 18", "edges = 0"),
+        "a scene with no connector to break",
+    )?;
+    refused(RECOVERY.replace("node_construction", "node_building"), "an unknown fault point")?;
+    refused(RECOVERY.replace("nothing_committed", "all_committed"), "an unknown expectation")?;
+    refused(
+        RECOVERY.replace("workload = \"recovery\"", "workload = \"scene_lifecycle\""),
+        "a recovery table on another workload",
+    )?;
+    Ok(())
+}

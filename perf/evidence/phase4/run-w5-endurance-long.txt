@@ -1,0 +1,22 @@
+the counting allocator is verified
+
+results in perf/evidence/phase4/results/w5-recovery-long-endurance
+
+B endurance #0: ok, 600 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 11 to 200, within the 0 allowed
+    ok   endurance.recoveries_succeed: pass, 600 recoveries over 200 cycles each reached the state the contract promises
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 0 before the first cycle and after each of the 200 teardowns
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 6 before the first cycle and after each of the 200 teardowns
+    ok   endurance.lost_externref_slots_are_explained: pass, 144 externref slots were lost over 200 cycles, one for each of the 144 failures of a DOM call that returns an object, and none for the others
+B endurance #1: ok, 600 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (32 operations)
+    ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 11 to 200, within the 0 allowed
+    ok   endurance.recoveries_succeed: pass, 600 recoveries over 200 cycles each reached the state the contract promises
+    ok   endurance.listeners_return_to_baseline: pass, the effective listener count was 0 before the first cycle and after each of the 200 teardowns
+    ok   endurance.dom_returns_to_baseline: pass, the document's element count was 6 before the first cycle and after each of the 200 teardowns
+    ok   endurance.lost_externref_slots_are_explained: pass, 144 externref slots were lost over 200 cycles, one for each of the 144 failures of a DOM call that returns an object, and none for the others
+
+every deterministic gate passed

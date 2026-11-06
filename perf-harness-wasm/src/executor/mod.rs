@@ -115,7 +115,10 @@ impl<'a> Run<'a> {
         })
         .map_err(describe)?;
         // Rerouting and interaction build one scene and keep it, so they have one cycle whatever their iteration counts say.
-        let total_cycles = if matches!(manifest.workload, Workload::ConnectorRerouting | Workload::Interaction) {
+        let total_cycles = if matches!(
+            manifest.workload,
+            Workload::ConnectorRerouting | Workload::Interaction | Workload::Recovery
+        ) {
             1
         } else {
             manifest.total_iterations()

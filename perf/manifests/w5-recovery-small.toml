@@ -1,0 +1,50 @@
+# W5, recovery: one scene is built and checked, and then broken on purpose, one fault point at a time.
+#
+# Each fault point is given what the library's own documentation says it leaves behind (perf/fault-contracts.json). The two
+# points that nothing documents are marked undocumented, so that the runner records what it sees and reports a finding, and
+# does not test against a guess. In an endurance run, every fault point is broken and recovered from in each cycle, and
+# `warmup_iterations` and `measurement_iterations` count the cycles.
+schema_version = 1
+workload = "recovery"
+seed = 2026
+prng = "splitmix64"
+
+[graph]
+nodes = 12
+edges = 18
+maximum_degree = 6
+
+[execution]
+modes = ["correctness", "recovery", "endurance"]
+warmup_iterations = 5
+measurement_iterations = 30
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+checkpoint_every = 1
+
+[checkpoint]
+view = "unchanged"
+
+[recovery]
+points = [
+    { point = "node_construction", expect = "nothing_committed" },
+    { point = "dom_transform", expect = "nothing_committed" },
+    { point = "connector_update", expect = "partly_committed" },
+    { point = "label_update", expect = "partly_committed" },
+    { point = "drag_install", expect = "nothing_committed" },
+    { point = "edge_construction", expect = "undocumented" },
+    { point = "scheduled_frame", expect = "partly_committed" },
+    { point = "teardown", expect = "nothing_committed" },
+    { point = "mid_drag_teardown", expect = "nothing_committed" },
+    { point = "removed_host", expect = "undocumented" },
+]
+
+[limits]
+wall_ms = 300000

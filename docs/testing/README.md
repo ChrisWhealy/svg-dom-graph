@@ -22,8 +22,8 @@
 | `cargo test -p cdp-integration-test` | The CDP tests, against a local Chrome |
 | `cargo test -p perf-harness` | The performance harness's workload generator, gesture planner, reference model and manifest checks. See [`perf/README.md`](../../perf/README.md) |
 | `cargo test -p perf-harness-wasm` | The performance harness's counting allocator and parsers. The browser runner itself is driven by `node perf/runner/run.mjs`. See [`perf/README.md`](../../perf/README.md) |
-| `node perf/lib/test-frames.mjs` and `node perf/runner/test-walk-verdict.mjs` | The Layer C frame attribution rule and the verdict of a gallery walk, on traces and walks written out by hand. No browser. See [`perf/README.md`](../../perf/README.md) |
-| `node perf/runner/selftest-layer-c.mjs`, `node perf/runner/selftest-gallery.mjs` and `node perf/runner/gallery-sweep.mjs` | The Layer C self-tests and the gallery sweep, which drive Chrome and are not run by CI yet. See [`perf/README.md`](../../perf/README.md) |
+| `node perf/lib/test-frames.mjs`, `node perf/runner/test-walk-verdict.mjs` and `node perf/lib/test-contracts.mjs` | The Layer C frame attribution rule, the verdict of a gallery walk, and the fault contracts against the code they cite. No browser. See [`perf/README.md`](../../perf/README.md) |
+| `node perf/runner/selftest-layer-c.mjs`, `selftest-gallery.mjs`, `selftest-recovery.mjs` and `node perf/runner/gallery-sweep.mjs` | The Layer C, gallery and recovery self-tests and the gallery sweep, which drive Chrome and are not run by CI yet. See [`perf/README.md`](../../perf/README.md) |
 
 ## Error handling during testing
 

@@ -37,7 +37,8 @@ class SplitMix64 {
   }
 }
 
-const derive = (seed, stream) => new SplitMix64(new SplitMix64(BigInt(seed) ^ ((BigInt(stream) * 0xd6e8feb86659fd93n) & MASK)).next())
+const derive = (seed, stream) =>
+  new SplitMix64(new SplitMix64(BigInt(seed) ^ ((BigInt(stream) * 0xd6e8feb86659fd93n) & MASK)).next())
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const NODE_W = 80
@@ -53,7 +54,7 @@ const planGraph = (prng, nodeCount, edgeCount, maxDegree) => {
   const nodes = Array.from({ length: nodeCount }, (_, i) => ({
     key: `n${i}`,
     x: MARGIN + (i % columns) * PITCH_X,
-    y: MARGIN + Math.floor(i / columns) * PITCH_Y,
+    y: MARGIN + Math.floor(i / columns) * PITCH_Y
   }))
   const limit = maxDegree ?? Infinity
   const degree = new Array(nodeCount).fill(0)
@@ -107,7 +108,7 @@ const ops = {
   addEdge: (from, to) => op(5, str(from), str(to)),
   moveNode: (key, x, y) => op(6, str(key), i64(x), i64(y)),
   phase: measure => op(7, u64(measure ? 1 : 0)),
-  checkpoint: index => op(8, u64(index)),
+  checkpoint: index => op(8, u64(index))
 }
 const isControl = o => o.code === 7 || o.code === 8
 
@@ -151,7 +152,7 @@ export const generate = manifest => {
       if (every !== null && (step + 1) % every === 0) checkpoint()
     }
     if (!lastWasCheckpoint) checkpoint()
-  } else if (workload === 'interaction') {
+  } else if (workload === 'interaction' || workload === 'recovery') {
     emit(ops.createScene())
     build(planFor(0))
     checkpoint()
@@ -182,12 +183,18 @@ export const digests = stream => {
       mutationCount++
     }
   }
-  return { operations: stream.length, mutations: mutationCount, sha256: full.digest('hex'), mutations_sha256: mutations.digest('hex') }
+  return {
+    operations: stream.length,
+    mutations: mutationCount,
+    sha256: full.digest('hex'),
+    mutations_sha256: mutations.digest('hex')
+  }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // A seed can be larger than 2**53, which a JSON number read as a double cannot hold. The reviver takes it from the source text.
-export const readReport = text => JSON.parse(text, (key, value, context) => (key === 'seed' ? BigInt(context.source) : value))
+export const readReport = text =>
+  JSON.parse(text, (key, value, context) => (key === 'seed' ? BigInt(context.source) : value))
 
 export const compare = report => {
   const mine = digests(generate(report.manifest.canonical))

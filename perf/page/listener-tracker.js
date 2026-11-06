@@ -59,7 +59,11 @@
     // A listener added again after it was removed is a new registration, which this one must not remove.
     if (entry.registrations.get(key) === registration) {
       entry.registrations.delete(key)
-      record(op, entry.ref.deref() ?? window, { type: registration.type, capture: registration.capture, born: registration.sequence })
+      record(op, entry.ref.deref() ?? window, {
+        type: registration.type,
+        capture: registration.capture,
+        born: registration.sequence
+      })
     }
   }
 
@@ -121,7 +125,12 @@
     const key = keyOf(type, callback, capture)
     const registration = entry && liveRegistration(entry, key)
     // A wrapped listener is the one the browser holds, so that is the one to take out.
-    const result = nativeRemove.call(this, type, registration && registration.wrapper ? registration.wrapper : callback, options)
+    const result = nativeRemove.call(
+      this,
+      type,
+      registration && registration.wrapper ? registration.wrapper : callback,
+      options
+    )
     if (registration) drop(entry, key, registration, 'remove')
     else record('remove-unknown', this, { type, capture })
     return result
@@ -156,6 +165,6 @@
     log,
     sequence: () => sequence,
     startLogging: () => (logging = true),
-    stopLogging: () => (logging = false),
+    stopLogging: () => (logging = false)
   }
 })()

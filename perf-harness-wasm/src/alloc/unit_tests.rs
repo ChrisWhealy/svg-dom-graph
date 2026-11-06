@@ -135,7 +135,9 @@ fn the_tracker_lists_the_blocks_allocated_since_it_began_that_are_still_live_wit
     live.sort_by_key(|b| b.size);
     unsafe { counter.dealloc(kept, layout(100)) };
     unsafe { counter.dealloc(also_kept, layout(300)) };
-    if live != [TrackedBlock { size: 100, tag: 1 }, TrackedBlock { size: 300, tag: 2 }] {
+    // Where a block is varies from run to run, so what is compared is its size and its tag.
+    let sized: Vec<(usize, usize)> = live.iter().map(|b| (b.size, b.tag)).collect();
+    if sized != [(100, 1), (300, 2)] {
         return Err(format!("{live:?}"));
     }
     if !counter.tracked_live().is_empty() {
@@ -156,7 +158,7 @@ fn a_reallocated_block_stays_listed_under_its_new_size_and_its_first_tag() -> Re
     counter.stop_tracking();
     let live = counter.tracked_live();
     unsafe { counter.dealloc(block, layout(4096)) };
-    if live != [TrackedBlock { size: 4096, tag: 7 }] {
+    if live.iter().map(|b| (b.size, b.tag)).collect::<Vec<_>>() != [(4096, 7)] {
         return Err(format!("{live:?}"));
     }
     Ok(())
@@ -216,7 +218,7 @@ fn a_block_from_before_tracking_that_grows_is_followed_under_its_own_tag() -> Re
     counter.stop_tracking();
     let live = counter.tracked_live();
     unsafe { counter.dealloc(block, layout(612)) };
-    if live != [TrackedBlock { size: 612, tag: GROWN_FLAG | 3 }] {
+    if live.iter().map(|b| (b.size, b.tag)).collect::<Vec<_>>() != [(612, GROWN_FLAG | 3)] {
         return Err(format!("{live:?}"));
     }
     Ok(())

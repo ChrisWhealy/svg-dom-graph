@@ -39,18 +39,21 @@ capture_frame_timing = false
 ${every === null ? '' : `checkpoint_every = ${every}`}
 [checkpoint]
 view = "unchanged"
+${workload === 'recovery' ? '[recovery]\npoints = [{ point = "node_construction", expect = "nothing_committed" }, { point = "removed_host", expect = "undocumented" }]' : ''}
 ${workload === 'interaction' ? '[interaction]\nscales_percent = [50, 100, 200]\ngestures = ["drag", "pan", "wheel_zoom"]\nsteps = 4\nstep_pixels = 5' : ''}
 [limits]
 wall_ms = 1000
 `
 
 const cases = []
-for (const workload of ['scene_construction', 'connector_rerouting', 'scene_lifecycle', 'interaction']) {
+for (const workload of ['scene_construction', 'connector_rerouting', 'scene_lifecycle', 'interaction', 'recovery']) {
   // The largest seed that TOML can write is the largest signed 64-bit integer. BigInt keeps the larger ones exact.
   for (const seed of [0n, 1n, 2026n, 9007199254740991n, 9007199254740993n, 9223372036854775807n]) {
     cases.push({ workload, seed, nodes: 12, edges: 20, degree: 8, warmup: 2, iterations: 6, every: 3 })
   }
-  cases.push({ workload, seed: 5n, nodes: 1, edges: 0, degree: null, warmup: 0, iterations: 1, every: null })
+  // A scene with no connector has none to break, which the recovery workload refuses.
+  if (workload !== 'recovery')
+    cases.push({ workload, seed: 5n, nodes: 1, edges: 0, degree: null, warmup: 0, iterations: 1, every: null })
   cases.push({ workload, seed: 5n, nodes: 2, edges: 2, degree: 2, warmup: 0, iterations: 3, every: 1 })
   cases.push({ workload, seed: 77n, nodes: 50, edges: 120, degree: null, warmup: 5, iterations: 20, every: 7 })
   cases.push({ workload, seed: 12345n, nodes: 200, edges: 600, degree: 16, warmup: 3, iterations: 9, every: null })
@@ -70,7 +73,9 @@ for (const [index, c] of cases.entries()) {
   }
   const { mine, differences } = compare(readReport(run.stdout))
   if (differences.length) failures++
-  console.log(`${differences.length ? 'FAIL' : 'ok  '} ${label}: ${mine.operations} operations${differences.length ? `, differs in ${differences.join(', ')}` : ''}`)
+  console.log(
+    `${differences.length ? 'FAIL' : 'ok  '} ${label}: ${mine.operations} operations${differences.length ? `, differs in ${differences.join(', ')}` : ''}`
+  )
 }
 fs.rmSync(dir, { recursive: true, force: true })
 console.log(failures ? `\n${failures} of ${cases.length} differ` : `\nall ${cases.length} agree`)

@@ -20,9 +20,7 @@
   "first_scene": {
     "scene_children": 5,
     "elements": 780,
-    "ids": [
-      "svg-dom-graph-arrow-0"
-    ],
+    "ids": ["svg-dom-graph-arrow-0"],
     "tally": {
       "add": 44,
       "remove": 7,
@@ -33,10 +31,7 @@
   "second_scene": {
     "scene_children": 10,
     "elements": 1560,
-    "ids": [
-      "svg-dom-graph-arrow-0",
-      "svg-dom-graph-arrow-1"
-    ],
+    "ids": ["svg-dom-graph-arrow-0", "svg-dom-graph-arrow-1"],
     "tally": {
       "add": 88,
       "remove": 51,
