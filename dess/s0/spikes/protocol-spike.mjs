@@ -153,9 +153,7 @@ const repetition = async (number, injectAt) => {
       await pause(QUIET_MS)
       const quiet = await state()
       if (quiet.ticks !== afterPlay.ticks || quiet.commits !== afterPlay.commits || quiet.pending !== 0) fail('something ran after the last Pause')
-      const commitsBefore = (await state()).commits
-      const commitsAfter = await chrome.evaluate('window.__dess.runCancelledTick()')
-      if (commitsAfter !== commitsBefore) fail('a cancelled callback that ran late committed a slice')
+      if ((await chrome.evaluate('window.__dess.lateCallbackCommits()')) !== 0) fail('a cancelled callback that ran late committed a slice')
     }
     result.seconds.play = (performance.now() - t0) / 1000
     result.seconds.total = (performance.now() - started) / 1000

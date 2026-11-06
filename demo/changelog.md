@@ -91,3 +91,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Correct CI test step order (`9630405`)
 - Perf Harness: Correct CI test that tried to delete a non-empty Chrome temp profile directory (`fc1bfab`)
 - Perf Harness: Ensure all test processes terminate after tests complete (`133d529`)
+- DESS: Prevent stale timer callbacks from erasing the current timer handle (``)

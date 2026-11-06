@@ -64,11 +64,11 @@
 //!
 //! All sixteen drive the same [`common`] fixture helpers, run via `wasm-pack test --headless --firefox`.
 
-mod common;
 mod bounds;
 mod butterfly;
 mod cell_style_writes;
 mod collision_resolution;
+mod common;
 mod connectors;
 mod content_group_hook;
 mod data_node;

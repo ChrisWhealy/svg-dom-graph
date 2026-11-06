@@ -63,7 +63,20 @@
     buttonRect: id => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } },
     // The product's own code, for the check that it names no mark.
     productSource: () => fetch('./product.js').then(r => r.text()),
-    // A late callback that was cancelled but runs anyway, as the held-callback test mode of the scheduler does.
-    runCancelledTick: () => { const e = controller.epoch - 1; controller.onTick(e); return controller.commits }
+    // The held-callback test mode of the scheduler: cancelled callbacks are kept, and run on request.
+    holdCancelled: on => { inner.keepCancelled = on },
+    runHeld: () => inner.runHeld(),
+    play: () => controller.play(),
+    pause: () => controller.pause(),
+    // A cancelled callback that runs after the playback it belonged to has stopped. It has to commit nothing.
+    lateCallbackCommits: () => {
+      inner.keepCancelled = true
+      controller.play()
+      controller.pause()
+      const before = controller.commits
+      inner.runHeld()
+      inner.keepCancelled = false
+      return controller.commits - before
+    }
   }
 </script>

@@ -13,21 +13,31 @@ export class BrowserScheduler {
   constructor() {
     this.live = new Map()
     this.next = 1
+    // The test mode of the design: a cancelled callback is kept, and can be made to run, as a browser sometimes lets one.
+    this.keepCancelled = false
+    this.held = []
   }
   schedule(callback, ms) {
     const handle = this.next++
-    this.live.set(
-      handle,
-      setTimeout(() => {
-        this.live.delete(handle)
-        callback()
-      }, ms)
-    )
+    const timeout = setTimeout(() => {
+      this.live.delete(handle)
+      callback()
+    }, ms)
+    this.live.set(handle, { timeout, callback })
     return handle
   }
   cancel(handle) {
-    clearTimeout(this.live.get(handle))
+    const entry = this.live.get(handle)
+    if (!entry) return
+    clearTimeout(entry.timeout)
     this.live.delete(handle)
+    if (this.keepCancelled) this.held.push(entry.callback)
+  }
+  /** Runs every cancelled callback that was kept, oldest first. */
+  runHeld() {
+    const callbacks = this.held.splice(0)
+    for (const callback of callbacks) callback()
+    return callbacks.length
   }
   get pending() {
     return this.live.size
@@ -99,6 +109,8 @@ export class Controller {
     this.epoch = 0
     this.playing = false
     this.timer = null
+    this.timerId = 0
+    this.armed = 0
     this.disposed = false
     this.commits = 0
     this.ticks = 0
@@ -136,12 +148,17 @@ export class Controller {
 
   arm() {
     const epoch = this.epoch
-    this.timer = this.scheduler.schedule(() => this.onTick(epoch), this.intervalMs)
+    // Each timer has an identity of its own, so that a callback can tell whether it is the timer that is pending now.
+    const id = ++this.armed
+    this.timerId = id
+    this.timer = this.scheduler.schedule(() => this.onTick(epoch, id), this.intervalMs)
   }
 
-  onTick(epoch) {
+  onTick(epoch, id) {
+    // A callback of an earlier playback, or of a timer that was cancelled, changes nothing. In particular it must not clear the
+    // handle of the timer that is pending now, or Pause could no longer cancel that one.
+    if (this.disposed || epoch !== this.epoch || id !== this.timerId) return
     this.timer = null
-    if (this.disposed || epoch !== this.epoch) return
     this.ticks++
     if (this.commit(this.cursor + 1) && this.playing) this.arm()
   }

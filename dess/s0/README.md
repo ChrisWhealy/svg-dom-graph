@@ -50,6 +50,7 @@ The JavaScript here is S0 prototype code, written to take the measurements that 
 | `node dess/s0/prototype/replay-bench.mjs` | The replay timing | No |
 | `node dess/s0/spikes/predicate-bench.mjs` | The panel-hidden predicates | Chrome |
 | `node dess/s0/spikes/protocol-spike.mjs` | The Layer C protocol, three repetitions, about three minutes | Chrome |
+| `node dess/s0/spikes/test-controller.mjs` | The stand-in controller against a stale callback from an earlier playback, about five seconds | Chrome |
 | `wasm-pack test --headless --chrome --test drag -- data_node_failure` | The data setter sweep | Chrome |
 | `wasm-pack test --headless --chrome --test drag -- content_group_hook` | The content group hook | Chrome |
 

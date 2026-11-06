@@ -22,6 +22,23 @@ That scheduler stamps a user-timing mark immediately before it calls what the pr
 A harness listener in the capture phase stamps a mark when a Next click is delivered, and when Pause is.
 The runner reads the product file, takes out its comments, and fails if it finds `performance.`, a mark name or the harness's hook.
 
+### A race the cycles cannot reach
+
+A review found a defect in the stand-in controller.
+Its tick callback cleared the timer handle before it checked its epoch.
+So a callback of an earlier playback, forced to run while a newer playback was live, erased the newer timer's handle.
+Pause could then no longer cancel that timer, and it stayed pending until it fired.
+The epoch check kept it from committing a wrong slice, but the immediate cleanup that the design requires was lost.
+
+The sequence is Play, Pause, Play, and then the first Play's cancelled callback runs.
+The spike's own late-callback check missed it, because it runs only after playback has stopped.
+
+The fix checks the callback before it touches any timer state, and gives each timer an identity.
+A callback acts only if its epoch is current and it is the timer that is pending now.
+The scheduler gained the design's held-callback test mode, which keeps a cancelled callback and runs it on request.
+`dess/s0/spikes/test-controller.mjs` tests the overlapping case, and fails on the unfixed controller with one timer left pending.
+The real controller must keep this test, and the same two checks.
+
 ## The protocol that was run
 
 Each repetition is a fresh Chrome, with real input through `Input.dispatchMouseEvent`.
@@ -42,9 +59,9 @@ Three valid repetitions, each with 30 Next and 30 Play observations, every one a
 
 | Repetition | Next median | Play median | Pause after the presentation | Wall time |
 |---|---|---|---|---|
-| 0 | 10.6 ms | 3.6 ms | 30 of 30 | 55.1 s |
-| 1 | 11.1 ms | 3.6 ms | 30 of 30 | 55.0 s |
-| 2 | 13.2 ms | 3.7 ms | 30 of 30 | 55.1 s |
+| 0 | 10.8 ms | 3.6 ms | 30 of 30 | 55.0 s |
+| 1 | 12.9 ms | 3.6 ms | 30 of 30 | 55.0 s |
+| 2 | 11.4 ms | 3.6 ms | 30 of 30 | 55.0 s |
 
 Next is input to presentation.
 Play is the timer callback to presentation, and the 1,000 ms interval is not in it.
