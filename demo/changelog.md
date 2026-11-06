@@ -35,7 +35,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Gallery walk tests have "pass", "inconclusive" and "fail" outcomes (`4857001`)
 - Perf Harness: Phase 4: Recovery and endurance testing under deliberate failures (`778ccbc`)
 - Perf Harness: Phase 5: CI integration, baseline promotion and statistical regression reporting (`ae4c4b1`)
-- Discrete-Event Service Simulator (DESS): S0 implementation (``)
+- Discrete-Event Service Simulator (DESS): S0 implementation (`fe0c7b5`)
+- Discrete-Event Service Simulator (DESS): Files missing from S0 implementation (``)
 
 ### Changed
 

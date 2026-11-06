@@ -1,0 +1,19 @@
+{
+  "revision": "mixed_outage/5",
+  "servers": 3,
+  "queueCapacity": 12,
+  "maxAttempts": 2,
+  "deferralCap": 4,
+  "arrivals": 4000,
+  "gap": [1, 3],
+  "highPercent": 30,
+  "duration": [2, 12],
+  "slack": [6, 30],
+  "cancelPercent": 4,
+  "cancelAfter": [1, 40],
+  "outage": {
+    "first": [100, 200],
+    "length": [5, 30],
+    "spacing": [80, 240]
+  }
+}

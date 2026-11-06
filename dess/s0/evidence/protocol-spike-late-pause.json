@@ -1,0 +1,28 @@
+{
+  "repetitions": 1,
+  "injected_late_pause": true,
+  "interval_ms": 1000,
+  "results": [
+    {
+      "repetition": 0,
+      "next": [
+        13.082, 9.53, 4.792, 17.454, 15.392, 11.436, 3.755, 15.681, 7.7, 18.182, 12.898, 6.227, 17.091, 10.282, 20.595,
+        13.933, 8.779, 16.83, 10.769, 2.972, 13.907, 5.93, 16.196, 9.735, 18.401, 11.863, 5.176, 16.298, 10.031, 5.238
+      ],
+      "play": [],
+      "unattributed": {},
+      "failures": [],
+      "rejected": "invalid_protocol_extra_tick: 2 ticks in a cycle, and one was meant",
+      "seconds": {
+        "next": 6.585465375,
+        "play": 18.758602458000002,
+        "total": 25.41448825
+      },
+      "pauseAfterPresentation": 0,
+      "pauseChecked": 0,
+      "nextQualifier": "update",
+      "browser": "157.0.0.0"
+    }
+  ],
+  "classification": null
+}

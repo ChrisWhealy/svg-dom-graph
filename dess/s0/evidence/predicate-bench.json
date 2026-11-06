@@ -1,0 +1,77 @@
+{
+  "truth": {
+    "shown": {
+      "cached flag (a variable the hint sets)": true,
+      "isConnected": true,
+      "ancestor has class active": true,
+      "closest('.section:not(.active)') is null": true,
+      "checkVisibility()": true,
+      "getClientRects().length > 0": true,
+      "getBoundingClientRect().width > 0": true
+    },
+    "hidden": {
+      "cached flag (a variable the hint sets)": false,
+      "isConnected": true,
+      "ancestor has class active": false,
+      "closest('.section:not(.active)') is null": false,
+      "checkVisibility()": false,
+      "getClientRects().length > 0": false,
+      "getBoundingClientRect().width > 0": false
+    }
+  },
+  "cost": {
+    "cached flag (a variable the hint sets)": {
+      "clean_us": 0.002,
+      "after_an_svg_write_us": -0.074
+    },
+    "isConnected": {
+      "clean_us": 0.031,
+      "after_an_svg_write_us": 0.003
+    },
+    "ancestor has class active": {
+      "clean_us": 0.066,
+      "after_an_svg_write_us": 0.051
+    },
+    "closest('.section:not(.active)') is null": {
+      "clean_us": 0.125,
+      "after_an_svg_write_us": 0.115
+    },
+    "checkVisibility()": {
+      "clean_us": 0.078,
+      "after_an_svg_write_us": 0.684
+    },
+    "getClientRects().length > 0": {
+      "clean_us": 0.208,
+      "after_an_svg_write_us": 2.011
+    },
+    "getBoundingClientRect().width > 0": {
+      "clean_us": 0.189,
+      "after_an_svg_write_us": 1.994
+    }
+  },
+  "orders": {
+    "none": [
+      "end of the task that toggled",
+      "microtask queued before the toggle",
+      "timer queued before the toggle",
+      "animation frame"
+    ],
+    "mutation": [
+      "end of the task that toggled",
+      "microtask queued before the toggle",
+      "mutation observer",
+      "timer queued before the toggle",
+      "animation frame"
+    ],
+    "intersection": [
+      "end of the task that toggled",
+      "microtask queued before the toggle",
+      "timer queued before the toggle",
+      "animation frame",
+      "intersection observer"
+    ]
+  },
+  "chrome": "157.0.0.0",
+  "crossOriginIsolated": true,
+  "hasCheckVisibility": "function"
+}

@@ -1,0 +1,69 @@
+<!doctype html>
+<meta charset="utf-8">
+<title>DESS S0 protocol spike</title>
+<style>
+  body { font: 14px sans-serif; margin: 16px }
+  button { font-size: 16px; padding: 8px 16px; margin-right: 8px }
+  svg { border: 1px solid #999; margin-top: 12px }
+</style>
+<!-- The harness's composition root. The product's own code is product.js; everything that measures lives in this file. -->
+<div>
+  <button id="next" type="button" aria-label="Next">Next</button>
+  <button id="play" type="button" aria-label="Play">Play</button>
+  <button id="pause" type="button" aria-label="Pause">Pause</button>
+  <output id="cursor" aria-live="polite">0</output>
+</div>
+<svg id="host" width="400" height="160" role="img" aria-label="Dashboard"></svg>
+<script type="module">
+  import { run } from './prototype/engine.mjs'
+  import { MIXED_OUTAGE, configOf, inputsFor } from './prototype/generator.mjs'
+  import { BrowserScheduler, Surface, Controller } from './product.js'
+
+  // The trace the controller steps through: the first slices of the manifest seed's run, from the prototype engine.
+  const slices = []
+  run(configOf(MIXED_OUTAGE), inputsFor(20261106), { stopAfterSlices: 700, onSlice: s => slices.push({ index: s.index, tick: s.tick, pops: s.pops, waiting: s.waiting, busy: s.busy }) })
+
+  // The harness's scheduler. It wraps the browser's, and stamps a mark immediately before it calls what the product scheduled.
+  // That is scheduled-commit-to-presentation, and the product's code holds none of it.
+  let tickMarks = 0
+  class StampingScheduler {
+    constructor(inner) { this.inner = inner }
+    schedule(callback, ms) {
+      return this.inner.schedule(() => { performance.mark(`dess-tick-${++tickMarks}`); callback() }, ms)
+    }
+    cancel(handle) { this.inner.cancel(handle) }
+    get pending() { return this.inner.pending }
+  }
+
+  const inner = new BrowserScheduler()
+  const scheduler = new StampingScheduler(inner)
+  const controller = new Controller({ slices, surface: new Surface(document.getElementById('host')), scheduler })
+
+  // The product's controls call the controller. The harness listens first, in the capture phase, so that its mark is written
+  // when the click is delivered and before the product's handler runs.
+  let nextMarks = 0
+  let pauseMarks = 0
+  const cursorOut = document.getElementById('cursor')
+  const show = () => { cursorOut.textContent = String(controller.cursor) }
+  document.addEventListener('click', event => {
+    if (event.target.id === 'next') performance.mark(`dess-next-${++nextMarks}`)
+    if (event.target.id === 'pause') performance.mark(`dess-pause-${++pauseMarks}`)
+  }, { capture: true })
+  document.getElementById('next').addEventListener('click', () => { controller.next(); show() })
+  document.getElementById('play').addEventListener('click', () => { controller.play() })
+  document.getElementById('pause').addEventListener('click', () => { controller.pause(); show() })
+
+  // What the runner reads and sets, and never what the product reads.
+  window.__dess = {
+    ready: true,
+    slices: slices.length,
+    state: () => ({ cursor: controller.cursor, epoch: controller.epoch, playing: controller.playing, pending: scheduler.pending, ticks: controller.ticks, commits: controller.commits, nextMarks, tickMarks, pauseMarks }),
+    reset: cursor => { controller.stop(); controller.cursor = cursor; controller.surface.draw(slices[cursor]); show() },
+    setInterval: ms => { controller.intervalMs = ms },
+    buttonRect: id => { const r = document.getElementById(id).getBoundingClientRect(); return { x: r.x + r.width / 2, y: r.y + r.height / 2 } },
+    // The product's own code, for the check that it names no mark.
+    productSource: () => fetch('./product.js').then(r => r.text()),
+    // A late callback that was cancelled but runs anyway, as the held-callback test mode of the scheduler does.
+    runCancelledTick: () => { const e = controller.epoch - 1; controller.onTick(e); return controller.commits }
+  }
+</script>

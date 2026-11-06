@@ -1,0 +1,162 @@
+{
+  "node": "v26.13.0",
+  "seed": 20261106,
+  "engine": "JavaScript prototype, not the product engine",
+  "rows": [
+    {
+      "target_pops": 1000,
+      "actual_pops": 1004,
+      "slices": 482,
+      "seek_ms": {
+        "p50": 0.257,
+        "p95": 0.429,
+        "worst": 0.496
+      },
+      "seek_to_the_end_median_ms": 0.373,
+      "replay_of_128_slices_ms": {
+        "p50": 0.091,
+        "p95": 0.138
+      },
+      "peak_heap_growth_bytes": 2385072,
+      "per_cursor": [
+        {
+          "cursor": 60,
+          "median_ms": 0.134
+        },
+        {
+          "cursor": 121,
+          "median_ms": 0.203
+        },
+        {
+          "cursor": 181,
+          "median_ms": 0.203
+        },
+        {
+          "cursor": 241,
+          "median_ms": 0.218
+        },
+        {
+          "cursor": 301,
+          "median_ms": 0.273
+        },
+        {
+          "cursor": 362,
+          "median_ms": 0.297
+        },
+        {
+          "cursor": 422,
+          "median_ms": 0.385
+        },
+        {
+          "cursor": 482,
+          "median_ms": 0.373
+        }
+      ]
+    },
+    {
+      "target_pops": 10000,
+      "actual_pops": 10019,
+      "slices": 4881,
+      "seek_ms": {
+        "p50": 2.246,
+        "p95": 3.828,
+        "worst": 4.695
+      },
+      "seek_to_the_end_median_ms": 3.751,
+      "replay_of_128_slices_ms": {
+        "p50": 0.105,
+        "p95": 0.114
+      },
+      "peak_heap_growth_bytes": 22057128,
+      "per_cursor": [
+        {
+          "cursor": 610,
+          "median_ms": 0.54
+        },
+        {
+          "cursor": 1220,
+          "median_ms": 0.969
+        },
+        {
+          "cursor": 1830,
+          "median_ms": 1.378
+        },
+        {
+          "cursor": 2441,
+          "median_ms": 1.84
+        },
+        {
+          "cursor": 3051,
+          "median_ms": 2.328
+        },
+        {
+          "cursor": 3661,
+          "median_ms": 2.824
+        },
+        {
+          "cursor": 4271,
+          "median_ms": 3.234
+        },
+        {
+          "cursor": 4881,
+          "median_ms": 3.751
+        }
+      ]
+    },
+    {
+      "target_pops": 100000,
+      "actual_pops": 100334,
+      "slices": 48769,
+      "seek_ms": {
+        "p50": 29.507,
+        "p95": 48.484,
+        "worst": 52.591
+      },
+      "seek_to_the_end_median_ms": 48.298,
+      "replay_of_128_slices_ms": {
+        "p50": 0.209,
+        "p95": 0.265
+      },
+      "peak_heap_growth_bytes": 40487616,
+      "per_cursor": [
+        {
+          "cursor": 6096,
+          "median_ms": 5.32
+        },
+        {
+          "cursor": 12192,
+          "median_ms": 10.868
+        },
+        {
+          "cursor": 18288,
+          "median_ms": 17.134
+        },
+        {
+          "cursor": 24385,
+          "median_ms": 23.566
+        },
+        {
+          "cursor": 30481,
+          "median_ms": 30.07
+        },
+        {
+          "cursor": 36577,
+          "median_ms": 35.954
+        },
+        {
+          "cursor": 42673,
+          "median_ms": 41.976
+        },
+        {
+          "cursor": 48769,
+          "median_ms": 48.298
+        }
+      ]
+    }
+  ],
+  "checkpoint_restore_estimate": {
+    "note": "structuredClone of a state with 40 live jobs and a 120-event heap; the real cost depends on the Rust representation",
+    "clone_ms_p50": 0.0334,
+    "clone_ms_p95": 0.036
+  }
+}
