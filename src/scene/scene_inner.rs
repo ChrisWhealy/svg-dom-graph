@@ -104,6 +104,17 @@ pub(super) struct SceneInner {
     pub butterflies: Vec<super::node::ButterflyUnit>,
 }
 
+/// What a node's name was before a relationship clause was added to it, which is all that is needed to take it away again.
+pub(super) struct NameBefore {
+    id: NodeId,
+    /// How long `aria_label` was. A clause is only ever added at its end.
+    length: usize,
+    base_label_len: usize,
+    /// For a node that had no `aria-label`: what its `<title>` said, if it had one.
+    title: Option<Option<String>>,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Drop for SceneInner {
     /// Writes a view change that has not reached the DOM yet.
     ///
@@ -177,8 +188,21 @@ impl SceneInner {
     /// # Errors
     ///
     /// Returns [`Error::UnknownNode`] if `id` does not name a node in this scene.
-    pub(super) fn append_relationship(&mut self, id: NodeId, clause: &str) -> Result<(), Error> {
+    ///
+    /// A failed write leaves the node's name as it was, in the model and as far as can be put back on the page, and gives
+    /// back the error. A successful one gives back what is needed to take the clause away again, which
+    /// [`restore_name`](Self::restore_name) does. `Scene::add_edge_with` writes the names of both ends before it records the
+    /// edge, so that a failure at the second end can undo the first.
+    pub(super) fn append_relationship(&mut self, id: NodeId, clause: &str) -> Result<NameBefore, Error> {
         let handles = self.node_handle_mut(id).ok_or(Error::UnknownNode(id))?;
+        let before = NameBefore {
+            id,
+            length: handles.aria_label.len(),
+            base_label_len: handles.base_label_len,
+            // A node with no name of its own is named by its visible text, and has no `aria-label` to put back. What its
+            // `<title>` said is read now, since the write below may replace it.
+            title: handles.aria_label.is_empty().then(|| handles.group.title()),
+        };
         if handles.aria_label.is_empty() {
             handles.aria_label.push_str(&handles.ref_name);
         }
@@ -191,11 +215,49 @@ impl SceneInner {
         handles.aria_label.push_str(clause);
         handles.aria_label.push('.');
         handles.base_label_len = handles.aria_label.len();
-        handles.group.set_attr("aria-label", &handles.aria_label)?;
-        // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
-        // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
-        handles.group.set_title(&handles.aria_label)?;
-        Ok(())
+        let written = handles.group.set_attr("aria-label", &handles.aria_label).and_then(|()| {
+            // Keeps the browser's own mouse-hover tooltip reading exactly the same text as `aria-label` — see
+            // `draw_content_box`'s own doc comment on why `<title>` is set to that same text at construction.
+            handles.group.set_title(&handles.aria_label)
+        });
+        match written {
+            Ok(()) => Ok(before),
+            Err(error) => {
+                self.restore_name(before);
+                Err(error.into())
+            },
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Takes a relationship clause away again, and puts the node's name back as it was before
+    /// [`append_relationship`](Self::append_relationship) added it.
+    ///
+    /// The clause was only ever added at the end, so the name is cut back to the length it had. The page is put back with
+    /// writes of its own, which can fail as the write being undone did. There is nowhere to report that to, since the call
+    /// being unwound is already returning an error, so it is not reported. It would take a second failure, straight after the
+    /// first, for the page to be left showing the clause.
+    pub(super) fn restore_name(&mut self, before: NameBefore) {
+        let Some(handles) = self.node_handle_mut(before.id) else {
+            return;
+        };
+        handles.aria_label.truncate(before.length);
+        handles.base_label_len = before.base_label_len;
+        match before.title {
+            Some(title) => {
+                let _ = handles.group.remove_attr("aria-label");
+                match title {
+                    Some(title) => {
+                        let _ = handles.group.set_title(&title);
+                    },
+                    None => handles.group.remove_title(),
+                }
+            },
+            None => {
+                let _ = handles.group.set_attr("aria-label", &handles.aria_label);
+                let _ = handles.group.set_title(&handles.aria_label);
+            },
+        }
     }
 
     /// Stores `handles` as node `id`'s own box handles. Called once, right after `id` is first added to `graph`, always

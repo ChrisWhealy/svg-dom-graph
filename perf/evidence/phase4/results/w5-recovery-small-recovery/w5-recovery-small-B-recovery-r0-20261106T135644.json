@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-B-recovery-r2-20261106T130930",
-  "started_at": "2026-11-06T13:09:30.470Z",
-  "repetition": 2,
-  "sequence_position": 4,
+  "run_id": "w5-recovery-small-B-recovery-r0-20261106T135644",
+  "started_at": "2026-11-06T13:56:44.012Z",
+  "repetition": 0,
+  "sequence_position": 0,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -117,21 +117,21 @@
       "layer": "B",
       "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
       "name": "recovery.node_construction.time",
-      "outliers_flagged": 2,
+      "outliers_flagged": 3,
       "samples": 24,
       "status": "measured",
       "summary": {
-        "max": 264.9998664855957,
+        "max": 274.99985694885254,
         "min": 55.00006675720215,
         "p50": 65.00005722045898
       },
       "unit": "us",
       "within_run": {
-        "iqr": 10.000109672546387,
-        "mean": 78.33332816759746,
-        "stddev": 44.29803798043798,
-        "tukey_high": 85.00033617019653,
-        "tukey_low": 44.999897480010986
+        "iqr": 19.99974250793457,
+        "mean": 85.20835141340892,
+        "stddev": 50.248893542390434,
+        "tukey_high": 109.99953746795654,
+        "tukey_low": 30.00056743621826
       }
     },
     {
@@ -153,17 +153,17 @@
       "samples": 1,
       "status": "measured",
       "summary": {
-        "max": 24.99997615814209,
-        "min": 24.99997615814209,
-        "p50": 24.99997615814209
+        "max": 19.999980926513672,
+        "min": 19.999980926513672,
+        "p50": 19.999980926513672
       },
       "unit": "us",
       "within_run": {
         "iqr": 0,
-        "mean": 24.99997615814209,
+        "mean": 19.999980926513672,
         "stddev": 0,
-        "tukey_high": 24.99997615814209,
-        "tukey_low": 24.99997615814209
+        "tukey_high": 19.999980926513672,
+        "tukey_low": 19.999980926513672
       }
     },
     {
@@ -185,17 +185,17 @@
       "samples": 2,
       "status": "measured",
       "summary": {
-        "max": 29.999971389770508,
-        "min": 19.999980926513672,
-        "p50": 19.999980926513672
+        "max": 19.999980926513672,
+        "min": 9.999990463256836,
+        "p50": 9.999990463256836
       },
       "unit": "us",
       "within_run": {
         "iqr": 9.999990463256836,
-        "mean": 24.99997615814209,
+        "mean": 14.999985694885254,
         "stddev": 7.071061068369714,
-        "tukey_high": 44.99995708465576,
-        "tukey_low": 4.999995231628418
+        "tukey_high": 34.999966621398926,
+        "tukey_low": -4.999995231628418
       }
     },
     {
@@ -217,17 +217,17 @@
       "samples": 3,
       "status": "measured",
       "summary": {
-        "max": 29.999971389770508,
-        "min": 14.999985694885254,
-        "p50": 14.999985694885254
+        "max": 24.99997615814209,
+        "min": 19.999980926513672,
+        "p50": 19.999980926513672
       },
       "unit": "us",
       "within_run": {
-        "iqr": 14.999985694885254,
-        "mean": 19.999980926513672,
-        "stddev": 8.660245778782537,
-        "tukey_high": 52.49994993209839,
-        "tukey_low": -7.499992847442627
+        "iqr": 4.999995231628418,
+        "mean": 21.666646003723145,
+        "stddev": 2.8867485929275123,
+        "tukey_high": 32.49996900558472,
+        "tukey_low": 12.499988079071045
       }
     },
     {
@@ -249,17 +249,17 @@
       "samples": 5,
       "status": "measured",
       "summary": {
-        "max": 74.99992847442627,
+        "max": 85.00003814697266,
         "min": 19.999980926513672,
-        "p50": 20.000100135803223
+        "p50": 19.999980926513672
       },
       "unit": "us",
       "within_run": {
-        "iqr": 15.000104904174805,
-        "mean": 34.00001525878906,
-        "stddev": 23.822219517181583,
-        "tukey_high": 57.500243186950684,
-        "tukey_low": -2.500176429748535
+        "iqr": 19.999980926513672,
+        "mean": 36.9999885559082,
+        "stddev": 28.195768205204534,
+        "tukey_high": 69.99993324279785,
+        "tukey_low": -9.999990463256836
       }
     },
     {
@@ -281,21 +281,30 @@
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 79.99992370605469,
-        "min": 4.999995231628418,
-        "p50": 14.999985694885254
+        "max": 44.99995708465576,
+        "min": 9.999990463256836,
+        "p50": 15.000104904174805
       },
       "unit": "us",
       "within_run": {
-        "iqr": 9.999871253967283,
-        "mean": 20.49999237060547,
-        "stddev": 21.402205580991225,
-        "tukey_high": 34.9997878074646,
-        "tukey_low": -4.999697208404536
+        "iqr": 4.999995231628418,
+        "mean": 18.999993801116943,
+        "stddev": 9.944274448701675,
+        "tukey_high": 27.4999737739563,
+        "tukey_low": 7.499992847442627
       }
+    },
+    {
+      "name": "recovery.edge_construction.failures_injected",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 10,
+      "mechanism": "DOM calls of the operation made to fail one at a time, by perf/page/fault-injector.js"
     }
   ],
-  "checkpoints_passed": 35,
+  "checkpoints_passed": 45,
   "checkpoints_failed": [],
   "gates": [
     {
@@ -342,47 +351,15 @@
       "name": "recovery.edge_construction.reference_agrees_with_the_model",
       "status": "pass",
       "detail": "the twin that made the call with no fault matches the reference model"
+    },
+    {
+      "name": "recovery.edge_construction.matches_the_contract",
+      "status": "pass",
+      "detail": "10 failures, each nothing committed as documented, and the retry reached the reference"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T130930.samples.ndjson",
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r0-20261106T135644.samples.ndjson",
   "findings": [
-    {
-      "point": "edge_construction",
-      "contract": "undocumented",
-      "summary": "10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference). 1 at 10 (the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference)",
-      "details": {
-        "observed": [
-          {
-            "what_was_left": "the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference",
-            "failures": 4,
-            "calls": [
-              "1 createElementNS path",
-              "2 setAttribute path d",
-              "3 appendChild svg",
-              "4 appendChild g"
-            ]
-          },
-          {
-            "what_was_left": "the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
-            "failures": 5,
-            "calls": [
-              "5 setAttribute path fill",
-              "6 setAttribute path stroke",
-              "7 setAttribute path stroke-width",
-              "8 setAttribute path marker-end",
-              "9 setAttribute g aria-label"
-            ]
-          },
-          {
-            "what_was_left": "the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
-            "failures": 1,
-            "calls": [
-              "10 setAttribute g aria-label"
-            ]
-          }
-        ]
-      }
-    },
     {
       "point": "externref_slot_per_failed_call",
       "contract": "undocumented",
@@ -462,5 +439,5 @@
       }
     }
   ],
-  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T130930.cases.json"
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r0-20261106T135644.cases.json"
 }

@@ -44,6 +44,7 @@ It then runs the browser integration tests in `tests/drag/`, split by category:
 * `data_node/` — split into `rendering.rs`, `grid_layout.rs`, `accessibility.rs`, `named.rs`, `plain_text.rs`, `cell_rect.rs` and `dragging_and_connectors.rs`
 * `operator_node/` — split into `construction.rs`, `port_markers.rs`, `anchor_routing.rs`, and `chaining.rs`
 * `selection.rs`, `secondary_selection.rs` and `unreached_cells.rs`
+* `edge_construction_failure.rs`
 * `cell_style_writes.rs` and `retry_after_failure.rs`
 * `element_labels.rs`
 * `set_data_values.rs`

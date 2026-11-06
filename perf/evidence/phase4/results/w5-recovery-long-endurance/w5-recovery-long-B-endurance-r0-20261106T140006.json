@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-long-B-endurance-r0-20261106T131214",
-  "started_at": "2026-11-06T13:12:14.953Z",
+  "run_id": "w5-recovery-long-B-endurance-r0-20261106T140006",
+  "started_at": "2026-11-06T14:00:06.315Z",
   "repetition": 0,
   "sequence_position": 0,
   "environment": {
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-long",
-    "sha256": "418a4039d5b06b8ebfa21997c88bb3db9859df9551e3814d8937b3cd76567a17",
+    "sha256": "c14e2f9654f83c91500df3da5937fd1895598d60cbf5331aee40bf68d3ff170e",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -81,7 +81,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -164,7 +164,7 @@
       "mechanism": "cycles in which every fault point of the manifest was broken and recovered from"
     }
   ],
-  "checkpoints_passed": 600,
+  "checkpoints_passed": 800,
   "checkpoints_failed": [],
   "gates": [
     {
@@ -175,7 +175,7 @@
     {
       "name": "endurance.recoveries_succeed",
       "status": "pass",
-      "detail": "600 recoveries over 200 cycles each reached the state the contract promises"
+      "detail": "800 recoveries over 200 cycles each reached the state the contract promises"
     },
     {
       "name": "endurance.listeners_return_to_baseline",
@@ -193,5 +193,5 @@
       "detail": "144 externref slots were lost over 200 cycles, one for each of the 144 failures of a DOM call that returns an object, and none for the others"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-long-endurance/w5-recovery-long-B-endurance-r0-20261106T131214.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-long-endurance/w5-recovery-long-B-endurance-r0-20261106T140006.samples.ndjson"
 }

@@ -25,6 +25,15 @@ const OPEN = 'perf-recovery-'
 const RETURNS_AN_OBJECT = new Set(['createElementNS', 'createElement', 'appendChild', 'insertBefore', 'getBBox'])
 const methodOf = row => (row.call ?? '').split(' ')[0]
 
+/** What an edge-construction failure changed, in words, from what was observed of it. */
+const leftBy = observed => [
+  ...(observed.sections_changed ?? []),
+  ...(observed.checkpoint_readable === false ? ['a scene that could not be read back'] : []),
+  ...(observed.extra_elements ? [`${observed.extra_elements} extra elements`] : []),
+  ...(observed.paths_changed ? ['the connector paths'] : []),
+  ...(observed.ends_named ? [`the names of ${observed.ends_named} of the ends`] : [])
+]
+
 export const makeRecovery = (h, now, testing = {}) => {
   const faults = () => window.__faults
   const call = (fn, ...args) => parse(fn(...args))
@@ -319,6 +328,8 @@ export const makeRecovery = (h, now, testing = {}) => {
       const dry = dryRun(1, op)
       if (!dry.result.ok) throw new Error(`the unfaulted twin could not add an edge: ${dry.result.error}`)
       snapshot(1, 'ref')
+      const reference = raw(1)
+      const referenceEnds = endNames(1, pair)
       const rows = []
       const times = []
       for (const index of indicesFor(dry.calls.length, options)) {
@@ -341,7 +352,7 @@ export const makeRecovery = (h, now, testing = {}) => {
           row('edge_construction', index, failure.fired, {
             error_surfaced: !failure.result.ok,
             outcome:
-              snap.ok && differences('before', 'after').count === 0 && sameRaw(before, after)
+              snap.ok && differences('before', 'after').count === 0 && sameRaw(before, after) && named === 0
                 ? 'nothing_committed'
                 : 'changed',
             observed: {
@@ -354,7 +365,14 @@ export const makeRecovery = (h, now, testing = {}) => {
               edge_confirmed_by_the_call: counts.edges
             },
             retry_ok: recovery.result.ok,
-            retry_reaches_reference: healed.ok && differences('ref', 'healed').count === 0
+            // The checkpoint and the document both have to be the reference's. A stray connector is an element that a checkpoint
+            // does not see, and a name that is half written is one that it sees only through the clauses.
+            retry_reaches_reference:
+              healed.ok &&
+              differences('ref', 'healed').count === 0 &&
+              raw(0).elements === reference.elements &&
+              raw(0).paths === reference.paths &&
+              JSON.stringify(endNames(0, pair)) === JSON.stringify(referenceEnds)
           })
         )
       }
@@ -411,12 +429,7 @@ export const makeRecovery = (h, now, testing = {}) => {
         if (r.outcome !== 'nothing_committed')
           broken.push(
             `call ${r.index} (${r.call}) left changes in ${
-              (
-                r.left ??
-                Object.entries(r.observed ?? {})
-                  .filter(([, value]) => value && value !== 0 && !Array.isArray(value))
-                  .map(([name]) => name)
-              ).join(', ') || 'the scene'
+              (r.left ?? leftBy(r.observed ?? {})).join(', ') || 'the scene'
             }`
           )
         else if (!r.retry_ok) broken.push(`call ${r.index} (${r.call}): the retry failed too`)

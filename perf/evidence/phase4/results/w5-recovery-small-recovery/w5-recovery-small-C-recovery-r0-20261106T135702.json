@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-recovery-r1-20261106T130929",
-  "started_at": "2026-11-06T13:09:29.957Z",
-  "repetition": 1,
-  "sequence_position": 3,
+  "run_id": "w5-recovery-small-C-recovery-r0-20261106T135702",
+  "started_at": "2026-11-06T13:57:02.219Z",
+  "repetition": 0,
+  "sequence_position": 1,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -117,21 +117,21 @@
       "layer": "C",
       "mechanism": "performance.now() in the page, from the first capture-phase listener for the event that retries (after a frame was refused, or its write failed) to the moment the content layer's transform became the scene's own view, which a MutationObserver reports",
       "name": "recovery.scheduled_frame.time",
-      "outliers_flagged": 1,
+      "outliers_flagged": 0,
       "samples": 20,
       "status": "measured",
       "summary": {
-        "max": 3.0399999618530273,
-        "min": 1.6150000095367432,
-        "p50": 1.8899999856948853
+        "max": 2.9850000143051147,
+        "min": 1.2200000286102295,
+        "p50": 2.225000023841858
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.18999993801116943,
-        "mean": 1.934249997138977,
-        "stddev": 0.29541796547624893,
-        "tukey_high": 2.259999930858612,
-        "tukey_low": 1.5000001788139343
+        "iqr": 0.5499999523162842,
+        "mean": 2.1900000154972075,
+        "stddev": 0.43598345757406154,
+        "tukey_high": 3.319999933242798,
+        "tukey_low": 1.1200001239776611
       }
     },
     {
@@ -140,21 +140,21 @@
       "layer": "C",
       "mechanism": "performance.now() in the page around the drop of the last Scene handle with a frame pending, which cancels the frame, writes the view that was waiting and releases the listeners",
       "name": "recovery.teardown.time",
-      "outliers_flagged": 4,
+      "outliers_flagged": 1,
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 1.4550000429153442,
-        "min": 0.09500002861022949,
-        "p50": 0.36500000953674316
+        "max": 1.3899999856948853,
+        "min": 0.125,
+        "p50": 0.35500001907348633
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.04999995231628418,
-        "mean": 0.47150001525878904,
-        "stddev": 0.38397085743219705,
-        "tukey_high": 0.47499990463256836,
-        "tukey_low": 0.27500009536743164
+        "iqr": 0.125,
+        "mean": 0.40800000429153443,
+        "stddev": 0.357065188124553,
+        "tukey_high": 0.5625,
+        "tukey_low": 0.0625
       }
     },
     {
@@ -168,16 +168,16 @@
       "status": "measured",
       "summary": {
         "max": 0.38499999046325684,
-        "min": 0.0849999189376831,
-        "p50": 0.2250000238418579
+        "min": 0.13999998569488525,
+        "p50": 0.25999999046325684
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.17499983310699463,
-        "mean": 0.23650001287460326,
-        "stddev": 0.10260631239403045,
-        "tukey_high": 0.5874996781349182,
-        "tukey_low": -0.1124996542930603
+        "iqr": 0.15500009059906006,
+        "mean": 0.2610000014305115,
+        "stddev": 0.08771165182160842,
+        "tukey_high": 0.5725001692771912,
+        "tukey_low": -0.04750019311904907
       }
     }
   ],
@@ -200,7 +200,7 @@
       "detail": "10 runs, each nothing committed as documented"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T130929.samples.ndjson",
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T135702.samples.ndjson",
   "findings": [
     {
       "point": "mid_drag_teardown",
@@ -213,5 +213,5 @@
       }
     }
   ],
-  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T130929.cases.json"
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T135702.cases.json"
 }

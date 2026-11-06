@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-recovery-r0-20261106T130911",
-  "started_at": "2026-11-06T13:09:11.363Z",
-  "repetition": 0,
-  "sequence_position": 1,
+  "run_id": "w5-recovery-small-C-recovery-r1-20261106T135720",
+  "started_at": "2026-11-06T13:57:20.937Z",
+  "repetition": 1,
+  "sequence_position": 3,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -121,17 +121,17 @@
       "samples": 20,
       "status": "measured",
       "summary": {
-        "max": 2.9100000858306885,
-        "min": 0.7150000333786011,
-        "p50": 2.069999933242798
+        "max": 3.4950000047683716,
+        "min": 1.9300000667572021,
+        "p50": 2.2699999809265137
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6200000047683716,
-        "mean": 2.035250020027161,
-        "stddev": 0.48556662132684797,
-        "tukey_high": 3.2850000262260437,
-        "tukey_low": 0.8050000071525574
+        "iqr": 0.23500001430511475,
+        "mean": 2.3645000100135802,
+        "stddev": 0.32423959423919935,
+        "tukey_high": 2.7875000834465027,
+        "tukey_low": 1.8475000262260437
       }
     },
     {
@@ -140,21 +140,21 @@
       "layer": "C",
       "mechanism": "performance.now() in the page around the drop of the last Scene handle with a frame pending, which cancels the frame, writes the view that was waiting and releases the listeners",
       "name": "recovery.teardown.time",
-      "outliers_flagged": 4,
+      "outliers_flagged": 0,
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 1.3450000286102295,
-        "min": 0.08500003814697266,
+        "max": 0.8049999475479126,
+        "min": 0.09500002861022949,
         "p50": 0.35500001907348633
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.10500013828277588,
-        "mean": 0.46100000143051145,
-        "stddev": 0.36651360319045606,
-        "tukey_high": 0.5825002789497375,
-        "tukey_low": 0.16249972581863403
+        "iqr": 0.2549999952316284,
+        "mean": 0.39850000143051145,
+        "stddev": 0.22279848707951244,
+        "tukey_high": 0.8774999976158142,
+        "tukey_low": -0.14249998331069946
       }
     },
     {
@@ -167,17 +167,17 @@
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 0.3700000047683716,
+        "max": 0.38499999046325684,
         "min": 0.07500004768371582,
-        "p50": 0.2999999523162842
+        "p50": 0.2749999761581421
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.24500000476837158,
-        "mean": 0.2595000028610229,
-        "stddev": 0.1188941931586157,
-        "tukey_high": 0.7325000166893005,
-        "tukey_low": -0.2475000023841858
+        "iqr": 0.12999999523162842,
+        "mean": 0.2584999918937683,
+        "stddev": 0.10803932501790352,
+        "tukey_high": 0.5249999165534973,
+        "tukey_low": 0.004999935626983643
       }
     }
   ],
@@ -200,7 +200,7 @@
       "detail": "10 runs, each nothing committed as documented"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T130911.samples.ndjson",
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T135720.samples.ndjson",
   "findings": [
     {
       "point": "mid_drag_teardown",
@@ -213,5 +213,5 @@
       }
     }
   ],
-  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T130911.cases.json"
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r1-20261106T135720.cases.json"
 }

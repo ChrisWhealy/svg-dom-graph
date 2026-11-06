@@ -1,34 +1,4 @@
 {
-  "B:edge_construction": {
-    "point": "edge_construction",
-    "contract": "undocumented",
-    "summary": "10 failures, one at each DOM call of the operation, left 3 different states: 4 at 1, 2, 3, 4 (the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference). 5 at 5, 6, 7, 8, 9 (the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference). 1 at 10 (the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference)",
-    "details": {
-      "observed": [
-        {
-          "what_was_left": "the error was reported; sections changed: none; 0 extra elements; connector paths unchanged; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry reaches the reference",
-          "failures": 4,
-          "calls": ["1 createElementNS path", "2 setAttribute path d", "3 appendChild svg", "4 appendChild g"]
-        },
-        {
-          "what_was_left": "the error was reported; sections changed: geometry; 1 extra elements; connector paths changed; 0 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
-          "failures": 5,
-          "calls": [
-            "5 setAttribute path fill",
-            "6 setAttribute path stroke",
-            "7 setAttribute path stroke-width",
-            "8 setAttribute path marker-end",
-            "9 setAttribute g aria-label"
-          ]
-        },
-        {
-          "what_was_left": "the error was reported; sections changed: topology, geometry; 1 extra elements; connector paths changed; 1 of the 2 ends of the edge say so; the call confirmed 18 edges; a retry does NOT reach the reference",
-          "failures": 1,
-          "calls": ["10 setAttribute g aria-label"]
-        }
-      ]
-    }
-  },
   "B:externref_slot_per_failed_call": {
     "point": "externref_slot_per_failed_call",
     "contract": "undocumented",
@@ -67,7 +37,11 @@
           "slots_lost": 0
         }
       ],
-      "losing": ["createElementNS", "appendChild", "getBBox"],
+      "losing": [
+        "createElementNS",
+        "appendChild",
+        "getBBox"
+      ],
       "exactly_one_slot_per_failed_object_call": true
     }
   },

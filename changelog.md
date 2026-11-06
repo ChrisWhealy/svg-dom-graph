@@ -11,11 +11,19 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
-## [0.2.48] - 2026-11-03
+## [0.2.48] - 2026-11-06
+
+## Fixed
+
+- Make `Scene::add_edge_with` transactional to prevent edge construction from leaving inconsistent state (``)
 
 ## Added
 
 - Red-Black Tree demo (`ae3000c`)
+- Implement marching squares demo panel, in a new "Computational Geometry" group (`421dfb1`)
+- Add a Petri Net demo (`eb06cfa`)
+- Add a Tarjan's Strongly Connected Components demo (`78e3e2c`)
+- CI performance measurement harness
 
 ## Changed
 

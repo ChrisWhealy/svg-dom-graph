@@ -92,8 +92,8 @@ check(
   `as it is: ${clean.status}, ${clean.gates.length} gates, ${clean.checkpoints_passed} failures recovered from`
 )
 check(
-  clean.findings.length === 3 && clean.findings.every(f => f.contract === 'undocumented'),
-  `the undocumented points are findings (${clean.findings.map(f => f.point).join(', ')}) and not gates`
+  clean.findings.length === 2 && clean.findings.every(f => f.contract === 'undocumented'),
+  `the undocumented point and the glue's behaviour are findings (${clean.findings.map(f => f.point).join(', ')}) and not gates`
 )
 const slotFinding = clean.findings.find(f => f.point === 'externref_slot_per_failed_call')
 check(
@@ -109,7 +109,8 @@ for (const [id, wrong] of [
   ['dom_transform', 'partly_committed'],
   ['connector_update', 'nothing_committed'],
   ['label_update', 'nothing_committed'],
-  ['drag_install', 'partly_committed']
+  ['drag_install', 'partly_committed'],
+  ['edge_construction', 'partly_committed']
 ]) {
   const outcome = await run(only([point(id, wrong)]))
   const verdict = gate(outcome, `recovery.${id}.matches_the_contract`)
@@ -119,13 +120,13 @@ for (const [id, wrong] of [
   )
 }
 {
-  // The undocumented point, asserted to be rolled back, fails. This is what the finding is: a rollback that nothing promises, and
-  // that the code does not make.
-  const outcome = await run({ ...manifest, recovery: { points: [point('edge_construction', 'nothing_committed')] } })
-  const rows = outcome.cases.filter(c => c.point === 'edge_construction')
+  // A point that is left undocumented is not judged. It is reported as a finding, which is what edge_construction was until the
+  // library made adding an edge a transaction. Made undocumented again, it must produce a finding and no gate.
+  const outcome = await run({ ...manifest, recovery: { points: [point('edge_construction', 'undocumented')] } })
+  const finding = outcome.findings.find(f => f.point === 'edge_construction')
   check(
-    rows.some(r => r.outcome !== 'nothing_committed'),
-    `if add_edge_with were promised to roll back, ${rows.filter(r => r.outcome !== 'nothing_committed').length} of its ${rows.length} failures would break the promise`
+    finding !== undefined && gate(outcome, 'recovery.edge_construction.matches_the_contract') === undefined,
+    `an undocumented edge_construction is a finding and not a gate: ${finding?.summary.slice(0, 110)}`
   )
 }
 
@@ -136,6 +137,14 @@ for (const [id, wrong] of [
   check(
     verdict?.status === 'fail' && outcome.status === 'invalid_incorrect',
     `with removal made to do nothing, node_construction fails: ${verdict?.detail.slice(0, 130)}`
+  )
+  // The same for adding an edge, whose rollback is the removal of the connector's path. A library with none leaves the stray
+  // path that the sweep found in it before it was made a transaction.
+  const edge = await run(only([point('edge_construction', 'nothing_committed')]), { suppressRemoval: true })
+  const edgeVerdict = gate(edge, 'recovery.edge_construction.matches_the_contract')
+  check(
+    edgeVerdict?.status === 'fail',
+    `and edge_construction, whose rollback is the same removal: ${edgeVerdict?.detail.slice(0, 130)}`
   )
 }
 

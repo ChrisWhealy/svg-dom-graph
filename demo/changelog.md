@@ -33,7 +33,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Provide completion evidence of gallery sweep (`1d2c34f`)
 - Perf Harness: Implement accessibility checks to cover Chrome AX tree (`be3b0b1`)
 - Perf Harness: Gallery walk tests have "pass", "inconclusive" and "fail" outcomes (`4857001`)
-- Perf Harness Phase 4: Recovery and endurance testing under deliberate failures (``)
+- Perf Harness: Phase 4: Recovery and endurance testing under deliberate failures (`778ccbc`)
 
 ### Changed
 

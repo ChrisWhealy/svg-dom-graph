@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-endurance-r1-20261106T131213",
-  "started_at": "2026-11-06T13:12:13.030Z",
+  "run_id": "w5-recovery-small-C-endurance-r1-20261106T140004",
+  "started_at": "2026-11-06T14:00:04.439Z",
   "repetition": 1,
   "sequence_position": 3,
   "environment": {
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -126,7 +126,7 @@
       "status": "measured",
       "unit": "bytes",
       "kind": "trend",
-      "value": 1453.18531701891,
+      "value": 1514.728364849833,
       "mechanism": "the least-squares slope of JSHeapUsedSize against the cycle over the measured cycles, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate. A diagnostic of Chrome only, and not a gate"
     },
     {
@@ -135,7 +135,7 @@
       "status": "measured",
       "unit": "bytes",
       "kind": "trend",
-      "value": 45048,
+      "value": 52984,
       "mechanism": "JSHeapUsedSize of the last measured cycle less the first, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
     }
   ],
@@ -158,5 +158,5 @@
       "detail": "105 scenario runs over 35 cycles each held to the contract"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-C-endurance-r1-20261106T131213.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-C-endurance-r1-20261106T140004.samples.ndjson"
 }

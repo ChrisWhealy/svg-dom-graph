@@ -38,7 +38,7 @@ points = [
     { point = "connector_update", expect = "partly_committed" },
     { point = "label_update", expect = "partly_committed" },
     { point = "drag_install", expect = "nothing_committed" },
-    { point = "edge_construction", expect = "undocumented" },
+    { point = "edge_construction", expect = "nothing_committed" },
     { point = "scheduled_frame", expect = "partly_committed" },
     { point = "teardown", expect = "nothing_committed" },
     { point = "mid_drag_teardown", expect = "nothing_committed" },

@@ -1,16 +1,18 @@
 ok   arming the 1st, 7th and last of the 24 DOM calls of add_node makes the operation fail
 ok   arming a call beyond the last fires nothing, and the operation counted 24 calls
 ok   a fault fires once, and the next operation works again
-ok   as it is: ok, 9 gates, 35 failures recovered from
-ok   the undocumented points are findings (edge_construction, externref_slot_per_failed_call, removed_host) and not gates
+ok   as it is: ok, 10 gates, 45 failures recovered from
+ok   the undocumented point and the glue's behaviour are findings (externref_slot_per_failed_call, removed_host) and not gates
 ok   a failed DOM call loses exactly one externref slot if it returns an object (createElementNS, appendChild, getBBox) and none if it does not
 ok   node_construction expected to be partly committed, against its contract: fail
 ok   dom_transform expected to be partly committed, against its contract: fail
 ok   connector_update expected to be nothing committed, against its contract: fail
 ok   label_update expected to be nothing committed, against its contract: fail
 ok   drag_install expected to be partly committed, against its contract: fail
-ok   if add_edge_with were promised to roll back, 6 of its 10 failures would break the promise
+ok   edge_construction expected to be partly committed, against its contract: fail
+ok   an undocumented edge_construction is a finding and not a gate: 10 failures, one at each DOM call of the operation, left 1 different states: 10 at 1, 2, 3, 4, 5, 6, 7, 8, 9, 
 ok   with removal made to do nothing, node_construction fails: 22 of 24: call 3 (createElementNS rect) left changes in elements
+ok   and edge_construction, whose rollback is the same removal: 7 of 10: call 4 (appendChild g) left changes in 1 extra elements, the connector paths
 ok   endurance as it is: ok, live_bytes_do_not_grow, recoveries_succeed, listeners_return_to_baseline, dom_returns_to_baseline, lost_externref_slots_are_explained all pass
 ok   a leak of bytes in every cycle fails live_bytes_do_not_grow and only that: failing live_bytes_do_not_grow
 ok   a leak of listener in every cycle fails listeners_return_to_baseline and only that: failing listeners_return_to_baseline

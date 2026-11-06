@@ -75,6 +75,7 @@ mod data_node;
 mod drag_basics;
 mod drag_observer;
 mod edge_anchors;
+mod edge_construction_failure;
 mod edge_focus;
 mod edge_labels;
 mod element_labels;

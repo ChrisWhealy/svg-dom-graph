@@ -2,7 +2,7 @@
   "schema_version": 1,
   "manifest": {
     "id": "w5-recovery-long",
-    "sha256": "418a4039d5b06b8ebfa21997c88bb3db9859df9551e3814d8937b3cd76567a17",
+    "sha256": "c14e2f9654f83c91500df3da5937fd1895598d60cbf5331aee40bf68d3ff170e",
     "canonical": {
       "schema_version": 1,
       "workload": "recovery",
@@ -57,7 +57,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",

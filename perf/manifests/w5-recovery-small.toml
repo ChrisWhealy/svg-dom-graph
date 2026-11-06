@@ -1,8 +1,8 @@
 # W5, recovery: one scene is built and checked, and then broken on purpose, one fault point at a time.
 #
-# Each fault point is given what the library's own documentation says it leaves behind (perf/fault-contracts.json). The two
-# points that nothing documents are marked undocumented, so that the runner records what it sees and reports a finding, and
-# does not test against a guess. In an endurance run, every fault point is broken and recovered from in each cycle, and
+# Each fault point is given what the library's own documentation says it leaves behind (perf/fault-contracts.json). The point
+# that nothing documents (removed_host) is marked undocumented, so that the runner records what it sees and reports a finding,
+# and does not test against a guess. edge_construction was the other until Scene::add_edge_with was made a transaction. In an endurance run, every fault point is broken and recovered from in each cycle, and
 # `warmup_iterations` and `measurement_iterations` count the cycles.
 schema_version = 1
 workload = "recovery"
@@ -39,7 +39,7 @@ points = [
     { point = "connector_update", expect = "partly_committed" },
     { point = "label_update", expect = "partly_committed" },
     { point = "drag_install", expect = "nothing_committed" },
-    { point = "edge_construction", expect = "undocumented" },
+    { point = "edge_construction", expect = "nothing_committed" },
     { point = "scheduled_frame", expect = "partly_committed" },
     { point = "teardown", expect = "nothing_committed" },
     { point = "mid_drag_teardown", expect = "nothing_committed" },

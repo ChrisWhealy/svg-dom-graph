@@ -699,7 +699,7 @@ fault point and what it expects (`nothing_committed`, `partly_committed` or `und
 | `scheduled_frame` | A view change written in a frame | Partly committed. The view changes at once and the write waits for a frame. A refused frame, or a failed write, is tried again by the next event | `view_input/frame.rs`, `frame_request.rs` |
 | `teardown` | Dropping the last handle with a frame pending | The frame is cancelled before its closure goes, the waiting view is written, the listeners are released | `frame_request.rs`, `scene_inner.rs` |
 | `mid_drag_teardown` | Dropping it between a pointer down and up | The handlers hold the scene weakly and do nothing once it is gone | `drag/handlers.rs` |
-| `edge_construction` | `add_edge_with` | **Nothing.** Only the rejections before anything is drawn are promised | `connector/mod.rs` |
+| `edge_construction` | `add_edge_with` | Nothing committed. Adding an edge is a transaction: no path left behind, neither name changed, the edge not in the graph. **This was undocumented, and not true, until the sweep found it and the library was fixed (below)** | `connector/mod.rs` (public) |
 | `removed_host` | Using a scene whose `<svg>` was removed | **Nothing** | none |
 
 ### How a failure is put in
@@ -727,28 +727,45 @@ Every documented contract held, at every DOM call (`evidence/phase4/results/w5-r
 | `connector_update` | 2 | Node moved, connectors partly redrawn. A move to the same origin redrew nothing, and a move to another put the connectors right |
 | `label_update` | 3 | Node moved, label unplaced. The same-origin move placed it |
 | `drag_install` | 5, four listeners and a style | Nothing left, no listener dangling, the node not marked draggable |
+| `edge_construction` | 10, one at each DOM call of `add_edge_with` | Each reported, each left nothing, each retry reached the reference |
 | `scheduled_frame` | 20, ten refused and ten whose write failed | The view changed at once, the document was stale, and the next event caught it up |
 | `teardown` | 10 | One frame cancelled each time, the view written, none ran late, no listener left |
 | `mid_drag_teardown` | 10 | Nothing moved after the drop, no error, page back to baseline |
 
-Four things were found, and are in `findings.json`. None is a pass or a failure of a contract, since nothing promises it.
+Three things nothing documents are in `findings.json`, and none is a pass or a failure of a contract. A fourth was found first, and was
+fixed.
 
-1. **`add_edge_with` has no rollback for a DOM failure after the connector is attached.** Of its 10 DOM calls, a failure at the first
-   four leaves nothing. A failure at the next five (the path's attributes, and the first end's name) leaves a stray connector in the
-   document, and a failure at the last leaves the edge in the graph with only one end named. In six of the ten, a retry does not
-   reach the reference: it adds a second connector beside the stray one. Nothing in the documentation says otherwise, and it is the one
-   place where a failure and a retry leave the scene different from a success.
-2. **A removed host is not an error.** With the `<svg>` out of the document, `add_node`, `move_node`, `add_edge_with`,
+1. **A removed host is not an error.** With the `<svg>` out of the document, `add_node`, `move_node`, `add_edge_with`,
    `make_draggable_with` and `set_edge_label` all succeeded, and put back, the scene agreed with the model.
-3. **A node dragged when its scene is dropped keeps `cursor: grabbing`** for as long as the host stays in the document. The documented
+2. **A node dragged when its scene is dropped keeps `cursor: grabbing`** for as long as the host stays in the document. The documented
    contract held, and what the node is left wearing is not documented.
-4. **A failed DOM call that returns an object costs wasm-bindgen one externref slot for good.** `createElementNS`, `appendChild` and
+3. **A failed DOM call that returns an object costs wasm-bindgen one externref slot for good.** `createElementNS`, `appendChild` and
    `getBBox` do, and `setAttribute` and `addEventListener`, which return nothing, do not. Over 40 failures of each, the table held
    exactly 40 more slots filled with `undefined` that nothing frees, and none more for the others. The harness's own web-sys calls
    lose them the same way, so it is in the generated glue (wasm-bindgen 0.2.129) and not in the library. Its cost is that the table, and the
    free list beside it, grow for as long as failures happen.
 
-The fourth was found by the endurance run, which is what it is for.
+The third was found by the endurance run, which is what it is for.
+
+#### The finding that was fixed: `add_edge_with` was not a transaction
+
+The first sweep of `edge_construction`, which nothing documented, found that of its 10 DOM calls a failure at the first four left
+nothing, a failure at the next five (the path's attributes, and the first end's name) left a stray connector in the document, and a
+failure at the last left the edge in the graph with only one end named. In six of the ten a retry did not reach the reference: it added
+a second connector beside the stray one. It was the one place where a failure and a retry left the scene different from a success.
+
+It was fixed in the library (`Scene::add_edge_with`, changelog 0.2.48). The connector's path is held by a guard until the edge is
+recorded, the name of each end is written before the graph changes and can be put back, and the graph and the handle, which cannot
+fail, are the last things to change. A failed call now leaves the scene exactly as it was, and the doc comment says so, so
+`edge_construction` moved from `undocumented` to `nothing_committed` by changing one word of the manifest and one entry of the
+contracts. The proof is in three places:
+
+- the same sweep against the original library, from `git show HEAD:`, fails the contract at calls 5 to 10, which is the six, and
+  against the fixed library fails none of the ten;
+- a browser test in the library's own suite, `tests/drag/edge_construction_failure.rs`, makes every DOM write of the call fail in turn
+  and checks the scene is as it was and that the retry gives what an edge that never failed gives. It fails on the original library at
+  the fifth write, and passes on the fixed one, in the 511 browser tests and 84 unit tests that pass in Chrome;
+- `selftest-recovery.mjs` shows that a library without the rollback is caught: with removal made to do nothing, 7 of the 10 fail.
 
 ### Endurance under deliberate failures
 
@@ -767,14 +784,15 @@ Two things were done, and neither loosens the gate. The slab is sized before the
 vectors, so that its doubling is not mistaken for growth. And the loss is counted exactly and held to a law of its own: the slots lost
 over a run must equal the number of failures of a call that returns an object, no more and no fewer
 (`endurance.lost_externref_slots_are_explained`). Over 200 cycles that was 144 slots for 144 failures. With that, the live bytes moved by
-0, and 600 recoveries each reached the state the contract promises.
+0, and 800 recoveries each reached the state the contract promises. Over the 35 cycles of the small manifest it was 140 recoveries, and
+105 scenario runs in Layer C.
 
 ### The self-test
 
 `selftest-recovery.mjs` shows that a green run means something. Arming the Nth DOM call makes exactly that call fail, once, and a call
-beyond the last makes none. Each documented point, given the other outcome, fails. If `add_edge_with` were promised to roll back, 6 of
-its 10 failures would break the promise. With removal made to do nothing, which is a library with no rollback, `node_construction`
-fails at 22 of 24 calls. With the cancel of a pending frame made to do nothing, `teardown` fails and names the frame that ran
+beyond the last makes none. Each documented point, given the other outcome, fails. A point made `undocumented` again is a finding and
+not a gate. With removal made to do nothing, which is a library with no rollback, `node_construction`
+fails at 22 of 24 calls, and `edge_construction`, whose rollback is the same removal, at 7 of 10. With the cancel of a pending frame made to do nothing, `teardown` fails and names the frame that ran
 after its closure was dropped. In endurance, a leak of bytes, of a listener, of an element, and a slot lost that no failure explains,
 each fails its own gate and no other.
 
@@ -794,9 +812,8 @@ each fails its own gate and no other.
 ### Handing over to Phase 5
 
 - CI has the contract checks and the unit tests, and no browser. The recovery and endurance profiles are ready to run in one.
-- Finding 1 is a candidate for a library fix, and the recovery sweep of `edge_construction` is the test for it: it would turn
-  from a finding into a contract (`nothing_committed`) by changing one word of a manifest.
-- Finding 4 is a candidate for a report to wasm-bindgen.
+- The recovery sweep is the regression test for the library's failure contracts. The one finding that was fixed is now a contract.
+- The externref slot is a candidate for a report to wasm-bindgen.
 
 ## Evidence
 

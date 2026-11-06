@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-endurance-r0-20261106T131100",
-  "started_at": "2026-11-06T13:11:00.938Z",
+  "run_id": "w5-recovery-small-B-endurance-r0-20261106T135740",
+  "started_at": "2026-11-06T13:57:40.806Z",
   "repetition": 0,
-  "sequence_position": 1,
+  "sequence_position": 0,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -112,51 +112,88 @@
   "status": "ok",
   "metrics": [
     {
+      "name": "wasm.externref_slots_lost",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 26,
+      "mechanism": "slots of wasm-bindgen's externref table that hold undefined and are never freed, counted by reading the table before the first cycle and after the last"
+    },
+    {
       "name": "lifecycle.measured_cycles_sampled",
-      "layer": "C",
+      "layer": "B",
       "status": "measured",
       "unit": "count",
       "kind": "count",
       "value": 30,
-      "mechanism": "read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+      "mechanism": "the counting allocator and the document, read after both scenes of a cycle were torn down"
     },
     {
-      "name": "browser.js_heap_slope_per_cycle",
-      "layer": "C",
+      "name": "wasm.live_bytes_net_change_after_warmup",
+      "layer": "B",
       "status": "measured",
       "unit": "bytes",
       "kind": "trend",
-      "value": 1505.6071190211346,
-      "mechanism": "the least-squares slope of JSHeapUsedSize against the cycle over the measured cycles, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate. A diagnostic of Chrome only, and not a gate"
+      "value": 0,
+      "mechanism": "the counting allocator and the document, read after both scenes of a cycle were torn down"
     },
     {
-      "name": "browser.js_heap_net_change_after_warmup",
-      "layer": "C",
+      "name": "wasm.live_bytes_slope_per_cycle",
+      "layer": "B",
       "status": "measured",
       "unit": "bytes",
       "kind": "trend",
-      "value": 52984,
-      "mechanism": "JSHeapUsedSize of the last measured cycle less the first, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+      "value": 0,
+      "mechanism": "the counting allocator and the document, read after both scenes of a cycle were torn down"
+    },
+    {
+      "name": "wasm.memory_grow_events_after_warmup",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 0,
+      "mechanism": "WebAssembly.Memory.buffer.byteLength after each teardown"
+    },
+    {
+      "name": "recovery.cycles",
+      "layer": "B",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 35,
+      "mechanism": "cycles in which every fault point of the manifest was broken and recovered from"
     }
   ],
-  "checkpoints_passed": 105,
+  "checkpoints_passed": 140,
   "checkpoints_failed": [],
   "gates": [
     {
-      "name": "endurance.listeners_return_to_baseline",
+      "name": "endurance.live_bytes_do_not_grow",
       "status": "pass",
-      "detail": "the effective listener count was 5 before the first cycle and after each of the 35 cycles"
-    },
-    {
-      "name": "endurance.dom_returns_to_baseline",
-      "status": "pass",
-      "detail": "the document's element count was 7 before the first cycle and after each of the 35 cycles"
+      "detail": "live bytes moved by 0 and trend by 0.00 a cycle over cycles 6 to 35, within the 0 allowed"
     },
     {
       "name": "endurance.recoveries_succeed",
       "status": "pass",
-      "detail": "105 scenario runs over 35 cycles each held to the contract"
+      "detail": "140 recoveries over 35 cycles each reached the state the contract promises"
+    },
+    {
+      "name": "endurance.listeners_return_to_baseline",
+      "status": "pass",
+      "detail": "the effective listener count was 0 before the first cycle and after each of the 35 teardowns"
+    },
+    {
+      "name": "endurance.dom_returns_to_baseline",
+      "status": "pass",
+      "detail": "the document's element count was 6 before the first cycle and after each of the 35 teardowns"
+    },
+    {
+      "name": "endurance.lost_externref_slots_are_explained",
+      "status": "pass",
+      "detail": "26 externref slots were lost over 35 cycles, one for each of the 26 failures of a DOM call that returns an object, and none for the others"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-C-endurance-r0-20261106T131100.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-B-endurance-r0-20261106T135740.samples.ndjson"
 }

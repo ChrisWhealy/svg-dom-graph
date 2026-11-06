@@ -24,7 +24,10 @@ pub(crate) use connector_handle::{ConnectorHandle, Pin};
 pub use connector_options::ConnectorOptions;
 pub use connector_type::ConnectorType;
 use std::cell::Cell;
-use svg_dom::root::utils::{Point, Rect};
+use svg_dom::{
+    SvgNode,
+    root::utils::{Point, Rect},
+};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// How thick a connector's line is.
@@ -328,6 +331,30 @@ pub(crate) fn route(
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Removes a connector's `<path>` again unless it is released, which is what makes adding an edge a transaction: a `?` on any
+/// step between drawing the path and recording the edge drops this while it is still holding the path.
+struct PathGuard(Option<SvgNode>);
+
+impl PathGuard {
+    fn node(&self) -> &SvgNode {
+        self.0.as_ref().expect("a PathGuard holds its path until it is released")
+    }
+
+    /// The edge is recorded, so the path stays. Gives it back, to be kept in the edge's handle.
+    fn release(mut self) -> SvgNode {
+        self.0.take().expect("a PathGuard holds its path until it is released")
+    }
+}
+
+impl Drop for PathGuard {
+    fn drop(&mut self) {
+        if let Some(path) = self.0.take() {
+            path.remove();
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Scene {
     /// Adds a directed edge to the graph, draws its arrow-tipped connector with a sharp-cornered elbow route, and
     /// returns its id.
@@ -362,6 +389,19 @@ impl Scene {
     /// from a different `Scene`. Checked before the self-loop check below, so a foreign id is always reported as
     /// unknown, even if `from` and `to` are the same foreign id. Returns [`Error::SelfLoopUnsupported`] if `from` and
     /// `to` are the same node in this scene — not yet supported, see that variant's own doc comment for why.
+    ///
+    /// Also returns a wrapped [`Error::Svg`] if a write fails.
+    ///
+    /// # When a write fails: what is committed, and what is not
+    ///
+    /// Nothing. Adding an edge is a transaction. If any write fails, whether it is making the connector's `<path>`, putting it
+    /// in the scene, styling it, or naming either end, the call returns the error and the scene is exactly as it was: no
+    /// `<path>` is left behind, neither node's name has the new relationship in it, and the edge is not in the graph. So the
+    /// call can be repeated, and does not leave a second connector beside a stray one.
+    ///
+    /// The edge is recorded last, after everything that can fail. The one thing that cannot be promised is that the page
+    /// is put back if the write that puts a name back fails too, straight after the one that failed. That takes two
+    /// failures of the browser in a row.
     pub fn add_edge_with(&self, from: NodeId, to: NodeId, options: ConnectorOptions) -> Result<EdgeId, Error> {
         validate_connector_options(options)?;
 
@@ -403,18 +443,32 @@ impl Scene {
         elbow_path_into(&vertices, radius, &mut d);
         let path_result = inner.svg.path(&d);
         inner.scratch = d;
-        let path = path_result?;
-        inner.attach(&path)?;
-        path.set_fill("none")?;
-        path.set_stroke(CONNECTOR_STROKE)?;
-        path.set_stroke_width(CONNECTOR_WIDTH)?;
-        path.set_marker_end_ref(&inner.arrow)?;
+        // From here to the end the call is a transaction. The path is removed again if anything fails before the edge is
+        // recorded, and the names of the ends are put back if the second cannot be written after the first was. The graph
+        // and the handle are the last things to change, and they cannot fail.
+        let guard = PathGuard(Some(path_result?));
+        inner.attach(guard.node())?;
+        guard.node().set_fill("none")?;
+        guard.node().set_stroke(CONNECTOR_STROKE)?;
+        guard.node().set_stroke_width(CONNECTOR_WIDTH)?;
+        guard.node().set_marker_end_ref(&inner.arrow)?;
+
+        // Every edge, not just an operator's own auto-wired input, gets both endpoints' own descriptions extended this
+        // way. So a `<path>` is never the only place that conveys which node feeds which — see
+        // `SceneInner::append_relationship`'s own doc comment.
+        let from_name = inner.node_handle(from).ok_or(Error::UnknownNode(from))?.current_ref_name();
+        let to_name = inner.node_handle(to).ok_or(Error::UnknownNode(to))?.current_ref_name();
+        let from_before = inner.append_relationship(from, &format!("Output to {to_name}"))?;
+        if let Err(error) = inner.append_relationship(to, &format!("Input from {from_name}")) {
+            inner.restore_name(from_before);
+            return Err(error);
+        }
 
         let id = inner.graph.add_edge(from, to);
         inner.insert_edge_handle(
             id,
             ConnectorHandle {
-                path,
+                path: guard.release(),
                 connector_type: options.connector_type,
                 from_side: options.from_side,
                 to_side: options.to_side,
@@ -429,14 +483,6 @@ impl Scene {
                 label: None,
             },
         );
-
-        // Every edge, not just an operator's own auto-wired input, gets both endpoints' own descriptions extended this
-        // way. So a `<path>` is never the only place that conveys which node feeds which — see
-        // `SceneInner::append_relationship`'s own doc comment.
-        let from_name = inner.node_handle(from).ok_or(Error::UnknownNode(from))?.current_ref_name();
-        let to_name = inner.node_handle(to).ok_or(Error::UnknownNode(to))?.current_ref_name();
-        inner.append_relationship(from, &format!("Output to {to_name}"))?;
-        inner.append_relationship(to, &format!("Input from {from_name}"))?;
 
         Ok(id)
     }

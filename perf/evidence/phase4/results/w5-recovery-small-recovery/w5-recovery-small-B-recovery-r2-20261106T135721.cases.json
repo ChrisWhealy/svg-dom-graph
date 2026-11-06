@@ -475,114 +475,101 @@
   "index": 5,
   "call": "setAttribute path fill",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
    "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  },
  {
   "point": "edge_construction",
   "index": 6,
   "call": "setAttribute path stroke",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
    "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  },
  {
   "point": "edge_construction",
   "index": 7,
   "call": "setAttribute path stroke-width",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
    "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  },
  {
   "point": "edge_construction",
   "index": 8,
   "call": "setAttribute path marker-end",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
    "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  },
  {
   "point": "edge_construction",
   "index": 9,
   "call": "setAttribute g aria-label",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
    "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  },
  {
   "point": "edge_construction",
   "index": 10,
   "call": "setAttribute g aria-label",
   "error_surfaced": true,
-  "outcome": "changed",
+  "outcome": "nothing_committed",
   "observed": {
    "checkpoint_readable": true,
-   "sections_changed": [
-    "topology",
-    "geometry"
-   ],
-   "extra_elements": 1,
-   "paths_changed": true,
-   "ends_named": 1,
+   "sections_changed": [],
+   "extra_elements": 0,
+   "paths_changed": false,
+   "ends_named": 0,
    "edge_confirmed_by_the_call": 18
   },
   "retry_ok": true,
-  "retry_reaches_reference": false
+  "retry_reaches_reference": true
  }
 ]

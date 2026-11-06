@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-B-endurance-r0-20261106T130949",
-  "started_at": "2026-11-06T13:09:49.682Z",
-  "repetition": 0,
-  "sequence_position": 0,
+  "run_id": "w5-recovery-small-B-endurance-r1-20261106T135852",
+  "started_at": "2026-11-06T13:58:52.952Z",
+  "repetition": 1,
+  "sequence_position": 2,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,13 +18,13 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "80e9916077765584c865a0c17c25d900beb89f78",
+    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w5-recovery-small",
-    "sha256": "9b0b77c5b56b76b0c8988ebc467e911b0498a148fee83b37ed730ad4cfdde179",
+    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -83,7 +83,7 @@
           },
           {
             "point": "edge_construction",
-            "expect": "undocumented"
+            "expect": "nothing_committed"
           },
           {
             "point": "scheduled_frame",
@@ -153,7 +153,7 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 1,
+      "value": 0,
       "mechanism": "WebAssembly.Memory.buffer.byteLength after each teardown"
     },
     {
@@ -166,7 +166,7 @@
       "mechanism": "cycles in which every fault point of the manifest was broken and recovered from"
     }
   ],
-  "checkpoints_passed": 105,
+  "checkpoints_passed": 140,
   "checkpoints_failed": [],
   "gates": [
     {
@@ -177,7 +177,7 @@
     {
       "name": "endurance.recoveries_succeed",
       "status": "pass",
-      "detail": "105 recoveries over 35 cycles each reached the state the contract promises"
+      "detail": "140 recoveries over 35 cycles each reached the state the contract promises"
     },
     {
       "name": "endurance.listeners_return_to_baseline",
@@ -195,5 +195,5 @@
       "detail": "26 externref slots were lost over 35 cycles, one for each of the 26 failures of a DOM call that returns an object, and none for the others"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-B-endurance-r0-20261106T130949.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-B-endurance-r1-20261106T135852.samples.ndjson"
 }
