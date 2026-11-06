@@ -11,6 +11,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 # [Unreleased]
 
+# [Released]
+
 ## [0.2.48] - 2026-11-06
 
 ## Fixed
@@ -33,8 +35,6 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Updated README again (`5d4cb49`)
 - Updated README yet again (`2ea3a72`)
 - Correct README.md formatting (`b12f28d`)
-
-# [Released]
 
 ## [0.2.47] - 2026-11-02
 

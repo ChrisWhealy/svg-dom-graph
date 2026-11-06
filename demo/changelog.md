@@ -87,4 +87,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Remove grab cursor for a node whose scene is dropped mid-drag (`19f3ac4`)
 - Perf Harness: Correct CI test step order (`9630405`)
 - Perf Harness: Correct CI test that tried to delete a non-empty Chrome temp profile directory (`fc1bfab`)
-- Perf Harness: Ensure all test processes terminate after tests complete (``)
+- Perf Harness: Ensure all test processes terminate after tests complete (`133d529`)
