@@ -59,13 +59,25 @@ Three valid repetitions, each with 30 Next and 30 Play observations, every one a
 
 | Repetition | Next median | Play median | Pause after the presentation | Wall time |
 |---|---|---|---|---|
-| 0 | 10.8 ms | 3.6 ms | 30 of 30 | 55.0 s |
-| 1 | 12.9 ms | 3.6 ms | 30 of 30 | 55.0 s |
-| 2 | 11.4 ms | 3.6 ms | 30 of 30 | 55.0 s |
+| 0 | 11.4 ms | 3.6 ms | 30 of 30 | 55.0 s |
+| 1 | 11.2 ms | 3.6 ms | 30 of 30 | 55.0 s |
+| 2 | 11.8 ms | 3.6 ms | 30 of 30 | 55.0 s |
 
 Next is input to presentation.
 Play is the timer callback to presentation, and the 1,000 ms interval is not in it.
 The two are different metrics and are never pooled.
+
+### What counts as a valid run
+
+A run is valid only if it is complete.
+Every repetition must have exactly 30 attributed Next and 30 attributed Play observations, and none unattributed.
+The Pause of every one of the 30 Play cycles must be marked, and must come after the presentation that was timed.
+The Next frames must have been found with the `update` qualifier, which is recorded.
+Any shortfall is a failed check, and fails the run.
+
+With a late Pause injected, the first repetition must be rejected for the extra tick and for nothing else.
+Every other repetition must be valid and complete.
+`--lose-pause-marks` treats the Pause marks as lost, and shows that the checks bite: the run reports "0 Pause marks were found, and 30 were meant" and exits with 1.
 
 ### The runtime budget
 
