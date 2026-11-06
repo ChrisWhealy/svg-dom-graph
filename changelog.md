@@ -15,7 +15,7 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 
 ## Fixed
 
-- Make `Scene::add_edge_with` transactional to prevent edge construction from leaving inconsistent state (``)
+- Make `Scene::add_edge_with` transactional to prevent edge construction from leaving inconsistent state (`1f1f252`)
 
 ## Added
 

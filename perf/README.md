@@ -813,7 +813,7 @@ each fails its own gate and no other.
 
 - CI has the contract checks and the unit tests, and no browser. The recovery and endurance profiles are ready to run in one.
 - The recovery sweep is the regression test for the library's failure contracts. The one finding that was fixed is now a contract.
-- The externref slot is a candidate for a report to wasm-bindgen.
+- The externref slot is wasm-bindgen's. `perf/repro/wasm-bindgen-externref-slot/` reproduces it with no DOM and none of this repository (1000 failures of a `catch` import that returns an object leave 1000 slots; the controls leave 0), on 0.2.129 and on 0.2.130. CI runs it expecting the leak, so a release that fixes it fails that step, which is the signal to drop the harness's accounting. A draft report is in `UPSTREAM_ISSUE.md`, and has not been filed.
 
 ## Evidence
 

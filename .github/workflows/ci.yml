@@ -162,6 +162,16 @@ jobs:
           node perf/runner/test-walk-verdict.mjs
           node perf/lib/test-contracts.mjs
 
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+
+      # The failed-import leak is wasm-bindgen's and not this crate's. The reproduction is expected to show it. A dependency update that
+      # fixes it makes this step fail, which is the signal to remove the harness's accounting of the lost slots.
+      - name: wasm-bindgen still loses an externref slot when an import that returns an object throws
+        run: node perf/repro/wasm-bindgen-externref-slot/check.mjs --expect leak
+
       - name: JSON schemas accept what they should and refuse what they should not
         run: |
           npm ci
