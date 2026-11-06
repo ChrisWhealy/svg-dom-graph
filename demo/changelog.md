@@ -81,4 +81,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Explain retained allocations in endurance test results (`cb03518`)
 - Perf Harness: Performance-mode correctness checks cover the measured work (`8736347`)
 - Perf Harness: Record attribution strength of the cause of a screen repaints (`80e9916`)
-- Perf Harness: Prevent failed DOM calls from retaining externref slots (``)
+- Perf Harness: Prevent failed DOM calls from retaining externref slots (`61499c9`)
