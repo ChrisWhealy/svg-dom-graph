@@ -115,7 +115,7 @@ So the revision's definition is pinned separately, in `dess/s0/prototype/frozen.
 | `input_stream_sha256` | Every outage and every arrival's draws for the manifest seed 20261106, one line each |
 | `event_pop_sha256` | The engine's pop sequence for that input: tick, kind, insertion sequence and whether the pop was stale |
 
-The manifest seed's run is also recorded in plain figures: 11,214 pops, 5,464 slices and 4,000 arrivals.
+The manifest seed's run is also recorded in plain figures: 11,214 pops, 5,464 slices and 4,000 arrivals, of which 3,002 pops are stale and 107 are no-ops.
 The three hashes are separate because each can move alone.
 A change to the deferral cap moves only the parameter hash for this seed, since the cap is never reached.
 A change to the engine moves only the pop hash.

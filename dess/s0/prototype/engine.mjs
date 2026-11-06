@@ -3,7 +3,13 @@
 // beside the Rust engine and the JavaScript oracle that S1 produces. It is not the S1 engine.
 //
 // An event is (tick, rank, sequence, payload) in a min-heap. Every event at the smallest tick is popped, in rank order, and then
-// jobs are dispatched once. A pop that finds its job or attempt already gone is stale, and is still a pop.
+// jobs are dispatched once. Every pop is one of three kinds, and every one is still a pop:
+//   effective  it changed something;
+//   stale      it carries a token (a completion, a deadline or a retry eligibility) and finds its job or attempt already gone;
+//   no-op      it names something that has nothing to act on: a cancel of a job that is missing, rejected or already terminal,
+//              a failure of a server that is already down, or a recovery of one that is already up.
+// The design calls the first of the last two a stale pop and the second a logged no-op, and counts both in the event-pop hash, so
+// the hash records which of the three each pop was.
 
 export const RANK = { complete: 0, fail: 1, cancel: 2, deadline: 3, recover: 4, retry: 5, arrive: 6 }
 const ACTIVE = new Set(['queued', 'running', 'retrywait'])
@@ -79,6 +85,7 @@ export const run = (config, inputs, options = {}) => {
   const counters = {
     pops: 0,
     stale: 0,
+    noops: 0,
     slices: 0,
     arrivals: 0,
     admitted: 0,
@@ -128,6 +135,7 @@ export const run = (config, inputs, options = {}) => {
       pops++
       counters.pops++
       let stale = false
+      let noop = false
       const p = ev.payload
       switch (ev.kind) {
         case 'arrive': {
@@ -184,7 +192,7 @@ export const run = (config, inputs, options = {}) => {
           if (job && ACTIVE.has(job.state)) {
             leave(job)
             finish(job, 'cancelled')
-          }
+          } else noop = true
           break
         }
         case 'fail': {
@@ -200,10 +208,12 @@ export const run = (config, inputs, options = {}) => {
               push(tick + 2 * 2 ** (job.failures - 1), 'retry', { job, token: job.token })
             } else finish(job, 'failed', 'attempts_exhausted')
           } else if (sv.state === 'idle') sv.state = 'down'
+          else noop = true
           break
         }
         case 'recover': {
           if (srv[p.server].state === 'down') srv[p.server].state = 'idle'
+          else noop = true
           break
         }
         case 'retry': {
@@ -221,7 +231,8 @@ export const run = (config, inputs, options = {}) => {
         }
       }
       if (stale) counters.stale++
-      if (hash) hash.update(`${tick}:${ev.kind}:${ev.seq}:${stale ? 1 : 0};`)
+      if (noop) counters.noops++
+      if (hash) hash.update(`${tick}:${ev.kind}:${ev.seq}:${stale ? 's' : noop ? 'n' : 'e'};`)
     }
     // Dispatch, once: high priority first, then the tick the job entered the queue, then its id. Idle servers by index.
     waiting.sort((a, b) => b.priority - a.priority || a.entered - b.entered || a.id - b.id)

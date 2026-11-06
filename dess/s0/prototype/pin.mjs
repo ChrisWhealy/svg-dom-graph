@@ -60,7 +60,13 @@ export const computePins = (params, seed) => {
     parameters_sha256: parametersHash(params),
     input_stream_sha256: inputStreamHash(seed, params),
     event_pop_sha256: pops.hash,
-    manifest_seed_run: { pops: pops.counters.pops, slices: pops.counters.slices, arrivals: pops.counters.arrivals }
+    manifest_seed_run: {
+      pops: pops.counters.pops,
+      slices: pops.counters.slices,
+      arrivals: pops.counters.arrivals,
+      stale: pops.counters.stale,
+      noops: pops.counters.noops
+    }
   }
 }
 

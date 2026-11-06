@@ -43,6 +43,7 @@ for (const [name, fixture] of Object.entries(FIXTURES)) {
   const c = result.counters
   const want = fixture.expect
   const same =
+    c.noops === want.noops &&
     c.pops === want.pops &&
     c.slices === want.slices &&
     c.slices + 1 === want.snapshots &&
@@ -53,7 +54,7 @@ for (const [name, fixture] of Object.entries(FIXTURES)) {
       (c.arrivals === want.arrivals && c.admitted === want.admitted && c.rejected === want.rejected))
   check(
     same,
-    `${name}: ${c.pops} pops, ${c.slices} slices, ${c.slices + 1} snapshots, ${c.stale} stale, ${JSON.stringify(result.states)}`
+    `${name}: ${c.pops} pops, ${c.slices} slices, ${c.slices + 1} snapshots, ${c.stale} stale, ${c.noops} no-ops, ${JSON.stringify(result.states)}`
   )
 }
 

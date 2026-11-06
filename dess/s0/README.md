@@ -36,6 +36,7 @@ The JavaScript here is S0 prototype code, written to take the measurements that 
 | [The data setter sweep](docs/setter-sweep.md) | The failure contracts of `add_data_node` and `set_data_values`, and finding F1 |
 | [The content group hook](docs/content-hook.md) | What the six tests pin, the decision, and the prepared documentation |
 | [How a hidden panel is known](docs/gallery-predicate.md) | The gallery's markup, the cost of each predicate, and the order of events |
+| [Stale pops and no-op pops](docs/pop-outcomes.md) | The three outcomes of a pop, the two E3 fixtures, and what the design should say |
 | [The generator and its qualification](docs/generator-and-qualification.md) | The streams, the frozen parameters, the seven candidates and the 500-seed result |
 | [The Layer C protocol spike](docs/protocol-spike.md) | The one-tick Play and Pause protocol, its results and its cost |
 | [What a seek costs](docs/replay.md) | Replay timing at 1,000, 10,000 and 100,000 pops |
