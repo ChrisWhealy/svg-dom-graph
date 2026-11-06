@@ -1,0 +1,29 @@
+ok   w1-scene-construction-small performance, as generated: ok, 2 checkpoints passed
+ok   w1-scene-construction-small performance executes exactly the last two checkpoints (2)
+ok   w1-scene-construction-small performance, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in topology, geometry
+      checkpoint 2: topology n10->n6: an edge is missing: expected present, got absent
+ok   w1-scene-construction-small performance, wrong last mutation before the final checkpoint: invalid_incorrect, caught in topology
+      checkpoint 3: topology (a host svg, perf-svg-leftover, is still in the document): an unexpected node: expected absent, got present
+ok   w1-scene-construction-small correctness, as generated: ok, 4 checkpoints passed
+ok   w1-scene-construction-small correctness, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in topology, geometry
+ok   w1-scene-construction-small correctness, wrong last mutation before the final checkpoint: invalid_incorrect, caught in topology
+ok   w2-connector-rerouting-small performance, as generated: ok, 2 checkpoints passed
+ok   w2-connector-rerouting-small performance executes exactly the last two checkpoints (2)
+ok   w2-connector-rerouting-small performance, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in geometry
+      checkpoint 2: geometry n5->n7: connector_path x1: expected 178.6138613861386, got 179.86138613861385
+ok   w2-connector-rerouting-small performance, wrong last mutation before the final checkpoint: invalid_incorrect, caught in geometry
+      checkpoint 3: geometry n10: node_box x: expected 179, got 186
+ok   w2-connector-rerouting-small correctness, as generated: ok, 4 checkpoints passed
+ok   w2-connector-rerouting-small correctness, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in geometry
+ok   w2-connector-rerouting-small correctness, wrong last mutation before the final checkpoint: invalid_incorrect, caught in geometry
+ok   w3-scene-lifecycle-small performance, as generated: ok, 2 checkpoints passed
+ok   w3-scene-lifecycle-small performance executes exactly the last two checkpoints (2)
+ok   w3-scene-lifecycle-small performance, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in topology, geometry
+      checkpoint 2: topology n3->n6: an edge is missing: expected present, got absent
+ok   w3-scene-lifecycle-small performance, wrong last mutation before the final checkpoint: invalid_incorrect, caught in topology
+      checkpoint 3: topology (a host svg, perf-svg-leftover, is still in the document): an unexpected node: expected absent, got present
+ok   w3-scene-lifecycle-small correctness, as generated: ok, 4 checkpoints passed
+ok   w3-scene-lifecycle-small correctness, wrong last mutation before the penultimate checkpoint: invalid_incorrect, caught in topology, geometry
+ok   w3-scene-lifecycle-small correctness, wrong last mutation before the final checkpoint: invalid_incorrect, caught in topology
+
+every wrong final mutation is caught, and every run as generated is valid

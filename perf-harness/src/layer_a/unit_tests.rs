@@ -164,3 +164,33 @@ fn the_time_scales_with_the_connectors() -> Result<(), String> {
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A performance run executes only the last two checkpoints, and they have to vouch for the end of the measured work. So a
+/// mutation that is applied wrongly just before either of them, in any workload and either mode, must make the run invalid.
+/// The stream's digest is untouched by it, since the operations are as generated, so it is the checkpoint that notices.
+#[test]
+fn a_wrong_final_mutation_invalidates_the_run() -> Result<(), String> {
+    for workload in ["scene_construction", "connector_rerouting", "scene_lifecycle"] {
+        for mode in [Mode::Performance, Mode::Correctness] {
+            let m = manifest(workload, 30, 60, 3, 20);
+            let clean = run_corrupted(&m, mode, None).map_err(|e| e.to_string())?;
+            if clean.status != "ok" {
+                return Err(format!("{workload} {mode:?}: a clean run is {}", clean.status));
+            }
+            for target in [Target::Penultimate, Target::Final] {
+                let outcome = run_corrupted(&m, mode, Some(target)).map_err(|e| e.to_string())?;
+                let stream = outcome.stream.as_ref().ok_or("no stream")?;
+                if outcome.status != "invalid_incorrect" || outcome.checkpoints_failed.is_empty() || !stream.matches {
+                    return Err(format!(
+                        "{workload} {mode:?} {target:?}: {}, {} checkpoints failed, stream matches {}",
+                        outcome.status,
+                        outcome.checkpoints_failed.len(),
+                        stream.matches
+                    ));
+                }
+            }
+        }
+    }
+    Ok(())
+}

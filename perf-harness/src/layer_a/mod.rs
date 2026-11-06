@@ -10,6 +10,7 @@
 //! and compares them with the reference model's, which works them out independently from the same rule. So it checks the
 //! library's geometry as well as timing it.
 
+use crate::corruption::{self, DISPLACEMENT, Target};
 use crate::manifest::{Manifest, Mode, ViewPolicy, Workload};
 use crate::metrics::{Layer, mark_resolution_limited, timing, unavailable};
 use crate::model::Model;
@@ -89,6 +90,20 @@ pub fn measure_resolution() -> f64 {
 ///
 /// Returns [`WorkloadError`] if the stream cannot be generated or the model refuses an operation.
 pub fn run(manifest: &Manifest, mode: Mode) -> Result<RunOutcome, WorkloadError> {
+    run_corrupted(manifest, mode, None)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same, with the last mutation before one of the two executed checkpoints applied wrongly to this runner's own state.
+///
+/// The model is given the operation as the stream has it, so the checkpoint that follows must find the two apart and the run
+/// must come out `invalid_incorrect`. See [`corruption`]. A corruption that finds nothing to corrupt is an error, so that a
+/// test of it cannot pass by corrupting nothing.
+///
+/// # Errors
+///
+/// As for [`run`], and if the corruption was never applied.
+pub fn run_corrupted(manifest: &Manifest, mode: Mode, corrupt: Option<Target>) -> Result<RunOutcome, WorkloadError> {
     if !matches!(mode, Mode::Correctness | Mode::Performance) {
         return Err(WorkloadError::Plan(format!("the Layer A runner has no {mode:?} mode")));
     }
@@ -108,8 +123,16 @@ pub fn run(manifest: &Manifest, mode: Mode) -> Result<RunOutcome, WorkloadError>
     let mut batch: Option<u32> = None;
     let mut observations: Vec<f64> = Vec::new();
     let mut moves_without_connectors = 0u64;
+    let corrupt_at = corrupt
+        .map(|target| corruption::locate(manifest, target))
+        .transpose()?
+        .map(|c| c.ordinal);
+    let (mut ordinal, mut corrupted) = (0u64, false);
 
     generate(manifest, &mut |op: &Op| {
+        let corrupt_now = corrupt_at == Some(ordinal);
+        ordinal += 1;
+        corrupted |= corrupt_now;
         model.apply(op)?;
         let skipped = matches!(op, Op::Checkpoint { index } if mode == Mode::Performance && !performance_runs_checkpoint(*index, total_checkpoints));
         if !skipped {
@@ -120,19 +143,24 @@ pub fn run(manifest: &Manifest, mode: Mode) -> Result<RunOutcome, WorkloadError>
             Op::AddNode { key, x, y, w, h, .. } => {
                 state.by_name.insert(key.clone(), state.names.len());
                 state.names.push(key.clone());
-                state.boxes.push((*x as f64, *y as f64, *w as f64, *h as f64));
+                let x = if corrupt_now { *x + DISPLACEMENT } else { *x };
+                state.boxes.push((x as f64, *y as f64, *w as f64, *h as f64));
                 state.incident.push(Vec::new());
             },
             Op::AddEdge { from, to } => {
                 let (from, to) = (state.by_name[from], state.by_name[to]);
-                let edge = state.edges.len();
-                state.edges.push((from, to));
-                state.incident[from].push(edge);
-                state.incident[to].push(edge);
+                // A corrupted edge is left out of this runner's state, and the model still has it.
+                if !corrupt_now {
+                    let edge = state.edges.len();
+                    state.edges.push((from, to));
+                    state.incident[from].push(edge);
+                    state.incident[to].push(edge);
+                }
             },
             Op::MoveNode { key, x, y } => {
                 let node = state.by_name[key];
-                state.boxes[node].0 = *x as f64;
+                let x = if corrupt_now { *x + DISPLACEMENT } else { *x };
+                state.boxes[node].0 = x as f64;
                 state.boxes[node].1 = *y as f64;
                 if timing_wanted && measuring {
                     if state.incident[node].is_empty() {
@@ -150,11 +178,19 @@ pub fn run(manifest: &Manifest, mode: Mode) -> Result<RunOutcome, WorkloadError>
                 }
             },
             // The host is gone with everything in it. Dropping the handle alone leaves the DOM, which this runner has none of.
-            Op::RemoveHost => state = State::default(),
+            // A corrupted removal leaves this runner's scene where it was, as a removal that did not happen would.
+            Op::RemoveHost if !corrupt_now => state = State::default(),
+            Op::RemoveHost => {},
             Op::DropScene => {},
+        }
+        if corrupt_now && matches!(op, Op::DropScene | Op::CreateScene) {
+            return Err(format!("{op:?} cannot be corrupted"));
         }
         Ok(())
     })?;
+    if corrupt.is_some() && !corrupted {
+        return Err(WorkloadError::Plan("the corruption was never applied".to_string()));
+    }
 
     if timing_wanted {
         let mut metric = timing(
@@ -238,15 +274,26 @@ fn cross_check(
     outcome: &mut RunOutcome,
 ) -> Result<(), String> {
     let checkpoint = model.checkpoint(view)?;
-    let mut wrong = 0usize;
-    let connectors = checkpoint
+    let connectors: Vec<_> = checkpoint
         .geometry
         .elements
         .iter()
-        .filter(|element| element.kind == "connector_path");
-    let mut seen = 0usize;
-    for (edge, element) in connectors.enumerate() {
-        seen += 1;
+        .filter(|element| element.kind == "connector_path")
+        .collect();
+    // A runner with a different number of connectors than the model has no end points to put beside the model's.
+    if connectors.len() != state.edges.len() {
+        outcome.checkpoints_failed.push(FailedCheckpoint {
+            section: "topology".to_string(),
+            detail: format!(
+                "checkpoint {index}: the model has {} connectors and the runner has {}",
+                connectors.len(),
+                state.edges.len()
+            ),
+        });
+        return Ok(());
+    }
+    let mut wrong = 0usize;
+    for (edge, element) in connectors.into_iter().enumerate() {
         let got = state.endpoints(edge);
         let off = if element.coordinates.is_empty() {
             // The model says the two ends are one point, and the library draws no path for that.
@@ -271,15 +318,7 @@ fn cross_check(
             }
         }
     }
-    if seen != state.edges.len() {
-        outcome.checkpoints_failed.push(FailedCheckpoint {
-            section: "topology".to_string(),
-            detail: format!(
-                "checkpoint {index}: the model has {seen} connectors and the runner has {}",
-                state.edges.len()
-            ),
-        });
-    } else if wrong == 0 {
+    if wrong == 0 {
         outcome.checkpoints_passed += 1;
     }
     Ok(())

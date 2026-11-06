@@ -283,6 +283,7 @@ node perf/runner/verify-allocator.mjs                                     # does
 node perf/runner/selftest.mjs                                             # does the checkpoint comparison notice a fault?
 node perf/runner/selftest-timing.mjs                                      # is the harness's own work outside every timing?
 node perf/runner/selftest-endurance.mjs                                   # does the endurance gate notice a leak?
+node perf/runner/selftest-final-state.mjs                                 # does a wrong final mutation invalidate a performance run?
 node perf/runner/attribute-persistent.mjs                                 # where do the bytes that stay allocated come from?
 cargo test -p perf-harness-wasm                                           # the allocator's arithmetic and the parsers, natively
 ```
@@ -359,6 +360,17 @@ with what exists and not with what it meant.
 - **The checkpoint comparison can fail.** `selftest.mjs` corrupts what was observed in six ways (a connector out by a unit, a
   node three units low, a node gone, changed text, swapped paint order, a missing edge). Each makes the run invalid and names
   the right section, and a clean run passes.
+- **A performance run vouches for the end of the measured work.** It executes only the last two checkpoints, to keep checks out
+  of the timing. For W1 and W3 those are the completed scene, with every node and edge, and the empty page after the final
+  removal. For W2 they are an earlier state and the state after the last move, and a checkpoint always follows the last move.
+  `perf-harness`'s `corruption` tests state that for every workload and for intervals that divide the run, that do not, and
+  that are absent. `selftest-final-state.mjs` then applies the last mutation before each of those two checkpoints wrongly (a
+  node seven units out, an edge the wrong way round, a removal that leaves a host behind) while the model is given the right
+  one. In both modes and all three workloads each makes the run `invalid_incorrect` through a checkpoint, with the stream's
+  digest still matching, and each run as generated is valid. A run whose corruption finds nothing to corrupt is an error and
+  not a pass. With the schedule weakened to the last checkpoint alone the tests fail. Layer A has the same test natively.
+  Writing it showed that Layer A's comparison indexed past its connectors when the runner had fewer than the model, which it now
+  reports as a topology failure.
 - **The counting allocator is verified.** It adds exactly the size of each retained block, returns exactly to where it started on
   release, and counts closures leaked with `Closure::forget`, including the library's own `svg_buttons::watch`, which leaks bytes
   that removing the element does not give back. `run.mjs` withholds every allocator figure if that check does not pass.

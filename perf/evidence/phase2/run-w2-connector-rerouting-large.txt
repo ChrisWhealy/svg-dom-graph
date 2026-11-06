@@ -13,7 +13,7 @@ A performance #0: ok, 2 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 B performance #0: ok, 2 checkpoints passed, 0 failed
-    mutation.move_node p50 7.67 us
+    mutation.move_node p50 6.96 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 A performance #1: ok, 2 checkpoints passed, 0 failed
@@ -21,7 +21,7 @@ A performance #1: ok, 2 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 B performance #1: ok, 2 checkpoints passed, 0 failed
-    mutation.move_node p50 6.88 us
+    mutation.move_node p50 6.77 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 A performance #2: ok, 2 checkpoints passed, 0 failed
@@ -29,7 +29,7 @@ A performance #2: ok, 2 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 B performance #2: ok, 2 checkpoints passed, 0 failed
-    mutation.move_node p50 6.72 us
+    mutation.move_node p50 6.96 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 A performance #3: ok, 2 checkpoints passed, 0 failed
@@ -37,7 +37,7 @@ A performance #3: ok, 2 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 B performance #3: ok, 2 checkpoints passed, 0 failed
-    mutation.move_node p50 6.82 us
+    mutation.move_node p50 7.22 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 A performance #4: ok, 2 checkpoints passed, 0 failed
@@ -45,12 +45,12 @@ A performance #4: ok, 2 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 B performance #4: ok, 2 checkpoints passed, 0 failed
-    mutation.move_node p50 6.97 us
+    mutation.move_node p50 7.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (5105 operations)
 
 the median of each timing in every repetition (the spread is highest over lowest):
-  A performance rust.connector_endpoints: 0.0909 to 0.0912 us over 5 repetitions, 0% apart
-  B performance mutation.move_node: 6.72 to 7.67 us over 5 repetitions, 14% apart
+  A performance rust.connector_endpoints: 0.0922 to 0.0922 us over 5 repetitions, 0% apart
+  B performance mutation.move_node: 6.77 to 7.22 us over 5 repetitions, 7% apart
 
 every deterministic gate passed

@@ -40,6 +40,8 @@ impl Run<'_> {
     /// reads a clock.
     fn step(&mut self, op: &Op) -> Result<(), String> {
         alloc::set_tag(phase::COLLECT);
+        let corrupt_now = self.corrupt_at == Some(self.ordinal);
+        self.ordinal += 1;
         self.model.apply(op)?;
         self.hold_up();
 
@@ -80,7 +82,11 @@ impl Run<'_> {
                     self.flush()?;
                 }
                 alloc::set_tag(phase::PREPARE);
-                let prepared = self.prepare(op)?;
+                let mut prepared = self.prepare(op)?;
+                // The model has been given the operation as the stream has it, and the library is given it wrong.
+                if corrupt_now {
+                    prepared = self.corrupt(prepared)?;
+                }
                 self.submit(prepared, waiting)?;
             },
         }

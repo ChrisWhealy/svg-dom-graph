@@ -23,6 +23,7 @@ pub use attribute::attribute;
 pub use injection::{Fault, Leak};
 
 use crate::alloc;
+use perf_harness::corruption::{self, Target};
 use perf_harness::manifest::{Manifest, Mode, ViewPolicy, Workload};
 use perf_harness::model::Model;
 use perf_harness::ops::{Op, StreamHasher};
@@ -93,6 +94,10 @@ struct Run<'a> {
     checkpoint_this_cycle: bool,
     outcome: RunOutcome,
     fault: Option<Fault>,
+    /// The position among the stream's operations of the one to apply wrongly, and whether that has been done.
+    corrupt_at: Option<u64>,
+    ordinal: u64,
+    corrupted: bool,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -162,6 +167,9 @@ impl<'a> Run<'a> {
             checkpoint_this_cycle: false,
             outcome: RunOutcome::new("B", mode),
             fault: None,
+            corrupt_at: None,
+            ordinal: 0,
+            corrupted: false,
         };
         let (resolution_us, clock_read_us) = run.measure_resolution();
         run.resolution_us = resolution_us;
@@ -226,6 +234,7 @@ impl<'a> Run<'a> {
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Drops the scene and removes its host, if the workload left them behind. It is done after every figure is taken.
     fn clean_up(&mut self) {
+        self.remove_leftover();
         self.scene = None;
         self.nodes.clear();
         if let Some(svg) = self.svg.take() {
@@ -242,7 +251,7 @@ fn describe(error: impl std::fmt::Display) -> String {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Runs `manifest` in `mode`, and always gives an outcome: a failure is a status and a message, never a trap.
 pub fn run(manifest: &Manifest, mode: Mode, expected: Option<&Expected>) -> RunOutcome {
-    run_with_fault(manifest, mode, expected, None)
+    run_with_options(manifest, mode, expected, Options::default())
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -253,41 +262,56 @@ pub fn run_with_fault(
     expected: Option<&Expected>,
     fault: Option<Fault>,
 ) -> RunOutcome {
-    run_with_options(manifest, mode, expected, fault, 0.0, None)
+    run_with_options(manifest, mode, expected, Options { fault, ..Options::default() })
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The same, with a deliberate delay of `harness_delay_us` microseconds in the harness's own work for every operation.
-///
-/// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it. The
-/// self-test runs a workload with and without it, and fails if a figure moves.
-pub fn run_with_options(
-    manifest: &Manifest,
-    mode: Mode,
-    expected: Option<&Expected>,
-    fault: Option<Fault>,
-    harness_delay_us: f64,
-    leak: Option<Leak>,
-) -> RunOutcome {
-    if !matches!(mode, Mode::Correctness | Mode::Performance | Mode::Endurance) {
+/// What a self-test does to a run to prove that something notices. A run that is not a self-test has none of it.
+#[derive(Debug, Clone, Copy, Default)]
+pub struct Options {
+    /// A fault in what is observed.
+    pub fault: Option<Fault>,
+    /// A delay in the harness's own work, in microseconds, for every operation.
+    ///
+    /// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it. The
+    /// self-test runs a workload with and without it, and fails if a figure moves.
+    pub harness_delay_us: f64,
+    /// A leak in every cycle.
+    pub leak: Option<Leak>,
+    /// The last mutation before one of the two executed checkpoints is applied wrongly. See [`perf_harness::corruption`].
+    pub corrupt: Option<Target>,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The same, with the self-test's `options`.
+pub fn run_with_options(manifest: &Manifest, mode: Mode, expected: Option<&Expected>, options: Options) -> RunOutcome {
+    let error = |message: String| {
         let mut outcome = RunOutcome::new("B", mode);
         outcome.status = "error";
-        outcome.error = Some(format!("the {mode:?} mode is not implemented in this runner yet"));
-        return outcome;
+        outcome.error = Some(message);
+        outcome
+    };
+    if !matches!(mode, Mode::Correctness | Mode::Performance | Mode::Endurance) {
+        return error(format!("the {mode:?} mode is not implemented in this runner yet"));
     }
+    let corrupt_at = match options.corrupt.map(|target| corruption::locate(manifest, target)).transpose() {
+        Ok(found) => found.map(|found| found.ordinal),
+        Err(message) => return error(describe(message)),
+    };
     let mut run = match Run::new(manifest, mode) {
         Ok(run) => run,
-        Err(message) => {
-            let mut outcome = RunOutcome::new("B", mode);
-            outcome.status = "error";
-            outcome.error = Some(message);
-            return outcome;
-        },
+        Err(message) => return error(message),
     };
-    run.fault = fault;
-    run.harness_delay_us = harness_delay_us;
-    run.leak = leak;
-    if let Err(message) = run.execute() {
+    run.fault = options.fault;
+    run.harness_delay_us = options.harness_delay_us;
+    run.leak = options.leak;
+    run.corrupt_at = corrupt_at;
+    let mut result = run.execute();
+    // A corruption that was never applied would leave a run that passes, which proves nothing.
+    if result.is_ok() && corrupt_at.is_some() && !run.corrupted {
+        result = Err("the corruption was never applied".to_string());
+    }
+    if let Err(message) = result {
         run.outcome.status = "error";
         run.outcome.error = Some(message);
     }

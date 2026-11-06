@@ -101,6 +101,40 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Runs a workload with its last mutation before one of the two executed checkpoints applied wrongly, and returns the
+    /// outcome as JSON. `target` is `final`, `penultimate` or `none`. A run that does it has to come out invalid, in the
+    /// performance mode as in the correctness mode, which `selftest-final-state.mjs` checks.
+    #[wasm_bindgen]
+    pub fn selftest_corruption(manifest_json: &str, mode: &str, target: &str) -> String {
+        let mode = match mode {
+            "correctness" => Mode::Correctness,
+            "performance" => Mode::Performance,
+            other => return failed(Mode::Performance, format!("the corruption self-test has no mode {other}")),
+        };
+        let manifest = match serde_json::from_str(manifest_json)
+            .map_err(|e| e.to_string())
+            .and_then(|v| Manifest::from_json(v).map_err(|e| e.to_string()))
+        {
+            Ok(manifest) => manifest,
+            Err(message) => return failed(mode, message),
+        };
+        let corrupt = match target {
+            "none" => None,
+            other => match perf_harness::corruption::Target::parse(other) {
+                Some(target) => Some(target),
+                None => return failed(mode, format!("there is no corruption target {other}")),
+            },
+        };
+        let outcome = crate::executor::run_with_options(
+            &manifest,
+            mode,
+            None,
+            crate::executor::Options { corrupt, ..Default::default() },
+        );
+        serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs a workload with a deliberate delay of `delay_us` microseconds in the harness's own work for every
     /// operation, and returns the outcome as JSON. No timing may show the delay, which the timing self-test checks.
     #[wasm_bindgen]
@@ -117,7 +151,15 @@ mod exports {
             Ok(manifest) => manifest,
             Err(message) => return failed(mode, message),
         };
-        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, delay_us, None);
+        let outcome = crate::executor::run_with_options(
+            &manifest,
+            mode,
+            None,
+            crate::executor::Options {
+                harness_delay_us: delay_us,
+                ..Default::default()
+            },
+        );
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 
@@ -142,7 +184,12 @@ mod exports {
                 None => return failed(mode, format!("there is no leak {other}")),
             },
         };
-        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, 0.0, leak);
+        let outcome = crate::executor::run_with_options(
+            &manifest,
+            mode,
+            None,
+            crate::executor::Options { leak, ..Default::default() },
+        );
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 

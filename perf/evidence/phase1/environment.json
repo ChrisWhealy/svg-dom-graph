@@ -1,37 +1,25 @@
 {
-  "recorded_at": "2026-11-05T19:26:24.392Z",
-  "commit": "0d5d63420ee3353ab7f8baa38540593d8c423da1",
+  "recorded_at": "2026-11-06T10:01:06.786Z",
+  "commit": "cb035183f0b3ce49ae0fb2b89fbf22e70e83fb23",
   "uncommitted_changes": [
     " M demo/changelog.md",
     " M design-specs/performance_harness.pdf",
-    " M perf-harness-wasm/src/alloc/mod.rs",
-    " M perf-harness-wasm/src/alloc/unit_tests.rs",
+    " M perf-harness-wasm/src/executor/cycle.rs",
+    " M perf-harness-wasm/src/executor/injection.rs",
     " M perf-harness-wasm/src/executor/mod.rs",
     " M perf-harness-wasm/src/lib.rs",
-    " M perf-harness/src/encode/mod.rs",
-    " M perf-harness/src/endurance/mod.rs",
-    " M perf-harness/src/endurance/unit_tests.rs",
-    " M perf-harness/src/manifest/mod.rs",
-    " M perf-harness/src/ops/unit_tests.rs",
-    " M perf-harness/src/outcome/mod.rs",
-    " M perf-harness/src/workload/mod.rs",
+    " M perf-harness/src/layer_a/mod.rs",
+    " M perf-harness/src/layer_a/unit_tests.rs",
+    " M perf-harness/src/lib.rs",
     " M perf/README.md",
     " D perf/evidence/phase1/environment.json",
     " M perf/evidence/phase1/rust-tests-native.txt",
     " M perf/evidence/phase1/rust-tests-wasm32-wasi.txt",
     " M perf/evidence/phase1/rust-tests-without-schema.txt",
-    " M perf/evidence/phase1/schema-checks.txt",
     " M perf/runner/page/index.html",
     " M perf/runner/record-phase2-evidence.mjs",
-    " M perf/runner/run.mjs",
-    " M perf/schemas/check.mjs",
-    " M perf/schemas/examples/rejected-manifests.json",
-    " M perf/schemas/examples/result.json",
-    " M perf/schemas/manifest.schema.json",
-    " M perf/schemas/result.schema.json",
-    "?? perf-harness-wasm/src/persistent/",
-    "?? perf/runner/attribute-persistent.mjs",
-    "?? perf/runner/selftest-endurance.mjs"
+    "?? perf-harness/src/corruption/",
+    "?? perf/runner/selftest-final-state.mjs"
   ],
   "machine": {
     "os": "Darwin 27.2.0",
@@ -51,67 +39,67 @@
       "file": "rust-tests-native.txt",
       "command": "cargo test -p perf-harness",
       "exit_code": 0,
-      "seconds": 0.381
+      "seconds": 0.385
     },
     {
       "file": "rust-tests-without-schema.txt",
       "command": "cargo test -p perf-harness --no-default-features",
       "exit_code": 0,
-      "seconds": 0.106
+      "seconds": 0.103
     },
     {
       "file": "rust-tests-wasm32-wasi.txt",
       "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
       "exit_code": 0,
-      "seconds": 0.237
+      "seconds": 1.111
     },
     {
       "file": "crosscheck-rust-vs-javascript.txt",
       "command": "node perf/crosscheck/crosscheck.mjs",
       "exit_code": 0,
-      "seconds": 0.549
+      "seconds": 0.859
     },
     {
       "file": "schema-checks.txt",
       "command": "npm test",
       "exit_code": 0,
-      "seconds": 0.16
+      "seconds": 0.173
     },
     {
       "file": "reports/w1-scene-construction-medium.json",
       "command": "perf-harness generate perf/manifests/w1-scene-construction-medium.toml --id w1-scene-construction-medium",
       "exit_code": 0,
-      "seconds": 0.32
+      "seconds": 0.321
     },
     {
       "file": "reports/w1-scene-construction-small.json",
       "command": "perf-harness generate perf/manifests/w1-scene-construction-small.toml --id w1-scene-construction-small",
       "exit_code": 0,
-      "seconds": 0.227
+      "seconds": 0.23
     },
     {
       "file": "reports/w2-connector-rerouting-large.json",
       "command": "perf-harness generate perf/manifests/w2-connector-rerouting-large.toml --id w2-connector-rerouting-large",
       "exit_code": 0,
-      "seconds": 0.416
+      "seconds": 0.427
     },
     {
       "file": "reports/w2-connector-rerouting-small.json",
       "command": "perf-harness generate perf/manifests/w2-connector-rerouting-small.toml --id w2-connector-rerouting-small",
       "exit_code": 0,
-      "seconds": 0.247
+      "seconds": 0.25
     },
     {
       "file": "reports/w3-scene-lifecycle-endurance.json",
       "command": "perf-harness generate perf/manifests/w3-scene-lifecycle-endurance.toml --id w3-scene-lifecycle-endurance",
       "exit_code": 0,
-      "seconds": 0.268
+      "seconds": 0.273
     },
     {
       "file": "reports/w3-scene-lifecycle-small.json",
       "command": "perf-harness generate perf/manifests/w3-scene-lifecycle-small.toml --id w3-scene-lifecycle-small",
       "exit_code": 0,
-      "seconds": 0.268
+      "seconds": 0.218
     }
   ]
 }

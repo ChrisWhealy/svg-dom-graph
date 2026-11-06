@@ -1,7 +1,11 @@
 //! Deliberate faults and leaks, to prove that the checks which should notice them do.
 
 use super::Run;
+use super::queue::Prepared;
+use perf_harness::corruption::DISPLACEMENT;
 use perf_harness::model::Checkpoint;
+use svg_dom::root::utils::Point;
+use wasm_bindgen::JsCast;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// A deliberate fault in what was observed, to prove that the comparison notices it.
@@ -128,6 +132,57 @@ impl Run<'_> {
                 let _ = svg_dom_graph::controls::svg_buttons::watch(&self.document, "perf-endurance-stage", |_| {});
             },
             None => {},
+        }
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The id of the host that a corrupted removal leaves behind.
+const LEFTOVER_ID: &str = "perf-svg-leftover";
+
+impl Run<'_> {
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Makes the operation wrong, after the reference model has been given the right one.
+    ///
+    /// A node is put out of place, an edge is put the wrong way round, and a removal leaves a host in the document. It is
+    /// done to the prepared operation, so the library is called with it exactly as a correct one would be and nothing in a
+    /// timed interval is different. The checkpoint that follows must find the difference.
+    pub(super) fn corrupt(&mut self, prepared: Prepared) -> Result<Prepared, String> {
+        self.corrupted = true;
+        let displace = |point: Point| Point::new(point.x + DISPLACEMENT as f64, point.y);
+        Ok(match prepared {
+            Prepared::AddNode { key, point, size, label } => Prepared::AddNode {
+                key,
+                point: displace(point),
+                size,
+                label,
+            },
+            Prepared::Move { id, point } => Prepared::Move { id, point: displace(point) },
+            Prepared::AddEdge { key, from, to } => Prepared::AddEdge { key, from: to, to: from },
+            Prepared::Remove => {
+                let svg = self.svg.as_ref().ok_or("there is no host to leave a copy of")?;
+                let leftover = svg
+                    .clone_node_with_deep(false)
+                    .map_err(|e| format!("{e:?}"))?
+                    .dyn_into::<web_sys::Element>()
+                    .map_err(|_| "a copy of the host is not an element".to_string())?;
+                leftover.set_id(LEFTOVER_ID);
+                self.document
+                    .body()
+                    .ok_or("there is no body")?
+                    .append_child(&leftover)
+                    .map_err(|e| format!("{e:?}"))?;
+                Prepared::Remove
+            },
+            Prepared::Create { .. } | Prepared::Drop => return Err("this operation cannot be corrupted".to_string()),
+        })
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Takes away the host that a corrupted removal left behind, so that the next run on the page does not find it.
+    pub(super) fn remove_leftover(&self) {
+        if let Some(leftover) = self.document.get_element_by_id(LEFTOVER_ID) {
+            leftover.remove();
         }
     }
 }

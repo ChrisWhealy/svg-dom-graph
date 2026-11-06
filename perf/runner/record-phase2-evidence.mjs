@@ -58,6 +58,7 @@ step('allocator-verification.txt', 'node', ['perf/runner/verify-allocator.mjs', 
 step('checker-selftest.txt', 'node', ['perf/runner/selftest.mjs'])
 step('timing-selftest.txt', 'node', ['perf/runner/selftest-timing.mjs'])
 step('endurance-selftest.txt', 'node', ['perf/runner/selftest-endurance.mjs'])
+step('final-state-selftest.txt', 'node', ['perf/runner/selftest-final-state.mjs'])
 step('persistent-allocations.txt', 'node', ['perf/runner/attribute-persistent.mjs', '--out', path.join(out, 'persistent-allocations.json')])
 
 // The realistic manifests, on both layers. The small ones are covered by Phase 1 and by the self-test.

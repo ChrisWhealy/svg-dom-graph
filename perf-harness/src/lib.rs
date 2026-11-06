@@ -8,6 +8,7 @@
 //! the stream itself from the same code. Switch off the `schema` feature to leave out the JSON-schema check on a manifest.
 
 pub mod compare;
+pub mod corruption;
 pub mod encode;
 pub mod endurance;
 pub mod manifest;
