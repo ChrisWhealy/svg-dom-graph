@@ -2,7 +2,7 @@
 // that must come out one way and a case that must come out the other. It needs no browser.
 //
 //   node perf/lib/test-frames.mjs
-import { attribute, parseTrace, toPageMs } from './frames.mjs'
+import { DEFINITION, attribute, parseTrace, toPageMs } from './frames.mjs'
 
 let failures = 0
 const check = (ok, text) => {
@@ -109,6 +109,14 @@ const run = (name, events, options) => attribute(parseTrace(events, options), na
   check(wide.status === 'measured' && wide.frame.id === 7 && wide.latencyMs === 12, 'with the wider qualifier, the frame that paints carries it')
   const idle = attribute(parseTrace([mark('m', 1_000_000), frame(7, 1_001_000, 4_000), ...pipeline(0, 7, 1_000_050, 1_012_000)]), 'm', { qualify: 'update' })
   check(idle.status === 'unavailable', `a frame that neither restyles nor paints never qualifies, however wide: ${idle.reason}`)
+}
+{
+  // A figure says how strongly its frame was attributed, and what it is not.
+  const events = [mark('m', 1_000_000), frame(7, 1_000_100, 5_000), style(1_004_000), paint(1_004_500), ...pipeline(0, 7, 1_000_050, 1_012_000)]
+  const strict = attribute(parseTrace(events), 'm')
+  const wide = attribute(parseTrace(events), 'm', { qualify: 'update' })
+  check(strict.qualify === 'style' && wide.qualify === 'update', 'a measured sample says which qualifier its frame was found with')
+  check(/not a photon latency/.test(DEFINITION) && /does not prove/.test(DEFINITION), 'the definition says that it is not photon latency and that attribution is not causation')
 }
 console.log(failures ? `\n${failures} did not behave` : '\nthe attribution rule behaves as designed on every hand-written trace')
 process.exit(failures ? 1 : 0)

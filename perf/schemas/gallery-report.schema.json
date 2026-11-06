@@ -59,7 +59,24 @@
         "first_visit_timed": { "type": "integer", "minimum": 0 },
         "revisit_timed": { "type": "integer", "minimum": 0 }
       },
-      "required": ["panels", "panels_in_gallery", "loaded", "failed_to_load", "with_errors", "walked", "downgraded", "skipped", "walks_pass", "walks_inconclusive", "walks_fail", "checks_pass", "checks_inconclusive", "checks_fail", "first_visit_timed", "revisit_timed"],
+      "required": [
+        "panels",
+        "panels_in_gallery",
+        "loaded",
+        "failed_to_load",
+        "with_errors",
+        "walked",
+        "downgraded",
+        "skipped",
+        "walks_pass",
+        "walks_inconclusive",
+        "walks_fail",
+        "checks_pass",
+        "checks_inconclusive",
+        "checks_fail",
+        "first_visit_timed",
+        "revisit_timed"
+      ],
       "additionalProperties": false
     },
     "browser": { "type": ["string", "null"] },
@@ -68,6 +85,11 @@
       "items": { "type": "integer", "minimum": 1 },
       "minItems": 2,
       "maxItems": 2
+    },
+    "time_definition": {
+      "type": "string",
+      "minLength": 1,
+      "description": "What a time in this report is: a trace-attributed presentation latency, and not a photon latency, found with the wider qualifier."
     },
     "cold_start_ms": { "type": "number", "minimum": 0 },
     "cold_start_definition": { "type": "string", "minLength": 1 },
@@ -101,7 +123,12 @@
               "elements_after_revisit": { "$ref": "#/$defs/count" },
               "listeners_after_revisit": { "$ref": "#/$defs/count" }
             },
-            "required": ["elements_before", "elements_after", "listeners_before", "listeners_after"],
+            "required": [
+              "elements_before",
+              "elements_after",
+              "listeners_before",
+              "listeners_after"
+            ],
             "additionalProperties": false
           },
           "controls": {
@@ -127,7 +154,10 @@
               "restarted": { "type": "boolean" },
               "clicks": { "type": "integer", "minimum": 0 },
               "changed": { "type": "integer", "minimum": 0 },
-              "step_ms": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+              "step_ms": {
+                "type": "array",
+                "items": { "type": "number", "minimum": 0 }
+              },
               "steps_unattributed": { "type": "integer", "minimum": 0 },
               "unattributed": {
                 "type": "object",
@@ -143,7 +173,17 @@
                 "items": {
                   "type": "object",
                   "properties": {
-                    "name": { "enum": ["walk", "next_changes_panel", "previous_changes_panel", "back_retraces_forward", "restart_changes_panel", "restart_returns_to_start", "no_page_errors_during_walk"] },
+                    "name": {
+                      "enum": [
+                        "walk",
+                        "next_changes_panel",
+                        "previous_changes_panel",
+                        "back_retraces_forward",
+                        "restart_changes_panel",
+                        "restart_returns_to_start",
+                        "no_page_errors_during_walk"
+                      ]
+                    },
                     "outcome": { "enum": ["pass", "inconclusive", "fail"] },
                     "detail": { "type": "string", "minLength": 1 }
                   },
@@ -163,30 +203,72 @@
                 "required": ["because"],
                 "additionalProperties": false
               },
-              "errors": { "type": "array", "items": { "$ref": "#/$defs/problem" } }
+              "errors": {
+                "type": "array",
+                "items": { "$ref": "#/$defs/problem" }
+              }
             },
             "required": ["status", "verdict", "checks"],
             "additionalProperties": false,
             "allOf": [
               {
-                "if": { "properties": { "status": { "enum": ["skipped", "downgraded"] } }, "required": ["status"] },
+                "if": {
+                  "properties": {
+                    "status": { "enum": ["skipped", "downgraded"] }
+                  },
+                  "required": ["status"]
+                },
                 "then": { "required": ["reason"] }
               },
               {
-                "if": { "properties": { "status": { "const": "walked" } }, "required": ["status"] },
+                "if": {
+                  "properties": { "status": { "const": "walked" } },
+                  "required": ["status"]
+                },
                 "then": {
-                  "required": ["forward", "back", "restarted", "clicks", "changed", "step_ms", "steps_unattributed", "errors"],
+                  "required": [
+                    "forward",
+                    "back",
+                    "restarted",
+                    "clicks",
+                    "changed",
+                    "step_ms",
+                    "steps_unattributed",
+                    "errors"
+                  ],
                   "not": { "required": ["reason"] }
                 }
               }
             ]
           }
         },
-        "required": ["id", "label", "group", "status", "notes", "errors", "build", "counts", "controls", "walk"],
+        "required": [
+          "id",
+          "label",
+          "group",
+          "status",
+          "notes",
+          "errors",
+          "build",
+          "counts",
+          "controls",
+          "walk"
+        ],
         "additionalProperties": false
       }
     }
   },
-  "required": ["schema_version", "summary", "browser", "viewport", "cold_start_ms", "cold_start_definition", "teardown", "panels", "page_errors"],
+  "required": [
+    "schema_version",
+    "summary",
+    "browser",
+    "viewport",
+    "time_definition",
+    "cold_start_ms",
+    "cold_start_definition",
+    "teardown",
+    "panels",
+    "page_errors"
+  ],
   "additionalProperties": false
 }

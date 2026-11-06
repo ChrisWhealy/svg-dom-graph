@@ -14,7 +14,7 @@
 // The wheel cases are each run in a tab of their own that has been brought to the front, since a real wheel reaches only the
 // tab in front.
 import { spawnSync } from 'node:child_process'
-import { attribute } from '../../lib/frames.mjs'
+import { DEFINITION, attribute } from '../../lib/frames.mjs'
 import { dragPath, pause, wheel } from '../../lib/input.mjs'
 import { traced } from '../../lib/trace.mjs'
 import { MAX_NODES, checkAccessibility, expectations } from './accessibility.mjs'
@@ -26,7 +26,7 @@ export const STEP_GAP_MS = 24
 const SETTLE_MS = 80
 
 const MECHANISM =
-  'from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the ' +
+  `${DEFINITION}, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the ` +
   `compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, ` +
   `devtools.timeline and cc; input from Input.dispatchMouseEvent every ${STEP_GAP_MS} ms`
 

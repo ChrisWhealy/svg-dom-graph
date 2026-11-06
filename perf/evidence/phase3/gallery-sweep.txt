@@ -1,62 +1,62 @@
-ok   panel-tree: build 32.4 ms, downgraded
-ok   panel-elbow: build 38.0 ms, downgraded
-ok   panel-edge-anchors: build 51.4 ms, downgraded
-ok   panel-ellipse: build 24.4 ms, downgraded
-ok   panel-unsigned: build 15.7 ms, downgraded
-ok   panel-signed: build 28.3 ms, downgraded
-ok   panel-hexdump: build 26.3 ms, downgraded
-ok   panel-ascii: build 24.0 ms, downgraded
-ok   panel-bits: build 29.4 ms, downgraded
-ok   panel-float: build 23.7 ms, downgraded
-ok   panel-128-bit: build 50.7 ms, downgraded
-ok   panel-size: build 37.9 ms, downgraded
+ok   panel-tree: build 16.1 ms, downgraded
+ok   panel-elbow: build 29.8 ms, downgraded
+ok   panel-edge-anchors: build 38.0 ms, downgraded
+ok   panel-ellipse: build 24.6 ms, downgraded
+ok   panel-unsigned: build 15.8 ms, downgraded
+ok   panel-signed: build 27.9 ms, downgraded
+ok   panel-hexdump: build 26.9 ms, downgraded
+ok   panel-ascii: build 34.3 ms, downgraded
+ok   panel-bits: build 39.3 ms, downgraded
+ok   panel-float: build 37.3 ms, downgraded
+ok   panel-128-bit: build 38.1 ms, downgraded
+ok   panel-size: build 37.5 ms, downgraded
 ok   panel-bool: build 41.9 ms, downgraded
-ok   panel-complex: build 39.0 ms, downgraded
-ok   panel-operators-unary: build 15.9 ms, downgraded
-ok   panel-operators-binary: build 38.4 ms, downgraded
-ok   panel-operators-arithmetic: build 38.4 ms, downgraded
-ok   panel-operators-chained: build 40.0 ms, downgraded
-ok   panel-butterfly: build 38.3 ms, downgraded
-ok   panel-selection-1d: build 15.6 ms, walked, 14 clicks
-ok   panel-selection-2d: build 16.8 ms, walked, 14 clicks
-ok   panel-selection-hexdump: build 15.9 ms, walked, 12 clicks
-ok   panel-selection-thetac: build 16.3 ms, walked, 10 clicks
-ok   panel-markdown: build 19.3 ms, downgraded
-ok   panel-text-input: build 39.8 ms, downgraded
-ok   panel-theta: build 52.5 ms, walked, 6 clicks
-ok   panel-sha1: build 15.6 ms, downgraded
-ok   panel-sha2-256: build 36.7 ms, downgraded
-ok   panel-sha3-sponge: build 37.9 ms, downgraded
-ok   panel-chacha20: build 36.1 ms, downgraded
-ok   panel-huffman: build 32.2 ms, downgraded
-ok   panel-base64: build 38.9 ms, downgraded
-ok   panel-utf8: build 36.5 ms, downgraded
-ok   panel-crc32: build 15.6 ms, downgraded
+ok   panel-complex: build 39.5 ms, downgraded
+ok   panel-operators-unary: build 17.1 ms, downgraded
+ok   panel-operators-binary: build 38.5 ms, downgraded
+ok   panel-operators-arithmetic: build 39.1 ms, downgraded
+ok   panel-operators-chained: build 38.2 ms, downgraded
+ok   panel-butterfly: build 40.7 ms, downgraded
+ok   panel-selection-1d: build 15.9 ms, walked, 14 clicks
+ok   panel-selection-2d: build 16.3 ms, walked, 14 clicks
+ok   panel-selection-hexdump: build 16.5 ms, walked, 12 clicks
+ok   panel-selection-thetac: build 17.2 ms, walked, 10 clicks
+ok   panel-markdown: build 16.1 ms, downgraded
+ok   panel-text-input: build 39.1 ms, downgraded
+ok   panel-theta: build 51.4 ms, walked, 6 clicks
+ok   panel-sha1: build 16.3 ms, downgraded
+ok   panel-sha2-256: build 36.6 ms, downgraded
+ok   panel-sha3-sponge: build 36.4 ms, downgraded
+ok   panel-chacha20: build 36.9 ms, downgraded
+ok   panel-huffman: build 16.4 ms, downgraded
+ok   panel-base64: build 38.8 ms, downgraded
+ok   panel-utf8: build 37.3 ms, downgraded
+ok   panel-crc32: build 16.6 ms, downgraded
 ok   panel-hamming: build 36.3 ms, downgraded
-ok   panel-qr-code: build 24.1 ms, downgraded
-ok   panel-bubble-sort: build 15.8 ms, walked, 14 clicks
-ok   panel-shell-sort: build 17.1 ms, walked, 14 clicks
-ok   panel-quicksort: build 15.5 ms, walked, 14 clicks
-ok   panel-dijkstra: build 31.9 ms, walked, 14 clicks
-ok   panel-springs: build 16.8 ms, downgraded
-ok   panel-edmonds-karp: build 51.2 ms, walked, 12 clicks
-ok   panel-red-black-tree: build 16.2 ms, walked, 12 clicks
-ok   panel-tarjan: build 14.5 ms, skipped
-ok   panel-sine-cosine: build 16.2 ms, downgraded
-ok   panel-pythagoras: build 15.8 ms, downgraded
-ok   panel-amplitude-frequency: build 36.9 ms, downgraded
+ok   panel-qr-code: build 23.6 ms, downgraded
+ok   panel-bubble-sort: build 16.4 ms, walked, 14 clicks
+ok   panel-shell-sort: build 16.9 ms, walked, 14 clicks
+ok   panel-quicksort: build 16.1 ms, walked, 14 clicks
+ok   panel-dijkstra: build 16.3 ms, walked, 14 clicks
+ok   panel-springs: build 16.2 ms, downgraded
+ok   panel-edmonds-karp: build 35.5 ms, walked, 12 clicks
+ok   panel-red-black-tree: build 17.0 ms, walked, 12 clicks
+ok   panel-tarjan: build 16.5 ms, skipped
+ok   panel-sine-cosine: build 15.7 ms, downgraded
+ok   panel-pythagoras: build 15.6 ms, downgraded
+ok   panel-amplitude-frequency: build 36.8 ms, downgraded
 ok   panel-phase-shift: build 36.2 ms, downgraded
-ok   panel-convolution: build 42.3 ms, downgraded
-ok   panel-fft: build 45.0 ms, walked, 6 clicks
-ok   panel-game-of-life: build 16.3 ms, walked, 7 clicks
-ok   panel-n-queens: build 16.4 ms, walked, 12 clicks
-ok   panel-marching-squares: build 16.9 ms, walked, 1 clicks
-ok   panel-petri-net: build 16.7 ms, walked, 12 clicks
+ok   panel-convolution: build 39.7 ms, downgraded
+ok   panel-fft: build 44.1 ms, walked, 6 clicks
+ok   panel-game-of-life: build 16.6 ms, walked, 7 clicks
+ok   panel-n-queens: build 16.9 ms, walked, 12 clicks
+ok   panel-marching-squares: build 16.3 ms, walked, 1 clicks
+ok   panel-petri-net: build 16.8 ms, walked, 12 clicks
 
-54 panels in perf/evidence/phase3/results/gallery/gallery-report-20261106T115922.json
-  cold start 59 ms
-  first visit: 54 timed, median 29.4 ms, slowest 52.5 ms (panel-theta)
-  revisit: 54 timed, median 37.7 ms
+54 panels in perf/evidence/phase3/results/gallery/gallery-report-20261106T121636.json
+  cold start 68 ms
+  first visit: 54 timed, median 27.9 ms, slowest 51.4 ms (panel-theta)
+  revisit: 54 timed, median 38.1 ms
   swept 54 of the 54 panels in the gallery: 54 loaded, 0 failed to load, 0 with page errors
   walked 16, downgraded 37, skipped 1
   walk verdicts: 16 pass, 38 inconclusive, 0 fail; of the 134 checks, 57 pass, 77 inconclusive, 0 fail

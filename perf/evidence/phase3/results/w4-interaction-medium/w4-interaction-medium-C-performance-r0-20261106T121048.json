@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-medium-C-performance-r0-20261106T114043",
-  "started_at": "2026-11-06T11:40:43.231Z",
+  "run_id": "w4-interaction-medium-C-performance-r0-20261106T121048",
+  "started_at": "2026-11-06T12:10:48.548Z",
   "repetition": 0,
   "sequence_position": 0,
   "environment": {
@@ -18,7 +18,7 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
+    "git_sha": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -90,17 +90,17 @@
       "samples": 1,
       "status": "measured",
       "summary": {
-        "max": 34.03999996185303,
-        "min": 34.03999996185303,
-        "p50": 34.03999996185303
+        "max": 43.46000003814697,
+        "min": 43.46000003814697,
+        "p50": 43.46000003814697
       },
       "unit": "ms",
       "within_run": {
         "iqr": 0,
-        "mean": 34.03999996185303,
+        "mean": 43.46000003814697,
         "stddev": 0,
-        "tukey_high": 34.03999996185303,
-        "tukey_low": 34.03999996185303
+        "tukey_high": 43.46000003814697,
+        "tukey_low": 43.46000003814697
       }
     },
     {
@@ -188,24 +188,24 @@
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.drag.scale_50.latency",
-      "outliers_flagged": 22,
+      "outliers_flagged": 9,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 239.48,
-        "min": 0.787,
-        "p50": 3.851,
-        "p95": 5.444
+        "max": 239.205,
+        "min": 0.702,
+        "p50": 4.031,
+        "p95": 5.735
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 1.3319999999999994,
-        "mean": 5.823995833333336,
-        "stddev": 17.840792579889598,
-        "tukey_high": 6.432999999999999,
-        "tukey_low": 1.105000000000001
+        "iqr": 1.5849999999999995,
+        "mean": 5.971954166666664,
+        "stddev": 17.817176805662854,
+        "tukey_high": 7.171499999999999,
+        "tukey_low": 0.8315000000000006
       }
     },
     {
@@ -214,22 +214,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.drag.scale_50.input_delay",
-      "outliers_flagged": 6,
+      "outliers_flagged": 4,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 10.010000109672546,
-        "min": 3.3299999237060547,
-        "p50": 7.120000004768372,
-        "p95": 8.389999985694885
+        "max": 9.080000042915344,
+        "min": 2.0649999380111694,
+        "p50": 7.009999990463257,
+        "p95": 8.454999923706055
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 1.0149999856948853,
-        "mean": 7.134812499582767,
-        "stddev": 0.8569690122114253,
-        "tukey_high": 9.222499907016754,
-        "tukey_low": 5.162499964237213
+        "iqr": 1.065000057220459,
+        "mean": 7.072979167600473,
+        "stddev": 0.8856027545666499,
+        "tukey_high": 9.242500066757202,
+        "tukey_low": 4.982499837875366
       }
     },
     {
@@ -238,22 +238,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.drag.scale_50.round_trip",
-      "outliers_flagged": 7,
+      "outliers_flagged": 6,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 10.311125000000175,
-        "min": 4.565208999999413,
-        "p50": 8.189457999999831,
-        "p95": 9.391041999999743
+        "max": 10.510791000000609,
+        "min": 3.2054589999997916,
+        "p50": 8.154375000000073,
+        "p95": 9.198041999999987
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.9355000000014115,
-        "mean": 8.127364754166619,
-        "stddev": 0.8191569139126489,
-        "tukey_high": 10.031375000003209,
-        "tukey_low": 6.2893749999975626
+        "iqr": 0.8933750000014697,
+        "mean": 8.134810924999934,
+        "stddev": 0.8265501204616403,
+        "tukey_high": 9.962104500003079,
+        "tukey_low": 6.3886044999972
       }
     },
     {
@@ -280,31 +280,31 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 63,
+      "value": 57,
       "mechanism": "Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above"
     },
     {
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.pan.scale_50.latency",
-      "outliers_flagged": 32,
+      "outliers_flagged": 26,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 32.09,
-        "min": 0.723,
-        "p50": 4.909,
-        "p95": 5.593
+        "max": 32.104,
+        "min": 0.864,
+        "p50": 5.206,
+        "p95": 5.772
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7370000000000001,
-        "mean": 4.901762499999999,
-        "stddev": 3.166892869933224,
-        "tukey_high": 6.3565000000000005,
-        "tukey_low": 3.4085
+        "iqr": 1.0170000000000003,
+        "mean": 5.065195833333332,
+        "stddev": 3.193007340051497,
+        "tukey_high": 6.986500000000001,
+        "tukey_low": 2.9184999999999994
       }
     },
     {
@@ -313,22 +313,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.pan.scale_50.input_delay",
-      "outliers_flagged": 12,
+      "outliers_flagged": 14,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 9.294999957084656,
-        "min": 0.2250000238418579,
-        "p50": 7.254999995231628,
-        "p95": 8.225000023841858
+        "max": 9.695000052452087,
+        "min": 0.39499998092651367,
+        "p50": 7,
+        "p95": 8.264999985694885
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7949999570846558,
-        "mean": 7.048229165375233,
-        "stddev": 1.3530663638631129,
-        "tukey_high": 8.867499887943268,
-        "tukey_low": 5.687500059604645
+        "iqr": 0.8250000476837158,
+        "mean": 6.894270835320155,
+        "stddev": 1.2557058059160375,
+        "tukey_high": 8.667500138282776,
+        "tukey_low": 5.367499947547913
       }
     },
     {
@@ -337,22 +337,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.pan.scale_50.round_trip",
-      "outliers_flagged": 16,
+      "outliers_flagged": 14,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 18.623208000000886,
-        "min": 0.7410840000011376,
-        "p50": 8.226291999999376,
-        "p95": 9.183750000000146
+        "max": 12.587082999998529,
+        "min": 1.432541999998648,
+        "p50": 8.132042000001093,
+        "p95": 9.300374999998894
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6717500000013388,
-        "mean": 8.109811962499862,
-        "stddev": 1.454302036099888,
-        "tukey_high": 9.56787500000064,
-        "tukey_low": 6.880874999995285
+        "iqr": 0.7948340000039025,
+        "mean": 8.06926044166668,
+        "stddev": 1.1838126089809646,
+        "tukey_high": 9.733460000008563,
+        "tukey_low": 6.554123999992953
       }
     },
     {
@@ -379,30 +379,30 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 43,
+      "value": 40,
       "mechanism": "Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above"
     },
     {
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.wheel_zoom.scale_50.latency",
-      "outliers_flagged": 0,
+      "outliers_flagged": 3,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 8.122,
-        "min": 5.652,
-        "p50": 6.871
+        "max": 8.216,
+        "min": 2.878,
+        "p50": 6.747
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6529999999999996,
-        "mean": 6.8863,
-        "stddev": 0.4767254794518756,
-        "tukey_high": 8.2105,
-        "tukey_low": 5.598500000000001
+        "iqr": 1.2299999999999995,
+        "mean": 6.4793,
+        "stddev": 1.2204560524091268,
+        "tukey_high": 9.139,
+        "tukey_low": 4.219000000000001
       }
     },
     {
@@ -411,21 +411,21 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.wheel_zoom.scale_50.input_delay",
-      "outliers_flagged": 3,
+      "outliers_flagged": 2,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 23.929999947547913,
-        "min": 21.790000081062317,
-        "p50": 22.835000038146973
+        "max": 24.97000002861023,
+        "min": 21.06500005722046,
+        "p50": 22.774999976158142
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.45500004291534424,
-        "mean": 22.934166661898296,
-        "stddev": 0.48035022289945994,
-        "tukey_high": 23.787500083446503,
-        "tukey_low": 21.967499911785126
+        "iqr": 0.9000000953674316,
+        "mean": 22.89533332983653,
+        "stddev": 0.7818842454695567,
+        "tukey_high": 24.68000018596649,
+        "tukey_low": 21.079999804496765
       }
     },
     {
@@ -434,21 +434,21 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.wheel_zoom.scale_50.round_trip",
-      "outliers_flagged": 2,
+      "outliers_flagged": 1,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 25.16095800000039,
-        "min": 22.786332999996375,
-        "p50": 23.955584000003
+        "max": 26.074749999999767,
+        "min": 22.328624999994645,
+        "p50": 23.96337499999936
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.5030010000045877,
-        "mean": 23.995216633333136,
-        "stddev": 0.484509937188199,
-        "tukey_high": 24.96841850000783,
-        "tukey_low": 22.956414499989478
+        "iqr": 0.9886249999908614,
+        "mean": 24.03795833333376,
+        "stddev": 0.7869460539150785,
+        "tukey_high": 25.996354499980953,
+        "tukey_low": 22.041854500017507
       }
     },
     {
@@ -482,24 +482,24 @@
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.drag.scale_100.latency",
       "outliers_flagged": 14,
       "samples": 232,
       "status": "measured",
       "summary": {
-        "max": 39.422,
-        "min": 2.057,
-        "p50": 4.919,
-        "p95": 6.095
+        "max": 39.729,
+        "min": 1.539,
+        "p50": 5.237,
+        "p95": 6.337
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.8180000000000005,
-        "mean": 5.2774698275862075,
-        "stddev": 3.855920247031392,
-        "tukey_high": 6.5280000000000005,
-        "tukey_low": 3.255999999999999
+        "iqr": 0.851,
+        "mean": 5.600189655172415,
+        "stddev": 3.919383405022213,
+        "tukey_high": 6.9275,
+        "tukey_low": 3.5235
       }
     },
     {
@@ -508,22 +508,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.drag.scale_100.input_delay",
-      "outliers_flagged": 9,
+      "outliers_flagged": 12,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 8.960000038146973,
-        "min": 2.100000023841858,
-        "p50": 7.149999976158142,
-        "p95": 8.065000057220459
+        "max": 9.129999995231628,
+        "min": 1.3250000476837158,
+        "p50": 6.96999990940094,
+        "p95": 7.894999980926514
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7749999761581421,
-        "mean": 7.042125000059604,
-        "stddev": 0.9166405957130164,
-        "tukey_high": 8.682499945163727,
-        "tukey_low": 5.5825000405311584
+        "iqr": 0.7099999189376831,
+        "mean": 6.843145828445753,
+        "stddev": 0.912612119909573,
+        "tukey_high": 8.354999840259552,
+        "tukey_low": 5.51500016450882
       }
     },
     {
@@ -532,22 +532,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.drag.scale_100.round_trip",
-      "outliers_flagged": 9,
+      "outliers_flagged": 13,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 9.930625000000873,
-        "min": 2.9740420000016456,
-        "p50": 8.20233300000109,
-        "p95": 9.201082999999926
+        "max": 10.429624999997031,
+        "min": 2.8459169999987353,
+        "p50": 8.150999999998021,
+        "p95": 9.145791000002646
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.8176670000029844,
-        "mean": 8.100988208333366,
-        "stddev": 0.935959869909579,
-        "tukey_high": 9.822500500002207,
-        "tukey_low": 6.551832499990269
+        "iqr": 0.7307080000027781,
+        "mean": 8.048932837500251,
+        "stddev": 0.924606826118505,
+        "tukey_high": 9.633854000006977,
+        "tukey_low": 6.7110219999958645
       }
     },
     {
@@ -581,24 +581,24 @@
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.pan.scale_100.latency",
-      "outliers_flagged": 5,
+      "outliers_flagged": 6,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 33.386,
-        "min": 0.768,
-        "p50": 5.093,
-        "p95": 6.682
+        "max": 32.929,
+        "min": 0.789,
+        "p50": 4.772,
+        "p95": 6.372
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 2.5560000000000005,
-        "mean": 4.889741666666667,
-        "stddev": 4.155181272313882,
-        "tukey_high": 9.580000000000002,
-        "tukey_low": -0.6440000000000006
+        "iqr": 1.8450000000000002,
+        "mean": 4.89350416666667,
+        "stddev": 4.0615047585529505,
+        "tukey_high": 8.188500000000001,
+        "tukey_low": 0.8085
       }
     },
     {
@@ -607,22 +607,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.pan.scale_100.input_delay",
-      "outliers_flagged": 13,
+      "outliers_flagged": 12,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 8.75,
-        "min": 0.059999942779541016,
-        "p50": 7.309999942779541,
+        "max": 9.480000019073486,
+        "min": 0.24500000476837158,
+        "p50": 7.319999933242798,
         "p95": 8.465000033378601
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.8700000047683716,
-        "mean": 7.0877291684349375,
-        "stddev": 1.558912143856722,
-        "tukey_high": 9.135000050067902,
-        "tukey_low": 5.655000030994415
+        "iqr": 0.934999942779541,
+        "mean": 7.073187498251597,
+        "stddev": 1.545601984526809,
+        "tukey_high": 9.207499861717224,
+        "tukey_low": 5.46750009059906
       }
     },
     {
@@ -631,22 +631,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.pan.scale_100.round_trip",
-      "outliers_flagged": 15,
+      "outliers_flagged": 13,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 9.723542000007,
-        "min": 0.3044579999987036,
-        "p50": 8.190666000009514,
-        "p95": 9.215374999999767
+        "max": 10.04187500000262,
+        "min": 0.726249999992433,
+        "p50": 8.18191700000898,
+        "p95": 9.23008299999492
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7093329999988782,
-        "mean": 7.903424945833619,
-        "stddev": 1.5811643553126669,
-        "tukey_high": 9.578082500000164,
-        "tukey_low": 6.740750500004651
+        "iqr": 0.8870420000021113,
+        "mean": 7.921715975000158,
+        "stddev": 1.542894736775424,
+        "tukey_high": 9.935730000004696,
+        "tukey_low": 6.387561999996251
       }
     },
     {
@@ -673,30 +673,30 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 53,
+      "value": 44,
       "mechanism": "Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above"
     },
     {
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.wheel_zoom.scale_100.latency",
-      "outliers_flagged": 5,
+      "outliers_flagged": 0,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 9.255,
-        "min": 6.545,
-        "p50": 7.584
+        "max": 8.366,
+        "min": 1.926,
+        "p50": 5.817
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.391,
-        "mean": 7.651499999999999,
-        "stddev": 0.5369036226363165,
-        "tukey_high": 8.435500000000001,
-        "tukey_low": 6.8715
+        "iqr": 2.692,
+        "mean": 5.7620999999999984,
+        "stddev": 1.721919305049876,
+        "tukey_high": 11.4,
+        "tukey_low": 0.6319999999999997
       }
     },
     {
@@ -705,21 +705,21 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.wheel_zoom.scale_100.input_delay",
-      "outliers_flagged": 3,
+      "outliers_flagged": 0,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 24.8400000333786,
-        "min": 22.174999952316284,
-        "p50": 23.0349999666214
+        "max": 25.25499999523163,
+        "min": 22.264999985694885,
+        "p50": 23.394999980926514
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.5299999713897705,
-        "mean": 23.148166660467783,
-        "stddev": 0.6091082966388414,
-        "tukey_high": 24.164999961853027,
-        "tukey_low": 22.045000076293945
+        "iqr": 1.2549999952316284,
+        "mean": 23.668166653315225,
+        "stddev": 0.8725472796234849,
+        "tukey_high": 26.127499997615814,
+        "tukey_low": 21.1075000166893
       }
     },
     {
@@ -728,21 +728,21 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.wheel_zoom.scale_100.round_trip",
-      "outliers_flagged": 1,
+      "outliers_flagged": 0,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 25.691208000003826,
-        "min": 23.15983299999789,
-        "p50": 24.012749999994412
+        "max": 26.194416999991518,
+        "min": 23.182042000000365,
+        "p50": 24.2214590000076
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6773759999778122,
-        "mean": 24.136687566666904,
-        "stddev": 0.5779752179689811,
-        "tukey_high": 25.487772999957087,
-        "tukey_low": 22.77826900004584
+        "iqr": 1.1340830000117421,
+        "mean": 24.428169400000478,
+        "stddev": 0.8073644261756501,
+        "tukey_high": 26.662874500019825,
+        "tukey_low": 22.126542499972857
       }
     },
     {
@@ -776,24 +776,24 @@
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.drag.scale_200.latency",
-      "outliers_flagged": 18,
+      "outliers_flagged": 12,
       "samples": 232,
       "status": "measured",
       "summary": {
-        "max": 38.987,
-        "min": 0.597,
-        "p50": 4.759,
-        "p95": 5.547
+        "max": 37.35,
+        "min": 1.625,
+        "p50": 4.043,
+        "p95": 5.158
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.8070000000000004,
-        "mean": 4.970370689655171,
-        "stddev": 3.9759402961585963,
-        "tukey_high": 6.325500000000001,
-        "tukey_low": 3.0974999999999993
+        "iqr": 0.851,
+        "mean": 4.400831896551725,
+        "stddev": 3.8432395158183814,
+        "tukey_high": 5.6785,
+        "tukey_low": 2.2745
       }
     },
     {
@@ -802,22 +802,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.drag.scale_200.input_delay",
-      "outliers_flagged": 15,
+      "outliers_flagged": 12,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 9.105000019073486,
-        "min": 0.49000000953674316,
-        "p50": 7.2149999141693115,
-        "p95": 8.259999990463257
+        "max": 10.215000033378601,
+        "min": 0.16999995708465576,
+        "p50": 7.399999976158142,
+        "p95": 8.375
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6699999570846558,
-        "mean": 7.170500001808008,
-        "stddev": 0.8332986028928756,
-        "tukey_high": 8.589999973773956,
-        "tukey_low": 5.910000145435333
+        "iqr": 0.7349998950958252,
+        "mean": 7.243604164818922,
+        "stddev": 0.9834238200219793,
+        "tukey_high": 8.742499828338623,
+        "tukey_low": 5.802500247955322
       }
     },
     {
@@ -826,22 +826,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.drag.scale_200.round_trip",
-      "outliers_flagged": 15,
+      "outliers_flagged": 20,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 10.115459000007831,
-        "min": 1.4659169999940787,
-        "p50": 8.211999999999534,
-        "p95": 9.15333400000236
+        "max": 15.768416999999317,
+        "min": 0.6393750000133878,
+        "p50": 8.225040999997873,
+        "p95": 9.335875000004307
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.6190420000057202,
-        "mean": 8.157025670833718,
-        "stddev": 0.8066426898466568,
-        "tukey_high": 9.44143800000893,
-        "tukey_low": 6.965269999986049
+        "iqr": 0.6779170000081649,
+        "mean": 8.146274112499972,
+        "stddev": 1.1335304908068504,
+        "tukey_high": 9.562500500025635,
+        "tukey_low": 6.8508324999929755
       }
     },
     {
@@ -868,31 +868,31 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 65,
+      "value": 73,
       "mechanism": "Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above"
     },
     {
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.pan.scale_200.latency",
-      "outliers_flagged": 6,
+      "outliers_flagged": 7,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 31.75,
-        "min": 2.911,
-        "p50": 4.642,
-        "p95": 5.358
+        "max": 30.926,
+        "min": 1.393,
+        "p50": 4.142,
+        "p95": 5.101
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.5469999999999997,
-        "mean": 4.972170833333333,
-        "stddev": 3.0116883586880374,
-        "tukey_high": 5.7555,
-        "tukey_low": 3.5675000000000003
+        "iqr": 0.9670000000000001,
+        "mean": 4.380904166666666,
+        "stddev": 3.012948397362764,
+        "tukey_high": 6.0675,
+        "tukey_low": 2.1994999999999996
       }
     },
     {
@@ -901,22 +901,22 @@
       "layer": "C",
       "mechanism": "event.timeStamp, which is when the browser made the event, to the first capture-phase listener, both in the page clock",
       "name": "interaction.pan.scale_200.input_delay",
-      "outliers_flagged": 9,
+      "outliers_flagged": 14,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 10.929999947547913,
-        "min": 0.3700000047683716,
-        "p50": 7.235000014305115,
-        "p95": 8.370000004768372
+        "max": 9.284999966621399,
+        "min": 0.25999999046325684,
+        "p50": 7.289999961853027,
+        "p95": 8.31000006198883
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7900000810623169,
-        "mean": 7.161770835518837,
-        "stddev": 1.1836308917515523,
-        "tukey_high": 8.865000188350677,
-        "tukey_low": 5.70499986410141
+        "iqr": 0.6150000095367432,
+        "mean": 7.135479163130125,
+        "stddev": 1.2933449238724666,
+        "tukey_high": 8.547500014305115,
+        "tukey_low": 6.087499976158142
       }
     },
     {
@@ -925,22 +925,22 @@
       "layer": "C",
       "mechanism": "how long Input.dispatchMouseEvent took to answer, which is never used as a start time",
       "name": "cdp.pan.scale_200.round_trip",
-      "outliers_flagged": 11,
+      "outliers_flagged": 23,
       "samples": 240,
       "status": "measured",
       "summary": {
-        "max": 11.944040999995195,
-        "min": 1.2075410000106785,
-        "p50": 8.234791000009864,
-        "p95": 9.369082999997772
+        "max": 10.246708000006038,
+        "min": 0.93895799999882,
+        "p50": 8.213541000004625,
+        "p95": 9.174791999990703
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.7596250000206055,
-        "mean": 8.147426699999718,
-        "stddev": 1.1968214082075432,
-        "tukey_high": 9.808145500042883,
-        "tukey_low": 6.769645499960461
+        "iqr": 0.5642919999954756,
+        "mean": 8.015210258333294,
+        "stddev": 1.2997659729644635,
+        "tukey_high": 9.31043799998588,
+        "tukey_low": 7.053270000003977
       }
     },
     {
@@ -967,30 +967,30 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 37,
+      "value": 35,
       "mechanism": "Event Timing entries of 16 ms or more, rounded to 8 ms by the browser, kept beside the figures above"
     },
     {
       "dropped": 0,
       "kind": "latency",
       "layer": "C",
-      "mechanism": "from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
+      "mechanism": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the style-or-layout qualifier. It runs from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, devtools.timeline and cc; input from Input.dispatchMouseEvent every 24 ms",
       "name": "interaction.wheel_zoom.scale_200.latency",
       "outliers_flagged": 0,
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 8.242,
-        "min": 0.861,
-        "p50": 5.53
+        "max": 7.892,
+        "min": 0.906,
+        "p50": 5.452
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 5.877,
-        "mean": 4.349433333333334,
-        "stddev": 2.932036207653055,
-        "tukey_high": 15.8225,
-        "tukey_low": -7.6855
+        "iqr": 5.479,
+        "mean": 4.196233333333334,
+        "stddev": 2.741220262927636,
+        "tukey_high": 14.9175,
+        "tukey_low": -6.998500000000001
       }
     },
     {
@@ -1003,17 +1003,17 @@
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 25.865000009536743,
-        "min": 22.625,
-        "p50": 24.00499999523163
+        "max": 25.929999947547913,
+        "min": 21.77500009536743,
+        "p50": 24.165000081062317
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 1.9249999523162842,
-        "mean": 24.224333329995474,
-        "stddev": 0.9945149016104652,
-        "tukey_high": 28.15749990940094,
-        "tukey_low": 20.457500100135803
+        "iqr": 2.0049999952316284,
+        "mean": 24.08633334636688,
+        "stddev": 1.1853618021111354,
+        "tukey_high": 28.04749995470047,
+        "tukey_low": 20.027499973773956
       }
     },
     {
@@ -1026,17 +1026,17 @@
       "samples": 30,
       "status": "measured",
       "summary": {
-        "max": 26.11958400000003,
-        "min": 23.52850000000035,
-        "p50": 24.94129200000316
+        "max": 26.207500000004075,
+        "min": 22.941749999998137,
+        "p50": 25.012082999994163
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 1.2079169999924488,
-        "mean": 24.876159733333527,
-        "stddev": 0.6718431888321227,
-        "tukey_high": 27.30233349998889,
-        "tukey_low": 22.470665500019095
+        "iqr": 1.3489580000023125,
+        "mean": 24.778967966667064,
+        "stddev": 0.8657049370087871,
+        "tukey_high": 27.464270000004035,
+        "tukey_low": 22.068437999994785
       }
     },
     {
@@ -1113,5 +1113,5 @@
       "detail": "7 elements before, 452 while built, 7 after, host present false"
     }
   ],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T114043.samples.ndjson"
+  "raw_samples": "perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T121048.samples.ndjson"
 }

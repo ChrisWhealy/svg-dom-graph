@@ -19,7 +19,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { launch, serve } from '../../lib/chrome-session.mjs'
-import { attribute } from '../../lib/frames.mjs'
+import { DEFINITION, attribute } from '../../lib/frames.mjs'
 import { pause } from '../../lib/input.mjs'
 import { traced } from '../../lib/trace.mjs'
 import { judgeWalk, unwalked } from './walk-verdict.mjs'
@@ -330,6 +330,7 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
       },
       browser: version,
       viewport: [1280, 900],
+      time_definition: `${DEFINITION}, found with the wider qualifier (a style or layout step, or a repaint), because a panel is built from HTML and measured in its own task. A time here is the upper bound of a window in which the panel's change was presented, and an unrelated repaint in that window could be taken for it. Headless Chrome presents without a display.`,
       cold_start_ms: coldStartMs,
       cold_start_definition: 'performance.now() in the page when the first panel is on screen, which is from the start of the navigation',
       teardown: 'not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown',

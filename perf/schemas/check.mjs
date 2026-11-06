@@ -120,6 +120,9 @@ const rejected = {
     "an unknown top-level key": d => {
       d.extra = 1
     },
+    "a report that does not say what its times are": d => {
+      delete d.time_definition
+    },
     "a report with no summary": d => {
       delete d.summary
     },

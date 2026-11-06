@@ -23,6 +23,19 @@
 // The wider qualifier is for changes that span tasks, and it can take an unrelated repaint for the one it is looking for, so
 // it is not the default.
 //
+// What the figure is, and what it is not. The result is a *trace-attributed presentation latency*: the time from the page's own
+// stamp to the compositor's own record of presenting the frame that the rule above attributes to the mark. Three things follow,
+// and every figure built on it says them.
+//   * It is attribution and not causation. Finding the frame whose lifecycle holds the relevant style or layout work does not
+//     prove that every change in that frame was caused by the marked operation. With the default qualifier the mutation is made
+//     in the task or frame that wrote the mark, which leaves little room for anything else, and the spike held it to the page's own
+//     stamps. With `qualify: 'update'` a frame also qualifies by repainting, and an unrelated repaint can be taken for the one
+//     sought, so a figure from that qualifier is the upper bound of a window and not a cause.
+//   * It is a presentation by the compositor, and not a photon. Between the compositor's record and light leaving a display there
+//     are the display pipeline and the panel's scan-out, which the trace does not see. A headless Chrome presents without any
+//     display at all, so its figures say how the page and the library behave, and not how a screen would.
+//   * Where the rule cannot attribute a frame, it says so and gives no number.
+//
 // A sample is unavailable, with its reason, when no such frame is found within the bound, when the mark falls after the style
 // step of the frame it is in and a later frame also has one, when the frame was not presented in full, when the mark is missing or
 // written twice, or when the trace lost data. Nothing here guesses.
@@ -89,6 +102,10 @@ const unavailable = reason => ({ status: 'unavailable', reason })
  * and `latencyMs` is from the mark to the presentation, in the page's clock. Otherwise gives `{ status: 'unavailable',
  * reason }`.
  */
+/** The sentence that every figure built on `attribute` carries. */
+export const DEFINITION =
+  "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation"
+
 export const attribute = (trace, name, { boundMs = 250, qualify = 'style' } = {}) => {
   if (trace.dataLost) return unavailable('the trace lost data, so a frame may be missing from it')
   if (trace.duplicates.has(name)) return unavailable(`the mark ${name} was written more than once`)
@@ -121,6 +138,8 @@ export const attribute = (trace, name, { boundMs = 250, qualify = 'style' } = {}
   if (pipeline.end < mark.ts) return unavailable(`frame ${frame.id} was presented before the mark`)
   return {
     status: 'measured',
+    // The qualifier the frame was found with, so that a figure can say how strong its attribution is.
+    qualify,
     frame: { id: frame.id, beganAt: frame.ts, endedAt: frame.end },
     presentedAt: pipeline.end,
     latencyMs: (pipeline.end - mark.ts) / 1000,

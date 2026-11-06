@@ -4,7 +4,7 @@ A correctness #0: ok, 1 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended full stream (56 operations)
 C correctness #0: ok, 312 checkpoints passed, 0 failed
-    cold_start.page_ready p50 48.74 ms
+    cold_start.page_ready p50 44.46 ms
     ok   the run is valid (ok)
     ok   it executed the intended full stream (56 operations)
     ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
@@ -17,34 +17,34 @@ A performance #0: ok, 1 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
 C performance #0: ok, 312 checkpoints passed, 0 failed
-    cold_start.page_ready p50 52.41 ms
-    interaction.drag.scale_50.latency p50 2.75 ms
-    interaction.drag.scale_50.input_delay p50 7.30 ms
-    cdp.drag.scale_50.round_trip p50 8.17 ms
-    interaction.pan.scale_50.latency p50 2.57 ms
-    interaction.pan.scale_50.input_delay p50 7.48 ms
+    cold_start.page_ready p50 46.35 ms
+    interaction.drag.scale_50.latency p50 2.97 ms
+    interaction.drag.scale_50.input_delay p50 7.08 ms
+    cdp.drag.scale_50.round_trip p50 8.25 ms
+    interaction.pan.scale_50.latency p50 2.87 ms
+    interaction.pan.scale_50.input_delay p50 7.18 ms
     cdp.pan.scale_50.round_trip p50 8.22 ms
-    interaction.wheel_zoom.scale_50.latency p50 2.91 ms
-    interaction.wheel_zoom.scale_50.input_delay p50 23.05 ms
-    cdp.wheel_zoom.scale_50.round_trip p50 23.87 ms
-    interaction.drag.scale_100.latency p50 2.93 ms
-    interaction.drag.scale_100.input_delay p50 7.37 ms
-    cdp.drag.scale_100.round_trip p50 8.21 ms
-    interaction.pan.scale_100.latency p50 3.02 ms
-    interaction.pan.scale_100.input_delay p50 7.20 ms
-    cdp.pan.scale_100.round_trip p50 8.07 ms
-    interaction.wheel_zoom.scale_100.latency p50 4.44 ms
-    interaction.wheel_zoom.scale_100.input_delay p50 22.77 ms
-    cdp.wheel_zoom.scale_100.round_trip p50 23.83 ms
-    interaction.drag.scale_200.latency p50 2.86 ms
-    interaction.drag.scale_200.input_delay p50 7.29 ms
-    cdp.drag.scale_200.round_trip p50 8.22 ms
-    interaction.pan.scale_200.latency p50 2.73 ms
-    interaction.pan.scale_200.input_delay p50 7.23 ms
-    cdp.pan.scale_200.round_trip p50 8.16 ms
-    interaction.wheel_zoom.scale_200.latency p50 3.28 ms
-    interaction.wheel_zoom.scale_200.input_delay p50 23.05 ms
-    cdp.wheel_zoom.scale_200.round_trip p50 24.19 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.73 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.42 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.30 ms
+    interaction.drag.scale_100.latency p50 2.98 ms
+    interaction.drag.scale_100.input_delay p50 7.14 ms
+    cdp.drag.scale_100.round_trip p50 8.14 ms
+    interaction.pan.scale_100.latency p50 2.97 ms
+    interaction.pan.scale_100.input_delay p50 7.29 ms
+    cdp.pan.scale_100.round_trip p50 8.21 ms
+    interaction.wheel_zoom.scale_100.latency p50 4.31 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 22.88 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 23.87 ms
+    interaction.drag.scale_200.latency p50 2.83 ms
+    interaction.drag.scale_200.input_delay p50 7.10 ms
+    cdp.drag.scale_200.round_trip p50 8.20 ms
+    interaction.pan.scale_200.latency p50 2.71 ms
+    interaction.pan.scale_200.input_delay p50 7.25 ms
+    cdp.pan.scale_200.round_trip p50 8.20 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.88 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.04 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 23.85 ms
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
     ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
@@ -57,34 +57,34 @@ A performance #1: ok, 1 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
 C performance #1: ok, 312 checkpoints passed, 0 failed
-    cold_start.page_ready p50 55.19 ms
-    interaction.drag.scale_50.latency p50 2.77 ms
-    interaction.drag.scale_50.input_delay p50 7.29 ms
-    cdp.drag.scale_50.round_trip p50 8.18 ms
-    interaction.pan.scale_50.latency p50 2.71 ms
-    interaction.pan.scale_50.input_delay p50 7.28 ms
-    cdp.pan.scale_50.round_trip p50 8.24 ms
-    interaction.wheel_zoom.scale_50.latency p50 4.02 ms
-    interaction.wheel_zoom.scale_50.input_delay p50 23.48 ms
-    cdp.wheel_zoom.scale_50.round_trip p50 24.49 ms
-    interaction.drag.scale_100.latency p50 3.10 ms
-    interaction.drag.scale_100.input_delay p50 7.12 ms
-    cdp.drag.scale_100.round_trip p50 8.21 ms
-    interaction.pan.scale_100.latency p50 3.27 ms
-    interaction.pan.scale_100.input_delay p50 7.13 ms
-    cdp.pan.scale_100.round_trip p50 8.19 ms
-    interaction.wheel_zoom.scale_100.latency p50 4.42 ms
-    interaction.wheel_zoom.scale_100.input_delay p50 23.05 ms
-    cdp.wheel_zoom.scale_100.round_trip p50 24.07 ms
-    interaction.drag.scale_200.latency p50 2.84 ms
-    interaction.drag.scale_200.input_delay p50 7.20 ms
-    cdp.drag.scale_200.round_trip p50 8.20 ms
-    interaction.pan.scale_200.latency p50 2.93 ms
-    interaction.pan.scale_200.input_delay p50 7.15 ms
-    cdp.pan.scale_200.round_trip p50 8.22 ms
-    interaction.wheel_zoom.scale_200.latency p50 3.88 ms
-    interaction.wheel_zoom.scale_200.input_delay p50 23.10 ms
-    cdp.wheel_zoom.scale_200.round_trip p50 24.23 ms
+    cold_start.page_ready p50 47.07 ms
+    interaction.drag.scale_50.latency p50 2.35 ms
+    interaction.drag.scale_50.input_delay p50 7.55 ms
+    cdp.drag.scale_50.round_trip p50 8.24 ms
+    interaction.pan.scale_50.latency p50 2.01 ms
+    interaction.pan.scale_50.input_delay p50 7.76 ms
+    cdp.pan.scale_50.round_trip p50 8.28 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.32 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.31 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.36 ms
+    interaction.drag.scale_100.latency p50 2.71 ms
+    interaction.drag.scale_100.input_delay p50 7.35 ms
+    cdp.drag.scale_100.round_trip p50 8.30 ms
+    interaction.pan.scale_100.latency p50 2.46 ms
+    interaction.pan.scale_100.input_delay p50 7.39 ms
+    cdp.pan.scale_100.round_trip p50 8.15 ms
+    interaction.wheel_zoom.scale_100.latency p50 3.62 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.82 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 24.55 ms
+    interaction.drag.scale_200.latency p50 2.21 ms
+    interaction.drag.scale_200.input_delay p50 7.41 ms
+    cdp.drag.scale_200.round_trip p50 8.23 ms
+    interaction.pan.scale_200.latency p50 2.09 ms
+    interaction.pan.scale_200.input_delay p50 7.50 ms
+    cdp.pan.scale_200.round_trip p50 8.23 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.60 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.72 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.46 ms
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
     ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
@@ -97,34 +97,34 @@ A performance #2: ok, 1 checkpoints passed, 0 failed
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
 C performance #2: ok, 312 checkpoints passed, 0 failed
-    cold_start.page_ready p50 48.66 ms
-    interaction.drag.scale_50.latency p50 3.17 ms
-    interaction.drag.scale_50.input_delay p50 7.13 ms
+    cold_start.page_ready p50 48.10 ms
+    interaction.drag.scale_50.latency p50 2.37 ms
+    interaction.drag.scale_50.input_delay p50 7.61 ms
     cdp.drag.scale_50.round_trip p50 8.24 ms
-    interaction.pan.scale_50.latency p50 2.80 ms
-    interaction.pan.scale_50.input_delay p50 7.45 ms
-    cdp.pan.scale_50.round_trip p50 8.29 ms
-    interaction.wheel_zoom.scale_50.latency p50 3.72 ms
-    interaction.wheel_zoom.scale_50.input_delay p50 23.50 ms
-    cdp.wheel_zoom.scale_50.round_trip p50 24.57 ms
-    interaction.drag.scale_100.latency p50 3.03 ms
-    interaction.drag.scale_100.input_delay p50 7.21 ms
-    cdp.drag.scale_100.round_trip p50 8.22 ms
-    interaction.pan.scale_100.latency p50 3.11 ms
-    interaction.pan.scale_100.input_delay p50 7.33 ms
-    cdp.pan.scale_100.round_trip p50 8.21 ms
-    interaction.wheel_zoom.scale_100.latency p50 4.59 ms
-    interaction.wheel_zoom.scale_100.input_delay p50 22.74 ms
-    cdp.wheel_zoom.scale_100.round_trip p50 23.85 ms
-    interaction.drag.scale_200.latency p50 2.91 ms
-    interaction.drag.scale_200.input_delay p50 7.30 ms
-    cdp.drag.scale_200.round_trip p50 8.25 ms
-    interaction.pan.scale_200.latency p50 2.91 ms
-    interaction.pan.scale_200.input_delay p50 7.14 ms
-    cdp.pan.scale_200.round_trip p50 8.16 ms
-    interaction.wheel_zoom.scale_200.latency p50 4.15 ms
-    interaction.wheel_zoom.scale_200.input_delay p50 22.72 ms
-    cdp.wheel_zoom.scale_200.round_trip p50 23.82 ms
+    interaction.pan.scale_50.latency p50 2.02 ms
+    interaction.pan.scale_50.input_delay p50 7.63 ms
+    cdp.pan.scale_50.round_trip p50 8.25 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.32 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 24.40 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.70 ms
+    interaction.drag.scale_100.latency p50 2.82 ms
+    interaction.drag.scale_100.input_delay p50 7.28 ms
+    cdp.drag.scale_100.round_trip p50 8.26 ms
+    interaction.pan.scale_100.latency p50 2.93 ms
+    interaction.pan.scale_100.input_delay p50 7.24 ms
+    cdp.pan.scale_100.round_trip p50 8.25 ms
+    interaction.wheel_zoom.scale_100.latency p50 3.61 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.49 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 24.39 ms
+    interaction.drag.scale_200.latency p50 2.22 ms
+    interaction.drag.scale_200.input_delay p50 7.60 ms
+    cdp.drag.scale_200.round_trip p50 8.29 ms
+    interaction.pan.scale_200.latency p50 2.75 ms
+    interaction.pan.scale_200.input_delay p50 7.30 ms
+    cdp.pan.scale_200.round_trip p50 8.30 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.85 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.37 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.23 ms
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (56 operations)
     ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
@@ -135,33 +135,33 @@ B performance #2: ok, 1 checkpoints passed, 0 failed
     ok   it executed the intended mutations stream (56 operations)
 
 the median of each timing in every repetition (the spread is highest over lowest):
-  C performance cold_start.page_ready: 48.7 to 55.2 ms over 3 repetitions, 13% apart
-  C performance interaction.drag.scale_50.latency: 2.75 to 3.17 ms over 3 repetitions, 15% apart
-  C performance interaction.drag.scale_50.input_delay: 7.13 to 7.30 ms over 3 repetitions, 2% apart
-  C performance cdp.drag.scale_50.round_trip: 8.17 to 8.24 ms over 3 repetitions, 1% apart
-  C performance interaction.pan.scale_50.latency: 2.57 to 2.80 ms over 3 repetitions, 9% apart
-  C performance interaction.pan.scale_50.input_delay: 7.28 to 7.48 ms over 3 repetitions, 3% apart
-  C performance cdp.pan.scale_50.round_trip: 8.22 to 8.29 ms over 3 repetitions, 1% apart
-  C performance interaction.wheel_zoom.scale_50.latency: 2.91 to 4.02 ms over 3 repetitions, 38% apart
-  C performance interaction.wheel_zoom.scale_50.input_delay: 23.0 to 23.5 ms over 3 repetitions, 2% apart
-  C performance cdp.wheel_zoom.scale_50.round_trip: 23.9 to 24.6 ms over 3 repetitions, 3% apart
-  C performance interaction.drag.scale_100.latency: 2.93 to 3.10 ms over 3 repetitions, 6% apart
-  C performance interaction.drag.scale_100.input_delay: 7.12 to 7.37 ms over 3 repetitions, 4% apart
-  C performance cdp.drag.scale_100.round_trip: 8.21 to 8.22 ms over 3 repetitions, 0% apart
-  C performance interaction.pan.scale_100.latency: 3.02 to 3.27 ms over 3 repetitions, 8% apart
-  C performance interaction.pan.scale_100.input_delay: 7.13 to 7.33 ms over 3 repetitions, 3% apart
-  C performance cdp.pan.scale_100.round_trip: 8.07 to 8.21 ms over 3 repetitions, 2% apart
-  C performance interaction.wheel_zoom.scale_100.latency: 4.42 to 4.59 ms over 3 repetitions, 4% apart
-  C performance interaction.wheel_zoom.scale_100.input_delay: 22.7 to 23.1 ms over 3 repetitions, 1% apart
-  C performance cdp.wheel_zoom.scale_100.round_trip: 23.8 to 24.1 ms over 3 repetitions, 1% apart
-  C performance interaction.drag.scale_200.latency: 2.84 to 2.91 ms over 3 repetitions, 3% apart
-  C performance interaction.drag.scale_200.input_delay: 7.20 to 7.30 ms over 3 repetitions, 1% apart
-  C performance cdp.drag.scale_200.round_trip: 8.20 to 8.25 ms over 3 repetitions, 1% apart
-  C performance interaction.pan.scale_200.latency: 2.73 to 2.93 ms over 3 repetitions, 7% apart
-  C performance interaction.pan.scale_200.input_delay: 7.14 to 7.23 ms over 3 repetitions, 1% apart
-  C performance cdp.pan.scale_200.round_trip: 8.16 to 8.22 ms over 3 repetitions, 1% apart
-  C performance interaction.wheel_zoom.scale_200.latency: 3.28 to 4.15 ms over 3 repetitions, 27% apart
-  C performance interaction.wheel_zoom.scale_200.input_delay: 22.7 to 23.1 ms over 3 repetitions, 2% apart
-  C performance cdp.wheel_zoom.scale_200.round_trip: 23.8 to 24.2 ms over 3 repetitions, 2% apart
+  C performance cold_start.page_ready: 46.3 to 48.1 ms over 3 repetitions, 4% apart
+  C performance interaction.drag.scale_50.latency: 2.35 to 2.97 ms over 3 repetitions, 27% apart
+  C performance interaction.drag.scale_50.input_delay: 7.08 to 7.61 ms over 3 repetitions, 7% apart
+  C performance cdp.drag.scale_50.round_trip: 8.24 to 8.25 ms over 3 repetitions, 0% apart
+  C performance interaction.pan.scale_50.latency: 2.01 to 2.87 ms over 3 repetitions, 43% apart
+  C performance interaction.pan.scale_50.input_delay: 7.18 to 7.76 ms over 3 repetitions, 8% apart
+  C performance cdp.pan.scale_50.round_trip: 8.22 to 8.28 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_50.latency: 3.32 to 3.73 ms over 3 repetitions, 12% apart
+  C performance interaction.wheel_zoom.scale_50.input_delay: 23.3 to 24.4 ms over 3 repetitions, 5% apart
+  C performance cdp.wheel_zoom.scale_50.round_trip: 24.3 to 24.7 ms over 3 repetitions, 2% apart
+  C performance interaction.drag.scale_100.latency: 2.71 to 2.98 ms over 3 repetitions, 10% apart
+  C performance interaction.drag.scale_100.input_delay: 7.14 to 7.35 ms over 3 repetitions, 3% apart
+  C performance cdp.drag.scale_100.round_trip: 8.14 to 8.30 ms over 3 repetitions, 2% apart
+  C performance interaction.pan.scale_100.latency: 2.46 to 2.97 ms over 3 repetitions, 21% apart
+  C performance interaction.pan.scale_100.input_delay: 7.24 to 7.39 ms over 3 repetitions, 2% apart
+  C performance cdp.pan.scale_100.round_trip: 8.15 to 8.25 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_100.latency: 3.61 to 4.31 ms over 3 repetitions, 19% apart
+  C performance interaction.wheel_zoom.scale_100.input_delay: 22.9 to 23.8 ms over 3 repetitions, 4% apart
+  C performance cdp.wheel_zoom.scale_100.round_trip: 23.9 to 24.6 ms over 3 repetitions, 3% apart
+  C performance interaction.drag.scale_200.latency: 2.21 to 2.83 ms over 3 repetitions, 28% apart
+  C performance interaction.drag.scale_200.input_delay: 7.10 to 7.60 ms over 3 repetitions, 7% apart
+  C performance cdp.drag.scale_200.round_trip: 8.20 to 8.29 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_200.latency: 2.09 to 2.75 ms over 3 repetitions, 32% apart
+  C performance interaction.pan.scale_200.input_delay: 7.25 to 7.50 ms over 3 repetitions, 3% apart
+  C performance cdp.pan.scale_200.round_trip: 8.20 to 8.30 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_200.latency: 3.60 to 3.88 ms over 3 repetitions, 8% apart
+  C performance interaction.wheel_zoom.scale_200.input_delay: 23.0 to 23.7 ms over 3 repetitions, 3% apart
+  C performance cdp.wheel_zoom.scale_200.round_trip: 23.8 to 24.5 ms over 3 repetitions, 3% apart
 
 every deterministic gate passed

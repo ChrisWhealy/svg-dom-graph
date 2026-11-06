@@ -1,28 +1,77 @@
 {
-  "recorded_at": "2026-11-06T11:59:22.407Z",
-  "commit": "be3b0b160e59be6401818e22b9cd9763883c99d0",
+  "recorded_at": "2026-11-06T12:16:36.702Z",
+  "commit": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
   "uncommitted_changes": [
-    " M .github/workflows/ci.yml",
     " M demo/changelog.md",
-    " M docs/testing/README.md",
-    " M perf/gallery-overrides.json",
-    " M perf/runner/gallery-sweep.mjs",
+    " M design-specs/performance_harness.pdf",
+    " M perf/README.md",
+    " M perf/evidence/phase3/frame-attribution-tests.txt",
+    " M perf/evidence/phase3/gallery-sweep.txt",
+    " D perf/evidence/phase3/results/gallery/gallery-report-20261106T115922.json",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T114043.json",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T114043.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T114252.json",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T114252.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T114500.json",
+    " D perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T114500.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-correctness-r0-20261106T113422.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r0-20261106T113522.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r0-20261106T113522.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r1-20261106T113626.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r1-20261106T113626.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T113730.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T113730.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-correctness-r0-20261106T113522.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r0-20261106T113626.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r0-20261106T113626.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r1-20261106T113730.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r1-20261106T113730.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r2-20261106T113834.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r2-20261106T113834.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-correctness-r0-20261106T113522.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r0-20261106T113626.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r0-20261106T113626.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r1-20261106T113730.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r1-20261106T113730.samples.ndjson",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r2-20261106T113833.json",
+    " D perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r2-20261106T113833.samples.ndjson",
+    " M perf/evidence/phase3/run-w4-interaction-medium.txt",
+    " M perf/evidence/phase3/run-w4-interaction-small.txt",
+    " M perf/lib/frames.mjs",
+    " M perf/lib/test-frames.mjs",
     " M perf/runner/layer-c/gallery.mjs",
-    " M perf/runner/record-phase3-evidence.mjs",
+    " M perf/runner/layer-c/interaction.mjs",
     " M perf/schemas/check.mjs",
     " M perf/schemas/examples/gallery-report.json",
     " M perf/schemas/gallery-report.schema.json",
-    "?? perf/evidence/phase3/environment.json",
-    "?? perf/evidence/phase3/gallery-selftest.txt",
-    "?? perf/evidence/phase3/gallery-sweep.txt",
-    "?? perf/evidence/phase3/results/gallery/",
-    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T114500.json",
-    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T114500.samples.ndjson",
-    "?? perf/evidence/phase3/run-w4-interaction-medium.txt",
-    "?? perf/evidence/phase3/walk-verdict-tests.txt",
-    "?? perf/runner/layer-c/walk-verdict.mjs",
-    "?? perf/runner/selftest-gallery.mjs",
-    "?? perf/runner/test-walk-verdict.mjs"
+    "?? perf/evidence/phase3/results/gallery/gallery-report-20261106T121636.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T121048.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r0-20261106T121048.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T121257.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T121257.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T121505.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T121505.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-correctness-r0-20261106T120427.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r0-20261106T120528.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r0-20261106T120528.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r1-20261106T120632.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r1-20261106T120632.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T120736.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T120736.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-correctness-r0-20261106T120528.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r0-20261106T120632.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r0-20261106T120632.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r1-20261106T120736.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r1-20261106T120736.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r2-20261106T120839.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r2-20261106T120839.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-correctness-r0-20261106T120527.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r0-20261106T120631.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r0-20261106T120631.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r1-20261106T120735.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r1-20261106T120735.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r2-20261106T120839.json",
+    "?? perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-C-performance-r2-20261106T120839.samples.ndjson"
   ],
   "machine": {
     "os": "Darwin 27.2.0",
@@ -67,12 +116,6 @@
       "seconds": 0.093
     },
     {
-      "file": "frame-attribution-tests.txt",
-      "command": "node perf/lib/test-frames.mjs",
-      "exit_code": 0,
-      "seconds": 0.02
-    },
-    {
       "file": "frame-correlation-spike.txt",
       "command": "node perf/spike/frame-correlation.mjs --out <repo>/perf/evidence/phase3/frame-correlation.json",
       "exit_code": 0,
@@ -83,18 +126,6 @@
       "command": "node perf/runner/selftest-layer-c.mjs",
       "exit_code": 0,
       "seconds": 59.713
-    },
-    {
-      "file": "run-w4-interaction-small.txt",
-      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-small.toml --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-small",
-      "exit_code": 0,
-      "seconds": 252.157
-    },
-    {
-      "file": "run-w4-interaction-medium.txt",
-      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-medium.toml --layers c --mode performance --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-medium",
-      "exit_code": 0,
-      "seconds": 386.454
     },
     {
       "file": "walk-verdict-tests.txt",
@@ -109,10 +140,28 @@
       "seconds": 16.736
     },
     {
+      "file": "frame-attribution-tests.txt",
+      "command": "node perf/lib/test-frames.mjs",
+      "exit_code": 0,
+      "seconds": 0.02
+    },
+    {
+      "file": "run-w4-interaction-small.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-small.toml --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-small",
+      "exit_code": 0,
+      "seconds": 252.047
+    },
+    {
+      "file": "run-w4-interaction-medium.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-medium.toml --layers c --mode performance --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-medium",
+      "exit_code": 0,
+      "seconds": 386.098
+    },
+    {
       "file": "gallery-sweep.txt",
       "command": "node perf/runner/gallery-sweep.mjs --out <repo>/perf/evidence/phase3/results/gallery",
       "exit_code": 0,
-      "seconds": 90.028
+      "seconds": 90.736
     }
   ]
 }

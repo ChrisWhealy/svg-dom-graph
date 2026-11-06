@@ -19,5 +19,7 @@ ok   a reused pipeline identifier pairs each end with its own beginning
 ok   a frame that only paints is not a style frame: no frame with a style or layout step began within 250 ms of the mark
 ok   with the wider qualifier, the frame that paints carries it
 ok   a frame that neither restyles nor paints never qualifies, however wide: no frame with a style, layout or paint step began within 250 ms of the mark
+ok   a measured sample says which qualifier its frame was found with
+ok   the definition says that it is not photon latency and that attribution is not causation
 
 the attribution rule behaves as designed on every hand-written trace

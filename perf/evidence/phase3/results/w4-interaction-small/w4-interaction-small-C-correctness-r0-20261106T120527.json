@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-C-correctness-r0-20261106T113522",
-  "started_at": "2026-11-06T11:35:22.403Z",
+  "run_id": "w4-interaction-small-C-correctness-r0-20261106T120527",
+  "started_at": "2026-11-06T12:05:27.982Z",
   "repetition": 0,
   "sequence_position": 1,
   "environment": {
@@ -18,7 +18,7 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
+    "git_sha": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -90,17 +90,17 @@
       "samples": 1,
       "status": "measured",
       "summary": {
-        "max": 48.735000014305115,
-        "min": 48.735000014305115,
-        "p50": 48.735000014305115
+        "max": 44.455000042915344,
+        "min": 44.455000042915344,
+        "p50": 44.455000042915344
       },
       "unit": "ms",
       "within_run": {
         "iqr": 0,
-        "mean": 48.735000014305115,
+        "mean": 44.455000042915344,
         "stddev": 0,
-        "tukey_high": 48.735000014305115,
-        "tukey_low": 48.735000014305115
+        "tukey_high": 44.455000042915344,
+        "tukey_low": 44.455000042915344
       }
     },
     {

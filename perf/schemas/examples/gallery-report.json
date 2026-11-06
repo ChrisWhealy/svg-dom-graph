@@ -23,6 +23,7 @@
     1280,
     900
   ],
+  "time_definition": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the wider qualifier.",
   "cold_start_ms": 74.2,
   "cold_start_definition": "performance.now() in the page when the first panel is on screen, which is from the start of the navigation",
   "teardown": "not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown",

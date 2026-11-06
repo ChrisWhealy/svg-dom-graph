@@ -23,7 +23,8 @@
     1280,
     900
   ],
-  "cold_start_ms": 59,
+  "time_definition": "trace-attributed presentation latency: from the page's own stamp to the compositor's record of presenting the frame that the correlation rule attributes to it. It is not a photon latency, and it does not prove that every change in that frame was caused by the marked operation, found with the wider qualifier (a style or layout step, or a repaint), because a panel is built from HTML and measured in its own task. A time here is the upper bound of a window in which the panel's change was presented, and an unrelated repaint in that window could be taken for it. Headless Chrome presents without a display.",
+  "cold_start_ms": 67.69999992847443,
   "cold_start_definition": "performance.now() in the page when the first panel is on screen, which is from the start of the navigation",
   "teardown": "not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown",
   "panels": [
@@ -35,14 +36,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 32.433
+        "ms": 16.08
       },
       "counts": {
         "elements_before": 2231,
         "elements_after": 2231,
         "listeners_before": 64,
         "listeners_after": 64,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -75,7 +76,7 @@
         ]
       },
       "revisit": {
-        "ms": 16.303
+        "ms": 15.505
       }
     },
     {
@@ -86,14 +87,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.015
+        "ms": 29.831
       },
       "counts": {
         "elements_before": 2231,
         "elements_after": 2342,
         "listeners_before": 64,
         "listeners_after": 76,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -126,7 +127,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.288
+        "ms": 34.757
       }
     },
     {
@@ -137,14 +138,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 51.369
+        "ms": 37.977
       },
       "counts": {
         "elements_before": 2342,
         "elements_after": 2386,
         "listeners_before": 76,
         "listeners_after": 83,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -177,7 +178,7 @@
         ]
       },
       "revisit": {
-        "ms": 33.944
+        "ms": 35.846
       }
     },
     {
@@ -188,14 +189,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 24.42
+        "ms": 24.584
       },
       "counts": {
         "elements_before": 2386,
         "elements_after": 2450,
         "listeners_before": 83,
         "listeners_after": 112,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -253,7 +254,7 @@
         ]
       },
       "revisit": {
-        "ms": 35.516
+        "ms": 36.256
       }
     },
     {
@@ -264,14 +265,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.737
+        "ms": 15.833
       },
       "counts": {
         "elements_before": 2450,
         "elements_after": 2848,
         "listeners_before": 112,
         "listeners_after": 229,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -824,7 +825,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.474
+        "ms": 39.564
       }
     },
     {
@@ -835,14 +836,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 28.338
+        "ms": 27.95
       },
       "counts": {
         "elements_before": 2848,
         "elements_after": 3246,
         "listeners_before": 229,
         "listeners_after": 346,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -1395,7 +1396,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.451
+        "ms": 39.097
       }
     },
     {
@@ -1406,14 +1407,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 26.286
+        "ms": 26.861
       },
       "counts": {
         "elements_before": 3246,
         "elements_after": 3439,
         "listeners_before": 346,
         "listeners_after": 391,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -1576,7 +1577,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.035
+        "ms": 37.322
       }
     },
     {
@@ -1587,14 +1588,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 24
+        "ms": 34.331
       },
       "counts": {
         "elements_before": 3439,
         "elements_after": 3628,
         "listeners_before": 391,
         "listeners_after": 436,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -1767,7 +1768,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.769
+        "ms": 35.33
       }
     },
     {
@@ -1778,14 +1779,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 29.387
+        "ms": 39.257
       },
       "counts": {
         "elements_before": 3628,
         "elements_after": 4265,
         "listeners_before": 436,
         "listeners_after": 633,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -2708,7 +2709,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.354
+        "ms": 36.212
       }
     },
     {
@@ -2719,14 +2720,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 23.677
+        "ms": 37.343
       },
       "counts": {
         "elements_before": 4265,
         "elements_after": 4869,
         "listeners_before": 633,
         "listeners_after": 654,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -3469,7 +3470,7 @@
         ]
       },
       "revisit": {
-        "ms": 40.836
+        "ms": 38.296
       }
     },
     {
@@ -3480,14 +3481,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 50.71
+        "ms": 38.08
       },
       "counts": {
         "elements_before": 4869,
         "elements_after": 5322,
         "listeners_before": 654,
         "listeners_after": 675,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -3795,7 +3796,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.28
+        "ms": 39.57
       }
     },
     {
@@ -3806,14 +3807,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 37.929
+        "ms": 37.52
       },
       "counts": {
         "elements_before": 5322,
         "elements_after": 5572,
         "listeners_before": 675,
         "listeners_after": 696,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -4021,7 +4022,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.558
+        "ms": 38.606
       }
     },
     {
@@ -4032,14 +4033,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 41.91
+        "ms": 41.884
       },
       "counts": {
         "elements_before": 5572,
         "elements_after": 6528,
         "listeners_before": 696,
         "listeners_after": 780,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -4797,7 +4798,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.386
+        "ms": 41.146
       }
     },
     {
@@ -4808,14 +4809,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.99
+        "ms": 39.455
       },
       "counts": {
         "elements_before": 6528,
         "elements_after": 9551,
         "listeners_before": 780,
         "listeners_after": 826,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5028,7 +5029,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.755
+        "ms": 40.748
       }
     },
     {
@@ -5039,14 +5040,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.925
+        "ms": 17.121
       },
       "counts": {
         "elements_before": 9551,
         "elements_after": 9963,
         "listeners_before": 826,
         "listeners_after": 903,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5159,7 +5160,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.96
+        "ms": 40.255
       }
     },
     {
@@ -5170,14 +5171,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.427
+        "ms": 38.481
       },
       "counts": {
         "elements_before": 9963,
         "elements_after": 10448,
         "listeners_before": 903,
         "listeners_after": 996,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5310,7 +5311,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.021
+        "ms": 38.969
       }
     },
     {
@@ -5321,14 +5322,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.357
+        "ms": 39.07
       },
       "counts": {
         "elements_before": 10448,
         "elements_after": 10939,
         "listeners_before": 996,
         "listeners_after": 1197,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5686,7 +5687,7 @@
         ]
       },
       "revisit": {
-        "ms": 41.607
+        "ms": 38.795
       }
     },
     {
@@ -5697,14 +5698,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 40.007
+        "ms": 38.226
       },
       "counts": {
         "elements_before": 10939,
         "elements_after": 11444,
         "listeners_before": 1197,
         "listeners_after": 1286,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5832,7 +5833,7 @@
         ]
       },
       "revisit": {
-        "ms": 40.101
+        "ms": 40.093
       }
     },
     {
@@ -5843,14 +5844,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.299
+        "ms": 40.654
       },
       "counts": {
         "elements_before": 11444,
         "elements_after": 11755,
         "listeners_before": 1286,
         "listeners_after": 1312,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -5958,7 +5959,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.336
+        "ms": 37.09
       }
     },
     {
@@ -5969,14 +5970,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.649
+        "ms": 15.915
       },
       "counts": {
         "elements_before": 11755,
         "elements_after": 11853,
         "listeners_before": 1312,
         "listeners_after": 1324,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -6044,20 +6045,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          15.766,
-          19.058,
-          17.525,
-          18.133,
-          18.342,
-          18.819,
-          18.441,
-          18.78,
-          18.462,
-          18.417,
-          17.642,
-          18.861,
-          17.861,
-          18.148
+          32.41,
+          18.923,
+          17.757,
+          18.448,
+          18.303,
+          20.165,
+          17.823,
+          18.715,
+          17.632,
+          18.368,
+          18.8,
+          19.198,
+          17.822,
+          18.281
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -6101,7 +6102,7 @@
         }
       },
       "revisit": {
-        "ms": 36.126
+        "ms": 38.302
       }
     },
     {
@@ -6112,14 +6113,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.821
+        "ms": 16.336
       },
       "counts": {
         "elements_before": 11853,
         "elements_after": 11988,
         "listeners_before": 1324,
         "listeners_after": 1348,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -6247,20 +6248,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          16.459,
-          18.623,
-          17.402,
-          18.641,
-          17.126,
-          17.248,
-          17.331,
-          16.613,
-          17.204,
-          17.612,
+          17.058,
+          17.971,
+          16.149,
+          18.249,
+          16.926,
+          16.6,
           17.245,
-          17.6,
-          17.094,
-          16.999
+          18.169,
+          16.972,
+          17.195,
+          18.12,
+          18.484,
+          16.825,
+          17.379
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -6304,7 +6305,7 @@
         }
       },
       "revisit": {
-        "ms": 37.353
+        "ms": 38.485
       }
     },
     {
@@ -6315,14 +6316,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.893
+        "ms": 16.525
       },
       "counts": {
         "elements_before": 11988,
         "elements_after": 12099,
         "listeners_before": 1348,
         "listeners_after": 1360,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -6385,18 +6386,18 @@
         "clicks": 12,
         "changed": 12,
         "step_ms": [
-          16.409,
-          17.26,
-          17.475,
-          17.332,
-          18.507,
-          18.597,
-          16.086,
-          17.092,
-          17.824,
-          16.966,
-          17.943,
-          18.142
+          16.393,
+          16.698,
+          17.624,
+          17.576,
+          17.921,
+          18.222,
+          18.43,
+          17.455,
+          17.885,
+          18.28,
+          18.194,
+          19.009
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -6440,7 +6441,7 @@
         }
       },
       "revisit": {
-        "ms": 38.544
+        "ms": 37.8
       }
     },
     {
@@ -6451,14 +6452,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.291
+        "ms": 17.215
       },
       "counts": {
         "elements_before": 12099,
         "elements_after": 12303,
         "listeners_before": 1360,
         "listeners_after": 1393,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -6721,16 +6722,16 @@
         "clicks": 10,
         "changed": 10,
         "step_ms": [
-          33.57,
-          16.328,
-          16.79,
-          16.77,
-          17.233,
-          16.725,
-          17.444,
-          17.635,
-          18.139,
-          16.652
+          17.346,
+          16.991,
+          17.192,
+          17.61,
+          16.741,
+          16.887,
+          18.412,
+          18.071,
+          16.985,
+          15.161
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -6774,7 +6775,7 @@
         }
       },
       "revisit": {
-        "ms": 36.302
+        "ms": 37.854
       }
     },
     {
@@ -6785,14 +6786,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 19.255
+        "ms": 16.135
       },
       "counts": {
         "elements_before": 12303,
         "elements_after": 12417,
         "listeners_before": 1393,
         "listeners_after": 1397,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -6815,7 +6816,7 @@
         ]
       },
       "revisit": {
-        "ms": 35.382
+        "ms": 36.741
       }
     },
     {
@@ -6826,14 +6827,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 39.811
+        "ms": 39.1
       },
       "counts": {
         "elements_before": 12417,
         "elements_after": 12720,
         "listeners_before": 1397,
         "listeners_after": 1412,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -7056,7 +7057,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.982
+        "ms": 38.604
       }
     },
     {
@@ -7067,14 +7068,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 52.455
+        "ms": 51.422
       },
       "counts": {
         "elements_before": 12720,
         "elements_after": 15306,
         "listeners_before": 1412,
         "listeners_after": 1547,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -8757,11 +8758,11 @@
         "clicks": 6,
         "changed": 6,
         "step_ms": [
-          16.129,
-          16.729,
-          17.593,
-          16.405,
-          17.139
+          17.388,
+          18.192,
+          17.408,
+          17.089,
+          17.483
         ],
         "steps_unattributed": 1,
         "unattributed": {
@@ -8807,7 +8808,7 @@
         }
       },
       "revisit": {
-        "ms": 42.358
+        "ms": 41.459
       }
     },
     {
@@ -8818,14 +8819,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.552
+        "ms": 16.311
       },
       "counts": {
         "elements_before": 15306,
         "elements_after": 17461,
         "listeners_before": 1547,
         "listeners_after": 1548,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -8848,7 +8849,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.707
+        "ms": 36.754
       }
     },
     {
@@ -8859,14 +8860,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.681
+        "ms": 36.619
       },
       "counts": {
         "elements_before": 17461,
         "elements_after": 19567,
         "listeners_before": 1548,
         "listeners_after": 1549,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -8889,7 +8890,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.379
+        "ms": 36.959
       }
     },
     {
@@ -8900,14 +8901,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 37.892
+        "ms": 36.36
       },
       "counts": {
         "elements_before": 19567,
         "elements_after": 26387,
         "listeners_before": 1549,
         "listeners_after": 1550,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -8930,7 +8931,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.237
+        "ms": 36.345
       }
     },
     {
@@ -8941,14 +8942,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.086
+        "ms": 36.943
       },
       "counts": {
         "elements_before": 26387,
         "elements_after": 29303,
         "listeners_before": 1550,
         "listeners_after": 1551,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -8971,7 +8972,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.682
+        "ms": 36.787
       }
     },
     {
@@ -8982,14 +8983,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 32.228
+        "ms": 16.409
       },
       "counts": {
         "elements_before": 29303,
         "elements_after": 32533,
         "listeners_before": 1551,
         "listeners_after": 1552,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9012,7 +9013,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.355
+        "ms": 37.556
       }
     },
     {
@@ -9023,14 +9024,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 38.924
+        "ms": 38.797
       },
       "counts": {
         "elements_before": 32533,
         "elements_after": 34087,
         "listeners_before": 1552,
         "listeners_after": 1598,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9633,7 +9634,7 @@
         ]
       },
       "revisit": {
-        "ms": 40.872
+        "ms": 41.559
       }
     },
     {
@@ -9644,14 +9645,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.539
+        "ms": 37.264
       },
       "counts": {
         "elements_before": 34087,
         "elements_after": 35265,
         "listeners_before": 1598,
         "listeners_after": 1641,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9814,7 +9815,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.56
+        "ms": 37.143
       }
     },
     {
@@ -9825,14 +9826,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.625
+        "ms": 16.617
       },
       "counts": {
         "elements_before": 35265,
         "elements_after": 38813,
         "listeners_before": 1641,
         "listeners_after": 1642,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9855,7 +9856,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.042
+        "ms": 37.371
       }
     },
     {
@@ -9866,14 +9867,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.292
+        "ms": 36.282
       },
       "counts": {
         "elements_before": 38813,
         "elements_after": 40792,
         "listeners_before": 1642,
         "listeners_after": 1643,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9907,14 +9908,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 24.064
+        "ms": 23.578
       },
       "counts": {
         "elements_before": 40792,
         "elements_after": 46166,
         "listeners_before": 1643,
         "listeners_after": 1644,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -9937,7 +9938,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.324
+        "ms": 37.321
       }
     },
     {
@@ -9948,14 +9949,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.842
+        "ms": 16.38
       },
       "counts": {
         "elements_before": 46166,
         "elements_after": 47631,
         "listeners_before": 1644,
         "listeners_after": 1679,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -10333,20 +10334,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          16.828,
-          17.475,
-          18.208,
-          17.948,
-          5.61,
-          18.385,
-          8.504,
-          17.481,
-          15.608,
-          9.413,
-          19.213,
-          18.123,
-          17.851,
-          18.323
+          17.377,
+          10.187,
+          17.181,
+          11.021,
+          14.85,
+          16.886,
+          9.281,
+          9.843,
+          10.521,
+          9.894,
+          9.902,
+          9.107,
+          8.83,
+          9.324
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -10386,7 +10387,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.99
+        "ms": 37.635
       }
     },
     {
@@ -10397,14 +10398,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 17.125
+        "ms": 16.917
       },
       "counts": {
         "elements_before": 47631,
         "elements_after": 49083,
         "listeners_before": 1679,
         "listeners_after": 1714,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -10702,20 +10703,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          15.941,
-          11.437,
-          9.799,
-          17.265,
-          9.993,
-          9.351,
-          14.939,
-          9.276,
-          10.957,
-          10.762,
-          8.88,
-          9.089,
-          8.752,
-          8.658
+          15.17,
+          8.4,
+          9.505,
+          16.97,
+          9.161,
+          10.093,
+          17.363,
+          11.649,
+          8.164,
+          8.141,
+          8.394,
+          8.19,
+          8.686,
+          8.013
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -10755,7 +10756,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.036
+        "ms": 36.952
       }
     },
     {
@@ -10766,14 +10767,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.548
+        "ms": 16.122
       },
       "counts": {
         "elements_before": 49083,
         "elements_after": 50723,
         "listeners_before": 1714,
         "listeners_after": 1749,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -11101,20 +11102,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          16.584,
-          8.135,
-          8.491,
-          6.789,
-          12.643,
-          8.932,
-          18.488,
-          8.316,
-          8.577,
-          8.352,
-          7.645,
-          8.836,
-          12.036,
-          15.01
+          13.223,
+          8.318,
+          8.51,
+          8.519,
+          8.928,
+          9.197,
+          16.562,
+          6.314,
+          8.918,
+          8.748,
+          8.419,
+          8.686,
+          7.901,
+          7.674
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -11154,7 +11155,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.039
+        "ms": 34.662
       }
     },
     {
@@ -11165,14 +11166,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 31.907
+        "ms": 16.279
       },
       "counts": {
         "elements_before": 50723,
         "elements_after": 52841,
         "listeners_before": 1749,
         "listeners_after": 1806,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -11570,20 +11571,20 @@
         "clicks": 14,
         "changed": 14,
         "step_ms": [
-          33.081,
-          18.288,
-          18.042,
-          17.37,
-          18.286,
-          18.448,
-          16.614,
-          18.401,
-          16.821,
-          17.181,
-          19.784,
-          17.894,
-          18.676,
-          21.031
+          17.282,
+          18.029,
+          18.947,
+          16.735,
+          17.123,
+          17.958,
+          15.754,
+          18.222,
+          17.306,
+          17.521,
+          18.058,
+          17.29,
+          16.919,
+          20.669
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -11613,7 +11614,7 @@
           {
             "name": "restart_returns_to_start",
             "outcome": "inconclusive",
-            "detail": "declared not to hold (demo-app/src/dijkstra/mod.rs: \"Restart\" gives its edges new random weights); the panel is not what it was at the start (2147 elements became 2141; #27: \"p||||||Step 1 of 20. Start at A, with distance 0. Every other vertex has not been reached,\" became \"p||||||The edge weights are new. Step 1 of 17. Start at A, with distance 0. Every other ve\"; #61: \"g||translate(109.6, 128.8)|||Edge from A to B: 4|\" became \"g||translate(106.1, 127.6)|||Edge from A to B: 10|\"; #62: \"title||||||Edge from A to B: 4\" became \"title||||||Edge from A to B: 10\")"
+            "detail": "declared not to hold (demo-app/src/dijkstra/mod.rs: \"Restart\" gives its edges new random weights); the panel is not what it was at the start (2147 elements became 2135; #27: \"p||||||Step 1 of 20. Start at A, with distance 0. Every other vertex has not been reached,\" became \"p||||||The edge weights are new. Step 1 of 14. Start at A, with distance 0. Every other ve\"; #61: \"g||translate(109.6, 128.8)|||Edge from A to B: 4|\" became \"g||translate(110.2, 129)|||Edge from A to B: 7|\"; #62: \"title||||||Edge from A to B: 4\" became \"title||||||Edge from A to B: 7\")"
           },
           {
             "name": "no_page_errors_during_walk",
@@ -11627,7 +11628,7 @@
         }
       },
       "revisit": {
-        "ms": 35.622
+        "ms": 38.116
       }
     },
     {
@@ -11638,14 +11639,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.833
+        "ms": 16.248
       },
       "counts": {
-        "elements_before": 52835,
-        "elements_after": 54704,
+        "elements_before": 52829,
+        "elements_after": 54698,
         "listeners_before": 1806,
         "listeners_after": 1857,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -11778,7 +11779,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.104
+        "ms": 39.009
       }
     },
     {
@@ -11789,14 +11790,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 51.172
+        "ms": 35.463
       },
       "counts": {
-        "elements_before": 54704,
-        "elements_after": 62305,
+        "elements_before": 54698,
+        "elements_after": 62299,
         "listeners_before": 1857,
         "listeners_after": 1867,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12019,9 +12020,9 @@
         "clicks": 12,
         "changed": 12,
         "step_ms": [
-          16.247,
-          17.207,
-          17.668
+          16.789,
+          17.528,
+          15.969
         ],
         "steps_unattributed": 9,
         "unattributed": {
@@ -12063,7 +12064,7 @@
         ]
       },
       "revisit": {
-        "ms": 37.701
+        "ms": 40.37
       }
     },
     {
@@ -12074,14 +12075,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.194
+        "ms": 16.987
       },
       "counts": {
-        "elements_before": 62305,
-        "elements_after": 67763,
+        "elements_before": 62299,
+        "elements_after": 67757,
         "listeners_before": 1867,
         "listeners_after": 1875,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12139,12 +12140,13 @@
         "clicks": 12,
         "changed": 12,
         "step_ms": [
-          5.719,
-          3.826
+          3.9,
+          2.938,
+          19.376
         ],
-        "steps_unattributed": 10,
+        "steps_unattributed": 9,
         "unattributed": {
-          "frame N was not presented in full, it ended as STATE_DROPPED": 10
+          "frame N was not presented in full, it ended as STATE_DROPPED": 9
         },
         "errors": [],
         "verdict": "pass",
@@ -12182,7 +12184,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.876
+        "ms": 38.944
       }
     },
     {
@@ -12193,14 +12195,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 14.535
+        "ms": 16.514
       },
       "counts": {
-        "elements_before": 67763,
-        "elements_after": 76537,
+        "elements_before": 67757,
+        "elements_after": 76531,
         "listeners_before": 1875,
         "listeners_after": 1876,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12223,7 +12225,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.64
+        "ms": 39.287
       }
     },
     {
@@ -12234,14 +12236,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.234
+        "ms": 15.701
       },
       "counts": {
-        "elements_before": 76537,
-        "elements_after": 78194,
+        "elements_before": 76531,
+        "elements_after": 78188,
         "listeners_before": 1876,
         "listeners_after": 1883,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12284,7 +12286,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.079
+        "ms": 38.567
       }
     },
     {
@@ -12295,14 +12297,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 15.787
+        "ms": 15.607
       },
       "counts": {
-        "elements_before": 78194,
-        "elements_after": 79100,
+        "elements_before": 78188,
+        "elements_after": 79094,
         "listeners_before": 1883,
         "listeners_after": 1888,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12330,7 +12332,7 @@
         ]
       },
       "revisit": {
-        "ms": 16.466
+        "ms": 16.634
       }
     },
     {
@@ -12341,14 +12343,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.874
+        "ms": 36.834
       },
       "counts": {
-        "elements_before": 79100,
-        "elements_after": 79590,
+        "elements_before": 79094,
+        "elements_after": 79584,
         "listeners_before": 1888,
         "listeners_after": 1889,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12386,7 +12388,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.415
+        "ms": 37.221
       }
     },
     {
@@ -12397,14 +12399,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 36.249
+        "ms": 36.153
       },
       "counts": {
-        "elements_before": 79590,
-        "elements_after": 80719,
+        "elements_before": 79584,
+        "elements_after": 80713,
         "listeners_before": 1889,
         "listeners_after": 1894,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12437,7 +12439,7 @@
         ]
       },
       "revisit": {
-        "ms": 36.504
+        "ms": 37.155
       }
     },
     {
@@ -12448,14 +12450,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 42.301
+        "ms": 39.723
       },
       "counts": {
-        "elements_before": 80719,
-        "elements_after": 82185,
+        "elements_before": 80713,
+        "elements_after": 82179,
         "listeners_before": 1894,
         "listeners_after": 1895,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12498,7 +12500,7 @@
         ]
       },
       "revisit": {
-        "ms": 40.305
+        "ms": 38.773
       }
     },
     {
@@ -12509,14 +12511,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 44.988
+        "ms": 44.079
       },
       "counts": {
-        "elements_before": 82185,
-        "elements_after": 86967,
+        "elements_before": 82179,
+        "elements_after": 86961,
         "listeners_before": 1895,
         "listeners_after": 1968,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -12854,12 +12856,12 @@
         "clicks": 6,
         "changed": 6,
         "step_ms": [
-          18.372,
-          20.908,
-          18.342,
-          18.943,
-          17.232,
-          20.566
+          17.847,
+          19.153,
+          20.794,
+          17.892,
+          18.861,
+          21.708
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -12899,7 +12901,7 @@
         ]
       },
       "revisit": {
-        "ms": 43.379
+        "ms": 43.298
       }
     },
     {
@@ -12913,14 +12915,14 @@
       ],
       "errors": [],
       "build": {
-        "ms": 16.329
+        "ms": 16.556
       },
       "counts": {
-        "elements_before": 86967,
-        "elements_after": 88302,
+        "elements_before": 86961,
+        "elements_after": 88296,
         "listeners_before": 1968,
         "listeners_after": 1977,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -13013,13 +13015,13 @@
         "clicks": 7,
         "changed": 7,
         "step_ms": [
-          17.436,
-          17.434,
-          19.516,
-          17.808,
-          18.719,
-          18.311,
-          19.709
+          15.609,
+          18.374,
+          19.872,
+          19.097,
+          18.404,
+          17.419,
+          18.599
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -13059,7 +13061,7 @@
         ]
       },
       "revisit": {
-        "ms": 39.215
+        "ms": 39.071
       }
     },
     {
@@ -13070,14 +13072,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.414
+        "ms": 16.919
       },
       "counts": {
-        "elements_before": 88302,
-        "elements_after": 93263,
+        "elements_before": 88296,
+        "elements_after": 93257,
         "listeners_before": 1977,
         "listeners_after": 1988,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -13465,18 +13467,18 @@
         "clicks": 12,
         "changed": 12,
         "step_ms": [
-          16.478,
-          18.59,
-          17.927,
-          17.171,
-          17.622,
-          18.112,
-          18.09,
-          16.378,
-          18.164,
-          18.098,
-          17.194,
-          18.078
+          17.02,
+          17.561,
+          18.76,
+          17.095,
+          17.295,
+          18.069,
+          17.851,
+          18.14,
+          18.147,
+          17.966,
+          18.459,
+          18.183
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -13516,7 +13518,7 @@
         ]
       },
       "revisit": {
-        "ms": 38.912
+        "ms": 37.979
       }
     },
     {
@@ -13527,14 +13529,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.923
+        "ms": 16.26
       },
       "counts": {
-        "elements_before": 93263,
-        "elements_after": 100498,
+        "elements_before": 93257,
+        "elements_after": 100492,
         "listeners_before": 1988,
         "listeners_after": 2030,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -13637,7 +13639,7 @@
         "clicks": 1,
         "changed": 1,
         "step_ms": [
-          18.256
+          17.631
         ],
         "steps_unattributed": 0,
         "unattributed": {},
@@ -13677,7 +13679,7 @@
         ]
       },
       "revisit": {
-        "ms": 40.248
+        "ms": 40.655
       }
     },
     {
@@ -13688,14 +13690,14 @@
       "notes": [],
       "errors": [],
       "build": {
-        "ms": 16.728
+        "ms": 16.821
       },
       "counts": {
-        "elements_before": 100470,
-        "elements_after": 109774,
+        "elements_before": 100464,
+        "elements_after": 109768,
         "listeners_before": 2030,
         "listeners_after": 2063,
-        "elements_after_revisit": 109774,
+        "elements_after_revisit": 109768,
         "listeners_after_revisit": 2063
       },
       "controls": [
@@ -14178,14 +14180,14 @@
         "clicks": 12,
         "changed": 12,
         "step_ms": [
-          17.219,
-          18.311,
-          19.344,
-          18.67,
-          21.303,
-          19.155,
-          17.08,
-          18.741
+          17.324,
+          18.413,
+          19.736,
+          19.14,
+          18.829,
+          17.55,
+          17.416,
+          18.653
         ],
         "steps_unattributed": 4,
         "unattributed": {
@@ -14227,11 +14229,11 @@
         ]
       },
       "revisit": {
-        "ms": 39.849
+        "ms": 39.842
       }
     }
   ],
   "page_errors": [],
-  "git_sha": "be3b0b160e59be6401818e22b9cd9763883c99d0",
+  "git_sha": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
   "git_dirty": true
 }

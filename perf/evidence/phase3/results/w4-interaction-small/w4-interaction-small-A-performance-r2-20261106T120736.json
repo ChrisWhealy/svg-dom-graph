@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-A-performance-r2-20261106T113730",
-  "started_at": "2026-11-06T11:37:30.604Z",
+  "run_id": "w4-interaction-small-A-performance-r2-20261106T120736",
+  "started_at": "2026-11-06T12:07:36.118Z",
   "repetition": 2,
   "sequence_position": 9,
   "environment": {
@@ -15,7 +15,7 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
+    "git_sha": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -86,5 +86,5 @@
   ],
   "checkpoints_passed": 1,
   "checkpoints_failed": [],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T113730.samples.ndjson"
+  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T120736.samples.ndjson"
 }

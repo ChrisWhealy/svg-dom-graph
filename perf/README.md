@@ -510,6 +510,25 @@ independent generator.
 Chrome 157 agreed with every prediction: **306 of 306 effect checks** passed on the medium manifest, and 144 of 144 on the small one,
 at 50%, 100% and 200%. A check that fails makes the run `invalid_incorrect`.
 
+### What a Layer C time is, and is not
+
+Every Layer C time is a **trace-attributed presentation latency**: from the page's own stamp to the compositor's own record of
+presenting the frame that the rule attributes to it. Two distinctions are kept, in the code (`lib/frames.mjs`), in the mechanism of
+every metric, and in the gallery report's `time_definition`.
+
+- **Attribution is not causation.** Finding the frame whose lifecycle holds the relevant style or layout work does not prove that every
+  change in that frame was caused by the marked operation. For the interaction runner the change is made by the handler of the
+  input event that wrote the mark, or in the frame callback it asked for, and the spike held that to the page's own stamps. The
+  gallery adapter uses the wider qualifier, under which a frame also qualifies by repainting, so an unrelated repaint inside the window
+  could be taken for the panel's. A gallery time is therefore the upper bound of a window in which the change was presented, and a
+  result says which qualifier its frame was found with.
+- **A compositor's presentation is not a photon.** Between the compositor's record and light leaving a display are the display pipeline
+  and the panel's scan-out, which the trace cannot see, and a headless Chrome presents without a display at all. These figures say how
+  the page and the library behave, and they are not a guaranteed end-to-end latency to the eye.
+
+Where the rule cannot attribute a frame, it says so and gives no number. No architecture change follows from this: the figures are
+comparable with one another, which is what a regression gate needs, and they are not offered as more than that.
+
 ### What Layer C measures
 
 - **Interaction time** starts at the first capture-phase listener for the input event, stamped with `performance.now()` in the page,

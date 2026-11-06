@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-B-performance-r2-20261106T113834",
-  "started_at": "2026-11-06T11:38:34.391Z",
-  "repetition": 2,
-  "sequence_position": 11,
+  "run_id": "w4-interaction-small-B-correctness-r0-20261106T120528",
+  "started_at": "2026-11-06T12:05:28.396Z",
+  "repetition": 0,
+  "sequence_position": 2,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -18,15 +18,15 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
+    "git_sha": "4857001ea6f3ad594e1ba1fb6b1fd2bb0ed9dbd2",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w4-interaction-small",
     "sha256": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
-    "operation_stream_scope": "mutations",
-    "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "14b81743005e3c4942facc98d885ce4b57b85578a023791a788259443af810de",
     "canonical": {
       "schema_version": 1,
       "workload": "interaction",
@@ -77,13 +77,13 @@
       }
     }
   },
-  "mode": "performance",
+  "mode": "correctness",
   "status": "ok",
   "metrics": [
     {
       "layer": "B",
       "name": "timing",
-      "reason": "no operation was in the measured part of the run",
+      "reason": "the correctness mode keeps no timing",
       "status": "unavailable"
     },
     {
@@ -124,6 +124,5 @@
     }
   ],
   "checkpoints_passed": 1,
-  "checkpoints_failed": [],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r2-20261106T113834.samples.ndjson"
+  "checkpoints_failed": []
 }
