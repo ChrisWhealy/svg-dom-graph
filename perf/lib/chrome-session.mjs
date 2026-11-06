@@ -82,6 +82,28 @@ const connect = async url => {
   return { socket, send, on, evaluate, metrics, collectGarbage }
 }
 
+// Every Chrome this process started and has not yet closed. A script that throws, is interrupted or times out before it reaches its
+// own `close()` would otherwise leave a headless Chrome running for good, with its helpers and its profile. The exit handler
+// runs on every way out of Node that Node can see, and kills what is left, and the signals are turned into exits so that it runs
+// for them too. Only a SIGKILL of Node itself gets past it.
+const running = new Set()
+const killRunning = () => {
+  for (const chrome of running) {
+    try {
+      chrome.kill('SIGKILL')
+    } catch {
+      // Already gone.
+    }
+  }
+}
+process.on('exit', killRunning)
+for (const [signal, code] of [
+  ['SIGINT', 130],
+  ['SIGTERM', 143],
+  ['SIGHUP', 129]
+])
+  process.on(signal, () => process.exit(code))
+
 export const launch = async () => {
   const chromePath = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
   const profile = fs.mkdtempSync(path.join(os.tmpdir(), 'perf-chrome-'))
@@ -98,6 +120,8 @@ export const launch = async () => {
     ],
     { stdio: ['ignore', 'ignore', 'pipe'] }
   )
+  running.add(chrome)
+  chrome.once('exit', () => running.delete(chrome))
   const wsUrl = await new Promise(resolve => {
     let log = ''
     chrome.stderr.on('data', chunk => {
