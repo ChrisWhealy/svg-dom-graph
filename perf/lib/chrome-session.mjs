@@ -110,11 +110,17 @@ export const launch = async () => {
   const tabs = await (await fetch(`http://${host}/json`)).json()
   const first = await connect(tabs.find(tab => tab.type === 'page').webSocketDebuggerUrl)
   const close = async () => {
-    // Chrome may still be writing to its profile directory, so the clean-up waits for it to exit and then retries.
+    // Chrome may still be writing to its profile directory, and on a CI runner its helper processes can outlive the main one. So
+    // the clean-up waits for the main process to exit and then retries. A directory that cannot be removed is a file in a
+    // temporary directory and not a result, so it is said and does not fail the run that has already measured what it was asked to.
     const exited = new Promise(resolve => chrome.once('exit', resolve))
     chrome.kill()
     await exited
-    fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
+    try {
+      fs.rmSync(profile, { recursive: true, force: true, maxRetries: 20, retryDelay: 250 })
+    } catch (error) {
+      console.warn(`could not remove the Chrome profile ${profile}: ${error.code ?? error.message}`)
+    }
   }
   // Opens another tab, which is its own target with its own client. Only the tab in front receives real wheel input, and
   // `Page.bringToFront` is what makes it that one.
