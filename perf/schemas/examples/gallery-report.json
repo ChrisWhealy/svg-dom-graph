@@ -1,5 +1,6 @@
 {
   "schema_version": 1,
+  "summary": { "panels": 2, "panels_in_gallery": 2, "loaded": 2, "failed_to_load": 0, "with_errors": 0, "walked": 1, "downgraded": 1, "skipped": 0, "first_visit_timed": 1, "revisit_timed": 2 },
   "browser": "Chrome/157.0.8103.39",
   "viewport": [1280, 900],
   "cold_start_ms": 74.2,

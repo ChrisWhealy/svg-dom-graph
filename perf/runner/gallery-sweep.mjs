@@ -40,23 +40,25 @@ const file = path.join(outDir, `gallery-report-${new Date().toISOString().replac
 fs.writeFileSync(file, JSON.stringify(report, null, 2) + '\n')
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+const summary = report.summary
 const median = values => (values.length ? [...values].sort((a, b) => a - b)[values.length >> 1] : null)
 const panels = report.panels
 const built = panels.filter(panel => panel.build.ms !== undefined).map(panel => panel.build.ms)
 const revisited = panels.filter(panel => panel.revisit?.ms !== undefined).map(panel => panel.revisit.ms)
-const walked = panels.filter(panel => panel.walk.status === 'walked')
 console.log(`\n${panels.length} panels in ${path.relative(root, file)}`)
 console.log(`  cold start ${report.cold_start_ms.toFixed(0)} ms`)
 console.log(`  first visit: ${built.length} timed, median ${median(built)?.toFixed(1)} ms, slowest ${Math.max(...built).toFixed(1)} ms (${panels.find(panel => panel.build.ms === Math.max(...built))?.id})`)
 console.log(`  revisit: ${revisited.length} timed, median ${median(revisited)?.toFixed(1)} ms`)
-console.log(`  walked ${walked.length}, downgraded ${panels.filter(panel => panel.walk.status === 'downgraded').length}, skipped ${panels.filter(panel => panel.walk.status === 'skipped').length}`)
+console.log(`  swept ${summary.panels} of the ${summary.panels_in_gallery} panels in the gallery: ${summary.loaded} loaded, ${summary.failed_to_load} failed to load, ${summary.with_errors} with page errors`)
+console.log(`  walked ${summary.walked}, downgraded ${summary.downgraded}, skipped ${summary.skipped}`)
 
 let failed = 0
 const gate = (ok, text) => {
   if (!ok) failed++
   console.log(`  ${ok ? 'ok  ' : 'FAIL'} ${text}`)
 }
-gate(panels.every(panel => panel.status !== 'error'), 'every panel came up when it was selected, on the first visit and on the revisit')
+gate(summary.panels === summary.panels_in_gallery || only !== null, `the whole gallery was swept (${summary.panels} of ${summary.panels_in_gallery})`)
+gate(summary.failed_to_load === 0, 'every panel came up when it was selected, on the first visit and on the revisit')
 gate(report.page_errors.length === 0, `the page threw nothing and logged no error (${report.page_errors.length})`)
 console.log(failed ? `\n${failed} deterministic gate(s) failed` : '\nevery deterministic gate passed')
 process.exit(failed ? 1 : 0)

@@ -120,6 +120,12 @@ const rejected = {
     "an unknown top-level key": d => {
       d.extra = 1
     },
+    "a report with no summary": d => {
+      delete d.summary
+    },
+    "a summary that is missing a count": d => {
+      delete d.summary.walked
+    },
     "a panel with no status": d => {
       delete d.panels[0].status
     },

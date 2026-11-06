@@ -29,7 +29,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Retain spike results as reproducible evidence (`89a03af`) 
 - Perf Harness Phase 1: Deterministic workload engine `perf-harness` (`a2c35b3`)
 - Perf Harness Phase 2: Layer A and Layer B runners `perf-harness-wasm` (`78eacc4`)
-- Perf Harness Phase 3: Layer C browser runner and gallery adapter (``)
+- Perf Harness Phase 3: Layer C browser runner and gallery adapter (`038b041`)
+- Perf Harness: Provide completion evidence of gallery sweep (``)
 
 ### Changed
 

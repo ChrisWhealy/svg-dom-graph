@@ -1,0 +1,94 @@
+{
+  "recorded_at": "2026-11-06T11:18:19.234Z",
+  "commit": "038b04130e688807b8a3fb7b25a8ce678d718b8b",
+  "uncommitted_changes": [
+    " M demo/changelog.md",
+    "?? perf/evidence/phase3/gallery-sweep.txt",
+    "?? perf/evidence/phase3/results/gallery/",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T111448.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r1-20261106T111448.samples.ndjson",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T111652.json",
+    "?? perf/evidence/phase3/results/w4-interaction-medium/w4-interaction-medium-C-performance-r2-20261106T111652.samples.ndjson",
+    "?? perf/evidence/phase3/run-w4-interaction-medium.txt"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "browser": "Google Chrome 157.0.8103.39",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm_pack": "wasm-pack 0.15.1",
+  "node": "v26.13.0",
+  "build_profile": "release",
+  "commands": [
+    {
+      "file": "build.txt",
+      "command": "sh -c cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg",
+      "exit_code": 0,
+      "seconds": 1.893
+    },
+    {
+      "file": "rust-tests-native.txt",
+      "command": "cargo test -p perf-harness",
+      "exit_code": 0,
+      "seconds": 1.398
+    },
+    {
+      "file": "rust-tests-wasm32-wasi.txt",
+      "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
+      "exit_code": 0,
+      "seconds": 0.708
+    },
+    {
+      "file": "crosscheck.txt",
+      "command": "node perf/crosscheck/crosscheck.mjs",
+      "exit_code": 0,
+      "seconds": 0.749
+    },
+    {
+      "file": "schema-checks.txt",
+      "command": "node check.mjs",
+      "exit_code": 0,
+      "seconds": 0.088
+    },
+    {
+      "file": "frame-attribution-tests.txt",
+      "command": "node perf/lib/test-frames.mjs",
+      "exit_code": 0,
+      "seconds": 0.02
+    },
+    {
+      "file": "frame-correlation-spike.txt",
+      "command": "node perf/spike/frame-correlation.mjs --out <repo>/perf/evidence/phase3/frame-correlation.json",
+      "exit_code": 0,
+      "seconds": 22.716
+    },
+    {
+      "file": "layer-c-selftest.txt",
+      "command": "node perf/runner/selftest-layer-c.mjs",
+      "exit_code": 0,
+      "seconds": 44.058
+    },
+    {
+      "file": "run-w4-interaction-small.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-small.toml --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-small",
+      "exit_code": 0,
+      "seconds": 234.39
+    },
+    {
+      "file": "run-w4-interaction-medium.txt",
+      "command": "node perf/runner/run.mjs perf/manifests/w4-interaction-medium.toml --layers c --mode performance --no-build --out-dir <repo>/perf/evidence/phase3/results/w4-interaction-medium",
+      "exit_code": 0,
+      "seconds": 372.652
+    },
+    {
+      "file": "gallery-sweep.txt",
+      "command": "node perf/runner/gallery-sweep.mjs --out <repo>/perf/evidence/phase3/results/gallery",
+      "exit_code": 0,
+      "seconds": 86,
+      "note": "run again on its own after the report gained a summary of its completion; the other steps were recorded together earlier"
+    }
+  ]
+}

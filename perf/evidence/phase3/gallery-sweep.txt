@@ -1,0 +1,66 @@
+ok   panel-tree: build 15.7 ms, downgraded
+ok   panel-elbow: build 43.3 ms, downgraded
+ok   panel-edge-anchors: build 22.3 ms, downgraded
+ok   panel-ellipse: build 25.5 ms, downgraded
+ok   panel-unsigned: build 14.5 ms, downgraded
+ok   panel-signed: build 32.4 ms, downgraded
+ok   panel-hexdump: build 25.5 ms, downgraded
+ok   panel-ascii: build 23.8 ms, downgraded
+ok   panel-bits: build 38.8 ms, downgraded
+ok   panel-float: build 28.7 ms, downgraded
+ok   panel-128-bit: build 38.0 ms, downgraded
+ok   panel-size: build 37.9 ms, downgraded
+ok   panel-bool: build 40.8 ms, downgraded
+ok   panel-complex: build 38.8 ms, downgraded
+ok   panel-operators-unary: build 16.5 ms, downgraded
+ok   panel-operators-binary: build 38.7 ms, downgraded
+ok   panel-operators-arithmetic: build 39.5 ms, downgraded
+ok   panel-operators-chained: build 37.9 ms, downgraded
+ok   panel-butterfly: build 38.9 ms, downgraded
+ok   panel-selection-1d: build 15.7 ms, walked, 12 clicks
+ok   panel-selection-2d: build 16.7 ms, walked, 12 clicks
+ok   panel-selection-hexdump: build 17.1 ms, walked, 12 clicks
+ok   panel-selection-thetac: build 16.5 ms, walked, 10 clicks
+ok   panel-markdown: build 16.3 ms, downgraded
+ok   panel-text-input: build 37.2 ms, downgraded
+ok   panel-theta: build 53.1 ms, walked, 5 clicks
+ok   panel-sha1: build 17.3 ms, downgraded
+ok   panel-sha2-256: build 36.1 ms, downgraded
+ok   panel-sha3-sponge: build 36.3 ms, downgraded
+ok   panel-chacha20: build 37.6 ms, downgraded
+ok   panel-huffman: build 16.0 ms, downgraded
+ok   panel-base64: build 39.4 ms, downgraded
+ok   panel-utf8: build 37.6 ms, downgraded
+ok   panel-crc32: build 16.5 ms, downgraded
+ok   panel-hamming: build 36.8 ms, downgraded
+ok   panel-qr-code: build 24.3 ms, downgraded
+ok   panel-bubble-sort: build 15.9 ms, walked, 13 clicks
+ok   panel-shell-sort: build 16.2 ms, walked, 13 clicks
+ok   panel-quicksort: build 16.4 ms, walked, 13 clicks
+ok   panel-dijkstra: build 16.1 ms, walked, 13 clicks
+ok   panel-springs: build 17.1 ms, downgraded
+ok   panel-edmonds-karp: build 37.9 ms, walked, 12 clicks
+ok   panel-red-black-tree: build 15.2 ms, walked, 12 clicks
+ok   panel-tarjan: build 13.4 ms, skipped
+ok   panel-sine-cosine: build 16.3 ms, downgraded
+ok   panel-pythagoras: build 17.1 ms, downgraded
+ok   panel-amplitude-frequency: build 37.3 ms, downgraded
+ok   panel-phase-shift: build 36.0 ms, downgraded
+ok   panel-convolution: build 40.5 ms, downgraded
+ok   panel-fft: build 41.6 ms, walked, 6 clicks
+ok   panel-game-of-life: build 16.2 ms, walked, 6 clicks
+ok   panel-n-queens: build 16.3 ms, walked, 12 clicks
+ok   panel-marching-squares: build 15.6 ms, walked, 1 clicks
+ok   panel-petri-net: build 16.1 ms, walked, 12 clicks
+
+54 panels in perf/evidence/phase3/results/gallery/gallery-report-20261106T112022.json
+  cold start 59 ms
+  first visit: 54 timed, median 25.5 ms, slowest 53.1 ms (panel-theta)
+  revisit: 54 timed, median 37.8 ms
+  swept 54 of the 54 panels in the gallery: 54 loaded, 0 failed to load, 0 with page errors
+  walked 16, downgraded 37, skipped 1
+  ok   the whole gallery was swept (54 of 54)
+  ok   every panel came up when it was selected, on the first visit and on the revisit
+  ok   the page threw nothing and logged no error (0)
+
+every deterministic gate passed

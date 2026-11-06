@@ -38,6 +38,24 @@
   },
   "properties": {
     "schema_version": { "const": 1 },
+    "summary": {
+      "type": "object",
+      "description": "The sweep's own account of its completion. panels is how many were swept, and panels_in_gallery how many the menu holds, so a sweep of a part of the gallery says so.",
+      "properties": {
+        "panels": { "type": "integer", "minimum": 0 },
+        "panels_in_gallery": { "type": "integer", "minimum": 0 },
+        "loaded": { "type": "integer", "minimum": 0 },
+        "failed_to_load": { "type": "integer", "minimum": 0 },
+        "with_errors": { "type": "integer", "minimum": 0 },
+        "walked": { "type": "integer", "minimum": 0 },
+        "downgraded": { "type": "integer", "minimum": 0 },
+        "skipped": { "type": "integer", "minimum": 0 },
+        "first_visit_timed": { "type": "integer", "minimum": 0 },
+        "revisit_timed": { "type": "integer", "minimum": 0 }
+      },
+      "required": ["panels", "panels_in_gallery", "loaded", "failed_to_load", "with_errors", "walked", "downgraded", "skipped", "first_visit_timed", "revisit_timed"],
+      "additionalProperties": false
+    },
     "browser": { "type": ["string", "null"] },
     "viewport": {
       "type": "array",
@@ -135,6 +153,6 @@
       }
     }
   },
-  "required": ["schema_version", "browser", "viewport", "cold_start_ms", "cold_start_definition", "teardown", "panels", "page_errors"],
+  "required": ["schema_version", "summary", "browser", "viewport", "cold_start_ms", "cold_start_definition", "teardown", "panels", "page_errors"],
   "additionalProperties": false
 }

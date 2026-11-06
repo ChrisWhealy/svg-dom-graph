@@ -1,8 +1,7 @@
 # Performance harness
 
-The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 3.
-Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine) and Phase 2 (the Layer A and Layer B runners) are done.
-The browser-level runner, Layer C, is Phase 3.
+The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 4.
+Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine), Phase 2 (the Layer A and Layer B runners) and Phase 3 (the Layer C browser runner and the gallery adapter) are done.
 
 | Path                             | Holds                                                              |
 | -------------------------------- | ------------------------------------------------------------------ |
@@ -21,10 +20,14 @@ The browser-level runner, Layer C, is Phase 3.
 | `lib/chrome-session.mjs`         | A static server and a headless Chrome with a small CDP client, shared by the scripts |
 | `schemas/workload-report.schema.json` | What a manifest should do and what the scene should look like at each checkpoint, written by `perf-harness generate` |
 | `schemas/examples/rejected-manifests.json` | Manifests that must be refused, read by both the JavaScript and the Rust validator |
-| `manifests/`                     | The three small reference manifests, one for each workload         |
+| `manifests/`                     | The reference manifests: a small one for each of W1 to W3, and a small and a medium one for W4 |
+| `gallery-overrides.json`         | Per-panel overrides for the gallery sweep: a control's name, or the hook that advances a manual clock |
+| `lib/frames.mjs`, `lib/trace.mjs`, `lib/input.mjs` | The frame attribution rule and its tests (`lib/test-frames.mjs`), the trace recorder, and real input through CDP |
+| `spike/frame-correlation.mjs`    | The Phase 3 spike that the frame correlation rule was tested with |
+| `schemas/gallery-report.schema.json` | What the gallery sweep writes |
 | `crosscheck/`                    | An independent JavaScript generator, a Rust-against-JavaScript comparison, a 32-bit wasm test runner, and the Phase 1 evidence recorder |
 | `runner/`                        | The orchestrator, the page that hosts the wasm runner, the allocator verification and the checker self-test |
-| `evidence/`                      | What the Phase 0, 1 and 2 checks printed, with the environment     |
+| `evidence/`                      | What the Phase 0, 1, 2 and 3 checks printed, with the environment  |
 | `baselines/`                     | Baselines, which only an explicit promotion command writes         |
 
 `perf-harness/` is an on-demand workspace member, like `cdp-integration-test`: a plain `cargo test` does not build it, and it adds no dependency to the published library.
@@ -441,7 +444,149 @@ with what exists and not with what it meant.
 - The trace correlation of presentation time still needs its spike, as the design says.
 - A workload that makes nodes draggable would let the listener gate prove something, and gives Layer C real input to time.
 
+## Phase 3: the browser runner
+
+Layer C drives a real scene in Chrome with real input, and reads what the browser did. It is conditional, in the design, on a
+spike that shows that a frame can be attributed to a mutation, so the spike came first.
+
+```sh
+node perf/lib/test-frames.mjs                                              # the attribution rule, on traces written by hand
+node perf/spike/frame-correlation.mjs                                      # the spike: the rule against the page's own stamps
+node perf/runner/run.mjs perf/manifests/w4-interaction-small.toml          # W4 on all three layers
+node perf/runner/run.mjs perf/manifests/w4-interaction-medium.toml --layers c --mode performance
+node perf/runner/selftest-layer-c.mjs                                      # does Layer C move by what it measures, and by nothing else?
+cargo run -p demo-server -- --build-only                                   # stages the gallery in target/demo-stage
+node perf/runner/gallery-sweep.mjs                                         # every panel loaded, revisited and walked
+```
+
+### The spike, and what it changed in the rule
+
+The rule of section 3.2 was tested on a page that keeps its own stamps of the frame callbacks that carry its mutations. A sample
+was right if the frame the trace gave it contains its own callback. In Chrome 157 (`evidence/phase3/frame-correlation.json`):
+
+| Experiment | Result |
+|---|---|
+| One mutation at a time, callbacks of 0 to 30 ms | 70 of 70 right, and none presented sooner than its callback's cost |
+| Unrelated work making a frame every 5 ms | 70 of 70 right |
+| A mutation every 6 ms, earlier frames still in flight | 80 of 80 right. The naive rule, the next presentation after the mark, was right for 53 |
+| A mutation that changes nothing | 0 of 20 given a frame |
+| A trace buffer of 16 KB | Chrome reported the loss, and 0 samples were given a frame |
+| Layout forced in the task that made the change | 0 of 40 by the style rule, 40 of 40 right by the wider one |
+| Real input from `Input.dispatchMouseEvent`, at once or deferred to a frame | 40 of 40 right each, and the mark was inside a main frame every time |
+
+Four things in the rule as designed did not survive, and the rule in `lib/frames.mjs` and section 3.2 is the one that did:
+
+- **Real input arrives inside a frame.** The first version took the first frame that began after the mark. For input, the mark is
+  already inside the frame that shows it, so the rule takes the frame that contains the mark if its style step is still to come.
+- **A presentation is not always the whole frame.** With unrelated frames being made, Chrome reports a `STATE_PRESENTED_PARTIAL`
+  pipeline for a frame as well as the `STATE_PRESENTED_ALL` one, and the partial one ends before the main thread has finished.
+  Taking it put the presentation before the callback had run, in 37 of 62 samples. Only a presentation in full, after the main thread
+  finished, counts, and a dropped frame is `unavailable`.
+- **A forced layout leaves no style step in the frame.** A panel that is built from HTML and measured has its style and layout done
+  in its own task, so the frame that shows it only paints. The gallery adapter widens the qualifier to a style step or a repaint,
+  and a frame that does neither never qualifies. The interaction runner keeps the strict one.
+- **A tolerance for the page's clock.** The page's stamps are 0.1 ms coarse, so the spike allows 0.25 ms when it asks whether a frame
+  contains a callback. Before that was allowed, 6 of 54 right answers were counted wrong.
+
+### W4: the interaction workload
+
+W4 builds one scene (the same graph planner, the same checkpoint), and leaves it for a browser. Its manifest has an `[interaction]`
+table: the scales in percent (25 to 400, which is what the library's view accepts), the gestures, and the pointer moves in a drag.
+`perf-harness gestures <manifest>` plans every case, one for each scale and gesture, and each case draws from a stream of its own.
+Every gesture says where the pointer goes down and what the scene must look like when it comes up.
+
+| Gesture | What it must do |
+|---|---|
+| `drag` | The node moves by the pointer's movement divided by the scale |
+| `pan` | The view translates by the movement, and the scale does not change |
+| `wheel_zoom` | One notch with the control key held multiplies the scale by 1.25, or divides it, about the pointer |
+
+The plan of the small reference manifest has a fixed digest, which is the same on native code and on 32-bit wasm (`gestures` tests).
+The independent JavaScript generator agrees on the stream of W4, 40 of 40 manifests now. The plan itself is not cross-checked by an
+independent generator.
+
+Chrome 157 agreed with every prediction: **306 of 306 effect checks** passed on the medium manifest, and 144 of 144 on the small one,
+at 50%, 100% and 200%. A check that fails makes the run `invalid_incorrect`.
+
+### What Layer C measures
+
+- **Interaction time** starts at the first capture-phase listener for the input event, stamped with `performance.now()` in the page,
+  which also writes the mark. It stops at the presentation boundary of the frame the rule attributes. The CDP command's round trip is
+  a metric of its own and is never a start. The browser's input delay and its Event Timing entries are kept beside it.
+- **Drag and pan** are timed for every pointer move with the button down. The harness sends one every 24 ms, so each has a frame to
+  itself, and that cadence is a choice of the harness. **A wheel** is one observation a gesture, and each wheel case runs in a tab of
+  its own that has been brought to the front, since a real wheel reaches only the tab in front.
+- **Every gesture starts from the same scene.** The view and the dragged node are put back between gestures, outside the timing.
+- **Resource counts** are DOM elements, effective listeners and the JS heap (a Chrome diagnostic), taken after a settle step before
+  the build, while it stands and after the teardown. The scene's nodes are draggable, so the listener gate now has something to
+  count: 105 listeners for 24 nodes and 329 for 80, back to the baseline of 5 after the teardown. A gate that passes because nothing
+  was counted is `inconclusive`.
+- **A cold start** is the page's clock when the wasm module is ready, which is from the start of the navigation.
+
+The medium manifest gave, in the recorded run, a median of 4.4 ms from input to presentation for a drag at 100% (232 of its 240
+observations placed in a frame, p95 5.8 ms), 4.5 ms for a pan and 6.9 ms for a wheel zoom. These are headless Chrome, whose
+compositor presents without a real display, so they say how the page and the library behave and not how a screen would. The medians
+agree across three repetitions to within 7% for drags and 17% for pans. A wheel zoom, with only 30 observations, spanned 38%.
+
+### Two findings from running it
+
+- **Connectors are drawn over nodes.** A press at the centre of a node can land on a connector's stroke, which takes it, so the drag
+  never starts. The runner moves the press to the nearest place that reaches the node, or the pan surface, and each metric says how
+  many presses it moved. At 80 nodes and 50%, the pan surface is mostly covered, and the search has to go as far as the host is wide.
+- **A gesture needs the whole host on screen.** In a tab of the default size, a wheel at a point outside the page does nothing.
+  Each tab is sized to the host before its gestures are played.
+
+### The Layer C self-test
+
+`selftest-layer-c.mjs` runs a small W4 five times. As it is, it is valid with every gesture right. With a listener that costs 20 ms
+after every move, the drag time goes from 3.0 to 20.8 ms and the run stays valid. With the input stopped before the library sees it,
+the run is `invalid_incorrect` and names the interaction. With every CDP command made 30 ms slower, the round trip goes from 8.1 to
+41.1 ms and the interaction time moves from 3.0 to 3.5 ms.
+
+### The gallery adapter
+
+`gallery-sweep.mjs` selects every panel with a real click on its menu entry, so it works for every panel without a change to any of
+them. The report (`schemas/gallery-report.schema.json`) states its own completion. In the recorded sweep
+(`evidence/phase3/results/gallery/`):
+
+| | |
+|---|---|
+| Panels in the gallery, and swept | 54 of 54 |
+| Loaded, failed to load, with page errors | 54, 0, 0 |
+| Walked with Next, Previous or Restart | 16 |
+| Downgraded to a load and a revisit | 37 (no such control by accessible name) |
+| Skipped by an override | 1 (Tarjan, whose panel only opens the demo in its own window) |
+| First visit and revisit timed | 54 and 54 |
+
+A first visit has a median of 24.9 ms, and a revisit 37.8 ms. They are close because the time is from the click to the end of the frame
+that shows the panel, and showing a large panel costs more than building it. The sweep says plainly that none of this is a teardown,
+since the gallery builds each panel once and only hides it afterwards.
+
+Of the 164 clicks of the 16 walked panels, 23 could not be placed in a frame (`STATE_DROPPED`), which is most of the steps of the
+heaviest panels. Every click changed the panel in 12 of the 16 walks. Only 5 walks came back to the state they started from after
+forward, back and restart. That is a count and not a verdict: the comparison is of the panel's attributes and text, and what a
+restart should restore is for the demos to say.
+
+### Limits, and where this departs from the design
+
+- **Chrome only, on one machine, headless.** No Firefox figures.
+- **The fixture is the harness's own.** The design says the runner drives the gallery and the fixture. The scene for W4 is built by
+  `perf-harness-wasm`, which keeps it on a stage the way the CDP tests' fixture does, so that the same graph planner, model and
+  checkpoint apply. `cdp-test-fixture` is not used.
+- **A dropped frame is `unavailable`,** and not attributed to the next one. It would be plausible, and it is not shown.
+- **The gesture plan is not cross-checked** by an independent generator.
+- **Perf-smoke in CI is Phase 5.** CI runs the attribution rule's tests and the gesture planner's, and not a browser.
+
+### Handing over to Phase 4
+
+- Recovery needs the fault points tabulated from the code first, as the design says. Mid-drag teardown can now be built, since W4
+  has a drag in progress to tear down.
+- Endurance for Layer C (heap and listener counts over hours) can reuse the settle step and the listener gate.
+
 ## Evidence
+
+`evidence/phase3/` holds what the Phase 3 checks printed, the spike's raw output, the W4 result documents and raw samples, and the gallery report.
+`node perf/runner/record-phase3-evidence.mjs` writes it again.
 
 `evidence/phase2/` holds what the Phase 2 checks printed, the allocator verification, and the result documents and raw samples of the realistic manifests.
 `node perf/runner/record-phase2-evidence.mjs` writes it again.
@@ -471,9 +616,8 @@ The Phase 0 figures were first taken against an earlier fixture build, and repro
 Port numbers are replaced with `PORT`, since they change every run.
 `uncommitted_changes` lists what was not committed when the record was made.
 
-## Not settled in Phase 0
+## Not settled
 
-- The trace correlation for Layer C presentation timing (spec section 3.2) needs its own Phase 3 spike.
 - Firefox and Safari figures. Nothing here was run in either.
 
 ## Checking the schemas

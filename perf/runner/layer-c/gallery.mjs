@@ -257,8 +257,23 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
     }
     for (const record of panels) if (record.errors.length > 0 && record.status === 'ok') record.status = 'errors'
 
+    const walks = status => panels.filter(panel => panel.walk.status === status).length
     return {
       schema_version: 1,
+      // What the sweep found, in numbers, so that the report states its own completion. A panel has loaded if selecting it made it
+      // the current panel, whether or not the page then complained, and it has failed if it did not.
+      summary: {
+        panels: panels.length,
+        panels_in_gallery: (await chrome.evaluate('perfG.menu()')).length,
+        loaded: panels.filter(panel => panel.status !== 'error').length,
+        failed_to_load: panels.filter(panel => panel.status === 'error').length,
+        with_errors: panels.filter(panel => panel.status === 'errors').length,
+        walked: walks('walked'),
+        downgraded: walks('downgraded'),
+        skipped: walks('skipped'),
+        first_visit_timed: panels.filter(panel => panel.build.ms !== undefined).length,
+        revisit_timed: panels.filter(panel => panel.revisit?.ms !== undefined).length,
+      },
       browser: version,
       viewport: [1280, 900],
       cold_start_ms: coldStartMs,
