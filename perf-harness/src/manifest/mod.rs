@@ -110,6 +110,11 @@ pub struct Limits {
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub dom_nodes: Option<u64>,
     pub wall_ms: u64,
+    /// How many bytes live memory may grow by over the measured part of an endurance run before the run fails its gate. Absent
+    /// means none, which suits a workload whose live bytes are exact. A structure that grows legitimately would state the most
+    /// it needs here, so that the allowance is a decision in the manifest and not a setting of the tool.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub live_growth_allowance_bytes: Option<u64>,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

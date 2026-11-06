@@ -1,0 +1,17 @@
+ok   no leak: the gate pass, slope 0, net change 0 (live bytes moved by 0 and trend by 0.00 a cycle over cycles 11 to 69, within the 0 allowed)
+ok   no leak: the cost of the first cycle is reported apart from the interval (576 bytes)
+ok   bytes 64 bytes a cycle: the gate fails (live bytes grew by 3776 over cycles 11 to 69, more than the 0 allowed)
+ok   bytes 64 bytes a cycle: the slope is 64 bytes a cycle, and the leak is 64
+ok   bytes 1024 bytes a cycle: the gate fails (live bytes grew by 60416 over cycles 11 to 69, more than the 0 allowed)
+ok   bytes 1024 bytes a cycle: the slope is 1024 bytes a cycle, and the leak is 1024
+ok   closure 256 bytes a cycle: the gate fails (live bytes grew by 15812 over cycles 11 to 69, more than the 0 allowed)
+ok   closure 256 bytes a cycle: the slope is 268.0 bytes a cycle, in 256 to 556
+ok   library_watch: the gate fails (live bytes grew by 1968 over cycles 11 to 69, more than the 0 allowed)
+ok   library_watch: the slope is 42.0 bytes a cycle, in 1 to 2001
+ok   bytes 65536 bytes a cycle: the gate fails (live bytes grew by 3866624 over cycles 11 to 69, more than the 0 allowed)
+ok   bytes 65536 bytes a cycle: the slope is 65536 bytes a cycle, and the leak is 65536
+ok   bytes 65536 bytes a cycle: it also grows the linear memory, 59 time(s)
+ok   an allowance of 3776 bytes, the growth that was seen, passes (live bytes moved by 3776 and trend by 64.00 a cycle over cycles 11 to 69, within the 3776 allowed)
+ok   an allowance of 3775 bytes, one byte less, fails (live bytes grew by 3776 over cycles 11 to 69, more than the 3775 allowed)
+
+the gate fails every leak, sizes each one correctly, passes a clean run, and turns exactly on its allowance

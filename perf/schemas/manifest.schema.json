@@ -130,6 +130,11 @@
         "wall_ms": {
           "type": "integer",
           "minimum": 1
+        },
+        "live_growth_allowance_bytes": {
+          "type": "integer",
+          "minimum": 0,
+          "description": "How many bytes live memory may grow by over the measured part of an endurance run before it fails its gate. Absent means none."
         }
       },
       "required": ["wall_ms"],

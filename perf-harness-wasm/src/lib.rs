@@ -20,6 +20,9 @@ pub mod executor;
 #[cfg(target_arch = "wasm32")]
 pub mod allocator_check;
 
+#[cfg(target_arch = "wasm32")]
+pub mod persistent;
+
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(target_arch = "wasm32")]
 mod exports {
@@ -114,11 +117,54 @@ mod exports {
             Ok(manifest) => manifest,
             Err(message) => return failed(mode, message),
         };
-        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, delay_us);
+        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, delay_us, None);
         serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Runs a manifest as an endurance run with a deliberate leak in every cycle, and returns the outcome as JSON. `kind` is
+    /// `none`, `bytes`, `closure` or `library_watch`, and `bytes` is how many a cycle leaks. The endurance gate has to fail
+    /// for every leak and pass for none, which `selftest-endurance.mjs` checks.
+    #[wasm_bindgen]
+    pub fn selftest_endurance(manifest_json: &str, kind: &str, bytes: u32) -> String {
+        let mode = Mode::Endurance;
+        let manifest = match serde_json::from_str(manifest_json)
+            .map_err(|e| e.to_string())
+            .and_then(|v| Manifest::from_json(v).map_err(|e| e.to_string()))
+        {
+            Ok(manifest) => manifest,
+            Err(message) => return failed(mode, message),
+        };
+        let leak = match kind {
+            "none" => None,
+            other => match crate::executor::Leak::parse(other, bytes as usize) {
+                Some(leak) => Some(leak),
+                None => return failed(mode, format!("there is no leak {other}")),
+            },
+        };
+        let outcome = crate::executor::run_with_options(&manifest, mode, None, None, 0.0, leak);
+        serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
+    }
+
+    /// Runs a manifest as an endurance run with the allocator tracking every block, and returns what is still live after the
+    /// teardown of each of the first `cycles` cycles, by the phase of the harness that allocated it, as JSON.
+    #[wasm_bindgen]
+    pub fn attribute_persistent_run(manifest_json: &str, cycles: u32) -> String {
+        match serde_json::from_str(manifest_json)
+            .map_err(|e| e.to_string())
+            .and_then(|v| Manifest::from_json(v).map_err(|e| e.to_string()))
+        {
+            Ok(manifest) => crate::executor::attribute(&manifest, u64::from(cycles)),
+            Err(message) => serde_json::json!({"error": message}).to_string(),
+        }
+    }
+
+    /// Runs `cycles` of one stage of the lifecycle and returns what the allocator counted after each, as JSON. See `persistent`.
+    #[wasm_bindgen]
+    pub fn attribute_persistent(stage: &str, cycles: u32, before_baseline: &str, nodes: u32) -> String {
+        crate::persistent::run(stage, cycles as usize, before_baseline, nodes as usize)
+    }
+
     /// Runs the counting allocator's checks and returns the result as JSON.
     #[wasm_bindgen]
     pub fn verify_allocator() -> String {

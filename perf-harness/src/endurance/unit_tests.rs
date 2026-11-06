@@ -140,3 +140,64 @@ fn too_little_data_gives_no_figure_and_never_a_made_up_one() -> Result<(), Strin
     }
     Ok(())
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn a_series_that_does_not_move_passes_and_one_that_climbs_fails() -> Result<(), String> {
+    let flat = judge(&summarize(&gapped(|_| 36_240.0, |_| 1.0)), 0.0);
+    if !matches!(flat, Verdict::Pass(_)) {
+        return Err(format!("{flat:?}"));
+    }
+    // 64 bytes a cycle over the 39 cycles from 20 to 59.
+    let leaking = judge(&summarize(&gapped(|c| 1000.0 + 64.0 * c as f64, |_| 1.0)), 0.0);
+    match &leaking {
+        Verdict::Fail(text) if text.contains("2496") => Ok(()),
+        other => Err(format!("{other:?}")),
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The allowance is on growth over the whole interval, and the verdict turns exactly on it.
+#[test]
+fn the_allowance_is_the_growth_tolerated_over_the_interval() -> Result<(), String> {
+    let summary = summarize(&gapped(|c| 1000.0 + 64.0 * c as f64, |_| 1.0));
+    let net = summary.net_live_change.ok_or("no net change")?;
+    let at = |allowance: f64| judge(&summary, allowance);
+    if !matches!(at(net), Verdict::Pass(_))
+        || !matches!(at(net - 1.0), Verdict::Fail(_))
+        || !matches!(at(net * 100.0), Verdict::Pass(_))
+    {
+        return Err(format!("net {net}: {:?} {:?} {:?}", at(net), at(net - 1.0), at(net * 100.0)));
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Steady growth with a low last reading has a small net change, and only the trend shows it. This is why there are two measures.
+#[test]
+fn the_trend_catches_growth_that_a_low_last_reading_hides_from_the_net_change() -> Result<(), String> {
+    let climbing_then_dropping =
+        summarize(&gapped(|c| if c == 59 { 1000.0 } else { 1000.0 + 50.0 * c as f64 }, |_| 1.0));
+    let net = climbing_then_dropping.net_live_change.ok_or("no net change")?;
+    let verdict = judge(&climbing_then_dropping, 0.0);
+    // The last reading is below the reference, so the net change is not positive. The slope is.
+    if net > 0.0 || !matches!(&verdict, Verdict::Fail(text) if text.contains("a cycle")) {
+        return Err(format!("net {net}, {verdict:?}"));
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[test]
+fn too_little_to_judge_is_inconclusive_and_never_a_pass() -> Result<(), String> {
+    let two = summarize(&[point(1, 0, 10.0, 1.0), point(2, 0, 10.0, 1.0)]);
+    let none = summarize(&[]);
+    let mut missing: Vec<SeriesPoint> = (1..=6).map(|c| point(c, 0, 1.0, 1.0)).collect();
+    missing[3].live_bytes = None;
+    for (label, summary) in [("two points", two), ("none", none), ("a missing reading", summarize(&missing))] {
+        if !matches!(judge(&summary, 1e9), Verdict::Inconclusive(_)) {
+            return Err(format!("{label} was judged"));
+        }
+    }
+    Ok(())
+}

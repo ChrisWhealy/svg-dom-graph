@@ -1,4 +1,4 @@
-running 76 tests
+running 81 tests
 test compare::unit_tests::a_coordinate_that_is_not_a_number_is_always_a_difference ... ok
 test compare::unit_tests::a_difference_is_modelled_and_an_unconfirmed_rule_would_say_so ... ok
 test compare::unit_tests::a_geometry_difference_names_the_element_the_coordinate_both_values_and_the_distance ... ok
@@ -12,11 +12,15 @@ test encode::unit_tests::a_float_is_its_bit_pattern_and_negative_zero_is_positiv
 test encode::unit_tests::a_float_that_is_not_finite_is_refused ... ok
 test encode::unit_tests::each_type_has_its_tag_and_fixed_layout ... ok
 test endurance::unit_tests::a_series_that_does_not_move_has_no_net_change_no_slope_and_no_growth ... ok
+test endurance::unit_tests::a_series_that_does_not_move_passes_and_one_that_climbs_fails ... ok
 test endurance::unit_tests::capacity_growth_counts_after_the_warm_up_and_not_during_it ... ok
 test endurance::unit_tests::one_stray_reading_moves_the_net_change_and_barely_moves_the_slope ... ok
+test endurance::unit_tests::the_allowance_is_the_growth_tolerated_over_the_interval ... ok
 test endurance::unit_tests::the_measured_interval_begins_at_the_first_measured_cycle_whatever_was_left_out ... ok
 test endurance::unit_tests::the_slope_and_the_net_change_are_two_different_figures_and_both_use_the_real_cycles ... ok
+test endurance::unit_tests::the_trend_catches_growth_that_a_low_last_reading_hides_from_the_net_change ... ok
 test endurance::unit_tests::too_little_data_gives_no_figure_and_never_a_made_up_one ... ok
+test endurance::unit_tests::too_little_to_judge_is_inconclusive_and_never_a_pass ... ok
 test endurance::unit_tests::with_no_warm_up_the_first_measured_cycle_is_the_reference ... ok
 test manifest::unit_tests::a_manifest_that_breaks_the_rules_is_refused ... ok
 test manifest::unit_tests::changing_a_value_changes_the_hash ... ok
@@ -42,6 +46,7 @@ test ops::unit_tests::a_string_cannot_be_mistaken_for_its_neighbour ... ok
 test ops::unit_tests::changing_any_one_operation_changes_both_digests ... ok
 test ops::unit_tests::markers_change_the_full_digest_and_not_the_mutations_digest ... ok
 test ops::unit_tests::the_counts_say_how_many_operations_and_how_many_mutations ... ok
+test ops::unit_tests::the_encoder_buffer_settles_at_64_bytes_for_the_largest_operation_of_a_workload ... ok
 test ops::unit_tests::the_stream_digests_match_an_independent_implementation ... ok
 test outcome::unit_tests::a_failed_checkpoint_or_a_different_stream_makes_a_run_invalid ... ok
 test outcome::unit_tests::a_performance_run_executes_only_the_last_two_checkpoints ... ok
@@ -76,7 +81,7 @@ test workload::unit_tests::the_busiest_node_is_moved_more_often_than_chance ... 
 test workload::unit_tests::the_same_manifest_gives_the_same_stream_and_another_seed_does_not ... ok
 test workload::unit_tests::the_warm_up_and_measured_markers_sit_at_the_right_places ... ok
 
-test result: ok. 76 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+test result: ok. 81 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
 
 running 0 tests
 

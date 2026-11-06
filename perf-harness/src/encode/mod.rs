@@ -49,6 +49,11 @@ impl Encoder {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// How many bytes the buffer can hold without growing. It only ever grows, to the largest operation encoded.
+    pub fn capacity(&self) -> usize {
+        self.bytes.capacity()
+    }
+
     pub fn as_slice(&self) -> &[u8] {
         &self.bytes
     }

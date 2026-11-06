@@ -475,6 +475,28 @@
     "raw_samples": {
       "type": "string",
       "minLength": 1
+    },
+    "gates": {
+      "type": "array",
+      "description": "Deterministic checks that the run made of itself, such as that live memory does not keep growing. inconclusive is never a pass.",
+      "items": {
+        "type": "object",
+        "properties": {
+          "name": {
+            "type": "string",
+            "minLength": 1
+          },
+          "status": {
+            "enum": ["pass", "fail", "inconclusive"]
+          },
+          "detail": {
+            "type": "string",
+            "minLength": 1
+          }
+        },
+        "required": ["name", "status", "detail"],
+        "additionalProperties": false
+      }
     }
   },
   "required": [

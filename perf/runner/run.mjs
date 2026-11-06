@@ -123,6 +123,10 @@ if (options.layers.includes('b') && manifest.measurement.capture_wasm_live_alloc
 }
 
 const withholdAllocatorFigures = outcome => {
+  // A gate that rests on the allocator's figures cannot be judged without them, and not judging is never a pass.
+  outcome.gates = (outcome.gates ?? []).map(gate =>
+    gate.name.includes('live_bytes') ? { ...gate, status: 'inconclusive', detail: 'the counting allocator did not pass its verification' } : gate,
+  )
   outcome.metrics = outcome.metrics.map(metric =>
     typeof metric.mechanism === 'string' && metric.mechanism.includes('counting allocator')
       ? { name: metric.name, layer: metric.layer, status: 'unavailable', reason: 'the counting allocator did not pass its verification' }
@@ -158,6 +162,7 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
     metrics: outcome.metrics,
     checkpoints_passed: outcome.checkpoints_passed,
     checkpoints_failed: outcome.checkpoints_failed,
+    ...(outcome.gates?.length ? { gates: outcome.gates } : {}),
     ...(keepsSamples ? { raw_samples: path.relative(root, samplesFile) } : {}),
   }
   // The seed is validated as the number it is. Only the file keeps its exact text.
@@ -225,6 +230,7 @@ for (const { layer, mode, repetition, runId, outcome } of runs) {
   gate(outcome.status === 'ok', `the run is valid (${outcome.status}${outcome.error ? `: ${outcome.error}` : ''})`)
   gate(outcome.stream?.matches === true, `it executed the intended ${outcome.stream?.scope} stream (${outcome.stream?.operations} operations)`)
   for (const failure of outcome.checkpoints_failed.slice(0, 5)) console.log(`      ${failure.section}: ${failure.detail}`)
+  for (const gateResult of outcome.gates ?? []) gate(gateResult.status === 'pass', `${gateResult.name}: ${gateResult.status}, ${gateResult.detail}`)
   if (layer === 'B') {
     for (const name of ['dom_elements', 'listeners']) {
       const delta = metricValue(outcome, `resource.${name}.delta_after_teardown`)

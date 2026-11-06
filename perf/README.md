@@ -282,6 +282,8 @@ node perf/runner/run.mjs <manifest> --mode correctness --layers b         # one 
 node perf/runner/verify-allocator.mjs                                     # does the counting allocator tell the truth?
 node perf/runner/selftest.mjs                                             # does the checkpoint comparison notice a fault?
 node perf/runner/selftest-timing.mjs                                      # is the harness's own work outside every timing?
+node perf/runner/selftest-endurance.mjs                                   # does the endurance gate notice a leak?
+node perf/runner/attribute-persistent.mjs                                 # where do the bytes that stay allocated come from?
 cargo test -p perf-harness-wasm                                           # the allocator's arithmetic and the parsers, natively
 ```
 
@@ -305,6 +307,8 @@ a gate.
 | `wasm.live_bytes_net_change_after_warmup` | B | Endurance only: live bytes at the last measured cycle less those at the end of the warm-up. How far live memory moved |
 | `wasm.live_bytes_slope_per_cycle` | B | Endurance only: the least-squares slope of live bytes against the cycle, through every measured point. How fast it moves |
 | `lifecycle.measured_cycles_sampled` | B | Endurance only: how many measured cycles are in the series, since cycles that ran a checkpoint are left out |
+| `wasm.live_bytes_one_time_after_first_cycle` | B | Endurance only: live bytes after the first teardown less the baseline. A cost of first use, kept out of the interval above |
+| gate `endurance.live_bytes_do_not_grow` | B | Endurance only: passes if neither the net change nor the slope carried across the interval exceeds `limits.live_growth_allowance_bytes`, which is zero if the manifest does not say. Too few cycles to judge is `inconclusive`, never a pass |
 
 A timed interval holds library calls and nothing else. Each operation is prepared first: its node ids are found, its strings
 are built, its host element is made, the reference model is updated and the stream is hashed. Prepared operations of one kind
@@ -349,8 +353,9 @@ with what exists and not with what it meant.
 - **Repeatability, from `evidence/phase2/`.** Over five fresh-Chrome repetitions the construction medians of a 200-node build
   agree to within 3% (nodes 3%, edges 2%, total 1%). The tiny operations (`create_scene`, `drop_scene`, `remove_host`) are under
   50 timer steps, are flagged `resolution_limited`, and vary by more. The 1,000-move run gives 40 observations a repetition, each
-  a batch of about 30 moves, and their medians span 6.8 to 7.2 us (5%). Forty is too few for a p95, so none is reported, which is
-  the rule working. Layer A gives the same median in every repetition, since its figures are quantised by the timer's tick.
+  a batch of about 30 moves, and their medians span 6.7 to 7.7 us (14%) in the recorded run. The same five repetitions have
+  spread by 16%, 5% and 14% in three recordings, so the figure to expect is between 5% and 16% and not a precise 5%. Forty is too
+  few for a p95, so none is reported, which is the rule working. Layer A gives the same median in every repetition, since its figures are quantised by the timer's tick.
 - **The checkpoint comparison can fail.** `selftest.mjs` corrupts what was observed in six ways (a connector out by a unit, a
   node three units low, a node gone, changed text, swapped paint order, a missing edge). Each makes the run invalid and names
   the right section, and a clean run passes.
@@ -367,7 +372,38 @@ with what exists and not with what it meant.
   and is tested natively with gaps in the warm-up and in the measured part.
 - **Scenes do not leak across their lifecycle.** Over 219 cycles of building, dropping and removing a different graph, live bytes
   after teardown hold at one exact value, capacity grew only during the warm-up, and the DOM and the listeners were back at their
-  baseline every time. The first scene costs about 4 KB that is never given back, once.
+  baseline every time. What stays allocated after the first teardown is not the scene's, and the next two findings say what it is.
+- **Where the bytes that stay allocated come from.** `attribute-persistent.mjs` runs each stage of the lifecycle in a fresh page,
+  and runs a real endurance run with the allocator following every block allocated after the baseline, by the phase of the harness
+  that made it. In the W3 endurance run (40 nodes, 80 edges) 576 bytes stay allocated after the first teardown, and every byte
+  has an owner:
+
+  | Bytes | Owner | Behaviour |
+  |---|---|---|
+  | 0 | The page, the library and wasm-bindgen's glue, for a scene of up to 24 nodes | Nothing is left after the first cycle, at any stage: nothing, the host element, a scene, 12 nodes, 24 connectors. Nothing grows over the next 29 |
+  | 512 | One block that held 512 bytes at the baseline and grew to 1,024 during the first cycle's library calls | A table that doubles to the most JS handles ever alive at once and never shrinks. With larger scenes the bytes left after the first cycle are 512 (40 nodes), 1,536 (80), 3,584 (160) and 7,680 (320), which are the steps of one block doubling. wasm-bindgen's `externref` slab (`Slab { data: Vec<usize>, .. }` in its `externref.rs`) has exactly that shape. The match is by size and growth, and the identity of the block is not proven |
+  | 64 | The hash of the operation stream | The encoder's buffer, which settles at the size of the largest operation. `the_encoder_buffer_settles_at_64_bytes_for_the_largest_operation_of_a_workload` checks that it is 64 |
+
+  The 576 therefore is the handle table's one-time growth with the encoder buffer, and not a scene's. It is reported apart, as
+  `wasm.live_bytes_one_time_after_first_cycle`, and is not part of the endurance interval.
+
+  A third owner was found and removed. The stream generator plans each cycle's graph before it emits the cycle, and held it to
+  the end, so a teardown was sampled while the generator was already holding the next cycle's plan: 42 blocks and 2,180 bytes,
+  which is exactly 40 x 32 bytes of nodes, 260 of key strings and 80 x 8 of edges on wasm32. The generator now drops a plan once
+  it is built, and a scene is dropped and removed at once and not when the next operation arrives, so the sample is taken before
+  the generator plans again.
+
+  The result recorded earlier (31,948 to 36,240 bytes and 17 to 61 blocks, so +4,292 and +44) came from an earlier executor, and
+  cannot be broken down, since that code has since changed. The classes above account for 2,756 of it, and the rest was that
+  executor's own state. The accounting here is of the current one. The run that attributes also costs memory of its own for
+  its log, so its totals are a little above a plain run's, and `before_tracking` shows that nothing was allocated before tracking
+  began.
+- **The endurance gate catches leaks, and says how big.** `selftest-endurance.mjs` runs 70 cycles with a leak of known size put
+  into each one. A clean run passes. A leak of 64, 1,024 or 65,536 bytes a cycle fails the gate with a slope of exactly 64, 1,024
+  and 65,536. A closure leaked with `Closure::forget` and capturing 256 bytes gives a slope of 268, which is the 256 and 12 bytes
+  of closure. The library's own `svg_buttons::watch`, which leaks about 42 bytes a call, fails it, so a very small real leak is
+  seen. The largest leak also grows the linear memory 59 times. The allowance is exact: with a leak of 64 bytes a cycle, which
+  grows live bytes by 3,776 over the interval, an allowance of 3,776 passes and 3,775 fails.
 - **The harness's own memory can look like the library's.** The first endurance run showed live bytes growing in steps of 320,
   640, 1,280 and 2,560. Those were the harness's own vectors doubling. Everything a run records is now allocated at full size
   before the first reading, and a cycle that ran a checkpoint is left out of the series. The same mistake had made the first
@@ -375,6 +411,9 @@ with what exists and not with what it meant.
 
 ### Limits, and where this departs from the design
 
+- **The live-bytes gate has a zero allowance unless the manifest says otherwise.** That is right for a workload whose live bytes
+  are exact, as these are. A workload with a structure that grows legitimately would state what it needs in
+  `limits.live_growth_allowance_bytes`, so that the allowance is a decision in the manifest.
 - **Listener counts are weak gates for these workloads.** The vocabulary has no `make_draggable`, no pan and no toolbar, so a
   scene registers no listeners and the count is zero before, during and after. The gate is sound and proves little here. A
   workload that makes nodes draggable is needed before it proves more.

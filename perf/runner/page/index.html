@@ -6,10 +6,10 @@
 </head>
 <body>
   <script type="module">
-    import init, { run_workload, verify_allocator, selftest_checker, selftest_timing } from "./pkg/perf_harness_wasm.js"
+    import init, { run_workload, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance } from "./pkg/perf_harness_wasm.js"
     await init()
     // The runner drives these from outside, through the DevTools Protocol.
-    window.perfHarness = { run_workload, verify_allocator, selftest_checker, selftest_timing }
+    window.perfHarness = { run_workload, verify_allocator, selftest_checker, selftest_timing, attribute_persistent, attribute_persistent_run, selftest_endurance }
   </script>
 </body>
 </html>

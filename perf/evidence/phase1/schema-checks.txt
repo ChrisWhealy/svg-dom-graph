@@ -25,6 +25,8 @@ ok   manifest rejects a checkpoint interval of zero
 ok   manifest rejects a wrong schema version
 ok   manifest rejects a missing capture option
 ok   manifest rejects a string for a count
+ok   manifest rejects a negative live growth allowance
+ok   manifest rejects a live growth allowance that is text
 ok   checkpoint rejects a connector with two numbers
 ok   checkpoint rejects no nodes list
 ok   checkpoint rejects no edges list
@@ -42,6 +44,9 @@ ok   checkpoint rejects a hash for geometry
 ok   checkpoint rejects a short hash
 ok   checkpoint rejects an edge without an end
 ok   checkpoint rejects a non-string content value
+ok   result rejects a gate with an unknown status
+ok   result rejects a gate with no detail
+ok   result rejects a gate with an unknown key
 ok   result rejects a resolution flag of false
 ok   result rejects a resolution flag on a count
 ok   result rejects a resolution flag on a batch

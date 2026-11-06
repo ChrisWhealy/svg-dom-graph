@@ -1,0 +1,40 @@
+30 cycles of each stage, each stage in a fresh page
+
+stage    left after cycle 1          first use of this stage      growth in cycles 2 to 30
+nothing       0 bytes   0 blocks        0 bytes   0 blocks        0 bytes   0 blocks   the loop and its recording: the harness
+host          0 bytes   0 blocks        0 bytes   0 blocks        0 bytes   0 blocks   the host <svg> made and removed: the page and wasm-bindgen
+scene         0 bytes   0 blocks        0 bytes   0 blocks        0 bytes   0 blocks   a scene made on the host and dropped: the library, with no content
+nodes         0 bytes   0 blocks        0 bytes   0 blocks        0 bytes   0 blocks   the same with 12 nodes: first use of nodes
+edges         0 bytes   0 blocks        0 bytes   0 blocks        0 bytes   0 blocks   the same with 12 nodes and 24 connectors: first use of connectors
+
+no stage grows after its first cycle: the page, the library and wasm-bindgen leave nothing behind
+
+The full lifecycle after what the executor does before its baseline:
+  after clock  : left after cycle 1 0 bytes 0 blocks, growth after that 0 bytes
+  after tracker: left after cycle 1 0 bytes 0 blocks, growth after that 0 bytes
+  after both   : left after cycle 1 0 bytes 0 blocks, growth after that 0 bytes
+
+What is left after the first cycle, by the size of the scene (nodes, and twice as many connectors):
+     4 nodes: left after cycle 1      0 bytes  0 blocks, growth after that 0 bytes
+    12 nodes: left after cycle 1      0 bytes  0 blocks, growth after that 0 bytes
+    24 nodes: left after cycle 1      0 bytes  0 blocks, growth after that 0 bytes
+    40 nodes: left after cycle 1    512 bytes  0 blocks, growth after that 0 bytes
+    80 nodes: left after cycle 1   1536 bytes  0 blocks, growth after that 0 bytes
+   160 nodes: left after cycle 1   3584 bytes  0 blocks, growth after that 0 bytes
+   320 nodes: left after cycle 1   7680 bytes  0 blocks, growth after that 0 bytes
+
+Inside a real endurance run (W3, 40 nodes, 80 edges), what stays allocated after each teardown, by phase:
+  after cycle 1: 576 bytes and 1 blocks over the baseline, 2 blocks (1088 bytes) followed
+        1 blocks     64 bytes  model, stream hash and delay  sizes 64
+        1 blocks   1024 bytes  a block from before the baseline that grew, during: library calls  sizes 1024
+  after cycle 2: 736 bytes and 3 blocks over the baseline, 2 blocks (1088 bytes) followed
+        1 blocks     64 bytes  model, stream hash and delay  sizes 64
+        1 blocks   1024 bytes  a block from before the baseline that grew, during: library calls  sizes 1024
+  after cycle 3: 768 bytes and 4 blocks over the baseline, 2 blocks (1088 bytes) followed
+        1 blocks     64 bytes  model, stream hash and delay  sizes 64
+        1 blocks   1024 bytes  a block from before the baseline that grew, during: library calls  sizes 1024
+  after cycle 4: 800 bytes and 5 blocks over the baseline, 2 blocks (1088 bytes) followed
+        1 blocks     64 bytes  model, stream hash and delay  sizes 64
+        1 blocks   1024 bytes  a block from before the baseline that grew, during: library calls  sizes 1024
+  a block from before the baseline grew from 512 to 1024 bytes during: library calls
+  bytes allocated after the baseline and before tracking began: 0

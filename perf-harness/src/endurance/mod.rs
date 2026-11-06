@@ -87,5 +87,51 @@ pub fn summarize(points: &[SeriesPoint]) -> Summary {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What a summary says about whether live memory keeps growing.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum Verdict {
+    /// Live bytes did not grow by more than the allowance, by either measure.
+    Pass(String),
+    /// They did, and the text says by how much.
+    Fail(String),
+    /// There is not enough to say, which is never a pass.
+    Inconclusive(String),
+}
+
+/// Judges whether live bytes keep growing, with `allowance_bytes` of growth over the whole measured interval tolerated.
+///
+/// Two measures must both be within the allowance. The net change is how far live bytes moved. The trend is the slope carried
+/// across the interval, which catches steady growth that one low reading at the end would hide from the net change. A run
+/// whose live bytes are exact, as these are, can use an allowance of zero. A workload with a structure that grows legitimately,
+/// such as a table that doubles, would state the allowance it needs and the manifest would carry it.
+pub fn judge(summary: &Summary, allowance_bytes: f64) -> Verdict {
+    let (Some(net), Some(slope), Some(first), Some(last)) = (
+        summary.net_live_change,
+        summary.live_slope_per_cycle,
+        summary.first_measured_cycle,
+        summary.last_measured_cycle,
+    ) else {
+        return Verdict::Inconclusive(format!(
+            "{} measured cycles were sampled, and at least {MIN_POINTS_FOR_TREND} with every reading present are needed to judge",
+            summary.measured_points
+        ));
+    };
+    let carried = slope * (last - first) as f64;
+    if net > allowance_bytes {
+        return Verdict::Fail(format!(
+            "live bytes grew by {net} over cycles {first} to {last}, more than the {allowance_bytes} allowed"
+        ));
+    }
+    if carried > allowance_bytes {
+        return Verdict::Fail(format!(
+            "live bytes grow by about {slope:.2} a cycle, {carried:.0} over cycles {first} to {last}, more than the {allowance_bytes} allowed"
+        ));
+    }
+    Verdict::Pass(format!(
+        "live bytes moved by {net} and trend by {slope:.2} a cycle over cycles {first} to {last}, within the {allowance_bytes} allowed"
+    ))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 #[cfg(test)]
 mod unit_tests;

@@ -259,16 +259,21 @@ fn cycles(manifest: &Manifest, emitter: &mut Emitter<'_>, new_graph_each_cycle: 
 
     for cycle in 0..total {
         emitter.phase_marker(cycle, warmup)?;
-        let planned;
-        let plan = match &fixed {
-            Some(plan) => plan,
-            None => {
-                planned = plan_for(manifest, STREAM_CYCLE_BASE + cycle)?;
-                &planned
-            },
-        };
-        emitter.emit(Op::CreateScene)?;
-        emitter.build(plan)?;
+        // A graph that is new every cycle is planned before anything is emitted, as it always was, and is dropped as soon as it
+        // has been built. Holding it to the end of the cycle would leave it allocated while the scene is torn down, and a runner
+        // counting the bytes that stay allocated after a teardown would count the generator's own plan, as an early one did.
+        {
+            let planned;
+            let plan = match &fixed {
+                Some(plan) => plan,
+                None => {
+                    planned = plan_for(manifest, STREAM_CYCLE_BASE + cycle)?;
+                    &planned
+                },
+            };
+            emitter.emit(Op::CreateScene)?;
+            emitter.build(plan)?;
+        }
         if every.is_some_and(|every| (cycle + 1) % every == 0) || cycle + 1 == total {
             emitter.checkpoint()?;
         }

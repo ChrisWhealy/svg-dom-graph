@@ -168,6 +168,15 @@ const rejected = {
     },
   },
   result: {
+    "a gate with an unknown status": d => {
+      d.gates = [{ name: "g", status: "maybe", detail: "x" }]
+    },
+    "a gate with no detail": d => {
+      d.gates = [{ name: "g", status: "pass" }]
+    },
+    "a gate with an unknown key": d => {
+      d.gates = [{ name: "g", status: "pass", detail: "x", typo: 1 }]
+    },
     "a resolution flag of false": d => {
       d.metrics[0].resolution_limited = false
     },

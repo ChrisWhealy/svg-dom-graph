@@ -130,5 +130,12 @@
       "reason": "no frame could be attributed to the mutation"
     }
   ],
-  "raw_samples": "target/perf/w2-0001.samples.ndjson"
+  "raw_samples": "target/perf/w2-0001.samples.ndjson",
+  "gates": [
+    {
+      "name": "endurance.live_bytes_do_not_grow",
+      "status": "pass",
+      "detail": "live bytes moved by 0 and trend by 0.00 a cycle over cycles 21 to 219, within the 0 allowed"
+    }
+  ]
 }

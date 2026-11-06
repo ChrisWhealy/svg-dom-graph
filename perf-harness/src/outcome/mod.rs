@@ -17,6 +17,15 @@ pub struct FailedCheckpoint {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A deterministic check that a run makes of itself, and what it found.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize)]
+pub struct Gate {
+    pub name: String,
+    /// `pass`, `fail` or `inconclusive`. Inconclusive is never a pass.
+    pub status: &'static str,
+    pub detail: String,
+}
+
 /// Which digest of the workload report a run executed, and whether it matched.
 #[derive(Debug, Clone, PartialEq, Eq, Serialize)]
 pub struct ExecutedStream {
@@ -43,6 +52,7 @@ pub struct RunOutcome {
     pub checkpoints_passed: u64,
     pub checkpoints_failed: Vec<FailedCheckpoint>,
     pub stream: Option<ExecutedStream>,
+    pub gates: Vec<Gate>,
     pub timer_resolution_us: f64,
     /// Findings worth keeping that are not failures, such as a provisional rule that held.
     pub notes: Vec<String>,
@@ -60,6 +70,7 @@ impl RunOutcome {
             checkpoints_passed: 0,
             checkpoints_failed: Vec::new(),
             stream: None,
+            gates: Vec::new(),
             timer_resolution_us: 0.0,
             notes: Vec::new(),
         }

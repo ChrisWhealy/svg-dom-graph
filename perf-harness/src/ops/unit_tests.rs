@@ -118,3 +118,31 @@ fn a_string_cannot_be_mistaken_for_its_neighbour() -> Result<(), String> {
         Ok(())
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The hash keeps one buffer that settles at the size of the largest operation, and that is a 64-byte block that stays allocated
+/// for the life of a run. It is the one block that an endurance run's attribution finds that the harness itself owns.
+#[test]
+fn the_encoder_buffer_settles_at_64_bytes_for_the_largest_operation_of_a_workload() -> Result<(), String> {
+    let mut encoder = Encoder::new();
+    let widest = Op::AddNode {
+        key: "n39".into(),
+        x: 4000,
+        y: 2000,
+        w: 80,
+        h: 36,
+        label: "n39".into(),
+    };
+    widest.encode(&mut encoder);
+    // One code byte, two 8-byte strings with a tag and a length (5 + 3 each), and four 9-byte integers.
+    if encoder.as_slice().len() != 1 + 2 * 8 + 4 * 9 || encoder.capacity() != 64 {
+        return Err(format!("{} bytes, capacity {}", encoder.as_slice().len(), encoder.capacity()));
+    }
+    // A smaller operation afterwards does not shrink it.
+    Op::CreateScene.encode(&mut encoder);
+    if encoder.capacity() == 64 {
+        Ok(())
+    } else {
+        Err(format!("capacity {}", encoder.capacity()))
+    }
+}

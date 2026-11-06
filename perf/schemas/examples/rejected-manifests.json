@@ -165,6 +165,24 @@
           "value": "many"
         }
       ]
+    },
+    {
+      "label": "a negative live growth allowance",
+      "ops": [
+        {
+          "set": ["limits", "live_growth_allowance_bytes"],
+          "value": -1
+        }
+      ]
+    },
+    {
+      "label": "a live growth allowance that is text",
+      "ops": [
+        {
+          "set": ["limits", "live_growth_allowance_bytes"],
+          "value": "lots"
+        }
+      ]
     }
   ]
 }

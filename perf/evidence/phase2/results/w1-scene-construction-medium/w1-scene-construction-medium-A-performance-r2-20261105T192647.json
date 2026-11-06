@@ -1,0 +1,76 @@
+{
+  "schema_version": 1,
+  "run_id": "w1-scene-construction-medium-A-performance-r2-20261105T192647",
+  "started_at": "2026-11-05T19:26:47.905Z",
+  "repetition": 2,
+  "sequence_position": 4,
+  "environment": {
+    "kind": "native",
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "memory_bytes": 34359738368,
+    "runner_class": "local",
+    "timer_resolution_us": 0.041,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "crate_version": "0.2.47",
+    "git_sha": "0d5d63420ee3353ab7f8baa38540593d8c423da1",
+    "git_dirty": true,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w1-scene-construction-medium",
+    "sha256": "f4ea8e54f2ba7989f7980557f96c9eb776c645b25fc9b09880b4572e772a93ad",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "540eafcd02661ee989aaddb4ba07b23f21321bfec206a3559065993f38746834",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "scene_construction",
+      "seed": 777,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 200,
+        "edges": 600,
+        "maximum_degree": 16
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 5,
+        "measurement_iterations": 40,
+        "repetitions": 5
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 10
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 300000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "layer": "A",
+      "name": "rust.connector_endpoints",
+      "reason": "this workload has no DOM-free library work to time",
+      "status": "unavailable"
+    }
+  ],
+  "checkpoints_passed": 2,
+  "checkpoints_failed": [],
+  "raw_samples": "perf/evidence/phase2/results/w1-scene-construction-medium/w1-scene-construction-medium-A-performance-r2-20261105T192647.samples.ndjson"
+}
