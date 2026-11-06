@@ -100,17 +100,54 @@ Its halves differ by 0.039 in occupancy and 6.5% in pops a slice.
 Every trace is above the 10,000-pop minimum, and a server is busy in every slice of the median seed.
 The queue is rarely full, so the trace exercises rejection a little and timeouts and cancellations a lot.
 
+## Qualifying is not the same as being unchanged
+
+The gate says that enough seeds pass.
+It does not say that the workload is the one that was frozen.
+A small change to a parameter, such as `highPercent` from 30 to 31, still qualifies: 491 of 500 seeds, and the manifest seed.
+Under the same revision name that change would have passed the gate and silently changed the event stream.
+
+So the revision's definition is pinned separately, in `dess/s0/prototype/frozen.json`.
+
+| Pin | What it fixes |
+|---|---|
+| `parameters_sha256` | The parameter set, as canonical JSON with its keys sorted |
+| `input_stream_sha256` | Every outage and every arrival's draws for the manifest seed 20261106, one line each |
+| `event_pop_sha256` | The engine's pop sequence for that input: tick, kind, insertion sequence and whether the pop was stale |
+
+The manifest seed's run is also recorded in plain figures: 11,214 pops, 5,464 slices and 4,000 arrivals.
+The three hashes are separate because each can move alone.
+A change to the deferral cap moves only the parameter hash for this seed, since the cap is never reached.
+A change to the engine moves only the pop hash.
+
+`qualify.mjs` checks the pins first, and fails before it runs the panel if the revision's name is unchanged and any hash moved.
+`test-prototype.mjs` checks that four small changes each fail the pin check.
+It also checks that the same change under a new revision name is a candidate, and is not held to the old pins.
+
+### Changing the generator on purpose
+
+1. Edit the parameters, and change `revision` in `generator.mjs`.
+2. Run `node dess/s0/prototype/qualify.mjs`.
+   It reports the new revision as a candidate, and runs the whole panel.
+3. Keep the result in `dess/s0/evidence/candidates/`, the failures included.
+4. When the panel passes, run `node dess/s0/prototype/freeze.mjs --write`, and commit `frozen.json` with the change.
+
+The S1 Rust engine has to reproduce the same three hashes for the manifest seed, since the input stream is the contract between the two engines.
+
 ## Reproducing it
 
 ```sh
 node dess/s0/prototype/test-prototype.mjs
 node dess/s0/prototype/qualify.mjs
+node dess/s0/prototype/freeze.mjs
 node dess/s0/prototype/qualify.mjs --params dess/s0/evidence/candidates/mixed_outage-3.params.json
 ```
 
-The first checks the prototype against the design's known answers.
-The second runs the panel, and exits with 1 if fewer than 475 seeds qualify or the manifest seed does not.
-The third reruns a recorded candidate, and the candidate files hold the full parameter set.
+The first checks the prototype against the design's known answers and the pins.
+The second checks the pins and then runs the panel.
+It exits with 1 if the revision changed under its name, if fewer than 475 seeds qualify, or if the manifest seed does not.
+The third prints the pins, and says whether the ones on file still match.
+The fourth reruns a recorded candidate, and the candidate files hold the full parameter set.
 `dess/s0/evidence/qualification.json` is the record of the frozen revision.
 
 ## What this shows and does not show

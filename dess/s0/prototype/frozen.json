@@ -1,0 +1,12 @@
+{
+  "revision": "mixed_outage/7",
+  "manifest_seed": 20261106,
+  "parameters_sha256": "b7919ffc9ffcdaf97bb293b8f4506585e255cc56c1e50ad37b29cc0f5721e4de",
+  "input_stream_sha256": "411e2bb54bc537a15ad2e1b58f1cc3d4cac72a360a470ea12600cfdde1355837",
+  "event_pop_sha256": "c09bed7a639ba1411a81f55bd35ca8c442e74aed52ecae5bed38ae3a40d9a00f",
+  "manifest_seed_run": {
+    "pops": 11214,
+    "slices": 5464,
+    "arrivals": 4000
+  }
+}

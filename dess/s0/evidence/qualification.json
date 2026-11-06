@@ -7,49 +7,34 @@
     "maxAttempts": 2,
     "deferralCap": 4,
     "arrivals": 4000,
-    "gap": [
-      1,
-      2
-    ],
+    "gap": [1, 2],
     "highPercent": 30,
-    "duration": [
-      2,
-      12
-    ],
-    "slack": [
-      6,
-      30
-    ],
+    "duration": [2, 12],
+    "slack": [6, 30],
     "cancelPercent": 4,
-    "cancelAfter": [
-      1,
-      40
-    ],
+    "cancelAfter": [1, 40],
     "outage": {
-      "first": [
-        100,
-        200
-      ],
-      "length": [
-        5,
-        30
-      ],
-      "spacing": [
-        80,
-        240
-      ]
+      "first": [100, 200],
+      "length": [5, 30],
+      "spacing": [80, 240]
+    }
+  },
+  "pinned": {
+    "revision": "mixed_outage/7",
+    "manifest_seed": 20261106,
+    "parameters_sha256": "b7919ffc9ffcdaf97bb293b8f4506585e255cc56c1e50ad37b29cc0f5721e4de",
+    "input_stream_sha256": "411e2bb54bc537a15ad2e1b58f1cc3d4cac72a360a470ea12600cfdde1355837",
+    "event_pop_sha256": "c09bed7a639ba1411a81f55bd35ca8c442e74aed52ecae5bed38ae3a40d9a00f",
+    "manifest_seed_run": {
+      "pops": 11214,
+      "slices": 5464,
+      "arrivals": 4000
     }
   },
   "bounds": {
-    "occupancyMean": [
-      0.25,
-      0.9
-    ],
+    "occupancyMean": [0.25, 0.9],
     "waitingNonemptyMin": 0.5,
-    "popsPerSlice": [
-      1.5,
-      32
-    ],
+    "popsPerSlice": [1.5, 32],
     "busyMin": 0.5,
     "halfOccupancyDifferenceMax": 0.2,
     "halfPopsDifferenceMax": 0.25
@@ -1424,9 +1409,7 @@
     {
       "seed": 85,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.224 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.224 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4972222222222223,
         "waitingNonemptyFraction": 1,
@@ -1771,9 +1754,7 @@
     {
       "seed": 108,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.230 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.230 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.46145833333333325,
         "waitingNonemptyFraction": 1,
@@ -1998,9 +1979,7 @@
     {
       "seed": 123,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.215 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.215 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.5086805555555558,
         "waitingNonemptyFraction": 1,
@@ -2435,9 +2414,7 @@
     {
       "seed": 152,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.214 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.214 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4368055555555554,
         "waitingNonemptyFraction": 0.9791666666666666,
@@ -3427,9 +3404,7 @@
     {
       "seed": 218,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.215 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.215 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4371527777777778,
         "waitingNonemptyFraction": 0.9833333333333333,
@@ -3549,9 +3524,7 @@
     {
       "seed": 226,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.230 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.230 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4739583333333331,
         "waitingNonemptyFraction": 0.9875,
@@ -4841,9 +4814,7 @@
     {
       "seed": 312,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.200 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.200 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4791666666666667,
         "waitingNonemptyFraction": 0.9916666666666667,
@@ -5233,9 +5204,7 @@
     {
       "seed": 338,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.254 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.254 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.554861111111111,
         "waitingNonemptyFraction": 1,
@@ -5610,9 +5579,7 @@
     {
       "seed": 363,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.265 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.265 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.43472222222222234,
         "waitingNonemptyFraction": 0.8875,
@@ -7277,9 +7244,7 @@
     {
       "seed": 474,
       "qualified": false,
-      "reasons": [
-        "the halves differ by 0.206 in occupancy, and 0.2 is the most"
-      ],
+      "reasons": ["the halves differ by 0.206 in occupancy, and 0.2 is the most"],
       "metrics": {
         "occupancyMean": 0.4972222222222223,
         "waitingNonemptyFraction": 1,

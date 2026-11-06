@@ -11,11 +11,23 @@ import fs from 'node:fs'
 import { run } from './engine.mjs'
 import { MIXED_OUTAGE, configOf, inputsFor } from './generator.mjs'
 import { BOUNDS, MIN_POPS, MIN_SLICES, WINDOW, evaluate } from './preflight.mjs'
+import { checkPins, readFrozen } from './pin.mjs'
 
 const argument = name => (process.argv.includes(name) ? process.argv[process.argv.indexOf(name) + 1] : null)
 const params = argument('--params')
   ? { ...MIXED_OUTAGE, ...JSON.parse(fs.readFileSync(argument('--params'), 'utf8')) }
   : MIXED_OUTAGE
+// Qualifying is one claim and being unchanged is another. Parameters that carry the frozen revision's name must also be the frozen
+// ones, by the hashes in frozen.json, or the gate fails before it runs the panel. A candidate with another name is not pinned.
+const pinCheck = checkPins(params)
+if (pinCheck.checked && !pinCheck.ok) {
+  console.error(`${params.revision} is not what was frozen:`)
+  for (const problem of pinCheck.problems) console.error(`  - ${problem}`)
+  console.error(
+    'A deliberate change needs a new revision, a passing panel, and `node dess/s0/prototype/freeze.mjs --write`.'
+  )
+  process.exit(1)
+}
 const SEEDS = Array.from({ length: 500 }, (_, i) => i)
 const MANIFEST_SEED = 20261106
 const REQUIRED = 475
@@ -59,6 +71,7 @@ for (const r of rows)
 const record = {
   candidate: argument('--candidate') ?? params.revision,
   parameters: params,
+  pinned: pinCheck.checked ? readFrozen() : null,
   bounds: BOUNDS,
   window: WINDOW,
   minimums: { slices: MIN_SLICES, pops: MIN_POPS },
@@ -87,6 +100,11 @@ const record = {
 if (argument('--out')) fs.writeFileSync(argument('--out'), JSON.stringify(record, null, 2) + '\n')
 
 const f = x => (typeof x === 'number' ? x.toFixed(3) : x)
+console.log(
+  pinCheck.checked
+    ? `pinned: the parameters, the input stream of seed ${readFrozen().manifest_seed} and its event pops are those of ${params.revision}`
+    : `${params.revision} is a candidate, and is not pinned`
+)
 console.log(
   `${record.candidate}: ${qualified} of 500 seeds qualify (${REQUIRED} are needed): ${record.panel.passed ? 'PASS' : 'FAIL'}`
 )

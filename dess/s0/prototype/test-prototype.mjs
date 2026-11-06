@@ -6,6 +6,7 @@ import { SplitMix64, derive } from './splitmix.mjs'
 import { run } from './engine.mjs'
 import { FIXTURES } from './fixtures.mjs'
 import { MIXED_OUTAGE, configOf, inputsFor } from './generator.mjs'
+import { canonical, checkPins, computePins, readFrozen } from './pin.mjs'
 
 let failures = 0
 const check = (ok, text) => {
@@ -70,6 +71,46 @@ for (const [name, fixture] of Object.entries(FIXTURES)) {
     k.arrivals === k.admitted + k.rejected &&
       k.admitted === k.completed + k.timedOut + k.cancelled + k.failed + countOpen(a.states),
     `conservation holds at the end of a run: ${k.arrivals} arrivals = ${k.admitted} admitted + ${k.rejected} rejected, and admitted jobs are all in one class`
+  )
+}
+
+// What the revision is, as distinct from whether it qualifies.
+{
+  const frozen = readFrozen()
+  check(
+    checkPins(MIXED_OUTAGE).ok && checkPins(MIXED_OUTAGE).checked,
+    `the parameters, input stream and event pops of ${frozen.revision} are the frozen ones`
+  )
+  check(
+    JSON.stringify(computePins(MIXED_OUTAGE, frozen.manifest_seed)) ===
+      JSON.stringify(computePins(MIXED_OUTAGE, frozen.manifest_seed)),
+    'the pins are the same each time they are computed'
+  )
+  check(
+    canonical({ b: 1, a: [2, { d: 3, c: 4 }] }) === canonical({ a: [2, { c: 4, d: 3 }], b: 1 }),
+    'the canonical form does not depend on the order the keys were written in'
+  )
+
+  // One small change, under the same name: the claim that it has not changed has to fail, however many seeds would still qualify.
+  for (const [name, change] of [
+    ['one percent more high-priority jobs', { highPercent: MIXED_OUTAGE.highPercent + 1 }],
+    [
+      'a service time that is one tick longer at most',
+      { duration: [MIXED_OUTAGE.duration[0], MIXED_OUTAGE.duration[1] + 1] }
+    ],
+    ['a different deferral cap', { deferralCap: MIXED_OUTAGE.deferralCap + 1 }],
+    ['a different outage pause', { outage: { ...MIXED_OUTAGE.outage, spacing: [80, 241] } }]
+  ]) {
+    const result = checkPins({ ...MIXED_OUTAGE, ...change })
+    check(
+      result.checked && !result.ok,
+      `${name}, with the revision unchanged, fails the pin check: ${result.problems.join('; ')}`
+    )
+  }
+  // A new revision is a candidate: it is requalified, and it is not held to the old pins.
+  check(
+    !checkPins({ ...MIXED_OUTAGE, highPercent: 31, revision: 'mixed_outage/8' }).checked,
+    'the same change under a new revision is a candidate, and is not checked against the old pins'
   )
 }
 
