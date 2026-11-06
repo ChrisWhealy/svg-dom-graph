@@ -1,0 +1,89 @@
+{
+  "final": {
+    "live_allocations": 586,
+    "live_bytes": 421913,
+    "peak_live_bytes": 6555600,
+    "total_allocations": 1159
+  },
+  "pass": true,
+  "rounds": 100,
+  "steps": [
+    {
+      "expectation": "each of 100 retained blocks of 65536 bytes adds exactly 65536 bytes and one block",
+      "name": "retain",
+      "observed": {
+        "expected_bytes": 6553600,
+        "per_block_all_exact": true,
+        "total_blocks": 100,
+        "total_bytes": 6553600
+      },
+      "pass": true
+    },
+    {
+      "expectation": "releasing every retained block returns the live bytes and blocks exactly to where they began",
+      "name": "release",
+      "observed": {
+        "blocks_not_returned": 0,
+        "bytes_not_returned": 0
+      },
+      "pass": true
+    },
+    {
+      "expectation": "each of 100 closures leaked with forget() adds at least the 4096 bytes it captures, the live bytes never fall, the extra is at most 256 bytes a closure on average, and none comes back",
+      "name": "leaked closure",
+      "observed": {
+        "all_at_least_capture": true,
+        "largest_per_closure": 4620,
+        "live_bytes_never_fell": true,
+        "minimum_total": 409600,
+        "overhead_allowed_bytes": 25600,
+        "overhead_total_bytes": 1712,
+        "smallest_per_closure": 4108,
+        "total_bytes_after_other_churn": 411312
+      },
+      "pass": true
+    },
+    {
+      "expectation": "100 calls of the library's svg_buttons::watch, which leaks two closures each, add bytes on every call, the live bytes never fall, and removing the element gives none back",
+      "name": "library leak",
+      "observed": {
+        "all_positive": true,
+        "bytes_after_removing_the_element": 3136,
+        "largest_per_call": 1040,
+        "live_bytes_never_fell": true,
+        "smallest_per_call": 16,
+        "total_bytes": 3136
+      },
+      "pass": true
+    },
+    {
+      "expectation": "a vector grown a byte at a time, which reallocates many times, is counted at its capacity as one block, and released exactly",
+      "name": "reallocation",
+      "observed": {
+        "blocks": 1,
+        "bytes_not_returned": 0,
+        "live_bytes": 1048576,
+        "vector_capacity": 1048576
+      },
+      "pass": true
+    },
+    {
+      "expectation": "25 rounds of retain and release each return exactly to the start, so nothing drifts or counts twice",
+      "name": "repeated release",
+      "observed": {
+        "worst_blocks_drift": 0,
+        "worst_bytes_drift": 0
+      },
+      "pass": true
+    },
+    {
+      "expectation": "the linear memory is at least as large as the most that was ever live",
+      "name": "capacity",
+      "observed": {
+        "capacity_bytes": 7798784,
+        "peak_live_bytes": 6555600
+      },
+      "pass": true
+    }
+  ]
+}

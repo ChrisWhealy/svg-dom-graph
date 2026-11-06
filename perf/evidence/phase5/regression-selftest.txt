@@ -1,0 +1,12 @@
+ok   five clean runs of w2-connector-rerouting-smoke pass their deterministic gates
+ok   they are promoted: promoted 5 runs of w2-connector-rerouting-smoke (layer B) to ../../../../../var/folders/8d/gyp_czz950qg_npw52zgksy00000gn/T/perf-selftest-regression-pHzlUY/baselines/w2-connector-rerouting-smoke/B/local-darwin-27.2.0-apple-m6-157.0.8103.39-p1
+ok   five more clean runs pass their deterministic gates
+ok   and are not a regression: no_material_change, ratio 1.014, interval 0.960 to 1.034
+ok   five runs with a slowdown injected still pass their deterministic gates, since a timing is not one
+ok   and are a regression against the baseline: ratio 7.88, interval 7.56 to 8.03, against a tolerance of 10%
+ok   each of their results says that a slowdown was injected
+ok   a clean w3-scene-lifecycle-smoke passes its deterministic gates
+ok   the same workload with listeners leaked after every teardown fails them: FAIL listeners after teardown equal those before the build (delta 90)
+ok   a run with a slowdown injected is refused as a baseline
+
+the harness catches an injected regression and an injected leak, and a clean candidate produces neither

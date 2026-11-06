@@ -1,7 +1,7 @@
 # Performance harness
 
-The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 5.
-Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine), Phase 2 (the Layer A and Layer B runners), Phase 3 (the Layer C browser runner and the gallery adapter) and Phase 4 (recovery and endurance under deliberate failures) are done.
+The design is in [`design-specs/performance_harness.pdf`](../design-specs/performance_harness.pdf), revision 6.
+Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engine), Phase 2 (the Layer A and Layer B runners), Phase 3 (the Layer C browser runner and the gallery adapter) Phase 4 (recovery and endurance under deliberate failures) and Phase 5 (CI integration, baselines and regression reporting) are done.
 
 | Path                             | Holds                                                              |
 | -------------------------------- | ------------------------------------------------------------------ |
@@ -9,6 +9,7 @@ Phase 0 (methodology, schemas, spike), Phase 1 (the deterministic workload engin
 | `schemas/manifest.schema.json`   | A workload manifest, which each result copies in full              |
 | `schemas/result.schema.json`     | One repetition of one workload, with no between-run statistic      |
 | `schemas/comparison.schema.json` | A baseline and a candidate collection of runs, with intervals and verdicts |
+| `schemas/baseline-promotion.schema.json` | The record that a promotion leaves next to a baseline |
 | `schemas/checkpoint.schema.json` | A structured checkpoint, compared section by section               |
 | `schemas/check.mjs`              | Validates each schema against its examples and against deliberately broken documents |
 | `schemas/examples/`             | Valid example documents |
@@ -822,7 +823,157 @@ each fails its own gate and no other.
 - The recovery sweep is the regression test for the library's failure contracts. The one finding that was fixed is now a contract.
 - The externref slot is wasm-bindgen's. `perf/repro/wasm-bindgen-externref-slot/` reproduces it with no DOM and none of this repository (1000 failures of a `catch` import that returns an object leave 1000 slots; the controls leave 0), on 0.2.129 and on 0.2.130. CI runs it expecting the leak, so a release that fixes it fails that step, which is the signal to drop the harness's accounting. A draft report is in `UPSTREAM_ISSUE.md`, and has not been filed.
 
+## Phase 5: CI integration, baselines and regression reporting
+
+Phase 5 is what turns the runs into a judgement about a change: a comparison of a candidate with a baseline that says, with an interval and
+not with a guess, whether the library got slower; a command that is the only way to set a baseline; and a CI job that runs the profile
+on every commit and fails on exactly the things that are deterministic. The exit condition is that a regression and a leak that are put
+into a candidate on purpose are each caught, and that a clean candidate produces neither.
+
+| Path | Holds |
+|---|---|
+| `perf-harness/src/regression/` | The comparison: the hierarchical bootstrap, the ratio of repetition medians and the verdicts, and the report (`report.rs`) |
+| `perf-harness compare` | Reads two collections of results and writes the report that `comparison.schema.json` describes |
+| `lib/baselines.mjs` | Where a baseline lives, how a comparison is made and checked against its schema, and how it is written for a person |
+| `runner/promote-baseline.mjs` | The only thing that writes under `baselines/` |
+| `runner/perf-smoke.mjs` | The profile that runs on every commit |
+| `schemas/baseline-promotion.schema.json` | The record that a promotion leaves next to the baseline |
+| `manifests/w1-scene-construction-smoke.toml`, `w2-…-smoke.toml`, `w3-…-smoke.toml` | The size that runs on every commit |
+| `lib/test-regression.mjs` | The comparison, the reports and the promotion on synthetic runs, with no browser (CI, per commit) |
+| `runner/selftest-regression.mjs` | The exit condition, in a browser |
+| `lib/calibrate-comparison.mjs` | How often the comparison raises a false alarm, and how often it finds a regression of a given size |
+
+### The comparison
+
+The unit is the repetition, because the observations inside one run share a page, a heap and a JIT and are not independent of one
+another. A run gives one figure for a metric, a percentile of its own observations. A collection gives the median of its runs' figures,
+and the statistic is the ratio of the candidate's to the baseline's.
+
+The interval on that ratio is a hierarchical bootstrap: each resample draws repetitions with replacement from each side, then draws the
+observations of each chosen repetition with replacement, and computes the ratio again. The interval is the middle 95% of 4,000 of them,
+from a fixed seed, so the same figures always give the same interval (it is the same to the last bit on 32-bit wasm). Resampling only
+the repetitions would treat each run's figure as exact, and resampling only the observations would treat the runs as one.
+
+With a ratio tolerance of 10% the verdict is
+
+| Interval of the ratio | Verdict |
+|---|---|
+| wholly above 1.1 | `regression` |
+| wholly below 1 / 1.1 | `improvement` |
+| wholly inside both | `no_material_change` |
+| anything else | `inconclusive`, which is never reported as a pass |
+
+Three more outcomes do not compare anything. **`diagnostic`** is given when either side has fewer than 5 repetitions, or a repetition has
+too few observations for the percentile (30 for p50, 200 for p95, 1000 for p99): the medians and the ratio are shown and there is no
+interval and no verdict. The three repetitions of a smoke run are always this. **`not_comparable`** is given, for every metric and with
+the reason, when the two sides were not measured alike: another operating system, processor, runner class, browser version or
+measurement protocol; another manifest or operation stream; or a run on either side that is not valid, since a timing from a run that
+did not do its work is not a slow timing. A comparison with another browser compares nothing.
+
+Layer A runs have no browser, so their environment key says `native`.
+
+### Baselines
+
+A baseline is a directory of results and their samples with a `promotion.json`, kept at
+`baselines/<manifest>/<layer>/<environment>/`. The environment is the same key that a comparison checks: runner class, operating system,
+processor, full browser version and measurement protocol, so a new Chrome starts a new baseline and does not move the old one.
+`runner/promote-baseline.mjs` writes it, and nothing else does: a run never updates a baseline, and a comparison does not touch one
+(the tests hash the directory before and after).
+
+```sh
+node perf/runner/promote-baseline.mjs --from target/perf-smoke/w2-connector-rerouting-smoke --layer B --reason "First baseline on this runner class"
+```
+
+The record names the commit, the hash of the workload, the environment, the method version, the runs, the reason, what it replaced and, if
+it was promoted over a regression, the reason and the metrics. It refuses
+
+- a run that is not valid;
+- a run of a candidate that was changed on purpose (its result carries an `injection` field);
+- runs from a tree with uncommitted changes, from more than one commit, or from a commit git does not know;
+- runs of more than one manifest, operation stream or environment, or fewer than `--min-runs` (3);
+- runs that regress against the baseline they would replace, unless `--accept-regression "<why>"` gives the reason, which is written
+  into the record.
+
+It copies and writes files and does not commit them: the person promoting reviews the diff and commits it. `--allow-dirty` is for trying
+the command out, and says that the result is not for committing. `PERF_BASELINES_DIR` moves the directory, to try a promotion without
+touching the committed one.
+
+No baseline is committed yet. A baseline is only meaningful for the environment it was measured in, and the one that matters is the CI
+runner's, so the first is made from the `perf-smoke` artifact of a run on the runner class: download it, promote it on a clean commit, and
+commit `perf/baselines/`. Until then `perf-smoke` says, for each layer, that there is no baseline and how to make one.
+
+### The CI profiles
+
+| Job | Runs | Fails on |
+|---|---|---|
+| `perf-harness` (per commit) | the unit tests including the comparison's statistics, on 64-bit and 32-bit wasm; the schemas; the fault contracts; `lib/test-regression.mjs` | any of them |
+| `perf-smoke` (per commit) | W1 to W3 at the smoke size and W4 small, with 3 repetitions each, Layers A to C where they apply; the comparison with a baseline if there is one; `selftest-regression.mjs` | an incorrect checkpoint, a stream that is not the intended one, a leaked deterministic resource (elements and listeners after a teardown), a result that does not satisfy its schema, a self-test that does not catch what it should. **Never a timing** |
+
+`perf-smoke` writes the comparison to the job summary and uploads the results and comparison reports as an artifact kept for 90 days.
+Historical runs are artifacts and are not committed. Statistical gates report only until a baseline has 10 runs on one runner class (design
+section 8.1): `perf-smoke` has `--enforce-statistical`, which then also fails on a regression, and only from a baseline with the runs to
+block with. It is not given the flag yet.
+
+The smoke manifests are the small scene (12 nodes, 20 edges) with enough measured iterations for a median: 40 cycles for W1 and W3 and
+2,000 moves for W2, which give at least 30 observations a run. The small reference manifests give 3 to 6 and could only ever be
+diagnostic.
+
+### The self-tests
+
+`lib/test-regression.mjs` runs the real binary and the real promotion command on synthetic runs with a spread like the real one. A clean
+fixture is no material change (ratio 0.99, interval 0.98 to 1.01). An injected slowdown of 35% is a regression (interval 1.32 to 1.37), and a
+speedup of 30% an improvement. Three repetitions, even of a doubling, are a diagnostic; runs that disagree among themselves are
+inconclusive. Another browser, runner class, protocol, manifest, operation stream or an invalid candidate is not comparable and compares
+no figure. Each refusal of the promotion command is tested, and that a refused promotion leaves nothing written.
+
+`runner/selftest-regression.mjs` is the exit condition, in Chrome. Five clean runs of W2 are promoted. Five more clean runs are not a
+regression (ratio 1.013, interval 0.974 to 1.062, no material change). Five runs with a 20 µs slowdown injected after every move, inside the
+timed interval, are a regression (ratio 7.8, interval 7.6 to 8.1), and the orchestrator still exits with success, since a timing is not a
+deterministic gate. A clean W3 passes its gates, and the same W3 with listeners leaked after every teardown fails
+`listeners after teardown equal those before the build` with 90 listeners left. A run with a slowdown injected cannot be promoted.
+
+The injection is in the orchestrator (`--inject-slowdown-us`, `--inject-leak`), runs only in Layer B, and is written into the result.
+The slowdown is spent after each library call, inside the timed interval, as a library that got slower would; the delay of Phase 2 is
+spent outside it, to prove that no timing shows it. Both are kept.
+
+`lib/calibrate-comparison.mjs` measures the comparison on 100 trials of synthetic runs with a run-to-run spread of 3% and a within-run
+spread of 10%, from five repetitions a side:
+
+| The candidate is | Regression | Inconclusive | No material change |
+|---|---|---|---|
+| unchanged | 0% | 0% | 100% |
+| 5% slower | 0% | 44% | 56% |
+| 15% slower | 74% | 26% | 0% |
+| 35% slower | 100% | 0% | 0% |
+
+There was no false alarm in 100 trials, a change inside the tolerance was never called a regression, and a change of half as much again
+as the tolerance was found three times in four. The figures belong to the spread that was assumed, which the real run-to-run spread of the
+runner class replaces once there is a baseline of 10 runs. They are why the statistical gates stay reporting-only until then.
+
+### Two bugs that perf-smoke found in the orchestrator
+
+Running the profile as CI would, and not the runs by hand, found two things the earlier phases had not needed: a performance run that times
+nothing (Layer A for W1 and W3, which have no DOM-free work, and Layer B for the interaction workload, whose timings are taken with real
+input in Layer C) failed the result schema's requirement for samples. A run that times nothing is now said, and is not a result.
+
+### Limits, and where this departs from the design
+
+- Only the median of a repetition's observations is compared (p50, and p95 and p99 where every repetition has the observations for them).
+  The smoke manifests give no p95 or p99.
+- One ratio tolerance (10%) is used for every metric. Per-metric thresholds from the observed run-to-run interval wait for a baseline of 10
+  runs on a runner class, which does not exist yet.
+- The comparison covers the metrics that keep their observations. Counts, capacities and the allocator's live bytes are deterministic
+  gates and are not compared as timings.
+- The ABAB alternation of baseline and candidate runs (design section 6) is not done by `perf-smoke`, since the baseline is a committed
+  set of earlier runs and not a run made beside the candidate. A comparison across time shares the machine only as far as the runner class
+  does, and the report says so by naming both commits and both dates.
+- Nothing here was run on a CI runner. The job is written to the pattern of the existing ones and its YAML parses.
+- Hour-scale endurance is not in any CI profile. It is a manifest run by hand, or on a schedule that does not exist yet.
+
 ## Evidence
+
+`evidence/phase5/` holds what the Phase 5 checks printed, the self-tests, the calibration, and two runs of the perf-smoke profile: one with no baseline, and one against a baseline promoted from the first, with its comparison reports and summary.
+`node perf/runner/record-phase5-evidence.mjs` writes it again.
 
 `evidence/phase4/` holds what the Phase 4 checks printed, the recovery and endurance result documents with the table of every failure that was injected, and `findings.json`.
 `node perf/runner/record-phase4-evidence.mjs` writes it again.

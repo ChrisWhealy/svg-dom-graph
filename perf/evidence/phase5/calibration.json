@@ -1,0 +1,40 @@
+{
+  "trials": 100,
+  "run_to_run_shift": 0.03,
+  "within_run_noise": 0.1,
+  "resamples": 2000,
+  "tolerance": 0.1,
+  "repetitions_per_side": 5,
+  "rows": [
+    {
+      "factor": 1,
+      "trials": 100,
+      "verdicts": {
+        "no_material_change": 100
+      }
+    },
+    {
+      "factor": 1.05,
+      "trials": 100,
+      "verdicts": {
+        "no_material_change": 56,
+        "inconclusive": 44
+      }
+    },
+    {
+      "factor": 1.15,
+      "trials": 100,
+      "verdicts": {
+        "inconclusive": 26,
+        "regression": 74
+      }
+    },
+    {
+      "factor": 1.35,
+      "trials": 100,
+      "verdicts": {
+        "regression": 100
+      }
+    }
+  ]
+}

@@ -1,0 +1,152 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:svg-dom-graph:perf:baseline-promotion:1",
+  "title": "The record that a collection of runs was promoted to be the baseline of a workload",
+  "description": "Written next to the runs by the promotion command and by nothing else. A baseline is never updated by a run, and a promotion over a regression carries the reason it was accepted.",
+  "type": "object",
+  "properties": {
+    "schema_version": {
+      "const": 1
+    },
+    "manifest_id": {
+      "type": "string",
+      "minLength": 1
+    },
+    "layer": {
+      "enum": ["A", "B", "C"]
+    },
+    "mode": {
+      "enum": ["performance", "endurance"]
+    },
+    "promotion": {
+      "type": "object",
+      "properties": {
+        "promoted_at": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "commit": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{40}$"
+        },
+        "workload_hash": {
+          "type": "string",
+          "pattern": "^[0-9a-f]{64}$"
+        },
+        "environment_key": {
+          "type": "string",
+          "minLength": 1
+        },
+        "method_version": {
+          "type": "string",
+          "minLength": 1
+        }
+      },
+      "required": ["promoted_at", "commit", "workload_hash", "environment_key", "method_version"],
+      "additionalProperties": false
+    },
+    "operation_stream_sha256": {
+      "type": "string",
+      "pattern": "^[0-9a-f]{64}$"
+    },
+    "reason": {
+      "type": "string",
+      "minLength": 1
+    },
+    "runs": {
+      "type": "array",
+      "items": {
+        "type": "string",
+        "minLength": 1
+      },
+      "minItems": 1,
+      "uniqueItems": true
+    },
+    "comparison_method": {
+      "type": "object",
+      "properties": {
+        "statistic": {
+          "const": "ratio of repetition medians"
+        },
+        "bootstrap": {
+          "const": "hierarchical: repetitions, then observations within each"
+        },
+        "ratio_tolerance": {
+          "type": "number",
+          "exclusiveMinimum": 0
+        },
+        "confidence": {
+          "type": "number",
+          "exclusiveMinimum": 0,
+          "exclusiveMaximum": 1
+        }
+      },
+      "required": ["statistic", "bootstrap", "ratio_tolerance", "confidence"],
+      "additionalProperties": false
+    },
+    "previous": {
+      "description": "The baseline this one replaced, or null if there was none.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "commit": {
+              "type": "string",
+              "pattern": "^[0-9a-f]{40}$"
+            },
+            "promoted_at": {
+              "type": "string",
+              "format": "date-time"
+            }
+          },
+          "required": ["commit", "promoted_at"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "accepted_regression": {
+      "description": "Null unless the new baseline was promoted over a regression against the one it replaced, in which case the reason and the metrics are written down.",
+      "oneOf": [
+        {
+          "type": "null"
+        },
+        {
+          "type": "object",
+          "properties": {
+            "reason": {
+              "type": "string",
+              "minLength": 1
+            },
+            "metrics": {
+              "type": "array",
+              "items": {
+                "type": "string",
+                "minLength": 1
+              },
+              "minItems": 1
+            }
+          },
+          "required": ["reason", "metrics"],
+          "additionalProperties": false
+        }
+      ]
+    }
+  },
+  "required": [
+    "schema_version",
+    "manifest_id",
+    "layer",
+    "mode",
+    "promotion",
+    "operation_stream_sha256",
+    "reason",
+    "runs",
+    "comparison_method",
+    "previous",
+    "accepted_regression"
+  ],
+  "additionalProperties": false
+}

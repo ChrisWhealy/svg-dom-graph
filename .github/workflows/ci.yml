@@ -181,6 +181,62 @@ jobs:
       - name: Fault contracts are well formed, cited, and what the manifests expect
         run: node perf/lib/test-contracts.mjs
 
+      # The comparison, the reports and the promotion of baselines are tested on synthetic runs, with the real binary. A clean
+      # fixture has to produce no regression, an injected slowdown has to produce one, and every refusal has to refuse.
+      - name: Comparison and baseline promotion behave as designed
+        run: |
+          cargo build --release -p perf-harness
+          node perf/lib/test-regression.mjs
+
+  # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic
+  # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
+  # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it
+  # is labelled diagnostic and gives no verdict. The statistical verdicts block a change only from a baseline of 10 runs on one
+  # runner class (section 8.1), and perf-smoke is not given `--enforce-statistical` until there is one.
+  perf-smoke:
+    name: perf smoke (W1 to W4 · baseline comparison report)
+    runs-on: ubuntu-latest
+    env:
+      PERF_RUNNER_CLASS: github-ubuntu-latest
+      # The runner's Chrome runs without its sandbox, as the CDP shards do, since the sandbox needs a privilege the runner lacks.
+      PERF_CHROME_NO_SANDBOX: "1"
+    steps:
+      - uses: actions/checkout@v7
+      - uses: dtolnay/rust-toolchain@stable
+        with:
+          targets: wasm32-unknown-unknown
+      - uses: Swatinem/rust-cache@v2
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+      - name: Install wasm-pack
+        uses: taiki-e/install-action@v2
+        with:
+          tool: wasm-pack@0.15.0
+      - name: Install the schemas' dependencies
+        run: npm ci
+        working-directory: perf/schemas
+      - name: Chrome version (the runner image ships one)
+        run: |
+          echo "CHROME=$(command -v google-chrome || command -v google-chrome-stable || command -v chromium-browser)" >> "$GITHUB_ENV"
+          google-chrome --version || google-chrome-stable --version || chromium-browser --version
+
+      - name: Run the smoke workloads and compare them with the baseline
+        run: node perf/runner/perf-smoke.mjs
+
+      # The proof that the harness would notice: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
+      - name: The harness catches an injected regression and an injected leak
+        run: node perf/runner/selftest-regression.mjs
+
+      # Historical runs are kept as artifacts and never committed. A baseline is committed only by the promotion command.
+      - name: Keep the results
+        if: always()
+        uses: actions/upload-artifact@v4
+        with:
+          name: perf-smoke-${{ github.sha }}
+          path: target/perf-smoke
+          retention-days: 90
+
   library-version:
     name: published library version
     runs-on: ubuntu-latest

@@ -207,6 +207,7 @@ impl Run<'_> {
                         // The label is moved in and not copied, so that no copy is made while the clock runs.
                         self.scratch_ids
                             .push(scene.add_node(*point, *size, std::mem::take(label)).map_err(describe)?);
+                        self.slow_down();
                     }
                 }
             },
@@ -217,6 +218,7 @@ impl Run<'_> {
                 for item in items.iter() {
                     if let Prepared::AddEdge { from, to, .. } = item {
                         scene.add_edge_with(*from, *to, options).map_err(describe)?;
+                        self.slow_down();
                     }
                 }
             },
@@ -225,6 +227,7 @@ impl Run<'_> {
                 for item in items.iter() {
                     if let Prepared::Move { id, point } = item {
                         scene.move_node(*id, *point).map_err(describe)?;
+                        self.slow_down();
                     }
                 }
             },

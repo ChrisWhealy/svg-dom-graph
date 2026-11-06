@@ -4,6 +4,8 @@
 //! * `generate` prints the workload report as JSON, or writes it to `--out`.
 //! * `stream` prints the operation stream, one JSON operation per line.
 //! * `canonical` prints the manifest in its canonical JSON form, exactly as it is hashed.
+//! * `baseline-key` prints the name of the environment a result was measured in, which is where its baseline is kept.
+//! * `compare` compares a candidate collection of runs with a baseline one and writes the comparison report.
 //! * `native` runs the Layer A runner (`--mode correctness|performance`) and prints its outcome as JSON, or writes it to `--out`.
 
 // Only the native runner reads `--mode`, so a build without it parses the option and has no use for it.
@@ -85,10 +87,88 @@ fn metric(args: &[String]) -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Compares a candidate collection of runs with a baseline one and writes the comparison report.
+///
+/// `compare --baseline DIR --candidate DIR [--candidate DIR ...] --promotion FILE --layer A|B|C --mode MODE --generated-at TIME
+/// [--tolerance 0.1] [--confidence 0.95] [--resamples 4000] [--seed 7] [--min-repetitions 5] [--runs-to-block 10] --out FILE`
+///
+/// It reports and never judges: the exit status says whether the report was written, and a regression is in the report.
+fn compare(args: &[String]) -> Result<(), String> {
+    use perf_harness::regression::{
+        Settings,
+        report::{Context, build_report, load_collection},
+    };
+    use std::path::PathBuf;
+    let (mut baseline, mut candidate) = (Vec::new(), Vec::new());
+    let (mut promotion, mut layer, mut mode, mut generated_at, mut out) = (None, None, None, None, None);
+    let mut runs_to_block = 10usize;
+    let mut settings = Settings::default();
+    let mut rest = args.iter();
+    while let Some(arg) = rest.next() {
+        let mut value = || rest.next().cloned().ok_or(format!("{arg} needs a value"));
+        let number = |text: String| text.parse::<f64>().map_err(|e| format!("{arg}: {e}"));
+        match arg.as_str() {
+            "--baseline" => baseline.push(PathBuf::from(value()?)),
+            "--candidate" => candidate.push(PathBuf::from(value()?)),
+            "--promotion" => promotion = Some(value()?),
+            "--layer" => layer = Some(value()?),
+            "--mode" => mode = Some(value()?),
+            "--generated-at" => generated_at = Some(value()?),
+            "--out" => out = Some(value()?),
+            "--tolerance" => settings.tolerance = number(value()?)?,
+            "--confidence" => settings.confidence = number(value()?)?,
+            "--resamples" => settings.resamples = number(value()?)? as u32,
+            "--seed" => settings.seed = number(value()?)? as u64,
+            "--min-repetitions" => settings.min_repetitions = number(value()?)? as usize,
+            "--runs-to-block" => runs_to_block = number(value()?)? as usize,
+            other => return Err(format!("compare has no option {other}")),
+        }
+    }
+    if !(settings.tolerance > 0.0
+        && settings.confidence > 0.0
+        && settings.confidence < 1.0
+        && settings.resamples >= 1000)
+    {
+        return Err(
+            "a tolerance above 0, a confidence between 0 and 1 and at least 1000 resamples are needed".to_string(),
+        );
+    }
+    let (layer, mode) = (layer.ok_or("--layer is required")?, mode.ok_or("--mode is required")?);
+    let promotion_file = promotion.ok_or("--promotion is required")?;
+    let promotion: serde_json::Value =
+        serde_json::from_str(&std::fs::read_to_string(&promotion_file).map_err(|e| format!("{promotion_file}: {e}"))?)
+            .map_err(|e| format!("{promotion_file}: {e}"))?;
+    let (baseline, candidate) = (
+        load_collection(&baseline, &layer, &mode)?,
+        load_collection(&candidate, &layer, &mode)?,
+    );
+    let generated_at = generated_at.ok_or("--generated-at is required")?;
+    let context = Context {
+        generated_at: &generated_at,
+        promotion: &promotion["promotion"],
+        runs_to_block,
+        layer: &layer,
+    };
+    let (report, _) = build_report(&baseline, &candidate, &settings, &context)?;
+    let json = serde_json::to_string_pretty(&report).map_err(|e| e.to_string())?;
+    let file = out.ok_or("--out is required")?;
+    std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}"))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn run(args: &[String]) -> Result<(), String> {
     let (command, rest) = args.split_first().ok_or("no command")?;
     if command == "metric" {
         return metric(rest);
+    }
+    if command == "compare" {
+        return compare(rest);
+    }
+    if command == "baseline-key" {
+        let file = rest.first().ok_or("baseline-key needs a result file")?;
+        let run = perf_harness::regression::report::load_run(std::path::Path::new(file))?;
+        println!("{}", run.key.slug());
+        return Ok(());
     }
     let mut path = None;
     let mut id = None;

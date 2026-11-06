@@ -1,0 +1,116 @@
+{
+  "recorded_at": "2026-11-06T15:19:41.484Z",
+  "commit": "9630405c4f45d651b0bea627272c8778f516c4e0",
+  "uncommitted_changes": [
+    " M .github/workflows/ci.yml",
+    " M demo/changelog.md",
+    " M docs/testing/README.md",
+    " M perf-harness-wasm/src/executor/cycle.rs",
+    " M perf-harness-wasm/src/executor/mod.rs",
+    " M perf-harness-wasm/src/executor/queue.rs",
+    " M perf-harness-wasm/src/lib.rs",
+    " M perf-harness/src/lib.rs",
+    " M perf-harness/src/main.rs",
+    " M perf/README.md",
+    " M perf/runner/page/index.html",
+    " M perf/runner/run.mjs",
+    " M perf/schemas/check.mjs",
+    " M perf/schemas/comparison.schema.json",
+    " M perf/schemas/examples/comparison.json",
+    " M perf/schemas/result.schema.json",
+    "?? perf-harness/src/regression/",
+    "?? perf/evidence/phase5/",
+    "?? perf/lib/baselines.mjs",
+    "?? perf/lib/calibrate-comparison.mjs",
+    "?? perf/lib/synthetic-runs.mjs",
+    "?? perf/lib/test-regression.mjs",
+    "?? perf/manifests/w1-scene-construction-smoke.toml",
+    "?? perf/manifests/w2-connector-rerouting-smoke.toml",
+    "?? perf/manifests/w3-scene-lifecycle-smoke.toml",
+    "?? perf/runner/perf-smoke.mjs",
+    "?? perf/runner/promote-baseline.mjs",
+    "?? perf/runner/record-phase5-evidence.mjs",
+    "?? perf/runner/selftest-regression.mjs",
+    "?? perf/schemas/baseline-promotion.schema.json",
+    "?? perf/schemas/examples/baseline-promotion.json"
+  ],
+  "machine": {
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "cores": 12,
+    "memory_bytes": 34359738368
+  },
+  "browser": "Google Chrome 157.0.8103.39",
+  "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+  "wasm_pack": "wasm-pack 0.15.1",
+  "node": "v26.13.0",
+  "build_profile": "release",
+  "commands": [
+    {
+      "file": "build.txt",
+      "command": "sh -c cargo build -q --release -p perf-harness && wasm-pack build perf-harness-wasm --target web --release --out-dir pkg",
+      "exit_code": 0,
+      "seconds": 0.928
+    },
+    {
+      "file": "rust-tests-native.txt",
+      "command": "cargo test -p perf-harness",
+      "exit_code": 0,
+      "seconds": 4.055
+    },
+    {
+      "file": "rust-tests-wasm32-wasi.txt",
+      "command": "cargo test -p perf-harness --no-default-features --target wasm32-wasip1",
+      "exit_code": 0,
+      "seconds": 9.064
+    },
+    {
+      "file": "crosscheck.txt",
+      "command": "node perf/crosscheck/crosscheck.mjs",
+      "exit_code": 0,
+      "seconds": 1.066
+    },
+    {
+      "file": "schema-checks.txt",
+      "command": "node check.mjs",
+      "exit_code": 0,
+      "seconds": 0.084
+    },
+    {
+      "file": "contract-checks.txt",
+      "command": "node perf/lib/test-contracts.mjs",
+      "exit_code": 0,
+      "seconds": 0.023
+    },
+    {
+      "file": "comparison-and-promotion-tests.txt",
+      "command": "node perf/lib/test-regression.mjs",
+      "exit_code": 0,
+      "seconds": 1.107
+    },
+    {
+      "file": "regression-selftest.txt",
+      "command": "node perf/runner/selftest-regression.mjs",
+      "exit_code": 0,
+      "seconds": 12.681
+    },
+    {
+      "file": "calibration.txt",
+      "command": "node perf/lib/calibrate-comparison.mjs --trials 100 --out <repo>/perf/evidence/phase5/calibration.json",
+      "exit_code": 0,
+      "seconds": 32.519
+    },
+    {
+      "file": "perf-smoke-no-baseline.txt",
+      "command": "node perf/runner/perf-smoke.mjs --no-build --out-dir <repo>/perf/evidence/phase5/results/perf-smoke",
+      "exit_code": 0,
+      "seconds": 259.306
+    },
+    {
+      "file": "perf-smoke-with-baseline.txt",
+      "command": "node perf/runner/perf-smoke.mjs --no-build --manifests w2-connector-rerouting-smoke --out-dir <repo>/perf/evidence/phase5/results/perf-smoke-with-baseline",
+      "exit_code": 0,
+      "seconds": 2.64
+    }
+  ]
+}

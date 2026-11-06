@@ -227,7 +227,8 @@
             },
             "browser_version": {
               "type": "string",
-              "pattern": "^\\d+(\\.\\d+)+$"
+              "pattern": "^(\\d+(\\.\\d+)+|native)$",
+              "description": "The full browser version, or native for a run of native code, which has no browser."
             },
             "protocol_version": {
               "type": "string",
@@ -305,6 +306,25 @@
         "minimum_repetitions_for_verdict",
         "protocol_version"
       ],
+      "additionalProperties": false
+    },
+    "gating": {
+      "type": "object",
+      "description": "Whether the verdicts may block a change yet. They only report until the baseline has the runs to set a threshold from the spread that was observed.",
+      "properties": {
+        "statistical_gates": {
+          "enum": ["reporting_only", "blocking"]
+        },
+        "baseline_runs": {
+          "type": "integer",
+          "minimum": 1
+        },
+        "baseline_runs_to_block": {
+          "type": "integer",
+          "minimum": 1
+        }
+      },
+      "required": ["statistical_gates", "baseline_runs", "baseline_runs_to_block"],
       "additionalProperties": false
     },
     "comparisons": {
@@ -424,7 +444,16 @@
       }
     }
   },
-  "required": ["schema_version", "generated_at", "baseline", "candidate", "compatibility", "method", "comparisons"],
+  "required": [
+    "schema_version",
+    "generated_at",
+    "baseline",
+    "candidate",
+    "compatibility",
+    "method",
+    "gating",
+    "comparisons"
+  ],
   "additionalProperties": false,
   "allOf": [
     {

@@ -40,6 +40,11 @@
     "minimum_repetitions_for_verdict": 5,
     "protocol_version": "1"
   },
+  "gating": {
+    "statistical_gates": "reporting_only",
+    "baseline_runs": 5,
+    "baseline_runs_to_block": 10
+  },
   "comparisons": [
     {
       "metric": "mutation.move_node",

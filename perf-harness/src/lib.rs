@@ -18,6 +18,7 @@ pub mod model;
 pub mod ops;
 pub mod outcome;
 pub mod prng;
+pub mod regression;
 pub mod report;
 pub mod stats;
 pub mod workload;

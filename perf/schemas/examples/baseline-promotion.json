@@ -1,0 +1,24 @@
+{
+  "schema_version": 1,
+  "manifest_id": "w1-scene-construction-small",
+  "layer": "B",
+  "mode": "performance",
+  "promotion": {
+    "promoted_at": "2026-11-06T12:00:00Z",
+    "commit": "aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa",
+    "workload_hash": "bbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbbb",
+    "environment_key": "ci-linux-example-cpu-157.0.7632.0-p1",
+    "method_version": "1"
+  },
+  "operation_stream_sha256": "cccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccccc",
+  "reason": "The first baseline of this workload on this runner class",
+  "runs": ["r1", "r2", "r3"],
+  "comparison_method": {
+    "statistic": "ratio of repetition medians",
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "ratio_tolerance": 0.1,
+    "confidence": 0.95
+  },
+  "previous": null,
+  "accepted_regression": null
+}

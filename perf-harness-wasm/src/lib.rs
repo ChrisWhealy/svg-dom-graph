@@ -83,6 +83,54 @@ mod exports {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// Runs one repetition of a workload as a candidate that has been changed on purpose, and returns the outcome as JSON.
+    ///
+    /// `slowdown_us` is spent inside the timed interval after every library call of a node, an edge or a move, as a library
+    /// that had got slower would. `leak` is `none`, `bytes`, `closure` or `library_watch`, made after every teardown, so that a
+    /// run with `library_watch` ends with listeners that the scene's teardown did not release. A run with neither is the same
+    /// as `run_workload`. `selftest-regression.mjs` uses it to prove that the comparison and the deterministic gates each
+    /// notice what they exist to notice.
+    #[wasm_bindgen]
+    pub fn run_candidate(manifest_json: &str, mode: &str, expected_json: &str, slowdown_us: f64, leak: &str) -> String {
+        let mode = match mode {
+            "correctness" => Mode::Correctness,
+            "performance" => Mode::Performance,
+            other => return failed(Mode::Performance, format!("a candidate has no mode {other}")),
+        };
+        let manifest = match serde_json::from_str(manifest_json)
+            .map_err(|e| e.to_string())
+            .and_then(|v| Manifest::from_json(v).map_err(|e| e.to_string()))
+        {
+            Ok(manifest) => manifest,
+            Err(message) => return failed(mode, message),
+        };
+        let expected = serde_json::from_str::<serde_json::Value>(expected_json).ok().and_then(|v| {
+            Some(crate::executor::Expected {
+                sha256: v["sha256"].as_str()?.to_string(),
+                mutations_sha256: v["mutations_sha256"].as_str()?.to_string(),
+            })
+        });
+        let leak = match leak {
+            "none" => None,
+            other => match crate::executor::Leak::parse(other, 64) {
+                Some(leak) => Some(leak),
+                None => return failed(mode, format!("there is no leak {other}")),
+            },
+        };
+        let outcome = crate::executor::run_with_options(
+            &manifest,
+            mode,
+            expected.as_ref(),
+            crate::executor::Options {
+                slowdown_us,
+                leak,
+                ..Default::default()
+            },
+        );
+        serde_json::to_string(&outcome).unwrap_or_else(|e| failed(mode, e.to_string()))
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     /// Runs a workload in the correctness mode with a deliberate fault in what is observed, to prove that the
     /// comparison notices it. `fault` is one of the names in `executor::Fault`.
     #[wasm_bindgen]

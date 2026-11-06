@@ -1,0 +1,30 @@
+ok   a baseline of fewer runs than were asked for is refused
+ok   runs from a tree with uncommitted changes are refused
+ok   runs from a commit that git does not know are refused
+ok   a run that is not valid is refused
+ok   runs of two manifests are refused
+ok   runs of a candidate changed on purpose are never a baseline
+ok   none of those refusals wrote anything
+ok   a clean collection is promoted: promoted 5 runs of w2-connector-rerouting-smoke (layer B) to ../../../../../var/folders/8d/gyp_czz950qg_npw52zgksy00000gn/T/perf-regression-TOlHoj/baselines/w2-connector-rerouting-smoke/B/ci-linux-linux-6.8-example-cpu-157.0.7632.0-p1
+ok   the promotion record names the commit, the workload hash, the environment (ci-linux-linux-6.8-example-cpu-157.0.7632.0-p1), the method and the runs
+ok   the baseline keeps the samples beside its results, so that it stands alone
+ok   a clean fixture is no material change (ratio 0.991, interval 0.980 to 1.010)
+ok   a baseline of 5 runs reports and does not block
+ok   an injected slowdown of 35% is a regression (ratio 1.345, interval 1.323 to 1.371)
+ok   and the summary a person reads says so
+ok   an injected speedup of 30% is an improvement, and not a regression
+ok   three repetitions, even of a doubling, give a diagnostic and no verdict (ratio 1.98)
+ok   runs that disagree among themselves give inconclusive, which is never a pass (inconclusive)
+ok   another browser is not comparable, with no figure compared: measured in different environments: browser version (157.0.7632.0 against 158.0.1.0)
+ok   another runner class is not comparable, with no figure compared: measured in different environments: runner class (ci-linux against laptop)
+ok   another protocol is not comparable, with no figure compared: measured in different environments: measurement protocol (1 against 2)
+ok   another manifest is not comparable, with no figure compared: the manifests differ, so the workloads are not the same
+ok   another operation stream is not comparable, with no figure compared: the operation streams differ, so the workloads are not the same
+ok   an invalid candidate run is not comparable, with no figure compared: the candidate run nc-B-performance-r0 is invalid_incorrect, and a timing from a run that d
+ok   no comparison changed the baseline
+ok   a promotion over a regression is refused
+ok   and leaves the baseline as it was
+ok   with the reason given it is promoted, and the record keeps the reason, the metric and what it replaced
+ok   promoting what does not regress needs no reason, and records none
+
+the comparison, the reports and the promotion behave as designed

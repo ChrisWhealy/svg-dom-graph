@@ -470,6 +470,23 @@
       "type": "string",
       "minLength": 1
     },
+    "injection": {
+      "type": "object",
+      "description": "Present only on a run of a candidate that was changed on purpose, to prove that a comparison or a gate notices the change. Such a run is never a baseline.",
+      "properties": {
+        "slowdown_us": {
+          "type": "number",
+          "minimum": 0,
+          "description": "Microseconds spent inside the timed interval after every library call of a node, an edge or a move."
+        },
+        "leak": {
+          "enum": ["none", "bytes", "closure", "library_watch"],
+          "description": "What is leaked after every teardown."
+        }
+      },
+      "required": ["slowdown_us", "leak"],
+      "additionalProperties": false
+    },
     "gates": {
       "type": "array",
       "description": "Deterministic checks that the run made of itself, such as that live memory does not keep growing. inconclusive is never a pass.",

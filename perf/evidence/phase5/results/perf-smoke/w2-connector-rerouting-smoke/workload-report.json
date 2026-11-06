@@ -1,0 +1,195 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "w2-connector-rerouting-smoke",
+    "sha256": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 12,
+        "edges": 20,
+        "maximum_degree": 8
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 100,
+        "measurement_iterations": 2000,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": false,
+        "checkpoint_every": 250
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "wall_ms": 60000
+      }
+    }
+  },
+  "stream": {
+    "encoding_version": 1,
+    "operations": 2145,
+    "mutations": 2133,
+    "sha256": "91c856b8ac092cd4c08f4adae7cc552ddffc19a79ac37b1e118a47bef3f0c991",
+    "mutations_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61"
+  },
+  "checkpoints": [
+    {
+      "index": 0,
+      "op_index": 33,
+      "model_sha256": "0be9fb64ed2646758a02f7d4e64ba2e86554680c263488a60ea05ec280bb75d6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 1,
+      "op_index": 286,
+      "model_sha256": "05163b656d10dfa739dc0e1a5d1aa6a2bede1cbba918d517d2cd58ba60b6352b",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 2,
+      "op_index": 537,
+      "model_sha256": "a64fa16b11d460aefb9414664fafbcba970ca6eb5a65317d26cefad4e061ea02",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 3,
+      "op_index": 788,
+      "model_sha256": "2d07f31051af96f2e295416e971034bf1141196c7a6c63f9c5e128f3640c5dfb",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 4,
+      "op_index": 1039,
+      "model_sha256": "0cced645dbf3ce1ebdedf856385f793c1138d3b44d8e3c88ebe763bdc4d8b97c",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 5,
+      "op_index": 1290,
+      "model_sha256": "8001290c567d1a398e91f632390d314e60ca2bd7212983fb2c1881e85476b488",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 6,
+      "op_index": 1541,
+      "model_sha256": "c78944d4b480d1e1dd1b30ac5a7d22e02e3f5058472cb8699217bc2800489b06",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 7,
+      "op_index": 1792,
+      "model_sha256": "861a32ef3acccccad496dcd7d88142fc6c27d86d7ad64a0733626c3db8d97dd6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 8,
+      "op_index": 2043,
+      "model_sha256": "949de25e9272845584fd16d8ba961c8c44527922c86583a9aa5381ced9fe9ac6",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    },
+    {
+      "index": 9,
+      "op_index": 2144,
+      "model_sha256": "92cd7d6bf8b464940e1c4059cbf4e6aa5146e21309c0a4d621556489c34b444c",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "941092ef780f0481cfe426bb714f07172d9e8a7c8e36ff96a9ffc829c69cd085",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "645ef91761c5f075d0457b03cb1e1299f681a25d107e2953b459469a03aeaee5",
+        "topology": "ad24cf3b79a9ed0a60a0f078e790c5a311de25ff02a74e837b44db5dd19d7845"
+      }
+    }
+  ],
+  "sections": {
+    "modelled": [
+      "topology",
+      "content",
+      "interaction",
+      "geometry",
+      "paint_order"
+    ],
+    "provisional": [],
+    "not_modelled": [
+      "dom_identity.ids",
+      "accessibility"
+    ]
+  }
+}

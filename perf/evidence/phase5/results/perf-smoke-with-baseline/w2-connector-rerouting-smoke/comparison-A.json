@@ -1,0 +1,208 @@
+{
+  "baseline": {
+    "git_sha": "9630405c4f45d651b0bea627272c8778f516c4e0",
+    "manifest_sha256": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "operation_stream_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61",
+    "promotion": {
+      "commit": "9630405c4f45d651b0bea627272c8778f516c4e0",
+      "environment_key": "local-darwin-27.2.0-apple-m6-native-p1",
+      "method_version": "1",
+      "promoted_at": "2026-11-06T15:19:38.780Z",
+      "workload_hash": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff"
+    },
+    "run_ids": [
+      "w2-connector-rerouting-smoke-A-performance-r0-20261106T151522",
+      "w2-connector-rerouting-smoke-A-performance-r1-20261106T151523",
+      "w2-connector-rerouting-smoke-A-performance-r2-20261106T151523"
+    ]
+  },
+  "candidate": {
+    "git_sha": "9630405c4f45d651b0bea627272c8778f516c4e0",
+    "manifest_sha256": "e1c0723069629f103adb8ace8be15e64ecf84c18b7352b52e1c6846ee9c96dff",
+    "operation_stream_sha256": "55b9b40368482578f91fefc836ae91cba646c4f9af565d6307a56fbf014d4d61",
+    "run_ids": [
+      "w2-connector-rerouting-smoke-A-performance-r0-20261106T151939",
+      "w2-connector-rerouting-smoke-A-performance-r1-20261106T151940",
+      "w2-connector-rerouting-smoke-A-performance-r2-20261106T151940"
+    ]
+  },
+  "comparisons": [
+    {
+      "baseline": {
+        "between_run": {
+          "range": [
+            0.03935185185185185,
+            0.040888888888888884
+          ],
+          "stddev": 0.0008868041776325705
+        },
+        "median": 0.040886792452830195,
+        "outliers_flagged": 8,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.024685185185185178,
+          "median_stddev": 0.013573113574638019
+        }
+      },
+      "candidate": {
+        "between_run": {
+          "range": [
+            0.040886792452830195,
+            0.05185714285714286
+          ],
+          "stddev": 0.00554207350611007
+        },
+        "median": 0.045,
+        "outliers_flagged": 51,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.025150943396226415,
+          "median_stddev": 0.013209712012152805
+        }
+      },
+      "layer": "A",
+      "metric": "rust.connector_endpoints",
+      "ratio": 1.1005999077065065,
+      "reason": "3 baseline and 3 candidate repetitions, and a verdict needs at least 5 on each side. The figures are shown and no interval or verdict is given",
+      "statistic": "p50",
+      "verdict": "diagnostic"
+    },
+    {
+      "baseline": {
+        "between_run": {
+          "range": [
+            0.06327777777777778,
+            0.06367924528301887
+          ],
+          "stddev": 0.00023178737222182946
+        },
+        "median": 0.06327777777777778,
+        "outliers_flagged": 8,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.024685185185185178,
+          "median_stddev": 0.013573113574638019
+        }
+      },
+      "candidate": {
+        "between_run": {
+          "range": [
+            0.06524528301886792,
+            0.06804081632653061
+          ],
+          "stddev": 0.0014763316722447555
+        },
+        "median": 0.06582,
+        "outliers_flagged": 51,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.025150943396226415,
+          "median_stddev": 0.013209712012152805
+        }
+      },
+      "layer": "A",
+      "metric": "rust.connector_endpoints",
+      "ratio": 1.0401755926251097,
+      "reason": "3 baseline and 3 candidate repetitions, and a verdict needs at least 5 on each side. The figures are shown and no interval or verdict is given",
+      "statistic": "p95",
+      "verdict": "diagnostic"
+    },
+    {
+      "baseline": {
+        "between_run": {
+          "range": [
+            0.06405555555555555,
+            0.06526415094339622
+          ],
+          "stddev": 0.0006977828725111504
+        },
+        "median": 0.06405555555555555,
+        "outliers_flagged": 8,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.024685185185185178,
+          "median_stddev": 0.013573113574638019
+        }
+      },
+      "candidate": {
+        "between_run": {
+          "range": [
+            0.06681132075471698,
+            0.13348979591836735
+          ],
+          "stddev": 0.03676226846583667
+        },
+        "median": 0.07332,
+        "outliers_flagged": 51,
+        "repetitions": 3,
+        "samples_per_repetition": [
+          2000,
+          2000,
+          2000
+        ],
+        "within_run": {
+          "median_iqr": 0.025150943396226415,
+          "median_stddev": 0.013209712012152805
+        }
+      },
+      "layer": "A",
+      "metric": "rust.connector_endpoints",
+      "ratio": 1.144631396357329,
+      "reason": "3 baseline and 3 candidate repetitions, and a verdict needs at least 5 on each side. The figures are shown and no interval or verdict is given",
+      "statistic": "p99",
+      "verdict": "diagnostic"
+    }
+  ],
+  "compatibility": {
+    "comparable": true,
+    "key": {
+      "browser_version": "native",
+      "cpu": "Apple M6",
+      "os": "Darwin 27.2.0",
+      "protocol_version": "1",
+      "runner_class": "local"
+    }
+  },
+  "gating": {
+    "baseline_runs": 3,
+    "baseline_runs_to_block": 10,
+    "statistical_gates": "reporting_only"
+  },
+  "generated_at": "2026-11-06T15:19:41.474Z",
+  "method": {
+    "bootstrap": "hierarchical: repetitions, then observations within each",
+    "bootstrap_resamples": 4000,
+    "bootstrap_seed": 7,
+    "confidence": 0.95,
+    "minimum_repetitions_for_verdict": 5,
+    "protocol_version": "1",
+    "ratio_tolerance": 0.1,
+    "statistic": "ratio of repetition medians"
+  },
+  "schema_version": 1
+}

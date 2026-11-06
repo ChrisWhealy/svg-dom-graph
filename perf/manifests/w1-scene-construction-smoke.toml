@@ -1,0 +1,36 @@
+# W1, scene construction, the size that runs on every commit (the perf-smoke profile).
+#
+# The same scene as the small reference manifest, with enough measured iterations for a median: a run gives at least 30
+# observations, which is what a p50 needs before it is shown (design section 6). Three repetitions, so that a comparison with a
+# baseline is labelled diagnostic and gives no verdict. It is small enough for a CI runner, and it is not one of the reference
+# manifests whose digests are pinned in the unit tests.
+schema_version = 1
+workload = "scene_construction"
+seed = 2026
+prng = "splitmix64"
+
+[graph]
+nodes = 12
+edges = 20
+maximum_degree = 8
+
+[execution]
+modes = ["correctness", "performance"]
+warmup_iterations = 5
+measurement_iterations = 40
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = false
+capture_wasm_capacity = true
+capture_wasm_live_allocation = true
+capture_frame_timing = false
+checkpoint_every = 3
+
+[checkpoint]
+view = "unchanged"
+
+[limits]
+wall_ms = 60000

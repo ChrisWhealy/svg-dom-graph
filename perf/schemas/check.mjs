@@ -19,7 +19,15 @@ const ajv = new Ajv({
 })
 addFormats(ajv)
 
-const names = ['manifest', 'checkpoint', 'result', 'comparison', 'workload-report', 'gallery-report']
+const names = [
+  'manifest',
+  'checkpoint',
+  'result',
+  'comparison',
+  'baseline-promotion',
+  'workload-report',
+  'gallery-report'
+]
 for (const name of names) ajv.addSchema(read(`${name}.schema.json`))
 const validators = Object.fromEntries(names.map(name => [name, ajv.getSchema(`urn:svg-dom-graph:perf:${name}:1`)]))
 
@@ -43,6 +51,7 @@ const valid = {
   checkpoint: read('examples/checkpoint.json'),
   result: read('examples/result.json'),
   comparison: read('examples/comparison.json'),
+  'baseline-promotion': read('examples/baseline-promotion.json'),
   'workload-report': read('examples/workload-report.json'),
   'gallery-report': read('examples/gallery-report.json')
 }
@@ -419,9 +428,44 @@ const rejected = {
       d.manifest.typo = 1
     }
   },
+  'baseline-promotion': {
+    'an unknown key': d => {
+      d.typo = 1
+    },
+    'no reason': d => {
+      delete d.reason
+    },
+    'a short commit': d => {
+      d.promotion.commit = 'abc'
+    },
+    'no record of what it replaced': d => {
+      delete d.previous
+    },
+    'an accepted regression with no reason': d => {
+      d.accepted_regression = { metrics: ['mutation.move_node'] }
+    },
+    'an accepted regression of no metric': d => {
+      d.accepted_regression = { reason: 'x', metrics: [] }
+    },
+    'no runs': d => {
+      d.runs = []
+    },
+    'a method that is not this one': d => {
+      d.comparison_method.statistic = 'mean'
+    }
+  },
   comparison: {
     'unknown top-level key': d => {
       d.typo = 1
+    },
+    'a gating block that is not one of the two states': d => {
+      d.gating.statistical_gates = 'maybe'
+    },
+    'no gating block': d => {
+      delete d.gating
+    },
+    'a browser version that is neither a version nor native': d => {
+      d.compatibility.key.browser_version = 'latest'
     },
     'no baseline promotion record': d => {
       delete d.baseline.promotion

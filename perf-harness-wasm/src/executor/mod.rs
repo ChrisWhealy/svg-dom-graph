@@ -75,6 +75,7 @@ struct Run<'a> {
     scratch_ids: Vec<NodeId>,
     /// A deliberate delay in the harness's own work, to prove that it is not in the timing. Zero outside the self-test.
     harness_delay_us: f64,
+    slowdown_us: f64,
     /// How many of the first cycles to list the live blocks of after their teardown. Zero outside the attribution run.
     leak: Option<Leak>,
     track_cycles: u64,
@@ -152,6 +153,7 @@ impl<'a> Run<'a> {
             pending_capacity,
             scratch_ids: Vec::with_capacity(pending_capacity),
             harness_delay_us: 0.0,
+            slowdown_us: 0.0,
             leak: None,
             track_cycles: 0,
             tracking_log: Vec::new(),
@@ -280,6 +282,11 @@ pub struct Options {
     /// The delay is in the reference model's turn, which is not part of any timed interval, so no timing may show it. The
     /// self-test runs a workload with and without it, and fails if a figure moves.
     pub harness_delay_us: f64,
+    /// A slowdown inside the timed interval, in microseconds, after every library call of a node, an edge or a move.
+    ///
+    /// Unlike the delay above it is meant to show. It stands in for a change that makes the library slower, to prove that a
+    /// comparison with a baseline notices one.
+    pub slowdown_us: f64,
     /// A leak in every cycle.
     pub leak: Option<Leak>,
     /// The last mutation before one of the two executed checkpoints is applied wrongly. See [`perf_harness::corruption`].
@@ -308,6 +315,7 @@ pub fn run_with_options(manifest: &Manifest, mode: Mode, expected: Option<&Expec
     };
     run.fault = options.fault;
     run.harness_delay_us = options.harness_delay_us;
+    run.slowdown_us = options.slowdown_us;
     run.leak = options.leak;
     run.corrupt_at = corrupt_at;
     let mut result = run.execute();

@@ -34,6 +34,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Implement accessibility checks to cover Chrome AX tree (`be3b0b1`)
 - Perf Harness: Gallery walk tests have "pass", "inconclusive" and "fail" outcomes (`4857001`)
 - Perf Harness: Phase 4: Recovery and endurance testing under deliberate failures (`778ccbc`)
+- Perf Harness: Phase 5: CI integration, baseline promotion and statistical regression reporting (``)
 
 ### Changed
 
@@ -84,4 +85,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Prevent failed DOM calls from retaining externref slots (`61499c9`)
 - Perf Harness: Prevent failed DOM calls from retaining externref slots (`e30bb44`)
 - Perf Harness: Remove grab cursor for a node whose scene is dropped mid-drag (`19f3ac4`)
-- Perf Harness: Correct CI test step order (``)
+- Perf Harness: Correct CI test step order (`9630405`)

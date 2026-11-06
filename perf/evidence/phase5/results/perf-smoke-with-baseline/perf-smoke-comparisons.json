@@ -1,0 +1,14 @@
+[
+  {
+    "id": "w2-connector-rerouting-smoke",
+    "layer": "A",
+    "out": "perf/evidence/phase5/results/perf-smoke-with-baseline/w2-connector-rerouting-smoke/comparison-A.json",
+    "gating": "reporting_only"
+  },
+  {
+    "id": "w2-connector-rerouting-smoke",
+    "layer": "B",
+    "out": "perf/evidence/phase5/results/perf-smoke-with-baseline/w2-connector-rerouting-smoke/comparison-B.json",
+    "gating": "reporting_only"
+  }
+]

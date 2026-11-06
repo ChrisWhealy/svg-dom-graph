@@ -1,0 +1,4 @@
+candidate   0% slower: regression 0%, inconclusive 0%, no material change 100%, improvement 0%
+candidate   5% slower: regression 0%, inconclusive 44%, no material change 56%, improvement 0%
+candidate  15% slower: regression 74%, inconclusive 26%, no material change 0%, improvement 0%
+candidate  35% slower: regression 100%, inconclusive 0%, no material change 0%, improvement 0%

@@ -1,0 +1,327 @@
+=== w1-scene-construction-smoke
+the counting allocator is verified
+skipping layer A in performance mode: scene_construction has no DOM-free work for it to time
+
+results in perf/evidence/phase5/results/perf-smoke/w1-scene-construction-smoke
+
+A correctness #0: ok, 16 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (1593 operations)
+B correctness #0: ok, 16 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (1593 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #0: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 180.00 us
+    construction.edges p50 90.00 us
+    construction.total p50 285.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 5.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #1: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 185.00 us
+    construction.edges p50 95.00 us
+    construction.total p50 285.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 5.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #2: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 5.00 us
+    construction.nodes p50 180.00 us
+    construction.edges p50 95.00 us
+    construction.total p50 280.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 5.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  B performance construction.create_scene: 5.00 to 10.0 us over 3 repetitions, 100% apart (under 50 timer steps, so coarse)
+  B performance construction.nodes: 180 to 185 us over 3 repetitions, 3% apart (under 50 timer steps, so coarse)
+  B performance construction.edges: 90.0 to 95.0 us over 3 repetitions, 6% apart (under 50 timer steps, so coarse)
+  B performance construction.total: 280 to 285 us over 3 repetitions, 2% apart
+  B performance teardown.drop_scene: 0.00 to 0.00 us over 3 repetitions, n/a apart (under 50 timer steps, so coarse)
+  B performance teardown.remove_host: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B performance teardown.total: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+
+every deterministic gate passed
+Layer B: no baseline for w1-scene-construction-smoke in the environment local-darwin-27.2.0-apple-m6-157.0.8103.39-p1, so nothing was compared. To make one: node perf/runner/promote-baseline.mjs --from perf/evidence/phase5/results/perf-smoke/w1-scene-construction-smoke --layer B --reason "..."
+
+=== w2-connector-rerouting-smoke
+the counting allocator is verified
+
+results in perf/evidence/phase5/results/perf-smoke/w2-connector-rerouting-smoke
+
+A correctness #0: ok, 10 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (2145 operations)
+B correctness #0: ok, 10 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (2145 operations)
+A performance #0: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.04 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+B performance #0: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 3.18 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+A performance #1: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.04 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+B performance #1: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 3.24 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+A performance #2: ok, 2 checkpoints passed, 0 failed
+    rust.connector_endpoints p50 0.04 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+B performance #2: ok, 2 checkpoints passed, 0 failed
+    mutation.move_node p50 3.29 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (2137 operations)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  A performance rust.connector_endpoints: 0.0394 to 0.0409 us over 3 repetitions, 4% apart
+  B performance mutation.move_node: 3.18 to 3.29 us over 3 repetitions, 3% apart
+
+every deterministic gate passed
+Layer A: no baseline for w2-connector-rerouting-smoke in the environment local-darwin-27.2.0-apple-m6-native-p1, so nothing was compared. To make one: node perf/runner/promote-baseline.mjs --from perf/evidence/phase5/results/perf-smoke/w2-connector-rerouting-smoke --layer A --reason "..."
+Layer B: no baseline for w2-connector-rerouting-smoke in the environment local-darwin-27.2.0-apple-m6-157.0.8103.39-p1, so nothing was compared. To make one: node perf/runner/promote-baseline.mjs --from perf/evidence/phase5/results/perf-smoke/w2-connector-rerouting-smoke --layer B --reason "..."
+
+=== w3-scene-lifecycle-smoke
+the counting allocator is verified
+skipping layer A in performance mode: scene_lifecycle has no DOM-free work for it to time
+
+results in perf/evidence/phase5/results/perf-smoke/w3-scene-lifecycle-smoke
+
+A correctness #0: ok, 16 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (1593 operations)
+B correctness #0: ok, 16 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (1593 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #0: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 180.00 us
+    construction.edges p50 105.00 us
+    construction.total p50 295.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 10.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #1: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 5.00 us
+    construction.nodes p50 180.00 us
+    construction.edges p50 95.00 us
+    construction.total p50 285.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 10.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+B performance #2: ok, 2 checkpoints passed, 0 failed
+    construction.create_scene p50 10.00 us
+    construction.nodes p50 175.00 us
+    construction.edges p50 95.00 us
+    construction.total p50 280.00 us
+    teardown.drop_scene p50 0.00 us
+    teardown.remove_host p50 5.00 us
+    teardown.total p50 5.00 us
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (1579 operations)
+    ok   dom_elements after teardown equal those before the build (delta 0)
+    ok   listeners after teardown equal those before the build (delta 0)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  B performance construction.create_scene: 5.00 to 10.0 us over 3 repetitions, 100% apart (under 50 timer steps, so coarse)
+  B performance construction.nodes: 175 to 180 us over 3 repetitions, 3% apart (under 50 timer steps, so coarse)
+  B performance construction.edges: 95.0 to 105 us over 3 repetitions, 11% apart (under 50 timer steps, so coarse)
+  B performance construction.total: 280 to 295 us over 3 repetitions, 5% apart
+  B performance teardown.drop_scene: 0.00 to 0.00 us over 3 repetitions, n/a apart (under 50 timer steps, so coarse)
+  B performance teardown.remove_host: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B performance teardown.total: 5.00 to 10.0 us over 3 repetitions, 100% apart (under 50 timer steps, so coarse)
+
+every deterministic gate passed
+Layer B: no baseline for w3-scene-lifecycle-smoke in the environment local-darwin-27.2.0-apple-m6-157.0.8103.39-p1, so nothing was compared. To make one: node perf/runner/promote-baseline.mjs --from perf/evidence/phase5/results/perf-smoke/w3-scene-lifecycle-smoke --layer B --reason "..."
+
+=== w4-interaction-small
+skipping layer A in performance mode: interaction has no DOM-free work for it to time
+layer B timed nothing in performance mode of interaction, so no result is kept
+
+results in perf/evidence/phase5/results/perf-smoke/w4-interaction-small
+
+A correctness #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+C correctness #0: ok, 312 checkpoints passed, 0 failed
+    cold_start.page_ready p50 46.88 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+B correctness #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+C performance #0: ok, 312 checkpoints passed, 0 failed
+    cold_start.page_ready p50 52.77 ms
+    interaction.drag.scale_50.latency p50 2.74 ms
+    interaction.drag.scale_50.input_delay p50 7.32 ms
+    cdp.drag.scale_50.round_trip p50 8.21 ms
+    interaction.pan.scale_50.latency p50 2.13 ms
+    interaction.pan.scale_50.input_delay p50 7.64 ms
+    cdp.pan.scale_50.round_trip p50 8.28 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.00 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.71 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.86 ms
+    interaction.drag.scale_100.latency p50 2.83 ms
+    interaction.drag.scale_100.input_delay p50 7.37 ms
+    cdp.drag.scale_100.round_trip p50 8.23 ms
+    interaction.pan.scale_100.latency p50 2.78 ms
+    interaction.pan.scale_100.input_delay p50 7.32 ms
+    cdp.pan.scale_100.round_trip p50 8.19 ms
+    interaction.wheel_zoom.scale_100.latency p50 3.89 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.53 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 24.44 ms
+    interaction.drag.scale_200.latency p50 2.35 ms
+    interaction.drag.scale_200.input_delay p50 7.42 ms
+    cdp.drag.scale_200.round_trip p50 8.21 ms
+    interaction.pan.scale_200.latency p50 2.29 ms
+    interaction.pan.scale_200.input_delay p50 7.47 ms
+    cdp.pan.scale_200.round_trip p50 8.19 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.71 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.13 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.00 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+C performance #1: ok, 312 checkpoints passed, 0 failed
+    cold_start.page_ready p50 46.23 ms
+    interaction.drag.scale_50.latency p50 2.52 ms
+    interaction.drag.scale_50.input_delay p50 7.30 ms
+    cdp.drag.scale_50.round_trip p50 8.30 ms
+    interaction.pan.scale_50.latency p50 2.28 ms
+    interaction.pan.scale_50.input_delay p50 7.54 ms
+    cdp.pan.scale_50.round_trip p50 8.30 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.48 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.92 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.83 ms
+    interaction.drag.scale_100.latency p50 2.56 ms
+    interaction.drag.scale_100.input_delay p50 7.45 ms
+    cdp.drag.scale_100.round_trip p50 8.21 ms
+    interaction.pan.scale_100.latency p50 2.68 ms
+    interaction.pan.scale_100.input_delay p50 7.38 ms
+    cdp.pan.scale_100.round_trip p50 8.18 ms
+    interaction.wheel_zoom.scale_100.latency p50 4.15 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.00 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 23.92 ms
+    interaction.drag.scale_200.latency p50 2.46 ms
+    interaction.drag.scale_200.input_delay p50 7.41 ms
+    cdp.drag.scale_200.round_trip p50 8.19 ms
+    interaction.pan.scale_200.latency p50 2.37 ms
+    interaction.pan.scale_200.input_delay p50 7.38 ms
+    cdp.pan.scale_200.round_trip p50 8.18 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.76 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.39 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.07 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+C performance #2: ok, 312 checkpoints passed, 0 failed
+    cold_start.page_ready p50 53.41 ms
+    interaction.drag.scale_50.latency p50 2.50 ms
+    interaction.drag.scale_50.input_delay p50 7.48 ms
+    cdp.drag.scale_50.round_trip p50 8.28 ms
+    interaction.pan.scale_50.latency p50 2.13 ms
+    interaction.pan.scale_50.input_delay p50 7.63 ms
+    cdp.pan.scale_50.round_trip p50 8.24 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.46 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.68 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.40 ms
+    interaction.drag.scale_100.latency p50 2.55 ms
+    interaction.drag.scale_100.input_delay p50 7.40 ms
+    cdp.drag.scale_100.round_trip p50 8.25 ms
+    interaction.pan.scale_100.latency p50 2.59 ms
+    interaction.pan.scale_100.input_delay p50 7.38 ms
+    cdp.pan.scale_100.round_trip p50 8.14 ms
+    interaction.wheel_zoom.scale_100.latency p50 3.97 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 22.88 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 23.68 ms
+    interaction.drag.scale_200.latency p50 2.39 ms
+    interaction.drag.scale_200.input_delay p50 7.47 ms
+    cdp.drag.scale_200.round_trip p50 8.28 ms
+    interaction.pan.scale_200.latency p50 2.25 ms
+    interaction.pan.scale_200.input_delay p50 7.35 ms
+    cdp.pan.scale_200.round_trip p50 8.22 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.61 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.20 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.14 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  C performance cold_start.page_ready: 46.2 to 53.4 ms over 3 repetitions, 16% apart
+  C performance interaction.drag.scale_50.latency: 2.50 to 2.74 ms over 3 repetitions, 9% apart
+  C performance interaction.drag.scale_50.input_delay: 7.30 to 7.48 ms over 3 repetitions, 2% apart
+  C performance cdp.drag.scale_50.round_trip: 8.21 to 8.30 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_50.latency: 2.13 to 2.28 ms over 3 repetitions, 7% apart
+  C performance interaction.pan.scale_50.input_delay: 7.54 to 7.64 ms over 3 repetitions, 1% apart
+  C performance cdp.pan.scale_50.round_trip: 8.24 to 8.30 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_50.latency: 3.00 to 3.48 ms over 3 repetitions, 16% apart
+  C performance interaction.wheel_zoom.scale_50.input_delay: 23.7 to 23.9 ms over 3 repetitions, 1% apart
+  C performance cdp.wheel_zoom.scale_50.round_trip: 24.4 to 24.9 ms over 3 repetitions, 2% apart
+  C performance interaction.drag.scale_100.latency: 2.55 to 2.83 ms over 3 repetitions, 11% apart
+  C performance interaction.drag.scale_100.input_delay: 7.37 to 7.45 ms over 3 repetitions, 1% apart
+  C performance cdp.drag.scale_100.round_trip: 8.21 to 8.25 ms over 3 repetitions, 0% apart
+  C performance interaction.pan.scale_100.latency: 2.59 to 2.78 ms over 3 repetitions, 7% apart
+  C performance interaction.pan.scale_100.input_delay: 7.32 to 7.38 ms over 3 repetitions, 1% apart
+  C performance cdp.pan.scale_100.round_trip: 8.14 to 8.19 ms over 3 repetitions, 0% apart
+  C performance interaction.wheel_zoom.scale_100.latency: 3.89 to 4.15 ms over 3 repetitions, 7% apart
+  C performance interaction.wheel_zoom.scale_100.input_delay: 22.9 to 23.5 ms over 3 repetitions, 3% apart
+  C performance cdp.wheel_zoom.scale_100.round_trip: 23.7 to 24.4 ms over 3 repetitions, 3% apart
+  C performance interaction.drag.scale_200.latency: 2.35 to 2.46 ms over 3 repetitions, 5% apart
+  C performance interaction.drag.scale_200.input_delay: 7.41 to 7.47 ms over 3 repetitions, 1% apart
+  C performance cdp.drag.scale_200.round_trip: 8.19 to 8.28 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_200.latency: 2.25 to 2.37 ms over 3 repetitions, 6% apart
+  C performance interaction.pan.scale_200.input_delay: 7.35 to 7.47 ms over 3 repetitions, 2% apart
+  C performance cdp.pan.scale_200.round_trip: 8.18 to 8.22 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_200.latency: 3.61 to 3.76 ms over 3 repetitions, 4% apart
+  C performance interaction.wheel_zoom.scale_200.input_delay: 23.1 to 23.4 ms over 3 repetitions, 1% apart
+  C performance cdp.wheel_zoom.scale_200.round_trip: 24.0 to 24.1 ms over 3 repetitions, 1% apart
+
+every deterministic gate passed
+Layer C: no baseline for w4-interaction-small in the environment local-darwin-27.2.0-apple-m6-157.0.8103.39-p1, so nothing was compared. To make one: node perf/runner/promote-baseline.mjs --from perf/evidence/phase5/results/perf-smoke/w4-interaction-small --layer C --reason "..."
+
+every deterministic gate passed
+(statistical verdicts report only until a baseline has 10 runs)

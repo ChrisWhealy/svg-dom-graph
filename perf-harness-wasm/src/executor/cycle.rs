@@ -103,6 +103,15 @@ impl Run<'_> {
     }
 
     // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    /// A deliberate slowdown inside the timed interval, to prove that a comparison notices a library that got slower.
+    pub(super) fn slow_down(&self) {
+        if self.slowdown_us > 0.0 {
+            let until = self.now_ms() + self.slowdown_us / 1000.0;
+            while self.now_ms() < until {}
+        }
+    }
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
     fn on_build_complete(&mut self) {
         if self.measuring && self.timing_on && self.cycle_construction_us > 0.0 {
             self.samples

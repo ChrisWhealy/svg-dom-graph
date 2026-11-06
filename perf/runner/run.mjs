@@ -3,6 +3,7 @@
 //
 //   node perf/runner/run.mjs <manifest.toml> [--mode correctness|performance|endurance|all] [--layers a,b,c]
 //                            [--repetitions N] [--out-dir DIR] [--no-build]
+//                            [--inject-slowdown-us N] [--inject-leak none|bytes|closure|library_watch]
 //
 // Each repetition of Layer B is a separate Chrome process with its own profile, so repetitions do not share a page, a heap or
 // a JIT. Every result is checked against `perf/schemas/result.schema.json` before it is written, and a result that does not
@@ -36,6 +37,8 @@ const parseArguments = argv => {
     else if (arg === '--repetitions') options.repetitions = Number(argv[++i])
     else if (arg === '--out-dir') options.outDir = argv[++i]
     else if (arg === '--no-build') options.build = false
+    else if (arg === '--inject-slowdown-us') options.slowdownUs = Number(argv[++i])
+    else if (arg === '--inject-leak') options.leak = argv[++i]
     else if (arg.startsWith('--')) throw new Error(`unknown option ${arg}`)
     else options.manifest = arg
   }
@@ -94,6 +97,13 @@ const gesturePlan =
   options.layers.includes('c') && interactive
     ? JSON.parse(must(run(binary, ['gestures', manifestPath]), 'planning the gestures').stdout)
     : null
+
+// A candidate changed on purpose, to prove that the comparison and the gates notice a change. It only reaches Layer B, where
+// the library is timed, and the result says so, so that it can never be taken for a measurement of the library.
+const injected = options.slowdownUs > 0 || (options.leak && options.leak !== 'none')
+const injection = injected ? { slowdown_us: options.slowdownUs ?? 0, leak: options.leak ?? 'none' } : null
+if (injected && options.layers.some(layer => layer !== 'b'))
+  throw new Error('an injected candidate runs in Layer B only: use --layers b')
 
 const modes = options.mode === 'all' ? manifest.execution.modes : [options.mode]
 const repetitionsFor = mode => (mode === 'correctness' ? 1 : (options.repetitions ?? manifest.execution.repetitions))
@@ -170,6 +180,13 @@ const withholdAllocatorFigures = outcome => {
 }
 
 const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
+  // A valid performance run that timed nothing has no figure to keep, and the schema asks a performance result for its samples.
+  // This is a layer that has nothing to time in this workload, such as Layer B for the interaction workload, whose timings are
+  // taken with real input in Layer C. It is said, and it is not a result.
+  if (mode === 'performance' && outcome.status === 'ok' && Object.keys(outcome.samples ?? {}).length === 0) {
+    if (repetition === 0) console.log(`layer ${layer} timed nothing in performance mode of ${manifest.workload}, so no result is kept`)
+    return
+  }
   const runId = `${manifestId}-${layer}-${mode}-r${repetition}-${new Date().toISOString().replace(/[-:.]/g, '').slice(0, 15)}`
   const keepsSamples = mode === 'performance' || mode === 'endurance' || mode === 'recovery'
   const samplesFile = path.join(outDir, `${runId}.samples.ndjson`)
@@ -201,6 +218,7 @@ const keep = (layer, mode, repetition, outcome, crossOriginIsolated) => {
     mode,
     status: outcome.status,
     ...(outcome.error ? { error: outcome.error } : {}),
+    ...(injection ? { injection } : {}),
     metrics: outcome.metrics,
     checkpoints_passed: outcome.checkpoints_passed,
     checkpoints_failed: outcome.checkpoints_failed,
@@ -228,7 +246,12 @@ for (const mode of modes) {
     continue
   }
   for (let repetition = 0; repetition < repetitionsFor(mode); repetition++) {
-    if (options.layers.includes('a') && (mode === 'correctness' || mode === 'performance')) {
+    // Layer A times the library's own DOM-free geometry, which only the rerouting workload has. In another workload's performance
+    // mode it has nothing to time, and a run with no figure is not a result.
+    const nativeTimesNothing = mode === 'performance' && manifest.workload !== 'connector_rerouting'
+    if (nativeTimesNothing && repetition === 0 && options.layers.includes('a'))
+      console.log(`skipping layer A in performance mode: ${manifest.workload} has no DOM-free work for it to time`)
+    if (options.layers.includes('a') && !nativeTimesNothing && (mode === 'correctness' || mode === 'performance')) {
       const file = path.join(outDir, `layer-a-${mode}-${repetition}.outcome.json`)
       must(run(binary, ['native', manifestPath, '--mode', mode, '--out', file]), `the native ${mode} run`)
       keep('A', mode, repetition, JSON.parse(fs.readFileSync(file, 'utf8')), null)
@@ -296,7 +319,9 @@ for (const mode of modes) {
       try {
         const outcome = JSON.parse(
           await page.evaluate(
-            `window.perfHarness.run_workload(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(mode)}, ${JSON.stringify(expected)})`
+            injection
+              ? `window.perfHarness.run_candidate(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(mode)}, ${JSON.stringify(expected)}, ${injection.slowdown_us}, ${JSON.stringify(injection.leak)})`
+              : `window.perfHarness.run_workload(${JSON.stringify(canonicalManifest)}, ${JSON.stringify(mode)}, ${JSON.stringify(expected)})`
           )
         )
         if (allocatorVerified === false) withholdAllocatorFigures(outcome)
