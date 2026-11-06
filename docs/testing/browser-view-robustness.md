@@ -53,3 +53,9 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - a `MutationObserver` watches the content layer and everything beneath it, so no node, connector, label or marker is ever rewritten
   - a burst of wheel and pan events inside one frame writing nothing until that frame, and then exactly once
   - every node's position and every connector's path being exactly what they were after zooming and panning
+- the content group that holds everything a `Scene` draws, in `tests/drag/content_group_hook.rs`:
+  - one `<g class="svg-dom-graph-content">` for each scene, which holds its nodes
+  - an element an application appends to it follows pan and zoom exactly as a node does, and survives drawing, moving, connecting and setting values
+  - a node drawn after the application's element is painted over it
+  - a second scene on one `<svg>` adds a second group
+  - a thousand commits through one data node, with a write to twelve application slots beside each, add no elements

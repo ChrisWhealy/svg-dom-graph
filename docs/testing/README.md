@@ -24,6 +24,7 @@
 | `cargo test -p perf-harness-wasm` | The performance harness's counting allocator and parsers. The browser runner itself is driven by `node perf/runner/run.mjs`. See [`perf/README.md`](../../perf/README.md) |
 | `node perf/lib/test-frames.mjs`, `node perf/runner/test-walk-verdict.mjs` and `node perf/lib/test-contracts.mjs` | The Layer C frame attribution rule, the verdict of a gallery walk, and the fault contracts against the code they cite. No browser. See [`perf/README.md`](../../perf/README.md) |
 | `node perf/lib/test-regression.mjs` | The statistical comparison of a candidate with a baseline, its reports and the promotion of baselines, on synthetic runs with the real binary. A clean fixture is no regression, an injected slowdown is one, and every refusal refuses. No browser. See [`perf/README.md`](../../perf/README.md) |
+| `node dess/s0/prototype/test-prototype.mjs` and `node dess/s0/prototype/qualify.mjs` | The discrete-event service simulator's stage S0 prototype against the design's known answers, and the 500-seed qualification of its generator. No browser. See [`dess/s0/README.md`](../../dess/s0/README.md) |
 | `node perf/runner/selftest-layer-c.mjs`, `selftest-gallery.mjs`, `selftest-recovery.mjs`, `selftest-regression.mjs` and `node perf/runner/gallery-sweep.mjs` | The Layer C, gallery and recovery self-tests and the gallery sweep, which drive Chrome and are not run by CI yet. See [`perf/README.md`](../../perf/README.md) |
 
 ## Error handling during testing

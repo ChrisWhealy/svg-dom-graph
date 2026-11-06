@@ -35,6 +35,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Gallery walk tests have "pass", "inconclusive" and "fail" outcomes (`4857001`)
 - Perf Harness: Phase 4: Recovery and endurance testing under deliberate failures (`778ccbc`)
 - Perf Harness: Phase 5: CI integration, baseline promotion and statistical regression reporting (`ae4c4b1`)
+- Discrete-Event Service Simulator (DESS): S0 implementation (``)
 
 ### Changed
 
@@ -48,7 +49,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Tighten JSON Schema validation (`e54ca79`)
 - Perf Harness: Treat WASM memory usage as a high water mark that does not need to shrink after teardown (`4365961`)
 - Perf Harness: Close gap caused by a helper listener not running when a once listener stops propagation on itself (`a6beaff`)
-- Refactor `perf/README` into multiple chapters (``)
+- Refactor `perf/README` into multiple chapters (`65511d1`)
 
 ### Fixed
 

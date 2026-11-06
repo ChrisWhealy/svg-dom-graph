@@ -118,3 +118,8 @@ These tests belong to the browser integration tests in `tests/drag/`; see [Brows
   - the cells' text and accessible names following the new values, for a grid and for a single value
   - rejecting a different width, a different count, an operator node's result, and a node of another kind
   - the accessible names, including a row or element label, surviving the replacement
+- a failed DOM write while a data node is drawn or given new values, in `tests/drag/data_node_failure.rs`:
+  - every one of `add_data_node`'s 208 counted writes is made to fail in turn, and each leaves the scene as it was and repeats to the same node
+  - every one of `set_data_values`'s 8 counted writes for an 8-cell grid is made to fail in turn, and each leaves some cells rewritten
+    - repeating the same call rewrites every cell
+    - asking for the old values instead does not, which is recorded in an ignored test until the library marks the cells stale

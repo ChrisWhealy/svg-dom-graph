@@ -6,73 +6,10 @@
 //! failure between the two relationship clauses left one end named and not the other, and repeating the call added a second
 //! connector beside the stray one.
 
-use crate::common::{check, make_svg, nth_group};
+use crate::common::{NthWriteFails, check, make_svg, nth_group};
 use svg_dom::root::utils::{Point, Size};
 use svg_dom_graph::scene::Scene;
 use wasm_bindgen_test::wasm_bindgen_test;
-
-/// Counts the DOM writes that can fail, and makes the nth one throw once, while it is alive. The original methods are put
-/// back when it is dropped.
-struct NthWriteFails;
-
-impl NthWriteFails {
-    fn install() -> Result<Self, String> {
-        js_sys::Function::new_no_args(
-            "const wrap = (proto, name) => {
-                 const key = '__original_' + name;
-                 if (!proto[key]) { proto[key] = proto[name]; }
-                 proto[name] = function (...args) {
-                     const state = window.__nthWrite;
-                     if (state) {
-                         state.counted += 1;
-                         if (state.counted === state.fail) { throw new Error('injected failure of write ' + state.fail + ', ' + name); }
-                     }
-                     return proto[key].apply(this, args);
-                 };
-             };
-             window.__nthWrite = { counted: 0, fail: 0 };
-             wrap(Element.prototype, 'setAttribute');
-             wrap(Element.prototype, 'setAttributeNS');
-             wrap(Node.prototype, 'appendChild');
-             wrap(Node.prototype, 'insertBefore');
-             wrap(Document.prototype, 'createElementNS');
-             wrap(Document.prototype, 'createElement');",
-        )
-        .call0(&wasm_bindgen::JsValue::NULL)
-        .map_err(|e| format!("{e:?}"))?;
-        Ok(Self)
-    }
-
-    /// Starts counting from nothing, and makes the `fail`th write throw. Zero fails none, and only counts.
-    fn arm(fail: u32) -> Result<(), String> {
-        js_sys::Function::new_no_args(&format!("window.__nthWrite = {{ counted: 0, fail: {fail} }};"))
-            .call0(&wasm_bindgen::JsValue::NULL)
-            .map(|_| ())
-            .map_err(|e| format!("{e:?}"))
-    }
-
-    /// How many writes were counted since `arm`, and stops counting.
-    fn disarm() -> Result<u32, String> {
-        let counted =
-            js_sys::Function::new_no_args("const c = window.__nthWrite.counted; window.__nthWrite = null; return c;")
-                .call0(&wasm_bindgen::JsValue::NULL)
-                .map_err(|e| format!("{e:?}"))?;
-        counted.as_f64().map(|c| c as u32).ok_or_else(|| "no count".to_owned())
-    }
-}
-
-impl Drop for NthWriteFails {
-    fn drop(&mut self) {
-        let _ = js_sys::Function::new_no_args(
-            "window.__nthWrite = null;
-             for (const [proto, name] of [[Element.prototype, 'setAttribute'], [Element.prototype, 'setAttributeNS'], [Node.prototype, 'appendChild'], [Node.prototype, 'insertBefore'], [Document.prototype, 'createElementNS'], [Document.prototype, 'createElement']]) {
-                 const key = '__original_' + name;
-                 if (proto[key]) { proto[name] = proto[key]; }
-             }",
-        )
-        .call0(&wasm_bindgen::JsValue::NULL);
-    }
-}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn two_nodes(id: &str) -> Result<(Scene, svg_dom_graph::NodeId, svg_dom_graph::NodeId), String> {
@@ -87,6 +24,7 @@ fn two_nodes(id: &str) -> Result<(Scene, svg_dom_graph::NodeId, svg_dom_graph::N
     Ok((scene, a, b))
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Every element under `#id`, the number of connectors, and the accessible name and tooltip of each of the two nodes.
 #[derive(Debug, PartialEq)]
 struct Picture {
@@ -95,6 +33,7 @@ struct Picture {
     names: [(Option<String>, Option<String>); 2],
 }
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn picture(id: &str) -> Result<Picture, String> {
     let document = web_sys::window().and_then(|w| w.document()).ok_or("no document")?;
     let count = |selector: &str| -> Result<u32, String> {

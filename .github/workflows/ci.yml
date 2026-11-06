@@ -188,6 +188,13 @@ jobs:
           cargo build --release -p perf-harness
           node perf/lib/test-regression.mjs
 
+      # The discrete-event service simulator's stage S0 prototype, which needs no browser. It reproduces the design's known answers,
+      # and the seed-qualification gate that froze the generator's parameters, so a change to either cannot pass unnoticed.
+      - name: Simulator prototype gives the design's known answers and qualifies its seeds
+        run: |
+          node dess/s0/prototype/test-prototype.mjs
+          node dess/s0/prototype/qualify.mjs
+
   # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic
   # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
   # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it

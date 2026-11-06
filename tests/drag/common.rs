@@ -401,3 +401,67 @@ impl Drop for FailingWrites {
         .call0(&wasm_bindgen::JsValue::NULL);
     }
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Counts the DOM writes that can fail, and makes the nth one throw once, while it is alive. The original methods are put
+/// back when it is dropped.
+pub struct NthWriteFails;
+
+impl NthWriteFails {
+    pub fn install() -> Result<Self, String> {
+        js_sys::Function::new_no_args(
+            "const wrap = (proto, name) => {
+                 const key = '__original_' + name;
+                 if (!proto[key]) { proto[key] = proto[name]; }
+                 proto[name] = function (...args) {
+                     const state = window.__nthWrite;
+                     if (state) {
+                         state.counted += 1;
+                         if (state.counted === state.fail) { throw new Error('injected failure of write ' + state.fail + ', ' + name); }
+                     }
+                     return proto[key].apply(this, args);
+                 };
+             };
+             window.__nthWrite = { counted: 0, fail: 0 };
+             wrap(Element.prototype, 'setAttribute');
+             wrap(Element.prototype, 'setAttributeNS');
+             wrap(Node.prototype, 'appendChild');
+             wrap(Node.prototype, 'insertBefore');
+             wrap(Document.prototype, 'createElementNS');
+             wrap(Document.prototype, 'createElement');",
+        )
+        .call0(&wasm_bindgen::JsValue::NULL)
+        .map_err(|e| format!("{e:?}"))?;
+        Ok(Self)
+    }
+
+    /// Starts counting from nothing, and makes the `fail`th write throw. Zero fails none, and only counts.
+    pub fn arm(fail: u32) -> Result<(), String> {
+        js_sys::Function::new_no_args(&format!("window.__nthWrite = {{ counted: 0, fail: {fail} }};"))
+            .call0(&wasm_bindgen::JsValue::NULL)
+            .map(|_| ())
+            .map_err(|e| format!("{e:?}"))
+    }
+
+    /// How many writes were counted since `arm`, and stops counting.
+    pub fn disarm() -> Result<u32, String> {
+        let counted =
+            js_sys::Function::new_no_args("const c = window.__nthWrite.counted; window.__nthWrite = null; return c;")
+                .call0(&wasm_bindgen::JsValue::NULL)
+                .map_err(|e| format!("{e:?}"))?;
+        counted.as_f64().map(|c| c as u32).ok_or_else(|| "no count".to_owned())
+    }
+}
+
+impl Drop for NthWriteFails {
+    fn drop(&mut self) {
+        let _ = js_sys::Function::new_no_args(
+            "window.__nthWrite = null;
+             for (const [proto, name] of [[Element.prototype, 'setAttribute'], [Element.prototype, 'setAttributeNS'], [Node.prototype, 'appendChild'], [Node.prototype, 'insertBefore'], [Document.prototype, 'createElementNS'], [Document.prototype, 'createElement']]) {
+                 const key = '__original_' + name;
+                 if (proto[key]) { proto[name] = proto[key]; }
+             }",
+        )
+        .call0(&wasm_bindgen::JsValue::NULL);
+    }
+}
