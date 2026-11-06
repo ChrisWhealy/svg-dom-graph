@@ -145,6 +145,23 @@ fn define_arrow_marker(svg: &SvgRoot, marker_id: &str) -> Result<SvgMarker, Erro
 ///
 /// Keep a handle alive somewhere that outlives the function that built it — for example, in a `thread_local!` for the
 /// page's whole lifetime, as `demo-app`'s own `SCENE` does.
+///
+/// # Keep the host `<svg>` in the document
+///
+/// A scene is supported only while its host `<svg>` is part of the document. Removing the host while a `Scene` is alive,
+/// and using that scene before the host is put back, is not a supported state, so no guarantee is given for it.
+///
+/// This is what has been observed, and it is not a promise. With the host removed, `add_node`, `move_node`, `add_edge`,
+/// `make_draggable` and `set_edge_label` all succeeded in a Chrome test, and once the host was put back the scene read back
+/// exactly as a scene that had stayed attached.
+///
+/// An operation that measures anything is not covered by that observation. A detached element has no layout, so a
+/// measurement such as a title's size or the screen transform that pointer handling needs may fail or report nothing.
+/// Reattach the host before relying on such an operation, and treat the result of any operation made while detached as
+/// unspecified.
+///
+/// Dropping the last handle while the host is removed is supported. The scene's listeners are released and the page is as
+/// it was before the scene.
 #[derive(Clone)]
 pub struct Scene {
     inner: Rc<RefCell<SceneInner>>,
