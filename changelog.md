@@ -24,7 +24,8 @@ Entries up to 0.2.47 also hold demo changes, from before the two were separated.
 - Add a Petri Net demo (`eb06cfa`)
 - Add a Tarjan's Strongly Connected Components demo (`78e3e2c`)
 - CI performance measurement harness
-- Doc only: `Scene` now says that its host `<svg>` must stay in the document (``)
+- Doc only: `Scene` now says that its host `<svg>` must stay in the document (`0dad3f1`)
+- Shell script to run `cargo clippy` against all packages (``)
 
 ## Changed
 
