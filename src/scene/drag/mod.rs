@@ -5,6 +5,7 @@ mod handlers;
 mod install_guard;
 mod observer;
 mod pointer_coalescer;
+mod style_restore;
 
 use super::{Scene, client_to_user_space};
 use crate::{error::Error, model::node::NodeId};
@@ -16,6 +17,7 @@ pub use observer::{DragObserverHandle, DragPhase};
 use observer::{ObserverSlot, WeakObserver};
 use pointer_coalescer::PointerCoalescer;
 use std::{cell::Cell, rc::Rc};
+use style_restore::DragStyleRestore;
 use svg_dom::root::utils::Rect;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -103,6 +105,12 @@ impl Scene {
     /// Pointer-based dragging is the only interaction mechanism offered here: not a complete WCAG-compliant way to
     /// reposition a node. The keyboard equivalent required by WCAG 2.1.1 has not been implemented, neither has the WCAG
     /// 2.5.single-pointer alternative.
+    ///
+    /// # Dropping the scene during a drag
+    ///
+    /// Dropping the last [`Scene`] handle between a pointer down and a pointer up ends the drag. The node stops moving, its
+    /// listeners are released, and the grabbing cursor is taken off it. The node's `<g>` stays in the document for as long
+    /// as the host `<svg>` does.
     ///
     /// # Errors
     ///
@@ -229,6 +237,7 @@ impl Scene {
             inner_weak.clone(),
             drag_start.clone(),
             coalescer.clone(),
+            DragStyleRestore::new(group.as_element().clone().into(), drag_start.clone()),
         ))?;
         let confinement = handlers::Confinement {
             bounds: options.bounds,

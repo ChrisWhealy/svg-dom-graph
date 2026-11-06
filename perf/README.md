@@ -698,7 +698,7 @@ fault point and what it expects (`nothing_committed`, `partly_committed` or `und
 | `drag_install` | `make_draggable_with` | Nothing committed, and a failed call can be retried | `drag/mod.rs` (public) |
 | `scheduled_frame` | A view change written in a frame | Partly committed. The view changes at once and the write waits for a frame. A refused frame, or a failed write, is tried again by the next event | `view_input/frame.rs`, `frame_request.rs` |
 | `teardown` | Dropping the last handle with a frame pending | The frame is cancelled before its closure goes, the waiting view is written, the listeners are released | `frame_request.rs`, `scene_inner.rs` |
-| `mid_drag_teardown` | Dropping it between a pointer down and up | The handlers hold the scene weakly and do nothing once it is gone | `drag/handlers.rs` |
+| `mid_drag_teardown` | Dropping it between a pointer down and up | The handlers hold the scene weakly and do nothing once it is gone, and the grabbing cursor is taken off the node | `drag/handlers.rs`, `drag/style_restore.rs` |
 | `edge_construction` | `add_edge_with` | Nothing committed. Adding an edge is a transaction: no path left behind, neither name changed, the edge not in the graph. **This was undocumented, and not true, until the sweep found it and the library was fixed (below)** | `connector/mod.rs` (public) |
 | `removed_host` | Using a scene whose `<svg>` was removed | **Nothing** | none |
 
@@ -730,24 +730,31 @@ Every documented contract held, at every DOM call (`evidence/phase4/results/w5-r
 | `edge_construction` | 10, one at each DOM call of `add_edge_with` | Each reported, each left nothing, each retry reached the reference |
 | `scheduled_frame` | 20, ten refused and ten whose write failed | The view changed at once, the document was stale, and the next event caught it up |
 | `teardown` | 10 | One frame cancelled each time, the view written, none ran late, no listener left |
-| `mid_drag_teardown` | 10 | Nothing moved after the drop, no error, page back to baseline |
+| `mid_drag_teardown` | 10 | Nothing moved after the drop, no error, no grabbing cursor left on the node, page back to baseline |
 
-Three things nothing documents are in `findings.json`, and none is a pass or a failure of a contract. A fourth was found first, and was
-fixed.
+Two things nothing documents are in `findings.json`, and neither is a pass or a failure of a contract. Two more were found, and were
+fixed in the library (below).
 
 1. **A removed host is not an error.** With the `<svg>` out of the document, `add_node`, `move_node`, `add_edge_with`,
    `make_draggable_with` and `set_edge_label` all succeeded, and put back, the scene agreed with the model.
-2. **A node dragged when its scene is dropped keeps `cursor: grabbing`** for as long as the host stays in the document. The documented
-   contract held, and what the node is left wearing is not documented.
-3. **A failed DOM call that returns an object costs wasm-bindgen one externref slot for good.** `createElementNS`, `appendChild` and
+2. **A failed DOM call that returns an object costs wasm-bindgen one externref slot for good.** `createElementNS`, `appendChild` and
    `getBBox` do, and `setAttribute` and `addEventListener`, which return nothing, do not. Over 40 failures of each, the table held
    exactly 40 more slots filled with `undefined` that nothing frees, and none more for the others. The harness's own web-sys calls
    lose them the same way, so it is in the generated glue (wasm-bindgen 0.2.129) and not in the library. Its cost is that the table, and the
    free list beside it, grow for as long as failures happen.
 
-The third was found by the endurance run, which is what it is for.
+The second was found by the endurance run, which is what it is for.
 
-#### The finding that was fixed: `add_edge_with` was not a transaction
+#### A finding that was fixed: a dragged node kept `cursor: grabbing`
+
+With the last `Scene` handle dropped between a pointer down and a pointer up, the node stopped moving, its listeners were released, and
+no handler failed, but the node kept `cursor: grabbing` for as long as the host stayed in the document, since the pointer-up handler
+that clears it had been released with the scene. The pointer-down handler now owns a guard (`DragStyleRestore`) that puts the idle style
+back as the listener is released. `make_draggable_with` documents it. The Layer C scenario now judges it (`grabbing_cursor_left`), so
+`mid_drag_teardown` is a contract with nothing left over, and a browser test, `dropping_the_scene_mid_drag_clears_the_grabbing_cursor`,
+fails on the library without the guard.
+
+#### A finding that was fixed: `add_edge_with` was not a transaction
 
 The first sweep of `edge_construction`, which nothing documented, found that of its 10 DOM calls a failure at the first four left
 nothing, a failure at the next five (the path's attributes, and the first end's name) left a stray connector in the document, and a

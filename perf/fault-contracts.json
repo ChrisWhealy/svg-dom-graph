@@ -93,9 +93,9 @@
       "operation": "Dropping the last Scene handle between a pointer down and a pointer up",
       "contract": "nothing_committed",
       "documented": "code",
-      "says": "The pointer handlers hold only weak references to the scene and upgrade them when they run, so once the scene is gone a handler that runs finds nothing and returns. After the host is removed the page is as it was before the scene. What a handler leaves on the dragged node (a cursor style, say) while the scene is dropped is not said.",
+      "says": "The pointer handlers hold only weak references to the scene and upgrade them when they run, so once the scene is gone a handler that runs finds nothing and returns. After the host is removed the page is as it was before the scene. The grabbing cursor is taken off the dragged node when the scene is dropped, because the pointer-down handler owns a guard that puts the idle style back as it is released. The node's <g> stays in the document for as long as the host does.",
       "retry": "Not applicable.",
-      "sources": ["src/scene/drag/handlers.rs:1-13"]
+      "sources": ["src/scene/drag/handlers.rs:1-13", "src/scene/drag/mod.rs:109-114", "src/scene/drag/style_restore.rs:4-12"]
     },
     {
       "id": "removed_host",

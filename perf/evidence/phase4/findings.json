@@ -76,15 +76,5 @@
       "agrees_with_the_model_when_back": true,
       "first_differences": []
     }
-  },
-  "C:mid_drag_teardown": {
-    "point": "mid_drag_teardown",
-    "contract": "undocumented",
-    "summary": "what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style \"cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;\" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its baseline once the host was removed.",
-    "details": {
-      "runs": 10,
-      "runs_with_the_style_left": 10,
-      "style": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
-    }
   }
 }

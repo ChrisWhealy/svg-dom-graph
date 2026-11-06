@@ -21,7 +21,7 @@ ok   label_update: src/scene/connector/edge_label.rs:329-334 is in a file of 481
 ok   drag_install: it is called documented exactly when its contract is not "undocumented" (nothing_committed, public)
 ok   drag_install: a documented contract cites where
 ok   drag_install: a partly committed contract names the sections that differ and the retry
-ok   drag_install: src/scene/drag/mod.rs:125-129 is in a file of 294 lines
+ok   drag_install: src/scene/drag/mod.rs:125-129 is in a file of 303 lines
 ok   edge_construction: it is called documented exactly when its contract is not "undocumented" (nothing_committed, public)
 ok   edge_construction: a documented contract cites where
 ok   edge_construction: a partly committed contract names the sections that differ and the retry
@@ -42,7 +42,9 @@ ok   teardown: src/scene/scene_inner.rs:107-115 is in a file of 841 lines
 ok   mid_drag_teardown: it is called documented exactly when its contract is not "undocumented" (nothing_committed, code)
 ok   mid_drag_teardown: a documented contract cites where
 ok   mid_drag_teardown: a partly committed contract names the sections that differ and the retry
-ok   mid_drag_teardown: src/scene/drag/handlers.rs:1-13 is in a file of 289 lines
+ok   mid_drag_teardown: src/scene/drag/handlers.rs:1-13 is in a file of 292 lines
+ok   mid_drag_teardown: src/scene/drag/mod.rs:109-114 is in a file of 303 lines
+ok   mid_drag_teardown: src/scene/drag/style_restore.rs:4-12 is in a file of 33 lines
 ok   removed_host: it is called documented exactly when its contract is not "undocumented" (undocumented, none)
 ok   removed_host: a documented contract cites where
 ok   removed_host: a partly committed contract names the sections that differ and the retry

@@ -13,7 +13,7 @@
 
 use super::{
     DragState, GRAB_STYLE, GRABBING_STYLE, client_to_user_space, collision_policy::CollisionPolicy,
-    drag_start::DragStart, observer::DragPhase, pointer_coalescer::PointerCoalescer,
+    drag_start::DragStart, observer::DragPhase, pointer_coalescer::PointerCoalescer, style_restore::DragStyleRestore,
 };
 use crate::{
     geometry::{clamp_to_bounds, invert_matrix, view::ViewTransform},
@@ -45,8 +45,11 @@ pub(super) fn pointerdown(
     inner_weak: Weak<RefCell<SceneInner>>,
     drag_start: DragState,
     coalescer: PointerCoalescer,
+    style_restore: DragStyleRestore,
 ) -> impl FnMut(PointerEvent) + 'static {
     move |evt| {
+        // Owned here so that it is dropped with this listener. See `DragStyleRestore`.
+        let _ = &style_restore;
         // Ignores a pointerdown while a drag is already active. Otherwise a second pointer touching this
         // element mid-drag would silently steal it. It would overwrite the first pointer's `DragStart` before
         // that pointer's own pointerup/pointercancel ever fires. Also ignores anything but the primary button.

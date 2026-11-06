@@ -338,8 +338,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -350,8 +351,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -362,8 +364,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -374,8 +377,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -386,8 +390,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -398,8 +403,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -410,8 +416,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -422,8 +429,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -434,8 +442,9 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  },
  {
   "point": "mid_drag_teardown",
@@ -446,7 +455,8 @@
   "listeners_after_the_drop": 0,
   "page_errors": [],
   "page_back_to_baseline": true,
+  "grabbing_cursor_left": false,
   "style_while_dragging": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;",
-  "style_after_the_drop_and_the_pointer_up": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
+  "style_after_the_drop_and_the_pointer_up": "touch-action: none; user-select: none; -webkit-user-select: none;"
  }
 ]

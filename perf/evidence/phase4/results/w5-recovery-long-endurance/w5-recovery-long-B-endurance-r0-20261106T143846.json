@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-B-endurance-r0-20261106T135740",
-  "started_at": "2026-11-06T13:57:40.806Z",
+  "run_id": "w5-recovery-long-B-endurance-r0-20261106T143846",
+  "started_at": "2026-11-06T14:38:46.968Z",
   "repetition": 0,
   "sequence_position": 0,
   "environment": {
@@ -17,14 +17,14 @@
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
-    "crate_version": "0.2.47",
-    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
+    "crate_version": "0.2.48",
+    "git_sha": "69c816b69416c1f2d827c7ca5d95bd01d76a26fa",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
-    "id": "w5-recovery-small",
-    "sha256": "1342e8442b70498bbea766864717fc1856dcd897fe4e8529cadde0ef59c6551d",
+    "id": "w5-recovery-long",
+    "sha256": "c14e2f9654f83c91500df3da5937fd1895598d60cbf5331aee40bf68d3ff170e",
     "operation_stream_scope": "full",
     "operation_stream_sha256": "65798ec325343d0fcd8cc405ca965e2567f7b68cb4ec24978fef72f0b6f56a5c",
     "canonical": {
@@ -39,13 +39,11 @@
       },
       "execution": {
         "modes": [
-          "correctness",
-          "recovery",
           "endurance"
         ],
-        "warmup_iterations": 5,
-        "measurement_iterations": 30,
-        "repetitions": 3
+        "warmup_iterations": 10,
+        "measurement_iterations": 190,
+        "repetitions": 2
       },
       "measurement": {
         "capture_dom_counts": true,
@@ -117,7 +115,7 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 26,
+      "value": 144,
       "mechanism": "slots of wasm-bindgen's externref table that hold undefined and are never freed, counted by reading the table before the first cycle and after the last"
     },
     {
@@ -126,7 +124,7 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 30,
+      "value": 190,
       "mechanism": "the counting allocator and the document, read after both scenes of a cycle were torn down"
     },
     {
@@ -162,38 +160,38 @@
       "status": "measured",
       "unit": "count",
       "kind": "count",
-      "value": 35,
+      "value": 200,
       "mechanism": "cycles in which every fault point of the manifest was broken and recovered from"
     }
   ],
-  "checkpoints_passed": 140,
+  "checkpoints_passed": 800,
   "checkpoints_failed": [],
   "gates": [
     {
       "name": "endurance.live_bytes_do_not_grow",
       "status": "pass",
-      "detail": "live bytes moved by 0 and trend by 0.00 a cycle over cycles 6 to 35, within the 0 allowed"
+      "detail": "live bytes moved by 0 and trend by 0.00 a cycle over cycles 11 to 200, within the 0 allowed"
     },
     {
       "name": "endurance.recoveries_succeed",
       "status": "pass",
-      "detail": "140 recoveries over 35 cycles each reached the state the contract promises"
+      "detail": "800 recoveries over 200 cycles each reached the state the contract promises"
     },
     {
       "name": "endurance.listeners_return_to_baseline",
       "status": "pass",
-      "detail": "the effective listener count was 0 before the first cycle and after each of the 35 teardowns"
+      "detail": "the effective listener count was 0 before the first cycle and after each of the 200 teardowns"
     },
     {
       "name": "endurance.dom_returns_to_baseline",
       "status": "pass",
-      "detail": "the document's element count was 6 before the first cycle and after each of the 35 teardowns"
+      "detail": "the document's element count was 6 before the first cycle and after each of the 200 teardowns"
     },
     {
       "name": "endurance.lost_externref_slots_are_explained",
       "status": "pass",
-      "detail": "26 externref slots were lost over 35 cycles, one for each of the 26 failures of a DOM call that returns an object, and none for the others"
+      "detail": "144 externref slots were lost over 200 cycles, one for each of the 144 failures of a DOM call that returns an object, and none for the others"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-B-endurance-r0-20261106T135740.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-long-endurance/w5-recovery-long-B-endurance-r0-20261106T143846.samples.ndjson"
 }

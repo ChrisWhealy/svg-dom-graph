@@ -83,3 +83,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Record attribution strength of the cause of a screen repaints (`80e9916`)
 - Perf Harness: Prevent failed DOM calls from retaining externref slots (`61499c9`)
 - Perf Harness: Prevent failed DOM calls from retaining externref slots (`e30bb44`)
+- Perf Harness: Remove grab cursor for a node whose scene is dropped mid-drag (``)

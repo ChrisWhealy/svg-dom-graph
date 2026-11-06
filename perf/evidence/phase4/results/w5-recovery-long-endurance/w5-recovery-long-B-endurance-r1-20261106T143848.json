@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-long-B-endurance-r1-20261106T140007",
-  "started_at": "2026-11-06T14:00:07.696Z",
+  "run_id": "w5-recovery-long-B-endurance-r1-20261106T143848",
+  "started_at": "2026-11-06T14:38:48.359Z",
   "repetition": 1,
   "sequence_position": 1,
   "environment": {
@@ -17,8 +17,8 @@
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
-    "crate_version": "0.2.47",
-    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
+    "crate_version": "0.2.48",
+    "git_sha": "69c816b69416c1f2d827c7ca5d95bd01d76a26fa",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -193,5 +193,5 @@
       "detail": "144 externref slots were lost over 200 cycles, one for each of the 144 failures of a DOM call that returns an object, and none for the others"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-long-endurance/w5-recovery-long-B-endurance-r1-20261106T140007.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-long-endurance/w5-recovery-long-B-endurance-r1-20261106T143848.samples.ndjson"
 }

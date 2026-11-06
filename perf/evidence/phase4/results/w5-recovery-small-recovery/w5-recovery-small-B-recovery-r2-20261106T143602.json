@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-B-recovery-r0-20261106T135644",
-  "started_at": "2026-11-06T13:56:44.012Z",
-  "repetition": 0,
-  "sequence_position": 0,
+  "run_id": "w5-recovery-small-B-recovery-r2-20261106T143602",
+  "started_at": "2026-11-06T14:36:02.271Z",
+  "repetition": 2,
+  "sequence_position": 4,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -17,8 +17,8 @@
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
-    "crate_version": "0.2.47",
-    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
+    "crate_version": "0.2.48",
+    "git_sha": "69c816b69416c1f2d827c7ca5d95bd01d76a26fa",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -117,21 +117,21 @@
       "layer": "B",
       "mechanism": "performance.now() in the page around the failed call and the call that recovers from it, with no check inside the interval",
       "name": "recovery.node_construction.time",
-      "outliers_flagged": 3,
+      "outliers_flagged": 4,
       "samples": 24,
       "status": "measured",
       "summary": {
-        "max": 274.99985694885254,
-        "min": 55.00006675720215,
-        "p50": 65.00005722045898
+        "max": 279.9999713897705,
+        "min": 55.0001859664917,
+        "p50": 70.0000524520874
       },
       "unit": "us",
       "within_run": {
-        "iqr": 19.99974250793457,
-        "mean": 85.20835141340892,
-        "stddev": 50.248893542390434,
-        "tukey_high": 109.99953746795654,
-        "tukey_low": 30.00056743621826
+        "iqr": 15.000224113464355,
+        "mean": 86.25003695487976,
+        "stddev": 49.8530311569951,
+        "tukey_high": 97.5005030632019,
+        "tukey_low": 37.49960660934448
       }
     },
     {
@@ -153,17 +153,17 @@
       "samples": 1,
       "status": "measured",
       "summary": {
-        "max": 19.999980926513672,
-        "min": 19.999980926513672,
-        "p50": 19.999980926513672
+        "max": 24.99997615814209,
+        "min": 24.99997615814209,
+        "p50": 24.99997615814209
       },
       "unit": "us",
       "within_run": {
         "iqr": 0,
-        "mean": 19.999980926513672,
+        "mean": 24.99997615814209,
         "stddev": 0,
-        "tukey_high": 19.999980926513672,
-        "tukey_low": 19.999980926513672
+        "tukey_high": 24.99997615814209,
+        "tukey_low": 24.99997615814209
       }
     },
     {
@@ -186,16 +186,16 @@
       "status": "measured",
       "summary": {
         "max": 19.999980926513672,
-        "min": 9.999990463256836,
-        "p50": 9.999990463256836
+        "min": 14.999985694885254,
+        "p50": 14.999985694885254
       },
       "unit": "us",
       "within_run": {
-        "iqr": 9.999990463256836,
-        "mean": 14.999985694885254,
-        "stddev": 7.071061068369714,
-        "tukey_high": 34.999966621398926,
-        "tukey_low": -4.999995231628418
+        "iqr": 4.999995231628418,
+        "mean": 17.499983310699463,
+        "stddev": 3.535530534184857,
+        "tukey_high": 27.4999737739563,
+        "tukey_low": 7.499992847442627
       }
     },
     {
@@ -217,17 +217,17 @@
       "samples": 3,
       "status": "measured",
       "summary": {
-        "max": 24.99997615814209,
-        "min": 19.999980926513672,
-        "p50": 19.999980926513672
+        "max": 29.999971389770508,
+        "min": 14.999985694885254,
+        "p50": 14.999985694885254
       },
       "unit": "us",
       "within_run": {
-        "iqr": 4.999995231628418,
-        "mean": 21.666646003723145,
-        "stddev": 2.8867485929275123,
-        "tukey_high": 32.49996900558472,
-        "tukey_low": 12.499988079071045
+        "iqr": 14.999985694885254,
+        "mean": 19.999980926513672,
+        "stddev": 8.660245778782537,
+        "tukey_high": 52.49994993209839,
+        "tukey_low": -7.499992847442627
       }
     },
     {
@@ -249,17 +249,17 @@
       "samples": 5,
       "status": "measured",
       "summary": {
-        "max": 85.00003814697266,
-        "min": 19.999980926513672,
-        "p50": 19.999980926513672
+        "max": 75.00004768371582,
+        "min": 14.999985694885254,
+        "p50": 24.99997615814209
       },
       "unit": "us",
       "within_run": {
         "iqr": 19.999980926513672,
-        "mean": 36.9999885559082,
-        "stddev": 28.195768205204534,
-        "tukey_high": 69.99993324279785,
-        "tukey_low": -9.999990463256836
+        "mean": 35.000038146972656,
+        "stddev": 24.23841305810085,
+        "tukey_high": 70.0000524520874,
+        "tukey_low": -9.999871253967285
       }
     },
     {
@@ -281,17 +281,17 @@
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 44.99995708465576,
+        "max": 39.999961853027344,
         "min": 9.999990463256836,
-        "p50": 15.000104904174805
+        "p50": 14.999985694885254
       },
       "unit": "us",
       "within_run": {
-        "iqr": 4.999995231628418,
-        "mean": 18.999993801116943,
-        "stddev": 9.944274448701675,
-        "tukey_high": 27.4999737739563,
-        "tukey_low": 7.499992847442627
+        "iqr": 9.999871253967283,
+        "mean": 17.499995231628418,
+        "stddev": 8.897545559746606,
+        "tukey_high": 34.9997878074646,
+        "tukey_low": -4.999697208404536
       }
     },
     {
@@ -358,7 +358,7 @@
       "detail": "10 failures, each nothing committed as documented, and the retry reached the reference"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r0-20261106T135644.samples.ndjson",
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T143602.samples.ndjson",
   "findings": [
     {
       "point": "externref_slot_per_failed_call",
@@ -439,5 +439,5 @@
       }
     }
   ],
-  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r0-20261106T135644.cases.json"
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-B-recovery-r2-20261106T143602.cases.json"
 }

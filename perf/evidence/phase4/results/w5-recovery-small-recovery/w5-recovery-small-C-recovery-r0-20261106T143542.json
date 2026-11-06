@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-recovery-r2-20261106T135739",
-  "started_at": "2026-11-06T13:57:39.689Z",
-  "repetition": 2,
-  "sequence_position": 5,
+  "run_id": "w5-recovery-small-C-recovery-r0-20261106T143542",
+  "started_at": "2026-11-06T14:35:42.975Z",
+  "repetition": 0,
+  "sequence_position": 1,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -17,8 +17,8 @@
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
-    "crate_version": "0.2.47",
-    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
+    "crate_version": "0.2.48",
+    "git_sha": "69c816b69416c1f2d827c7ca5d95bd01d76a26fa",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -117,21 +117,21 @@
       "layer": "C",
       "mechanism": "performance.now() in the page, from the first capture-phase listener for the event that retries (after a frame was refused, or its write failed) to the moment the content layer's transform became the scene's own view, which a MutationObserver reports",
       "name": "recovery.scheduled_frame.time",
-      "outliers_flagged": 0,
+      "outliers_flagged": 3,
       "samples": 20,
       "status": "measured",
       "summary": {
-        "max": 2.9600000381469727,
-        "min": 1.5549999475479126,
-        "p50": 2.184999942779541
+        "max": 3.590000033378601,
+        "min": 0.6700000762939453,
+        "p50": 2.3949999809265137
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.42500007152557373,
-        "mean": 2.1705000042915343,
-        "stddev": 0.33999574910155267,
-        "tukey_high": 2.98250013589859,
-        "tukey_low": 1.2824998497962952
+        "iqr": 0.529999852180481,
+        "mean": 2.278249990940094,
+        "stddev": 0.6979316710208276,
+        "tukey_high": 3.499999701976776,
+        "tukey_low": 1.3800002932548523
       }
     },
     {
@@ -140,21 +140,21 @@
       "layer": "C",
       "mechanism": "performance.now() in the page around the drop of the last Scene handle with a frame pending, which cancels the frame, writes the view that was waiting and releases the listeners",
       "name": "recovery.teardown.time",
-      "outliers_flagged": 2,
+      "outliers_flagged": 4,
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 1.4350000619888306,
-        "min": 0.13999998569488525,
-        "p50": 0.4299999475479126
+        "max": 1.3600000143051147,
+        "min": 0.08999991416931152,
+        "p50": 0.4249999523162842
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.16999995708465576,
-        "mean": 0.5225000143051147,
-        "stddev": 0.3803306387681342,
-        "tukey_high": 0.7199999690055847,
-        "tukey_low": 0.04000014066696167
+        "iqr": 0.08500003814697266,
+        "mean": 0.5054999947547912,
+        "stddev": 0.3482212941691724,
+        "tukey_high": 0.6075000762939453,
+        "tukey_low": 0.2674999237060547
       }
     },
     {
@@ -167,17 +167,17 @@
       "samples": 10,
       "status": "measured",
       "summary": {
-        "max": 0.39499998092651367,
-        "min": 0.06999993324279785,
-        "p50": 0.31999993324279785
+        "max": 0.5299999713897705,
+        "min": 0.10000002384185791,
+        "p50": 0.26999998092651367
       },
       "unit": "ms",
       "within_run": {
-        "iqr": 0.2349998950958252,
-        "mean": 0.253499960899353,
-        "stddev": 0.12725846966843177,
-        "tukey_high": 0.712499737739563,
-        "tukey_low": -0.2274998426437378
+        "iqr": 0.2749999761581421,
+        "mean": 0.30150001049041747,
+        "stddev": 0.15771016266743712,
+        "tukey_high": 0.8475000262260437,
+        "tukey_low": -0.25249987840652466
       }
     }
   ],
@@ -200,18 +200,6 @@
       "detail": "10 runs, each nothing committed as documented"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r2-20261106T135739.samples.ndjson",
-  "findings": [
-    {
-      "point": "mid_drag_teardown",
-      "contract": "undocumented",
-      "summary": "what the dragged node is left wearing is not documented: in 10 of 10 runs, with the scene dropped between the pointer going down and coming up, the node kept the style \"cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;\" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its baseline once the host was removed.",
-      "details": {
-        "runs": 10,
-        "runs_with_the_style_left": 10,
-        "style": "cursor: grabbing; touch-action: none; user-select: none; -webkit-user-select: none;"
-      }
-    }
-  ],
-  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r2-20261106T135739.cases.json"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T143542.samples.ndjson",
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r0-20261106T143542.cases.json"
 }

@@ -11,7 +11,7 @@
 //                      view that was waiting, and releases the scene's listeners. Removing the host then leaves the page as
 //                      it was.
 //   mid_drag_teardown  nothing committed. The pointer handlers hold the scene weakly, so after it is dropped they find nothing and
-//                      do nothing, and removing the host leaves the page as it was.
+//                      do nothing, the grabbing cursor is taken off the node, and removing the host leaves the page as it was.
 //
 // Frames are refused, held back, and made to fail by `perf/page/fault-injector.js`, and the input is real, through
 // `Input.dispatchMouseEvent`. Every scenario is run `REPETITIONS` times, in a scene of its own, and must hold every time.
@@ -277,7 +277,9 @@ export const runRecoveryC = async ({
             listeners_after_the_drop: afterDrop.listeners - baseline.listeners,
             page_errors: problems.slice(errorsBefore),
             page_back_to_baseline: final.elements === baseline.elements && final.listeners === baseline.listeners,
-            // What the node's style says once the pointer has come up. The documentation does not say, so it is only recorded.
+            // The node is not being dragged any more, so it must not show the cursor of a drag, either straight after the drop or
+            // once the pointer has come up.
+            grabbing_cursor_left: /grabbing/.test(atDrop.style) || /grabbing/.test(later.style),
             style_while_dragging: moving.style,
             style_after_the_drop_and_the_pointer_up: later.style
           })
@@ -288,6 +290,7 @@ export const runRecoveryC = async ({
               r.the_drag_was_under_way &&
               !r.node_moved_by_the_drag_after_the_drop &&
               r.listeners_after_the_drop === 0 &&
+              !r.grabbing_cursor_left &&
               r.page_errors.length === 0 &&
               r.page_back_to_baseline
             )
@@ -297,7 +300,7 @@ export const runRecoveryC = async ({
           times,
           broken,
           describe: r =>
-            `drag under way ${r.the_drag_was_under_way}, moved after the drop ${r.node_moved_by_the_drag_after_the_drop}, listeners left ${r.listeners_after_the_drop}, errors ${r.page_errors.length}, back to baseline ${r.page_back_to_baseline}`
+            `drag under way ${r.the_drag_was_under_way}, moved after the drop ${r.node_moved_by_the_drag_after_the_drop}, listeners left ${r.listeners_after_the_drop}, grabbing cursor left ${r.grabbing_cursor_left}, errors ${r.page_errors.length}, back to baseline ${r.page_back_to_baseline}`
         }
       }
     }
@@ -449,22 +452,6 @@ export const runRecoveryC = async ({
           })
       }
 
-      // What the dragged node is left wearing is not documented, so it is reported and not judged.
-      const left = outcome.cases.filter(
-        c => c.point === 'mid_drag_teardown' && /grab/.test(c.style_after_the_drop_and_the_pointer_up ?? '')
-      )
-      if (wanted.some(p => p.point === 'mid_drag_teardown') && left.length > 0) {
-        outcome.findings.push({
-          point: 'mid_drag_teardown',
-          contract: 'undocumented',
-          summary: `what the dragged node is left wearing is not documented: in ${left.length} of ${repetitions} runs, with the scene dropped between the pointer going down and coming up, the node kept the style "${left[0].style_after_the_drop_and_the_pointer_up}" for as long as the host stayed in the document. The documented contract held: nothing moved, no listener was left, and the page was back to its baseline once the host was removed.`,
-          details: {
-            runs: repetitions,
-            runs_with_the_style_left: left.length,
-            style: left[0].style_after_the_drop_and_the_pointer_up
-          }
-        })
-      }
       if (problems.length > 0)
         outcome.notes.push(
           `the page reported ${problems.length} errors during the scenarios, the first being: ${problems[0].slice(0, 160)}`

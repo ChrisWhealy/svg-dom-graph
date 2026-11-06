@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w5-recovery-small-C-endurance-r0-20261106T135852",
-  "started_at": "2026-11-06T13:58:52.281Z",
-  "repetition": 0,
-  "sequence_position": 1,
+  "run_id": "w5-recovery-small-C-recovery-r2-20261106T143620",
+  "started_at": "2026-11-06T14:36:20.385Z",
+  "repetition": 2,
+  "sequence_position": 5,
   "environment": {
     "kind": "browser",
     "browser": "Chrome",
@@ -17,8 +17,8 @@
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
-    "crate_version": "0.2.47",
-    "git_sha": "778ccbc3c0c303f4d199d82d70f82116c0389680",
+    "crate_version": "0.2.48",
+    "git_sha": "69c816b69416c1f2d827c7ca5d95bd01d76a26fa",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -108,55 +108,98 @@
       }
     }
   },
-  "mode": "endurance",
+  "mode": "recovery",
   "status": "ok",
   "metrics": [
     {
-      "name": "lifecycle.measured_cycles_sampled",
+      "dropped": 0,
+      "kind": "latency",
       "layer": "C",
+      "mechanism": "performance.now() in the page, from the first capture-phase listener for the event that retries (after a frame was refused, or its write failed) to the moment the content layer's transform became the scene's own view, which a MutationObserver reports",
+      "name": "recovery.scheduled_frame.time",
+      "outliers_flagged": 1,
+      "samples": 20,
       "status": "measured",
-      "unit": "count",
-      "kind": "count",
-      "value": 30,
-      "mechanism": "read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+      "summary": {
+        "max": 3.8399999141693115,
+        "min": 0.9499999284744263,
+        "p50": 2.3000000715255737
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.8050000667572021,
+        "mean": 2.259249985218048,
+        "stddev": 0.6396838819997687,
+        "tukey_high": 3.7525001764297485,
+        "tukey_low": 0.5324999094009399
+      }
     },
     {
-      "name": "browser.js_heap_slope_per_cycle",
+      "dropped": 0,
+      "kind": "latency",
       "layer": "C",
+      "mechanism": "performance.now() in the page around the drop of the last Scene handle with a frame pending, which cancels the frame, writes the view that was waiting and releases the listeners",
+      "name": "recovery.teardown.time",
+      "outliers_flagged": 2,
+      "samples": 10,
       "status": "measured",
-      "unit": "bytes",
-      "kind": "trend",
-      "value": 1468.1459399332591,
-      "mechanism": "the least-squares slope of JSHeapUsedSize against the cycle over the measured cycles, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate. A diagnostic of Chrome only, and not a gate"
+      "summary": {
+        "max": 0.6750000715255737,
+        "min": 0.10000002384185791,
+        "p50": 0.2349998950958252
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.07500016689300537,
+        "mean": 0.2839999794960022,
+        "stddev": 0.15761771134767907,
+        "tukey_high": 0.4175003170967102,
+        "tukey_low": 0.11749964952468872
+      }
     },
     {
-      "name": "browser.js_heap_net_change_after_warmup",
+      "dropped": 0,
+      "kind": "latency",
       "layer": "C",
+      "mechanism": "performance.now() in the page around the drop of the last Scene handle between a pointer down and a pointer up",
+      "name": "recovery.mid_drag_teardown.time",
+      "outliers_flagged": 0,
+      "samples": 10,
       "status": "measured",
-      "unit": "bytes",
-      "kind": "trend",
-      "value": 45048,
-      "mechanism": "JSHeapUsedSize of the last measured cycle less the first, read after each cycle once the page had settled and HeapProfiler.collectGarbage had run, so the heap is a Chrome diagnostic and the counts are the gate"
+      "summary": {
+        "max": 0.41999995708465576,
+        "min": 0.09499990940093994,
+        "p50": 0.19000005722045898
+      },
+      "unit": "ms",
+      "within_run": {
+        "iqr": 0.23500001430511475,
+        "mean": 0.2569999933242798,
+        "stddev": 0.12369765937217077,
+        "tukey_high": 0.737500011920929,
+        "tukey_low": -0.20250004529953003
+      }
     }
   ],
-  "checkpoints_passed": 105,
+  "checkpoints_passed": 40,
   "checkpoints_failed": [],
   "gates": [
     {
-      "name": "endurance.listeners_return_to_baseline",
+      "name": "recovery.scheduled_frame.matches_the_contract",
       "status": "pass",
-      "detail": "the effective listener count was 5 before the first cycle and after each of the 35 cycles"
+      "detail": "20 runs, each partly committed as documented"
     },
     {
-      "name": "endurance.dom_returns_to_baseline",
+      "name": "recovery.teardown.matches_the_contract",
       "status": "pass",
-      "detail": "the document's element count was 7 before the first cycle and after each of the 35 cycles"
+      "detail": "10 runs, each nothing committed as documented"
     },
     {
-      "name": "endurance.recoveries_succeed",
+      "name": "recovery.mid_drag_teardown.matches_the_contract",
       "status": "pass",
-      "detail": "105 scenario runs over 35 cycles each held to the contract"
+      "detail": "10 runs, each nothing committed as documented"
     }
   ],
-  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-endurance/w5-recovery-small-C-endurance-r0-20261106T135852.samples.ndjson"
+  "raw_samples": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r2-20261106T143620.samples.ndjson",
+  "cases": "perf/evidence/phase4/results/w5-recovery-small-recovery/w5-recovery-small-C-recovery-r2-20261106T143620.cases.json"
 }

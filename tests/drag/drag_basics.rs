@@ -461,6 +461,35 @@ fn make_draggable_with_rejects_a_non_finite_or_negative_padding() -> Result<(), 
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Dropping the last `Scene` handle in the middle of a drag takes the grabbing cursor off the node. The node's `<g>` stays in
+/// the document, and no pointer-up will ever reach a handler to clear the cursor, so the scene's teardown has to.
+#[wasm_bindgen_test]
+fn dropping_the_scene_mid_drag_clears_the_grabbing_cursor() -> Result<(), String> {
+    let svg = make_svg("drag-cursor-teardown", Size::new(400.0, 260.0), Size::new(400.0, 260.0));
+    let scene = Scene::new(svg).map_err(|e| e.to_string())?;
+    let node = scene
+        .add_node(Point::new(0.0, 0.0), Size::new(80.0, 40.0), "node")
+        .map_err(|e| e.to_string())?;
+    scene.make_draggable(node).map_err(|e| e.to_string())?;
+
+    let group = nth_group("drag-cursor-teardown", 0)?;
+    dispatch_pointer_event(&group, "pointerdown", 40, 20, 1)?;
+    let dragging_style = group.get_attribute("style").unwrap_or_default();
+    check(
+        dragging_style.contains("cursor: grabbing"),
+        &format!("expected a grabbing cursor while dragging, got style={dragging_style:?}"),
+    )?;
+
+    drop(scene);
+
+    let after_style = group.get_attribute("style").unwrap_or_default();
+    check(
+        !after_style.contains("cursor"),
+        &format!("expected the grabbing cursor gone once the scene was dropped, got style={after_style:?}"),
+    )
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// `make_draggable` leaves the idle cursor alone. A node does not look grabbable before a caller has actually started
 /// dragging it. But it does show a grabbing cursor once a drag is actually in progress. It clears that cursor again
 /// once the drag ends.
