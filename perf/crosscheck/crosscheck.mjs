@@ -39,12 +39,13 @@ capture_frame_timing = false
 ${every === null ? '' : `checkpoint_every = ${every}`}
 [checkpoint]
 view = "unchanged"
+${workload === 'interaction' ? '[interaction]\nscales_percent = [50, 100, 200]\ngestures = ["drag", "pan", "wheel_zoom"]\nsteps = 4\nstep_pixels = 5' : ''}
 [limits]
 wall_ms = 1000
 `
 
 const cases = []
-for (const workload of ['scene_construction', 'connector_rerouting', 'scene_lifecycle']) {
+for (const workload of ['scene_construction', 'connector_rerouting', 'scene_lifecycle', 'interaction']) {
   // The largest seed that TOML can write is the largest signed 64-bit integer. BigInt keeps the larger ones exact.
   for (const seed of [0n, 1n, 2026n, 9007199254740991n, 9007199254740993n, 9223372036854775807n]) {
     cases.push({ workload, seed, nodes: 12, edges: 20, degree: 8, warmup: 2, iterations: 6, every: 3 })

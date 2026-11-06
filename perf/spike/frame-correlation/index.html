@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>frame correlation spike</title>
+  <style>
+    #box { position: absolute; left: 10px; top: 10px; width: 40px; height: 40px; background: #36c }
+    #other { position: absolute; left: 10px; top: 80px; width: 40px; height: 40px; background: #c63 }
+  </style>
+</head>
+<body>
+  <div id="box"></div>
+  <div id="other"></div>
+  <script>
+    // What the page can say for itself, so that a trace can be judged against something that is not the trace.
+    const box = document.getElementById('box')
+    const other = document.getElementById('other')
+    const spin = ms => { const until = performance.now() + ms; while (performance.now() < until); }
+    let unrelated = null
+    window.spike = {
+      // One mutation. The mark is written first, in the same task and immediately before the change. The change is made
+      // synchronously, as the library's calls are. A frame callback of known cost is asked for, so that the frame that
+      // carries the mutation has a duration that is known, and the page's own stamps of it are kept as the answer.
+      mutate: (index, cost) =>
+        new Promise(resolve => {
+          const record = { index, markAt: 0, mutatedAt: 0, rafStart: 0, rafEnd: 0, cost }
+          const name = `perf-${index}`
+          record.markAt = performance.now()
+          performance.mark(name)
+          box.style.transform = `translateX(${(index % 40) * 3 + 1}px)`
+          record.mutatedAt = performance.now()
+          requestAnimationFrame(() => {
+            record.rafStart = performance.now()
+            spin(cost)
+            record.rafEnd = performance.now()
+            // After the callback the frame still has to lay out and paint, so settling is by a second callback and a timer.
+            requestAnimationFrame(() => setTimeout(() => resolve(record), 30))
+          })
+        }),
+      // Work that is not ours, which makes frames of its own at times of its own.
+      startUnrelated: period => {
+        let n = 0
+        unrelated = setInterval(() => { other.style.transform = `translateY(${(n++ % 20)}px)` }, period)
+      },
+      stopUnrelated: () => clearInterval(unrelated),
+      // A mutation that changes nothing, which has no style step to find a frame by.
+      noop: index =>
+        new Promise(resolve => {
+          const name = `perf-${index}`
+          performance.mark(name)
+          box.style.transform = box.style.transform
+          requestAnimationFrame(() => requestAnimationFrame(() => setTimeout(() => resolve({ index }), 30)))
+        }),
+      // A change whose layout is forced in the task that makes it, so that the frame that shows it has a paint and no style step.
+      mutateForced: index =>
+        new Promise(resolve => {
+          const record = { index, cost: 0, rafStart: 0, rafEnd: 0 }
+          performance.mark(`perf-${index}`)
+          box.style.background = index % 2 ? '#36c' : '#3c6'
+          box.style.width = `${40 + (index % 5)}px`
+          box.getBoundingClientRect()
+          requestAnimationFrame(() => {
+            record.rafStart = performance.now()
+            record.rafEnd = performance.now()
+            requestAnimationFrame(() => setTimeout(() => resolve(record), 30))
+          })
+        }),
+      // The same, without waiting for the frame, so that the next one is made while the last is still on its way.
+      mutateNow: (index, cost) => {
+        const record = { index, cost, rafStart: 0, rafEnd: 0 }
+        performance.mark(`perf-${index}`)
+        box.style.transform = `translateX(${(index % 40) * 3 + 1}px)`
+        requestAnimationFrame(() => {
+          record.rafStart = performance.now()
+          spin(cost)
+          record.rafEnd = performance.now()
+        })
+        return record
+      },
+      // Real input. The first listener for the event, in the capture phase, writes the mark and the stamp. The change is made
+      // at once, or in the next frame as the library does for a pan, and the frame callback that carries it keeps its own stamp.
+      armInput: deferred => {
+        const log = []
+        addEventListener(
+          'pointermove',
+          event => {
+            const record = { index: log.length, stampAt: performance.now(), rafStart: 0, rafEnd: 0, timeStamp: event.timeStamp }
+            log.push(record)
+            performance.mark(`perf-in-${record.index}`)
+            if (!deferred) box.style.transform = `translateX(${record.index % 40}px)`
+            requestAnimationFrame(() => {
+              record.rafStart = performance.now()
+              if (deferred) box.style.transform = `translateX(${record.index % 40}px)`
+              record.rafEnd = performance.now()
+            })
+          },
+          { capture: true },
+        )
+        window.spike.log = log
+        return 0
+      },
+      inputLog: () => window.spike.log,
+      now: () => performance.now(),
+    }
+  </script>
+</body>
+</html>

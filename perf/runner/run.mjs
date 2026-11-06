@@ -1,6 +1,7 @@
-// Runs a workload manifest on Layer A (native) and Layer B (wasm in Chrome), and writes a result document for each run.
+// Runs a workload manifest on Layer A (native), Layer B (wasm in Chrome) and, for the interaction workload, Layer C (real input
+// in Chrome), and writes a result document for each run.
 //
-//   node perf/runner/run.mjs <manifest.toml> [--mode correctness|performance|endurance|all] [--layers a,b]
+//   node perf/runner/run.mjs <manifest.toml> [--mode correctness|performance|endurance|all] [--layers a,b,c]
 //                            [--repetitions N] [--out-dir DIR] [--no-build]
 //
 // Each repetition of Layer B is a separate Chrome process with its own profile, so repetitions do not share a page, a heap or
@@ -14,6 +15,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from './lib/harness-page.mjs'
+import { runInteraction } from './layer-c/interaction.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const requireFromSchemas = createRequire(path.join(root, 'perf/schemas/package.json'))
@@ -25,7 +27,7 @@ const PROTOCOL_VERSION = '1'
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const parseArguments = argv => {
-  const options = { layers: ['a', 'b'], mode: 'all', build: true, outDir: null, repetitions: null, manifest: null }
+  const options = { layers: null, mode: 'all', build: true, outDir: null, repetitions: null, manifest: null }
   for (let i = 0; i < argv.length; i++) {
     const arg = argv[i]
     if (arg === '--mode') options.mode = argv[++i]
@@ -57,12 +59,7 @@ const manifestId = path.basename(manifestPath).replace(/\.toml$/, '')
 const outDir = path.resolve(options.outDir ?? path.join(root, 'target/perf', manifestId))
 fs.mkdirSync(outDir, { recursive: true })
 
-if (options.build) {
-  must(run('cargo', ['build', '-q', '--release', '-p', 'perf-harness']), 'building perf-harness')
-  if (options.layers.includes('b')) {
-    must(run('wasm-pack', ['build', 'perf-harness-wasm', '--target', 'web', '--release', '--out-dir', 'pkg']), 'building perf-harness-wasm')
-  }
-}
+if (options.build) must(run('cargo', ['build', '-q', '--release', '-p', 'perf-harness']), 'building perf-harness')
 const binary = path.join(root, 'target/release/perf-harness')
 
 const reportPath = path.join(outDir, 'workload-report.json')
@@ -71,6 +68,20 @@ const report = readExact(fs.readFileSync(reportPath, 'utf8'))
 const canonicalManifest = must(run(binary, ['canonical', manifestPath]), 'reading the manifest').stdout.trim()
 const expected = JSON.stringify({ sha256: report.stream.sha256, mutations_sha256: report.stream.mutations_sha256 })
 const manifest = report.manifest.canonical
+
+// Layer C drives a scene with real input, which only the interaction workload has. It is on by default for that workload and
+// refused for any other, and a layer that is asked for by name and cannot run says so and does not quietly do nothing.
+const interactive = manifest.workload === 'interaction'
+options.layers ??= interactive ? ['a', 'b', 'c'] : ['a', 'b']
+if (options.layers.includes('c') && !interactive) {
+  console.log(`skipping layer C: ${manifest.workload} has no input to drive, and only the interaction workload does`)
+  options.layers = options.layers.filter(layer => layer !== 'c')
+}
+if (options.build && (options.layers.includes('b') || options.layers.includes('c'))) {
+  must(run('wasm-pack', ['build', 'perf-harness-wasm', '--target', 'web', '--release', '--out-dir', 'pkg']), 'building perf-harness-wasm')
+}
+// The gestures are planned once, by the same engine that planned the scene, and every repetition plays the same plan.
+const gesturePlan = options.layers.includes('c') ? JSON.parse(must(run(binary, ['gestures', manifestPath]), 'planning the gestures').stdout) : null
 
 const modes = options.mode === 'all' ? manifest.execution.modes : [options.mode]
 const repetitionsFor = mode => (mode === 'correctness' ? 1 : (options.repetitions ?? manifest.execution.repetitions))
@@ -186,6 +197,10 @@ for (const mode of modes) {
       keep('A', mode, repetition, JSON.parse(fs.readFileSync(file, 'utf8')), null)
       fs.rmSync(file)
     }
+    if (options.layers.includes('c') && (mode === 'correctness' || mode === 'performance')) {
+      const outcome = await runInteraction({ binary, mode, canonical: canonicalManifest, plan: gesturePlan, report })
+      keep('C', mode, repetition, outcome, outcome.crossOriginIsolated ?? null)
+    }
     if (options.layers.includes('b')) {
       const page = await openHarnessPage()
       try {
@@ -213,7 +228,8 @@ for (const group of Object.values(Object.groupBy(runs, run => `${run.layer} ${ru
     const low = Math.min(...medians)
     const high = Math.max(...medians)
     const coarse = group.some(run => run.outcome.metrics.find(m => m.name === name)?.resolution_limited === true)
-    spread.push({ group: `${group[0].layer} ${group[0].mode}`, name, repetitions: medians.length, low, high, coarse, percent: low > 0 ? ((high - low) / low) * 100 : null })
+    const unit = group[0].outcome.metrics.find(m => m.name === name)?.unit ?? 'us'
+    spread.push({ group: `${group[0].layer} ${group[0].mode}`, name, unit, repetitions: medians.length, low, high, coarse, percent: low > 0 ? ((high - low) / low) * 100 : null })
   }
 }
 
@@ -243,7 +259,7 @@ if (spread.length) {
   const show = value => (value >= 100 ? value.toFixed(0) : value.toPrecision(3))
   for (const row of spread) {
     const coarse = row.coarse ? ' (under 50 timer steps, so coarse)' : ''
-    console.log(`  ${row.group} ${row.name}: ${show(row.low)} to ${show(row.high)} us over ${row.repetitions} repetitions, ${row.percent === null ? 'n/a' : `${row.percent.toFixed(0)}%`} apart${coarse}`)
+    console.log(`  ${row.group} ${row.name}: ${show(row.low)} to ${show(row.high)} ${row.unit} over ${row.repetitions} repetitions, ${row.percent === null ? 'n/a' : `${row.percent.toFixed(0)}%`} apart${coarse}`)
   }
 }
 console.log(gatesFailed ? `\n${gatesFailed} deterministic gate(s) failed` : '\nevery deterministic gate passed')

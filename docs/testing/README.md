@@ -20,8 +20,10 @@
 | `cargo test -p svg-dom-graph-demo` and `cargo test -p demo-server` | The demo's own tests |
 | `wasm-pack test --headless --firefox` and `wasm-pack test --headless --chrome` | The browser integration tests, which CI runs in both browsers |
 | `cargo test -p cdp-integration-test` | The CDP tests, against a local Chrome |
-| `cargo test -p perf-harness` | The performance harness's workload generator, reference model and manifest checks. See [`perf/README.md`](../../perf/README.md) |
+| `cargo test -p perf-harness` | The performance harness's workload generator, gesture planner, reference model and manifest checks. See [`perf/README.md`](../../perf/README.md) |
 | `cargo test -p perf-harness-wasm` | The performance harness's counting allocator and parsers. The browser runner itself is driven by `node perf/runner/run.mjs`. See [`perf/README.md`](../../perf/README.md) |
+| `node perf/lib/test-frames.mjs` | The Layer C frame attribution rule, on traces written out by hand. No browser. See [`perf/README.md`](../../perf/README.md) |
+| `node perf/runner/selftest-layer-c.mjs` and `node perf/runner/gallery-sweep.mjs` | The Layer C self-test and the gallery sweep, which drive Chrome and are not run by CI yet. See [`perf/README.md`](../../perf/README.md) |
 
 ## Error handling during testing
 

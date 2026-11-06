@@ -1,4 +1,4 @@
-// Checks the four performance-harness schemas. Run it with `npm install && npm test` in this directory.
+// Checks the performance-harness schemas. Run it with `npm install && npm test` in this directory.
 //
 // Every valid example must pass, and every mutation in `rejected` must fail. A schema that is too permissive therefore
 // fails this script, not just a malformed document. Phase 1 should reuse the same cases against the Rust validator.
@@ -26,6 +26,7 @@ const names = [
   "result",
   "comparison",
   "workload-report",
+  "gallery-report",
 ]
 for (const name of names) ajv.addSchema(read(`${name}.schema.json`))
 const validators = Object.fromEntries(
@@ -60,6 +61,7 @@ const valid = {
   result: read("examples/result.json"),
   comparison: read("examples/comparison.json"),
   "workload-report": read("examples/workload-report.json"),
+  "gallery-report": read("examples/gallery-report.json"),
 }
 
 let failures = 0
@@ -114,6 +116,50 @@ const rejected = {
       d => applyOps(d, c.ops),
     ]),
   ),
+  "gallery-report": {
+    "an unknown top-level key": d => {
+      d.extra = 1
+    },
+    "a panel with no status": d => {
+      delete d.panels[0].status
+    },
+    "an unknown panel status": d => {
+      d.panels[0].status = "fine"
+    },
+    "a panel id that is not a panel": d => {
+      d.panels[0].id = "tree"
+    },
+    "a build with both a time and a reason": d => {
+      d.panels[0].build = { ms: 1, unavailable: "no" }
+    },
+    "a negative time": d => {
+      d.panels[0].build = { ms: -1 }
+    },
+    "a downgraded walk with no reason": d => {
+      delete d.panels[0].walk.reason
+    },
+    "a walked panel with no clicks": d => {
+      delete d.panels[1].walk.clicks
+    },
+    "a walked panel with a reason": d => {
+      d.panels[1].walk.reason = "why"
+    },
+    "an unknown walk status": d => {
+      d.panels[1].walk.status = "ran"
+    },
+    "a control with no name": d => {
+      d.panels[1].controls[0].name = ""
+    },
+    "a count that is not whole": d => {
+      d.panels[0].counts.elements_after = 1.5
+    },
+    "a page error of an unknown kind": d => {
+      d.page_errors = [{ kind: "warning", text: "x" }]
+    },
+    "a viewport of three numbers": d => {
+      d.viewport = [1, 2, 3]
+    },
+  },
   checkpoint: {
     "a connector with two numbers": d => {
       d.geometry.elements[1].coordinates = [1, 2]

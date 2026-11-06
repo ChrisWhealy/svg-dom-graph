@@ -11,6 +11,7 @@ pub mod compare;
 pub mod corruption;
 pub mod encode;
 pub mod endurance;
+pub mod gestures;
 pub mod manifest;
 pub mod metrics;
 pub mod model;

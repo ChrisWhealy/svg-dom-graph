@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en">
+<head>
+  <meta charset="utf-8">
+  <title>perf harness, layer C</title>
+  <style>body { margin: 0 }</style>
+</head>
+<body>
+  <script type="module">
+    import init, {
+      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present,
+    } from "./pkg/perf_harness_wasm.js"
+    await init()
+
+    // Every input event the page receives is written down by the first listener there is, in the capture phase on the window,
+    // with a user-timing mark made in the same breath. The mark is what the trace is correlated with, and the stamp is the
+    // start of the interaction. Both are the browser's own clock, and neither depends on how long CDP took to deliver the input.
+    const events = []
+    let gesture = null
+    const record = event => {
+      const n = events.length
+      const stamp = performance.now()
+      performance.mark(`perf-c-${n}`)
+      events.push({
+        n,
+        type: event.type,
+        stamp,
+        hardware: event.timeStamp,
+        buttons: event.buttons ?? 0,
+        ctrl: Boolean(event.ctrlKey),
+        gesture: gesture?.id ?? null,
+        measured: gesture?.measured ?? false,
+      })
+    }
+    for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'click']) {
+      addEventListener(type, record, { capture: true, passive: true })
+    }
+
+    // Event Timing entries are kept beside the figures that are ours. They are rounded to 8 ms and hold only what took 16 ms or
+    // more, so they say whether the browser saw slow input, and not how fast it was.
+    const eventTiming = []
+    try {
+      new PerformanceObserver(list => {
+        for (const entry of list.getEntries()) eventTiming.push({ name: entry.name, start: entry.startTime, duration: entry.duration, processingStart: entry.processingStart })
+      }).observe({ type: 'event', durationThreshold: 16, buffered: true })
+    } catch {
+      // The browser has no Event Timing, and the runner says so.
+    }
+
+    const frames = () => new Promise(resolve => requestAnimationFrame(() => requestAnimationFrame(resolve)))
+    window.perfC = {
+      readyAt: performance.now(),
+      interactive_build, interactive_view, interactive_node, interactive_reset, interactive_teardown, interactive_host_present,
+      // For the self-test only. A slowdown makes every move cost a known time in a listener that runs after the library's own, and
+      // a block stops every input event before anything but the recorder has seen it. The first must show in the interaction
+      // time by what it costs, and the second must make a run invalid, since a gesture that did nothing is not a measurement.
+      slowdown: ms => addEventListener('pointermove', () => { const until = performance.now() + ms; while (performance.now() < until); }),
+      block: () => { for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'mousedown', 'mousemove', 'mouseup']) addEventListener(type, event => event.stopImmediatePropagation(), { capture: true }) },
+      begin: (id, measured) => { gesture = { id, measured } },
+      end: () => { gesture = null },
+      events: () => events,
+      eventTiming: () => eventTiming,
+      clear: () => { events.length = 0; eventTiming.length = 0 },
+      // Two frames and a pause, so that what the last input started has reached the screen before the next thing is done.
+      settle: async ms => { await frames(); await new Promise(resolve => setTimeout(resolve, ms ?? 60)) },
+      // Connectors are drawn over the nodes, and a connector's stroke takes a press that lands on it, so a press at the centre of
+      // a node may reach a connector and not the node. This finds the nearest place to the planned one at which the pointer
+      // reaches what the gesture is for: the node itself for a drag, or the surface that pans for a pan. It gives a point of
+      // the host, or null if there is none, and says how far it is from the planned one.
+      pressPoint: (id, kind, key, hint) => {
+        const svg = document.getElementById(id)
+        const host = svg.getBoundingClientRect()
+        const content = svg.querySelector('g.svg-dom-graph-content')
+        const hits = (x, y) => document.elementFromPoint(host.left + x, host.top + y)
+        let accepts
+        let around = hint
+        if (kind === 'drag') {
+          const node = [...content.children].find(child => child.localName === 'g' && child.querySelector('text')?.textContent === key)
+          if (!node) return null
+          const box = node.getBoundingClientRect()
+          around = [box.left - host.left + box.width / 2, box.top - host.top + box.height / 2]
+          accepts = element => element !== null && node.contains(element)
+        } else {
+          accepts = element => element !== null && element.parentNode === svg && element.localName === 'rect' && element.style.cursor !== ''
+        }
+        const candidates = [[0, 0]]
+        // A dense graph leaves little of the background uncovered, so the search goes as far as the host is wide.
+        for (let radius = 6; radius <= Math.max(host.width, host.height); radius += 6) {
+          for (let step = 0; step < 24; step++) {
+            const angle = (step / 24) * 2 * Math.PI
+            candidates.push([Math.round(radius * Math.cos(angle)), Math.round(radius * Math.sin(angle))])
+          }
+        }
+        for (const [dx, dy] of candidates) {
+          const x = Math.round(around[0] + dx)
+          const y = Math.round(around[1] + dy)
+          if (accepts(hits(x, y))) return { x, y, moved: Math.hypot(x - hint[0], y - hint[1]) }
+        }
+        return null
+      },
+      hostRect: id => { const r = document.getElementById(id)?.getBoundingClientRect(); return r ? { left: r.left, top: r.top } : null },
+      countElements: () => document.querySelectorAll('*').length,
+      listeners: () => window.__listeners?.snapshot().total ?? null,
+    }
+  </script>
+</body>
+</html>

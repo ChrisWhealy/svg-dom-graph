@@ -1,0 +1,10 @@
+ok   as it is: ok, 24 checks passed, every gesture did what the plan said
+ok   the wheel, in a tab of its own, was placed in a frame every time
+      drag 3.01 ms, CDP round trip 8.08 ms
+ok   a 20 ms listener after every move: the drag time goes from 3.01 to 20.75 ms, and the run stays ok
+ok   input that never reaches the library: invalid_incorrect, and names interaction
+      drag 0 at 100%: n5 ended at (20, 110), the plan said (22, 94)
+ok   CDP made 30 ms slower: the round trip goes from 8.08 to 41.05 ms
+ok   and the interaction time does not move, 3.01 to 3.50 ms, since CDP's clock is never its start
+
+Layer C moves by what it measures, and by nothing else

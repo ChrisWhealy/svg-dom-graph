@@ -21,6 +21,9 @@ pub mod executor;
 pub mod allocator_check;
 
 #[cfg(target_arch = "wasm32")]
+pub mod interactive;
+
+#[cfg(target_arch = "wasm32")]
 pub mod persistent;
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -210,6 +213,43 @@ mod exports {
     #[wasm_bindgen]
     pub fn attribute_persistent(stage: &str, cycles: u32, before_baseline: &str, nodes: u32) -> String {
         crate::persistent::run(stage, cycles as usize, before_baseline, nodes as usize)
+    }
+
+    /// Builds the scene of an interaction manifest at a scale of the view, checks it against the reference model, and says what
+    /// it made, as JSON. See `interactive`.
+    #[wasm_bindgen]
+    pub fn interactive_build(manifest_json: &str, scale_percent: u32) -> String {
+        crate::interactive::build(manifest_json, scale_percent)
+    }
+
+    /// The view of the scene on the stage, as `{scale, tx, ty}`.
+    #[wasm_bindgen]
+    pub fn interactive_view() -> String {
+        crate::interactive::view()
+    }
+
+    /// Where the scene says a node is, as `{x, y}`.
+    #[wasm_bindgen]
+    pub fn interactive_node(key: &str) -> String {
+        crate::interactive::node(key)
+    }
+
+    /// Puts the view and the named nodes back, between samples.
+    #[wasm_bindgen]
+    pub fn interactive_reset(scale_percent: u32, positions_json: &str) -> String {
+        crate::interactive::reset(scale_percent, positions_json)
+    }
+
+    /// Drops the scene on the stage and removes its host.
+    #[wasm_bindgen]
+    pub fn interactive_teardown() -> String {
+        crate::interactive::teardown()
+    }
+
+    /// Whether the host of the stage's scene is in the document.
+    #[wasm_bindgen]
+    pub fn interactive_host_present() -> bool {
+        crate::interactive::host_present()
     }
 
     /// Runs the counting allocator's checks and returns the result as JSON.

@@ -34,13 +34,13 @@ use resources::{Resources, SeriesEntry};
 use std::collections::BTreeMap;
 use svg_dom_graph::{NodeId, scene::Scene};
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The digests of the stream that the workload report expects, produced by a different process.
 pub struct Expected {
     pub sha256: String,
     pub mutations_sha256: String,
 }
 
-// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 struct Run<'a> {
     manifest: &'a Manifest,
@@ -114,7 +114,8 @@ impl<'a> Run<'a> {
             Ok(())
         })
         .map_err(describe)?;
-        let total_cycles = if manifest.workload == Workload::ConnectorRerouting {
+        // Rerouting and interaction build one scene and keep it, so they have one cycle whatever their iteration counts say.
+        let total_cycles = if matches!(manifest.workload, Workload::ConnectorRerouting | Workload::Interaction) {
             1
         } else {
             manifest.total_iterations()

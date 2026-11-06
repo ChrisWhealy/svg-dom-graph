@@ -8,7 +8,16 @@ import os from 'node:os'
 import path from 'node:path'
 import { spawn } from 'node:child_process'
 
-const types = { '.html': 'text/html', '.js': 'text/javascript', '.wasm': 'application/wasm' }
+const types = {
+  '.html': 'text/html',
+  '.js': 'text/javascript',
+  '.mjs': 'text/javascript',
+  '.css': 'text/css',
+  '.json': 'application/json',
+  '.svg': 'image/svg+xml',
+  '.png': 'image/png',
+  '.wasm': 'application/wasm',
+}
 
 // Serves `dir`. COOP and COEP headers are sent only when `isolated` is set, which is what gives a finer timer.
 export const serve = (dir, { isolated = false } = {}) =>
@@ -26,6 +35,52 @@ export const serve = (dir, { isolated = false } = {}) =>
       })
       .listen(0, () => resolve({ server, port: server.address().port }))
   })
+
+// A CDP client on one page's socket. `on` subscribes to events, and gives back the function that unsubscribes.
+const connect = async url => {
+  const socket = new WebSocket(url)
+  await new Promise(resolve => (socket.onopen = resolve))
+  let nextId = 0
+  const pending = new Map()
+  const handlers = new Map()
+  socket.onmessage = event => {
+    const message = JSON.parse(event.data)
+    if (message.id && pending.has(message.id)) {
+      pending.get(message.id)(message)
+      pending.delete(message.id)
+    } else if (message.method) {
+      for (const handler of handlers.get(message.method) ?? []) handler(message.params)
+    }
+  }
+  const send = (method, params = {}) =>
+    new Promise(resolve => {
+      const id = ++nextId
+      pending.set(id, resolve)
+      socket.send(JSON.stringify({ id, method, params }))
+    })
+  const on = (method, handler) => {
+    if (!handlers.has(method)) handlers.set(method, new Set())
+    handlers.get(method).add(handler)
+    return () => handlers.get(method).delete(handler)
+  }
+  const evaluate = async expression => {
+    const reply = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
+    if (reply.result.exceptionDetails) throw new Error(reply.result.exceptionDetails.exception?.description)
+    return reply.result.result?.value
+  }
+  const metrics = async () => {
+    const reply = await send('Performance.getMetrics')
+    return Object.fromEntries(reply.result.metrics.map(metric => [metric.name, metric.value]))
+  }
+  const collectGarbage = async () => {
+    await send('HeapProfiler.collectGarbage')
+    await new Promise(resolve => setTimeout(resolve, 100))
+  }
+  await send('Performance.enable')
+  await send('Page.enable')
+  await send('HeapProfiler.enable')
+  return { socket, send, on, evaluate, metrics, collectGarbage }
+}
 
 export const launch = async () => {
   const chromePath = process.env.CHROME ?? '/Applications/Google Chrome.app/Contents/MacOS/Google Chrome'
@@ -53,37 +108,7 @@ export const launch = async () => {
   })
   const host = wsUrl.match(/ws:\/\/([^/]+)/)[1]
   const tabs = await (await fetch(`http://${host}/json`)).json()
-  const socket = new WebSocket(tabs.find(tab => tab.type === 'page').webSocketDebuggerUrl)
-  await new Promise(resolve => (socket.onopen = resolve))
-
-  let nextId = 0
-  const pending = new Map()
-  socket.onmessage = event => {
-    const message = JSON.parse(event.data)
-    if (message.id && pending.has(message.id)) {
-      pending.get(message.id)(message)
-      pending.delete(message.id)
-    }
-  }
-  const send = (method, params = {}) =>
-    new Promise(resolve => {
-      const id = ++nextId
-      pending.set(id, resolve)
-      socket.send(JSON.stringify({ id, method, params }))
-    })
-  const evaluate = async expression => {
-    const reply = await send('Runtime.evaluate', { expression, awaitPromise: true, returnByValue: true })
-    if (reply.result.exceptionDetails) throw new Error(reply.result.exceptionDetails.exception?.description)
-    return reply.result.result?.value
-  }
-  const metrics = async () => {
-    const reply = await send('Performance.getMetrics')
-    return Object.fromEntries(reply.result.metrics.map(metric => [metric.name, metric.value]))
-  }
-  const collectGarbage = async () => {
-    await send('HeapProfiler.collectGarbage')
-    await new Promise(resolve => setTimeout(resolve, 100))
-  }
+  const first = await connect(tabs.find(tab => tab.type === 'page').webSocketDebuggerUrl)
   const close = async () => {
     // Chrome may still be writing to its profile directory, so the clean-up waits for it to exit and then retries.
     const exited = new Promise(resolve => chrome.once('exit', resolve))
@@ -91,9 +116,17 @@ export const launch = async () => {
     await exited
     fs.rmSync(profile, { recursive: true, force: true, maxRetries: 5, retryDelay: 200 })
   }
-
-  await send('Performance.enable')
-  await send('Page.enable')
-  await send('HeapProfiler.enable')
-  return { send, evaluate, metrics, collectGarbage, close }
+  // Opens another tab, which is its own target with its own client. Only the tab in front receives real wheel input, and
+  // `Page.bringToFront` is what makes it that one.
+  const newPage = async (url = 'about:blank') => {
+    const target = await (await fetch(`http://${host}/json/new?${url}`, { method: 'PUT' })).json()
+    const page = await connect(target.webSocketDebuggerUrl)
+    page.targetId = target.id
+    page.closeTab = async () => {
+      page.socket.close()
+      await fetch(`http://${host}/json/close/${target.id}`)
+    }
+    return page
+  }
+  return { ...first, newPage, close }
 }

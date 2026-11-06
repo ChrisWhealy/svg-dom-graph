@@ -1,0 +1,121 @@
+{
+  "chrome": "Chrome/157.0.8103.39",
+  "experiments": {
+    "known_cost": {
+      "label": "1 known cost, one at a time",
+      "samples": 70,
+      "measured": 70,
+      "right": 70,
+      "presented_after_callback": 70,
+      "unavailable": {},
+      "wrong_indices": [],
+      "presented_sooner_than_cost": 0
+    },
+    "unrelated_work": {
+      "label": "2 unrelated work making frames at 5 ms",
+      "samples": 70,
+      "measured": 70,
+      "right": 70,
+      "presented_after_callback": 70,
+      "unavailable": {},
+      "wrong_indices": []
+    },
+    "back_to_back": {
+      "label": "3 back to back, 6 ms apart",
+      "samples": 80,
+      "measured": 80,
+      "right": 80,
+      "presented_after_callback": 80,
+      "unavailable": {},
+      "wrong_indices": [],
+      "naive": {
+        "measured": 80,
+        "right": 53
+      }
+    },
+    "changes_nothing": {
+      "samples": 20,
+      "measured": 0
+    },
+    "small_buffer": {
+      "label": "4b a trace with a 16 KB buffer",
+      "samples": 70,
+      "measured": 0,
+      "right": 0,
+      "presented_after_callback": 0,
+      "unavailable": {
+        "the trace lost data, so a frame may be missing from it": 70
+      },
+      "wrong_indices": [],
+      "data_loss_reported": true
+    },
+    "forced_layout": {
+      "samples": 40,
+      "strict_measured": 0,
+      "update_measured": 40,
+      "update_right": 40
+    },
+    "input_immediate": {
+      "label": "5 real input, written at once",
+      "samples": 40,
+      "measured": 40,
+      "right": 40,
+      "presented_after_callback": 40,
+      "unavailable": {},
+      "wrong_indices": [],
+      "mark_inside_a_frame": 40,
+      "mark_before_a_frame": 0,
+      "cdp_round_trip_ms_median": 5.187541999999667
+    },
+    "input_deferred": {
+      "label": "5 real input, deferred to the frame",
+      "samples": 40,
+      "measured": 40,
+      "right": 40,
+      "presented_after_callback": 40,
+      "unavailable": {},
+      "wrong_indices": [],
+      "mark_inside_a_frame": 40,
+      "mark_before_a_frame": 0,
+      "cdp_round_trip_ms_median": 1.9352079999989655
+    }
+  },
+  "verdicts": [
+    {
+      "ok": true,
+      "text": "one at a time, every sample is given the frame that holds its callback"
+    },
+    {
+      "ok": true,
+      "text": "with unrelated work, every sample that is given a frame is given the right one"
+    },
+    {
+      "ok": true,
+      "text": "back to back, every sample that is given a frame is given the right one"
+    },
+    {
+      "ok": true,
+      "text": "the naive rule is wrong back to back, which is what the rule is for"
+    },
+    {
+      "ok": true,
+      "text": "a mutation that changes nothing is never given a frame"
+    },
+    {
+      "ok": true,
+      "text": "a trace that lost events gives no wrong frame"
+    },
+    {
+      "ok": true,
+      "text": "a change with its layout forced in the task is missed by the style rule and placed right by the wider one"
+    },
+    {
+      "ok": true,
+      "text": "real input written at once is given the right frame"
+    },
+    {
+      "ok": true,
+      "text": "real input deferred to a frame is given the right frame"
+    }
+  ]
+}

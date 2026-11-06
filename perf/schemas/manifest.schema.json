@@ -9,7 +9,12 @@
       "const": 1
     },
     "workload": {
-      "enum": ["scene_construction", "connector_rerouting", "scene_lifecycle"]
+      "enum": [
+        "scene_construction",
+        "connector_rerouting",
+        "scene_lifecycle",
+        "interaction"
+      ]
     },
     "seed": {
       "type": "integer",
@@ -120,6 +125,42 @@
       "required": ["view"],
       "additionalProperties": false
     },
+    "interaction": {
+      "type": "object",
+      "description": "What a browser is driven with in the interaction workload, and at what scales of the view. Scales are in percent so that the manifest holds no floating-point number. The gestures are made once for each warm-up and measured iteration at each scale.",
+      "properties": {
+        "scales_percent": {
+          "type": "array",
+          "items": {
+            "type": "integer",
+            "minimum": 25,
+            "maximum": 400
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "gestures": {
+          "type": "array",
+          "items": {
+            "enum": ["drag", "pan", "wheel_zoom"]
+          },
+          "minItems": 1,
+          "uniqueItems": true
+        },
+        "steps": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 100
+        },
+        "step_pixels": {
+          "type": "integer",
+          "minimum": 1,
+          "maximum": 50
+        }
+      },
+      "required": ["scales_percent", "gestures", "steps", "step_pixels"],
+      "additionalProperties": false
+    },
     "limits": {
       "type": "object",
       "properties": {
@@ -153,6 +194,23 @@
   ],
   "additionalProperties": false,
   "allOf": [
+    {
+      "if": {
+        "properties": {
+          "workload": {
+            "const": "interaction"
+          }
+        }
+      },
+      "then": {
+        "required": ["interaction"]
+      },
+      "else": {
+        "not": {
+          "required": ["interaction"]
+        }
+      }
+    },
     {
       "if": {
         "properties": {

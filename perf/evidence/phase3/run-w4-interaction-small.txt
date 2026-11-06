@@ -1,0 +1,167 @@
+results in perf/evidence/phase3/results/w4-interaction-small
+
+A correctness #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+C correctness #0: ok, 144 checkpoints passed, 0 failed
+    cold_start.page_ready p50 52.71 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+B correctness #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended full stream (56 operations)
+A performance #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+C performance #0: ok, 144 checkpoints passed, 0 failed
+    cold_start.page_ready p50 46.73 ms
+    interaction.drag.scale_50.latency p50 3.10 ms
+    interaction.drag.scale_50.input_delay p50 7.14 ms
+    cdp.drag.scale_50.round_trip p50 8.27 ms
+    interaction.pan.scale_50.latency p50 2.71 ms
+    interaction.pan.scale_50.input_delay p50 7.43 ms
+    cdp.pan.scale_50.round_trip p50 8.27 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.27 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.29 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.12 ms
+    interaction.drag.scale_100.latency p50 3.11 ms
+    interaction.drag.scale_100.input_delay p50 7.20 ms
+    cdp.drag.scale_100.round_trip p50 8.17 ms
+    interaction.pan.scale_100.latency p50 2.58 ms
+    interaction.pan.scale_100.input_delay p50 7.43 ms
+    cdp.pan.scale_100.round_trip p50 8.14 ms
+    interaction.wheel_zoom.scale_100.latency p50 3.58 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.55 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 24.35 ms
+    interaction.drag.scale_200.latency p50 2.37 ms
+    interaction.drag.scale_200.input_delay p50 7.55 ms
+    cdp.drag.scale_200.round_trip p50 8.22 ms
+    interaction.pan.scale_200.latency p50 2.35 ms
+    interaction.pan.scale_200.input_delay p50 7.46 ms
+    cdp.pan.scale_200.round_trip p50 8.23 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.79 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.53 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.36 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+B performance #0: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+A performance #1: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+C performance #1: ok, 144 checkpoints passed, 0 failed
+    cold_start.page_ready p50 37.27 ms
+    interaction.drag.scale_50.latency p50 2.88 ms
+    interaction.drag.scale_50.input_delay p50 7.26 ms
+    cdp.drag.scale_50.round_trip p50 8.26 ms
+    interaction.pan.scale_50.latency p50 2.64 ms
+    interaction.pan.scale_50.input_delay p50 7.44 ms
+    cdp.pan.scale_50.round_trip p50 8.22 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.35 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.99 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.77 ms
+    interaction.drag.scale_100.latency p50 2.89 ms
+    interaction.drag.scale_100.input_delay p50 7.27 ms
+    cdp.drag.scale_100.round_trip p50 8.28 ms
+    interaction.pan.scale_100.latency p50 3.02 ms
+    interaction.pan.scale_100.input_delay p50 7.29 ms
+    cdp.pan.scale_100.round_trip p50 8.24 ms
+    interaction.wheel_zoom.scale_100.latency p50 4.17 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 23.13 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 24.40 ms
+    interaction.drag.scale_200.latency p50 2.76 ms
+    interaction.drag.scale_200.input_delay p50 7.21 ms
+    cdp.drag.scale_200.round_trip p50 8.13 ms
+    interaction.pan.scale_200.latency p50 2.67 ms
+    interaction.pan.scale_200.input_delay p50 7.25 ms
+    cdp.pan.scale_200.round_trip p50 8.22 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.78 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 22.93 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.02 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+B performance #1: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+A performance #2: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+C performance #2: ok, 144 checkpoints passed, 0 failed
+    cold_start.page_ready p50 54.44 ms
+    interaction.drag.scale_50.latency p50 2.88 ms
+    interaction.drag.scale_50.input_delay p50 7.24 ms
+    cdp.drag.scale_50.round_trip p50 8.21 ms
+    interaction.pan.scale_50.latency p50 2.45 ms
+    interaction.pan.scale_50.input_delay p50 7.52 ms
+    cdp.pan.scale_50.round_trip p50 8.15 ms
+    interaction.wheel_zoom.scale_50.latency p50 3.04 ms
+    interaction.wheel_zoom.scale_50.input_delay p50 23.19 ms
+    cdp.wheel_zoom.scale_50.round_trip p50 24.35 ms
+    interaction.drag.scale_100.latency p50 2.92 ms
+    interaction.drag.scale_100.input_delay p50 7.22 ms
+    cdp.drag.scale_100.round_trip p50 8.23 ms
+    interaction.pan.scale_100.latency p50 2.90 ms
+    interaction.pan.scale_100.input_delay p50 7.32 ms
+    cdp.pan.scale_100.round_trip p50 8.22 ms
+    interaction.wheel_zoom.scale_100.latency p50 4.32 ms
+    interaction.wheel_zoom.scale_100.input_delay p50 22.94 ms
+    cdp.wheel_zoom.scale_100.round_trip p50 23.93 ms
+    interaction.drag.scale_200.latency p50 2.79 ms
+    interaction.drag.scale_200.input_delay p50 7.28 ms
+    cdp.drag.scale_200.round_trip p50 8.21 ms
+    interaction.pan.scale_200.latency p50 2.64 ms
+    interaction.pan.scale_200.input_delay p50 7.23 ms
+    cdp.pan.scale_200.round_trip p50 8.15 ms
+    interaction.wheel_zoom.scale_200.latency p50 3.80 ms
+    interaction.wheel_zoom.scale_200.input_delay p50 23.05 ms
+    cdp.wheel_zoom.scale_200.round_trip p50 24.05 ms
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+    ok   interaction.listeners_return_to_baseline: pass, 5 before the build, 110 while it stood, 5 after the teardown
+    ok   interaction.listeners_are_seen_while_built: pass, 105 listeners were added by a scene whose nodes are draggable
+    ok   interaction.dom_returns_to_baseline: pass, 7 elements before, 138 while built, 7 after, host present false
+B performance #2: ok, 1 checkpoints passed, 0 failed
+    ok   the run is valid (ok)
+    ok   it executed the intended mutations stream (56 operations)
+
+the median of each timing in every repetition (the spread is highest over lowest):
+  C performance cold_start.page_ready: 37.3 to 54.4 ms over 3 repetitions, 46% apart
+  C performance interaction.drag.scale_50.latency: 2.88 to 3.10 ms over 3 repetitions, 8% apart
+  C performance interaction.drag.scale_50.input_delay: 7.14 to 7.26 ms over 3 repetitions, 2% apart
+  C performance cdp.drag.scale_50.round_trip: 8.21 to 8.27 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_50.latency: 2.45 to 2.71 ms over 3 repetitions, 11% apart
+  C performance interaction.pan.scale_50.input_delay: 7.43 to 7.52 ms over 3 repetitions, 1% apart
+  C performance cdp.pan.scale_50.round_trip: 8.15 to 8.27 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_50.latency: 3.04 to 3.35 ms over 3 repetitions, 10% apart
+  C performance interaction.wheel_zoom.scale_50.input_delay: 23.2 to 24.0 ms over 3 repetitions, 3% apart
+  C performance cdp.wheel_zoom.scale_50.round_trip: 24.1 to 24.8 ms over 3 repetitions, 3% apart
+  C performance interaction.drag.scale_100.latency: 2.89 to 3.11 ms over 3 repetitions, 8% apart
+  C performance interaction.drag.scale_100.input_delay: 7.20 to 7.27 ms over 3 repetitions, 1% apart
+  C performance cdp.drag.scale_100.round_trip: 8.17 to 8.28 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_100.latency: 2.58 to 3.02 ms over 3 repetitions, 17% apart
+  C performance interaction.pan.scale_100.input_delay: 7.29 to 7.43 ms over 3 repetitions, 2% apart
+  C performance cdp.pan.scale_100.round_trip: 8.14 to 8.24 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_100.latency: 3.58 to 4.32 ms over 3 repetitions, 21% apart
+  C performance interaction.wheel_zoom.scale_100.input_delay: 22.9 to 23.6 ms over 3 repetitions, 3% apart
+  C performance cdp.wheel_zoom.scale_100.round_trip: 23.9 to 24.4 ms over 3 repetitions, 2% apart
+  C performance interaction.drag.scale_200.latency: 2.37 to 2.79 ms over 3 repetitions, 18% apart
+  C performance interaction.drag.scale_200.input_delay: 7.21 to 7.55 ms over 3 repetitions, 5% apart
+  C performance cdp.drag.scale_200.round_trip: 8.13 to 8.22 ms over 3 repetitions, 1% apart
+  C performance interaction.pan.scale_200.latency: 2.35 to 2.67 ms over 3 repetitions, 14% apart
+  C performance interaction.pan.scale_200.input_delay: 7.23 to 7.46 ms over 3 repetitions, 3% apart
+  C performance cdp.pan.scale_200.round_trip: 8.15 to 8.23 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_200.latency: 3.78 to 3.80 ms over 3 repetitions, 1% apart
+  C performance interaction.wheel_zoom.scale_200.input_delay: 22.9 to 23.5 ms over 3 repetitions, 3% apart
+  C performance cdp.wheel_zoom.scale_200.round_trip: 24.0 to 24.4 ms over 3 repetitions, 1% apart
+
+every deterministic gate passed

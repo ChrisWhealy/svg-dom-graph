@@ -1,0 +1,23 @@
+ok   a frame that begins after the mark and has a style step carries it, 12 ms to presentation
+ok   the presentation is also given on the page clock, through the mark
+ok   an instant of the trace converts to the page clock through a mark
+ok   a frame with no style or layout step is skipped
+ok   a frame already in flight when the mark was written is not taken for it (frame 6)
+ok   a mark inside a frame, before its style step, belongs to that frame and not the next
+ok   a mark after its frame's style step, with a later frame that has one, is ambiguous: the mark fell after the style step of its frame, and a later frame also has one, so they cannot be told apart
+ok   no frame within the bound is unavailable: no frame with a style or layout step began within 250 ms of the mark
+ok   a frame that was not presented is unavailable: frame 7 was not presented in full, it ended as STATE_NO_UPDATE_DESIRED
+ok   a part that was presented early is not taken for the frame, 20 ms to the whole
+ok   a frame of which only a part was presented is unavailable: frame 7 was not presented in full, it ended as STATE_PRESENTED_PARTIAL
+ok   a dropped frame is unavailable: frame 7 was not presented in full, it ended as STATE_DROPPED
+ok   a frame with no compositor record is unavailable: the compositor has no record of frame 7 in the trace
+ok   a trace that lost data is unavailable: the trace lost data, so a frame may be missing from it
+ok   a mark that was written twice is unavailable: the mark m was written more than once
+ok   a mark that is not in the trace is unavailable
+ok   the frames and pipelines of another process are not read for this page
+ok   a reused pipeline identifier pairs each end with its own beginning
+ok   a frame that only paints is not a style frame: no frame with a style or layout step began within 250 ms of the mark
+ok   with the wider qualifier, the frame that paints carries it
+ok   a frame that neither restyles nor paints never qualifies, however wide: no frame with a style, layout or paint step began within 250 ms of the mark
+
+the attribution rule behaves as designed on every hand-written trace

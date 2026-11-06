@@ -1,0 +1,92 @@
+{
+  "schema_version": 1,
+  "manifest": {
+    "id": "w4-interaction-medium",
+    "sha256": "40f95bdf3b212ab5ddc7fb2c3409e93ae24700d0ece07441caef71020ae744a0",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "interaction",
+      "seed": 2026,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 80,
+        "edges": 120,
+        "maximum_degree": 6
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 3,
+        "measurement_iterations": 30,
+        "repetitions": 3
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": true,
+        "capture_wasm_capacity": false,
+        "capture_wasm_live_allocation": false,
+        "capture_frame_timing": true,
+        "checkpoint_every": 1
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "interaction": {
+        "scales_percent": [
+          50,
+          100,
+          200
+        ],
+        "gestures": [
+          "drag",
+          "pan",
+          "wheel_zoom"
+        ],
+        "steps": 8,
+        "step_pixels": 6
+      },
+      "limits": {
+        "wall_ms": 120000
+      }
+    }
+  },
+  "stream": {
+    "encoding_version": 1,
+    "operations": 202,
+    "mutations": 201,
+    "sha256": "1fa83c67492f94dda36d945bdce24456d6e5ee22806b9f969b1bba88c9860d70",
+    "mutations_sha256": "8bf4fd190864f2861db11153fb9d7071c751640c11e6a86f77790aa580fcc709"
+  },
+  "checkpoints": [
+    {
+      "index": 0,
+      "op_index": 201,
+      "model_sha256": "69185e5ee2f9c1219b871421518f6cdb3c7743fd77fc940a5feff099592ca291",
+      "section_sha256": {
+        "accessibility": "a91d7cc1eff74cb5a904d6073dd7724daedc69c4d432de62a1630a2e51bf94a6",
+        "content": "43629eccad7c9f6673a3f40a8079a0df632c700aa29e09a1bc2dc8eb5cc695d9",
+        "dom_identity": "5c56afe00e590d6fc2e077093c8ba9b1fd680ccd10c93a25939b5424aa03cc02",
+        "interaction": "49410401e3ed3a7cce1f5c88f4ce1ed9e7189e08551de25a27e1155444e63a44",
+        "paint_order": "cb0d5d844ffb81295a4c8711da0845360d5e53f59a673870137803474c415d38",
+        "topology": "93bfe0d33533ac9a8622717db7e25a76e1c70389f6db12f3f8e8ce26789e6358"
+      }
+    }
+  ],
+  "sections": {
+    "modelled": [
+      "topology",
+      "content",
+      "interaction",
+      "geometry",
+      "paint_order"
+    ],
+    "provisional": [],
+    "not_modelled": [
+      "dom_identity.ids",
+      "accessibility"
+    ]
+  }
+}

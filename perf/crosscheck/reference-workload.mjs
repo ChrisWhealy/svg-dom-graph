@@ -151,6 +151,10 @@ export const generate = manifest => {
       if (every !== null && (step + 1) % every === 0) checkpoint()
     }
     if (!lastWasCheckpoint) checkpoint()
+  } else if (workload === 'interaction') {
+    emit(ops.createScene())
+    build(planFor(0))
+    checkpoint()
   } else {
     const fixed = workload === 'scene_construction' ? planFor(0) : null
     for (let cycle = 0; cycle < total; cycle++) {

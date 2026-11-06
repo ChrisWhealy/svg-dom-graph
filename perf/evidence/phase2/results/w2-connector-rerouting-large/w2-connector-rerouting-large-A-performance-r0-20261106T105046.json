@@ -1,0 +1,97 @@
+{
+  "schema_version": 1,
+  "run_id": "w2-connector-rerouting-large-A-performance-r0-20261106T105046",
+  "started_at": "2026-11-06T10:50:46.084Z",
+  "repetition": 0,
+  "sequence_position": 2,
+  "environment": {
+    "kind": "native",
+    "os": "Darwin 27.2.0",
+    "cpu": "Apple M6",
+    "memory_bytes": 34359738368,
+    "runner_class": "local",
+    "timer_resolution_us": 0.041,
+    "protocol_version": "1",
+    "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
+    "wasm_pack": "wasm-pack 0.15.1",
+    "crate_version": "0.2.47",
+    "git_sha": "87363474c6cda31001fb6197850caac3dd24f74f",
+    "git_dirty": true,
+    "build_profile": "release"
+  },
+  "manifest": {
+    "id": "w2-connector-rerouting-large",
+    "sha256": "937dce3f0756ff5274dab77b587c015817fa945c7f619468effe0194d2a9b58e",
+    "operation_stream_scope": "mutations",
+    "operation_stream_sha256": "4ff9c1294c9f05c02d1702cba2f80305f27e00835b99cb3791430eb3c4f9006c",
+    "canonical": {
+      "schema_version": 1,
+      "workload": "connector_rerouting",
+      "seed": 12345,
+      "prng": "splitmix64",
+      "graph": {
+        "nodes": 1000,
+        "edges": 3000,
+        "maximum_degree": 16
+      },
+      "execution": {
+        "modes": [
+          "correctness",
+          "performance"
+        ],
+        "warmup_iterations": 100,
+        "measurement_iterations": 1000,
+        "repetitions": 5,
+        "order": "interleaved"
+      },
+      "measurement": {
+        "capture_dom_counts": true,
+        "capture_listener_tally": true,
+        "capture_heap": false,
+        "capture_wasm_capacity": true,
+        "capture_wasm_live_allocation": true,
+        "capture_frame_timing": true,
+        "checkpoint_every": 100
+      },
+      "checkpoint": {
+        "view": "unchanged"
+      },
+      "limits": {
+        "dom_nodes": 50000,
+        "wall_ms": 120000
+      }
+    }
+  },
+  "mode": "performance",
+  "status": "ok",
+  "metrics": [
+    {
+      "batch_size": 33,
+      "dropped": 0,
+      "kind": "batch_throughput",
+      "layer": "A",
+      "mechanism": "std::time::Instant, over the library's boundary_point for each connector at the moved node",
+      "name": "rust.connector_endpoints",
+      "outliers_flagged": 0,
+      "samples": 999,
+      "status": "measured",
+      "summary": {
+        "max": 0.34724242424242424,
+        "min": 0.012606060606060607,
+        "p50": 0.09218181818181817,
+        "p95": 0.18436363636363634
+      },
+      "unit": "us",
+      "within_run": {
+        "iqr": 0.11742424242424243,
+        "mean": 0.10766047866047838,
+        "stddev": 0.054033626493779637,
+        "tukey_high": 0.3591969696969697,
+        "tukey_low": -0.11050000000000001
+      }
+    }
+  ],
+  "checkpoints_passed": 2,
+  "checkpoints_failed": [],
+  "raw_samples": "perf/evidence/phase2/results/w2-connector-rerouting-large/w2-connector-rerouting-large-A-performance-r0-20261106T105046.samples.ndjson"
+}

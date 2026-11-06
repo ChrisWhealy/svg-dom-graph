@@ -1,0 +1,40 @@
+# W4, interaction: one scene is built and checked, and a browser is then driven through it with real input.
+#
+# The larger manifest, of 80 nodes, with enough moves that the drag and the pan of each scale give 240 observations, which is
+# what a p95 needs. A wheel zoom is one observation a gesture, so it gives 30 and no p95. The scales are 50%, 100% and 200%.
+schema_version = 1
+workload = "interaction"
+seed = 2026
+prng = "splitmix64"
+
+[graph]
+nodes = 80
+edges = 120
+maximum_degree = 6
+
+[execution]
+modes = ["correctness", "performance"]
+warmup_iterations = 3
+measurement_iterations = 30
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = false
+capture_wasm_live_allocation = false
+capture_frame_timing = true
+checkpoint_every = 1
+
+[checkpoint]
+view = "unchanged"
+
+[interaction]
+scales_percent = [50, 100, 200]
+gestures = ["drag", "pan", "wheel_zoom"]
+steps = 8
+step_pixels = 6
+
+[limits]
+wall_ms = 120000

@@ -1,0 +1,27 @@
+Chrome Chrome/157.0.8103.39
+
+1 known cost, one at a time: 70 samples, 70 given a frame, 70 of those hold the sample's own callback, 70 presented after it ends
+  none presented sooner than the callback's own cost: true; latency by cost (ms): 0→5.2 2→3.5 5→8.1 9→23.2 14→16.5 20→26.5 30→44.1
+2 unrelated work making frames at 5 ms: 70 samples, 70 given a frame, 70 of those hold the sample's own callback, 70 presented after it ends
+3 back to back, 6 ms apart: 80 samples, 80 given a frame, 80 of those hold the sample's own callback, 80 presented after it ends
+  the naive rule, the next presentation after the mark: 80 given a frame, 53 of them right
+4a a mutation that changes nothing: 20 samples, 0 given a frame (it should be none)
+4b a trace with a 16 KB buffer: 70 samples, 0 given a frame, 0 of those hold the sample's own callback, 0 presented after it ends, unavailable: {"the trace lost data, so a frame may be missing from it":70}
+  Chrome reported data loss: true; the marks that survived: 1 of 70
+6 layout forced in the task: 40 samples, 0 given a frame by the style rule, 40 by the wider rule, of which 40 hold the callback
+5 real input, written at once: 40 samples, 40 given a frame, 40 of those hold the sample's own callback, 40 presented after it ends
+  the mark was inside a main frame 40 times and before one 0 times; CDP round trip median 5.19 ms
+5 real input, deferred to the frame: 40 samples, 40 given a frame, 40 of those hold the sample's own callback, 40 presented after it ends
+  the mark was inside a main frame 40 times and before one 0 times; CDP round trip median 1.94 ms
+
+ok   one at a time, every sample is given the frame that holds its callback
+ok   with unrelated work, every sample that is given a frame is given the right one
+ok   back to back, every sample that is given a frame is given the right one
+ok   the naive rule is wrong back to back, which is what the rule is for
+ok   a mutation that changes nothing is never given a frame
+ok   a trace that lost events gives no wrong frame
+ok   a change with its layout forced in the task is missed by the style rule and placed right by the wider one
+ok   real input written at once is given the right frame
+ok   real input deferred to a frame is given the right frame
+
+the rule attributes frames correctly wherever it gives an answer

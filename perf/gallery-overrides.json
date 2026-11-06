@@ -1,0 +1,31 @@
+{
+  "description": "Per-panel overrides for the gallery sweep (perf/runner/gallery-sweep.mjs). A panel needs none unless a control's accessible name is ambiguous, or it runs on a clock that has to be advanced by hand. `before_build` is evaluated in the page before the panel is first selected, `advance` after every click and once more at the end, and `next`, `previous` and `restart` are regular expressions for the accessible name of a control, used instead of the defaults. `skip` names a reason to leave the panel out of the walk and still load and revisit it.",
+  "panels": {
+    "panel-n-queens": {
+      "before_build": "window.__nQueensManualClock = true",
+      "advance": "window.__nQueensAdvance(6)"
+    },
+    "panel-tarjan": {
+      "skip": "the panel only opens the demo in its own window, and has no controls of its own to walk"
+    },
+    "panel-petri-net": {
+      "before_build": "window.__pnManualClock = true",
+      "advance": "window.__pnAdvance(6)"
+    },
+    "panel-edmonds-karp": {
+      "before_build": "window.__ekManualClock = true",
+      "advance": "window.__ekAdvance(6)"
+    },
+    "panel-red-black-tree": {
+      "before_build": "window.__rbtManualClock = true",
+      "advance": "window.__rbtAdvance(6)"
+    },
+    "panel-marching-squares": {
+      "before_build": "window.__msManualClock = true",
+      "advance": "window.__msAdvanceFrame(6)"
+    },
+    "panel-game-of-life": {
+      "next": "^step$"
+    }
+  }
+}

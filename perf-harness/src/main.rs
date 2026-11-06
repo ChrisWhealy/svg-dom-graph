@@ -34,14 +34,62 @@ fn main() -> ExitCode {
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn usage() -> ExitCode {
     eprintln!(
-        "usage: perf-harness (validate | stream | canonical | generate [--id NAME] [--out FILE] | native [--mode MODE] [--out FILE]) <manifest.toml>"
+        "usage: perf-harness (validate | stream | canonical | generate [--id NAME] [--out FILE] | gestures [--out FILE] | native [--mode MODE] [--out FILE]) <manifest.toml>"
     );
     ExitCode::from(2)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Reads a JSON array of numbers from standard input and writes the metric that describes them, so that a runner that is not
+/// written in Rust describes its samples with the same statistics as the ones that are.
+///
+/// `metric --name NAME --layer A|B|C --unit ms|us --mechanism TEXT [--batch N]`
+fn metric(args: &[String]) -> Result<(), String> {
+    use perf_harness::metrics::{Layer, mark_resolution_limited, timing};
+    let (mut name, mut layer, mut unit, mut mechanism, mut batch, mut resolution) =
+        (None, None, None, None, None, None);
+    let mut args = args.iter();
+    while let Some(arg) = args.next() {
+        let mut value = || args.next().cloned().ok_or(format!("{arg} needs a value"));
+        match arg.as_str() {
+            "--name" => name = Some(value()?),
+            "--layer" => layer = Some(value()?),
+            "--unit" => unit = Some(value()?),
+            "--mechanism" => mechanism = Some(value()?),
+            "--batch" => batch = Some(value()?.parse::<u32>().map_err(|e| e.to_string())?),
+            "--resolution-us" => resolution = Some(value()?.parse::<f64>().map_err(|e| e.to_string())?),
+            other => return Err(format!("unknown option {other}")),
+        }
+    }
+    let layer = match layer.as_deref() {
+        Some("A") => Layer::A,
+        Some("B") => Layer::B,
+        Some("C") => Layer::C,
+        _ => return Err("--layer must be A, B or C".to_string()),
+    };
+    let samples: Vec<f64> = serde_json::from_reader(std::io::stdin()).map_err(|e| format!("the samples: {e}"))?;
+    let name = name.ok_or("--name is required")?;
+    let mut value = timing(
+        &name,
+        layer,
+        &unit.ok_or("--unit is required")?,
+        &samples,
+        batch,
+        &mechanism.ok_or("--mechanism is required")?,
+    );
+    if let Some(resolution) = resolution {
+        mark_resolution_limited(&mut value, resolution);
+    }
+    println!("{value}");
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 fn run(args: &[String]) -> Result<(), String> {
     let (command, rest) = args.split_first().ok_or("no command")?;
+    if command == "metric" {
+        return metric(rest);
+    }
     let mut path = None;
     let mut id = None;
     let mut out = None;
@@ -90,6 +138,18 @@ fn run(args: &[String]) -> Result<(), String> {
             };
             let outcome = perf_harness::layer_a::run(&manifest, mode).map_err(|e| e.to_string())?;
             let json = serde_json::to_string_pretty(&outcome).map_err(|e| e.to_string())?;
+            match out {
+                Some(file) => std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}")),
+                None => {
+                    println!("{json}");
+                    Ok(())
+                },
+            }
+        },
+        "gestures" => {
+            let plan = perf_harness::gestures::plan(&manifest).map_err(|e| e.to_string())?;
+            let json = serde_json::to_string(&serde_json::json!({"sha256": plan.sha256(), "plan": plan}))
+                .map_err(|e| e.to_string())?;
             match out {
                 Some(file) => std::fs::write(&file, json + "\n").map_err(|e| format!("{file}: {e}")),
                 None => {

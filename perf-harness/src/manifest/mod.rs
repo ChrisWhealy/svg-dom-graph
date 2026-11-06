@@ -23,6 +23,8 @@ pub enum Workload {
     ConnectorRerouting,
     /// W3: build, drop and remove a scene again and again, with a different graph each time.
     SceneLifecycle,
+    /// W4: build a scene once and leave it for a browser to be driven through with real input. See [`Interaction`].
+    Interaction,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -57,6 +59,67 @@ pub enum ViewPolicy {
     Unchanged,
     Expected,
     Ignored,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+#[derive(Debug, Clone, Copy, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(rename_all = "snake_case")]
+pub enum GestureKind {
+    /// Press on a node, move, and release.
+    Drag,
+    /// Press on the background, move, and release.
+    Pan,
+    /// One wheel event with the control key held.
+    WheelZoom,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// What a browser is asked to do to the scene of workload W4, and at what scale of the view.
+///
+/// A scale is in percent, since a manifest holds no floating-point number that would have to be compared for equality. Every
+/// gesture is made once for each of the measured and warm-up iterations at each scale, so the cases are the scales times the
+/// gestures.
+#[derive(Debug, Clone, PartialEq, Eq, Serialize, Deserialize)]
+#[serde(deny_unknown_fields)]
+pub struct Interaction {
+    pub scales_percent: Vec<u32>,
+    pub gestures: Vec<GestureKind>,
+    /// How many pointer moves a drag or a pan is made of.
+    pub steps: u32,
+    /// How far the pointer moves at each step at most, in pixels.
+    pub step_pixels: u32,
+}
+
+impl Interaction {
+    /// The scales that the library's view accepts, in percent: a quarter to four times.
+    pub const SCALE_RANGE_PERCENT: std::ops::RangeInclusive<u32> = 25..=400;
+
+    // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+    fn check(&self) -> Result<(), ManifestError> {
+        let refuse = |message: &str| Err(ManifestError::Semantic(message.to_string()));
+        if self.scales_percent.is_empty() || self.gestures.is_empty() {
+            return refuse("interaction needs at least one scale and one gesture");
+        }
+        for (index, scale) in self.scales_percent.iter().enumerate() {
+            if !Self::SCALE_RANGE_PERCENT.contains(scale) {
+                return refuse(
+                    "interaction.scales_percent must each be from 25 to 400, which is what the view accepts",
+                );
+            }
+            if self.scales_percent[..index].contains(scale) {
+                return refuse("interaction.scales_percent must not repeat a scale");
+            }
+        }
+        for (index, gesture) in self.gestures.iter().enumerate() {
+            if self.gestures[..index].contains(gesture) {
+                return refuse("interaction.gestures must not repeat a gesture");
+            }
+        }
+        if !(1..=100).contains(&self.steps) || !(1..=50).contains(&self.step_pixels) {
+            return refuse("interaction.steps must be from 1 to 100 and interaction.step_pixels from 1 to 50");
+        }
+        Ok(())
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -130,6 +193,8 @@ pub struct Manifest {
     pub measurement: Measurement,
     #[serde(default, skip_serializing_if = "Option::is_none")]
     pub checkpoint: Option<CheckpointPolicy>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub interaction: Option<Interaction>,
     pub limits: Limits,
 }
 
@@ -156,6 +221,7 @@ impl std::fmt::Display for ManifestError {
 
 impl std::error::Error for ManifestError {}
 
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 impl Manifest {
     /// Reads, validates and checks a manifest.
     ///
@@ -260,6 +326,14 @@ impl Manifest {
         }
         if self.workload == Workload::ConnectorRerouting && self.graph.edges.is_none() {
             return refuse("connector_rerouting needs graph.edges");
+        }
+        match (&self.interaction, self.workload) {
+            (None, Workload::Interaction) => return refuse("the interaction workload needs an [interaction] table"),
+            (Some(_), workload) if workload != Workload::Interaction => {
+                return refuse("only the interaction workload takes an [interaction] table");
+            },
+            (Some(interaction), _) => interaction.check()?,
+            (None, _) => {},
         }
         Ok(())
     }

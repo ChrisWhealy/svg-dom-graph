@@ -3,13 +3,13 @@ the counting allocator is verified
 results in perf/evidence/phase2/results/w3-scene-lifecycle-endurance
 
 B endurance #0: ok, 2 checkpoints passed, 0 failed
-    construction.create_scene p50 10.00 us
-    construction.nodes p50 590.00 us
-    construction.edges p50 355.00 us
-    construction.total p50 960.00 us
+    construction.create_scene p50 5.00 us
+    construction.nodes p50 560.00 us
+    construction.edges p50 335.00 us
+    construction.total p50 910.00 us
     teardown.drop_scene p50 5.00 us
     teardown.remove_host p50 15.00 us
-    teardown.total p50 20.00 us
+    teardown.total p50 15.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (27064 operations)
     ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 21 to 219, within the 0 allowed
@@ -17,12 +17,12 @@ B endurance #0: ok, 2 checkpoints passed, 0 failed
     ok   listeners after teardown equal those before the build (delta 0)
 B endurance #1: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 5.00 us
-    construction.nodes p50 570.00 us
-    construction.edges p50 335.00 us
-    construction.total p50 915.00 us
+    construction.nodes p50 555.00 us
+    construction.edges p50 325.00 us
+    construction.total p50 890.00 us
     teardown.drop_scene p50 5.00 us
     teardown.remove_host p50 15.00 us
-    teardown.total p50 20.00 us
+    teardown.total p50 15.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (27064 operations)
     ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 21 to 219, within the 0 allowed
@@ -30,12 +30,12 @@ B endurance #1: ok, 2 checkpoints passed, 0 failed
     ok   listeners after teardown equal those before the build (delta 0)
 B endurance #2: ok, 2 checkpoints passed, 0 failed
     construction.create_scene p50 5.00 us
-    construction.nodes p50 570.00 us
-    construction.edges p50 335.00 us
-    construction.total p50 915.00 us
+    construction.nodes p50 555.00 us
+    construction.edges p50 330.00 us
+    construction.total p50 900.00 us
     teardown.drop_scene p50 5.00 us
     teardown.remove_host p50 15.00 us
-    teardown.total p50 20.00 us
+    teardown.total p50 15.00 us
     ok   the run is valid (ok)
     ok   it executed the intended mutations stream (27064 operations)
     ok   endurance.live_bytes_do_not_grow: pass, live bytes moved by 0 and trend by 0.00 a cycle over cycles 21 to 219, within the 0 allowed
@@ -43,12 +43,12 @@ B endurance #2: ok, 2 checkpoints passed, 0 failed
     ok   listeners after teardown equal those before the build (delta 0)
 
 the median of each timing in every repetition (the spread is highest over lowest):
-  B endurance construction.create_scene: 5.00 to 10.0 us over 3 repetitions, 100% apart (under 50 timer steps, so coarse)
-  B endurance construction.nodes: 570 to 590 us over 3 repetitions, 4% apart
-  B endurance construction.edges: 335 to 355 us over 3 repetitions, 6% apart
-  B endurance construction.total: 915 to 960 us over 3 repetitions, 5% apart
+  B endurance construction.create_scene: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B endurance construction.nodes: 555 to 560 us over 3 repetitions, 1% apart
+  B endurance construction.edges: 325 to 335 us over 3 repetitions, 3% apart
+  B endurance construction.total: 890 to 910 us over 3 repetitions, 2% apart
   B endurance teardown.drop_scene: 5.00 to 5.00 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
   B endurance teardown.remove_host: 15.0 to 15.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
-  B endurance teardown.total: 20.0 to 20.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
+  B endurance teardown.total: 15.0 to 15.0 us over 3 repetitions, 0% apart (under 50 timer steps, so coarse)
 
 every deterministic gate passed

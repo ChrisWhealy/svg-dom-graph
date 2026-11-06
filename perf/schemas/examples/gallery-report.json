@@ -1,0 +1,43 @@
+{
+  "schema_version": 1,
+  "browser": "Chrome/157.0.8103.39",
+  "viewport": [1280, 900],
+  "cold_start_ms": 74.2,
+  "cold_start_definition": "performance.now() in the page when the first panel is on screen, which is from the start of the navigation",
+  "teardown": "not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown",
+  "git_sha": "0123456789abcdef0123456789abcdef01234567",
+  "git_dirty": false,
+  "page_errors": [],
+  "panels": [
+    {
+      "id": "panel-tree",
+      "label": "Directed tree",
+      "group": "Basic Nodes",
+      "status": "ok",
+      "notes": [],
+      "errors": [],
+      "build": { "ms": 52.7 },
+      "revisit": { "ms": 9.1 },
+      "counts": { "elements_before": 2231, "elements_after": 2424, "listeners_before": 64, "listeners_after": 109, "elements_after_revisit": 2424, "listeners_after_revisit": 109 },
+      "controls": [{ "name": "Root. Output to Left child. Output to Right child.", "role": "g", "disabled": false }],
+      "walk": { "status": "downgraded", "reason": "the panel has no Next, Previous or Restart control by accessible name, and no clock to advance" }
+    },
+    {
+      "id": "panel-n-queens",
+      "label": "Backtracking",
+      "group": "Backtracking",
+      "status": "ok",
+      "notes": [],
+      "errors": [],
+      "build": { "unavailable": "no frame with a style, layout or paint step began within 2000 ms of the mark" },
+      "revisit": { "ms": 38.9 },
+      "counts": { "elements_before": 2424, "elements_after": 7386, "listeners_before": 109, "listeners_after": 120, "elements_after_revisit": 7386, "listeners_after_revisit": 120 },
+      "controls": [
+        { "name": "Restart", "role": "button", "disabled": false },
+        { "name": "Previous", "role": "button", "disabled": true },
+        { "name": "Next", "role": "button", "disabled": false }
+      ],
+      "walk": { "status": "walked", "forward": 6, "back": 6, "restarted": true, "clicks": 13, "changed": 13, "step_ms": [14.2, 15.8], "steps_unattributed": 11, "returned_to_start": true, "errors": [] }
+    }
+  ]
+}

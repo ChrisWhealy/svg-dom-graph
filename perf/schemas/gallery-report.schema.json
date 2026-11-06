@@ -1,0 +1,140 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "urn:svg-dom-graph:perf:gallery-report:1",
+  "title": "The report of a sweep of the demo gallery",
+  "description": "What perf/runner/gallery-sweep.mjs writes: for every panel, the time of its first visit and of a revisit, the counts either side, the errors, and the walk of its controls. It is strict, so a misspelt field is an error. The gallery builds each panel once and later only hides it, so a visit and a revisit are not a teardown, and the report says so.",
+  "type": "object",
+  "$defs": {
+    "timed": {
+      "description": "A time in ms, from a real click to the end of the frame that shows the panel, or the reason that no frame could be found.",
+      "oneOf": [
+        {
+          "type": "object",
+          "properties": { "ms": { "type": "number", "minimum": 0 } },
+          "required": ["ms"],
+          "additionalProperties": false
+        },
+        {
+          "type": "object",
+          "properties": { "unavailable": { "type": "string", "minLength": 1 } },
+          "required": ["unavailable"],
+          "additionalProperties": false
+        }
+      ]
+    },
+    "count": {
+      "type": ["integer", "null"],
+      "minimum": 0
+    },
+    "problem": {
+      "type": "object",
+      "properties": {
+        "kind": { "enum": ["exception", "console.error"] },
+        "text": { "type": "string" }
+      },
+      "required": ["kind", "text"],
+      "additionalProperties": false
+    }
+  },
+  "properties": {
+    "schema_version": { "const": 1 },
+    "browser": { "type": ["string", "null"] },
+    "viewport": {
+      "type": "array",
+      "items": { "type": "integer", "minimum": 1 },
+      "minItems": 2,
+      "maxItems": 2
+    },
+    "cold_start_ms": { "type": "number", "minimum": 0 },
+    "cold_start_definition": { "type": "string", "minLength": 1 },
+    "teardown": { "type": "string", "minLength": 1 },
+    "git_sha": { "type": ["string", "null"] },
+    "git_dirty": { "type": "boolean" },
+    "page_errors": { "type": "array", "items": { "$ref": "#/$defs/problem" } },
+    "panels": {
+      "type": "array",
+      "items": {
+        "type": "object",
+        "properties": {
+          "id": { "type": "string", "pattern": "^panel-" },
+          "label": { "type": "string", "minLength": 1 },
+          "group": { "type": "string" },
+          "status": {
+            "enum": ["ok", "errors", "error"],
+            "description": "ok if it came up and the page said nothing, errors if it came up and the page threw or logged an error, error if selecting it did not make it the current panel"
+          },
+          "notes": { "type": "array", "items": { "type": "string" } },
+          "errors": { "type": "array", "items": { "$ref": "#/$defs/problem" } },
+          "build": { "$ref": "#/$defs/timed" },
+          "revisit": { "$ref": "#/$defs/timed" },
+          "counts": {
+            "type": "object",
+            "properties": {
+              "elements_before": { "$ref": "#/$defs/count" },
+              "elements_after": { "$ref": "#/$defs/count" },
+              "listeners_before": { "$ref": "#/$defs/count" },
+              "listeners_after": { "$ref": "#/$defs/count" },
+              "elements_after_revisit": { "$ref": "#/$defs/count" },
+              "listeners_after_revisit": { "$ref": "#/$defs/count" }
+            },
+            "required": ["elements_before", "elements_after", "listeners_before", "listeners_after"],
+            "additionalProperties": false
+          },
+          "controls": {
+            "type": "array",
+            "items": {
+              "type": "object",
+              "properties": {
+                "name": { "type": "string", "minLength": 1 },
+                "role": { "type": "string" },
+                "disabled": { "type": "boolean" }
+              },
+              "required": ["name", "role", "disabled"],
+              "additionalProperties": false
+            }
+          },
+          "walk": {
+            "type": "object",
+            "properties": {
+              "status": { "enum": ["walked", "downgraded", "skipped"] },
+              "reason": { "type": "string", "minLength": 1 },
+              "forward": { "type": "integer", "minimum": 0 },
+              "back": { "type": "integer", "minimum": 0 },
+              "restarted": { "type": "boolean" },
+              "clicks": { "type": "integer", "minimum": 0 },
+              "changed": { "type": "integer", "minimum": 0 },
+              "step_ms": { "type": "array", "items": { "type": "number", "minimum": 0 } },
+              "steps_unattributed": { "type": "integer", "minimum": 0 },
+              "unattributed": {
+                "type": "object",
+                "description": "Why the clicks that could not be placed in a frame could not, by reason, with the numbers in each reason replaced by N.",
+                "additionalProperties": { "type": "integer", "minimum": 1 }
+              },
+              "returned_to_start": { "type": "boolean" },
+              "errors": { "type": "array", "items": { "$ref": "#/$defs/problem" } }
+            },
+            "required": ["status"],
+            "additionalProperties": false,
+            "allOf": [
+              {
+                "if": { "properties": { "status": { "enum": ["skipped", "downgraded"] } }, "required": ["status"] },
+                "then": { "required": ["reason"] }
+              },
+              {
+                "if": { "properties": { "status": { "const": "walked" } }, "required": ["status"] },
+                "then": {
+                  "required": ["forward", "back", "restarted", "clicks", "changed", "step_ms", "steps_unattributed", "returned_to_start", "errors"],
+                  "not": { "required": ["reason"] }
+                }
+              }
+            ]
+          }
+        },
+        "required": ["id", "label", "group", "status", "notes", "errors", "build", "counts", "controls", "walk"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["schema_version", "browser", "viewport", "cold_start_ms", "cold_start_definition", "teardown", "panels", "page_errors"],
+  "additionalProperties": false
+}

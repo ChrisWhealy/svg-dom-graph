@@ -29,6 +29,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Retain spike results as reproducible evidence (`89a03af`) 
 - Perf Harness Phase 1: Deterministic workload engine `perf-harness` (`a2c35b3`)
 - Perf Harness Phase 2: Layer A and Layer B runners `perf-harness-wasm` (`78eacc4`)
+- Perf Harness Phase 3: Layer C browser runner and gallery adapter (``)
 
 ### Changed
 
@@ -74,4 +75,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Wait for timing segment to close before `step()` updates reference model (`56c2522`)
 - Perf Harness: Include cycles that run a checkpoint in the endurance series (`0d5d634`)
 - Perf Harness: Explain retained allocations in endurance test results (`cb03518`)
-- Perf Harness: Performance-mode correctness checks cover the measured work (``)
+- Perf Harness: Performance-mode correctness checks cover the measured work (`8736347`)

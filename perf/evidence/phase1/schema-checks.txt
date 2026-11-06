@@ -3,6 +3,7 @@ ok   valid checkpoint
 ok   valid result
 ok   valid comparison
 ok   valid workload-report
+ok   valid gallery-report
 ok   valid checkpoint with an undrawn connector
 ok   valid native result
 ok   the result example carries the example manifest
@@ -27,6 +28,22 @@ ok   manifest rejects a missing capture option
 ok   manifest rejects a string for a count
 ok   manifest rejects a negative live growth allowance
 ok   manifest rejects a live growth allowance that is text
+ok   manifest rejects an interaction table on a workload that is not the interaction workload
+ok   manifest rejects the interaction workload with no interaction table
+ok   gallery-report rejects an unknown top-level key
+ok   gallery-report rejects a panel with no status
+ok   gallery-report rejects an unknown panel status
+ok   gallery-report rejects a panel id that is not a panel
+ok   gallery-report rejects a build with both a time and a reason
+ok   gallery-report rejects a negative time
+ok   gallery-report rejects a downgraded walk with no reason
+ok   gallery-report rejects a walked panel with no clicks
+ok   gallery-report rejects a walked panel with a reason
+ok   gallery-report rejects an unknown walk status
+ok   gallery-report rejects a control with no name
+ok   gallery-report rejects a count that is not whole
+ok   gallery-report rejects a page error of an unknown kind
+ok   gallery-report rejects a viewport of three numbers
 ok   checkpoint rejects a connector with two numbers
 ok   checkpoint rejects no nodes list
 ok   checkpoint rejects no edges list

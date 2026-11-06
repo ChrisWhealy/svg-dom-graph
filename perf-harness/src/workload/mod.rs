@@ -9,6 +9,8 @@
 //! * W1, scene construction: the same graph is built, dropped and removed again and again.
 //! * W2, connector rerouting: one scene is built, and then nodes are moved so that their connectors are routed again.
 //! * W3, scene lifecycle: a different graph is built, dropped and removed on every cycle.
+//! * W4, interaction: one scene is built and checked, and a browser is then driven through it with real input. The input is
+//!   planned by [`crate::gestures`], and is not part of this stream.
 
 use crate::manifest::{Manifest, Workload};
 use crate::ops::{Op, Phase};
@@ -228,8 +230,19 @@ pub fn generate(manifest: &Manifest, visit: Visit<'_>) -> Result<(), WorkloadErr
     match manifest.workload {
         Workload::SceneConstruction => cycles(manifest, &mut emitter, false),
         Workload::SceneLifecycle => cycles(manifest, &mut emitter, true),
+        Workload::Interaction => interaction(manifest, &mut emitter),
         Workload::ConnectorRerouting => rerouting(manifest, &mut emitter),
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The graph that a scene of this manifest is built from, which is the one that the interaction workload plans gestures over.
+///
+/// # Errors
+///
+/// Returns [`WorkloadError::Plan`] if the graph cannot be planned.
+pub fn graph_plan(manifest: &Manifest) -> Result<GraphPlan, WorkloadError> {
+    plan_for(manifest, STREAM_GRAPH)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -280,6 +293,18 @@ fn cycles(manifest: &Manifest, emitter: &mut Emitter<'_>, new_graph_each_cycle: 
         emitter.emit(Op::DropScene)?;
         emitter.emit(Op::RemoveHost)?;
     }
+    emitter.checkpoint()
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// W4: build the scene once and checkpoint it.
+///
+/// What the browser does to it afterwards is a plan of its own, so that a stream that is only the build is the same on every
+/// layer, and a checkpoint proves that the scene it is about to be driven through is the one that was meant.
+fn interaction(manifest: &Manifest, emitter: &mut Emitter<'_>) -> Result<(), WorkloadError> {
+    let plan = plan_for(manifest, STREAM_GRAPH)?;
+    emitter.emit(Op::CreateScene)?;
+    emitter.build(&plan)?;
     emitter.checkpoint()
 }
 

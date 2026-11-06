@@ -1,0 +1,41 @@
+# W4, interaction: one scene is built and checked, and a browser is then driven through it with real input.
+#
+# The small reference manifest. The gestures are made at three scales of the view, 50%, 100% and 200%, and each is a drag of a
+# node, a pan of the background, or one wheel zoom with the control key held. `warmup_iterations` and `measurement_iterations`
+# are counted for each (scale, gesture) case. Its plan is fixed in perf-harness/src/gestures/unit_tests.rs.
+schema_version = 1
+workload = "interaction"
+seed = 2026
+prng = "splitmix64"
+
+[graph]
+nodes = 24
+edges = 30
+maximum_degree = 6
+
+[execution]
+modes = ["correctness", "performance"]
+warmup_iterations = 3
+measurement_iterations = 12
+repetitions = 3
+
+[measurement]
+capture_dom_counts = true
+capture_listener_tally = true
+capture_heap = true
+capture_wasm_capacity = false
+capture_wasm_live_allocation = false
+capture_frame_timing = true
+checkpoint_every = 1
+
+[checkpoint]
+view = "unchanged"
+
+[interaction]
+scales_percent = [50, 100, 200]
+gestures = ["drag", "pan", "wheel_zoom"]
+steps = 8
+step_pixels = 6
+
+[limits]
+wall_ms = 120000

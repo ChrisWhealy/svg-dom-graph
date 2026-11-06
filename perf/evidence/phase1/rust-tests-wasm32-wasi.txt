@@ -1,4 +1,4 @@
-running 86 tests
+running 98 tests
 test compare::unit_tests::a_coordinate_that_is_not_a_number_is_always_a_difference ... ok
 test compare::unit_tests::a_difference_is_modelled_and_an_unconfirmed_rule_would_say_so ... ok
 test compare::unit_tests::a_geometry_difference_names_the_element_the_coordinate_both_values_and_the_distance ... ok
@@ -27,6 +27,18 @@ test endurance::unit_tests::the_trend_catches_growth_that_a_low_last_reading_hid
 test endurance::unit_tests::too_little_data_gives_no_figure_and_never_a_made_up_one ... ok
 test endurance::unit_tests::too_little_to_judge_is_inconclusive_and_never_a_pass ... ok
 test endurance::unit_tests::with_no_warm_up_the_first_measured_cycle_is_the_reference ... ok
+test gestures::unit_tests::a_case_does_not_depend_on_the_cases_before_it ... ok
+test gestures::unit_tests::a_drag_with_no_node_in_view_is_an_error_and_not_a_guess ... ok
+test gestures::unit_tests::a_wheel_zoom_keeps_the_pointer_where_it_is_and_stays_within_the_librarys_scales ... ok
+test gestures::unit_tests::every_drag_starts_on_a_node_that_is_in_view_and_ends_in_view ... ok
+test gestures::unit_tests::every_pan_starts_on_the_background_and_translates_by_the_movement ... ok
+test gestures::unit_tests::only_an_interaction_manifest_has_gestures ... ok
+test gestures::unit_tests::the_interaction_stream_is_one_build_and_one_checkpoint ... ok
+test gestures::unit_tests::the_manifest_refuses_a_bad_interaction_table ... ok
+test gestures::unit_tests::the_plan_of_the_reference_manifest_is_fixed ... ok
+test gestures::unit_tests::the_same_manifest_gives_the_same_plan_and_another_seed_does_not ... ok
+test gestures::unit_tests::the_scales_a_manifest_may_ask_for_are_the_librarys_range ... ok
+test gestures::unit_tests::there_is_a_case_for_every_scale_and_gesture_with_the_counts_asked_for ... ok
 test manifest::unit_tests::a_manifest_that_breaks_the_rules_is_refused ... ok
 test manifest::unit_tests::changing_a_value_changes_the_hash ... ok
 test manifest::unit_tests::every_shared_rejected_manifest_is_refused ... ok
@@ -86,7 +98,7 @@ test workload::unit_tests::the_busiest_node_is_moved_more_often_than_chance ... 
 test workload::unit_tests::the_same_manifest_gives_the_same_stream_and_another_seed_does_not ... ok
 test workload::unit_tests::the_warm_up_and_measured_markers_sit_at_the_right_places ... ok
 
-test result: ok. 86 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
+test result: ok. 98 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in <time>
 
 running 0 tests
 
