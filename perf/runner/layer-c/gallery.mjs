@@ -22,6 +22,7 @@ import { launch, serve } from '../../lib/chrome-session.mjs'
 import { attribute } from '../../lib/frames.mjs'
 import { pause } from '../../lib/input.mjs'
 import { traced } from '../../lib/trace.mjs'
+import { judgeWalk, unwalked } from './walk-verdict.mjs'
 
 const root = path.resolve(import.meta.dirname, '../../..')
 const tracker = fs.readFileSync(path.join(root, 'perf/page/listener-tracker.js'), 'utf8')
@@ -36,7 +37,7 @@ const DEFAULT_NAMES = {
 const MAX_STEPS = 6
 
 // The page's side: a recorder like Layer C's for the click, and the finders that a real click needs a place from.
-const PAGE = `
+export const PAGE = `
 ;(() => {
   const events = []
   addEventListener('click', event => {
@@ -78,16 +79,19 @@ const PAGE = `
       const element = [...(section()?.querySelectorAll('[role="button"], button') ?? [])].find(candidate => pattern.test(name(candidate)))
       return element ? { ...centre(element), name: name(element), disabled: element.getAttribute('aria-disabled') === 'true' || element.disabled === true } : null
     },
-    // What the panel looks like, as a number, so that a click can be told to have changed something. The panel's own text and
-    // the attributes that a step changes are in it.
-    fingerprint: () => {
+    // What the panel looks like, as numbers cannot say it exactly: positions come from measured text widths, which drift in the
+    // fifth decimal place from one layout to the next, so every number is rounded to a tenth of a pixel first.
+    parts: () => {
+      const round = text => text.replace(/-?\\d+\\.\\d{2,}/g, number => String(Math.round(Number(number) * 10) / 10))
       const s = section()
-      if (!s) return null
+      return s ? [...s.querySelectorAll('*')].map(element => element.localName + '|' + (element.getAttribute('class') ?? '') + '|' + round(element.getAttribute('transform') ?? '') + '|' + (element.getAttribute('fill') ?? '') + '|' + round((element.getAttribute('d') ?? '').slice(0, 60)) + '|' + round(element.getAttribute('aria-label') ?? '') + '|' + (element.children.length === 0 ? round(element.textContent) : '')) : []
+    },
+    // The parts as one number, so that two states can be compared without keeping both.
+    fingerprint: () => {
+      const parts = window.perfG.parts()
+      if (parts.length === 0) return null
       let hash = 0
-      for (const element of s.querySelectorAll('*')) {
-        const text = element.localName + (element.getAttribute('transform') ?? '') + (element.getAttribute('fill') ?? '') + (element.getAttribute('d') ?? '') + (element.getAttribute('aria-label') ?? '') + (element.children.length === 0 ? element.textContent : '')
-        for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) | 0
-      }
+      for (const text of parts) for (let i = 0; i < text.length; i++) hash = (hash * 31 + text.charCodeAt(i)) | 0
       return hash
     },
   }
@@ -192,29 +196,68 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
         }
       }
       if (override.skip) {
-        record.walk = { status: 'skipped', reason: override.skip }
+        record.walk = { status: 'skipped', reason: override.skip, ...unwalked(override.skip) }
       } else if (!found.next && !found.previous && !found.restart && !override.advance) {
-        record.walk = { status: 'downgraded', reason: 'the panel has no Next, Previous or Restart control by accessible name, and no clock to advance' }
+        const reason = 'the panel has no Next, Previous or Restart control by accessible name, and no clock to advance'
+        record.walk = { status: 'downgraded', reason, ...unwalked(reason) }
       } else {
         const steps = []
         const walkErrors = errors.length
         await chrome.evaluate('perfG.clear()')
-        const start = await chrome.evaluate('perfG.fingerprint()')
+        const fingerprint = () => chrome.evaluate('perfG.fingerprint()')
+        const start = await fingerprint()
+        const fingerprints = { start, forward: [], back: [], beforeRestart: null, afterRestart: null }
+        // Where two states differ, as the first few elements that are not the same, so that a mismatch can be read and not just counted.
+        const snapshots = { start: await chrome.evaluate('perfG.parts()') }
+        // The first step at which Previous missed the state that Next had left from, and where the two differ.
+        const firstRetraceMiss = () => {
+          for (let index = 0; index < fingerprints.back.length - 1; index++) {
+            const step = fingerprints.forward.length - index - 1
+            if (fingerprints.back[index] !== fingerprints.forward[step - 1]) return `at step ${step}, ${differences(`forward${step}`, `back${index}`)}`
+          }
+          return ''
+        }
+        const differences = (from, to) => {
+          const a = snapshots[from]
+          const b = snapshots[to]
+          if (!a || !b) return ''
+          const seen = []
+          for (let index = 0; index < Math.max(a.length, b.length) && seen.length < 3; index++) {
+            if (a[index] !== b[index]) seen.push(`#${index}: "${(a[index] ?? '(none)').slice(0, 90)}" became "${(b[index] ?? '(none)').slice(0, 90)}"`)
+          }
+          return a.length === b.length ? `${seen.length}+ elements differ, first ${seen.join('; ')}` : `${a.length} elements became ${b.length}; ${seen.join('; ')}`
+        }
         let taken = 0
-        const press = async (key, label) => {
+        const press = async (key, phase = key) => {
           const at = await chrome.evaluate(`perfG.find(${JSON.stringify(names[key])})`)
           if (!at || at.disabled) return false
-          const changedFrom = await chrome.evaluate('perfG.fingerprint()')
+          const changedFrom = await fingerprint()
           await click(chrome, at)
           await advance()
           await settle(chrome, 120)
-          steps.push({ label, changed: (await chrome.evaluate('perfG.fingerprint()')) !== changedFrom })
+          steps.push({ label: key, phase, changed: (await fingerprint()) !== changedFrom })
           return true
         }
         const { trace } = await traced(chrome, async () => {
-          while (taken < MAX_STEPS && (await press('next', 'next'))) taken++
-          for (let back = 0; back < taken; back++) if (!(await press('previous', 'previous'))) break
-          await press('restart', 'restart')
+          // Every state is kept as it is left, so that Previous can be held to landing on the one that Next left from.
+          while (taken < MAX_STEPS && (await press('next'))) {
+            taken++
+            fingerprints.forward.push(await fingerprint())
+            snapshots[`forward${taken}`] = await chrome.evaluate('perfG.parts()')
+          }
+          for (let back = 0; back < taken; back++) {
+            if (!(await press('previous'))) break
+            fingerprints.back.push(await fingerprint())
+            snapshots[`back${back}`] = await chrome.evaluate('perfG.parts()')
+          }
+          // Restart acts on a panel that has been moved, so the panel is moved once more if it is at its start.
+          if (fingerprints.back.at(-1) === start || fingerprints.back.length === 0) await press('next', 'nudge')
+          fingerprints.beforeRestart = await fingerprint()
+          snapshots.beforeRestart = await chrome.evaluate('perfG.parts()')
+          if (await press('restart')) {
+            fingerprints.afterRestart = await fingerprint()
+            snapshots.afterRestart = await chrome.evaluate('perfG.parts()')
+          }
           if (override.advance) {
             await advance()
             await settle(chrome, 120)
@@ -233,9 +276,12 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
           step_ms: times.filter(time => time.ms !== undefined).map(time => time.ms),
           steps_unattributed: times.filter(time => time.ms === undefined).length,
           unattributed: times.filter(time => time.ms === undefined).reduce((reasons, time) => ({ ...reasons, [time.reason.replace(/\d+/g, 'N')]: (reasons[time.reason.replace(/\d+/g, 'N')] ?? 0) + 1 }), {}),
-          returned_to_start: (await chrome.evaluate('perfG.fingerprint()')) === start,
           errors: errors.slice(walkErrors),
         }
+        // What the walk found is judged against what is defined for the panel, and an observation that nothing defines is not a pass.
+        const expect = override.expect ?? {}
+        Object.assign(record.walk, judgeWalk({ found, steps, fingerprints, errors: record.walk.errors, expect, differences: { back: firstRetraceMiss(), restart: differences('start', 'afterRestart'), restartEffect: differences('beforeRestart', 'afterRestart') } }))
+        if (override.expect) record.walk.expect = override.expect
         for (const key of ['next', 'previous', 'restart']) if (!found[key]) record.notes.push(`no ${key} control by accessible name`)
         if (!found.next && !found.previous && !found.restart) record.notes.push('advanced by its clock only')
       }
@@ -256,6 +302,8 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
       record.errors.push(...revisit.errors)
     }
     for (const record of panels) if (record.errors.length > 0 && record.status === 'ok') record.status = 'errors'
+    const verdicts = verdict => panels.filter(panel => panel.walk.verdict === verdict).length
+    const checks = outcome => panels.reduce((total, panel) => total + panel.walk.checks.filter(c => c.outcome === outcome).length, 0)
 
     const walks = status => panels.filter(panel => panel.walk.status === status).length
     return {
@@ -271,6 +319,12 @@ export const sweepGallery = async ({ stageDir, overrides = {}, only = null, log 
         walked: walks('walked'),
         downgraded: walks('downgraded'),
         skipped: walks('skipped'),
+        walks_pass: verdicts('pass'),
+        walks_inconclusive: verdicts('inconclusive'),
+        walks_fail: verdicts('fail'),
+        checks_pass: checks('pass'),
+        checks_inconclusive: checks('inconclusive'),
+        checks_fail: checks('fail'),
         first_visit_timed: panels.filter(panel => panel.build.ms !== undefined).length,
         revisit_timed: panels.filter(panel => panel.revisit?.ms !== undefined).length,
       },

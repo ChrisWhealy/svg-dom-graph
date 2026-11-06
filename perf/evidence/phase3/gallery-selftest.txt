@@ -1,0 +1,8 @@
+ok   a restart declared to return to the start, where the source says it does not: fail
+      declared (declared wrongly, on purpose), and it did not hold: the panel is not what it was at the start (2147 elements became 2141; #27: "p||||||Step 1 of 20. Start at A, with distance 0. Every other 
+ok   declared as its source says: pass, and the restart check is inconclusive
+ok   nothing declared: Next and Previous are pass, the retrace is inconclusive and says it is an observation
+      no expectation is defined for this panel; Previous landed on the state Next had left from at all 5 steps it could be compared (an observation and not a pass)
+ok   declared reversible, as its source says: declared (demo-app/src/selection.rs: "Previous" un-reveals a row exactly as it reveals an earlier one), and it
+
+a broken declared expectation fails, and what nothing defines is never a pass

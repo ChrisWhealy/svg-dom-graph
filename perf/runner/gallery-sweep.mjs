@@ -4,7 +4,8 @@
 //
 // The gallery is built by `cargo run -p demo-server -- --build-only`, which stages it in `target/demo-stage`. The report is
 // checked against `perf/schemas/gallery-report.schema.json` before it is written. The sweep fails if a panel does not come up
-// when it is selected, or if the page throws, and it never fails on a time.
+// when it is selected, if the page throws, or if a walk breaks an expectation that is defined for the panel, and it never fails on a
+// time. A walk that cannot be judged is inconclusive, which is reported and is not a failure and is not a pass.
 import fs from 'node:fs'
 import path from 'node:path'
 import { createRequire } from 'node:module'
@@ -51,6 +52,7 @@ console.log(`  first visit: ${built.length} timed, median ${median(built)?.toFix
 console.log(`  revisit: ${revisited.length} timed, median ${median(revisited)?.toFixed(1)} ms`)
 console.log(`  swept ${summary.panels} of the ${summary.panels_in_gallery} panels in the gallery: ${summary.loaded} loaded, ${summary.failed_to_load} failed to load, ${summary.with_errors} with page errors`)
 console.log(`  walked ${summary.walked}, downgraded ${summary.downgraded}, skipped ${summary.skipped}`)
+console.log(`  walk verdicts: ${summary.walks_pass} pass, ${summary.walks_inconclusive} inconclusive, ${summary.walks_fail} fail; of the ${summary.checks_pass + summary.checks_inconclusive + summary.checks_fail} checks, ${summary.checks_pass} pass, ${summary.checks_inconclusive} inconclusive, ${summary.checks_fail} fail`)
 
 let failed = 0
 const gate = (ok, text) => {
@@ -59,6 +61,10 @@ const gate = (ok, text) => {
 }
 gate(summary.panels === summary.panels_in_gallery || only !== null, `the whole gallery was swept (${summary.panels} of ${summary.panels_in_gallery})`)
 gate(summary.failed_to_load === 0, 'every panel came up when it was selected, on the first visit and on the revisit')
+for (const panel of panels.filter(panel => panel.walk.verdict === 'fail')) {
+  for (const failed of panel.walk.checks.filter(c => c.outcome === 'fail')) console.log(`      ${panel.id}: ${failed.name}: ${failed.detail}`)
+}
+gate(summary.walks_fail === 0, `no panel broke an expectation that is defined for it (${summary.walks_fail} did)`)
 gate(report.page_errors.length === 0, `the page threw nothing and logged no error (${report.page_errors.length})`)
 console.log(failed ? `\n${failed} deterministic gate(s) failed` : '\nevery deterministic gate passed')
 process.exit(failed ? 1 : 0)

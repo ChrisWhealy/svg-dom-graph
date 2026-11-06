@@ -141,6 +141,27 @@ const rejected = {
     "a negative time": d => {
       d.panels[0].build = { ms: -1 }
     },
+    "a walk with no verdict": d => {
+      delete d.panels[1].walk.verdict
+    },
+    "an unknown verdict": d => {
+      d.panels[1].walk.verdict = "ok"
+    },
+    "a walk with no checks": d => {
+      d.panels[1].walk.checks = []
+    },
+    "a check with an unknown outcome": d => {
+      d.panels[1].walk.checks[0].outcome = "ok"
+    },
+    "a check with no detail": d => {
+      delete d.panels[1].walk.checks[0].detail
+    },
+    "an expectation with no reason": d => {
+      delete d.panels[1].walk.expect.because
+    },
+    "an unwalked panel with no verdict": d => {
+      delete d.panels[0].walk.verdict
+    },
     "a downgraded walk with no reason": d => {
       delete d.panels[0].walk.reason
     },

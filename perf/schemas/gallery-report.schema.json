@@ -50,10 +50,16 @@
         "walked": { "type": "integer", "minimum": 0 },
         "downgraded": { "type": "integer", "minimum": 0 },
         "skipped": { "type": "integer", "minimum": 0 },
+        "walks_pass": { "type": "integer", "minimum": 0 },
+        "walks_inconclusive": { "type": "integer", "minimum": 0 },
+        "walks_fail": { "type": "integer", "minimum": 0 },
+        "checks_pass": { "type": "integer", "minimum": 0 },
+        "checks_inconclusive": { "type": "integer", "minimum": 0 },
+        "checks_fail": { "type": "integer", "minimum": 0 },
         "first_visit_timed": { "type": "integer", "minimum": 0 },
         "revisit_timed": { "type": "integer", "minimum": 0 }
       },
-      "required": ["panels", "panels_in_gallery", "loaded", "failed_to_load", "with_errors", "walked", "downgraded", "skipped", "first_visit_timed", "revisit_timed"],
+      "required": ["panels", "panels_in_gallery", "loaded", "failed_to_load", "with_errors", "walked", "downgraded", "skipped", "walks_pass", "walks_inconclusive", "walks_fail", "checks_pass", "checks_inconclusive", "checks_fail", "first_visit_timed", "revisit_timed"],
       "additionalProperties": false
     },
     "browser": { "type": ["string", "null"] },
@@ -128,10 +134,38 @@
                 "description": "Why the clicks that could not be placed in a frame could not, by reason, with the numbers in each reason replaced by N.",
                 "additionalProperties": { "type": "integer", "minimum": 1 }
               },
-              "returned_to_start": { "type": "boolean" },
+              "verdict": {
+                "enum": ["pass", "inconclusive", "fail"],
+                "description": "fail if a defined expectation was broken, pass if none was and at least one was met, and inconclusive if none could be judged: a control is absent, or no expectation is defined for the panel. An observation that nothing defines is never a pass."
+              },
+              "checks": {
+                "type": "array",
+                "items": {
+                  "type": "object",
+                  "properties": {
+                    "name": { "enum": ["walk", "next_changes_panel", "previous_changes_panel", "back_retraces_forward", "restart_changes_panel", "restart_returns_to_start", "no_page_errors_during_walk"] },
+                    "outcome": { "enum": ["pass", "inconclusive", "fail"] },
+                    "detail": { "type": "string", "minLength": 1 }
+                  },
+                  "required": ["name", "outcome", "detail"],
+                  "additionalProperties": false
+                },
+                "minItems": 1
+              },
+              "expect": {
+                "type": "object",
+                "description": "What the panel declares in perf/gallery-overrides.json, with the place in its source that says so.",
+                "properties": {
+                  "reversible": { "type": "boolean" },
+                  "restart_to_start": { "type": "boolean" },
+                  "because": { "type": "string", "minLength": 1 }
+                },
+                "required": ["because"],
+                "additionalProperties": false
+              },
               "errors": { "type": "array", "items": { "$ref": "#/$defs/problem" } }
             },
-            "required": ["status"],
+            "required": ["status", "verdict", "checks"],
             "additionalProperties": false,
             "allOf": [
               {
@@ -141,7 +175,7 @@
               {
                 "if": { "properties": { "status": { "const": "walked" } }, "required": ["status"] },
                 "then": {
-                  "required": ["forward", "back", "restarted", "clicks", "changed", "step_ms", "steps_unattributed", "returned_to_start", "errors"],
+                  "required": ["forward", "back", "restarted", "clicks", "changed", "step_ms", "steps_unattributed", "errors"],
                   "not": { "required": ["reason"] }
                 }
               }

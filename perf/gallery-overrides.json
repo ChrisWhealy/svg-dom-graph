@@ -1,5 +1,5 @@
 {
-  "description": "Per-panel overrides for the gallery sweep (perf/runner/gallery-sweep.mjs). A panel needs none unless a control's accessible name is ambiguous, or it runs on a clock that has to be advanced by hand. `before_build` is evaluated in the page before the panel is first selected, `advance` after every click and once more at the end, and `next`, `previous` and `restart` are regular expressions for the accessible name of a control, used instead of the defaults. `skip` names a reason to leave the panel out of the walk and still load and revisit it.",
+  "description": "Per-panel overrides for the gallery sweep (perf/runner/gallery-sweep.mjs). A panel needs none unless a control's accessible name is ambiguous, it runs on a clock that has to be advanced by hand, or it defines how its navigation behaves. `before_build` is evaluated in the page before the panel is first selected, `advance` after every click and once more at the end, and `next`, `previous` and `restart` are regular expressions for the accessible name of a control, used instead of the defaults. `skip` names a reason to leave the panel out of the walk. `expect` declares what the panel's navigation does, with the place in its source that says so: `reversible` (Previous undoes Next) and `restart_to_start` (Restart returns the panel to the state it was first shown in). true is held to, false says it does not and is inconclusive, and absent means nothing is defined and is inconclusive. A mismatch of something undeclared is written down and never counts as a pass.",
   "panels": {
     "panel-n-queens": {
       "before_build": "window.__nQueensManualClock = true",
@@ -26,6 +26,42 @@
     },
     "panel-game-of-life": {
       "next": "^step$"
+    },
+    "panel-selection-1d": {
+      "expect": {
+        "reversible": true,
+        "because": "demo-app/src/selection.rs: \"Previous\" un-reveals a row exactly as it reveals an earlier one"
+      }
+    },
+    "panel-selection-2d": {
+      "expect": {
+        "reversible": true,
+        "because": "demo-app/src/selection.rs: \"Previous\" un-reveals a row exactly as it reveals an earlier one"
+      }
+    },
+    "panel-selection-hexdump": {
+      "expect": {
+        "reversible": true,
+        "because": "demo-app/src/selection.rs: \"Previous\" un-reveals a row exactly as it reveals an earlier one"
+      }
+    },
+    "panel-selection-thetac": {
+      "expect": {
+        "reversible": true,
+        "because": "demo-app/src/selection.rs: \"Previous\" un-reveals a row exactly as it reveals an earlier one"
+      }
+    },
+    "panel-theta": {
+      "expect": {
+        "reversible": true,
+        "because": "demo-app/src/sha3_sponge/theta/xor_loop.rs: \"Previous\" un-reveals a later cell exactly as it reveals an earlier one"
+      }
+    },
+    "panel-dijkstra": {
+      "expect": {
+        "restart_to_start": false,
+        "because": "demo-app/src/dijkstra/mod.rs: \"Restart\" gives its edges new random weights"
+      }
     }
   }
 }

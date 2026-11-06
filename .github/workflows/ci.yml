@@ -157,7 +157,9 @@ jobs:
       # Layer C attributes a frame to an input from a Chrome trace. The rule is tested on traces written out by hand, so it needs no
       # browser. Driving a real browser with it comes with Phase 5.
       - name: Frame attribution rule behaves as designed
-        run: node perf/lib/test-frames.mjs
+        run: |
+          node perf/lib/test-frames.mjs
+          node perf/runner/test-walk-verdict.mjs
 
       - name: JSON schemas accept what they should and refuse what they should not
         run: |

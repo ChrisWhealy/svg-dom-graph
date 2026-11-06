@@ -1,8 +1,28 @@
 {
   "schema_version": 1,
-  "summary": { "panels": 2, "panels_in_gallery": 2, "loaded": 2, "failed_to_load": 0, "with_errors": 0, "walked": 1, "downgraded": 1, "skipped": 0, "first_visit_timed": 1, "revisit_timed": 2 },
+  "summary": {
+    "panels": 2,
+    "panels_in_gallery": 2,
+    "loaded": 2,
+    "failed_to_load": 0,
+    "with_errors": 0,
+    "walked": 1,
+    "downgraded": 1,
+    "skipped": 0,
+    "first_visit_timed": 1,
+    "revisit_timed": 2,
+    "walks_pass": 1,
+    "walks_inconclusive": 1,
+    "walks_fail": 0,
+    "checks_pass": 4,
+    "checks_inconclusive": 6,
+    "checks_fail": 0
+  },
   "browser": "Chrome/157.0.8103.39",
-  "viewport": [1280, 900],
+  "viewport": [
+    1280,
+    900
+  ],
   "cold_start_ms": 74.2,
   "cold_start_definition": "performance.now() in the page when the first panel is on screen, which is from the start of the navigation",
   "teardown": "not measured: the gallery builds each panel once and only hides it afterwards, so a visit and a revisit are not a teardown",
@@ -17,11 +37,39 @@
       "status": "ok",
       "notes": [],
       "errors": [],
-      "build": { "ms": 52.7 },
-      "revisit": { "ms": 9.1 },
-      "counts": { "elements_before": 2231, "elements_after": 2424, "listeners_before": 64, "listeners_after": 109, "elements_after_revisit": 2424, "listeners_after_revisit": 109 },
-      "controls": [{ "name": "Root. Output to Left child. Output to Right child.", "role": "g", "disabled": false }],
-      "walk": { "status": "downgraded", "reason": "the panel has no Next, Previous or Restart control by accessible name, and no clock to advance" }
+      "build": {
+        "ms": 52.7
+      },
+      "revisit": {
+        "ms": 9.1
+      },
+      "counts": {
+        "elements_before": 2231,
+        "elements_after": 2424,
+        "listeners_before": 64,
+        "listeners_after": 109,
+        "elements_after_revisit": 2424,
+        "listeners_after_revisit": 109
+      },
+      "controls": [
+        {
+          "name": "Root. Output to Left child. Output to Right child.",
+          "role": "g",
+          "disabled": false
+        }
+      ],
+      "walk": {
+        "status": "downgraded",
+        "reason": "the panel has no Next, Previous or Restart control by accessible name, and no clock to advance",
+        "verdict": "inconclusive",
+        "checks": [
+          {
+            "name": "walk",
+            "outcome": "inconclusive",
+            "detail": "the panel has no Next, Previous or Restart control by accessible name, and no clock to advance"
+          }
+        ]
+      }
     },
     {
       "id": "panel-n-queens",
@@ -30,15 +78,88 @@
       "status": "ok",
       "notes": [],
       "errors": [],
-      "build": { "unavailable": "no frame with a style, layout or paint step began within 2000 ms of the mark" },
-      "revisit": { "ms": 38.9 },
-      "counts": { "elements_before": 2424, "elements_after": 7386, "listeners_before": 109, "listeners_after": 120, "elements_after_revisit": 7386, "listeners_after_revisit": 120 },
+      "build": {
+        "unavailable": "no frame with a style, layout or paint step began within 2000 ms of the mark"
+      },
+      "revisit": {
+        "ms": 38.9
+      },
+      "counts": {
+        "elements_before": 2424,
+        "elements_after": 7386,
+        "listeners_before": 109,
+        "listeners_after": 120,
+        "elements_after_revisit": 7386,
+        "listeners_after_revisit": 120
+      },
       "controls": [
-        { "name": "Restart", "role": "button", "disabled": false },
-        { "name": "Previous", "role": "button", "disabled": true },
-        { "name": "Next", "role": "button", "disabled": false }
+        {
+          "name": "Restart",
+          "role": "button",
+          "disabled": false
+        },
+        {
+          "name": "Previous",
+          "role": "button",
+          "disabled": true
+        },
+        {
+          "name": "Next",
+          "role": "button",
+          "disabled": false
+        }
       ],
-      "walk": { "status": "walked", "forward": 6, "back": 6, "restarted": true, "clicks": 13, "changed": 13, "step_ms": [14.2, 15.8], "steps_unattributed": 11, "returned_to_start": true, "errors": [] }
+      "walk": {
+        "status": "walked",
+        "forward": 7,
+        "back": 6,
+        "restarted": true,
+        "clicks": 13,
+        "changed": 13,
+        "step_ms": [
+          14.2,
+          15.8
+        ],
+        "steps_unattributed": 11,
+        "errors": [],
+        "verdict": "pass",
+        "checks": [
+          {
+            "name": "next_changes_panel",
+            "outcome": "pass",
+            "detail": "7 presses of Next, and each changed the panel"
+          },
+          {
+            "name": "previous_changes_panel",
+            "outcome": "pass",
+            "detail": "6 presses of Previous, and each changed the panel"
+          },
+          {
+            "name": "back_retraces_forward",
+            "outcome": "inconclusive",
+            "detail": "no expectation is defined for this panel; the panel is not what it was at the start (it did not return to the start, which is an observation and not a failure)"
+          },
+          {
+            "name": "restart_changes_panel",
+            "outcome": "pass",
+            "detail": "Restart changed a panel that had been moved"
+          },
+          {
+            "name": "restart_returns_to_start",
+            "outcome": "inconclusive",
+            "detail": "no expectation is defined for this panel; the panel is not what it was at the start (it did not return to the start, which is an observation and not a failure)"
+          },
+          {
+            "name": "no_page_errors_during_walk",
+            "outcome": "pass",
+            "detail": "the page threw nothing and logged no error"
+          }
+        ],
+        "expect": {
+          "restart_to_start": false,
+          "because": "an example of a declaration"
+        }
+      }
     }
   ]
 }

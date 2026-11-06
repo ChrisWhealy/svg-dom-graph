@@ -1,0 +1,19 @@
+ok   every defined expectation held: pass
+ok   with nothing declared, the controls that changed the panel pass and the invariants are inconclusive
+ok   and an undeclared retrace is said to be an observation and not a pass
+ok   an undeclared mismatch is inconclusive, not a failure, and is written down
+ok   a declared reversal that did not happen is a failure, and so is the walk
+ok   a declared restart that did not return is a failure
+ok   a panel that declares it does not restart to its start is not failed for it
+ok   an enabled Next that changed nothing is a failure, whatever else passed
+ok   a Restart that changed nothing in a moved panel is a failure
+ok   a Restart pressed on a panel that was still at its start has nothing to do, and is inconclusive
+ok   a panel with no controls has every control check inconclusive (the page-error check alone passes)
+ok   a panel that was not walked is inconclusive
+ok   a page error during the walk is a failure
+ok   two broken declared invariants are two failures
+ok   a declared reversal where Previous stopped early is a failure
+ok   the last Previous, which leaves the first step, is not held to the start
+ok   a walk of one step has nothing to retrace, and is inconclusive even when declared
+
+every outcome of a walk is reachable, and a mismatch is never a pass
