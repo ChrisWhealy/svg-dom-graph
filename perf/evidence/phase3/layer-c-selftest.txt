@@ -1,10 +1,13 @@
-ok   as it is: ok, 24 checks passed, every gesture did what the plan said
+ok   as it is: ok, 80 checks passed, every gesture did what the plan said
 ok   the wheel, in a tab of its own, was placed in a frame every time
-      drag 3.01 ms, CDP round trip 8.08 ms
-ok   a 20 ms listener after every move: the drag time goes from 3.01 to 20.75 ms, and the run stays ok
+ok   the accessibility tree agrees with the model: 56 checks in a tab of their own, the largest tree 99 nodes, 22 inspected
+      drag 3.44 ms, CDP round trip 8.06 ms
+ok   a 20 ms listener after every move: the drag time goes from 3.44 to 20.75 ms, and the run stays ok
 ok   input that never reaches the library: invalid_incorrect, and names interaction
       drag 0 at 100%: n5 ended at (20, 110), the plan said (22, 94)
-ok   CDP made 30 ms slower: the round trip goes from 8.08 to 41.05 ms
-ok   and the interaction time does not move, 3.01 to 3.50 ms, since CDP's clock is never its start
+ok   a node that loses its relationship clauses: invalid_incorrect, and the accessibility check names it
+      accessibility at 100% before input: n1 says "n1.", and the model has it output to [n5] and input from []
+ok   CDP made 30 ms slower: the round trip goes from 8.06 to 41.20 ms
+ok   and the interaction time does not move, 3.44 to 3.70 ms, since CDP's clock is never its start
 
 Layer C moves by what it measures, and by nothing else

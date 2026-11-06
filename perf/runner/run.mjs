@@ -15,7 +15,7 @@ import path from 'node:path'
 import { createRequire } from 'node:module'
 import { spawnSync } from 'node:child_process'
 import { openHarnessPage } from './lib/harness-page.mjs'
-import { runInteraction } from './layer-c/interaction.mjs'
+import { edgesOf, runInteraction } from './layer-c/interaction.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const requireFromSchemas = createRequire(path.join(root, 'perf/schemas/package.json'))
@@ -198,7 +198,7 @@ for (const mode of modes) {
       fs.rmSync(file)
     }
     if (options.layers.includes('c') && (mode === 'correctness' || mode === 'performance')) {
-      const outcome = await runInteraction({ binary, mode, canonical: canonicalManifest, plan: gesturePlan, report })
+      const outcome = await runInteraction({ binary, mode, canonical: canonicalManifest, plan: gesturePlan, report, edges: edgesOf(binary, manifestPath) })
       keep('C', mode, repetition, outcome, outcome.crossOriginIsolated ?? null)
     }
     if (options.layers.includes('b')) {

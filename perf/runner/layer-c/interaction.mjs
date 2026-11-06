@@ -17,6 +17,7 @@ import { spawnSync } from 'node:child_process'
 import { attribute } from '../../lib/frames.mjs'
 import { dragPath, pause, wheel } from '../../lib/input.mjs'
 import { traced } from '../../lib/trace.mjs'
+import { MAX_NODES, checkAccessibility, expectations } from './accessibility.mjs'
 import { openLayerCPage } from './lib/c-page.mjs'
 
 /** How long between one pointer move and the next. A frame is 16.7 ms at 60 Hz, so each move gets a frame of its own. */
@@ -28,6 +29,14 @@ const MECHANISM =
   'from the first capture-phase listener for the input event, stamped with performance.now() in the page, to the end of the ' +
   `compositor's PipelineReporter for the frame that the correlation rule attributes to it, in a trace of blink.user_timing, ` +
   `devtools.timeline and cc; input from Input.dispatchMouseEvent every ${STEP_GAP_MS} ms`
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** The edges of a manifest's scene, as `[from, to]` pairs, from the operation stream that `perf-harness stream` writes. */
+export const edgesOf = (binary, manifestPath) => {
+  const run = spawnSync(binary, ['stream', manifestPath], { encoding: 'utf8', maxBuffer: 1 << 28 })
+  if (run.status !== 0) throw new Error(`reading the stream: ${run.stderr}`)
+  return run.stdout.split('\n').filter(Boolean).map(line => JSON.parse(line)).filter(op => op.op === 'add_edge').map(op => [op.from, op.to])
+}
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 const describeSamples = (binary, name, unit, values, mechanism) => {
@@ -181,9 +190,10 @@ const runCase = async (tab, kase, canonical, timed, faults) => {
  * Runs the interaction workload once in a fresh Chrome, in `mode`, and gives an outcome in the shape of the other layers'.
  *
  * `plan` is the output of `perf-harness gestures`, and `report` the workload report of the manifest, whose digests the stream
- * that the page executed is held to. `faults` is for the self-test alone: `slowdownMs`, `blockInput` and `cdpExtraMs`.
+ * that the page executed is held to. `faults` is for the self-test alone: `slowdownMs`, `blockInput`, `cdpExtraMs` and `accessibility`.
+ * `edges` are the scene's edges, which the accessibility check holds the tree to.
  */
-export const runInteraction = async ({ binary, mode, canonical, plan, report, faults = {} }) => {
+export const runInteraction = async ({ binary, mode, canonical, plan, report, edges, faults = {} }) => {
   const timed = mode === 'performance'
   const outcome = {
     status: 'ok',
@@ -261,6 +271,9 @@ export const runInteraction = async ({ binary, mode, canonical, plan, report, fa
       outcome.samples[`cdp.${key}.round_trip`] = result.trips
     }
     if (!timed) outcome.metrics.push(unavailable('interaction.latency', 'the correctness mode keeps no timing'))
+
+    // The accessibility tree, last, and in tabs of their own, since keeping it up to date costs time on every change.
+    if (edges) await accessibilityPass({ page, plan, canonical, edges, outcome, fault: faults.accessibility ?? null })
   } catch (error) {
     outcome.status = 'error'
     outcome.error = String(error?.message ?? error)
@@ -269,4 +282,52 @@ export const runInteraction = async ({ binary, mode, canonical, plan, report, fa
   }
   if (outcome.status === 'ok' && (outcome.checkpoints_failed.length > 0 || outcome.stream?.matches === false)) outcome.status = 'invalid_incorrect'
   return outcome
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/**
+ * Checks Chrome's accessibility tree at each scale of the plan, in a tab of its own with the scene built, before and after one
+ * drag, one pan and one wheel zoom, and puts what it found in `outcome`. See `accessibility.mjs`.
+ */
+const accessibilityPass = async ({ page, plan, canonical, edges, outcome, fault }) => {
+  const expected = expectations(edges)
+  const scales = [...new Set(plan.plan.cases.map(kase => kase.scale_percent))]
+  let largest = 0
+  let inspected = 0
+  let checked = 0
+  for (const scalePercent of scales) {
+    const tab = await page.openTab()
+    try {
+      const build = JSON.parse(await tab.evaluate(`perfC.interactive_build(${JSON.stringify(canonical)}, ${scalePercent})`))
+      if (build.error) throw new Error(`building the scene for the accessibility check: ${build.error}`)
+      await tab.send('Emulation.setDeviceMetricsOverride', { width: build.host[0] + 40, height: build.host[1] + 40, deviceScaleFactor: 1, mobile: false })
+      await tab.evaluate('perfC.settle(100)')
+      // The first measured gesture of each kind at this scale, with the wheel last so that the graph view's name has to change.
+      const gestures = ['drag', 'pan', 'wheel_zoom']
+        .map(kind => plan.plan.cases.find(kase => kase.scale_percent === scalePercent && kase.gesture === kind)?.measured[0])
+        .filter(Boolean)
+      const play_ = async item => {
+        const positions = item.gesture === 'drag' ? { [item.node]: item.start } : {}
+        await tab.evaluate(`perfC.interactive_reset(${scalePercent}, ${JSON.stringify(JSON.stringify(positions))})`)
+        await tab.evaluate('perfC.settle(40)')
+        const origin = await tab.evaluate(`perfC.hostRect(${JSON.stringify(build.svg_id)})`)
+        await play(tab, item, origin, build.svg_id)
+        await pause(SETTLE_MS)
+      }
+      const { checks, stats } = await checkAccessibility({ tab, expected, scalePercent, gestures, play: play_, label: `accessibility at ${scalePercent}%`, fault })
+      for (const check of checks) {
+        if (check.ok) outcome.checkpoints_passed++
+        else outcome.checkpoints_failed.push({ section: 'accessibility', detail: check.detail })
+      }
+      checked += checks.length
+      largest = Math.max(largest, stats.ax_nodes)
+      inspected = Math.max(inspected, stats.nodes_inspected)
+    } finally {
+      await tab.closeTab()
+    }
+  }
+  const how = 'Accessibility.getFullAXTree in a tab of its own, after the timed cases'
+  outcome.metrics.push(count('accessibility.checks', 'count', checked, `${how}: roles, names and relationships against the model, focus, and consistency after input`))
+  outcome.metrics.push(count('accessibility.ax_nodes_largest_tree', 'count', largest, how))
+  outcome.metrics.push(count('accessibility.nodes_inspected', 'count', inspected, `${how}, at most ${MAX_NODES} nodes from those that have an edge`))
 }

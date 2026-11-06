@@ -30,7 +30,7 @@
       "wrong_indices": [],
       "naive": {
         "measured": 80,
-        "right": 53
+        "right": 54
       }
     },
     "changes_nothing": {
@@ -65,7 +65,7 @@
       "wrong_indices": [],
       "mark_inside_a_frame": 40,
       "mark_before_a_frame": 0,
-      "cdp_round_trip_ms_median": 5.187541999999667
+      "cdp_round_trip_ms_median": 2.977208000000246
     },
     "input_deferred": {
       "label": "5 real input, deferred to the frame",
@@ -77,7 +77,7 @@
       "wrong_indices": [],
       "mark_inside_a_frame": 40,
       "mark_before_a_frame": 0,
-      "cdp_round_trip_ms_median": 1.9352079999989655
+      "cdp_round_trip_ms_median": 2.025000000001455
     }
   },
   "verdicts": [

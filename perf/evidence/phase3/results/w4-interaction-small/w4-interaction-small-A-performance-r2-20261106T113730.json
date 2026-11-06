@@ -1,24 +1,21 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-B-performance-r0-20261106T110840",
-  "started_at": "2026-11-06T11:08:40.919Z",
-  "repetition": 0,
-  "sequence_position": 5,
+  "run_id": "w4-interaction-small-A-performance-r2-20261106T113730",
+  "started_at": "2026-11-06T11:37:30.604Z",
+  "repetition": 2,
+  "sequence_position": 9,
   "environment": {
-    "kind": "browser",
-    "browser": "Chrome",
-    "browser_version": "157.0.8103.39",
+    "kind": "native",
     "os": "Darwin 27.2.0",
     "cpu": "Apple M6",
     "memory_bytes": 34359738368,
     "runner_class": "local",
-    "timer_resolution_us": 4.999995231628418,
-    "cross_origin_isolated": true,
+    "timer_resolution_us": 0.041,
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "87363474c6cda31001fb6197850caac3dd24f74f",
+    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -81,49 +78,13 @@
   "status": "ok",
   "metrics": [
     {
-      "layer": "B",
-      "name": "timing",
-      "reason": "no operation was in the measured part of the run",
+      "layer": "A",
+      "name": "rust.connector_endpoints",
+      "reason": "this workload has no DOM-free library work to time",
       "status": "unavailable"
-    },
-    {
-      "kind": "count",
-      "layer": "B",
-      "mechanism": "document.querySelectorAll('*').length",
-      "name": "resource.dom_elements.baseline",
-      "status": "measured",
-      "unit": "count",
-      "value": 6
-    },
-    {
-      "kind": "count",
-      "layer": "B",
-      "mechanism": "document.querySelectorAll('*').length",
-      "name": "resource.dom_elements.after_build",
-      "status": "measured",
-      "unit": "count",
-      "value": 135
-    },
-    {
-      "kind": "count",
-      "layer": "B",
-      "mechanism": "the effective-registration tracker",
-      "name": "resource.listeners.baseline",
-      "status": "measured",
-      "unit": "count",
-      "value": 0
-    },
-    {
-      "kind": "count",
-      "layer": "B",
-      "mechanism": "the effective-registration tracker",
-      "name": "resource.listeners.after_build",
-      "status": "measured",
-      "unit": "count",
-      "value": 0
     }
   ],
   "checkpoints_passed": 1,
   "checkpoints_failed": [],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-B-performance-r0-20261106T110840.samples.ndjson"
+  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T113730.samples.ndjson"
 }

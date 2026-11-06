@@ -56,6 +56,11 @@
       // time by what it costs, and the second must make a run invalid, since a gesture that did nothing is not a measurement.
       slowdown: ms => addEventListener('pointermove', () => { const until = performance.now() + ms; while (performance.now() < until); }),
       block: () => { for (const type of ['pointerdown', 'pointermove', 'pointerup', 'wheel', 'mousedown', 'mousemove', 'mouseup']) addEventListener(type, event => event.stopImmediatePropagation(), { capture: true }) },
+      // For the self-test only: one node loses its relationship clauses, which the accessibility check must notice.
+      sabotageAccessibility: () => {
+        const group = [...document.querySelectorAll('g.svg-dom-graph-content > g')].find(g => g.getAttribute('aria-label')?.includes('Output to'))
+        group.setAttribute('aria-label', group.getAttribute('aria-label').split('.')[0] + '.')
+      },
       begin: (id, measured) => { gesture = { id, measured } },
       end: () => { gesture = null },
       events: () => events,

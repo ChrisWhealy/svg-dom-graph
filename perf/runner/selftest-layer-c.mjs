@@ -12,14 +12,16 @@
 //      since a time for a gesture that did nothing is not a measurement;
 //   4. with every CDP command made to take 30 ms longer to answer. The CDP round trip has to go up by that, and the interaction
 //      time must not move, since the start of an interaction is the page's own stamp and never CDP's clock;
-//   5. with a wheel in a tab of its own, which the first run already includes, and has to have changed the view.
+//   5. with a node whose accessible name has lost its relationship clauses, which the check of Chrome's accessibility tree has to
+//      notice, while the first run's tree has to agree with the model's edges;
+//   6. with a wheel in a tab of its own, which the first run already includes, and has to have changed the view.
 //
 // It exits with 1 if any does not.
 import fs from 'node:fs'
 import os from 'node:os'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { runInteraction } from './layer-c/interaction.mjs'
+import { edgesOf, runInteraction } from './layer-c/interaction.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
 const binary = path.join(root, 'target/release/perf-harness')
@@ -41,7 +43,8 @@ const sh = (...args) => {
 const plan = JSON.parse(sh('gestures', manifest))
 const report = JSON.parse(sh('generate', manifest))
 const canonical = sh('canonical', manifest).trim()
-const play = faults => runInteraction({ binary, mode: 'performance', canonical, plan, report, faults })
+const edges = edgesOf(binary, manifest)
+const play = faults => runInteraction({ binary, mode: 'performance', canonical, plan, report, edges, faults })
 
 let failures = 0
 const check = (ok, text) => {
@@ -54,6 +57,8 @@ const clean = await play({})
 check(clean.status === 'ok' && clean.checkpoints_failed.length === 0, `as it is: ${clean.status}, ${clean.checkpoints_passed} checks passed, every gesture did what the plan said`)
 const view = clean.metrics.find(metric => metric.name === 'interaction.wheel_zoom.scale_100.latency')
 check(view?.status === 'measured' && view.samples === 6, 'the wheel, in a tab of its own, was placed in a frame every time')
+const axMetric = name => clean.metrics.find(metric => metric.name === name)?.value
+check(axMetric('accessibility.checks') > 0 && !clean.checkpoints_failed.some(failure => failure.section === 'accessibility'), `the accessibility tree agrees with the model: ${axMetric('accessibility.checks')} checks in a tab of their own, the largest tree ${axMetric('accessibility.ax_nodes_largest_tree')} nodes, ${axMetric('accessibility.nodes_inspected')} inspected`)
 const base = median(clean, 'interaction.drag.scale_100.latency')
 const baseTrip = median(clean, 'cdp.drag.scale_100.round_trip')
 console.log(`      drag ${base.toFixed(2)} ms, CDP round trip ${baseTrip.toFixed(2)} ms`)
@@ -68,6 +73,11 @@ const blocked = await play({ blockInput: true })
 const named = blocked.checkpoints_failed.some(failure => failure.section === 'interaction')
 check(blocked.status === 'invalid_incorrect' && named, `input that never reaches the library: ${blocked.status}, and ${named ? 'names interaction' : 'does not name interaction'}`)
 if (blocked.checkpoints_failed[0]) console.log(`      ${blocked.checkpoints_failed[0].detail}`)
+
+const broken = await play({ accessibility: 'label' })
+const seen = broken.checkpoints_failed.filter(failure => failure.section === 'accessibility')
+check(broken.status === 'invalid_incorrect' && seen.length > 0, `a node that loses its relationship clauses: ${broken.status}, and the accessibility check names it`)
+if (seen[0]) console.log(`      ${seen[0].detail}`)
 
 const laggy = await play({ cdpExtraMs: 30 })
 const trip = median(laggy, 'cdp.drag.scale_100.round_trip')

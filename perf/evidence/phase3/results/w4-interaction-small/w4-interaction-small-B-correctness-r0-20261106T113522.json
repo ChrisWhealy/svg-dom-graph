@@ -1,29 +1,32 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-A-performance-r2-20261106T110940",
-  "started_at": "2026-11-06T11:09:40.507Z",
-  "repetition": 2,
-  "sequence_position": 9,
+  "run_id": "w4-interaction-small-B-correctness-r0-20261106T113522",
+  "started_at": "2026-11-06T11:35:22.895Z",
+  "repetition": 0,
+  "sequence_position": 2,
   "environment": {
-    "kind": "native",
+    "kind": "browser",
+    "browser": "Chrome",
+    "browser_version": "157.0.8103.39",
     "os": "Darwin 27.2.0",
     "cpu": "Apple M6",
     "memory_bytes": 34359738368,
     "runner_class": "local",
-    "timer_resolution_us": 0.041,
+    "timer_resolution_us": 4.999995231628418,
+    "cross_origin_isolated": true,
     "protocol_version": "1",
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "87363474c6cda31001fb6197850caac3dd24f74f",
+    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w4-interaction-small",
     "sha256": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
-    "operation_stream_scope": "mutations",
-    "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "14b81743005e3c4942facc98d885ce4b57b85578a023791a788259443af810de",
     "canonical": {
       "schema_version": 1,
       "workload": "interaction",
@@ -74,17 +77,52 @@
       }
     }
   },
-  "mode": "performance",
+  "mode": "correctness",
   "status": "ok",
   "metrics": [
     {
-      "layer": "A",
-      "name": "rust.connector_endpoints",
-      "reason": "this workload has no DOM-free library work to time",
+      "layer": "B",
+      "name": "timing",
+      "reason": "the correctness mode keeps no timing",
       "status": "unavailable"
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.baseline",
+      "status": "measured",
+      "unit": "count",
+      "value": 6
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "document.querySelectorAll('*').length",
+      "name": "resource.dom_elements.after_build",
+      "status": "measured",
+      "unit": "count",
+      "value": 135
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.baseline",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
+    },
+    {
+      "kind": "count",
+      "layer": "B",
+      "mechanism": "the effective-registration tracker",
+      "name": "resource.listeners.after_build",
+      "status": "measured",
+      "unit": "count",
+      "value": 0
     }
   ],
   "checkpoints_passed": 1,
-  "checkpoints_failed": [],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r2-20261106T110940.samples.ndjson"
+  "checkpoints_failed": []
 }

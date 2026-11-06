@@ -30,7 +30,8 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness Phase 1: Deterministic workload engine `perf-harness` (`a2c35b3`)
 - Perf Harness Phase 2: Layer A and Layer B runners `perf-harness-wasm` (`78eacc4`)
 - Perf Harness Phase 3: Layer C browser runner and gallery adapter (`038b041`)
-- Perf Harness: Provide completion evidence of gallery sweep (``)
+- Perf Harness: Provide completion evidence of gallery sweep (`1d2c34f`)
+- Perf Harness: Implement accessibility checks to cover Chrome AX tree (``)
 
 ### Changed
 

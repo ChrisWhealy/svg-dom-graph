@@ -31,6 +31,8 @@ ok   manifest rejects a live growth allowance that is text
 ok   manifest rejects an interaction table on a workload that is not the interaction workload
 ok   manifest rejects the interaction workload with no interaction table
 ok   gallery-report rejects an unknown top-level key
+ok   gallery-report rejects a report with no summary
+ok   gallery-report rejects a summary that is missing a count
 ok   gallery-report rejects a panel with no status
 ok   gallery-report rejects an unknown panel status
 ok   gallery-report rejects a panel id that is not a panel

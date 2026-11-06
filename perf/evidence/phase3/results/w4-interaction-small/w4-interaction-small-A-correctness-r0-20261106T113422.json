@@ -1,9 +1,9 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-A-performance-r0-20261106T110741",
-  "started_at": "2026-11-06T11:07:41.546Z",
+  "run_id": "w4-interaction-small-A-correctness-r0-20261106T113422",
+  "started_at": "2026-11-06T11:34:22.394Z",
   "repetition": 0,
-  "sequence_position": 3,
+  "sequence_position": 0,
   "environment": {
     "kind": "native",
     "os": "Darwin 27.2.0",
@@ -15,15 +15,15 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "87363474c6cda31001fb6197850caac3dd24f74f",
+    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
     "git_dirty": true,
     "build_profile": "release"
   },
   "manifest": {
     "id": "w4-interaction-small",
     "sha256": "2f385927caae5d6023c6f5dff844b0ed73b599912ebc7a1c672663f853dfa298",
-    "operation_stream_scope": "mutations",
-    "operation_stream_sha256": "00276afb6cc2c00a9abec7d77c2b04c49fb395c0c63bb1bed92cdcf0c1380b06",
+    "operation_stream_scope": "full",
+    "operation_stream_sha256": "14b81743005e3c4942facc98d885ce4b57b85578a023791a788259443af810de",
     "canonical": {
       "schema_version": 1,
       "workload": "interaction",
@@ -74,17 +74,16 @@
       }
     }
   },
-  "mode": "performance",
+  "mode": "correctness",
   "status": "ok",
   "metrics": [
     {
       "layer": "A",
       "name": "rust.connector_endpoints",
-      "reason": "this workload has no DOM-free library work to time",
+      "reason": "the correctness mode keeps no timing",
       "status": "unavailable"
     }
   ],
   "checkpoints_passed": 1,
-  "checkpoints_failed": [],
-  "raw_samples": "perf/evidence/phase3/results/w4-interaction-small/w4-interaction-small-A-performance-r0-20261106T110741.samples.ndjson"
+  "checkpoints_failed": []
 }

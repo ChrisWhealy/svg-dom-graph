@@ -1,7 +1,7 @@
 {
   "schema_version": 1,
-  "run_id": "w4-interaction-small-C-correctness-r0-20261106T110740",
-  "started_at": "2026-11-06T11:07:40.941Z",
+  "run_id": "w4-interaction-small-C-correctness-r0-20261106T113522",
+  "started_at": "2026-11-06T11:35:22.403Z",
   "repetition": 0,
   "sequence_position": 1,
   "environment": {
@@ -18,7 +18,7 @@
     "rustc": "rustc 1.99.1 (58cf8f9c3 2026-10-13)",
     "wasm_pack": "wasm-pack 0.15.1",
     "crate_version": "0.2.47",
-    "git_sha": "87363474c6cda31001fb6197850caac3dd24f74f",
+    "git_sha": "1d2c34f92c08ba4e53bd63ce22688553d562e0fb",
     "git_dirty": true,
     "build_profile": "release"
   },
@@ -90,17 +90,17 @@
       "samples": 1,
       "status": "measured",
       "summary": {
-        "max": 52.705000042915344,
-        "min": 52.705000042915344,
-        "p50": 52.705000042915344
+        "max": 48.735000014305115,
+        "min": 48.735000014305115,
+        "p50": 48.735000014305115
       },
       "unit": "ms",
       "within_run": {
         "iqr": 0,
-        "mean": 52.705000042915344,
+        "mean": 48.735000014305115,
         "stddev": 0,
-        "tukey_high": 52.705000042915344,
-        "tukey_low": 52.705000042915344
+        "tukey_high": 48.735000014305115,
+        "tukey_low": 48.735000014305115
       }
     },
     {
@@ -127,7 +127,7 @@
       "status": "measured",
       "unit": "bytes",
       "kind": "count",
-      "value": 570708,
+      "value": 571048,
       "mechanism": "Performance.getMetrics JSHeapUsedSize after a forced collection, and a diagnostic of Chrome only"
     },
     {
@@ -154,7 +154,7 @@
       "status": "measured",
       "unit": "bytes",
       "kind": "count",
-      "value": 817348,
+      "value": 817688,
       "mechanism": "Performance.getMetrics JSHeapUsedSize after a forced collection, and a diagnostic of Chrome only"
     },
     {
@@ -181,7 +181,7 @@
       "status": "measured",
       "unit": "bytes",
       "kind": "count",
-      "value": 796788,
+      "value": 797128,
       "mechanism": "Performance.getMetrics JSHeapUsedSize after a forced collection, and a diagnostic of Chrome only"
     },
     {
@@ -189,9 +189,36 @@
       "layer": "C",
       "status": "unavailable",
       "reason": "the correctness mode keeps no timing"
+    },
+    {
+      "name": "accessibility.checks",
+      "layer": "C",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 168,
+      "mechanism": "Accessibility.getFullAXTree in a tab of its own, after the timed cases: roles, names and relationships against the model, focus, and consistency after input"
+    },
+    {
+      "name": "accessibility.ax_nodes_largest_tree",
+      "layer": "C",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 99,
+      "mechanism": "Accessibility.getFullAXTree in a tab of its own, after the timed cases"
+    },
+    {
+      "name": "accessibility.nodes_inspected",
+      "layer": "C",
+      "status": "measured",
+      "unit": "count",
+      "kind": "count",
+      "value": 22,
+      "mechanism": "Accessibility.getFullAXTree in a tab of its own, after the timed cases, at most 40 nodes from those that have an edge"
     }
   ],
-  "checkpoints_passed": 144,
+  "checkpoints_passed": 312,
   "checkpoints_failed": [],
   "gates": [
     {
