@@ -348,8 +348,10 @@ impl Engine {
         config.validate()?;
         if let Some(p) = params {
             p.validate(&limits)?;
+            Self::validate_agreement(&config, p)?;
         }
         Self::validate_keys(script, params)?;
+        Self::validate_script(script, &config)?;
         let mut engine = Self {
             config_id: config_id.to_owned(),
             seed,
@@ -408,6 +410,58 @@ impl Engine {
             engine.create_generated_arrival(0)?;
         }
         Ok(engine)
+    }
+
+    /// The configuration of a generated run is that of its parameters (rule R14), so that a generated outage names a server that exists.
+    fn validate_agreement(config: &Config, params: &Params) -> Result<(), Error> {
+        let given = params.config()?;
+        let pairs = [
+            ("servers", given.servers as u64, config.servers as u64),
+            ("queue capacity", given.queue_capacity as u64, config.queue_capacity as u64),
+            (
+                "maximum attempts",
+                u64::from(given.max_attempts),
+                u64::from(config.max_attempts),
+            ),
+            (
+                "retry deferral cap",
+                u64::from(given.deferral_cap),
+                u64::from(config.deferral_cap),
+            ),
+        ];
+        for (name, from_params, from_config) in pairs {
+            if from_params != from_config {
+                return Err(Error::Invalid(format!(
+                    "the parameters give {name} {from_params}, and the configuration gives {from_config}"
+                )));
+            }
+        }
+        Ok(())
+    }
+
+    /// A scripted event has to be well formed (rule R14), and is refused here and not when it pops.
+    fn validate_script(script: &[ScriptEvent], config: &Config) -> Result<(), Error> {
+        for event in script {
+            match event {
+                ScriptEvent::Fail { server, .. } | ScriptEvent::Recover { server, .. }
+                    if usize::try_from(*server).map_or(true, |s| s >= config.servers) =>
+                {
+                    return Err(Error::Invalid(format!("server {server} does not exist")));
+                },
+                ScriptEvent::Arrive {
+                    at, key, durations, deadline, ..
+                } => {
+                    if durations.is_empty() || durations.contains(&0) {
+                        return Err(Error::Invalid("a duration is not positive".into()));
+                    }
+                    if deadline <= at {
+                        return Err(Error::Invalid(format!("the deadline of {key} is not after its admission")));
+                    }
+                },
+                _ => {},
+            }
+        }
+        Ok(())
     }
 
     /// The keys of the script and the generator have to name one job each (rule R13), and are checked before anything runs.

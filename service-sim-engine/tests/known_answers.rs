@@ -230,22 +230,85 @@ fn a_configuration_outside_its_range_is_refused_before_anything_runs() {
     }
 }
 
+/// A scripted event that is not well formed is refused when the engine is built (rule R14), and not when the event pops.
 #[test]
-fn a_deadline_that_is_not_after_the_admission_is_refused() {
-    let e = engine_of(config(), &[arrive(5, "J", vec![1], 5)], Limits::default()).unwrap();
-    assert!(matches!(run_to_end(e), Err(Error::Invalid(text)) if text.contains("deadline")));
+fn a_scripted_event_that_is_not_well_formed_is_refused_at_construction() {
+    let cases: [(ScriptEvent, &str); 6] = [
+        (arrive(5, "J", vec![1], 5), "deadline"),
+        (ScriptEvent::Fail { at: 1, server: 2 }, "server 2"),
+        (ScriptEvent::Recover { at: 1, server: 2 }, "server 2"),
+        (arrive(0, "J", vec![0], 9), "duration"),
+        (arrive(0, "J", vec![2, 0], 9), "duration"),
+        (arrive(0, "J", vec![], 9), "duration"),
+    ];
+    for (event, word) in cases {
+        let got = engine_of(config(), std::slice::from_ref(&event), Limits::default()).err();
+        assert!(
+            matches!(&got, Some(Error::Invalid(text)) if text.contains(word)),
+            "{event:?}: {got:?}"
+        );
+    }
 }
 
+/// A bad deadline on a job that would have been rejected on arrival is refused as well, since nothing else would ever look at it.
 #[test]
-fn a_server_that_does_not_exist_is_refused() {
-    let e = engine_of(config(), &[ScriptEvent::Fail { at: 1, server: 2 }], Limits::default()).unwrap();
-    assert!(matches!(run_to_end(e), Err(Error::Invalid(text)) if text.contains("server 2")));
+fn a_bad_deadline_on_a_job_that_would_be_rejected_is_still_refused() {
+    let config = Config {
+        servers: 1,
+        queue_capacity: 1,
+        ..config()
+    };
+    let script = [
+        arrive(0, "A", vec![9], 50),
+        arrive(0, "B", vec![9], 50),
+        arrive(0, "C", vec![3], 0),
+    ];
+    assert!(matches!(engine_of(config, &script, Limits::default()), Err(Error::Invalid(_))));
 }
 
+/// The configuration of a generated run is that of its parameters (rule R14).
 #[test]
-fn a_duration_that_is_not_positive_is_refused() {
-    let e = engine_of(config(), &[arrive(0, "J", vec![0], 9)], Limits::default()).unwrap();
-    assert!(matches!(run_to_end(e), Err(Error::Invalid(text)) if text.contains("duration")));
+fn parameters_and_configuration_that_differ_are_refused() {
+    let params = Params::panel(1);
+    let given = params.config().expect("a configuration");
+    let new = |config: Config| Engine::new("x", 1, config, &[], Some(&params), Limits::default());
+    assert!(new(given).is_ok());
+    for (name, bad) in [
+        (
+            "servers",
+            Config {
+                servers: given.servers % 4 + 1,
+                ..given
+            },
+        ),
+        (
+            "queue capacity",
+            Config {
+                queue_capacity: given.queue_capacity % 64 + 1,
+                ..given
+            },
+        ),
+        (
+            "maximum attempts",
+            Config {
+                max_attempts: given.max_attempts % 3 + 1,
+                ..given
+            },
+        ),
+        (
+            "retry deferral cap",
+            Config {
+                deferral_cap: (given.deferral_cap + 1) % 17,
+                ..given
+            },
+        ),
+    ] {
+        let got = new(bad).err();
+        assert!(
+            matches!(&got, Some(Error::Invalid(text)) if text.starts_with(&format!("the parameters give {name}"))),
+            "{name}: {got:?}"
+        );
+    }
 }
 
 /// A tick that would pass the end of the integers is an error, and the engine does not wrap.

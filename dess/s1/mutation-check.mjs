@@ -1,4 +1,4 @@
-// Shows that the differential run can fail: the Rust engine is broken in thirteen small ways, one at a time, and the differential run has
+// Shows that the differential run can fail: the Rust engine is broken in fifteen small ways, one at a time, and the differential run has
 // to find each one. A comparison that agrees proves nothing until it is known to notice a disagreement.
 //
 //   node dess/s1/mutation-check.mjs [--out FILE]
@@ -21,6 +21,8 @@ const MUTATIONS = [
     'if self.jobs[id].defers >= self.config.deferral_cap {'
   ],
   ['dispatch ignores the queue entry tick', '                .then(a.entered.cmp(&b.entered))\n', ''],
+  ['the parameters are not compared with the configuration', 'Self::validate_agreement(&config, p)?;', ''],
+  ['scripted events are not checked before the run', 'Self::validate_script(script, &config)?;', ''],
   [
     'the backoff is half what it should be',
     'let backoff = 2u64 << (self.jobs[id].failures - 1);',

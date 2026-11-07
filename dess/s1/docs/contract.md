@@ -21,6 +21,7 @@ Where the design is silent, the choice made here is a binding rule, and every on
 | R10 Run end | The run ends when the future heap is empty |
 | R11 Same-tick creation | No event is created for the tick being processed. A retry deferral, a duration and a backoff are at least one tick, and a generated gap is at least one tick |
 | R13 Arrival keys | A key names one job, and is unique across the script and the generator. A scripted key that two arrivals share is refused, and so is a scripted key that the generator uses: `g` and a number below the generator's arrival count, written without a leading zero. Both are refused before the run. An arrival pop that finds its key already bound to a job is an error as well, and never rebinds it |
+| R14 Well-formed input | A generated run has the configuration of its parameters: servers, queue capacity, maximum attempts and retry deferral cap are equal. A scripted failure or recovery names a server below the server count. A scripted arrival has at least one duration, none of them zero, and a deadline after its tick. All are refused before the run. The checks at the pop stay as a backstop |
 | R12 Limits | A configuration is validated before anything is allocated, with checked arithmetic. A limit that is exceeded is an error and not a truncation |
 
 ## 2. Inputs
@@ -57,6 +58,10 @@ The messages that the key rule uses are these.
 | Two scripted arrivals share a key `K` | `the arrival key K is used more than once` |
 | A scripted key `K` is one that the generator uses | `the arrival key K is one that the generator uses` |
 | An arrival pop finds `K` already bound | `the arrival key K is already bound to a job` |
+| Parameters and configuration differ in a figure | `the parameters give N V, and the configuration gives W`, where N is servers, queue capacity, maximum attempts or retry deferral cap, in that order of checking |
+| A scripted failure or recovery names server `S` that is not below the count | `server S does not exist` |
+| A scripted arrival has no duration, or a zero one | `a duration is not positive` |
+| A scripted arrival has a deadline that is not after its tick | `the deadline of K is not after its admission` |
 
 ## 3. The event-pop hash and the input-stream hash
 

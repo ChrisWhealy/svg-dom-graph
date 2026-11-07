@@ -13,6 +13,18 @@
       "detail": "fixture E0: event_pop_sha256: rust \"e8e5d94a0a174ad5c7559ff4913a3cc6bdb8e39c3ade6bad4b7905015d24ebe9\", oracle \"8f1d2e105c69496a65456b6ab94d76f8b76b15695a539aef96bfcf7f22030844\""
     },
     {
+      "name": "the parameters are not compared with the configuration",
+      "caught": true,
+      "equivalent": false,
+      "detail": "refusal PARAMS-SERVERS-DIFFER: rust {\"name\":\"PARAMS-SERVERS-DIFFER\",\"outcome\":\"ok\"}, oracle {\"name\":\"PARAMS-SERVERS-DIFFER\",\"outcome\":\"error\",\"kind\":\"invalid\",\"message\":\"the parameters giv"
+    },
+    {
+      "name": "scripted events are not checked before the run",
+      "caught": true,
+      "equivalent": false,
+      "detail": "refusal DURATION-LATER-ZERO: rust {\"name\":\"DURATION-LATER-ZERO\",\"outcome\":\"ok\"}, oracle {\"name\":\"DURATION-LATER-ZERO\",\"outcome\":\"error\",\"kind\":\"invalid\",\"message\":\"a duration is not positi"
+    },
+    {
       "name": "the backoff is half what it should be",
       "caught": true,
       "equivalent": false,
@@ -40,13 +52,13 @@
       "name": "the guard against a rebound key at the arrival pop is off (equivalent)",
       "caught": false,
       "equivalent": true,
-      "detail": "native Rust against the oracle: 318 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
+      "detail": "native Rust against the oracle: 328 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
     },
     {
       "name": "a terminal job keeps its token (equivalent)",
       "caught": false,
       "equivalent": true,
-      "detail": "native Rust against the oracle: 318 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
+      "detail": "native Rust against the oracle: 328 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
     },
     {
       "name": "a cancel runs after a deadline",

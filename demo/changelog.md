@@ -95,4 +95,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS: Prevent layer C protocol from accepting incomplete measurements (`2bb307c`)
 - DESS: Ensure frozen generator parameters are independently pinned (`883bcae`)
 - DESS: Classify late cancellation events as stale (`1003933`)
-- DESS S1: Prevent duplicate job keys from redirecting cancellation (``)
+- DESS S1: Prevent duplicate job keys from redirecting cancellation (`9be023b`)
+- DESS S1: Prevent generator parameters and engine configuration from disagreeing (``)

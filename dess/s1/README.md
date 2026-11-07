@@ -24,7 +24,7 @@ The review of the contract against the design by someone other than its author i
 | `dess/s1/error-fixtures.json` | Scenarios that break a rule, which both engines must refuse in the same words, and look-alikes that both must accept |
 | `dess/s1/golden.json` | The hashes of 1,200 panel scenarios on which the two engines agreed, which the Rust tests check on every platform |
 | `dess/s1/differential.mjs` | The comparison of the two engines, pop by pop and slice by slice |
-| `dess/s1/mutation-check.mjs` | Breaks the Rust engine in thirteen ways, to show that the comparison notices |
+| `dess/s1/mutation-check.mjs` | Breaks the Rust engine in fifteen ways, to show that the comparison notices |
 | `dess/s1/coverage.mjs` | Counts the seeds that reach each rule |
 | `dess/s1/freeze-golden.mjs` | Writes the golden file, and only if the two engines agree |
 

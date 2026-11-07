@@ -114,12 +114,8 @@ for (const [name, f] of Object.entries(fixtures)) {
   const a = run({ configId: 'panel/1:5', seed: 5, config: p, params: p })
   const b = run({ configId: 'panel/1:5', seed: 5, config: p, params: p })
   check(JSON.stringify(a) === JSON.stringify(b), 'the same seed gives the same trace')
-  const zero = run({
-    configId: 'zero',
-    seed: 0,
-    config: { servers: 2, queueCapacity: 4, maxAttempts: 2, deferralCap: 4 },
-    params: { ...panelParams(1), arrivals: 0 }
-  })
+  const none = { ...panelParams(1), arrivals: 0 }
+  const zero = run({ configId: 'zero', seed: 0, config: none, params: none })
   check(zero.counters.pops === 0 && zero.slices.length === 0, 'a scenario with no arrivals has no pops and no slices')
 }
 

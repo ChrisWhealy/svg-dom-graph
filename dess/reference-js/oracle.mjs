@@ -52,6 +52,34 @@ const validateKeys = (script, params) => {
   }
 }
 
+/** A generated run has the configuration of its parameters (rule R14), so that a generated outage names a server that exists. */
+const validateAgreement = (config, params) => {
+  const pairs = [
+    ['servers', params.servers, config.servers],
+    ['queue capacity', params.queueCapacity, config.queueCapacity],
+    ['maximum attempts', params.maxAttempts, config.maxAttempts],
+    ['retry deferral cap', params.deferralCap, config.deferralCap]
+  ]
+  for (const [name, fromParams, fromConfig] of pairs)
+    if (fromParams !== fromConfig)
+      throw new ScenarioError(
+        'invalid',
+        `the parameters give ${name} ${fromParams}, and the configuration gives ${fromConfig}`
+      )
+}
+
+/** A scripted event has to be well formed (rule R14), and is refused before the run and not when it pops. */
+const validateScript = (script, config) => {
+  for (const e of script) {
+    if ((e.kind === 'fail' || e.kind === 'recover') && e.server >= config.servers)
+      throw new ScenarioError('invalid', `server ${e.server} does not exist`)
+    if (e.kind !== 'arrive') continue
+    if (e.durations.length === 0 || e.durations.some(d => d < 1))
+      throw new ScenarioError('invalid', 'a duration is not positive')
+    if (e.deadline <= e.at) throw new ScenarioError('invalid', `the deadline of ${e.key} is not after its admission`)
+  }
+}
+
 const validate = config => {
   const inRange = (name, v, lo, hi) => {
     if (!Number.isInteger(v) || v < lo || v > hi)
@@ -320,7 +348,9 @@ const checkpoint = (s, tick, batch) => {
 export const run = (scenario, options = {}) => {
   const { configId, seed, config, script = [], params = null } = scenario
   validate(config)
+  if (params) validateAgreement(config, params)
   validateKeys(script, params)
+  validateScript(script, config)
   const s = {
     configId,
     seed,
