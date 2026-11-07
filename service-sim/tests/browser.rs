@@ -151,10 +151,13 @@ fn a_delta_writes_only_what_differs() -> Result<(), String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// 1,000 consecutive displayed slices go through the one data node and the one overlay, and each changes its content, leaves the
-/// page equal to its projection, and adds no element.
+/// An endurance test of the setter and the overlay: 1,000 commits go through the one data node and the one overlay, and each changes
+/// the node's content, leaves the page equal to what was drawn, and adds no element.
+///
+/// It is not a sequence of simulation states. It cycles through E0's 13 projections and overwrites the ordinal cell with the commit
+/// number, so the cell no longer matches the clock slot. The test that follows it draws 1,200 genuine slices.
 #[wasm_bindgen_test]
-fn a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter() -> Result<(), String> {
+fn the_setter_endures_a_thousand_commits_with_no_new_element() -> Result<(), String> {
     let (servers, projections) = e0_projections(&View::default());
     let mut s = surface("ss-thousand", servers)?;
     s.draw(&projections[0])?;
@@ -186,6 +189,105 @@ fn a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter() -> Res
         previous_ordinal = Some(ordinal);
     }
     Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// 1,200 consecutive slices of a generated run, each projected from the engine and drawn as it comes, with nothing in a projection
+/// changed by hand. After every slice the page is what the projection says, and the data node and the clock are what the engine's own
+/// slice record says, which the projection did not produce. The run is the frozen `mixed_outage/7` at the manifest seed.
+#[wasm_bindgen_test]
+fn twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly() -> Result<(), String> {
+    const SLICES: u64 = 1_200;
+    let scenario = Scenario::mixed_outage_7(20_261_106).map_err(|e| e.to_string())?;
+    let mut engine = Engine::new(
+        &scenario.config_id,
+        scenario.seed,
+        scenario.config,
+        &scenario.script,
+        scenario.params.as_ref(),
+        Limits::default(),
+    )
+    .map_err(|e| e.to_string())?;
+    let servers = scenario.config.servers;
+    // A job is selected at every slice, and it changes, so that the highlight moves through real jobs as they come and go.
+    let view_at = |slice: u64| View { selected: Some(slice % 40) };
+    let mut s = surface("ss-genuine", servers)?;
+    let first = view_at(0);
+    s.draw(&project(&extract(&engine, &first), &first))?;
+    let elements = s.element_count()?;
+
+    let (mut saw_down, mut saw_busy, mut saw_queue, mut saw_retry, mut saw_rejection) =
+        (false, false, false, false, false);
+    let mut previous = 0;
+    while previous < SLICES {
+        let slice = engine
+            .step()
+            .map_err(|e| e.to_string())?
+            .ok_or_else(|| format!("the run ended after {previous} slices"))?;
+        check(
+            slice.index == previous + 1,
+            &format!("slice {} followed slice {previous}", slice.index),
+        )?;
+        previous = slice.index;
+
+        let view = view_at(slice.index);
+        let p = project(&extract(&engine, &view), &view);
+        let drawn = s.draw(&p)?;
+        check(drawn.data_set, &format!("the setter was not called on slice {}", slice.index))?;
+        check(
+            s.snapshot()? == p.canonical(),
+            &format!("the page differs from its projection at slice {}", slice.index),
+        )?;
+
+        // What the engine's own record says, which the projection did not produce.
+        let cells = s.data_texts()?;
+        let wanted = [slice.index, slice.tick, slice.waiting as u64, slice.busy as u64];
+        check(
+            cells.iter().take(4).map(String::as_str).eq(wanted
+                .iter()
+                .map(ToString::to_string)
+                .collect::<Vec<_>>()
+                .iter()
+                .map(String::as_str)),
+            &format!(
+                "data cells {:?}, and the slice record says {wanted:?}, at slice {}",
+                &cells[..4],
+                slice.index
+            ),
+        )?;
+        let clock = p.slots.iter().find(|x| x.key == "clock").ok_or("no clock slot")?;
+        check(
+            clock.text == format!("tick {} · slice {}", slice.tick, slice.index),
+            &format!("the clock says {:?} at slice {}", clock.text, slice.index),
+        )?;
+        check(
+            s.element_count()? == elements,
+            &format!("the element count changed at slice {}", slice.index),
+        )?;
+
+        for slot in &p.slots {
+            saw_down |= slot.key.starts_with('S') && slot.text == "down";
+            saw_busy |= slot.key.starts_with('S') && slot.class.contains("ss-busy");
+            saw_queue |= slot.key == "Q0" && !slot.hidden;
+            saw_retry |= slot.key == "retrying" && slot.text != "0";
+            saw_rejection |= slot.key == "rejected" && slot.text != "0";
+        }
+        // Now and then the page reached by deltas is compared with a fresh surface drawn in full.
+        if slice.index % 300 == 0 {
+            let mut fresh = surface(&format!("ss-genuine-fresh-{}", slice.index), servers)?;
+            fresh.draw(&p)?;
+            check(
+                s.snapshot()? == fresh.snapshot()?,
+                &format!("delta and full differ at slice {}", slice.index),
+            )?;
+        }
+    }
+    check(
+        saw_down && saw_busy && saw_queue && saw_retry && saw_rejection,
+        &format!(
+            "the run was too tame to prove much: down {saw_down}, busy {saw_busy}, queue {saw_queue}, retry {saw_retry}, rejection {saw_rejection}"
+        ),
+    )
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

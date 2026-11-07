@@ -100,4 +100,5 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S1: Prevent generator parameters and engine configuration from disagreeing (`62e2798`)
 - DESS S1: Ensure coverage report accurately states path-specific checks (`3794f8a`)
 - DESS S2: Prevent detached-host writes from being accepted as successful (`ad02b75`)
-- DESS S2: Projection preparation has an unbounded per-slice cost (``)
+- DESS S2: Projection preparation has an unbounded per-slice cost (`0bfef6d`)
+- DESS S2: Ensure 1000-commit test uses 1000 consecutive simulation snapshots (``)

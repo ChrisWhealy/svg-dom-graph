@@ -1,4 +1,4 @@
-// Shows that the projection tests and the surface tests can fail: the code is broken in fourteen small ways, one at a time, and a test has
+// Shows that the projection tests and the surface tests can fail: the code is broken in fifteen small ways, one at a time, and a test has
 // to notice each. A test that passes proves nothing until it is known to fail on a fault.
 //
 //   node dess/s2/mutation-check.mjs [--out FILE]
@@ -93,6 +93,13 @@ const MUTATIONS = [
     'let mut ids = waiting.clone();',
     'let mut ids: Vec<u64> = (0..self.jobs.len() as u64).collect();',
     'engine'
+  ],
+  [
+    PROJECTION,
+    'the tick in the data node is cut to a byte',
+    'clamp(model.tick),',
+    'clamp(model.tick & 0xFF),',
+    'browser'
   ],
   [
     PROJECTION,

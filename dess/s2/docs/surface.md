@@ -63,7 +63,8 @@ Only the tests enable it, through a dev-dependency of the crate on itself, so a 
 | `a_delta_between_any_two_snapshots_equals_a_full_redraw` | A delta between any two snapshots, forwards or backwards, reaches what a full redraw writes. This is a seek |
 | `a_page_reached_by_deltas_equals_a_page_drawn_in_full` | The same on the page, against a fresh surface drawn in full at each step |
 | `a_delta_writes_only_what_differs` | A stale-only slice writes four fields and calls the setter |
-| `a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter` | 1,000 consecutive commits through the one data node change its content every time, keep the page equal to its projection and add no element |
+| `the_setter_endures_a_thousand_commits_with_no_new_element` | An endurance test of the setter: 1,000 commits through the one data node change its content every time, keep the page equal to what was drawn and add no element. It cycles E0's projections and overwrites the ordinal, so it is not a sequence of states |
+| `twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly` | 1,200 consecutive slices of the frozen generated run, each projected from the engine and drawn as it comes, with nothing changed by hand. After each, the page is its projection, and the data node and the clock agree with the engine's own slice record. Every 300 slices the page is compared with a fresh surface drawn in full |
 | `drawing_leaves_the_view_and_the_focus_alone` | A set view and a focused slot are where they were after every draw, including draws that change the selection |
 | `the_overlay_is_in_the_one_content_group_and_follows_the_view` | There is one content group, the overlay is its last child, and a view of scale 2 scales the overlay as it scales a node |
 | `a_refused_draw_makes_the_next_one_a_full_redraw` | A projection of the wrong shape is refused, and the next draw is a full one |
@@ -88,8 +89,8 @@ Both are fixed, and the second is one of the mutations that the sensitivity chec
 
 ## The sensitivity check
 
-`dess/s2/mutation-check.mjs` breaks the code in fourteen ways, one at a time, and runs the tests.
-The record is `dess/s2/evidence/mutation-check.json`, and all fourteen are caught.
+`dess/s2/mutation-check.mjs` breaks the code in fifteen ways, one at a time, and runs the tests.
+The record is `dess/s2/evidence/mutation-check.json`, and all fifteen are caught.
 
 | Mutation | First test to fail |
 |---|---|
@@ -106,6 +107,7 @@ The record is `dess/s2/evidence/mutation-check.json`, and all fourteen are caugh
 | The stale count is not shown | The E0 ledger |
 | The retry-wait count is not lowered when a retry re-queues a job, or when a job is finished | The recount after every slice |
 | A model copies every job that has arrived | The model's size |
+| The tick in the data node is cut to a byte | The 1,200 genuine slices, and no other test, since E0 ends at tick 20 |
 
 ## Left open
 
