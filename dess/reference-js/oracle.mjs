@@ -344,6 +344,9 @@ const checkpoint = (s, tick, batch) => {
  *
  * `scenario`: `{ configId, seed, config, script, params }`. `params` is present for a generated run, and then `config` is its
  * servers, queue capacity, attempts and deferral cap. `script` is a list of events.
+ *
+ * `options.observe(state, event)` is called before each pop with the engine's state as it is at that moment, and must not change it.
+ * The coverage report uses it to see the state that a transition acts on. `options.stopAfterSlices` ends the run early.
  */
 export const run = (scenario, options = {}) => {
   const { configId, seed, config, script = [], params = null } = scenario
@@ -392,6 +395,7 @@ export const run = (scenario, options = {}) => {
     while (count < s.events.length && s.events[count].tick === tick) count++
     const batch = s.events.splice(0, count)
     for (const ev of batch) {
+      options.observe?.(s, ev)
       const [outcome, subject] = transitions[ev.kind](s, ev)
       s.counters.pops += 1
       if (outcome === 's') s.counters.stale += 1

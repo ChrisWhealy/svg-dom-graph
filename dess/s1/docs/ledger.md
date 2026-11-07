@@ -29,6 +29,7 @@ Findings 6 and 7 below are defects that both engines had, and that agreement cou
 | 5 | The design does not say in what order the events that one pop creates take their sequence numbers | A rule left open | Contract rules R1 and R2, fixed before either engine was coded. The S0 pins, which another implementation produced, confirm them, since they include the sequence numbers |
 | 6 | Two arrivals with the same key made the second overwrite the first job's entry, so a later cancel of the key reached the wrong job | A defect that both engines shared, found by review | Rule R13: keys are unique across the script and the generator, and a violation is refused before the run, in the same words by both engines. See below |
 | 7 | The engine did not check that the generator's parameters and its own configuration agree, so a generated outage could name a server that does not exist. Scripted events were checked only when they popped | A gap that both engines shared, found by review | Rule R14: the figures must agree, and scripted events are well formed. Both are refused before the run, in the same words by both engines. See below |
+| 8 | The coverage report said that it counted a cancel or a timeout while a job waits to retry, and a rejection while a server is idle, and it read only counters, outcomes and final states | A report that claimed more than it measured | The oracle has an `observe` hook that gives the state before each pop, and the report now counts those transitions from it. See below |
 
 ## Finding 6: duplicate arrival keys
 
@@ -75,6 +76,31 @@ The checks at the pop stay as a backstop.
 Ten new refusal cases cover each figure, each kind of scripted event, a zero duration on a later attempt, and the rejected arrival with the bad deadline.
 Two cases show that agreeing figures and the last server are accepted.
 The sensitivity check has a mutation for each of the two checks, and both are caught.
+
+## Finding 8: what the coverage report measures
+
+A review found that the report named two conditions that it could not establish.
+It counted counters, pop outcomes and final job states, and none of those says what state a job or a server was in just before an event.
+Fixtures E1-RC and E2-RT do reach the retry-wait cases, so the checks were covered, and the report was not.
+
+The oracle's `run` now takes an `observe(state, event)` hook, which is called before each pop and changes nothing.
+The report is in two parts and says so in its header.
+The first part is from the trace, as before.
+The second part, marked `transition:`, is from the state before each pop.
+
+| Pair of an event and a state | First panel | Disturbed panel |
+|---|---|---|
+| A cancel reaches a job that waits to retry | 16 seeds | 18 seeds |
+| A deadline reaches a job that waits to retry | 83 seeds | 119 seeds |
+| An arrival is rejected while a server is idle | 127 seeds | 175 seeds |
+| An arrival is rejected while no server is idle | 110 seeds | 172 seeds |
+| A failure reaches a server that is idle, busy or down | 425, 438 and none | 579, 495 and 464 seeds |
+
+The report also gives a cancel and a deadline for a job in each other state.
+A pair that no seed reaches is absent from the list, and not shown as zero.
+The first panel never fails a server that is down, which is why the disturbed panel exists.
+
+The oracle's trace is unchanged, so the golden hashes and the differential run are unaffected.
 
 ## Rules that the design left open
 
