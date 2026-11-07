@@ -31,10 +31,22 @@
       "detail": "fixture E0: slice 3, checkpoint: rust \"58ffd48d159d1d9fda44fa6192e56c912ceec023ef9b5812a84e13c259d6f5c3\", oracle \"fd87ffa03f79f0e7685f352600d049be7a977332205063cdc1601370dc719de3\""
     },
     {
+      "name": "a duplicate scripted key is not refused before the run",
+      "caught": true,
+      "equivalent": false,
+      "detail": "refusal DUP-SCRIPT: rust {\"kind\":\"invalid\",\"message\":\"the arrival key X is already bound to a job\",\"name\":\"DUP-SCRIPT\",\"outcome\":\"error\"}, oracle {\"name\":\"DUP-SCRIPT\",\"outcome\":\"error\",\"ki"
+    },
+    {
+      "name": "the guard against a rebound key at the arrival pop is off (equivalent)",
+      "caught": false,
+      "equivalent": true,
+      "detail": "native Rust against the oracle: 318 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
+    },
+    {
       "name": "a terminal job keeps its token (equivalent)",
       "caught": false,
       "equivalent": true,
-      "detail": "native Rust against the oracle: 306 scenarios, 105927 pops and 60630 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
+      "detail": "native Rust against the oracle: 318 scenarios, 105934 pops and 60636 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
     },
     {
       "name": "a cancel runs after a deadline",

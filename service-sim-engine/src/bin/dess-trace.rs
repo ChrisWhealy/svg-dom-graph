@@ -2,6 +2,7 @@
 //!
 //!   dess-trace panel FROM TO        the panel seeds FROM to TO - 1
 //!   dess-trace panel2 FROM TO       the disturbed panel: the same seeds with a script added
+//!   dess-trace errors PATH          every case of an error-fixtures file, as `{"name", "outcome", "kind", "message"}`; PATH `-` is standard input
 //!   dess-trace manifest             the frozen revision `mixed_outage/7` for the manifest seed 20261106
 //!   dess-trace fixtures PATH        every fixture of the file, as `{"name": ..., "trace": ...}`. PATH `-` reads standard input
 //!
@@ -42,6 +43,28 @@ fn run() -> Result<(), String> {
             println!("{}", trace(&scenario, Limits::default()).map_err(show)?);
             Ok(())
         },
+        Some("errors") => {
+            let path = args.get(1).ok_or("PATH is missing")?;
+            let mut text = String::new();
+            if path == "-" {
+                std::io::Read::read_to_string(&mut std::io::stdin(), &mut text)
+                    .map_err(|e| format!("standard input: {e}"))?;
+            } else {
+                text = std::fs::read_to_string(path).map_err(|e| format!("{path}: {e}"))?;
+            }
+            let all: serde_json::Value = serde_json::from_str(&text).map_err(|e| format!("{path}: {e}"))?;
+            for (name, case) in all.as_object().ok_or("the cases are not an object")? {
+                let outcome = Scenario::fixture(name, case).and_then(|s| trace(&s, Limits::default()).map(|_| ()));
+                let line = match outcome {
+                    Ok(()) => serde_json::json!({ "name": name, "outcome": "ok" }),
+                    Err(e) => {
+                        serde_json::json!({ "name": name, "outcome": "error", "kind": e.kind(), "message": e.message() })
+                    },
+                };
+                println!("{line}");
+            }
+            Ok(())
+        },
         Some("fixtures") => {
             let path = args.get(1).ok_or("PATH is missing")?;
             let mut text = String::new();
@@ -59,7 +82,7 @@ fn run() -> Result<(), String> {
             }
             Ok(())
         },
-        _ => Err("usage: dess-trace (panel FROM TO | panel2 FROM TO | manifest | fixtures PATH)".into()),
+        _ => Err("usage: dess-trace (panel FROM TO | panel2 FROM TO | manifest | fixtures PATH | errors PATH)".into()),
     }
 }
 

@@ -89,6 +89,26 @@ for (const [name, f] of Object.entries(fixtures)) {
   )
 }
 
+// A scenario that breaks the rule of the keys is refused before it runs, and the same job is not reachable by another's key.
+{
+  const cases = JSON.parse(fs.readFileSync(new URL('../s1/error-fixtures.json', import.meta.url), 'utf8'))
+  let wrong = 0
+  for (const [name, c] of Object.entries(cases)) {
+    let got
+    try {
+      run({ configId: name, seed: 0, config: c.config, script: c.script, params: c.params ?? null })
+      got = { outcome: 'ok' }
+    } catch (error) {
+      got = { outcome: 'error', kind: error.kind, message: error.message }
+    }
+    if (JSON.stringify(got) !== JSON.stringify(c.expect)) {
+      wrong++
+      console.log(`     ${name}: ${JSON.stringify(got)}, and ${JSON.stringify(c.expect)} was expected`)
+    }
+  }
+  check(wrong === 0, `the ${Object.keys(cases).length} refusal cases give the contract's outcomes`)
+}
+
 {
   const p = panelParams(5)
   const a = run({ configId: 'panel/1:5', seed: 5, config: p, params: p })

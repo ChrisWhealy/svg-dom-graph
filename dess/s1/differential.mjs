@@ -5,7 +5,8 @@
 // For each scenario both engines produce a trace (design: `dess/s1/docs/contract.md`, section 6), and the traces have to be equal in
 // every field. The scenarios are
 //
-//   * the five known-answer fixtures of `dess/s1/fixtures.json`, which also have to give the design's counts;
+//   * the six known-answer fixtures of `dess/s1/fixtures.json`, which also have to give the design's counts;
+//   * the refusals of `dess/s1/error-fixtures.json`, which both engines have to reject in the same words, before anything runs;
 //   * the panel: the seeds 0 to N - 1, each deriving its own configuration, so that the two engines also agree on the derivation;
 //   * the disturbed panel: the same seeds with a script added, which reaches the rules that generated outages and cancels cannot;
 //   * the frozen revision `mixed_outage/7` for the manifest seed, whose parameter, input and event-pop hashes are the S0 pins.
@@ -16,7 +17,7 @@
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
-import { run } from '../reference-js/oracle.mjs'
+import { ScenarioError, run } from '../reference-js/oracle.mjs'
 import { MIXED_OUTAGE_7, disturbances, panelParams } from '../reference-js/generator.mjs'
 
 const root = path.resolve(import.meta.dirname, '../..')
@@ -27,11 +28,17 @@ const rust =
   argument('--rust') ??
   path.join(root, WASI ? 'target/wasm32-wasip1/release/dess-trace.wasm' : 'target/release/dess-trace')
 const fixturesFile = path.join(root, 'dess/s1/fixtures.json')
+const errorsFile = path.join(root, 'dess/s1/error-fixtures.json')
 
 const rustLines = (...args) => {
   const command = WASI ? ['node', [path.join(root, 'perf/crosscheck/run-wasi.mjs'), rust, ...args]] : [rust, args]
   // The fixtures are given on standard input, since the WASI runner preopens no directory.
-  const input = args[0] === 'fixtures' ? fs.readFileSync(fixturesFile, 'utf8') : undefined
+  const input =
+    args[0] === 'fixtures'
+      ? fs.readFileSync(fixturesFile, 'utf8')
+      : args[0] === 'errors'
+        ? fs.readFileSync(errorsFile, 'utf8')
+        : undefined
   const result = spawnSync(command[0], command[1], { cwd: root, encoding: 'utf8', maxBuffer: 1 << 30, input })
   if (result.status !== 0)
     throw new Error(`the Rust engine failed (${args.join(' ')}): ${result.stderr || result.stdout}`)
@@ -105,6 +112,30 @@ for (const { name, trace } of rustLines('fixtures', '-')) {
     differences.push(
       `fixture ${name}: the design's counts are ${JSON.stringify(want)}, and the engines gave ${c.pops} pops, ${c.slices} slices, ${c.stale} stale, ${c.noops} no-ops`
     )
+}
+
+// The refusals: scenarios that break a rule must be refused by both engines in the same words, before they run (rule R13 and the
+// checks of the configuration, the deadlines and the servers), and the cases that look alike but are valid must be accepted.
+{
+  const cases = JSON.parse(fs.readFileSync(errorsFile, 'utf8'))
+  const rust = Object.fromEntries(rustLines('errors', '-').map(r => [r.name, r]))
+  for (const [name, c] of Object.entries(cases)) {
+    scenarios++
+    let oracle
+    try {
+      run({ configId: `fixture/${name}`, seed: 0, config: c.config, script: c.script, params: c.params ?? null })
+      oracle = { name, outcome: 'ok' }
+    } catch (error) {
+      if (!(error instanceof ScenarioError)) throw error
+      oracle = { name, outcome: 'error', kind: error.kind, message: error.message }
+    }
+    if (canonical(rust[name]) !== canonical(oracle))
+      differences.push(`refusal ${name}: rust ${JSON.stringify(rust[name])}, oracle ${JSON.stringify(oracle)}`)
+    if (canonical({ ...oracle, name: undefined }) !== canonical({ ...c.expect, name: undefined }))
+      differences.push(
+        `refusal ${name}: the contract says ${JSON.stringify(c.expect)}, and the engines gave ${JSON.stringify(oracle)}`
+      )
+  }
 }
 
 // The panel.

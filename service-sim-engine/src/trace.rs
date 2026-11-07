@@ -116,12 +116,13 @@ impl Scenario {
                 _ => return Err(bad("an event of an unknown kind")),
             });
         }
+        let params = v.get("params").map(Params::from_json).transpose()?;
         Ok(Self {
             config_id: format!("fixture/{name}"),
             seed: 0,
             config,
             script,
-            params: None,
+            params,
         })
     }
 }

@@ -8,6 +8,7 @@ use service_sim_engine::{Config, Engine, Error, Limits, Params, ScriptEvent};
 
 const FIXTURES: &str = include_str!("../../dess/s1/fixtures.json");
 const GOLDEN: &str = include_str!("../../dess/s1/golden.json");
+const ERRORS: &str = include_str!("../../dess/s1/error-fixtures.json");
 const FROZEN: &str = include_str!("../../dess/s0/prototype/frozen.json");
 
 fn json(text: &str) -> Value {
@@ -98,6 +99,35 @@ fn every_panel_scenario_gives_the_golden_hashes() {
             );
         }
     }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A key names one job (rule R13). Two scripted arrivals that share a key, or a scripted key that the generator uses, are refused
+/// before anything runs, and keys that only look alike are accepted. The cases and their messages are in the contract's data.
+#[test]
+fn the_refusals_of_the_contract_are_refused_in_its_words() {
+    for (name, case) in json(ERRORS).as_object().expect("an object") {
+        let outcome = Scenario::fixture(name, case).and_then(|s| trace(&s, Limits::default()).map(|_| ()));
+        let want = &case["expect"];
+        match (outcome, want["outcome"].as_str()) {
+            (Ok(()), Some("ok")) => {},
+            (Err(e), Some("error")) => {
+                assert_eq!(e.kind(), want["kind"].as_str().unwrap_or_default(), "{name}: the kind");
+                assert_eq!(e.message(), want["message"].as_str().unwrap_or_default(), "{name}: the message");
+            },
+            (got, _) => panic!("{name}: {got:?}, and {want} was expected"),
+        }
+    }
+}
+
+/// The scenario that a duplicate key would have broken: with two keys, a cancel reaches the job it names and not the other.
+#[test]
+fn a_cancel_reaches_the_job_that_its_key_names() {
+    let fixtures = json(FIXTURES);
+    let t = run_trace(&Scenario::fixture("E3-KEY", &fixtures["E3-KEY"]).expect("a fixture"));
+    let jobs = t["jobs"].as_array().expect("jobs");
+    assert_eq!(jobs[0][2], "cancelled", "the running job X is the one cancelled");
+    assert_eq!(jobs[1][2], "completed", "the queued job Y runs on after it");
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

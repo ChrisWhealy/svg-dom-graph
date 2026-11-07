@@ -1,16 +1,75 @@
 {
   "E0": {
-    "config": { "servers": 2, "queueCapacity": 3, "maxAttempts": 2, "deferralCap": 4 },
+    "config": {
+      "servers": 2,
+      "queueCapacity": 3,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
     "script": [
-      { "kind": "arrive", "at": 0, "key": "J0", "priority": 1, "durations": [4, 2], "deadline": 10 },
-      { "kind": "arrive", "at": 0, "key": "J1", "priority": 0, "durations": [6], "deadline": 20 },
-      { "kind": "arrive", "at": 1, "key": "J2", "priority": 1, "durations": [2], "deadline": 8 },
-      { "kind": "arrive", "at": 2, "key": "J3", "priority": 0, "durations": [2], "deadline": 5 },
-      { "kind": "arrive", "at": 4, "key": "J4", "priority": 1, "durations": [1], "deadline": 9 },
-      { "kind": "arrive", "at": 5, "key": "J5", "priority": 0, "durations": [3], "deadline": 15 },
-      { "kind": "fail", "at": 2, "server": 0 },
-      { "kind": "recover", "at": 7, "server": 0 },
-      { "kind": "cancel", "at": 6, "key": "J5" }
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J0",
+        "priority": 1,
+        "durations": [4, 2],
+        "deadline": 10
+      },
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J1",
+        "priority": 0,
+        "durations": [6],
+        "deadline": 20
+      },
+      {
+        "kind": "arrive",
+        "at": 1,
+        "key": "J2",
+        "priority": 1,
+        "durations": [2],
+        "deadline": 8
+      },
+      {
+        "kind": "arrive",
+        "at": 2,
+        "key": "J3",
+        "priority": 0,
+        "durations": [2],
+        "deadline": 5
+      },
+      {
+        "kind": "arrive",
+        "at": 4,
+        "key": "J4",
+        "priority": 1,
+        "durations": [1],
+        "deadline": 9
+      },
+      {
+        "kind": "arrive",
+        "at": 5,
+        "key": "J5",
+        "priority": 0,
+        "durations": [3],
+        "deadline": 15
+      },
+      {
+        "kind": "fail",
+        "at": 2,
+        "server": 0
+      },
+      {
+        "kind": "recover",
+        "at": 7,
+        "server": 0
+      },
+      {
+        "kind": "cancel",
+        "at": 6,
+        "key": "J5"
+      }
     ],
     "expect": {
       "pops": 19,
@@ -37,11 +96,31 @@
     }
   },
   "E1-RC": {
-    "config": { "servers": 1, "queueCapacity": 2, "maxAttempts": 2, "deferralCap": 4 },
+    "config": {
+      "servers": 1,
+      "queueCapacity": 2,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
     "script": [
-      { "kind": "arrive", "at": 0, "key": "J0", "priority": 1, "durations": [5], "deadline": 20 },
-      { "kind": "fail", "at": 1, "server": 0 },
-      { "kind": "cancel", "at": 2, "key": "J0" }
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J0",
+        "priority": 1,
+        "durations": [5],
+        "deadline": 20
+      },
+      {
+        "kind": "fail",
+        "at": 1,
+        "server": 0
+      },
+      {
+        "kind": "cancel",
+        "at": 2,
+        "key": "J0"
+      }
     ],
     "expect": {
       "pops": 6,
@@ -49,15 +128,33 @@
       "snapshots": 7,
       "stale": 3,
       "noops": 0,
-      "states": { "J0": "cancelled" },
+      "states": {
+        "J0": "cancelled"
+      },
       "servers": ["down"]
     }
   },
   "E2-RT": {
-    "config": { "servers": 1, "queueCapacity": 2, "maxAttempts": 2, "deferralCap": 4 },
+    "config": {
+      "servers": 1,
+      "queueCapacity": 2,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
     "script": [
-      { "kind": "arrive", "at": 0, "key": "J0", "priority": 1, "durations": [5], "deadline": 2 },
-      { "kind": "fail", "at": 1, "server": 0 }
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J0",
+        "priority": 1,
+        "durations": [5],
+        "deadline": 2
+      },
+      {
+        "kind": "fail",
+        "at": 1,
+        "server": 0
+      }
     ],
     "expect": {
       "pops": 5,
@@ -65,20 +162,58 @@
       "snapshots": 6,
       "stale": 2,
       "noops": 0,
-      "states": { "J0": "timedout" },
+      "states": {
+        "J0": "timedout"
+      },
       "servers": ["down"]
     }
   },
   "E3-NOOP": {
-    "config": { "servers": 1, "queueCapacity": 2, "maxAttempts": 2, "deferralCap": 4 },
+    "config": {
+      "servers": 1,
+      "queueCapacity": 2,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
     "script": [
-      { "kind": "arrive", "at": 0, "key": "J0", "priority": 1, "durations": [2], "deadline": 10 },
-      { "kind": "cancel", "at": 5, "key": "J0" },
-      { "kind": "cancel", "at": 6, "key": "X" },
-      { "kind": "fail", "at": 7, "server": 0 },
-      { "kind": "fail", "at": 8, "server": 0 },
-      { "kind": "recover", "at": 9, "server": 0 },
-      { "kind": "recover", "at": 11, "server": 0 }
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J0",
+        "priority": 1,
+        "durations": [2],
+        "deadline": 10
+      },
+      {
+        "kind": "cancel",
+        "at": 5,
+        "key": "J0"
+      },
+      {
+        "kind": "cancel",
+        "at": 6,
+        "key": "X"
+      },
+      {
+        "kind": "fail",
+        "at": 7,
+        "server": 0
+      },
+      {
+        "kind": "fail",
+        "at": 8,
+        "server": 0
+      },
+      {
+        "kind": "recover",
+        "at": 9,
+        "server": 0
+      },
+      {
+        "kind": "recover",
+        "at": 11,
+        "server": 0
+      }
     ],
     "expect": {
       "pops": 9,
@@ -86,17 +221,46 @@
       "snapshots": 10,
       "stale": 1,
       "noops": 4,
-      "states": { "J0": "completed" },
+      "states": {
+        "J0": "completed"
+      },
       "servers": ["idle"]
     }
   },
   "E3-CT": {
-    "config": { "servers": 1, "queueCapacity": 1, "maxAttempts": 2, "deferralCap": 4 },
+    "config": {
+      "servers": 1,
+      "queueCapacity": 1,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
     "script": [
-      { "kind": "arrive", "at": 0, "key": "J0", "priority": 1, "durations": [10], "deadline": 3 },
-      { "kind": "arrive", "at": 0, "key": "J1", "priority": 1, "durations": [2], "deadline": 8 },
-      { "kind": "cancel", "at": 1, "key": "J1" },
-      { "kind": "cancel", "at": 4, "key": "J0" }
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J0",
+        "priority": 1,
+        "durations": [10],
+        "deadline": 3
+      },
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "J1",
+        "priority": 1,
+        "durations": [2],
+        "deadline": 8
+      },
+      {
+        "kind": "cancel",
+        "at": 1,
+        "key": "J1"
+      },
+      {
+        "kind": "cancel",
+        "at": 4,
+        "key": "J0"
+      }
     ],
     "expect": {
       "pops": 6,
@@ -107,7 +271,53 @@
       "arrivals": 2,
       "admitted": 1,
       "rejected": 1,
-      "states": { "J0": "timedout", "J1": "rejected" },
+      "states": {
+        "J0": "timedout",
+        "J1": "rejected"
+      },
+      "servers": ["idle"]
+    }
+  },
+  "E3-KEY": {
+    "config": {
+      "servers": 1,
+      "queueCapacity": 2,
+      "maxAttempts": 2,
+      "deferralCap": 4
+    },
+    "script": [
+      {
+        "kind": "arrive",
+        "at": 0,
+        "key": "X",
+        "priority": 1,
+        "durations": [10],
+        "deadline": 50
+      },
+      {
+        "kind": "arrive",
+        "at": 1,
+        "key": "Y",
+        "priority": 1,
+        "durations": [3],
+        "deadline": 50
+      },
+      {
+        "kind": "cancel",
+        "at": 2,
+        "key": "X"
+      }
+    ],
+    "expect": {
+      "pops": 7,
+      "slices": 6,
+      "snapshots": 7,
+      "stale": 3,
+      "noops": 0,
+      "states": {
+        "X": "cancelled",
+        "Y": "completed"
+      },
       "servers": ["idle"]
     }
   }

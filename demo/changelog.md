@@ -36,7 +36,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Phase 4: Recovery and endurance testing under deliberate failures (`778ccbc`)
 - Perf Harness: Phase 5: CI integration, baseline promotion and statistical regression reporting (`ae4c4b1`)
 - Discrete-Event Service Simulator (DESS): S0 implementation (`fe0c7b5`)
-- DESS S1: Pure Rust `service-sim-engine` (``)
+- DESS S1: Pure Rust `service-sim-engine` (`72adf2b`)
 
 ### Changed
 
@@ -95,3 +95,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS: Prevent layer C protocol from accepting incomplete measurements (`2bb307c`)
 - DESS: Ensure frozen generator parameters are independently pinned (`883bcae`)
 - DESS: Classify late cancellation events as stale (`1003933`)
+- DESS S1: Prevent duplicate job keys from redirecting cancellation (``)

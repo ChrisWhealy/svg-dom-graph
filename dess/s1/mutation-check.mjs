@@ -1,4 +1,4 @@
-// Shows that the differential run can fail: the Rust engine is broken in eleven small ways, one at a time, and the differential run has
+// Shows that the differential run can fail: the Rust engine is broken in thirteen small ways, one at a time, and the differential run has
 // to find each one. A comparison that agrees proves nothing until it is known to notice a disagreement.
 //
 //   node dess/s1/mutation-check.mjs [--out FILE]
@@ -20,11 +20,7 @@ const MUTATIONS = [
     'if self.jobs[id].defers > self.config.deferral_cap {',
     'if self.jobs[id].defers >= self.config.deferral_cap {'
   ],
-  [
-    'dispatch ignores the queue entry tick',
-    '.then(a.entered.cmp(&b.entered)).then(a.id.cmp(&b.id))',
-    '.then(a.id.cmp(&b.id))'
-  ],
+  ['dispatch ignores the queue entry tick', '                .then(a.entered.cmp(&b.entered))\n', ''],
   [
     'the backoff is half what it should be',
     'let backoff = 2u64 << (self.jobs[id].failures - 1);',
@@ -39,6 +35,19 @@ const MUTATIONS = [
     'an aborted attempt keeps its token',
     '                let id = job as usize;\n                self.jobs[id].token += 1;\n                self.jobs[id].failures += 1;',
     '                let id = job as usize;\n                self.jobs[id].failures += 1;'
+  ],
+  [
+    'a duplicate scripted key is not refused before the run',
+    'if !seen.insert(key.as_str()) {',
+    'if !seen.insert(key.as_str()) && false {'
+  ],
+  // Unobservable through the engine's interface: the validation before the run refuses a duplicate key first, so the guard in the
+  // arrival pop, which is there in case a scenario reaches it some other way, is never reached.
+  [
+    'the guard against a rebound key at the arrival pop is off (equivalent)',
+    'if self.by_key.contains_key(&key) {',
+    'if false {',
+    true
   ],
   // Unobservable: a terminal job fails the state check of every late event, and is not in the checkpoint. It is kept to show that
   // the check reports an equivalent mutant as one, and does not pretend that it was caught.
@@ -75,6 +84,13 @@ const differential = () =>
     encoding: 'utf8',
     maxBuffer: 1 << 28
   })
+
+// Every mutation has to apply to the source as it is now, and rustfmt can move the text, so this is checked before anything is changed.
+const stale = MUTATIONS.filter(([, from]) => !original.includes(from)).map(([name]) => name)
+if (stale.length > 0) {
+  console.error(`these mutations do not apply to engine.rs as it is: ${stale.join('; ')}`)
+  process.exit(2)
+}
 
 const results = []
 try {

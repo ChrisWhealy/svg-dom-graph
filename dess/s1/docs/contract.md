@@ -20,6 +20,7 @@ Where the design is silent, the choice made here is a binding rule, and every on
 | R9 Pop outcome | Effective, stale or no-op, as in `dess/s0/docs/pop-outcomes.md` |
 | R10 Run end | The run ends when the future heap is empty |
 | R11 Same-tick creation | No event is created for the tick being processed. A retry deferral, a duration and a backoff are at least one tick, and a generated gap is at least one tick |
+| R13 Arrival keys | A key names one job, and is unique across the script and the generator. A scripted key that two arrivals share is refused, and so is a scripted key that the generator uses: `g` and a number below the generator's arrival count, written without a leading zero. Both are refused before the run. An arrival pop that finds its key already bound to a job is an error as well, and never rebinds it |
 | R12 Limits | A configuration is validated before anything is allocated, with checked arithmetic. A limit that is exceeded is an error and not a truncation |
 
 ## 2. Inputs
@@ -43,6 +44,19 @@ A script event is one of four kinds.
 A generator makes the arrivals and cancels of a seed, and the outages, as `dess/s0/docs/generator-and-qualification.md` describes.
 Its six streams are `derive(seed, 1)` to `derive(seed, 6)`.
 The scripted outages are all drawn before the run, and the arrivals one at a time.
+
+### Refusals
+
+A scenario that breaks a rule of this page is refused with an error before anything runs, and both engines refuse it in the same words.
+An error has a kind and a message.
+The kind is `invalid`, `overflow` or `limit`.
+The messages that the key rule uses are these.
+
+| Case | Message |
+|---|---|
+| Two scripted arrivals share a key `K` | `the arrival key K is used more than once` |
+| A scripted key `K` is one that the generator uses | `the arrival key K is one that the generator uses` |
+| An arrival pop finds `K` already bound | `the arrival key K is already bound to a job` |
 
 ## 3. The event-pop hash and the input-stream hash
 

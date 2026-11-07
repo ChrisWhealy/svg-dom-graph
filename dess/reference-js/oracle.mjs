@@ -31,9 +31,31 @@ const ACTIVE = job => job.state === 'queued' || job.state === 'running' || job.s
 const compare = (a, b) => a.tick - b.tick || a.rank - b.rank || a.seq - b.seq
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/** An error with a kind, which the differential run compares with the Rust engine's. */
+export class ScenarioError extends Error {
+  constructor(kind, message) {
+    super(message)
+    this.kind = kind
+  }
+}
+
+/** The keys of the script and the generator have to name one job each, and are checked before anything runs (rule R13). */
+const validateKeys = (script, params) => {
+  const seen = new Set()
+  for (const e of script) {
+    if (e.kind !== 'arrive') continue
+    if (seen.has(e.key)) throw new ScenarioError('invalid', `the arrival key ${e.key} is used more than once`)
+    seen.add(e.key)
+    const generated = /^g(0|[1-9][0-9]*)$/.exec(e.key)
+    if (params && generated && Number(generated[1]) < params.arrivals)
+      throw new ScenarioError('invalid', `the arrival key ${e.key} is one that the generator uses`)
+  }
+}
+
 const validate = config => {
   const inRange = (name, v, lo, hi) => {
-    if (!Number.isInteger(v) || v < lo || v > hi) throw new Error(`${name} ${v} is outside ${lo} to ${hi}`)
+    if (!Number.isInteger(v) || v < lo || v > hi)
+      throw new ScenarioError('invalid', `${name} ${v} is outside ${lo} to ${hi}`)
   }
   inRange('servers', config.servers, 1, 4)
   inRange('queue capacity', config.queueCapacity, 1, 64)
@@ -88,6 +110,7 @@ const leave = (s, job) => {
 const transitions = {
   arrive(s, ev) {
     const p = ev.payload
+    if (s.byKey.has(p.key)) throw new ScenarioError('invalid', `the arrival key ${p.key} is already bound to a job`)
     const job = {
       id: s.jobs.length,
       key: p.key,
@@ -112,7 +135,7 @@ const transitions = {
       s.waiting.push(job)
       s.counters.admitted += 1
       const deadline = p.generated ? ev.tick + p.deadlineOrSlack : p.deadlineOrSlack
-      if (deadline <= ev.tick) throw new Error(`the deadline of ${p.key} is not after its admission`)
+      if (deadline <= ev.tick) throw new ScenarioError('invalid', `the deadline of ${p.key} is not after its admission`)
       create(s, deadline, 'deadline', { job: job.id })
       if (p.generated && p.cancelDelay > 0) create(s, ev.tick + p.cancelDelay, 'cancel', { key: p.key })
     } else {
@@ -154,6 +177,7 @@ const transitions = {
 
   fail(s, ev) {
     const index = ev.payload.server
+    if (index >= s.servers.length) throw new ScenarioError('invalid', `server ${index} does not exist`)
     const server = s.servers[index]
     if (server.state === 'busy') {
       const job = server.job
@@ -175,6 +199,7 @@ const transitions = {
 
   recover(s, ev) {
     const index = ev.payload.server
+    if (index >= s.servers.length) throw new ScenarioError('invalid', `server ${index} does not exist`)
     if (s.servers[index].state === 'down') {
       s.servers[index] = { state: 'idle' }
       return ['e', index]
@@ -212,7 +237,7 @@ const dispatch = (s, tick) => {
     job.state = 'running'
     job.server = index
     const duration = job.durations[job.attempt - 1] ?? job.durations[job.durations.length - 1]
-    if (duration < 1) throw new Error('a duration is not positive')
+    if (duration < 1) throw new ScenarioError('invalid', 'a duration is not positive')
     s.servers[index] = { state: 'busy', job, due: tick + duration }
     create(s, tick + duration, 'complete', { job: job.id, token: job.token })
   }
@@ -295,6 +320,7 @@ const checkpoint = (s, tick, batch) => {
 export const run = (scenario, options = {}) => {
   const { configId, seed, config, script = [], params = null } = scenario
   validate(config)
+  validateKeys(script, params)
   const s = {
     configId,
     seed,

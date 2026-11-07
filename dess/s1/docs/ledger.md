@@ -8,14 +8,15 @@ The text of design revision 6 decides every discrepancy, and neither engine is c
 
 | Comparison | Scenarios | Pops | Slice checkpoints | Disagreements |
 |---|---|---|---|---|
-| Native Rust against the oracle | 1,206 | 399,483 | 234,754 | 0 |
-| 32-bit Rust (`wasm32-wasip1`) against the oracle | 1,206 | 399,483 | 234,754 | 0 |
+| Native Rust against the oracle | 1,218 | 399,490 | 234,760 | 0 |
+| 32-bit Rust (`wasm32-wasip1`) against the oracle | 1,218 | 399,490 | 234,760 | 0 |
 
-The scenarios are the five known-answer fixtures, 600 seeds of the panel, 600 seeds of the disturbed panel and the frozen revision `mixed_outage/7`.
+The scenarios are the six known-answer fixtures, the eleven refusal cases, 600 seeds of the panel, 600 seeds of the disturbed panel and the frozen revision `mixed_outage/7`.
 A disagreement is any difference in a hash, a pop, a slice, a counter or a final state.
 
 The two engines never disagreed on a pop, a slice or a hash, at any point of the build.
 That is a statement about what was tested, and it needs three qualifications, which the last section sets out.
+Finding 6 below is a defect that both engines had, and that agreement could not show.
 
 ## What was found while building the comparison
 
@@ -26,10 +27,35 @@ That is a statement about what was tested, and it needs three qualifications, wh
 | 3 | Rule R6 said that a job's token rises when it reaches a terminal state, and no comparison can see that | An unobservable rule | The mutation check kept a mutation of it, and reported it as equivalent. R6 now says so. Both engines keep the increase |
 | 4 | The design's "stale/active bit" in the event-pop hash has no value for a no-op | A gap in the design, settled in stage S0 | Three outcomes, as `dess/s0/docs/pop-outcomes.md` records. Revision 7 of the design should say so |
 | 5 | The design does not say in what order the events that one pop creates take their sequence numbers | A rule left open | Contract rules R1 and R2, fixed before either engine was coded. The S0 pins, which another implementation produced, confirm them, since they include the sequence numbers |
+| 6 | Two arrivals with the same key made the second overwrite the first job's entry, so a later cancel of the key reached the wrong job | A defect that both engines shared, found by review | Rule R13: keys are unique across the script and the generator, and a violation is refused before the run, in the same words by both engines. See below |
+
+## Finding 6: duplicate arrival keys
+
+A review found that the engine bound a key to a job with an insert that replaced any earlier binding.
+With J0 arriving as `X` and running, and J1 arriving as `X` and queued, a later `Cancel(X)` cancelled J1, and J0 ran on.
+A scripted arrival could also take a key that the generator makes, such as `g0`.
+The oracle did the same, so the two engines agreed on the wrong answer, and no comparison could have seen it.
+The panels use `S` and a number for scripted keys and `g` and a number for generated ones, so they never collided.
+
+The design says a cancel names a job by its key, and so a key has to name one job.
+The text decides it, and rule R13 now says so.
+
+- **Refused before the run.** Two scripted arrivals that share a key, and a scripted key that is `g` and a number below the generator's arrival count with no leading zero.
+- **Refused at the arrival pop.** A pop that finds its key already bound is an error and never rebinds it.
+  The check before the run refuses first, so this stays in case a scenario arrives some other way.
+- **Not refused.** `g5` when the generator makes five arrivals, `g01`, `G0`, and `g0` when there is no generator.
+
+The same refusals are in `dess/s1/error-fixtures.json`, with their messages, and both engines are compared on them.
+Fixture E3-KEY is the scenario with distinct keys: the cancel reaches X, and Y runs on.
+Two more refusals that the oracle gave in other words, a nonexistent server and a duration that is not positive, were made to match at the same time.
+
+The sensitivity check has a mutation for it.
+Removing the check before the run is caught, since the engine then refuses in the words of the guard.
+Removing the guard is equivalent, since the check before the run refuses first.
 
 ## Rules that the design left open
 
-The contract lists R1 to R12.
+The contract lists R1 to R13.
 The ones that could have gone either way are these.
 
 - **R2, creation order inside a pop.** A generated arrival creates the next arrival, then its deadline, then its cancel.
@@ -45,7 +71,7 @@ The ones that could have gone either way are these.
 ## Does the comparison see a bug?
 
 A comparison that agrees proves nothing until it is known to notice a disagreement.
-`dess/s1/mutation-check.mjs` breaks the Rust engine in eleven small ways, one at a time, and runs the differential run on 150 seeds of each panel.
+`dess/s1/mutation-check.mjs` breaks the Rust engine in thirteen small ways, one at a time, and runs the differential run on 150 seeds of each panel.
 
 | Mutation | Caught by |
 |---|---|
@@ -59,9 +85,11 @@ A comparison that agrees proves nothing until it is known to notice a disagreeme
 | The checkpoint leaves out the deferral count | The slice checkpoint, in fixture E0 |
 | A retry that is queued keeps its deferral count | The slice checkpoint, in a panel seed |
 | The queue holds one job too many | The event-pop hash, in fixture E0 |
+| A duplicate scripted key is not refused before the run | The refusal cases, which then differ in their words |
+| The guard against a rebound key is off | Not caught, and equivalent: the check before the run refuses first (finding 6) |
 | A terminal job keeps its token | Not caught, and equivalent: it cannot be observed (finding 3) |
 
-Ten of the eleven were caught, and the eleventh is unobservable.
+Eleven of the thirteen were caught, and the other two are unobservable.
 The record is `dess/s1/evidence/mutation-check.json`.
 
 ## What the agreement does not show
@@ -69,6 +97,7 @@ The record is `dess/s1/evidence/mutation-check.json`.
 1. **The same author wrote both engines.** The oracle was written first, from the design and the contract, and the Rust engine second, from the same text.
    They share no code.
    They can still share a misreading of the design, and agreement cannot reveal one.
+   Finding 6 is one, and a reviewer found it.
    The known answers of the design and the S0 pins, which another implementation produced, are the only checks that do not depend on the author.
    A reviewer who did not write either engine should read the contract against the design.
 2. **The panels are random.** They reach the rules that the coverage report lists, and a rule that is reached in few seeds is tested by few.

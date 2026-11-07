@@ -26,6 +26,27 @@ impl std::fmt::Display for Error {
 
 impl std::error::Error for Error {}
 
+impl Error {
+    /// The kind of the error, as the differential run compares it.
+    #[must_use]
+    pub fn kind(&self) -> &'static str {
+        match self {
+            Self::Invalid(_) => "invalid",
+            Self::Overflow(_) => "overflow",
+            Self::Limit(_) => "limit",
+        }
+    }
+
+    /// The message of the error, without its kind.
+    #[must_use]
+    pub fn message(&self) -> String {
+        match self {
+            Self::Invalid(text) => text.clone(),
+            Self::Overflow(what) | Self::Limit(what) => (*what).to_owned(),
+        }
+    }
+}
+
 /// The part of a scenario that the engine's rules use.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Config {

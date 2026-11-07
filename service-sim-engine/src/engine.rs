@@ -10,7 +10,7 @@ use crate::hash::Writer;
 use crate::params::{Config, Error, Limits, Params};
 use sha2::{Digest, Sha256};
 use std::cmp::Reverse;
-use std::collections::{BTreeMap, BinaryHeap};
+use std::collections::{BTreeMap, BTreeSet, BinaryHeap};
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// The kind of an event. The number is its rank and also its code in the canonical encoding.
@@ -349,6 +349,7 @@ impl Engine {
         if let Some(p) = params {
             p.validate(&limits)?;
         }
+        Self::validate_keys(script, params)?;
         let mut engine = Self {
             config_id: config_id.to_owned(),
             seed,
@@ -407,6 +408,28 @@ impl Engine {
             engine.create_generated_arrival(0)?;
         }
         Ok(engine)
+    }
+
+    /// The keys of the script and the generator have to name one job each (rule R13), and are checked before anything runs.
+    fn validate_keys(script: &[ScriptEvent], params: Option<&Params>) -> Result<(), Error> {
+        let mut seen = BTreeSet::new();
+        for event in script {
+            let ScriptEvent::Arrive { key, .. } = event else { continue };
+            if !seen.insert(key.as_str()) {
+                return Err(Error::Invalid(format!("the arrival key {key} is used more than once")));
+            }
+            // A generated key is `g` and a number without a leading zero, so `g01` is not one.
+            let generated = key
+                .strip_prefix('g')
+                .and_then(|rest| rest.parse::<u64>().ok())
+                .filter(|n| format!("g{n}") == *key);
+            if let (Some(p), Some(n)) = (params, generated) {
+                if n < p.arrivals {
+                    return Err(Error::Invalid(format!("the arrival key {key} is one that the generator uses")));
+                }
+            }
+        }
+        Ok(())
     }
 
     /// Creates an event with the next sequence number.
@@ -490,6 +513,9 @@ impl Engine {
         else {
             unreachable!("an arrival carries an arrival");
         };
+        if self.by_key.contains_key(&key) {
+            return Err(Error::Invalid(format!("the arrival key {key} is already bound to a job")));
+        }
         let id = self.jobs.len();
         self.jobs.push(Job {
             id: id as u64,

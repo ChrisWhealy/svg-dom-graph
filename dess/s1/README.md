@@ -20,10 +20,11 @@ The review of the contract against the design by someone other than its author i
 |---|---|
 | `service-sim-engine/` | The Rust engine, an unpublished workspace member with no `web-sys`. It builds natively and for `wasm32-wasip1` |
 | `dess/reference-js/` | The oracle, a second engine in JavaScript with its events in a sorted array and a function for each transition. It shares no code with the Rust engine or with the S0 prototype |
-| `dess/s1/fixtures.json` | The known-answer fixtures E0, E1-RC, E2-RT, E3-NOOP and E3-CT, as data that both engines read |
+| `dess/s1/fixtures.json` | The known-answer fixtures E0, E1-RC, E2-RT, E3-NOOP, E3-CT and E3-KEY, as data that both engines read |
+| `dess/s1/error-fixtures.json` | Scenarios that break a rule, which both engines must refuse in the same words, and look-alikes that both must accept |
 | `dess/s1/golden.json` | The hashes of 1,200 panel scenarios on which the two engines agreed, which the Rust tests check on every platform |
 | `dess/s1/differential.mjs` | The comparison of the two engines, pop by pop and slice by slice |
-| `dess/s1/mutation-check.mjs` | Breaks the Rust engine in eleven ways, to show that the comparison notices |
+| `dess/s1/mutation-check.mjs` | Breaks the Rust engine in thirteen ways, to show that the comparison notices |
 | `dess/s1/coverage.mjs` | Counts the seeds that reach each rule |
 | `dess/s1/freeze-golden.mjs` | Writes the golden file, and only if the two engines agree |
 
