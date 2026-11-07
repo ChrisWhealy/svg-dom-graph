@@ -1,0 +1,42 @@
+{
+  "what": "the preparation of one draw, native: times in microseconds, sizes in bytes",
+  "pointer_width": 64,
+  "rows": [
+    {
+      "actual_pops": 1004,
+      "slices": 482,
+      "jobs_copied_at_the_cursors": [47, 97, 144, 189, 235, 278, 323, 358],
+      "engine_one_slice_us": { "p50": 0.92, "p95": 1.04, "worst": 1.04 },
+      "model_us": { "p50": 3.08, "p95": 4.0, "worst": 14.79 },
+      "projection_us": { "p50": 5.92, "p95": 8.08, "worst": 21.0 },
+      "delta_us": { "p50": 0.54, "p95": 1.29, "worst": 2.88 },
+      "model_bytes": { "p50": 17886.0, "p95": 27170.0, "worst": 27170.0 },
+      "model_allocations": { "p50": 238.0, "p95": 360.0, "worst": 360.0 },
+      "projection_bytes": { "p50": 6518.0, "p95": 6711.0, "worst": 6711.0 }
+    },
+    {
+      "actual_pops": 10019,
+      "slices": 4881,
+      "jobs_copied_at_the_cursors": [462, 910, 1365, 1807, 2246, 2682, 3138, 3572],
+      "engine_one_slice_us": { "p50": 0.5, "p95": 0.88, "worst": 0.88 },
+      "model_us": { "p50": 19.42, "p95": 30.29, "worst": 40.62 },
+      "projection_us": { "p50": 4.71, "p95": 5.58, "worst": 10.46 },
+      "delta_us": { "p50": 0.42, "p95": 0.88, "worst": 1.58 },
+      "model_bytes": { "p50": 171936.0, "p95": 274006.0, "worst": 274006.0 },
+      "model_allocations": { "p50": 2249.0, "p95": 3574.0, "worst": 3574.0 },
+      "projection_bytes": { "p50": 6434.0, "p95": 6533.0, "worst": 6533.0 }
+    },
+    {
+      "actual_pops": 100334,
+      "slices": 48769,
+      "jobs_copied_at_the_cursors": [4494, 8994, 13502, 17995, 22501, 26953, 31414, 35715],
+      "engine_one_slice_us": { "p50": 0.54, "p95": 0.71, "worst": 0.71 },
+      "model_us": { "p50": 134.67, "p95": 220.67, "worst": 365.96 },
+      "projection_us": { "p50": 12.88, "p95": 18.75, "worst": 24.04 },
+      "delta_us": { "p50": 0.29, "p95": 0.58, "worst": 1.83 },
+      "model_bytes": { "p50": 1744080.0, "p95": 2774732.0, "worst": 2774732.0 },
+      "model_allocations": { "p50": 22504.0, "p95": 35717.0, "worst": 35717.0 },
+      "projection_bytes": { "p50": 6354.0, "p95": 6726.0, "worst": 6726.0 }
+    }
+  ]
+}

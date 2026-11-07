@@ -326,6 +326,9 @@ pub struct Engine {
     hash_pops: bool,
     /// The tick of the last slice. Only [`Engine::model`] reads it, and no hash covers it.
     last_tick: u64,
+    /// How many jobs are in `RetryWait`, kept so that a reader does not have to count them. No hash covers it, and a test checks it
+    /// against a count of the jobs after every slice.
+    retry_wait: u64,
 }
 
 fn add(a: u64, b: u64) -> Result<u64, Error> {
@@ -371,6 +374,7 @@ impl Engine {
             pop_hash: Sha256::new(),
             hash_pops: true,
             last_tick: 0,
+            retry_wait: 0,
         };
         for event in script {
             match event {
@@ -531,8 +535,12 @@ impl Engine {
 
     fn finish(&mut self, id: usize, state: State) {
         let job = &mut self.jobs[id];
+        let was_waiting_to_retry = job.state == State::RetryWait;
         job.state = state;
         job.token += 1;
+        if was_waiting_to_retry {
+            self.retry_wait -= 1;
+        }
         match state {
             State::Completed => self.counters.completed += 1,
             State::TimedOut => self.counters.timed_out += 1,
@@ -656,6 +664,7 @@ impl Engine {
                 self.jobs[id].failures += 1;
                 if self.jobs[id].failures < self.config.max_attempts {
                     self.jobs[id].state = State::RetryWait;
+                    self.retry_wait += 1;
                     let backoff = 2u64 << (self.jobs[id].failures - 1);
                     let token = self.jobs[id].token;
                     self.create(add(tick, backoff)?, Kind::Retry, Payload::Retry { job, token })?;
@@ -687,6 +696,7 @@ impl Engine {
         if self.jobs[id].state == State::RetryWait && self.jobs[id].token == token {
             if self.waiting.len() < self.config.queue_capacity {
                 self.jobs[id].state = State::Queued;
+                self.retry_wait -= 1;
                 self.jobs[id].entered = tick;
                 self.jobs[id].defers = 0;
                 self.waiting.push(job);
@@ -919,34 +929,33 @@ impl Engine {
         Ok(Some((tick, pops)))
     }
 
-    /// A read-only picture of the engine between two slices.
+    /// A read-only picture of the engine between two slices, for a reader who shows the first `window` places of the queue and has
+    /// `selected` chosen.
+    ///
+    /// It copies the jobs in those places, the running jobs and the selected one, and no others, so its cost does not depend on how
+    /// many jobs have arrived.
     #[must_use]
-    pub fn model(&self) -> Model {
-        let server_of = |job: &Job| (job.state == State::Running).then_some(job.server);
-        let due_of = |job: &Job| {
-            server_of(job).and_then(|i| match self.servers.get(i) {
-                Some(Server::Busy { due, .. }) => Some(*due),
-                _ => None,
-            })
-        };
-        Model {
-            tick: self.last_tick,
-            slice: self.counters.slices,
-            counters: self.counters,
-            servers: self
-                .servers
-                .iter()
-                .map(|s| match *s {
-                    Server::Idle => ServerView::Idle,
-                    Server::Busy { job, due } => ServerView::Busy { job, due },
-                    Server::Down => ServerView::Down,
-                })
-                .collect(),
-            waiting: self.waiting.clone(),
-            jobs: self
-                .jobs
-                .iter()
-                .map(|j| JobView {
+    pub fn model(&self, window: usize, selected: Option<u64>) -> Model {
+        let waiting: Vec<u64> = self.waiting.iter().take(window).copied().collect();
+        let mut ids = waiting.clone();
+        for server in &self.servers {
+            if let Server::Busy { job, .. } = server {
+                ids.push(*job);
+            }
+        }
+        ids.extend(selected.filter(|id| (*id as usize) < self.jobs.len()));
+        ids.sort_unstable();
+        ids.dedup();
+        let jobs = ids
+            .into_iter()
+            .map(|id| {
+                let j = &self.jobs[id as usize];
+                let server = (j.state == State::Running).then_some(j.server);
+                let due = server.and_then(|i| match self.servers.get(i) {
+                    Some(Server::Busy { due, .. }) => Some(*due),
+                    _ => None,
+                });
+                JobView {
                     id: j.id,
                     key: j.key.clone(),
                     priority: j.priority,
@@ -962,10 +971,30 @@ impl Engine {
                         State::Failed(Failure::DeferralsExhausted) => JobState::FailedDeferrals,
                     },
                     attempt: j.attempt,
-                    server: server_of(j),
-                    due: due_of(j),
+                    server,
+                    due,
+                }
+            })
+            .collect();
+        Model {
+            tick: self.last_tick,
+            slice: self.counters.slices,
+            counters: self.counters,
+            servers: self
+                .servers
+                .iter()
+                .map(|s| match *s {
+                    Server::Idle => ServerView::Idle,
+                    Server::Busy { job, due } => ServerView::Busy { job, due },
+                    Server::Down => ServerView::Down,
                 })
                 .collect(),
+            waiting,
+            waiting_total: self.waiting.len(),
+            retry_wait: self.retry_wait as usize,
+            arrived: self.jobs.len() as u64,
+            jobs,
+            selected,
             queue_capacity: self.config.queue_capacity,
         }
     }

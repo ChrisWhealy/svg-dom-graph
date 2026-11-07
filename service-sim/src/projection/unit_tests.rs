@@ -18,12 +18,12 @@ fn engine_of(scenario: &Scenario) -> Engine {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The model before the first slice, and after each slice.
-fn models(scenario: &Scenario) -> Vec<Model> {
+/// The model before the first slice, and after each slice, extracted for `view`.
+fn models(scenario: &Scenario, view: &View) -> Vec<Model> {
     let mut engine = engine_of(scenario);
-    let mut all = vec![engine.model()];
+    let mut all = vec![extract(&engine, view)];
     while engine.step().expect("a slice").is_some() {
-        all.push(engine.model());
+        all.push(extract(&engine, view));
     }
     all
 }
@@ -94,7 +94,7 @@ const E0: [Row; 13] = [
 /// E0 projects exactly: after each of its 12 slices, and before the first, every slot says what the hand-audited ledger says.
 #[test]
 fn e0_projects_exactly_what_the_ledger_says() {
-    let all = models(&fixture("E0"));
+    let all = models(&fixture("E0"), &View::default());
     assert_eq!(all.len(), E0.len(), "13 snapshots including index 0");
     for (k, (model, row)) in all.iter().zip(&E0).enumerate() {
         let p = project(model, &View::default());
@@ -126,7 +126,7 @@ fn e0_projects_exactly_what_the_ledger_says() {
 /// An empty queue slot is blank and hidden, and a filled one is neither. A busy server says its job, attempt and due tick.
 #[test]
 fn empty_slots_are_hidden_and_a_busy_server_names_its_job() {
-    let all = models(&fixture("E0"));
+    let all = models(&fixture("E0"), &View::default());
     let p = project(&all[1], &View::default());
     assert_eq!(slot_of(&p, "S0").label, "Server S0: running J0, attempt 1, due tick 4");
     assert_eq!(slot_of(&p, "S1").label, "Server S1: running J1, attempt 1, due tick 6");
@@ -149,7 +149,10 @@ fn empty_slots_are_hidden_and_a_busy_server_names_its_job() {
 /// A delta from any snapshot to any other, forwards or backwards, reaches what a full redraw of the other writes. This is a seek.
 #[test]
 fn a_delta_between_any_two_snapshots_equals_a_full_redraw() {
-    let projections: Vec<Projection> = models(&fixture("E0")).iter().map(|m| project(m, &View::default())).collect();
+    let projections: Vec<Projection> = models(&fixture("E0"), &View::default())
+        .iter()
+        .map(|m| project(m, &View::default()))
+        .collect();
     for (from, old) in projections.iter().enumerate() {
         for (to, new) in projections.iter().enumerate() {
             assert!(old.same_shape(new));
@@ -185,7 +188,7 @@ fn a_delta_between_any_two_snapshots_equals_a_full_redraw() {
 /// A slice that only pops stale events still changes the clock, the stale counter and the data node's ordinal, and nothing else.
 #[test]
 fn a_stale_only_slice_writes_only_the_clock_and_the_stale_counter() {
-    let all = models(&fixture("E0"));
+    let all = models(&fixture("E0"), &View::default());
     let (before, after) = (project(&all[9], &View::default()), project(&all[10], &View::default()));
     let delta = writes(Some(&before), &after);
     let keys: Vec<(&str, Field)> = delta.iter().map(|w| (after.slots[w.slot].key.as_str(), w.field)).collect();
@@ -208,28 +211,34 @@ fn a_stale_only_slice_writes_only_the_clock_and_the_stale_counter() {
 /// The selected job is highlighted wherever it is, and the detail line follows it. An id that is not a job selects nothing.
 #[test]
 fn selection_highlights_the_job_wherever_it_is() {
-    let all = models(&fixture("E0"));
+    let scenario = fixture("E0");
     let j2 = View { selected: Some(2) };
-    let p = project(&all[4], &j2);
+    let (plain_all, j2_all) = (models(&scenario, &View::default()), models(&scenario, &j2));
+    let p = project(&j2_all[4], &j2);
     assert!(
         slot_of(&p, "Q0").class.ends_with("ss-selected"),
         "J2 is at the head of the queue"
     );
     assert!(!slot_of(&p, "Q1").class.contains("ss-selected"));
     assert_eq!(text_of(&p, "selected"), "J2: queued");
-    let p = project(&all[6], &j2);
+    let p = project(&j2_all[6], &j2);
     assert!(slot_of(&p, "S1").class.ends_with("ss-selected"), "J2 is running on S1");
     assert_eq!(text_of(&p, "selected"), "J2: running");
     assert_eq!(
         slot_of(&p, "selected").label,
         "Selected job J2, high priority, running, attempt 1"
     );
-    let p = project(&all[12], &j2);
-    assert_eq!(text_of(&p, "selected"), "J2: completed");
-    let p = project(&all[3], &View { selected: Some(77) });
-    assert_eq!(text_of(&p, "selected"), "none");
+    let p = project(&j2_all[12], &j2);
+    assert_eq!(
+        text_of(&p, "selected"),
+        "J2: completed",
+        "a job that is finished is still held, since it was selected"
+    );
+    let nowhere = View { selected: Some(77) };
+    let p = project(&models(&scenario, &nowhere)[3], &nowhere);
+    assert_eq!(text_of(&p, "selected"), "none", "an id that is not a job selects nothing");
     // Changing only the selection writes only the slots that it touches.
-    let (plain, chosen) = (project(&all[4], &View::default()), project(&all[4], &j2));
+    let (plain, chosen) = (project(&plain_all[4], &View::default()), project(&j2_all[4], &j2));
     let touched: Vec<&str> = writes(Some(&plain), &chosen)
         .iter()
         .map(|w| chosen.slots[w.slot].key.as_str())
@@ -258,7 +267,7 @@ fn a_long_queue_shows_the_head_and_says_how_many_more() {
         .collect();
     let mut engine = Engine::new("long", 0, config, &script, None, Limits::default()).expect("an engine");
     engine.step().expect("a slice");
-    let p = project(&engine.model(), &View::default());
+    let p = project(&extract(&engine, &View::default()), &View::default());
     assert_eq!(text_of(&p, "queue"), "19/30");
     assert_eq!(text_of(&p, "more"), "+7 more");
     assert_eq!(slot_of(&p, "more").label, "7 more waiting jobs");
@@ -277,7 +286,10 @@ fn generated_runs_keep_one_shape_and_every_delta_lands_on_the_full_redraw() {
     for seed in [1, 2, 3, 5, 8, 13] {
         for scenario in [Scenario::panel(seed).expect("panel"), Scenario::panel2(seed).expect("panel2")] {
             let servers = scenario.config.servers;
-            let projections: Vec<Projection> = models(&scenario).iter().map(|m| project(m, &View::default())).collect();
+            let projections: Vec<Projection> = models(&scenario, &View::default())
+                .iter()
+                .map(|m| project(m, &View::default()))
+                .collect();
             let keys = Projection::keys(servers);
             let mut previous: Option<&Projection> = None;
             for p in &projections {
@@ -304,7 +316,7 @@ fn generated_runs_keep_one_shape_and_every_delta_lands_on_the_full_redraw() {
 /// The same model and view give the same projection and the same hash, and a change of one field changes the hash.
 #[test]
 fn the_projection_is_pure_and_its_hash_notices_one_field() {
-    let all = models(&fixture("E0"));
+    let all = models(&fixture("E0"), &View::default());
     let (a, b) = (project(&all[5], &View::default()), project(&all[5], &View::default()));
     assert_eq!((a.canonical(), a.sha256()), (b.canonical(), b.sha256()));
     assert_eq!(a.sha256().len(), 64);

@@ -374,42 +374,42 @@ fn an_empty_scenario_has_nothing_to_run() {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-/// The picture that a projection draws agrees, after every slice, with what the slice record says, and reading it changes
-/// nothing: the run's hash is the one of a run that never asked.
+fn engine_for(scenario: &Scenario) -> Engine {
+    Engine::new(
+        &scenario.config_id,
+        scenario.seed,
+        scenario.config,
+        &scenario.script,
+        scenario.params.as_ref(),
+        Limits::default(),
+    )
+    .expect("an engine")
+}
+
+/// The picture that a projection draws agrees, after every slice, with what the slice record says, and reading it changes nothing:
+/// the run's hash is the one of a run that never asked.
 #[test]
 fn the_model_agrees_with_the_slice_record_and_reading_it_changes_nothing() {
     let fixtures = json(FIXTURES);
     let scenario = Scenario::fixture("E0", &fixtures["E0"]).expect("a fixture");
-    let build = || {
-        Engine::new(
-            &scenario.config_id,
-            scenario.seed,
-            scenario.config,
-            &scenario.script,
-            None,
-            Limits::default(),
-        )
-        .expect("an engine")
-    };
-    let (mut asked, mut silent) = (build(), build());
-    assert_eq!(asked.model().slice, 0, "snapshot 0 is the initial state");
+    let (mut asked, mut silent) = (engine_for(&scenario), engine_for(&scenario));
+    assert_eq!(asked.model(12, None).slice, 0, "snapshot 0 is the initial state");
     while let Some(slice) = asked.step().expect("a slice") {
-        let model = asked.model();
+        let model = asked.model(12, Some(2));
         assert_eq!(model.slice, slice.index);
         assert_eq!(model.tick, slice.tick);
-        assert_eq!(model.waiting.len(), slice.waiting);
+        assert_eq!(model.waiting_total, slice.waiting);
+        assert_eq!(model.waiting.len(), slice.waiting.min(12));
         let busy = model.servers.iter().filter(|s| matches!(s, ServerView::Busy { .. })).count();
         assert_eq!(busy, slice.busy);
-        assert_eq!(
-            model.count(JobState::Running),
-            slice.busy,
-            "a running job holds one busy server"
-        );
         for server in &model.servers {
             if let ServerView::Busy { job, due } = server {
-                let held = model.job(*job).expect("a job");
+                let held = model.job(*job).expect("a running job is in the model");
                 assert_eq!((held.state, held.due), (JobState::Running, Some(*due)));
             }
+        }
+        for id in &model.waiting {
+            assert_eq!(model.job(*id).expect("a waiting job in the window").state, JobState::Queued);
         }
         let _ = silent.step().expect("a slice");
     }
@@ -417,4 +417,76 @@ fn the_model_agrees_with_the_slice_record_and_reading_it_changes_nothing() {
         while silent.step().expect("a slice").is_some() {}
         silent.finish_run().event_pop_sha256
     });
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A model holds only what a projection can name, whatever the length of the run: the window of the queue, the running jobs and the
+/// selected one. Every other job is in the aggregates.
+#[test]
+fn a_model_does_not_copy_the_jobs_that_nobody_can_see() {
+    let scenario = Scenario::mixed_outage_7(20_261_106).expect("the frozen revision");
+    let mut engine = engine_for(&scenario);
+    while engine.advance().expect("a slice") {}
+    let model = engine.model(12, None);
+    assert!(model.arrived > 100, "the run should have many jobs: {}", model.arrived);
+    assert!(
+        model.jobs.len() <= 12 + model.servers.len(),
+        "{} jobs copied of {}",
+        model.jobs.len(),
+        model.arrived
+    );
+    let with_selection = engine.model(12, Some(3));
+    assert_eq!(
+        with_selection.job(3).map(|j| j.id),
+        Some(3),
+        "the selected job is held, wherever it is"
+    );
+    assert!(with_selection.jobs.len() <= model.jobs.len() + 1);
+    assert_eq!(
+        engine.model(12, Some(u64::MAX)).jobs.len(),
+        model.jobs.len(),
+        "a job that never arrived is not invented"
+    );
+    assert_eq!(model.arrived, engine.counters().arrivals);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The count of jobs that wait to retry, which the engine keeps as it goes, equals a count of the jobs after every slice. The count
+/// is made from the final report's job states, which the engine builds in another place.
+#[test]
+fn the_retry_wait_aggregate_equals_a_recount_after_every_slice() {
+    let fixtures = json(FIXTURES);
+    let mut scenarios: Vec<Scenario> = ["E0", "E1-RC", "E2-RT", "E3-NOOP", "E3-CT", "E3-KEY"]
+        .iter()
+        .map(|name| Scenario::fixture(name, &fixtures[*name]).expect("a fixture"))
+        .collect();
+    for seed in 0..60 {
+        scenarios.push(Scenario::panel(seed).expect("panel"));
+        scenarios.push(Scenario::panel2(seed).expect("panel2"));
+    }
+    let mut seen_waiting = false;
+    for scenario in &scenarios {
+        let mut engine = engine_for(scenario);
+        while engine.step().expect("a slice").is_some() {
+            let recount = engine
+                .finish_run()
+                .jobs
+                .iter()
+                .filter(|(_, _, state)| state == "retrywait")
+                .count();
+            let model = engine.model(12, None);
+            assert_eq!(model.retry_wait, recount, "{} at slice {}", scenario.config_id, model.slice);
+            seen_waiting |= recount > 0;
+        }
+        assert_eq!(
+            engine.model(12, None).retry_wait,
+            0,
+            "{}: nothing waits to retry when the run is over",
+            scenario.config_id
+        );
+    }
+    assert!(
+        seen_waiting,
+        "no scenario had a job waiting to retry, so the check proved nothing"
+    );
 }

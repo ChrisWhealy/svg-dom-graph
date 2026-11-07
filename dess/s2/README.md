@@ -18,18 +18,20 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 
 | Path | Holds |
 |---|---|
-| `service-sim-engine/src/model.rs` | A read-only picture of the engine between two slices. Reading it changes no hash and no rule |
+| `service-sim-engine/src/model.rs` | A read-only picture of the engine between two slices, of the jobs a projection can name and no others. Reading it changes no hash and no rule |
 | `service-sim/src/projection/` | The pure function from that picture to fixed slots, the writes between two projections, and the canonical text and hash of a projection |
 | `service-sim/src/surface.rs` | The `Scene`, the overlay and the data node, built once and written in place. It builds only for `wasm32-unknown-unknown` |
 | `service-sim/src/layout.rs` | Where everything is |
 | `service-sim/tests/browser.rs` | Eleven tests in Chrome |
-| `dess/s2/mutation-check.mjs` | Breaks the projection and the surface in eleven ways, to show that the tests notice |
+| `service-sim/src/bin/projection-bench.rs` | Times the preparation of a draw in three parts, and counts its allocations |
+| `dess/s2/mutation-check.mjs` | Breaks the engine's model, the projection and the surface in fourteen ways, to show that the tests notice |
 
 ## Pages
 
 | Page | What it covers |
 |---|---|
 | [The projection and the surface](docs/surface.md) | The slots, what a draw writes, what the tests prove, the layout defects they found, and what is left open |
+| [What it costs to prepare a draw](docs/preparation-cost.md) | The cost of the model and the projection at 1,000, 10,000 and 100,000 pops, before and after it stopped growing with the run |
 
 ## Running the S2 checks
 
@@ -39,6 +41,7 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 | `wasm-pack test --headless --chrome service-sim` | Eleven tests on a real page. They need Chrome |
 | `cargo clippy -p service-sim --all-targets -- -D warnings` | Lints the projection natively |
 | `cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings` | Lints the surface and its tests |
+| `cargo run --release -p service-sim --bin projection-bench` | The preparation timings and allocation counts, as JSON |
 | `node dess/s2/mutation-check.mjs` | The sensitivity check, a few minutes, which needs Chrome and restores the source |
 
 The native tests and both lints are in CI, in the perf-harness job.

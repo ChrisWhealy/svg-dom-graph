@@ -2,10 +2,10 @@
 //! a draw leaves alone, and the content group that the overlay lives in. Run with `wasm-pack test --headless --chrome service-sim`.
 #![cfg(target_arch = "wasm32")]
 
-use service_sim::projection::{DATA_CELLS, Projection, View, project, writes};
+use service_sim::projection::{DATA_CELLS, Projection, View, extract, project, writes};
 use service_sim::surface::{DrawError, FaultPoint, Surface};
 use service_sim_engine::trace::Scenario;
-use service_sim_engine::{Config, Engine, Limits, Model, ScriptEvent};
+use service_sim_engine::{Config, Engine, Limits, ScriptEvent};
 use svg_dom::SvgRoot;
 use svg_dom::root::utils::Size;
 use svg_dom_graph::scene::ViewTransform;
@@ -48,21 +48,25 @@ fn surface(id: &str, servers: usize) -> Result<Surface, String> {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn models(name: &str) -> (usize, Vec<Model>) {
+/// The projection after the snapshots of a fixture, each extracted for the view that `view_at` gives for that snapshot's index.
+fn projections_with(name: &str, view_at: impl Fn(usize) -> View) -> (usize, Vec<Projection>) {
     let fixtures: serde_json::Value = serde_json::from_str(FIXTURES).expect("fixtures");
     let s = Scenario::fixture(name, &fixtures[name]).expect("a fixture");
     let mut engine = Engine::new(&s.config_id, s.seed, s.config, &s.script, s.params.as_ref(), Limits::default())
         .expect("an engine");
-    let mut all = vec![engine.model()];
+    let one = |engine: &Engine, k: usize| {
+        let view = view_at(k);
+        project(&extract(engine, &view), &view)
+    };
+    let mut all = vec![one(&engine, 0)];
     while engine.step().expect("a slice").is_some() {
-        all.push(engine.model());
+        all.push(one(&engine, all.len()));
     }
     (s.config.servers, all)
 }
 
 fn e0_projections(view: &View) -> (usize, Vec<Projection>) {
-    let (servers, all) = models("E0");
-    (servers, all.iter().map(|m| project(m, view)).collect())
+    projections_with("E0", |_| *view)
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -188,7 +192,11 @@ fn a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter() -> Res
 /// A draw leaves the view and the focus where they were, including a draw that changes the selection.
 #[wasm_bindgen_test]
 fn drawing_leaves_the_view_and_the_focus_alone() -> Result<(), String> {
-    let (servers, all) = models("E0");
+    // Every other slice also changes which job is selected.
+    let (servers, all) = projections_with("E0", |k| View {
+        selected: if k % 2 == 0 { Some(2) } else { None },
+    });
+    let plain = e0_projections(&View::default()).1;
     let mut s = surface("ss-focus", servers)?;
     let view = ViewTransform {
         scale: 1.5,
@@ -196,7 +204,7 @@ fn drawing_leaves_the_view_and_the_focus_alone() -> Result<(), String> {
         ty: -10.0,
     };
     s.scene().set_view(view).map_err(|e| e.to_string())?;
-    s.draw(&project(&all[0], &View::default()))?;
+    s.draw(&plain[0])?;
     let target = s.slot_element("S1").ok_or("no slot S1")?;
     target.dyn_ref::<web_sys::HtmlElement>().map_or_else(
         || {
@@ -211,10 +219,8 @@ fn drawing_leaves_the_view_and_the_focus_alone() -> Result<(), String> {
         document().active_element().as_ref() == Some(&target),
         "the focus did not reach the slot",
     )?;
-    for (k, model) in all.iter().enumerate() {
-        // Every other slice also changes which job is selected.
-        let selected = if k % 2 == 0 { Some(2) } else { None };
-        s.draw(&project(model, &View { selected }))?;
+    for (k, projection) in all.iter().enumerate() {
+        s.draw(projection)?;
         check(
             document().active_element().as_ref() == Some(&target),
             &format!("the focus moved at slice {k}"),
@@ -225,7 +231,7 @@ fn drawing_leaves_the_view_and_the_focus_alone() -> Result<(), String> {
             &format!("the view changed at slice {k}: {now:?}"),
         )?;
     }
-    let after_full = s.redraw(&project(&all[12], &View::default()))?;
+    let after_full = s.redraw(&plain[12])?;
     check(after_full.writes > 0, "a full redraw wrote nothing")?;
     check(
         document().active_element().as_ref() == Some(&target),
@@ -407,8 +413,8 @@ fn layout_is_sound(id: &str, servers: usize, projection: &Projection) -> Result<
 /// The widest cases of the layout: E0 with a job selected, and four servers with a full window of twelve and "+N more" under it.
 #[wasm_bindgen_test]
 fn nothing_is_drawn_outside_the_view_or_over_anything_else() -> Result<(), String> {
-    let (servers, all) = models("E0");
-    layout_is_sound("ss-layout-e0", servers, &project(&all[4], &View { selected: Some(2) }))?;
+    let (servers, selected) = projections_with("E0", |_| View { selected: Some(2) });
+    layout_is_sound("ss-layout-e0", servers, &selected[4])?;
 
     let config = Config {
         servers: 4,
@@ -427,7 +433,8 @@ fn nothing_is_drawn_outside_the_view_or_over_anything_else() -> Result<(), Strin
         .collect();
     let mut engine = Engine::new("wide", 0, config, &script, None, Limits::default()).map_err(|e| e.to_string())?;
     engine.step().map_err(|e| e.to_string())?;
-    let wide = project(&engine.model(), &View { selected: Some(5) });
+    let view = View { selected: Some(5) };
+    let wide = project(&extract(&engine, &view), &view);
     check(
         wide.slots.iter().any(|s| s.key == "more" && !s.hidden),
         "the wide case has no \"more\" line",

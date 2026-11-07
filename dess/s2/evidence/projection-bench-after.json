@@ -1,0 +1,42 @@
+{
+  "what": "the preparation of one draw, native: times in microseconds, sizes in bytes",
+  "pointer_width": 64,
+  "rows": [
+    {
+      "actual_pops": 1004,
+      "slices": 482,
+      "jobs_copied_at_the_cursors": [7, 11, 9, 10, 11, 6, 12, 0],
+      "engine_one_slice_us": { "p50": 0.67, "p95": 1.96, "worst": 1.96 },
+      "model_us": { "p50": 0.33, "p95": 0.5, "worst": 1.92 },
+      "projection_us": { "p50": 5.62, "p95": 6.5, "worst": 8.67 },
+      "delta_us": { "p50": 0.5, "p95": 1.0, "worst": 2.33 },
+      "model_bytes": { "p50": 1056.0, "p95": 1272.0, "worst": 1272.0 },
+      "model_allocations": { "p50": 15.0, "p95": 17.0, "worst": 17.0 },
+      "projection_bytes": { "p50": 6518.0, "p95": 6711.0, "worst": 6711.0 }
+    },
+    {
+      "actual_pops": 10019,
+      "slices": 4881,
+      "jobs_copied_at_the_cursors": [10, 6, 9, 6, 7, 10, 9, 0],
+      "engine_one_slice_us": { "p50": 0.58, "p95": 0.88, "worst": 0.88 },
+      "model_us": { "p50": 0.25, "p95": 0.33, "worst": 0.46 },
+      "projection_us": { "p50": 4.0, "p95": 5.04, "worst": 14.58 },
+      "delta_us": { "p50": 0.46, "p95": 0.71, "worst": 1.21 },
+      "model_bytes": { "p50": 957.0, "p95": 1066.0, "worst": 1066.0 },
+      "model_allocations": { "p50": 14.0, "p95": 15.0, "worst": 15.0 },
+      "projection_bytes": { "p50": 6434.0, "p95": 6533.0, "worst": 6533.0 }
+    },
+    {
+      "actual_pops": 100334,
+      "slices": 48769,
+      "jobs_copied_at_the_cursors": [8, 12, 11, 7, 8, 11, 7, 0],
+      "engine_one_slice_us": { "p50": 0.46, "p95": 0.58, "worst": 0.58 },
+      "model_us": { "p50": 0.17, "p95": 0.21, "worst": 0.96 },
+      "projection_us": { "p50": 2.5, "p95": 3.08, "worst": 3.83 },
+      "delta_us": { "p50": 0.29, "p95": 0.5, "worst": 0.88 },
+      "model_bytes": { "p50": 856.0, "p95": 1284.0, "worst": 1284.0 },
+      "model_allocations": { "p50": 13.0, "p95": 17.0, "worst": 17.0 },
+      "projection_bytes": { "p50": 6354.0, "p95": 6726.0, "worst": 6726.0 }
+    }
+  ]
+}

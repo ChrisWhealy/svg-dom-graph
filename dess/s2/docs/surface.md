@@ -88,8 +88,8 @@ Both are fixed, and the second is one of the mutations that the sensitivity chec
 
 ## The sensitivity check
 
-`dess/s2/mutation-check.mjs` breaks the code in eleven ways, one at a time, and runs the tests.
-The record is `dess/s2/evidence/mutation-check.json`, and all eleven are caught.
+`dess/s2/mutation-check.mjs` breaks the code in fourteen ways, one at a time, and runs the tests.
+The record is `dess/s2/evidence/mutation-check.json`, and all fourteen are caught.
 
 | Mutation | First test to fail |
 |---|---|
@@ -104,6 +104,8 @@ The record is `dess/s2/evidence/mutation-check.json`, and all eleven are caught.
 | The queue window is shifted by one | The empty slots |
 | A delta never writes a changed label | The stale-only slice |
 | The stale count is not shown | The E0 ledger |
+| The retry-wait count is not lowered when a retry re-queues a job, or when a job is finished | The recount after every slice |
+| A model copies every job that has arrived | The model's size |
 
 ## Left open
 

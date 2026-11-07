@@ -7,7 +7,7 @@
 //! Nothing here reads the DOM. [`Projection::canonical`] is the text that the page is compared with, and its hash is the design's
 //! `dom_projection_sha`.
 
-use service_sim_engine::{JobState, Model, ServerView, hash::sha256_hex};
+use service_sim_engine::{Engine, Model, ServerView, hash::sha256_hex};
 
 #[cfg(test)]
 mod unit_tests;
@@ -176,7 +176,7 @@ pub fn counter_values(model: &Model) -> [u64; 10] {
         c.timed_out,
         c.cancelled,
         c.failed_attempts + c.failed_deferrals,
-        model.count(JobState::RetryWait) as u64,
+        model.retry_wait as u64,
         c.stale,
         c.noops,
     ]
@@ -202,9 +202,24 @@ fn priority_word(priority: u8) -> &'static str {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The model that [`project`] needs for a reader who has chosen `view`: the window of the queue, the running jobs and the selected
+/// one, and nothing of the jobs that nobody can see. Its cost does not grow with the length of the run.
+#[must_use]
+pub fn extract(engine: &Engine, view: &View) -> Model {
+    engine.model(QUEUE_SLOTS, view.selected)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What the model looks like to a reader who has chosen `view`.
+///
+/// The model has to be the one that [`extract`] made for the same view. A model extracted for another selection may not hold the
+/// job that this view selects, and that is a caller's defect, which a debug build reports.
 #[must_use]
 pub fn project(model: &Model, view: &View) -> Projection {
+    debug_assert_eq!(
+        model.selected, view.selected,
+        "the model was extracted for another selection than the view's"
+    );
     let selected = view.selected.and_then(|id| model.job(id));
     let chosen = |id: u64| selected.is_some_and(|j| j.id == id);
     let mut slots = Vec::with_capacity(Projection::keys(model.servers.len()).len());
@@ -218,9 +233,9 @@ pub fn project(model: &Model, view: &View) -> Projection {
     ));
     slots.push(slot(
         "queue",
-        format!("{}/{}", model.waiting.len(), model.queue_capacity),
+        format!("{}/{}", model.waiting_total, model.queue_capacity),
         "ss-queue-count",
-        format!("The waiting queue holds {} of {}", model.waiting.len(), model.queue_capacity),
+        format!("The waiting queue holds {} of {}", model.waiting_total, model.queue_capacity),
         false,
     ));
 
@@ -265,7 +280,7 @@ pub fn project(model: &Model, view: &View) -> Projection {
         });
     }
 
-    let more = model.waiting.len().saturating_sub(QUEUE_SLOTS);
+    let more = model.waiting_total.saturating_sub(QUEUE_SLOTS);
     slots.push(if more > 0 {
         slot(
             "more",
@@ -312,7 +327,7 @@ pub fn project(model: &Model, view: &View) -> Projection {
     let data = [
         clamp(model.slice),
         clamp(model.tick),
-        clamp(model.waiting.len() as u64),
+        clamp(model.waiting_total as u64),
         clamp(busy as u64),
         clamp(c.completed),
         clamp(c.timed_out),

@@ -1,10 +1,10 @@
-// Shows that the projection tests and the surface tests can fail: the code is broken in eleven small ways, one at a time, and a test has
+// Shows that the projection tests and the surface tests can fail: the code is broken in fourteen small ways, one at a time, and a test has
 // to notice each. A test that passes proves nothing until it is known to fail on a fault.
 //
 //   node dess/s2/mutation-check.mjs [--out FILE]
 //
 // Each mutation is a single edit to a source file of `service-sim`, made on a copy that is put back afterwards, even if the run is
-// interrupted. The browser mutations run `wasm-pack test --headless --chrome service-sim` and need Chrome, as the tests do.
+// interrupted. The browser mutations run `wasm-pack test --headless --chrome service-sim` and need Chrome, as the tests do. The engine mutations run the engine's own tests.
 import fs from 'node:fs'
 import path from 'node:path'
 import { spawnSync } from 'node:child_process'
@@ -14,6 +14,7 @@ const out = process.argv.includes('--out') ? process.argv[process.argv.indexOf('
 
 const SURFACE = 'service-sim/src/surface.rs'
 const PROJECTION = 'service-sim/src/projection/mod.rs'
+const ENGINE = 'service-sim-engine/src/engine.rs'
 
 const MUTATIONS = [
   [
@@ -73,6 +74,27 @@ const MUTATIONS = [
     'browser'
   ],
   [
+    ENGINE,
+    'the retry-wait count is not lowered when a retry re-queues a job',
+    '                self.retry_wait -= 1;\n                self.jobs[id].entered = tick;',
+    '                self.jobs[id].entered = tick;',
+    'engine'
+  ],
+  [
+    ENGINE,
+    'the retry-wait count is not lowered when a job is finished',
+    'if was_waiting_to_retry {\n            self.retry_wait -= 1;\n        }',
+    '',
+    'engine'
+  ],
+  [
+    ENGINE,
+    'a model copies every job that has arrived',
+    'let mut ids = waiting.clone();',
+    'let mut ids: Vec<u64> = (0..self.jobs.len() as u64).collect();',
+    'engine'
+  ],
+  [
     PROJECTION,
     'the queue window is shifted by one',
     'model.waiting.get(position)',
@@ -97,14 +119,17 @@ if (stale.length > 0) {
   process.exit(2)
 }
 
+const COMMANDS = {
+  browser: ['wasm-pack', 'test', '--headless', '--chrome', 'service-sim'],
+  native: ['cargo', 'test', '-p', 'service-sim', '--lib'],
+  engine: ['cargo', 'test', '-p', 'service-sim-engine', '--test', 'known_answers']
+}
+
 const results = []
 try {
   for (const [file, name, from, to, kind] of MUTATIONS) {
     fs.writeFileSync(path.join(root, file), originals.get(file).replace(from, to))
-    const args =
-      kind === 'browser'
-        ? ['wasm-pack', 'test', '--headless', '--chrome', 'service-sim']
-        : ['cargo', 'test', '-p', 'service-sim', '--lib']
+    const args = COMMANDS[kind]
     const run = spawnSync(args[0], args.slice(1), { cwd: root, encoding: 'utf8', timeout: 900_000 })
     fs.writeFileSync(path.join(root, file), originals.get(file))
     const text = `${run.stdout}${run.stderr}`
