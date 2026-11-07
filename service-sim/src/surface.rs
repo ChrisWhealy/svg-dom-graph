@@ -30,6 +30,46 @@ struct SlotEl {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Why a draw did not succeed. After any of them the surface no longer trusts what the page holds.
+#[derive(Debug, Clone, PartialEq, Eq)]
+pub enum DrawError {
+    /// The host `<svg>` is not in the document. A detached element still accepts writes, so this is checked and not discovered.
+    Detached,
+    /// The projection does not have the shape of the surface.
+    Shape,
+    /// A DOM write or the data setter failed. The page may be partly written.
+    Write(String),
+}
+
+impl std::fmt::Display for DrawError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            Self::Detached => f.write_str("the host is not in the document"),
+            Self::Shape => f.write_str("the projection does not have the shape of the surface"),
+            Self::Write(what) => f.write_str(what),
+        }
+    }
+}
+
+impl From<DrawError> for String {
+    fn from(e: DrawError) -> Self {
+        e.to_string()
+    }
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A point of a draw at which a test can act, such as detaching the host. It exists only with the `fault-hook` feature, which no
+/// clean build has.
+#[cfg(feature = "fault-hook")]
+#[derive(Debug, Clone, Copy, PartialEq, Eq)]
+pub enum FaultPoint {
+    /// After the nth field of the overlay was written.
+    Overlay(usize),
+    /// After the data node's setter returned.
+    Setter,
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// What one draw wrote.
 #[derive(Debug, Clone, Copy, PartialEq, Eq)]
 pub struct Drawn {
@@ -50,10 +90,16 @@ pub struct Surface {
     slots: Vec<SlotEl>,
     /// What the page holds, if that is known. `None` after a failed draw and before the first.
     drawn: Option<Projection>,
+    #[cfg(feature = "fault-hook")]
+    hook: Option<Box<dyn FnMut(FaultPoint)>>,
 }
 
 fn fail<E: std::fmt::Debug>(what: &str) -> impl FnOnce(E) -> String + '_ {
     move |e| format!("{what}: {e:?}")
+}
+
+fn write_error<E: std::fmt::Debug>(what: &str) -> impl FnOnce(E) -> DrawError + '_ {
+    move |e| DrawError::Write(format!("{what}: {e:?}"))
 }
 
 fn make(document: &web_sys::Document, tag: &str, attributes: &[(&str, &str)]) -> Result<web_sys::Element, String> {
@@ -216,6 +262,8 @@ impl Surface {
             keys,
             slots,
             drawn: None,
+            #[cfg(feature = "fault-hook")]
+            hook: None,
         })
     }
 
@@ -260,7 +308,7 @@ impl Surface {
     ///
     /// Returns `Err` if the projection has another shape than the surface, or a write failed. The page may then be partly written,
     /// and the next draw is a full one.
-    pub fn draw(&mut self, projection: &Projection) -> Result<Drawn, String> {
+    pub fn draw(&mut self, projection: &Projection) -> Result<Drawn, DrawError> {
         let old = self.drawn.take();
         self.write(projection, old.as_ref())
     }
@@ -270,36 +318,69 @@ impl Surface {
     /// # Errors
     ///
     /// As [`draw`](Self::draw).
-    pub fn redraw(&mut self, projection: &Projection) -> Result<Drawn, String> {
+    pub fn redraw(&mut self, projection: &Projection) -> Result<Drawn, DrawError> {
         self.drawn = None;
         self.write(projection, None)
     }
 
-    fn write(&mut self, projection: &Projection, old: Option<&Projection>) -> Result<Drawn, String> {
+    /// Fails with [`DrawError::Detached`] if the host is not in the document. A detached element accepts writes without complaint, so
+    /// the absence of an error from a write is no evidence that the page was written.
+    fn require_connected(&self) -> Result<(), DrawError> {
+        if self.host.is_connected() { Ok(()) } else { Err(DrawError::Detached) }
+    }
+
+    #[cfg(feature = "fault-hook")]
+    fn fire(&mut self, point: FaultPoint) {
+        if let Some(hook) = self.hook.as_mut() {
+            hook(point);
+        }
+    }
+
+    /// Sets the function that is called at each [`FaultPoint`] of a draw, for a test that detaches the host in the middle of one.
+    #[cfg(feature = "fault-hook")]
+    pub fn set_fault_hook(&mut self, hook: Option<Box<dyn FnMut(FaultPoint)>>) {
+        self.hook = hook;
+    }
+
+    // The host is checked before every write, before the setter and after it (a draw with no writes is still checked before the setter), so that no write or scene operation is begun on a
+    // detached root, and a host that leaves during the draw is seen before the draw can count as done. `drawn` is set only at the end.
+    fn write(&mut self, projection: &Projection, old: Option<&Projection>) -> Result<Drawn, DrawError> {
         if projection.slots.len() != self.keys.len()
             || projection.slots.iter().zip(&self.keys).any(|(s, k)| &s.key != k)
         {
-            return Err("the projection does not have the shape of the surface".to_owned());
+            return Err(DrawError::Shape);
         }
         let list = writes(old, projection);
-        for w in &list {
+        for (index, w) in list.iter().enumerate() {
+            #[cfg(not(feature = "fault-hook"))]
+            let _ = index;
+            self.require_connected()?;
             let (slot, el) = (&projection.slots[w.slot], &self.slots[w.slot]);
             match w.field {
                 Field::Text => el.text.set_text_content(Some(&slot.text)),
-                Field::Class => el.group.set_attribute("class", &slot.class).map_err(fail("class"))?,
+                Field::Class => el.group.set_attribute("class", &slot.class).map_err(write_error("class"))?,
                 Field::Label if slot.label.is_empty() => {
-                    el.group.remove_attribute("aria-label").map_err(fail("label"))?
+                    el.group.remove_attribute("aria-label").map_err(write_error("label"))?
                 },
-                Field::Label => el.group.set_attribute("aria-label", &slot.label).map_err(fail("label"))?,
+                Field::Label => el
+                    .group
+                    .set_attribute("aria-label", &slot.label)
+                    .map_err(write_error("label"))?,
                 Field::Hidden if slot.hidden => {
-                    el.group.set_attribute("aria-hidden", "true").map_err(fail("hidden"))?
+                    el.group.set_attribute("aria-hidden", "true").map_err(write_error("hidden"))?
                 },
-                Field::Hidden => el.group.remove_attribute("aria-hidden").map_err(fail("hidden"))?,
+                Field::Hidden => el.group.remove_attribute("aria-hidden").map_err(write_error("hidden"))?,
             }
+            #[cfg(feature = "fault-hook")]
+            self.fire(FaultPoint::Overlay(index));
         }
+        self.require_connected()?;
         self.scene
             .set_data_values(self.data_node, NodeValues::U32(projection.data.to_vec()))
-            .map_err(|e| e.to_string())?;
+            .map_err(|e| DrawError::Write(e.to_string()))?;
+        #[cfg(feature = "fault-hook")]
+        self.fire(FaultPoint::Setter);
+        self.require_connected()?;
         self.drawn = Some(projection.clone());
         Ok(Drawn {
             writes: list.len(),

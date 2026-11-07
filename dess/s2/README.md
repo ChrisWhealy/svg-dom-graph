@@ -22,8 +22,8 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 | `service-sim/src/projection/` | The pure function from that picture to fixed slots, the writes between two projections, and the canonical text and hash of a projection |
 | `service-sim/src/surface.rs` | The `Scene`, the overlay and the data node, built once and written in place. It builds only for `wasm32-unknown-unknown` |
 | `service-sim/src/layout.rs` | Where everything is |
-| `service-sim/tests/browser.rs` | Nine tests in Chrome |
-| `dess/s2/mutation-check.mjs` | Breaks the projection and the surface in eight ways, to show that the tests notice |
+| `service-sim/tests/browser.rs` | Eleven tests in Chrome |
+| `dess/s2/mutation-check.mjs` | Breaks the projection and the surface in eleven ways, to show that the tests notice |
 
 ## Pages
 
@@ -36,7 +36,7 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 | Command | Runs |
 |---|---|
 | `cargo test -p service-sim --lib` | Eight native tests, among them E0 against a ledger written from the design's table |
-| `wasm-pack test --headless --chrome service-sim` | Nine tests on a real page. They need Chrome |
+| `wasm-pack test --headless --chrome service-sim` | Eleven tests on a real page. They need Chrome |
 | `cargo clippy -p service-sim --all-targets -- -D warnings` | Lints the projection natively |
 | `cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings` | Lints the surface and its tests |
 | `node dess/s2/mutation-check.mjs` | The sensitivity check, a few minutes, which needs Chrome and restores the source |
@@ -51,6 +51,6 @@ The Chrome tests are in CI, in the browser-tests job, for Chrome only.
 - No one has looked at the page.
   The geometry test finds overlap and overflow, and it cannot say whether the page is pleasant.
 - The overlay has no stylesheet yet, so it is drawn in the browser's defaults.
-- Nothing here injects a failure.
-  The recovery of a failed draw is stage S4.
+- The only fault injected is a host that leaves the document in the middle of a draw.
+  The recovery of a failed write is stage S4.
 - The projection and the ledger were written by one author, as the two engines were.

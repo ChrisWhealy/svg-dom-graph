@@ -221,6 +221,7 @@ jobs:
         run: |
           cargo clippy -p service-sim --all-targets -- -D warnings
           cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings
+          cargo clippy -p service-sim --lib --target wasm32-unknown-unknown -- -D warnings
           cargo test -p service-sim --lib
 
   # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic

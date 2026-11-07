@@ -7,7 +7,9 @@
       "failed": [
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
-        "a_refused_draw_makes_the_next_one_a_full_redraw"
+        "a_refused_draw_makes_the_next_one_a_full_redraw",
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted",
+        "a_detached_host_is_refused_before_anything_is_written"
       ]
     },
     {
@@ -17,7 +19,9 @@
       "failed": [
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
-        "a_refused_draw_makes_the_next_one_a_full_redraw"
+        "a_refused_draw_makes_the_next_one_a_full_redraw",
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted",
+        "a_detached_host_is_refused_before_anything_is_written"
       ]
     },
     {
@@ -27,14 +31,40 @@
       "failed": [
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
-        "a_refused_draw_makes_the_next_one_a_full_redraw"
+        "a_refused_draw_makes_the_next_one_a_full_redraw",
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted",
+        "a_detached_host_is_refused_before_anything_is_written"
       ]
     },
     {
       "name": "a failed draw keeps trusting the page",
       "kind": "browser",
       "caught": true,
-      "failed": ["a_refused_draw_makes_the_next_one_a_full_redraw"]
+      "failed": [
+        "a_refused_draw_makes_the_next_one_a_full_redraw",
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"
+      ]
+    },
+    {
+      "name": "the host is not checked between writes",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted",
+        "a_detached_host_is_refused_before_anything_is_written"
+      ]
+    },
+    {
+      "name": "the host is not checked before the setter",
+      "kind": "browser",
+      "caught": true,
+      "failed": ["a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"]
+    },
+    {
+      "name": "the host is not checked after the setter",
+      "kind": "browser",
+      "caught": true,
+      "failed": ["a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"]
     },
     {
       "name": "the more line is drawn at the top of its row",
@@ -47,10 +77,10 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "projection::unit_tests::selection_highlights_the_job_wherever_it_is",
-        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says",
         "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
-        "projection::unit_tests::a_long_queue_shows_the_head_and_says_how_many_more"
+        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says",
+        "projection::unit_tests::a_long_queue_shows_the_head_and_says_how_many_more",
+        "projection::unit_tests::selection_highlights_the_job_wherever_it_is"
       ]
     },
     {

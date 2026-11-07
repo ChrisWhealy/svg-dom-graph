@@ -1,4 +1,4 @@
-// Shows that the projection tests and the surface tests can fail: the code is broken in eight small ways, one at a time, and a test has
+// Shows that the projection tests and the surface tests can fail: the code is broken in eleven small ways, one at a time, and a test has
 // to notice each. A test that passes proves nothing until it is known to fail on a fault.
 //
 //   node dess/s2/mutation-check.mjs [--out FILE]
@@ -42,6 +42,27 @@ const MUTATIONS = [
     'a failed draw keeps trusting the page',
     'let old = self.drawn.take();',
     'let old = self.drawn.clone();',
+    'browser'
+  ],
+  [
+    SURFACE,
+    'the host is not checked between writes',
+    'for (index, w) in list.iter().enumerate() {\n            #[cfg(not(feature = "fault-hook"))]\n            let _ = index;\n            self.require_connected()?;',
+    'for (index, w) in list.iter().enumerate() {\n            #[cfg(not(feature = "fault-hook"))]\n            let _ = index;',
+    'browser'
+  ],
+  [
+    SURFACE,
+    'the host is not checked before the setter',
+    '        self.require_connected()?;\n        self.scene',
+    '        self.scene',
+    'browser'
+  ],
+  [
+    SURFACE,
+    'the host is not checked after the setter',
+    'self.fire(FaultPoint::Setter);\n        self.require_connected()?;',
+    'self.fire(FaultPoint::Setter);',
     'browser'
   ],
   [

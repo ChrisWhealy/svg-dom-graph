@@ -37,7 +37,7 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - Perf Harness: Phase 5: CI integration, baseline promotion and statistical regression reporting (`ae4c4b1`)
 - Discrete-Event Service Simulator (DESS): S0 implementation (`fe0c7b5`)
 - DESS S1: Pure Rust `service-sim-engine` (`72adf2b`)
-- DESS S2: Long-lived fixed Scene, overlay, reserved data node; exact incremental projection; class compatibility test (``)
+- DESS S2: Long-lived fixed Scene, overlay, reserved data node; exact incremental projection; class compatibility test (`1c599ba`)
 
 ### Changed
 
@@ -99,3 +99,4 @@ The format is based on [Keep a Changelog](https://keepachangelog.com/en/1.0.0/).
 - DESS S1: Prevent duplicate job keys from redirecting cancellation (`9be023b`)
 - DESS S1: Prevent generator parameters and engine configuration from disagreeing (`62e2798`)
 - DESS S1: Ensure coverage report accurately states path-specific checks (`3794f8a`)
+- DESS S2: Prevent detached-host writes from being accepted as successful (``)

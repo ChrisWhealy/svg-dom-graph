@@ -22,11 +22,16 @@ wasm-bindgen = "0.2"
 version = "0.3"
 features = ["Window", "Document", "Element", "Node", "NodeList", "SvgElement", "HtmlElement"]
 
+# The tests detach the host in the middle of a draw, which needs a hook that no other build has.
+[features]
+fault-hook = []
+
 [dev-dependencies]
 serde_json = "1"
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies]
 wasm-bindgen-test = "0.3"
+service-sim = { path = ".", features = ["fault-hook"] }
 
 [target.'cfg(target_arch = "wasm32")'.dev-dependencies.web-sys]
 version = "0.3"

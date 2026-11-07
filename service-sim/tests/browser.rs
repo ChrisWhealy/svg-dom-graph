@@ -3,7 +3,7 @@
 #![cfg(target_arch = "wasm32")]
 
 use service_sim::projection::{DATA_CELLS, Projection, View, project, writes};
-use service_sim::surface::Surface;
+use service_sim::surface::{DrawError, FaultPoint, Surface};
 use service_sim_engine::trace::Scenario;
 use service_sim_engine::{Config, Engine, Limits, Model, ScriptEvent};
 use svg_dom::SvgRoot;
@@ -433,4 +433,137 @@ fn nothing_is_drawn_outside_the_view_or_over_anything_else() -> Result<(), Strin
         "the wide case has no \"more\" line",
     )?;
     layout_is_sound("ss-layout-wide", 4, &wide)
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Takes the host out of the document, and gives the means of putting it back.
+fn detach(id: &str) -> Result<impl Fn() -> Result<(), String> + Clone, String> {
+    let host = document().get_element_by_id(id).ok_or("no host")?;
+    let parent = host.parent_node().ok_or("the host has no parent")?;
+    let take_out = {
+        let (host, parent) = (host.clone(), parent.clone());
+        move || parent.remove_child(&host).map(|_| ()).map_err(|e| format!("{e:?}"))
+    };
+    take_out()?;
+    Ok(move || parent.append_child(&host).map(|_| ()).map_err(|e| format!("{e:?}")))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A host that is not in the document is refused before anything is written, a draw or a full redraw, and the surface then draws in
+/// full once the host is back. A detached `<svg>` accepts writes without complaint, so the surface has to ask.
+#[wasm_bindgen_test]
+fn a_detached_host_is_refused_before_anything_is_written() -> Result<(), String> {
+    let (servers, projections) = e0_projections(&View::default());
+    let mut s = surface("ss-detached", servers)?;
+    s.draw(&projections[3])?;
+    let reattach = detach("ss-detached")?;
+    check(
+        s.draw(&projections[4]) == Err(DrawError::Detached),
+        "a draw on a detached host was not refused",
+    )?;
+    check(
+        s.redraw(&projections[4]) == Err(DrawError::Detached),
+        "a full redraw on a detached host was not refused",
+    )?;
+    check(!s.is_trusted(), "a refused draw left the surface trusting its page")?;
+    check(
+        s.snapshot()? == projections[3].canonical(),
+        "a refused draw wrote to the detached host",
+    )?;
+    reattach()?;
+    let back = s.draw(&projections[4])?;
+    check(
+        back.writes == projections[4].slots.len() * 4,
+        "the draw after reattaching was not a full one",
+    )?;
+    check(
+        s.snapshot()? == projections[4].canonical(),
+        "the page is not the projection after reattaching",
+    )?;
+    check(s.is_trusted(), "the surface does not trust a page it has just drawn in full")
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The host leaves the document after each possible write of a draw in turn, and after the data node's setter. Whichever it is, the
+/// draw fails with `Detached`, the surface does not trust the page, no write follows the detachment, the setter is not begun on a
+/// detached root, and a full redraw after reattaching restores the projection.
+#[wasm_bindgen_test]
+fn a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted() -> Result<(), String> {
+    let (servers, projections) = e0_projections(&View::default());
+    let (from, to) = (&projections[0], &projections[4]);
+    let n = writes(Some(from), to).len();
+    check(n > 10, "the sweep needs a draw with many writes")?;
+    // What the page holds if every overlay write is made and the setter is not: the new slots with the old data.
+    let overlay_only = Projection {
+        slots: to.slots.clone(),
+        data: from.data,
+    }
+    .canonical();
+
+    // The overlay's writes are numbered from 0, and the setter's point comes after them.
+    for point in 0..=n {
+        let id = format!("ss-sweep-{point}");
+        let mut s = surface(&id, servers)?;
+        s.draw(from)?;
+        let host = document().get_element_by_id(&id).ok_or("no host")?;
+        let parent = host.parent_node().ok_or("no parent")?;
+        let (leaving_host, leaving_parent) = (host.clone(), parent.clone());
+        s.set_fault_hook(Some(Box::new(move |at| {
+            let here = match at {
+                FaultPoint::Overlay(i) => i,
+                FaultPoint::Setter => n,
+            };
+            if here == point {
+                let _ = leaving_parent.remove_child(&leaving_host);
+            }
+        })));
+        let result = s.draw(to);
+        check(
+            result == Err(DrawError::Detached),
+            &format!("point {point} of {n}: the draw gave {result:?}"),
+        )?;
+        check(
+            !s.is_trusted(),
+            &format!("point {point} of {n}: the surface trusts a page it lost the host of"),
+        )?;
+        let held = s.snapshot()?;
+        if point + 1 < n {
+            check(
+                held != overlay_only,
+                &format!("point {point} of {n}: writes went on after the host left"),
+            )?;
+        } else if point + 1 == n {
+            check(
+                held == overlay_only,
+                "the last overlay write was the one that the host left after",
+            )?;
+        }
+        if point < n {
+            check(
+                s.data_texts()? == from.data.iter().map(ToString::to_string).collect::<Vec<_>>(),
+                &format!("point {point} of {n}: the setter was begun on a detached root"),
+            )?;
+        } else {
+            check(
+                held == to.canonical(),
+                "a host that left after the setter should have had every write",
+            )?;
+        }
+        s.set_fault_hook(None);
+        parent.append_child(&host).map_err(|e| format!("{e:?}"))?;
+        let repaired = s.draw(to)?;
+        check(
+            repaired.writes == to.slots.len() * 4,
+            &format!("point {point} of {n}: the draw after reattaching was not a full one"),
+        )?;
+        check(
+            s.snapshot()? == to.canonical(),
+            &format!("point {point} of {n}: the page was not restored"),
+        )?;
+        check(
+            s.is_trusted(),
+            &format!("point {point} of {n}: the surface does not trust a restored page"),
+        )?;
+    }
+    Ok(())
 }
