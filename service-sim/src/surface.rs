@@ -161,7 +161,7 @@ impl Surface {
         for node in &server_nodes {
             scene.add_edge(queue, *node).map_err(|e| e.to_string())?;
         }
-        let values = NodeValues::U32(vec![0; DATA_CELLS]);
+        let values = NodeValues::U64(vec![0; DATA_CELLS]);
         let data_node = scene
             .add_data_node(
                 Point::new(DATA_AT.0, DATA_AT.1),
@@ -376,7 +376,7 @@ impl Surface {
         }
         self.require_connected()?;
         self.scene
-            .set_data_values(self.data_node, NodeValues::U32(projection.data.to_vec()))
+            .set_data_values(self.data_node, NodeValues::U64(projection.data.to_vec()))
             .map_err(|e| DrawError::Write(e.to_string()))?;
         #[cfg(feature = "fault-hook")]
         self.fire(FaultPoint::Setter);

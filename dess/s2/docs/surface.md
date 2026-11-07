@@ -23,6 +23,7 @@ The class says the state, so a stylesheet can colour a server that is busy or do
 The accessible name says the same in words, for example `Server S0: running J0, attempt 1, due tick 4`.
 
 The data node has eight cells: the snapshot number, the tick, the waiting count, the busy count, and the completed, timed-out, cancelled and rejected counts.
+Each is a 64-bit unsigned figure, as the engine holds it, and none is narrowed on the way to the page.
 The first cell is the snapshot number, so that every displayed slice changes the node, including a slice that pops only stale events.
 
 ## What a draw writes
@@ -71,6 +72,9 @@ Only the tests enable it, through a dev-dependency of the crate on itself, so a 
 | `a_detached_host_is_refused_before_anything_is_written` | A draw and a full redraw on a detached host fail with `Detached` and write nothing. After reattaching, the next draw is a full one and restores the projection |
 | `a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted` | The host leaves after each of the 30 overlay writes of a draw in turn, and after the setter. Every time the draw fails, no write follows the departure, the setter is not begun on a detached root, the surface does not trust the page, and a full redraw restores it |
 | `ids_and_slot_keys_are_unique_and_do_not_change` | Every id on the page is unique, and the slot keys are those of the projection before and after drawing |
+| `a_tick_of_any_size_is_in_the_data_node_exactly` | Native. For ticks at the edge of a `u32`, of what an `f64` holds exactly, and of a `u64`, the data node, the clock slot and the canonical text all say the engine's own tick |
+| `no_cell_of_the_data_node_is_narrower_than_the_figure_it_shows` | Native. Counts above `u32::MAX` reach their cells in full |
+| `ticks_at_the_edges_of_the_integers_are_on_the_page_exactly` | On the page, the data node reads back each of those ticks as the same decimal digits, and a node given 20-digit figures in all eight cells still fits the view and overlaps nothing |
 | `nothing_is_drawn_outside_the_view_or_over_anything_else` | Nothing is outside the view box, and nothing overlaps, for E0 and for four servers with a full window and a "more" line |
 
 The content group test is the compatibility test that the design asks for.
@@ -89,8 +93,8 @@ Both are fixed, and the second is one of the mutations that the sensitivity chec
 
 ## The sensitivity check
 
-`dess/s2/mutation-check.mjs` breaks the code in fifteen ways, one at a time, and runs the tests.
-The record is `dess/s2/evidence/mutation-check.json`, and all fifteen are caught.
+`dess/s2/mutation-check.mjs` breaks the code in seventeen ways, one at a time, and runs the tests.
+The record is `dess/s2/evidence/mutation-check.json`, and all seventeen are caught.
 
 | Mutation | First test to fail |
 |---|---|
@@ -107,7 +111,9 @@ The record is `dess/s2/evidence/mutation-check.json`, and all fifteen are caught
 | The stale count is not shown | The E0 ledger |
 | The retry-wait count is not lowered when a retry re-queues a job, or when a job is finished | The recount after every slice |
 | A model copies every job that has arrived | The model's size |
-| The tick in the data node is cut to a byte | The 1,200 genuine slices, and no other test, since E0 ends at tick 20 |
+| The tick in the data node is cut to a byte | The 1,200 genuine slices and the edge ticks, and no other test, since E0 ends at tick 20 |
+| The tick in the data node is cut to 32 bits | The edge ticks |
+| The surface clamps the data node to 32 bits | The edge ticks on the page, and no other test |
 
 ## Left open
 

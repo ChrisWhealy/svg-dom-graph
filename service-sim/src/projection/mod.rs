@@ -73,8 +73,9 @@ pub struct Write {
 #[derive(Debug, Clone, PartialEq, Eq)]
 pub struct Projection {
     pub slots: Vec<Slot>,
-    /// The values of the data node. They change with every slice, since the first is the slice ordinal.
-    pub data: [u32; DATA_CELLS],
+    /// The values of the data node, as the engine holds them: ticks and counts are 64 bits wide, and none is narrowed. They change
+    /// with every slice, since the first is the slice ordinal.
+    pub data: [u64; DATA_CELLS],
 }
 
 impl Projection {
@@ -183,10 +184,6 @@ pub fn counter_values(model: &Model) -> [u64; 10] {
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
-fn clamp(v: u64) -> u32 {
-    u32::try_from(v).unwrap_or(u32::MAX)
-}
-
 fn slot(key: &str, text: String, class: &str, label: String, hidden: bool) -> Slot {
     Slot {
         key: key.to_owned(),
@@ -325,14 +322,14 @@ pub fn project(model: &Model, view: &View) -> Projection {
     let c = &model.counters;
     let busy = model.servers.iter().filter(|s| matches!(s, ServerView::Busy { .. })).count();
     let data = [
-        clamp(model.slice),
-        clamp(model.tick),
-        clamp(model.waiting_total as u64),
-        clamp(busy as u64),
-        clamp(c.completed),
-        clamp(c.timed_out),
-        clamp(c.cancelled),
-        clamp(c.rejected),
+        model.slice,
+        model.tick,
+        model.waiting_total as u64,
+        busy as u64,
+        c.completed,
+        c.timed_out,
+        c.cancelled,
+        c.rejected,
     ];
     Projection { slots, data }
 }

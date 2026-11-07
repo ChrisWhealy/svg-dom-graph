@@ -6,6 +6,7 @@
       "caught": true,
       "failed": [
         "twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly",
+        "ticks_at_the_edges_of_the_integers_are_on_the_page_exactly",
         "the_setter_endures_a_thousand_commits_with_no_new_element",
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_refused_draw_makes_the_next_one_a_full_redraw",
@@ -19,6 +20,7 @@
       "caught": true,
       "failed": [
         "twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly",
+        "ticks_at_the_edges_of_the_integers_are_on_the_page_exactly",
         "the_setter_endures_a_thousand_commits_with_no_new_element",
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_refused_draw_makes_the_next_one_a_full_redraw",
@@ -32,6 +34,7 @@
       "caught": true,
       "failed": [
         "twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly",
+        "ticks_at_the_edges_of_the_integers_are_on_the_page_exactly",
         "the_setter_endures_a_thousand_commits_with_no_new_element",
         "e0_is_on_the_page_exactly_after_every_slice",
         "a_refused_draw_makes_the_next_one_a_full_redraw",
@@ -61,53 +64,84 @@
       "name": "the host is not checked before the setter",
       "kind": "browser",
       "caught": true,
-      "failed": ["a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"]
+      "failed": [
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"
+      ]
     },
     {
       "name": "the host is not checked after the setter",
       "kind": "browser",
       "caught": true,
-      "failed": ["a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"]
+      "failed": [
+        "a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted"
+      ]
     },
     {
       "name": "the more line is drawn at the top of its row",
       "kind": "browser",
       "caught": true,
-      "failed": ["nothing_is_drawn_outside_the_view_or_over_anything_else"]
+      "failed": [
+        "nothing_is_drawn_outside_the_view_or_over_anything_else"
+      ]
     },
     {
       "name": "the retry-wait count is not lowered when a retry re-queues a job",
       "kind": "engine",
       "caught": true,
-      "failed": ["the_retry_wait_aggregate_equals_a_recount_after_every_slice"]
+      "failed": [
+        "the_retry_wait_aggregate_equals_a_recount_after_every_slice"
+      ]
     },
     {
       "name": "the retry-wait count is not lowered when a job is finished",
       "kind": "engine",
       "caught": true,
-      "failed": ["the_retry_wait_aggregate_equals_a_recount_after_every_slice"]
+      "failed": [
+        "the_retry_wait_aggregate_equals_a_recount_after_every_slice"
+      ]
     },
     {
       "name": "a model copies every job that has arrived",
       "kind": "engine",
       "caught": true,
-      "failed": ["a_model_does_not_copy_the_jobs_that_nobody_can_see"]
+      "failed": [
+        "a_model_does_not_copy_the_jobs_that_nobody_can_see"
+      ]
     },
     {
       "name": "the tick in the data node is cut to a byte",
       "kind": "browser",
       "caught": true,
-      "failed": ["twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly"]
+      "failed": [
+        "twelve_hundred_genuine_slices_of_a_generated_run_are_drawn_exactly",
+        "ticks_at_the_edges_of_the_integers_are_on_the_page_exactly"
+      ]
+    },
+    {
+      "name": "the tick in the data node is cut to 32 bits",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "projection::unit_tests::a_tick_of_any_size_is_in_the_data_node_exactly"
+      ]
+    },
+    {
+      "name": "the surface narrows the data node to 32 bits",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "ticks_at_the_edges_of_the_integers_are_on_the_page_exactly"
+      ]
     },
     {
       "name": "the queue window is shifted by one",
       "kind": "native",
       "caught": true,
       "failed": [
-        "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
-        "projection::unit_tests::selection_highlights_the_job_wherever_it_is",
         "projection::unit_tests::a_long_queue_shows_the_head_and_says_how_many_more",
-        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says"
+        "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
+        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says",
+        "projection::unit_tests::selection_highlights_the_job_wherever_it_is"
       ]
     },
     {

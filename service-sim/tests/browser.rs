@@ -166,7 +166,7 @@ fn the_setter_endures_a_thousand_commits_with_no_new_element() -> Result<(), Str
     for commit in 0..1000_usize {
         // Walk forwards through the run, and give each commit its own ordinal so that every write changes the node's content.
         let mut p = projections[commit % projections.len()].clone();
-        p.data[0] = u32::try_from(commit + 1).map_err(|e| e.to_string())?;
+        p.data[0] = (commit + 1) as u64;
         let drawn = s.draw(&p)?;
         check(drawn.data_set, &format!("the setter was not called on commit {commit}"))?;
         let ordinal = s.data_texts()?[0].clone();
@@ -673,6 +673,64 @@ fn a_host_that_leaves_in_the_middle_of_a_draw_never_leaves_the_surface_trusted()
             s.is_trusted(),
             &format!("point {point} of {n}: the surface does not trust a restored page"),
         )?;
+    }
+    Ok(())
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// A tick at the edge of what a `u32`, an `f64` and a `u64` can hold is on the page exactly, in the clock and in the data node, and
+/// the layout still holds, since a data cell keeps the width it was drawn with and has to fit the widest figure it will be given.
+#[wasm_bindgen_test]
+fn ticks_at_the_edges_of_the_integers_are_on_the_page_exactly() -> Result<(), String> {
+    let ticks: [u64; 6] = [
+        4_294_967_295,
+        4_294_967_296,
+        1 << 53,
+        (1 << 53) + 1,
+        u64::MAX / 2,
+        u64::MAX - 100,
+    ];
+    for (n, tick) in ticks.into_iter().enumerate() {
+        let config = Config {
+            servers: 1,
+            queue_capacity: 2,
+            max_attempts: 1,
+            deferral_cap: 4,
+        };
+        let script = [ScriptEvent::Arrive {
+            at: tick,
+            key: "J".into(),
+            priority: 1,
+            durations: vec![5],
+            deadline: tick + 50,
+        }];
+        let mut engine = Engine::new("edge", 0, config, &script, None, Limits::default()).map_err(|e| e.to_string())?;
+        let mut s = surface(&format!("ss-edge-{n}"), 1)?;
+        let mut last = None;
+        while let Some(slice) = engine.step().map_err(|e| e.to_string())? {
+            let p = project(&extract(&engine, &View::default()), &View::default());
+            s.draw(&p)?;
+            let cells = s.data_texts()?;
+            check(
+                cells[1] == slice.tick.to_string(),
+                &format!("the data node says {} for tick {}", cells[1], slice.tick),
+            )?;
+            check(cells[0] == slice.index.to_string(), "the ordinal is not exact")?;
+            check(
+                s.snapshot()? == p.canonical(),
+                &format!("the page differs from its projection at tick {}", slice.tick),
+            )?;
+            last = Some(p);
+        }
+        // The widest figures the node can be given: every cell at the edge, in the layout that the node was built for.
+        let mut widest = last.ok_or("the run had no slice")?;
+        widest.data = [u64::MAX; DATA_CELLS];
+        s.draw(&widest)?;
+        check(
+            s.data_texts()?.iter().all(|c| *c == u64::MAX.to_string()),
+            "a cell does not show the largest figure in full",
+        )?;
+        layout_is_sound(&format!("ss-edge-layout-{n}"), 1, &widest)?;
     }
     Ok(())
 }

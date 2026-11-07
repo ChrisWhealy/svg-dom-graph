@@ -22,9 +22,9 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 | `service-sim/src/projection/` | The pure function from that picture to fixed slots, the writes between two projections, and the canonical text and hash of a projection |
 | `service-sim/src/surface.rs` | The `Scene`, the overlay and the data node, built once and written in place. It builds only for `wasm32-unknown-unknown` |
 | `service-sim/src/layout.rs` | Where everything is |
-| `service-sim/tests/browser.rs` | Twelve tests in Chrome |
+| `service-sim/tests/browser.rs` | Thirteen tests in Chrome |
 | `service-sim/src/bin/projection-bench.rs` | Times the preparation of a draw in three parts, and counts its allocations |
-| `dess/s2/mutation-check.mjs` | Breaks the engine's model, the projection and the surface in fifteen ways, to show that the tests notice |
+| `dess/s2/mutation-check.mjs` | Breaks the engine's model, the projection and the surface in seventeen ways, to show that the tests notice |
 
 ## Pages
 
@@ -37,8 +37,8 @@ It is not a page yet: there is no controller, no scheduler and no gallery panel,
 
 | Command | Runs |
 |---|---|
-| `cargo test -p service-sim --lib` | Eight native tests, among them E0 against a ledger written from the design's table |
-| `wasm-pack test --headless --chrome service-sim` | Twelve tests on a real page. They need Chrome |
+| `cargo test -p service-sim --lib` | Ten native tests, among them E0 against a ledger written from the design's table, and ticks at the edges of the integers |
+| `wasm-pack test --headless --chrome service-sim` | Thirteen tests on a real page. They need Chrome |
 | `cargo clippy -p service-sim --all-targets -- -D warnings` | Lints the projection natively |
 | `cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings` | Lints the surface and its tests |
 | `cargo run --release -p service-sim --bin projection-bench` | The preparation timings and allocation counts, as JSON |

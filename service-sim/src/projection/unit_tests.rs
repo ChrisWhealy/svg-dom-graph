@@ -114,11 +114,7 @@ fn e0_projects_exactly_what_the_ledger_says() {
         let counters: Vec<String> = COUNTER_NAMES.iter().map(|(key, _)| text_of(&p, key).to_owned()).collect();
         let want: Vec<String> = row.counters.iter().map(ToString::to_string).collect();
         assert_eq!(counters, want, "counters at {k}");
-        assert_eq!(
-            p.data[0],
-            u32::try_from(k).expect("small"),
-            "the data node's first cell is the slice ordinal at {k}"
-        );
+        assert_eq!(p.data[0], k as u64, "the data node's first cell is the slice ordinal at {k}");
     }
 }
 
@@ -341,5 +337,87 @@ fn the_projection_is_pure_and_its_hash_notices_one_field() {
     assert_ne!(
         canonical_line("k", "a\nb", "c", "d", false),
         canonical_line("k\na", "b", "c", "d", false)
+    );
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The ticks at the edges of what a `u32` can hold, what an `f64` can hold exactly, and what a `u64` can hold.
+const EDGE_TICKS: [u64; 6] = [
+    4_294_967_295,
+    4_294_967_296,
+    1 << 53,
+    (1 << 53) + 1,
+    u64::MAX / 2,
+    u64::MAX - 100,
+];
+
+/// An engine whose only job arrives at `tick`, with a deadline after it and a duration that ends before the end of the integers.
+fn engine_at(tick: u64) -> Engine {
+    let config = Config {
+        servers: 1,
+        queue_capacity: 2,
+        max_attempts: 1,
+        deferral_cap: 4,
+    };
+    let script = [ScriptEvent::Arrive {
+        at: tick,
+        key: "J".into(),
+        priority: 1,
+        durations: vec![5],
+        deadline: tick + 50,
+    }];
+    Engine::new("edge", 0, config, &script, None, Limits::default()).expect("an engine")
+}
+
+/// The data node holds what the engine holds, whatever the tick: nothing is narrowed, rounded or clamped on the way, and the clock
+/// slot and the data node cannot disagree about a tick. A valid scripted event at tick 4,294,967,296 once showed the right tick in the
+/// clock and `u32::MAX` in the data node.
+#[test]
+fn a_tick_of_any_size_is_in_the_data_node_exactly() {
+    for tick in EDGE_TICKS {
+        let mut engine = engine_at(tick);
+        let mut seen = 0;
+        while let Some(slice) = engine.step().expect("a slice") {
+            let model = extract(&engine, &View::default());
+            let p = project(&model, &View::default());
+            assert_eq!(model.tick, slice.tick);
+            assert_eq!(p.data[0], slice.index, "the ordinal at tick {tick}");
+            assert_eq!(p.data[1], slice.tick, "the tick in the data node at tick {tick}");
+            assert_eq!(text_of(&p, "clock"), format!("tick {} · slice {}", slice.tick, slice.index));
+            assert!(
+                p.canonical().contains(&format!("data\t{}\t{}\t", slice.index, slice.tick)),
+                "the canonical text at tick {tick}"
+            );
+            seen += 1;
+        }
+        assert_eq!(
+            seen, 3,
+            "arrival, completion and the stale deadline are three slices at tick {tick}"
+        );
+    }
+}
+
+/// Every cell of the data node is the engine's own figure, in full: none is narrowed, so a count above `u32::MAX` would show.
+#[test]
+fn no_cell_of_the_data_node_is_narrower_than_the_figure_it_shows() {
+    let mut engine = engine_at(7);
+    engine.step().expect("a slice");
+    let model = extract(&engine, &View::default());
+    let mut big = model.clone();
+    big.counters.completed = u64::MAX;
+    big.counters.timed_out = 4_294_967_303;
+    big.counters.cancelled = (1 << 53) + 1;
+    big.counters.rejected = u64::MAX - 1;
+    big.slice = u64::MAX - 2;
+    let p = project(&big, &View::default());
+    assert_eq!(p.data[0], u64::MAX - 2);
+    assert_eq!(
+        [p.data[4], p.data[5], p.data[6], p.data[7]],
+        [u64::MAX, 4_294_967_303, (1 << 53) + 1, u64::MAX - 1]
+    );
+    assert_eq!(
+        text_of(&p, "completed"),
+        u64::MAX.to_string(),
+        "the counter slot says the same as the data node"
     );
 }

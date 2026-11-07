@@ -1,4 +1,4 @@
-// Shows that the projection tests and the surface tests can fail: the code is broken in fifteen small ways, one at a time, and a test has
+// Shows that the projection tests and the surface tests can fail: the code is broken in seventeen small ways, one at a time, and a test has
 // to notice each. A test that passes proves nothing until it is known to fail on a fault.
 //
 //   node dess/s2/mutation-check.mjs [--out FILE]
@@ -27,8 +27,8 @@ const MUTATIONS = [
   [
     SURFACE,
     'the data node is given zeros and not the values',
-    'NodeValues::U32(projection.data.to_vec())',
-    'NodeValues::U32(vec![0; DATA_CELLS])',
+    'NodeValues::U64(projection.data.to_vec())',
+    'NodeValues::U64(vec![0; DATA_CELLS])',
     'browser'
   ],
   [
@@ -97,8 +97,22 @@ const MUTATIONS = [
   [
     PROJECTION,
     'the tick in the data node is cut to a byte',
-    'clamp(model.tick),',
-    'clamp(model.tick & 0xFF),',
+    '        model.slice,\n        model.tick,\n',
+    '        model.slice,\n        model.tick & 0xFF,\n',
+    'browser'
+  ],
+  [
+    PROJECTION,
+    'the tick in the data node is cut to 32 bits',
+    '        model.slice,\n        model.tick,\n',
+    '        model.slice,\n        model.tick & 0xFFFF_FFFF,\n',
+    'native'
+  ],
+  [
+    SURFACE,
+    'the surface narrows the data node to 32 bits',
+    'NodeValues::U64(projection.data.to_vec())',
+    'NodeValues::U64(projection.data.iter().map(|v| (*v).min(4_294_967_295)).collect())',
     'browser'
   ],
   [
