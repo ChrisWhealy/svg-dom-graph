@@ -1,0 +1,70 @@
+{
+  "mutations": [
+    {
+      "name": "the deferral cap is one too few",
+      "caught": true,
+      "equivalent": false,
+      "detail": "panel seed 134: event_pop_sha256: rust \"5ac9d6a4b877cfb5ce9fd2ab0c467e1a9ad759a239a061efb6bd9ea93cb917e9\", oracle \"32ce5103ab3d2b4acfc5b3f6a0932e1c2d25233fea7c9f44d61accb8cb739f01\""
+    },
+    {
+      "name": "dispatch ignores the queue entry tick",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: event_pop_sha256: rust \"e8e5d94a0a174ad5c7559ff4913a3cc6bdb8e39c3ade6bad4b7905015d24ebe9\", oracle \"8f1d2e105c69496a65456b6ab94d76f8b76b15695a539aef96bfcf7f22030844\""
+    },
+    {
+      "name": "the backoff is half what it should be",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: event_pop_sha256: rust \"503ea4627cdfe6fc9e10b10de5e1e851cb0ae2f22d7b282e85651fe86599539a\", oracle \"8f1d2e105c69496a65456b6ab94d76f8b76b15695a539aef96bfcf7f22030844\""
+    },
+    {
+      "name": "a cancel with nothing to act on is counted as stale",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E3-CT: event_pop_sha256: rust \"537d993a41c7c0f6ae7b1f987bfd8da29db9fb241e76245962ab7be9802c9606\", oracle \"8abebc017123325cab15678e05014ab9120f3d70cffa73c9878de56461d963e6\""
+    },
+    {
+      "name": "an aborted attempt keeps its token",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: slice 3, checkpoint: rust \"58ffd48d159d1d9fda44fa6192e56c912ceec023ef9b5812a84e13c259d6f5c3\", oracle \"fd87ffa03f79f0e7685f352600d049be7a977332205063cdc1601370dc719de3\""
+    },
+    {
+      "name": "a terminal job keeps its token (equivalent)",
+      "caught": false,
+      "equivalent": true,
+      "detail": "native Rust against the oracle: 306 scenarios, 105927 pops and 60630 slices compared every scenario agrees on every pop, every slice checkpoint and every hash"
+    },
+    {
+      "name": "a cancel runs after a deadline",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: initial_checkpoint: rust \"8b06a38e1a575bdf76ba96450868c5f7a20fbf8f496d9136fed581f2acd4e823\", oracle \"e174c1be5b3a8574ef3d8c550e5ba86af9541345905e9e36a7cd7afb02d7fa30\""
+    },
+    {
+      "name": "a failure of a server that is down counts as effective",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E3-NOOP: event_pop_sha256: rust \"398728c40e0a61ee12675503196275c558a0a38d73de4497c1f3c64cbd5c9249\", oracle \"38e484ae4cd2382d976eb6da61a160141b2db6ae4de62de6b38e95715e404cf6\""
+    },
+    {
+      "name": "the checkpoint leaves out the deferral count",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: slice 1, checkpoint: rust \"ee6c89bff23ff25b171e660638321d05ea192eb1ae15259e35e7d59449b40565\", oracle \"0c597f26ea06bb443ae6affa18b0ca9347b214254044e1b0cedd6f2417d8664a\""
+    },
+    {
+      "name": "a retry that is queued keeps its deferral count",
+      "caught": true,
+      "equivalent": false,
+      "detail": "panel seed 98: slice 187, checkpoint: rust \"9822e4f9029ccdacb1a97c7ea98f952c04f1ed7159ba7df40992266e955dd8c1\", oracle \"167332f8d2e0b711ed415a15886dd451de4935ac340225628f446d6c1b599dd2\""
+    },
+    {
+      "name": "the queue holds one job too many",
+      "caught": true,
+      "equivalent": false,
+      "detail": "fixture E0: event_pop_sha256: rust \"d0f828b3c89e2862c74f048721e9ffef73589bfbc4827c225df4abe234011550\", oracle \"8f1d2e105c69496a65456b6ab94d76f8b76b15695a539aef96bfcf7f22030844\""
+    }
+  ]
+}

@@ -195,6 +195,26 @@ jobs:
           node dess/s0/prototype/test-prototype.mjs
           node dess/s0/prototype/qualify.mjs
 
+      # Stage S1: the simulator's pure engine in Rust, and its oracle in JavaScript. The engine is linted and tested natively and as
+      # 32-bit wasm, and the two engines are compared pop by pop and checkpoint by checkpoint on 1,200 scenarios, with the Rust one
+      # built for both targets.
+      - name: Simulator engine is linted and tested, natively and on 32-bit wasm
+        run: |
+          cargo clippy -p service-sim-engine --all-targets -- -D warnings
+          cargo clippy -p service-sim-engine --lib --bins --target wasm32-wasip1 -- -D warnings
+          cargo test -p service-sim-engine
+          cargo test -p service-sim-engine --target wasm32-wasip1
+        env:
+          CARGO_TARGET_WASM32_WASIP1_RUNNER: node ${{ github.workspace }}/perf/crosscheck/run-wasi.mjs
+
+      - name: Simulator engine agrees with its oracle, natively and on 32-bit wasm
+        run: |
+          cargo build --release -p service-sim-engine
+          cargo build --release -p service-sim-engine --target wasm32-wasip1 --bin dess-trace
+          node dess/reference-js/test-oracle.mjs
+          node dess/s1/differential.mjs
+          node dess/s1/differential.mjs --wasi
+
   # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic
   # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
   # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it

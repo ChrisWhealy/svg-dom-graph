@@ -5,8 +5,8 @@ Stage S0 is the interface audit.
 It settles the decisions that later stages depend on, with evidence.
 
 S0 is complete.
-Nothing of stage S1 exists in the repository yet: there is no `service-sim-engine` crate and no Rust engine.
 The JavaScript here is S0 prototype code, written to take the measurements that S0 requires.
+Stage S1, the engine proper, is in [`dess/s1/`](../s1/README.md).
 
 ## Table of Contents
 

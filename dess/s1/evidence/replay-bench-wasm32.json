@@ -1,0 +1,25 @@
+{
+  "engine": "Rust, fast path (no hash, no record)",
+  "pointer_width": 32,
+  "rows": [
+    {
+      "actual_pops": 1004,
+      "slices": 482,
+      "seek_ms": { "p50": 0.0696, "p95": 0.0896, "worst": 0.1112 },
+      "replay_of_128_slices_ms": { "p50": 0.0215, "p95": 0.0251 }
+    },
+    {
+      "actual_pops": 10019,
+      "slices": 4881,
+      "seek_ms": { "p50": 0.6494, "p95": 1.1034, "worst": 1.1202 },
+      "replay_of_128_slices_ms": { "p50": 0.0242, "p95": 0.0281 }
+    },
+    {
+      "actual_pops": 100334,
+      "slices": 48769,
+      "seek_ms": { "p50": 8.4009, "p95": 13.5212, "worst": 14.2283 },
+      "replay_of_128_slices_ms": { "p50": 0.0323, "p95": 0.042 }
+    }
+  ],
+  "checkpoint_hash_ms": { "p50": 0.0087, "p95": 0.0456 }
+}
