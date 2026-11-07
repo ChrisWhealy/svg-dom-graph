@@ -8,6 +8,7 @@ members = [
     "perf-harness",
     "perf-harness-wasm",
     "service-sim-engine",
+    "service-sim",
 ]
 # Keep plain `cargo build` / `cargo test` focused on the library; the demo-app (a small worked example, consuming
 # svg-dom-graph only through its public API) and demo-server (the Actix-based static server that builds and serves

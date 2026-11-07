@@ -7,6 +7,7 @@
 
 use crate::generator::{Generator, OutageEvent, outages};
 use crate::hash::Writer;
+use crate::model::{JobState, JobView, Model, ServerView};
 use crate::params::{Config, Error, Limits, Params};
 use sha2::{Digest, Sha256};
 use std::cmp::Reverse;
@@ -323,6 +324,8 @@ pub struct Engine {
     generator: Option<Generator>,
     pop_hash: Sha256,
     hash_pops: bool,
+    /// The tick of the last slice. Only [`Engine::model`] reads it, and no hash covers it.
+    last_tick: u64,
 }
 
 fn add(a: u64, b: u64) -> Result<u64, Error> {
@@ -367,6 +370,7 @@ impl Engine {
             generator: params.map(|p| Generator::new(seed, p)),
             pop_hash: Sha256::new(),
             hash_pops: true,
+            last_tick: 0,
         };
         for event in script {
             match event {
@@ -911,7 +915,59 @@ impl Engine {
         }
         self.dispatch(tick)?;
         self.counters.slices += 1;
+        self.last_tick = tick;
         Ok(Some((tick, pops)))
+    }
+
+    /// A read-only picture of the engine between two slices.
+    #[must_use]
+    pub fn model(&self) -> Model {
+        let server_of = |job: &Job| (job.state == State::Running).then_some(job.server);
+        let due_of = |job: &Job| {
+            server_of(job).and_then(|i| match self.servers.get(i) {
+                Some(Server::Busy { due, .. }) => Some(*due),
+                _ => None,
+            })
+        };
+        Model {
+            tick: self.last_tick,
+            slice: self.counters.slices,
+            counters: self.counters,
+            servers: self
+                .servers
+                .iter()
+                .map(|s| match *s {
+                    Server::Idle => ServerView::Idle,
+                    Server::Busy { job, due } => ServerView::Busy { job, due },
+                    Server::Down => ServerView::Down,
+                })
+                .collect(),
+            waiting: self.waiting.clone(),
+            jobs: self
+                .jobs
+                .iter()
+                .map(|j| JobView {
+                    id: j.id,
+                    key: j.key.clone(),
+                    priority: j.priority,
+                    state: match j.state {
+                        State::Queued => JobState::Queued,
+                        State::Running => JobState::Running,
+                        State::RetryWait => JobState::RetryWait,
+                        State::Completed => JobState::Completed,
+                        State::TimedOut => JobState::TimedOut,
+                        State::Cancelled => JobState::Cancelled,
+                        State::Rejected => JobState::Rejected,
+                        State::Failed(Failure::AttemptsExhausted) => JobState::FailedAttempts,
+                        State::Failed(Failure::DeferralsExhausted) => JobState::FailedDeferrals,
+                    },
+                    attempt: j.attempt,
+                    server: server_of(j),
+                    due: due_of(j),
+                })
+                .collect(),
+            queue_capacity: self.config.queue_capacity,
+        }
     }
 
     /// The end of the run: the counters, every job's state, every server's, and the hash of the pops.

@@ -10,9 +10,11 @@
 pub mod engine;
 pub mod generator;
 pub mod hash;
+pub mod model;
 pub mod params;
 pub mod prng;
 pub mod trace;
 
 pub use engine::{Counters, Engine, Final, Kind, Outcome, PopRecord, ScriptEvent, SliceRecord};
+pub use model::{JobState, JobView, Model, ServerView};
 pub use params::{Config, Error, Limits, Params};

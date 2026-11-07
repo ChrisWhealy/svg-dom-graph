@@ -215,6 +215,14 @@ jobs:
           node dess/s1/differential.mjs
           node dess/s1/differential.mjs --wasi
 
+      # Stage S2: the projection of the engine's state is pure, so it is tested natively against the hand-audited E0 ledger. The
+      # surface needs a browser, so it is only linted here, and its tests run in the `browser-tests` job.
+      - name: Simulator projection is linted and tested, and its surface is linted for the browser
+        run: |
+          cargo clippy -p service-sim --all-targets -- -D warnings
+          cargo clippy -p service-sim --all-targets --target wasm32-unknown-unknown -- -D warnings
+          cargo test -p service-sim --lib
+
   # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic
   # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
   # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it
@@ -329,6 +337,11 @@ jobs:
       # Firefox is unaffected, since webdriver.json currently contains no moz:firefoxOptions.
       - name: Run the browser integration tests
         run: wasm-pack test --headless --${{ matrix.browser }}
+
+      # The simulator surface has been run in Chrome only, so Firefox is not asked until it has been run there.
+      - name: Run the simulator surface tests
+        if: matrix.browser == 'chrome'
+        run: wasm-pack test --headless --chrome service-sim
 
   # The lints are their own job so that they run once, not once for every shard of the tests below.
   cdp-lint:

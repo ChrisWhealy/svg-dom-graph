@@ -1,0 +1,76 @@
+{
+  "mutations": [
+    {
+      "name": "a hidden slot is not marked hidden",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "e0_is_on_the_page_exactly_after_every_slice",
+        "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
+        "a_refused_draw_makes_the_next_one_a_full_redraw"
+      ]
+    },
+    {
+      "name": "the data node is given zeros and not the values",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "e0_is_on_the_page_exactly_after_every_slice",
+        "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
+        "a_refused_draw_makes_the_next_one_a_full_redraw"
+      ]
+    },
+    {
+      "name": "a delta writes a blank class",
+      "kind": "browser",
+      "caught": true,
+      "failed": [
+        "e0_is_on_the_page_exactly_after_every_slice",
+        "a_thousand_displayed_slices_add_no_element_and_each_calls_the_setter",
+        "a_refused_draw_makes_the_next_one_a_full_redraw"
+      ]
+    },
+    {
+      "name": "a failed draw keeps trusting the page",
+      "kind": "browser",
+      "caught": true,
+      "failed": ["a_refused_draw_makes_the_next_one_a_full_redraw"]
+    },
+    {
+      "name": "the more line is drawn at the top of its row",
+      "kind": "browser",
+      "caught": true,
+      "failed": ["nothing_is_drawn_outside_the_view_or_over_anything_else"]
+    },
+    {
+      "name": "the queue window is shifted by one",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "projection::unit_tests::selection_highlights_the_job_wherever_it_is",
+        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says",
+        "projection::unit_tests::empty_slots_are_hidden_and_a_busy_server_names_its_job",
+        "projection::unit_tests::a_long_queue_shows_the_head_and_says_how_many_more"
+      ]
+    },
+    {
+      "name": "a delta never writes a changed label",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "projection::unit_tests::a_stale_only_slice_writes_only_the_clock_and_the_stale_counter",
+        "projection::unit_tests::selection_highlights_the_job_wherever_it_is",
+        "projection::unit_tests::a_delta_between_any_two_snapshots_equals_a_full_redraw"
+      ]
+    },
+    {
+      "name": "the stale count is not shown",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "projection::unit_tests::a_stale_only_slice_writes_only_the_clock_and_the_stale_counter",
+        "projection::unit_tests::e0_projects_exactly_what_the_ledger_says"
+      ]
+    }
+  ]
+}

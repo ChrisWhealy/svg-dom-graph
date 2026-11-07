@@ -4,7 +4,7 @@
 
 use serde_json::Value;
 use service_sim_engine::trace::{Scenario, trace};
-use service_sim_engine::{Config, Engine, Error, Limits, Params, ScriptEvent};
+use service_sim_engine::{Config, Engine, Error, JobState, Limits, Params, ScriptEvent, ServerView};
 
 const FIXTURES: &str = include_str!("../../dess/s1/fixtures.json");
 const GOLDEN: &str = include_str!("../../dess/s1/golden.json");
@@ -371,4 +371,50 @@ fn an_empty_scenario_has_nothing_to_run() {
     let mut e = engine_of(config(), &[], Limits::default()).unwrap();
     assert!(e.step().unwrap().is_none());
     assert_eq!(e.counters().pops, 0);
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// The picture that a projection draws agrees, after every slice, with what the slice record says, and reading it changes
+/// nothing: the run's hash is the one of a run that never asked.
+#[test]
+fn the_model_agrees_with_the_slice_record_and_reading_it_changes_nothing() {
+    let fixtures = json(FIXTURES);
+    let scenario = Scenario::fixture("E0", &fixtures["E0"]).expect("a fixture");
+    let build = || {
+        Engine::new(
+            &scenario.config_id,
+            scenario.seed,
+            scenario.config,
+            &scenario.script,
+            None,
+            Limits::default(),
+        )
+        .expect("an engine")
+    };
+    let (mut asked, mut silent) = (build(), build());
+    assert_eq!(asked.model().slice, 0, "snapshot 0 is the initial state");
+    while let Some(slice) = asked.step().expect("a slice") {
+        let model = asked.model();
+        assert_eq!(model.slice, slice.index);
+        assert_eq!(model.tick, slice.tick);
+        assert_eq!(model.waiting.len(), slice.waiting);
+        let busy = model.servers.iter().filter(|s| matches!(s, ServerView::Busy { .. })).count();
+        assert_eq!(busy, slice.busy);
+        assert_eq!(
+            model.count(JobState::Running),
+            slice.busy,
+            "a running job holds one busy server"
+        );
+        for server in &model.servers {
+            if let ServerView::Busy { job, due } = server {
+                let held = model.job(*job).expect("a job");
+                assert_eq!((held.state, held.due), (JobState::Running, Some(*due)));
+            }
+        }
+        let _ = silent.step().expect("a slice");
+    }
+    assert_eq!(asked.finish_run().event_pop_sha256, {
+        while silent.step().expect("a slice").is_some() {}
+        silent.finish_run().event_pop_sha256
+    });
 }
