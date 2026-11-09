@@ -26,8 +26,8 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped",
-        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary"
+        "controller::unit_tests::a_repair_that_fails_leaves_the_page_dirty_and_a_later_request_repairs_it_even_at_a_boundary",
+        "controller::unit_tests::a_failed_write_commits_nothing_reports_once_repairs_once_and_stays_stopped"
       ],
       "built": true
     },
@@ -146,10 +146,10 @@
       "kind": "native",
       "caught": true,
       "failed": [
-        "controller::unit_tests::a_seek_back_to_the_committed_slice_cancels_the_seek_that_was_pending",
         "controller::unit_tests::a_frame_of_a_seek_that_was_replaced_does_no_work_for_the_new_one",
         "controller::unit_tests::a_forced_one_slice_seek_can_be_cancelled_between_frames_and_changes_nothing_that_is_shown",
         "controller::unit_tests::a_seek_replaces_the_one_before_it_and_a_kept_frame_of_the_first_is_inert",
+        "controller::unit_tests::a_seek_back_to_the_committed_slice_cancels_the_seek_that_was_pending",
         "controller::unit_tests::a_seek_while_playing_stops_playback_and_the_seek_is_the_only_thing_that_moves_the_slice",
         "controller::unit_tests::scheduled_callbacks_hold_no_strong_reference_to_the_controller"
       ],
@@ -170,6 +170,15 @@
       "caught": true,
       "failed": [
         "controller::unit_tests::restart_and_previous_at_the_first_slice_cancel_a_pending_seek_too"
+      ],
+      "built": true
+    },
+    {
+      "name": "an engine error during a seek is taken for the end of the run",
+      "kind": "native",
+      "caught": true,
+      "failed": [
+        "controller::unit_tests::an_engine_error_during_a_seek_commits_nothing_and_does_not_end_the_run"
       ],
       "built": true
     },

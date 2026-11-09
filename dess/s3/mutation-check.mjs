@@ -131,6 +131,13 @@ const MUTATIONS = [
     '    pub fn restart(&self) -> Outcome {',
     'native'
   ],
+  [
+    CONTROLLER,
+    'an engine error during a seek is taken for the end of the run',
+    '                    Err(e) => {\n                        failed = Some(e.message());\n                        break;',
+    '                    Err(e) => {\n                        let _ = e;\n                        failed = None::<String>;\n                        ended = true;\n                        break;',
+    'native'
+  ],
   [HOST, 'a hidden panel is taken for a live one', 'd.hidden()) || !self.rendered() {', 'd.hidden()) {', 'browser'],
   [HOST, 'a cancelled task keeps its closure', 'drop(entry.closure);', 'std::mem::forget(entry.closure);', 'browser'],
   [

@@ -798,32 +798,50 @@ impl<H: Host + 'static, S: Scheduler + 'static> Inner<H, S> {
         let finished = {
             let mut st = self.state.borrow_mut();
             let budget = st.chunk.unwrap_or(u64::MAX);
-            let job = st.seek.as_mut().expect("a seek job");
+            let mut job = st.seek.take().expect("a seek job");
             let mut done = 0;
             let mut ended = false;
+            let mut failed = None;
             while job.at < job.target && done < budget {
                 match job.engine.step() {
                     Ok(Some(_)) => {
                         job.at += 1;
                         done += 1;
                     },
+                    // The run has no more slices, which is its natural end, and the last slice is where the replay got
+                    // to.
                     Ok(None) => {
                         ended = true;
                         break;
                     },
-                    Err(_) => {
-                        ended = true;
+                    // The engine refused to go on. That says nothing about where the run ends, so nothing is recorded
+                    // of it.
+                    Err(e) => {
+                        failed = Some(e.message());
                         break;
                     },
                 }
             }
-            if ended {
-                job.target = job.at;
+            if let Some(problem) = failed {
+                // The seek is over, and it changed nothing that is shown or known: the cursor, the committed projection
+                // and the last slice are as they were. The job is dropped with the engine that failed.
+                Err(problem)
+            } else {
+                if ended {
+                    job.target = job.at;
+                    st.last_slice = Some(job.at);
+                }
+                let reached = job.at >= job.target;
+                st.seek = Some(job);
+                Ok(reached)
             }
-            if ended {
-                st.last_slice = Some(st.seek.as_ref().map_or(0, |j| j.at));
-            }
-            st.seek.as_ref().is_some_and(|j| j.at >= j.target)
+        };
+        let finished = match finished {
+            Ok(reached) => reached,
+            Err(problem) => {
+                self.report_once(&problem);
+                return;
+            },
         };
         if !finished {
             self.request_seek_frame();

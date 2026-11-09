@@ -826,3 +826,86 @@ fn pause_stops_playback_and_leaves_a_pending_seek_alone() {
     assert_eq!(c.committed_slice(), 5, "a pause does not cancel a seek");
     assert!(!c.is_playing());
 }
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+// An engine that fails is not an engine that has finished. The run is made to fail by a limit of five slices, which the
+// sixth exceeds.
+
+/// A generated run whose engine refuses the sixth slice.
+fn failing_after_five() -> Factory {
+    let scenario = Scenario::panel(3).expect("a panel");
+    Rc::new(move || {
+        Engine::new(
+            &scenario.config_id,
+            scenario.seed,
+            scenario.config,
+            &scenario.script,
+            scenario.params.as_ref(),
+            Limits {
+                max_slices: 5,
+                ..Limits::default()
+            },
+        )
+    })
+}
+
+#[test]
+fn an_engine_error_during_a_seek_commits_nothing_and_does_not_end_the_run() {
+    for stepped in [0, 3] {
+        let factory = failing_after_five();
+        let (c, log) = start(Rc::clone(&factory));
+        for _ in 0..stepped {
+            assert_eq!(c.next(), Outcome::Done);
+        }
+        let (slice, shown, draws) = (c.committed_slice(), c.committed().canonical(), log.borrow().draws.len());
+        assert_eq!(c.seek(9), Outcome::Pending);
+        run_frames(&c);
+        assert_eq!(c.committed_slice(), slice, "the cursor stayed, from slice {stepped}");
+        assert_eq!(c.committed().canonical(), shown, "the committed projection stayed");
+        assert_eq!(c.last_slice(), None, "a failure is not the end of the run");
+        assert_eq!(
+            log.borrow().draws.len(),
+            draws,
+            "nothing was drawn for a slice that was not reached"
+        );
+        assert_eq!(page(&log), Some(shown));
+        assert_eq!(log.borrow().reports.len(), 1, "the error is reported once");
+        assert!(log.borrow().reports[0].contains("limit") || !log.borrow().reports[0].is_empty());
+        assert_eq!(c.scheduler().pending_frames(), 0, "the seek is over");
+        assert!(!c.is_dirty());
+    }
+}
+
+#[test]
+fn an_engine_error_on_a_step_commits_nothing_and_does_not_end_the_run() {
+    let (c, log) = start(failing_after_five());
+    for _ in 0..5 {
+        assert_eq!(c.next(), Outcome::Done);
+    }
+    let (shown, draws) = (c.committed().canonical(), log.borrow().draws.len());
+    assert_eq!(c.next(), Outcome::Failed);
+    assert_eq!((c.committed_slice(), c.last_slice()), (5, None));
+    assert_eq!(c.committed().canonical(), shown);
+    assert_eq!(log.borrow().draws.len(), draws);
+    assert_eq!(log.borrow().reports.len(), 1);
+}
+
+#[test]
+fn an_engine_error_while_playing_stops_playback_and_keeps_the_last_committed_slice() {
+    let (c, log) = start(failing_after_five());
+    c.set_speed(10);
+    c.play();
+    c.scheduler().advance_by(1_000);
+    assert_eq!((c.committed_slice(), c.last_slice()), (5, None));
+    assert!(!c.is_playing(), "playback stopped at the failure");
+    assert_eq!(log.borrow().reports.len(), 1);
+    assert_eq!(page(&log), Some(c.committed().canonical()));
+}
+
+#[test]
+fn a_run_that_comes_to_its_natural_end_is_still_known_to_have_ended() {
+    let (c, _) = start(e0());
+    c.seek(500);
+    run_frames(&c);
+    assert_eq!((c.committed_slice(), c.last_slice()), (12, Some(12)));
+}

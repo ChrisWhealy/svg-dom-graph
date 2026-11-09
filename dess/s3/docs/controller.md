@@ -72,6 +72,9 @@ A hidden gallery panel is still in the document, so attachment alone is not enou
 A seek replays the run from its first slice into a new engine, at an animation frame.
 Staging happens on that engine and never touches the committed state, so a seek that is replaced half way changes nothing that is shown.
 A forced test mode replays one slice a frame, to make the races of cancellation reachable.
+A replay that ends because the run has no more slices has found the last slice, and records it.
+A replay that ends because the engine refused to go on has found nothing, and records nothing.
+It reports the error once, and the cursor, the committed projection and the last slice stay as they were.
 A seek whose frame cannot be asked for keeps the cursor and offers a retry, and no synchronous fallback hides it.
 
 ## What the tests prove
@@ -85,6 +88,7 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 | A host that leaves in the middle of a draw | On a fake host, in a seek, and on the real surface after each of its overlay writes and its setter, the slice is not committed, nothing is written after the departure, and a return repairs the page |
 | A failed write | Nothing is committed, one report, one repair and no retry, and a repair that fails leaves the page dirty until the next request, even one at a boundary |
 | Replacement | A seek, a speed change and a scenario switch each leave a kept callback of the old one inert |
+| An engine error | The engine is made to refuse the sixth slice by a limit. A seek, a step and playback each leave the cursor, the committed projection, the page and the unknown last slice as they were, and report once. A natural end still records the last slice |
 | Navigation ownership | Seek then seek back to the committed slice, restart and previous at the first slice, play then next, play then seek, seek then play, and seek then next, each with the callbacks of what was cancelled kept, leave the last request in force. A pause leaves a seek alone |
 | No cycle | A timer and a frame that are waiting hold no strong reference to the controller |
 | Closures | Over 60 cycles on the page's own timers, every closure is dropped, whether the task ran or was cancelled |
@@ -92,8 +96,8 @@ A seek whose frame cannot be asked for keeps the cursor and offers a retry, and 
 
 ## The sensitivity check
 
-`dess/s3/mutation-check.mjs` breaks the code in twenty-one ways, one at a time, and runs the tests.
-The record is `dess/s3/evidence/mutation-check.json`, and all twenty-one are caught.
+`dess/s3/mutation-check.mjs` breaks the code in twenty-two ways, one at a time, and runs the tests.
+The record is `dess/s3/evidence/mutation-check.json`, and all twenty-two are caught.
 The first run caught fifteen and missed three, and the tests that close them are these.
 
 | Mutation that was missed | Test added |
