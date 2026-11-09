@@ -1,0 +1,828 @@
+{
+  "EMPTY-MATRIX": {
+    "why": "no nonzeros: every row and column is empty, and every product is zero",
+    "spec": {
+      "seed": 7,
+      "rows": 5,
+      "cols": 5,
+      "per_row": 0,
+      "hub_cols": 0,
+      "hub_percent": 0,
+      "label_len": 12,
+      "cells": 3,
+      "updates": 2,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok",
+      "stats": {
+        "nnz": 0,
+        "max_row_degree": 0,
+        "max_col_degree": 0,
+        "empty_rows": 5,
+        "empty_cols": 5
+      }
+    }
+  },
+  "ONE-BY-ONE": {
+    "why": "the only column that can be drawn is 0",
+    "spec": {
+      "seed": 7,
+      "rows": 1,
+      "cols": 1,
+      "per_row": 1,
+      "hub_cols": 0,
+      "hub_percent": 0,
+      "label_len": 12,
+      "cells": 1,
+      "updates": 1,
+      "steps": 3
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok",
+      "stats": {
+        "nnz": 1,
+        "max_row_degree": 1,
+        "max_col_degree": 1,
+        "empty_rows": 0,
+        "empty_cols": 0
+      }
+    }
+  },
+  "ONE-HUB-COLUMN": {
+    "why": "every draw is the hub 0, so each row keeps one nonzero in column 0",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 3,
+      "hub_cols": 1,
+      "hub_percent": 100,
+      "label_len": 5,
+      "cells": 4,
+      "updates": 2,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok",
+      "stats": {
+        "nnz": 20,
+        "max_row_degree": 1,
+        "max_col_degree": 20,
+        "empty_rows": 0,
+        "empty_cols": 29
+      }
+    }
+  },
+  "NO-UPDATES": {
+    "why": "steps with no updates leave x and y as they were",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 0,
+      "steps": 5
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "WINDOW-IS-THE-WHOLE-VECTOR": {
+    "why": "cells equals the smaller dimension",
+    "spec": {
+      "seed": 7,
+      "rows": 12,
+      "cols": 12,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 12,
+      "updates": 12,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "NO-STEPS": {
+    "why": "only the initial state",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 0
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "LONG-LABEL-ALLOWED": {
+    "why": "the top of the label range is valid",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 100000,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "INVALID-ROWS": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 0,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "invalid",
+      "code": "invalid",
+      "message": "rows 0 is outside 1 to 1000000"
+    }
+  },
+  "INVALID-HUB-COLS": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 31,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "invalid",
+      "code": "invalid",
+      "message": "hub_cols 31 is outside 0 to 30"
+    }
+  },
+  "INVALID-CELLS": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 21,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "invalid",
+      "code": "invalid",
+      "message": "cells 21 is outside 1 to 20"
+    }
+  },
+  "INVALID-UPDATES": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 7,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "invalid",
+      "code": "invalid",
+      "message": "updates 7 is outside 0 to 6"
+    }
+  },
+  "INVALID-ORDER": {
+    "why": "the first field of the table is the one reported",
+    "spec": {
+      "seed": 7,
+      "rows": 0,
+      "cols": 0,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "invalid",
+      "code": "invalid",
+      "message": "rows 0 is outside 1 to 1000000"
+    }
+  },
+  "REFUSED-NODES": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 49,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "nodes",
+      "message": "nodes 50 is over the budget of 49"
+    }
+  },
+  "REFUSED-CELLS": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 5,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "cells",
+      "message": "cells in a data node 6 is over the budget of 5"
+    }
+  },
+  "REFUSED-TOTAL-CELLS": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 11,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "total_cells",
+      "message": "cells in all data nodes 12 is over the budget of 11"
+    }
+  },
+  "REFUSED-LABEL": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 11,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "label_len",
+      "message": "label length 12 is over the budget of 11"
+    }
+  },
+  "REFUSED-EDGES": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 79,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "edges",
+      "message": "edges 80 is over the budget of 79"
+    }
+  },
+  "REFUSED-DOM": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 409,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "dom",
+      "message": "estimated page elements 410 is over the budget of 409"
+    }
+  },
+  "REFUSED-ORDER": {
+    "why": "nodes are checked before cells and edges",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1,
+      "max_edges": 1,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "nodes",
+      "message": "nodes 50 is over the budget of 1"
+    }
+  },
+  "REFUSED-ORDER-LATE": {
+    "why": "edges are checked before the page estimate",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "edges",
+      "message": "edges 80 is over the budget of 1"
+    }
+  },
+  "AT-THE-LIMIT-IS-ALLOWED": {
+    "why": "a limit is the greatest value allowed, and not the first refused",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 50,
+      "max_edges": 80,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 6,
+      "max_total_cells": 12,
+      "max_label_len": 12,
+      "max_dom_elements": 410,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "REFUSED-DEGREE": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 3,
+      "hub_cols": 1,
+      "hub_percent": 100,
+      "label_len": 5,
+      "cells": 4,
+      "updates": 2,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 19,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "degree",
+      "message": "degree of a node 20 is over the budget of 19"
+    }
+  },
+  "DEGREE-AT-THE-LIMIT": {
+    "why": "",
+    "spec": {
+      "seed": 7,
+      "rows": 20,
+      "cols": 30,
+      "per_row": 3,
+      "hub_cols": 1,
+      "hub_percent": 100,
+      "label_len": 5,
+      "cells": 4,
+      "updates": 2,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 20,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  },
+  "REFUSED-BEFORE-ANY-MATRIX": {
+    "why": "a hostile size is refused by the first stage, and no matrix is generated",
+    "spec": {
+      "seed": 7,
+      "rows": 1000000,
+      "cols": 1000000,
+      "per_row": 64,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 12,
+      "cells": 6,
+      "updates": 3,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 10000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "refused",
+      "code": "nodes",
+      "message": "nodes 2000000 is over the budget of 10000"
+    }
+  },
+  "LABEL-SHORTER-THAN-ITS-TEXT": {
+    "why": "a label length shorter than the text of the label: the text is kept whole and is not cut",
+    "spec": {
+      "seed": 7,
+      "rows": 12,
+      "cols": 15,
+      "per_row": 4,
+      "hub_cols": 5,
+      "hub_percent": 50,
+      "label_len": 1,
+      "cells": 6,
+      "updates": 2,
+      "steps": 2
+    },
+    "budget": {
+      "max_nodes": 1000000000000000,
+      "max_edges": 1000000000000000,
+      "max_degree": 1000000000000000,
+      "max_cells_per_node": 1000000000000000,
+      "max_total_cells": 1000000000000000,
+      "max_label_len": 1000000000000000,
+      "max_dom_elements": 1000000000000000,
+      "dom_base": 10,
+      "dom_per_node": 2,
+      "dom_per_edge": 3,
+      "dom_per_cell": 5
+    },
+    "expect": {
+      "outcome": "ok"
+    }
+  }
+}

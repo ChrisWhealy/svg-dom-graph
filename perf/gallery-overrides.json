@@ -5,6 +5,9 @@
       "before_build": "window.__nQueensManualClock = true",
       "advance": "window.__nQueensAdvance(6)"
     },
+    "panel-sparse-matrix": {
+      "skip": "its controls are a build, a run and a set of scale choices that go past the budget on purpose, so there are no reversible steps to walk; spmv/panel-smoke.mjs drives them"
+    },
     "panel-tarjan": {
       "skip": "the panel only opens the demo in its own window, and has no controls of its own to walk"
     },

@@ -1,0 +1,32 @@
+[package]
+name = "spmv-scene"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Chris Whealy <chris@whealy.com>"]
+description = "The scene of the sparse-matrix scale demonstrator: a bipartite dependency graph and two data nodes on a svg-dom-graph Scene, and the probes that measure what it costs"
+license = "MIT"
+# Not part of the published library. It is built on demand, like service-sim, and it adds no dependency to svg-dom-graph.
+publish = false
+
+[dependencies]
+spmv-core = { path = "../spmv-core" }
+serde_json = "1"
+
+# The scene needs a browser to run, but these build on every target, so that the gallery's crate, which is also built natively for
+# its unit tests, can depend on it. The layout is pure and is tested natively.
+svg-dom-graph = { path = ".." }
+svg-dom = "^0.2.17"
+wasm-bindgen = "0.2"
+js-sys = "0.3"
+
+[dependencies.web-sys]
+version = "0.3"
+features = ["Window", "Document", "Element", "Node", "NodeList", "Performance", "HtmlElement", "Navigator", "console"]
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies]
+wasm-bindgen-test = "0.3"
+
+[target.'cfg(target_arch = "wasm32")'.dev-dependencies.web-sys]
+version = "0.3"
+features = ["Window", "Document", "Element", "Node", "NodeList", "HtmlElement", "console"]

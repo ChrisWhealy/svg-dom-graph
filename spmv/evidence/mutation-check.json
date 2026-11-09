@@ -1,0 +1,262 @@
+{
+  "mutations": [
+    {
+      "name": "a duplicate column is kept in a row",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /matrix_sha256: rust \"81295f9d92cff9c76bb988bfa788b75d008e84f6f7deacd7db373065f05087ba\", oracle \"4929566c4b91f0e2cc351e4432d009427f28ff6bfe540f8969fbd8278033f43"
+    },
+    {
+      "name": "a hub draw needs u less than or equal to the percentage",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /matrix_sha256: rust \"6a74503d1055baed01c6fa6328aa0ee158bd54f3c6800d06f7be2f9aaa554d27\", oracle \"4929566c4b91f0e2cc351e4432d009427f28ff6bfe540f8969fbd8278033f43"
+    },
+    {
+      "name": "a value has the wrong sign",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /matrix_sha256: rust \"c5f19b9e18201ad4cff51124e3a648f7eb5c233c77b3b658fa46bc5a749aae45\", oracle \"4929566c4b91f0e2cc351e4432d009427f28ff6bfe540f8969fbd8278033f43"
+    },
+    {
+      "name": "the values are drawn before the columns are sorted",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /matrix_sha256: rust \"d685d7dec4fde0aaad5d8d3dae27fde97a87c70c8469b840901a979d1dca73e2\", oracle \"4929566c4b91f0e2cc351e4432d009427f28ff6bfe540f8969fbd8278033f43"
+    },
+    {
+      "name": "x starts one too low",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /steps/0/x_sha256: rust \"446d7ff23108419c460dd3405e99982bd76bcdab3d4ef9e47db05f78c7b5b7bc\", oracle \"f00cc2af5f1727c05179cbedfb2e67434f03f1a17a2ba920d53c5cde6685"
+    },
+    {
+      "name": "an update may reach beyond the window",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /steps/0/x_sha256: rust \"593ee8b201f40f725f57e367025199cb8ceddc853b6d08769a3c932c1d7c0257\", oracle \"f00cc2af5f1727c05179cbedfb2e67434f03f1a17a2ba920d53c5cde6685"
+    },
+    {
+      "name": "the incremental product skips the last nonzero of a column",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /code: rust \"internal\", oracle undefined"
+    },
+    {
+      "name": "a changed entry is not stored in x",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /code: rust \"internal\", oracle undefined"
+    },
+    {
+      "name": "a limit is exclusive and not inclusive",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /code: rust \"nodes\", oracle undefined"
+    },
+    {
+      "name": "the degree check ignores the columns",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /plan/max_degree: rust 4, oracle 11"
+    },
+    {
+      "name": "the first stage bounds the edges by the rows alone",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case REFUSED-DOM: /code: rust undefined, oracle \"dom\""
+    },
+    {
+      "name": "the matrix hash leaves out the values",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /matrix_sha256: rust \"dac25395d5b05b933dc2be0269d180ceea9f4dd7980502b713973a7f47d20da4\", oracle \"4929566c4b91f0e2cc351e4432d009427f28ff6bfe540f8969fbd8278033f43"
+    },
+    {
+      "name": "labels are padded with another character",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case AT-THE-LIMIT-IS-ALLOWED: /labels_sha256: rust \"a19e1223bedb2b68d21e1912fa935809d46cb69c5b689d017cca1308d87ac4d8\", oracle \"4d44fd932b42df6764adb373de2f47464db4bc2dd3e84254ebb0655b9da8460"
+    },
+    {
+      "name": "a label is cut to its length",
+      "kind": "differential",
+      "caught": true,
+      "detail": "case LABEL-SHORTER-THAN-ITS-TEXT: /labels_sha256: rust \"27e18a8a6eb633c742d11b0ac2603fb0539e91e0a541a8b4a6aea9800a765761\", oracle \"a8b68ec3aa8412489e70142bcf844ce834c8fef3694162d84b56d4ee205"
+    },
+    {
+      "name": "a step writes the x values into the y data node",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_data_nodes_show_the_product_after_every_step"
+    },
+    {
+      "name": "the edges leave out the first nonzero of a row",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_scene_is_the_matrix_it_was_built_from, the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses, the_description_of_a_node_grows_with_its_degree, the_captions_explain_the_boxes_and_overlap_nothing, the_budgets_model_of_the_page_never_falls_below_the_page, selecting_a_node_lights_exactly_its_edges_and_neighbours, moving_a_node_redraws_exactly_its_connectors, edge_labels_say_the_value_of_each_edge, a_readable_scene_signs_every_edge_and_tags_every_node"
+    },
+    {
+      "name": "the square of the pattern leaves out the first nonzero of a row",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_scene_is_the_matrix_it_was_built_from"
+    },
+    {
+      "name": "a node is labelled with the next index",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_scene_is_the_matrix_it_was_built_from"
+    },
+    {
+      "name": "a teardown leaves the host in the page",
+      "kind": "browser",
+      "caught": true,
+      "detail": "teardown_returns_the_page_to_where_it_was_every_time"
+    },
+    {
+      "name": "a move does not move the node",
+      "kind": "browser",
+      "caught": true,
+      "detail": "moving_a_node_redraws_exactly_its_connectors"
+    },
+    {
+      "name": "the square of the pattern is not added",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_scene_is_the_matrix_it_was_built_from, the_captions_explain_the_boxes_and_overlap_nothing, selecting_a_node_lights_exactly_its_edges_and_neighbours"
+    },
+    {
+      "name": "the data nodes are given less room than they take",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_captions_explain_the_boxes_and_overlap_nothing"
+    },
+    {
+      "name": "an edge of a negative value is drawn as a positive one",
+      "kind": "browser",
+      "caught": true,
+      "detail": "a_readable_scene_signs_every_edge_and_tags_every_node"
+    },
+    {
+      "name": "a selection does not put out the last one",
+      "kind": "browser",
+      "caught": true,
+      "detail": "selecting_a_node_lights_exactly_its_edges_and_neighbours"
+    },
+    {
+      "name": "selecting a column leaves out its first edge",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses, selecting_a_node_lights_exactly_its_edges_and_neighbours"
+    },
+    {
+      "name": "a small graph is not drawn as single columns",
+      "kind": "scene-unit",
+      "caught": true,
+      "detail": "layout::unit_tests::a_longer_label_gives_a_wider_node_up_to_a_limit, layout::unit_tests::a_shifted_layout_moves_the_matrix_with_everything_else, layout::unit_tests::a_small_graph_is_two_single_columns_with_a_wide_channel, layout::unit_tests::a_small_matrix_is_drawn_in_full_and_a_large_one_as_a_pattern, layout::unit_tests::the_vectors_line_up_with_the_matrix"
+    },
+    {
+      "name": "a negative term is written with a plus sign",
+      "kind": "core-unit",
+      "caught": true,
+      "detail": "explain::tests::a_row_is_written_as_a_formula_then_with_the_values_then_the_result"
+    },
+    {
+      "name": "a long row does not say how many terms it left out",
+      "kind": "core-unit",
+      "caught": true,
+      "detail": "explain::tests::the_result_written_is_always_the_product_the_core_holds"
+    },
+    {
+      "name": "the index of an edge is one too high",
+      "kind": "core-unit",
+      "caught": true,
+      "detail": "matrix::tests::an_edge_index_is_the_position_in_row_order_and_none_for_a_zero"
+    },
+    {
+      "name": "the captions of the three boxes are not added",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_captions_explain_the_boxes_and_overlap_nothing"
+    },
+    {
+      "name": "the cells of a selected row are not lit",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses"
+    },
+    {
+      "name": "the entries of x that a row uses are not marked",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses"
+    },
+    {
+      "name": "a step does not mark what it changed",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses"
+    },
+    {
+      "name": "the value beside a node is not updated by a step",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_matrix_is_drawn_in_full_and_a_selection_lights_what_it_uses"
+    },
+    {
+      "name": "a column story multiplies by the wrong entry",
+      "kind": "core-unit",
+      "caught": true,
+      "detail": "explain::tests::a_column_story_follows_the_value_into_each_sum_it_is_a_term_of"
+    },
+    {
+      "name": "a step does not write the products of the worked row",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_worked_product_ends_at_the_entry_of_y_for_every_row"
+    },
+    {
+      "name": "the terms past the limit are left out of the folded sum by one",
+      "kind": "scene-unit",
+      "caught": true,
+      "detail": "worked::unit_tests::a_long_row_folds_the_terms_past_the_limit_into_one_that_keeps_the_sum_whole"
+    },
+    {
+      "name": "the running total begins at one",
+      "kind": "scene-unit",
+      "caught": true,
+      "detail": "worked::unit_tests::a_long_row_folds_the_terms_past_the_limit_into_one_that_keeps_the_sum_whole, worked::unit_tests::a_row_of_one_term_has_no_addition, worked::unit_tests::a_short_row_shows_every_term_and_adds_them_one_after_another, worked::unit_tests::every_running_total_is_the_sum_of_the_items_so_far"
+    },
+    {
+      "name": "the cells of a row of A are tagged with the first row",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_worked_product_ends_at_the_entry_of_y_for_every_row"
+    },
+    {
+      "name": "in-order steps stay on the first entry",
+      "kind": "core-unit",
+      "caught": true,
+      "detail": "run::tests::in_order_changes_x0_then_x1_and_so_on_round_the_window_and_keeps_the_product_exact"
+    },
+    {
+      "name": "a negative bar grows to the right",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_output_is_drawn_as_bars_and_a_step_marks_what_it_fed"
+    },
+    {
+      "name": "the marks of the last step are not put out",
+      "kind": "browser",
+      "caught": true,
+      "detail": "the_output_is_drawn_as_bars_and_a_step_marks_what_it_fed"
+    },
+    {
+      "name": "the caption of the data node is put on top of it",
+      "kind": "scene-unit",
+      "caught": true,
+      "detail": "layout::unit_tests::every_box_has_room_for_its_caption_above_the_graph"
+    }
+  ]
+}

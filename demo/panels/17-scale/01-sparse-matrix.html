@@ -1,0 +1,58 @@
+<section class="section" id="panel-sparse-matrix" data-label="Sparse Matrix: Scale and Limits">
+  <h2>Sparse Matrix&ndash;Vector Product: Scale and Resource Limits</h2>
+  <p>
+    The demo exists to discover the library&rsquo;s resource limits, so its controls reach past them on purpose. Before
+    any <code>Scene</code> call is made, the graph size you choose is checked against a budget. Any size over that
+    budget is refused before any drawing takes place. Choose 20,000 entities or a label of 1,024 characters to see this.
+  </p>
+  <p>
+    What this demo shows: a computer often has to multiply a table of numbers (the matrix <code>A</code>) by a list of
+    numbers <code>[x]</code> to make a new list <code>[y]</code>. Search algorithms, graphics rendering and machine
+    learning all perform this type of task.
+  </p>
+  <p>How to read it:</p>
+  <ol>
+    <li>Each row in <code>y</code> is made from one row of <code>A</code></li>
+    <li>Multiply every number in the row by the <code>x</code> in its column</li>
+    <li>Then add the products.</li>
+  </ol>
+  <p>
+    The boxes at the right do exactly that for the selected row, and the bars draw <code>y</code>. Click another row to
+    see the proecess operating on that row.
+  </p>
+  <p>
+    What a step does: <code>A</code> never changes. A step changes one number of <code>x</code>, and only the
+    <code>y</code> values that use that <code>x</code> are recalculated, and they are outlined in green. Run keeps
+    stepping, at the speed you choose. Steps go in order, <code>x0</code> then <code>x1</code> and so on, so you can
+    tell what comes next. The Step order list can make it random.
+  </p>
+  <p>
+    Why it matters: most big tables are mostly zeros, so a computer keeps only the numbers that are not zero and skips
+    the rest. Choose a larger size to see how much a page can draw before it slows down.
+  </p>
+  <p>
+    The demo opens in a window of its own, as large as your screen allows. The first scenario is small enough to read. A
+    blue edge has a positive value and a red one a negative value, and the thicker the edge, the greater the value.
+    Click a node to highlight its edges and to see the arithmetic it stands for, for example
+    <code>y3 = 5&middot;x1 &minus; 2&middot;x7 = &hellip;</code>.
+  </p>
+  <p>
+    Each step changes some entries of <code>x</code> and recomputes <code>y</code> from the change. The two data nodes
+    are rewritten and the graph is left alone, and every step is checked against a full recomputation of the product
+    whenever the matrix is small enough to afford it.
+  </p>
+  <p>
+    <button type="button" id="spmv-open" class="open-window">Open the demo in its own window</button>
+  </p>
+  <h3>About the figures</h3>
+  <ul>
+    <li>
+      They come from the browser you are using, on the machine you are using, and a timing is a measurement and not a
+      promise.
+    </li>
+    <li>
+      The budget&rsquo;s limits are from Chrome on one computer, recorded in <code>spmv/docs/resource-risks.md</code>.
+    </li>
+    <li>The product is exact integer arithmetic, so it is compared with the oracle without any tolerance.</li>
+  </ul>
+</section>

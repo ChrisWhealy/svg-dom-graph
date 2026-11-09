@@ -34,6 +34,7 @@ fn copy_minimal_source_root(src_root: &Path, dst_root: &Path) -> Result<(), Stri
     copy("demo/hamming-window.html")?;
     copy("demo/qr-code-window.html")?;
     copy("demo/tarjan-scc-window.html")?;
+    copy("demo/sparse-matrix-window.html")?;
     for panel in panels::catalogue(&src_root.join("demo").join("panels")).map_err(|e| e.to_string())? {
         copy(&format!("demo/panels/{}", panel.path.display()))?;
     }
@@ -81,6 +82,7 @@ fn prepare_stage_assembles_the_real_projects_index_html() -> Result<(), String> 
         "hamming-window.html",
         "qr-code-window.html",
         "tarjan-scc-window.html",
+        "sparse-matrix-window.html",
     ] {
         if !stage.stage_dir.join(page).is_file() {
             return Err(format!("expected {page} to be staged alongside index.html"));

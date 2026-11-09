@@ -32,6 +32,7 @@
 - [Red–black tree](red-black-tree.md)
 - [Marching squares](marching-squares.md)
 - [Petri net](petri-net.md)
+- [Sparse matrix: scale and limits](sparse-matrix.md)
 - [Tarjan's strongly connected components](tarjan-scc.md)
 - [Conway's Game of Life](game-of-life.md)
 - [The N-Queens puzzle](n-queens.md)

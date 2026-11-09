@@ -1,0 +1,14 @@
+[package]
+name = "spmv-core"
+version = "0.1.0"
+edition = "2024"
+rust-version = "1.85"
+authors = ["Chris Whealy <chris@whealy.com>"]
+description = "The pure core of the sparse-matrix scale demonstrator: a seeded sparse matrix, an exact integer product, budgets and canonical hashes"
+license = "MIT"
+# Not part of the published library. It is built on demand, like service-sim-engine, and it adds no dependency to svg-dom-graph.
+publish = false
+
+[dependencies]
+sha2 = "0.11"
+serde_json = "1"

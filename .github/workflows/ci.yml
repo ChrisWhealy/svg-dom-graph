@@ -224,6 +224,26 @@ jobs:
           cargo clippy -p service-sim --lib --target wasm32-unknown-unknown -- -D warnings
           cargo test -p service-sim --lib
 
+      # The sparse-matrix scale demonstrator (coverage audit, scenario D). Its core is pure, so it is linted and tested natively and as
+      # 32-bit wasm, and compared with an oracle written from the contract alone. Its scene needs a browser, so here it is only linted.
+      - name: Sparse-matrix core and scene are linted and tested, and the core on 32-bit wasm
+        run: |
+          cargo clippy -p spmv-core -p spmv-scene --all-targets -- -D warnings
+          cargo clippy -p spmv-scene --all-targets --target wasm32-unknown-unknown -- -D warnings
+          cargo clippy -p spmv-core --lib --bins --target wasm32-wasip1 -- -D warnings
+          cargo test -p spmv-core -p spmv-scene
+          cargo test -p spmv-core --target wasm32-wasip1
+        env:
+          CARGO_TARGET_WASM32_WASIP1_RUNNER: node ${{ github.workspace }}/perf/crosscheck/run-wasi.mjs
+
+      - name: Sparse-matrix core agrees with its oracle, natively and on 32-bit wasm
+        run: |
+          cargo build --release -p spmv-core
+          cargo build --release -p spmv-core --target wasm32-wasip1 --bin spmv-trace
+          node spmv/reference-js/test-oracle.mjs
+          node spmv/differential.mjs
+          node spmv/differential.mjs --wasi
+
   # The profile that runs on every commit (design section 8). It fails on an incorrect checkpoint, a leaked deterministic
   # resource, a stream that is not the intended one or a result that does not satisfy its schema. It never fails on a timing: the
   # comparison with a baseline is written to the job summary and to the artifact, and with the three repetitions of a smoke run it
@@ -259,6 +279,15 @@ jobs:
 
       - name: Run the smoke workloads and compare them with the baseline
         run: node perf/runner/perf-smoke.mjs
+
+      # The sparse-matrix demo is driven as a person would use it, in the window that the gallery's panel opens: every list and button is
+      # in a foreignObject of its one svg, the graph pans and zooms, a click on a node lights its edges and writes out its arithmetic, a run
+      # stops when asked and when the window is hidden, a size over the budget is refused before the page is touched, and ten rebuilds
+      # leave the page as it was.
+      - name: Sparse-matrix demo behaves
+        run: |
+          cargo run -p demo-server -- --build-only
+          node spmv/panel-smoke.mjs
 
       # The proof that the harness would notice: a slowdown and a leak are put into a candidate on purpose, and a clean one is not.
       - name: The harness catches an injected regression and an injected leak
@@ -343,6 +372,12 @@ jobs:
       - name: Run the simulator surface tests
         if: matrix.browser == 'chrome'
         run: wasm-pack test --headless --chrome service-sim
+
+      # The sparse-matrix scene has been run in Chrome only, so Firefox is not asked until it has been run there. Its measurements are
+      # ignored tests that nothing here runs, since a timing is never a gate.
+      - name: Run the sparse-matrix scene tests
+        if: matrix.browser == 'chrome'
+        run: wasm-pack test --headless --chrome spmv-scene --test browser
 
   # The lints are their own job so that they run once, not once for every shard of the tests below.
   cdp-lint:

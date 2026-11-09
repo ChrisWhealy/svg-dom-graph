@@ -1,0 +1,80 @@
+<div class="spmv-controls">
+  <label>Graph entities
+    <select id="spmv-size">
+      <option value="16" selected>16: to read</option>
+      <option value="40">40</option>
+      <option value="100">100</option>
+      <option value="1000">1,000</option>
+      <option value="5000">5,000</option>
+      <option value="10000">10,000 (the budget&rsquo;s limit)</option>
+      <option value="20000">20,000 (over the budget)</option>
+      <option value="2000000">2,000,000 (hostile)</option>
+    </select>
+  </label>
+  <label>Adjacency
+    <select id="spmv-adjacency">
+      <option value="flat" selected>Flat: every column alike</option>
+      <option value="hub">Hub-heavy: 20 columns take 60%</option>
+    </select>
+  </label>
+  <label>Label length
+    <select id="spmv-labels">
+      <option value="1" selected>Natural: x0, y3</option>
+      <option value="4">4</option>
+      <option value="32">32</option>
+      <option value="128">128</option>
+      <option value="256">256 (the budget&rsquo;s limit)</option>
+      <option value="1024">1,024 (over the budget)</option>
+    </select>
+  </label>
+  <label>Cells in a data node
+    <select id="spmv-cells">
+      <option value="10" selected>10</option>
+      <option value="100">100</option>
+      <option value="1000">1,000</option>
+    </select>
+  </label>
+  <label>Entries changed in a step
+    <select id="spmv-updates">
+      <option value="1" selected>1</option>
+      <option value="10">10</option>
+      <option value="100">100</option>
+    </select>
+  </label>
+  <label>Step order
+    <select id="spmv-order">
+      <option value="inorder" selected>In order: x0, x1, &hellip;</option>
+      <option value="random">Random: the seeded stream</option>
+    </select>
+  </label>
+  <label>Run speed
+    <select id="spmv-speed">
+      <option value="3000">Slow: a step every 3 s</option>
+      <option value="1500" selected>Medium: every 1.5 s</option>
+      <option value="500">Fast: every 0.5 s</option>
+      <option value="0">Flat out: every frame</option>
+    </select>
+  </label>
+  <label>Edges
+    <select id="spmv-edges">
+      <option value="auto" selected>Automatic</option>
+      <option value="all">Show every edge</option>
+      <option value="focus">Only the selected node&rsquo;s</option>
+    </select>
+  </label>
+  <label>Highlight a node
+    <select id="spmv-pick"><option value="" selected>None</option></select>
+  </label>
+</div>
+<div class="spmv-buttons">
+  <button type="button" id="spmv-build">Build</button>
+  <button type="button" id="spmv-step">Step</button>
+  <button type="button" id="spmv-run" aria-pressed="false">Run</button>
+  <button type="button" id="spmv-drag">Drag the busiest column</button>
+  <button type="button" id="spmv-rebuild">Rebuild 10 times</button>
+  <button type="button" id="spmv-teardown">Tear down</button>
+  <span class="spmv-gap"></span>
+  <button type="button" id="spmv-zoom-in" aria-label="Zoom in">Zoom in</button>
+  <button type="button" id="spmv-zoom-out" aria-label="Zoom out">Zoom out</button>
+  <button type="button" id="spmv-zoom-reset">Reset view</button>
+</div>

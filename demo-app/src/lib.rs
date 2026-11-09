@@ -45,6 +45,10 @@
 //! - `panel-tarjan` / `#tj-open` — [`tarjan::build_tarjan_demo`]: Tarjan's strongly connected components on a fixed
 //!   graph of 64 vertices and 114 edges, one event at a time, in a window of its own. The graph, the stack, the roster
 //!   of components and the condensation are all in one scene.
+//! - `panel-sparse-matrix` / `#spmv-stage` — [`sparse_matrix::build_sparse_matrix_demo`]: a sparse matrix times a vector,
+//!   drawn as a bipartite dependency graph with two data nodes that are rewritten at every step. Its controls reach past the
+//!   library's documented resource limits on purpose: a size over the budget is refused with a reason before any `Scene`
+//!   call, and what each build, step, drag and rebuild costs is shown.
 //! - `panel-float` / `#float-diagram` — [`floats::build_float_demo`]: the same nine floating point values written every
 //!   way a [`FloatFormat`](svg_dom_graph::scene::FloatFormat) can write them, one node per format.
 //! - `panel-unsigned` / `#unsigned-diagram`, `panel-signed` / `#signed-diagram` — [`data::build_unsigned_demo`] and
@@ -196,6 +200,7 @@ mod sha3_sponge;
 mod shell_sort;
 mod sine_cosine;
 mod source_frame;
+mod sparse_matrix;
 mod springs;
 mod tarjan;
 mod text_nodes;
@@ -321,6 +326,7 @@ demo_gallery! {
     "panel-marching-squares" => marching_squares::build_marching_squares_demo + marching_squares::FILES,
     "panel-petri-net" => petri_net::build_petri_net_demo + petri_net::FILES,
     "panel-tarjan" => tarjan::build_tarjan_demo + tarjan::FILES,
+    "panel-sparse-matrix" => sparse_matrix::build_sparse_matrix_demo + sparse_matrix::FILES,
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -361,6 +367,14 @@ pub fn init_huffman_window() -> Result<(), JsValue> {
 #[wasm_bindgen]
 pub fn init_tarjan_window() -> Result<(), JsValue> {
     tarjan::build_tarjan_window().map_err(|e| JsValue::from_str(&e))
+}
+
+// - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
+/// Builds the sparse-matrix demo in `sparse-matrix-window.html`, the window the gallery's own panel opens. Call it once, from that
+/// page's own script, after the wasm module has loaded.
+#[wasm_bindgen]
+pub fn init_sparse_matrix_window() -> Result<(), JsValue> {
+    sparse_matrix::build_sparse_matrix_window().map_err(|e| JsValue::from_str(&e))
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -

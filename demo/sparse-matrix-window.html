@@ -1,0 +1,31 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1" />
+    <title>Sparse matrix: scale and limits — svg-dom-graph</title>
+    <link rel="stylesheet" href="style.css" />
+  </head>
+
+  <!-- The sparse-matrix demo in a window of its own. The gallery's own panel keeps the description and opens this page (see
+     `build_sparse_matrix_demo`). `init_sparse_matrix_window` builds the one `<svg>` that fills the window: the controls above, the
+     readout below, each in a `<foreignObject>`, and between them the scene, which pans and zooms. -->
+
+  <body class="spmv-window">
+    <div id="spmv-root"></div>
+    <p class="demo-error" id="spmv-fatal" hidden></p>
+
+    <script type="module">
+      import init, { init_sparse_matrix_window } from './pkg/svg_dom_graph_demo.js'
+
+      try {
+        await init()
+        init_sparse_matrix_window()
+      } catch (err) {
+        const banner = document.getElementById('spmv-fatal')
+        banner.textContent = `This demo failed to build: ${err}`
+        banner.hidden = false
+      }
+    </script>
+  </body>
+</html>

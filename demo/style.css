@@ -2579,3 +2579,375 @@ body.tj-window {
         fill: CanvasText;
     }
 }
+
+/* The sparse-matrix demo (demo-app/src/sparse_matrix), in a window of its own (`sparse-matrix-window.html`). The window is one
+   <svg>: the controls and the readout are the browser's own HTML in a <foreignObject> each, and the graph is a nested <svg> between
+   them that pans and zooms. An edge says its value three ways: a colour for its sign, a width for its size, and a label when there
+   are few. A refusal gets a look of its own that a drawing does not. */
+body.spmv-window {
+    margin: 0;
+    height: 100vh;
+    overflow: hidden;
+}
+
+.spmv-host {
+    display: block;
+    background: #0d1117;
+}
+
+.spmv-backdrop {
+    fill: #ffffee;
+    stroke: var(--border-strong);
+    /* The background is what is dragged to pan, so all of it says so, and not only the part that the library marks. */
+    cursor: grab;
+}
+
+.spmv-backdrop:active {
+    cursor: grabbing;
+}
+
+.spmv-fo {
+    box-sizing: border-box;
+    height: 100%;
+    padding: 0.4rem 0.75rem;
+    overflow: auto;
+    font-size: 0.85rem;
+    color: var(--text);
+}
+
+/* The controls look as those of the Petri net demo do, so that the gallery is consistent. The pane has the colour of every demo's canvas
+   and the text a scene writes in. A list is the browser's own <select>, with its name beside it as the Petri net writes it. A button is
+   drawn as the library draws its own SVG buttons (svg-dom-graph/src/controls/svg_buttons.rs): a white fill, an outline of 1.5 pixels in
+   slate with a corner of 6, the text in 14 pixels, teal when it is pressed, and a ring when it has the keyboard focus. */
+.spmv-controls-pane {
+    background: #ffffee;
+    color: #1a1a1a;
+    font-size: 14px;
+    border-bottom: 1px solid var(--border-strong);
+}
+
+.spmv-controls {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.4rem 1.25rem;
+    margin-bottom: 0.5rem;
+}
+
+.spmv-controls label {
+    display: flex;
+    align-items: center;
+    gap: 0.4rem;
+    font-size: 14px;
+    color: #1a1a1a;
+}
+
+.spmv-controls select {
+    font: inherit;
+    font-size: 14px;
+    box-sizing: border-box;
+}
+
+.spmv-buttons {
+    display: flex;
+    flex-wrap: wrap;
+    align-items: center;
+    gap: 0.5rem;
+}
+
+.spmv-buttons button {
+    box-sizing: border-box;
+    padding: 0.3rem 0.8rem;
+    font: inherit;
+    font-size: 14px;
+    color: #1a1a1a;
+    background: #ffffff;
+    /* The library's outline is 1.5 pixels wide. A CSS border is rounded to whole device pixels, and an inset shadow is not. */
+    border: 0;
+    box-shadow: inset 0 0 0 1.5px #64748b;
+    border-radius: 6px;
+    cursor: pointer;
+}
+
+.spmv-buttons button[aria-pressed="true"] {
+    background: #ccfbf1;
+    box-shadow: inset 0 0 0 1.5px #0f766e;
+}
+
+.spmv-controls-pane :focus-visible {
+    outline: 2px solid #1d4ed8;
+    outline-offset: 2px;
+}
+
+.spmv-verdict {
+    padding: 0.35rem 0.75rem;
+    margin: 0 0 0.35rem;
+    border-left: 4px solid var(--accent);
+    background: var(--surface);
+}
+
+.spmv-verdict.spmv-refused {
+    border-left-color: var(--error);
+}
+
+.spmv-task {
+    white-space: pre-line;
+    margin: 0 0 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-left: 4px solid #7c3aed;
+    background: var(--surface);
+    overflow-wrap: anywhere;
+}
+
+.spmv-measure {
+    margin: 0.35rem 0.75rem 0;
+}
+
+.spmv-measure summary {
+    cursor: pointer;
+}
+
+.spmv-story {
+    margin: 0 0 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-left: 4px solid #16a34a;
+    background: var(--surface);
+    overflow-wrap: anywhere;
+}
+
+.spmv-selected {
+    white-space: pre-line;
+    margin: 0 0 0.35rem;
+    padding: 0.35rem 0.75rem;
+    border-left: 4px solid #f59e0b;
+    background: var(--surface);
+    overflow-wrap: anywhere;
+}
+
+.spmv-numbers {
+    display: grid;
+    grid-template-columns: max-content 1fr max-content 1fr;
+    gap: 0.1rem 1rem;
+    margin: 0;
+}
+
+.spmv-numbers dt {
+    color: var(--accent);
+}
+
+.spmv-numbers dd {
+    margin: 0;
+    overflow-wrap: anywhere;
+}
+
+/* The edges are a picture and take no part in the pointer. They are drawn after the nodes, so a dense graph covers its nodes with them,
+   and a click on a node lands on a connector, which does not register it, and the hand that says that the background can be dragged turns
+   back into an arrow wherever an edge passes. With the pointer going through them, a click reaches the node under an edge and the
+   background under it is the background. This is for every connector of the scene, readable or not. */
+svg.spmv-scene-svg > g.svg-dom-graph-content > path {
+    pointer-events: none;
+}
+
+/* The words under the three boxes that say what each is. */
+svg.spmv-scene-svg .spmv-caption-channel {
+    text-anchor: middle;
+}
+
+svg.spmv-scene-svg .spmv-node-value {
+    font-size: 13px;
+    font-weight: 600;
+    fill: #9d174d;
+    pointer-events: none;
+}
+
+svg.spmv-scene-svg .spmv-node-value-x {
+    text-anchor: end;
+}
+
+svg.spmv-scene-svg .spmv-node-value.spmv-hot {
+    fill: #b45309;
+    font-size: 15px;
+}
+
+svg.spmv-scene-svg .spmv-node-value.spmv-changed {
+    fill: #15803d;
+    text-decoration: underline;
+}
+
+svg.spmv-scene-svg .spmv-caption {
+    font-size: 12px;
+    fill: #1a1a1a;
+    pointer-events: none;
+    user-select: none;
+}
+
+svg.spmv-scene .spmv-edge {
+    fill: none;
+    stroke-linecap: round;
+}
+
+svg.spmv-scene .spmv-pos {
+    stroke: #2563eb;
+}
+
+svg.spmv-scene .spmv-neg {
+    stroke: #dc2626;
+}
+
+svg.spmv-scene .spmv-w1 { stroke-width: 0.9px; }
+svg.spmv-scene .spmv-w2 { stroke-width: 1.2px; }
+svg.spmv-scene .spmv-w3 { stroke-width: 1.5px; }
+svg.spmv-scene .spmv-w4 { stroke-width: 1.8px; }
+svg.spmv-scene .spmv-w5 { stroke-width: 2.1px; }
+svg.spmv-scene .spmv-w6 { stroke-width: 2.4px; }
+svg.spmv-scene .spmv-w7 { stroke-width: 2.7px; }
+svg.spmv-scene .spmv-w8 { stroke-width: 3px; }
+svg.spmv-scene .spmv-w9 { stroke-width: 3.3px; }
+
+/* With only the selected node's edges shown, the rest are faint, and the selected ones are as strong as they go. Until a node is
+   selected, every edge is shown at a middling strength, so that the picture is not empty. */
+svg.spmv-scene.spmv-focus .spmv-edge:not(.spmv-on) {
+    stroke-opacity: 0.35;
+}
+
+svg.spmv-scene.spmv-focus.spmv-has-pick .spmv-edge:not(.spmv-on) {
+    stroke-opacity: 0.07;
+}
+
+svg.spmv-scene .spmv-edge.spmv-on {
+    stroke-opacity: 1;
+    stroke-width: 3.6px;
+}
+
+svg.spmv-scene g.spmv-on > rect {
+    fill: #fde68a;
+    stroke: #b45309;
+}
+
+svg.spmv-scene g.spmv-picked > rect {
+    fill: #fb923c;
+    stroke: #7c2d12;
+    stroke-width: 2.5px;
+}
+
+/* The worked product: A as a grid, x and y as columns, and the operations of the selected row. */
+svg.spmv-scene .spmv-a-cell.spmv-pos { fill: #dbeafe; }
+svg.spmv-scene .spmv-a-cell.spmv-neg { fill: #fee2e2; }
+svg.spmv-scene .spmv-a-cell.spmv-zero { fill: #f8fafc; }
+svg.spmv-scene text.spmv-zero { fill: #cbd5e1; }
+
+svg.spmv-scene .spmv-a-cell.spmv-row { stroke: #b45309; stroke-width: 1.5px; }
+svg.spmv-scene .spmv-a-cell.spmv-row.spmv-zero { fill: #fef3c7; }
+svg.spmv-scene .spmv-a-cell.spmv-on { fill: #fde68a; stroke: #b45309; stroke-width: 2px; }
+
+svg.spmv-scene rect.spmv-hot { fill: #fde68a; stroke: #b45309; stroke-width: 2.5px; }
+svg.spmv-scene rect.spmv-changed { stroke: #16a34a; stroke-width: 3px; stroke-dasharray: 4 2; }
+
+svg.spmv-scene .spmv-term-a > rect:first-of-type,
+svg.spmv-scene .spmv-term-x > rect:first-of-type { stroke: #b45309; }
+
+svg.spmv-scene .spmv-term-label { font-size: 11px; fill: #475569; text-anchor: end; }
+svg.spmv-scene .spmv-result-label { text-anchor: start; font-size: 14px; font-weight: 600; fill: #1a1a1a; }
+svg.spmv-scene .spmv-bar { stroke-width: 0; }
+svg.spmv-scene .spmv-bar.spmv-pos { fill: #3b82f6; }
+svg.spmv-scene .spmv-bar.spmv-neg { fill: #ef4444; }
+svg.spmv-scene .spmv-bar.spmv-hot-bar { stroke: #b45309; stroke-width: 2px; }
+svg.spmv-scene .spmv-bar.spmv-bar-changed { stroke: #16a34a; stroke-width: 2px; }
+svg.spmv-scene .spmv-bar-axis { stroke: #94a3b8; stroke-width: 1px; }
+svg.spmv-scene .spmv-bars-title { font-size: 12px; fill: #475569; text-anchor: middle; }
+svg.spmv-scene .spmv-bars-scale { font-size: 11px; fill: #475569; text-anchor: middle; }
+svg.spmv-scene .spmv-a-cell.spmv-fed { stroke: #16a34a; stroke-width: 2.5px; stroke-dasharray: 4 2; }
+
+svg.spmv-scene .spmv-sign { font-size: 28px; fill: #475569; text-anchor: middle; }
+svg.spmv-scene .spmv-col-label { font-size: 12px; fill: #475569; text-anchor: middle; }
+svg.spmv-scene .spmv-heading { font-size: 15px; font-weight: 600; fill: #1a1a1a; }
+
+/* The matrix drawn in full. A zero is left blank, so that only the nonzeros are seen, and a selection lights a band and its cells. */
+svg.spmv-scene-svg .spmv-matrix-frame {
+    fill: #fff;
+    stroke: #64748b;
+    stroke-width: 1px;
+}
+
+svg.spmv-scene-svg .spmv-band {
+    fill: #fde68a;
+    fill-opacity: 0.55;
+    pointer-events: none;
+}
+
+svg.spmv-scene-svg .spmv-matrix-label {
+    font-size: 10px;
+    fill: #475569;
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+svg.spmv-scene-svg .spmv-matrix-row-label {
+    text-anchor: end;
+}
+
+svg.spmv-scene-svg .spmv-matrix-value {
+    font-size: 11px;
+    fill: #1a1a1a;
+    text-anchor: middle;
+    pointer-events: none;
+}
+
+svg.spmv-scene-svg .spmv-matrix-cell rect {
+    fill-opacity: 0.55;
+    stroke-width: 1px;
+}
+
+svg.spmv-scene-svg .spmv-matrix-cell.spmv-pos rect {
+    fill: #bfdbfe;
+    stroke: #2563eb;
+}
+
+svg.spmv-scene-svg .spmv-matrix-cell.spmv-neg rect {
+    fill: #fecaca;
+    stroke: #dc2626;
+}
+
+svg.spmv-scene-svg .spmv-matrix-cell.spmv-on rect {
+    fill-opacity: 1;
+    stroke-width: 2px;
+}
+
+svg.spmv-scene-svg.spmv-has-pick .spmv-matrix-cell:not(.spmv-on) {
+    opacity: 0.35;
+}
+
+svg.spmv-scene-svg .spmv-vec-cell rect {
+    fill: #fce7f3;
+    stroke: #be185d;
+    stroke-width: 1px;
+}
+
+svg.spmv-scene-svg .spmv-vec-cell.spmv-hot rect {
+    fill: #fde68a;
+    stroke: #b45309;
+    stroke-width: 2.5px;
+}
+
+svg.spmv-scene-svg .spmv-vec-cell.spmv-changed rect {
+    stroke: #16a34a;
+    stroke-width: 3px;
+    stroke-dasharray: 4 2;
+}
+
+/* The entries of x and y that the selected node uses or makes, and the ones that the last step changed. */
+svg.spmv-scene-svg rect.spmv-hot {
+    fill: #fde68a;
+    stroke: #b45309;
+    stroke-width: 2.5px;
+}
+
+svg.spmv-scene-svg rect.spmv-changed {
+    stroke: #16a34a;
+    stroke-width: 3px;
+    stroke-dasharray: 4 2;
+}
+
+.spmv-gap {
+    flex: 0 0 1.5rem;
+}
