@@ -377,32 +377,40 @@ fn make_scene(document: &web_sys::Document, prepared: &Prepared, run: &Run) -> R
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
 /// Builds the scenario the controls describe, or says why it was refused.
 fn build() -> Result<(), String> {
-    teardown()?;
     clear_error(ERROR);
+    let spec = spec_from_controls()?;
+    let budget = Budget::default();
+    // The budget is checked, and the matrix generated, before the scene that is there is touched and before a single scene call, so a
+    // scenario that is refused leaves the graph that a person has exactly as it was.
+    let prepared = match Prepared::new(&spec, &budget) {
+        Ok(p) => p,
+        Err(Error::Refused(r)) => {
+            let had_one = PANEL.with(|p| p.borrow().live.is_some());
+            text(
+                "spmv-verdict",
+                &format!(
+                    "Refused before anything was built: {}. {}",
+                    r.message,
+                    if had_one { "The graph you had is unchanged." } else { "Nothing was built." }
+                ),
+            );
+            set_class("spmv-verdict", "spmv-verdict spmv-refused");
+            if !had_one {
+                text(
+                    "spmv-n-plan",
+                    &format!("Refused ({}). No node, edge or data node was made.", r.code),
+                );
+            }
+            return Ok(());
+        },
+        Err(e) => return Err(e.to_string()),
+    };
+    teardown()?;
     for id in [
         "spmv-n-plan", "spmv-n-page", "spmv-n-build", "spmv-n-step", "spmv-n-check", "spmv-n-drag", "spmv-n-rebuild",
     ] {
         text(id, "—");
     }
-    let spec = spec_from_controls()?;
-    let budget = Budget::default();
-    // The budget is checked, and the matrix generated, before a single scene call. A scenario that fails here has built nothing.
-    let prepared = match Prepared::new(&spec, &budget) {
-        Ok(p) => p,
-        Err(Error::Refused(r)) => {
-            text(
-                "spmv-verdict",
-                &format!("Refused before anything was built: {}. The page was not touched.", r.message),
-            );
-            text(
-                "spmv-n-plan",
-                &format!("Refused ({}). No node, edge or data node was made.", r.code),
-            );
-            set_class("spmv-verdict", "spmv-verdict spmv-refused");
-            return Ok(());
-        },
-        Err(e) => return Err(e.to_string()),
-    };
     let mut run = prepared.run();
     // A matrix that is worked is for watching, so its steps go in order, and a measured one keeps the contract's random order.
     let order = if is_worked(&prepared) { "inorder" } else { "random" };

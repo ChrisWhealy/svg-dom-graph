@@ -141,7 +141,8 @@ The product is exact integer arithmetic, so the oracle in `spmv/reference-js/` a
 ## Refusals
 
 Before any `Scene` call is made, the size is checked against a budget.
-A size over it is refused with a reason, in a message styled apart from the readout of a drawing, and the page is not touched.
+A size over it is refused with a reason, in a message styled apart from the readout of a drawing.
+The check is made before anything is changed, so a graph that was there stays, with its readouts and its view, and the message says so.
 
 | Choice | Refusal |
 |---|---|

@@ -363,20 +363,36 @@ try {
   check((await alive()) === 0, 'a window that was hidden in the middle of a run leaves no frame callback behind')
   await other.closeTab()
 
-  // - - - Refusals: reported apart from a drawing, with the reason, before the page is touched.
+  // - - - Refusals: reported apart from a drawing, with the reason, and a graph that was there is left as it was.
   const sceneSvgs = () => chrome.evaluate(`document.querySelectorAll('.spmv-scene-svg').length`)
+  const marker = () =>
+    chrome.evaluate(`(() => { const s = document.querySelector('.spmv-scene-svg'); return s ? s.id + ':' + s.querySelectorAll('rect').length + ':' + s.querySelector('g.svg-dom-graph-content').getAttribute('transform') : null })()`)
   for (const [control, value, wanted] of [
     ['spmv-size', '20000', 'nodes 20000 is over the budget of 10000'],
     ['spmv-labels', '1024', 'label length 1024 is over the budget of 256']
   ]) {
     await choose('spmv-size', '16')
     await choose('spmv-labels', '1')
+    await click('spmv-build')
+    check(await waitFor(async () => (await text('spmv-verdict'))?.startsWith('Accepted: 16 nodes'), 10000), `${control} ${value}: a graph is there before the refusal`)
+    await click('spmv-step')
+    const had = { marker: await marker(), plan: await text('spmv-n-plan'), step: await text('spmv-n-step'), task: await text('spmv-task') }
     await choose(control, value)
     await click('spmv-build')
     const verdict = await text('spmv-verdict')
     check(verdict.startsWith('Refused before anything was built') && verdict.includes(wanted), `${control} ${value} is refused with its reason (${verdict})`)
-    check((await sceneSvgs()) === 0, `${control} ${value}: no scene was made`)
+    check(verdict.endsWith('The graph you had is unchanged.'), `${control} ${value}: the refusal says that the graph is unchanged`)
+    check((await sceneSvgs()) === 1 && (await marker()) === had.marker, `${control} ${value}: the graph that was there is the same one, with the same view`)
+    check((await text('spmv-n-plan')) === had.plan && (await text('spmv-n-step')) === had.step && (await text('spmv-task')) === had.task, `${control} ${value}: the readouts of that graph are as they were`)
+    const stepBefore = await text('spmv-n-step')
+    await click('spmv-step')
+    check((await text('spmv-n-step')) !== stepBefore && /^Step 2:/.test(await text('spmv-n-step')), `${control} ${value}: the graph that was kept still steps`)
     check((await chrome.evaluate(`document.getElementById('spmv-verdict').className`)).includes('spmv-refused'), `${control} ${value}: a refusal is styled apart`)
+    // With no graph there, a refusal builds nothing and says so.
+    await click('spmv-teardown')
+    await click('spmv-build')
+    const bare = await text('spmv-verdict')
+    check(bare.endsWith('Nothing was built.') && (await sceneSvgs()) === 0, `${control} ${value}: with no graph there, nothing is built and the refusal says so (${bare})`)
   }
   await choose('spmv-labels', '1')
   await choose('spmv-size', '2000000')
