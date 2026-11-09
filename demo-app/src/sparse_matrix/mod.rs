@@ -615,6 +615,53 @@ fn choose(selection: Option<Selection>) -> Result<(), String> {
     })
 }
 
+/// Selects the node that a person typed, which can be any of them, and not only the first 100 that the list holds, so that a node
+/// beyond those is reached from the keyboard too.
+fn goto_changed() -> Result<(), String> {
+    let input = document()?
+        .get_element_by_id("spmv-goto")
+        .and_then(|e| e.dyn_into::<web_sys::HtmlInputElement>().ok())
+        .ok_or("the box for a node is missing")?;
+    let tag = input.value().trim().to_lowercase();
+    if tag.is_empty() {
+        return Ok(());
+    }
+    let selection =
+        Selection::parse(&tag).ok_or_else(|| "Type a node as x or y and its number, such as x250 or y7.".to_owned())?;
+    let (cols, rows, worked, readable) = PANEL
+        .with(|p| {
+            let p = p.borrow();
+            p.live.as_ref().map(|l| {
+                let m = l.prepared.matrix();
+                (m.cols, m.rows, l.built.worked_row().is_some(), l.built.is_readable())
+            })
+        })
+        .ok_or("Nothing is built yet.")?;
+    let last = |n: usize| n.saturating_sub(1);
+    match selection {
+        Selection::Column(j) if j >= cols => {
+            return Err(format!("There is no {tag}: the columns are x0 to x{}.", last(cols)));
+        },
+        Selection::Row(i) if i >= rows => {
+            return Err(format!("There is no {tag}: the rows are y0 to y{}.", last(rows)));
+        },
+        Selection::Column(_) if worked => {
+            return Err(format!(
+                "This view shows one row at a time, so choose a row: y0 to y{}.",
+                last(rows)
+            ));
+        },
+        _ if !readable => {
+            return Err(format!(
+                "Selecting a node is off above {} nonzeros, which the scene does not tag.",
+                n(READABLE_UP_TO as u64)
+            ));
+        },
+        _ => {},
+    }
+    choose(Some(selection))
+}
+
 fn pick_changed() -> Result<(), String> {
     let tag = selected("spmv-pick")?;
     choose(Selection::parse(&tag))
@@ -972,6 +1019,26 @@ fn on(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result<(), S
     Ok(())
 }
 
+/// As [`on`], for a box that a person types in. What they typed may not be a node that is there, which is the person's to correct and
+/// not a fault of the page, so it is told in the banner and is not logged as an error.
+fn on_typed(id: &str, event: &str, action: fn() -> Result<(), String>) -> Result<(), String> {
+    let target = required_element(&document()?, id)?;
+    let callback = Closure::<dyn FnMut()>::new(move || match action() {
+        Ok(()) => clear_error(ERROR),
+        Err(message) => {
+            if let Some(banner) = document().ok().and_then(|d| d.get_element_by_id(ERROR)) {
+                banner.set_text_content(Some(&message));
+                banner.remove_attribute("hidden").ok();
+            }
+        },
+    });
+    target
+        .add_event_listener_with_callback(event, callback.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not wire #{id}: {e:?}"))?;
+    callback.forget();
+    Ok(())
+}
+
 /// The gallery's panel: the description is in the page, and this wires the button that opens the demo in a window of its own, as
 /// large as the screen allows.
 ///
@@ -1029,6 +1096,7 @@ pub(crate) fn build_sparse_matrix_window() -> Result<(), String> {
     on("spmv-pick", "change", pick_changed)?;
     on("spmv-edges", "change", edges_changed)?;
     on("spmv-order", "change", order_changed)?;
+    on_typed("spmv-goto", "change", goto_changed)?;
     // A run stops when the window goes, and nothing is stepped after it.
     let leaving = Closure::<dyn FnMut(web_sys::Event)>::new(move |_: web_sys::Event| {
         let _ = teardown();

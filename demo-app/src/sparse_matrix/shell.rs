@@ -10,7 +10,7 @@ const SVG_NS: &str = "http://www.w3.org/2000/svg";
 const XHTML: &str = "http://www.w3.org/1999/xhtml";
 
 /// The height of the controls above the scene and of the readout below it.
-const CONTROLS_HEIGHT: f64 = 112.0;
+const CONTROLS_HEIGHT: f64 = 140.0;
 const READOUT_HEIGHT: f64 = 340.0;
 /// The room, in pixels, that the scene keeps clear at each side of the graph.
 const EDGE_ROOM: f64 = 16.0;

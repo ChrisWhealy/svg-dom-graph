@@ -93,6 +93,9 @@ A larger graph is there to be measured, and is packed into blocks.
 - **What a step changed.** After a step, the entries of **x** and **y** that changed have a dashed green outline.
 - **A click for the arithmetic.** Click a node, or choose one in the list, to light its edges and the nodes at their other ends.
   The readout then writes out what the node stands for.
+- **Any node from the keyboard.** The list holds only the first 100 columns and the first 100 rows.
+  The Go to a node box takes any node, such as `x250` or `y400`, and selects it when Enter is pressed.
+  A name that is not a node, or is out of range, is told in the banner with the range that exists, and the selection stays.
 
 ```text
 x0 = 74 feeds 3 rows: y0 (×6), y3 (×−4), y5 (×−4)

@@ -90,6 +90,15 @@ try {
   check(paneColour === 'rgb(255, 255, 238)', `the controls are on the colour of the demos' canvas (${paneColour})`)
   // - - - The multiplication is drawn as the operations that do it, for the matrix that a person can read.
   const mouse = (type, x, y) => chrome.send('Input.dispatchMouseEvent', { type, x, y, button: 'left', clickCount: 1 })
+  // Keys, for the checks that use no mouse: Tab moves the focus, text is typed, and Enter commits it.
+  const key = (name, code, vk) => chrome.send('Input.dispatchKeyEvent', { type: name === 'Enter' ? 'keyDown' : 'rawKeyDown', key: name, code, windowsVirtualKeyCode: vk, text: name === 'Enter' ? '\r' : undefined })
+    .then(() => chrome.send('Input.dispatchKeyEvent', { type: 'keyUp', key: name, code, windowsVirtualKeyCode: vk }))
+  const typeNode = async word => {
+    await chrome.evaluate(`(() => { const i = document.getElementById('spmv-goto'); i.focus(); i.select() })()`)
+    await chrome.send('Input.insertText', { text: word })
+    await key('Enter', 'Enter', 13)
+    await pause(300)
+  }
   const worked = () =>
     chrome.evaluate(`(() => {
       const svg = document.querySelector('.spmv-scene-svg')
@@ -127,6 +136,18 @@ try {
   check(w.result === w.y[5] && w.changed > 0, `after a step the sum still ends at y5, and what changed is outlined (${w.changed} entries)`)
   check(/the input changed \(x\d+ -?\d+ → -?\d+\)/.test(await text('spmv-story')), `a step is explained in words (${await text('spmv-story')})`)
   check(viewBefore === (await chrome.evaluate(`document.querySelector('.spmv-scene-svg > g.svg-dom-graph-content').getAttribute('transform')`)), 'showing another row keeps the view')
+  // A node can be reached from the keyboard alone: Tab from the list lands on the box, and a row typed there is chosen.
+  await chrome.evaluate(`document.getElementById('spmv-pick').focus()`)
+  await key('Tab', 'Tab', 9)
+  check((await chrome.evaluate(`document.activeElement?.id`)) === 'spmv-goto', 'Tab from the list of nodes moves the focus to the box for typing one')
+  await typeNode('Y3')
+  check((await text('spmv-selected')).startsWith('y3 is made from row 3'), 'typing a row selects it, whatever the case')
+  w = await worked()
+  check(rowOf(w.heading) === 3 && w.result === w.y[3], `the operations of the typed row are drawn (${w.heading})`)
+  await typeNode('x3')
+  check(/one row at a time/.test(await text('spmv-error')) && rowOf((await worked()).heading) === 3, `a column is declined in this view, with the reason (${await text('spmv-error')})`)
+  await typeNode('y99')
+  check(/There is no y99: the rows are y0 to y7\./.test(await text('spmv-error')), `a node that is not there is declined with the range (${await text('spmv-error')})`)
 
   // Steps go in order, so that what comes next can be told, and a run is slow enough to follow.
   check((await chrome.evaluate(`document.getElementById('spmv-order').value`)) === 'inorder', 'a matrix that is worked steps in order by default')
@@ -289,6 +310,18 @@ try {
   await chrome.send('Input.dispatchMouseEvent', { type: 'mouseReleased', x: onEdge[0] + 80, y: onEdge[1] + 50, button: 'left', clickCount: 1 })
   await pause(100)
   check((await view()) !== panBefore, 'a drag that begins on top of an edge pans the scene')
+  // A node beyond the first 100 that the list holds is reached from the keyboard, by typing it.
+  const inList = await chrome.evaluate(`[...document.getElementById('spmv-pick').options].map(o => o.value)`)
+  check(inList.includes('x99') && !inList.includes('x250') && !inList.includes('y400'), 'the list holds only the first 100 of each, so x250 and y400 are not in it')
+  await typeNode('x250')
+  check((await text('spmv-selected')).startsWith('x250 = '), `typing x250 selects a column that the list does not hold (${(await text('spmv-selected')).slice(0, 40)})`)
+  check((await chrome.evaluate(`document.querySelectorAll('[data-spmv-node="x250"].spmv-picked').length`)) === 1, 'the node that was typed is the one that is picked in the scene')
+  await typeNode('y400')
+  check((await text('spmv-selected')).includes('y400 = '), 'typing y400 selects a row that the list does not hold')
+  await typeNode('x5000')
+  check(/There is no x5000: the columns are x0 to x499\./.test(await text('spmv-error')) && (await text('spmv-selected')).includes('y400 = '), `a node that is not there is declined with the range, and the selection stays (${await text('spmv-error')})`)
+  await typeNode('banana')
+  check(/Type a node as x or y/.test(await text('spmv-error')), 'text that is not a node is declined with what to type')
   await click('spmv-zoom-reset')
   await choose('spmv-size', '40')
   await click('spmv-build')
