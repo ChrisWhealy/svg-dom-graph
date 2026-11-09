@@ -323,16 +323,24 @@ try {
   await pause(400)
   check((await stepsDone()) === stopped, `no step follows a stop (${stopped} steps, and none after)`)
 
-  // A run stops by itself when the window is hidden, and no step follows.
+  // A run stops by itself when the window is hidden, and no step follows. The window is really hidden, by bringing another tab to the
+  // front, because a hidden page is given no animation frames, and a frame cannot be what notices that it is hidden. Nor does the run
+  // go on when the window comes back.
   await click('spmv-run')
   await waitFor(async () => (await stepsDone()) > stopped + 5, 5000)
-  await chrome.evaluate(`Object.defineProperty(document, 'hidden', { value: true, configurable: true })`)
+  const other = await chrome.newPage('about:blank')
+  await other.send('Page.bringToFront')
+  check(await waitFor(async () => (await chrome.evaluate('document.visibilityState')) === 'hidden', 5000), 'the window is hidden by another tab in front of it')
   await pause(300)
   const hiddenAt = await stepsDone()
-  await pause(400)
+  await pause(600)
   check((await stepsDone()) === hiddenAt, `a run stops when the window is hidden, and no step follows (${hiddenAt} steps)`)
   check((await chrome.evaluate(`document.getElementById('spmv-run').getAttribute('aria-pressed')`)) === 'false', 'Run says it is stopped')
-  await chrome.evaluate(`delete document.hidden`)
+  await chrome.send('Page.bringToFront')
+  check(await waitFor(async () => (await chrome.evaluate('document.visibilityState')) === 'visible', 5000), 'the window is visible again')
+  await pause(800)
+  check((await stepsDone()) === hiddenAt, 'a run does not start again when the window comes back')
+  await other.closeTab()
 
   // - - - Refusals: reported apart from a drawing, with the reason, before the page is touched.
   const sceneSvgs = () => chrome.evaluate(`document.querySelectorAll('.spmv-scene-svg').length`)

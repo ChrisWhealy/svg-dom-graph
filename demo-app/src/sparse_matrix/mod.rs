@@ -967,5 +967,16 @@ pub(crate) fn build_sparse_matrix_window() -> Result<(), String> {
         .add_event_listener_with_callback("pagehide", leaving.as_ref().unchecked_ref())
         .map_err(|e| format!("could not attach the pagehide listener: {e:?}"))?;
     leaving.forget();
+    // A browser stops the animation frames of a hidden page, so a frame cannot be the one to notice that the page is hidden: the run
+    // would be left running, and would go on when the page came back. The page says when it is hidden, and the run stops then.
+    let hiding = Closure::<dyn FnMut(web_sys::Event)>::new(move |_: web_sys::Event| {
+        if document().is_ok_and(|d| d.hidden()) {
+            stop_run();
+        }
+    });
+    document()?
+        .add_event_listener_with_callback("visibilitychange", hiding.as_ref().unchecked_ref())
+        .map_err(|e| format!("could not attach the visibilitychange listener: {e:?}"))?;
+    hiding.forget();
     build()
 }
