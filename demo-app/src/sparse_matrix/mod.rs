@@ -67,6 +67,38 @@ const WINDOW: usize = 120;
 
 thread_local! {
     static PANEL: RefCell<Panel> = RefCell::new(Panel::default());
+    /// How many frame callbacks are alive, which a test reads from the window's `data-live-frame-callbacks` to see that none is left behind.
+    static LIVE_CALLBACKS: std::cell::Cell<usize> = const { std::cell::Cell::new(0) };
+}
+
+/// A callback for an animation frame, and the generation that it was asked for under. It counts itself while it lives.
+struct FrameCallback {
+    generation: u32,
+    closure: Closure<dyn FnMut()>,
+}
+
+impl FrameCallback {
+    fn new(generation: u32) -> Self {
+        let closure = Closure::<dyn FnMut()>::new(move || frame(generation));
+        Self::count(1);
+        Self { generation, closure }
+    }
+
+    fn count(change: isize) {
+        let live = LIVE_CALLBACKS.with(|c| {
+            c.set(c.get().saturating_add_signed(change));
+            c.get()
+        });
+        if let Some(host) = document().ok().and_then(|d| d.get_element_by_id(ROOT)) {
+            host.set_attribute("data-live-frame-callbacks", &live.to_string()).ok();
+        }
+    }
+}
+
+impl Drop for FrameCallback {
+    fn drop(&mut self) {
+        Self::count(-1);
+    }
 }
 
 // - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - - -
@@ -95,7 +127,14 @@ struct Panel {
     /// Counted up by every build and teardown. A frame that was asked for under an older number does nothing.
     generation: u32,
     running: bool,
+    /// The frame that is asked for, and the callback that it will call. The panel owns the callback, so that a frame that is cancelled
+    /// and never called does not leave it behind: cancelling drops it.
     frame: Option<i32>,
+    callback: Option<FrameCallback>,
+    /// The callback that is running, or has run. A callback cannot be dropped while it runs, so it is dropped when the next one starts or
+    /// when the run is stopped from outside a frame.
+    finished: Option<FrameCallback>,
+    in_frame: bool,
     /// Counted up for each `<svg>` made, so that no two have the same id.
     svgs: u32,
     /// When a run next takes a step, which the Run speed list sets, so that a step can be followed.
@@ -222,6 +261,12 @@ fn stop_run() {
         p.generation += 1;
         if let (Some(id), Some(window)) = (p.frame.take(), web_sys::window()) {
             window.cancel_animation_frame(id).ok();
+        }
+        // A frame that was cancelled is never called, so its callback is dropped here and not by the browser. One that is running cannot
+        // be dropped from inside itself, and goes when the next starts.
+        p.callback = None;
+        if !p.in_frame {
+            p.finished = None;
         }
     });
     if let Some(e) = document().ok().and_then(|d| d.get_element_by_id("spmv-run")) {
@@ -703,6 +748,20 @@ fn story(step: u64, x0: &[i64], y0: &[i64], x1: &[i64], y1: &[i64]) -> String {
 }
 
 fn frame(generation: u32) {
+    PANEL.with(|p| {
+        let mut p = p.borrow_mut();
+        p.in_frame = true;
+        p.frame = None;
+        // This is the callback that is being called. The one before it has finished, and goes.
+        if p.callback.as_ref().is_some_and(|c| c.generation == generation) {
+            p.finished = p.callback.take();
+        }
+    });
+    frame_body(generation);
+    PANEL.with(|p| p.borrow_mut().in_frame = false);
+}
+
+fn frame_body(generation: u32) {
     let current = PANEL.with(|p| {
         let p = p.borrow();
         p.running && p.generation == generation
@@ -742,11 +801,15 @@ fn frame(generation: u32) {
 
 fn schedule(generation: u32) -> Result<(), String> {
     let window = web_sys::window().ok_or("no window")?;
-    let callback = Closure::once_into_js(move || frame(generation));
+    let callback = FrameCallback::new(generation);
     let id = window
-        .request_animation_frame(callback.unchecked_ref())
+        .request_animation_frame(callback.closure.as_ref().unchecked_ref())
         .map_err(|e| format!("could not ask for a frame: {e:?}"))?;
-    PANEL.with(|p| p.borrow_mut().frame = Some(id));
+    PANEL.with(|p| {
+        let mut p = p.borrow_mut();
+        p.frame = Some(id);
+        p.callback = Some(callback);
+    });
     Ok(())
 }
 

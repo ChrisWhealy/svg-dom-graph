@@ -155,6 +155,26 @@ try {
   check(slow >= 1 && slow <= 2 && fast >= 4 && fast <= 7 && fast > slow, `the run speed list sets the pace: ${slow} steps in 4 s when slow and ${fast} in 3.2 s when fast`)
   check((await chrome.evaluate(`document.getElementById('spmv-speed').value`)) === '500', 'the list says what was chosen')
 
+  // The page owns the callback of every frame it asks for, so a frame that is cancelled leaves none behind. The window counts the
+  // callbacks that are alive, and many starts and stops, a rebuild in the middle of a run, and a window that is hidden leave none.
+  const alive = () => chrome.evaluate(`Number(document.getElementById('spmv-root').getAttribute('data-live-frame-callbacks') ?? -1)`)
+  await choose('spmv-speed', '0')
+  let most = 0
+  for (let k = 0; k < 40; k++) {
+    await click('spmv-run')
+    await pause(k % 3 === 0 ? 40 : 5)
+    most = Math.max(most, await alive())
+    await click('spmv-run')
+  }
+  check(most >= 1 && most <= 2, `a run holds at most two frame callbacks, the one that is waiting and the one that ran (${most})`)
+  check((await alive()) === 0, 'after 40 starts and stops no frame callback is left behind')
+  await click('spmv-run')
+  await pause(100)
+  await click('spmv-build')
+  await pause(300)
+  check((await alive()) === 0 && (await chrome.evaluate(`document.getElementById('spmv-run').textContent`)) === 'Run', 'a rebuild in the middle of a run leaves no frame callback behind')
+  await choose('spmv-speed', '500')
+
   // - - - The graph that a larger matrix is drawn as: the rest of the window is checked on 20 by 20.
   await choose('spmv-size', '40')
   await click('spmv-build')
@@ -340,6 +360,7 @@ try {
   check(await waitFor(async () => (await chrome.evaluate('document.visibilityState')) === 'visible', 5000), 'the window is visible again')
   await pause(800)
   check((await stepsDone()) === hiddenAt, 'a run does not start again when the window comes back')
+  check((await alive()) === 0, 'a window that was hidden in the middle of a run leaves no frame callback behind')
   await other.closeTab()
 
   // - - - Refusals: reported apart from a drawing, with the reason, before the page is touched.
